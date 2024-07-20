@@ -46,6 +46,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	app.Get("/", HandleHome)
 	app.Get("/mangas", HandleMangas)
+	app.Get("/manga/:slug", HandleManga)
 	app.Get("/libraries", HandleLibraries)
 	app.Get("/library/:slug", HandleLibrary)
 

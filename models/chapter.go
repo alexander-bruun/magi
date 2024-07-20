@@ -47,7 +47,6 @@ func GetChapter(id uint) (*Chapter, error) {
 
 // UpdateChapter updates an existing chapter record
 func UpdateChapter(chapter *Chapter) error {
-	// Why in the fuck is this a thig? - https://github.com/go-gorm/gorm/issues/3487#issuecomment-698303344
 	err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&chapter).Error
 	if err != nil {
 		return err

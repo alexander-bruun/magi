@@ -145,3 +145,16 @@ func MangaCount(filterBy, filter string) (int, error) {
 
 	return int(count), nil
 }
+
+// GetMangaIDBySlug retrieves the ID of a manga record by its slug
+func GetMangaIDBySlug(slug string) (uint, error) {
+	var manga Manga
+	err := db.Select("id").Where("slug = ?", slug).First(&manga).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, errors.New("manga not found")
+		}
+		return 0, err
+	}
+	return manga.ID, nil
+}
