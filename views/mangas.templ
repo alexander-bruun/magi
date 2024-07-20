@@ -6,7 +6,7 @@ import (
 	"math"
 )
 
-templ Mangas(mangas []models.Manga, totalCount int64, currentPage int64) {
+templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -43,22 +43,29 @@ templ Mangas(mangas []models.Manga, totalCount int64, currentPage int64) {
 			<div class="uk-card uk-card-default uk-card-body">No mangas found...</div>
 		</div>
 	}
-	<div class="uk-card-media-top flex justify-center items-center py-3">
+	<div class="uk-card-media-top flex justify-center items-center py-8">
 		@Pagination(totalCount, currentPage)
 	</div>
+	<script>
+	document.addEventListener('htmx:afterSwap', (event) => {
+			if (event.detail.target.id === 'content') {
+					window.scrollTo(0, 0);
+			}
+	});
+	</script>
 }
 
-templ Pagination(totalCount int64, currentPage int64) {
+templ Pagination(totalCount int, currentPage int) {
 	<nav aria-label="Pagination">
 		<ul class="uk-pagination" uk-margin>
-			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "uk-pagination-previous")
+			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
 			@PaginationNumbers(totalCount, currentPage)
-			@PaginationItem(currentPage < int64(math.Ceil(float64(totalCount)/9)), currentPage+1, "Next", "uk-pagination-next")
+			@PaginationItem(currentPage < int(math.Ceil(float64(totalCount)/9)), currentPage+1, "Next", "next")
 		</ul>
 	</nav>
 }
 
-templ PaginationItem(enabled bool, page int64, text string, icon string) {
+templ PaginationItem(enabled bool, page int, text string, icon string) {
 	if enabled {
 		<li>
 			<a
@@ -68,6 +75,11 @@ templ PaginationItem(enabled bool, page int64, text string, icon string) {
 				hx-push-url="true"
 			>
 				if icon != "" {
+					if icon == "next" {
+						<span uk-pagination-next></span>
+					} else {
+						<span uk-pagination-previous></span>
+					}
 					<span uk-={ icon }></span>
 				} else {
 					{ text }
@@ -87,13 +99,13 @@ templ PaginationItem(enabled bool, page int64, text string, icon string) {
 	}
 }
 
-templ PaginationNumbers(totalCount int64, currentPage int64) {
-	for i := int64(1); i <= int64(math.Ceil(float64(totalCount) / 9)); i++ {
+templ PaginationNumbers(totalCount int, currentPage int) {
+	for i := 1; i <= int(math.Ceil(float64(totalCount) / 9)); i++ {
 		if i == currentPage {
 			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
-		} else if i == 1 || i == int64(math.Ceil(float64(totalCount)/9)) || (i >= currentPage-1 && i <= currentPage+1) {
+		} else if i == 1 || i == int(math.Ceil(float64(totalCount)/9)) || (i >= currentPage-1 && i <= currentPage+1) {
 			@PaginationItem(true, i, fmt.Sprint(i), "")
-		} else if (i == 2 && currentPage > 3) || (i == int64(math.Ceil(float64(totalCount)/9))-1 && currentPage < int64(math.Ceil(float64(totalCount)/9))-2) {
+		} else if (i == 2 && currentPage > 3) || (i == int(math.Ceil(float64(totalCount)/9))-1 && currentPage < int(math.Ceil(float64(totalCount)/9))-2) {
 			<li class="uk-disabled"><span>…</span></li>
 		}
 	}

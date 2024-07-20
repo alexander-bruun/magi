@@ -26,7 +26,7 @@ func HandleHome(c *fiber.Ctx) error {
 }
 
 func HandleMangas(c *fiber.Ctx) error {
-	page, err := strconv.Atoi("page")
+	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil || page <= 0 {
 		page = 1
 	}
@@ -36,7 +36,7 @@ func HandleMangas(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	return HandleView(c, views.Mangas(mangas, count))
+	return HandleView(c, views.Mangas(mangas, int(count), page))
 }
 
 func HandleManga(c *fiber.Ctx) error {
