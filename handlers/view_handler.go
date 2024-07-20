@@ -27,6 +27,22 @@ func HandleMangas(c *fiber.Ctx) error {
 	return HandleView(c, views.Mangas())
 }
 
+func HandleManga(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	id, err := models.GetMangaIDBySlug(slug)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	manga, err := models.GetManga(id)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	return HandleView(c, views.Manga(*manga))
+}
+
 func HandleNotFound(c *fiber.Ctx) error {
 	return HandleView(c, views.NotFound())
 }
