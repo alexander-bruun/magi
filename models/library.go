@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
 	"gorm.io/gorm"
@@ -15,6 +16,14 @@ type Library struct {
 	Cron        string   `gorm:"not null"`
 	Mangas      []Manga  `gorm:"foreignKey:LibraryID"`
 	Folders     []Folder `gorm:"foreignKey:LibraryID"`
+}
+
+func (l *Library) GetFolderNames() string {
+	var folderNames []string
+	for _, folder := range l.Folders {
+		folderNames = append(folderNames, folder.Name)
+	}
+	return strings.Join(folderNames, ", ")
 }
 
 func (l *Library) Validate() error {

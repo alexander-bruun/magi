@@ -44,11 +44,13 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Static("/api/images", cacheDirectory)
 	app.Static("/assets/", "./assets/")
 
+	// Register views
 	app.Get("/", HandleHome)
 	app.Get("/mangas", HandleMangas)
 	app.Get("/manga/:slug", HandleManga)
 	app.Get("/libraries", HandleLibraries)
 	app.Get("/library/:slug", HandleLibrary)
+	app.Get("/admin", HandleAdmin)
 
 	// Register library handlers
 	app.Get("/api/libraries", GetLibrariesHandler)
