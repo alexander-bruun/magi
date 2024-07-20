@@ -1,0 +1,179 @@
+//
+// Component: Navbar
+//
+// ========================================================================
+
+
+// Variables
+// ========================================================================
+
+@navbar-gap:                                    15px;
+
+@navbar-nav-gap:                                15px;
+
+@navbar-nav-item-padding-horizontal:            0;
+
+@navbar-nav-item-font-size:                     @global-small-font-size;
+
+@navbar-item-padding-horizontal:                0;
+
+@navbar-dropdown-margin:                        15px;
+@navbar-dropdown-padding:                       25px;
+@navbar-dropdown-background:                    @global-background;
+
+@navbar-dropdown-nav-subtitle-font-size:        12px;
+
+//
+// New
+//
+
+@navbar-gap-m:                                  30px;
+@navbar-nav-gap-m:                              30px;
+
+@navbar-nav-item-text-transform:                uppercase;
+
+@navbar-dropdown-nav-font-size:                 @global-small-font-size;
+
+@navbar-dropdown-box-shadow:                    0 5px 12px rgba(0,0,0,0.15);
+
+
+// Component
+// ========================================================================
+
+.hook-navbar() {}
+
+
+// Container
+// ========================================================================
+
+.hook-navbar-container() {}
+
+
+// Nav
+// ========================================================================
+
+.hook-navbar-nav-item() {
+    text-transform: @navbar-nav-item-text-transform;
+    transition: 0.1s ease-in-out;
+    transition-property: color, background-color;
+}
+
+.hook-navbar-nav-item-hover() {}
+
+.hook-navbar-nav-item-onclick() {}
+
+.hook-navbar-nav-item-active() {}
+
+
+// Item
+// ========================================================================
+
+.hook-navbar-item() {}
+
+
+// Toggle
+// ========================================================================
+
+.hook-navbar-toggle() {}
+
+.hook-navbar-toggle-hover() {}
+
+.hook-navbar-toggle-icon() {}
+
+.hook-navbar-toggle-icon-hover() {}
+
+
+// Subtitle
+// ========================================================================
+
+.hook-navbar-subtitle() {}
+
+
+// Style modifiers
+// ========================================================================
+
+.hook-navbar-primary() {}
+
+.hook-navbar-transparent() {}
+
+.hook-navbar-sticky() {}
+
+
+// Dropdown
+// ========================================================================
+
+.hook-navbar-dropdown() { box-shadow: @navbar-dropdown-box-shadow; }
+
+.hook-navbar-dropdown-large() {}
+
+.hook-navbar-dropdown-dropbar() { box-shadow: none; }
+
+.hook-navbar-dropdown-dropbar-large() {}
+
+
+// Dropdown nav
+// ========================================================================
+
+.hook-navbar-dropdown-nav() { font-size: @navbar-dropdown-nav-font-size; }
+
+.hook-navbar-dropdown-nav-item() {}
+
+.hook-navbar-dropdown-nav-item-hover() {}
+
+.hook-navbar-dropdown-nav-subtitle() {}
+
+.hook-navbar-dropdown-nav-header() {}
+
+.hook-navbar-dropdown-nav-divider() {}
+
+
+// Dropbar
+// ========================================================================
+
+.hook-navbar-dropbar() {}
+
+
+// Miscellaneous
+// ========================================================================
+
+.hook-navbar-misc() {
+
+    .uk-navbar-container {
+        transition: 0.1s ease-in-out;
+        transition-property: background-color;
+    }
+
+    /* Tablet landscape and bigger */
+    @media (min-width: @breakpoint-medium) {
+
+        .uk-navbar-left,
+        .uk-navbar-right,
+        [class*="uk-navbar-center"] { gap: @navbar-gap-m; }
+
+        .uk-navbar-center-left { right: ~'calc(100% + @{navbar-gap-m})'; }
+        .uk-navbar-center-right { left: ~'calc(100% + @{navbar-gap-m})'; }
+
+    }
+
+    /* Tablet landscape and bigger */
+    @media (min-width: @breakpoint-medium) {
+
+        .uk-navbar-nav { gap: @navbar-nav-gap-m; }
+
+    }
+
+}
+
+
+// Inverse
+// ========================================================================
+
+.hook-inverse-navbar-nav-item() {}
+.hook-inverse-navbar-nav-item-hover() {}
+.hook-inverse-navbar-nav-item-onclick() {}
+.hook-inverse-navbar-nav-item-active() {}
+
+.hook-inverse-navbar-item() {}
+
+.hook-inverse-navbar-toggle() {}
+.hook-inverse-navbar-toggle-hover() {}

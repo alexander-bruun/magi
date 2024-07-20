@@ -1,0 +1,113 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+func GetLibraries() []models.Library {
+	libraries, _ := models.GetLibraries()
+	return libraries
+}
+
+templ navbar() {
+	<nav class="uk-navbar-container">
+		<div class="uk-container">
+			<div uk-navbar>
+				<div class="uk-navbar-left">
+					<ul class="uk-navbar-nav">
+						<li class="uk-active">
+							<a class="btn btn-ghost text-xl" href="/" hx-get="/" hx-target="#content" hx-push-url="true">Magi</a>
+						</li>
+					</ul>
+				</div>
+				<div class="uk-navbar-center">
+					<ul class="uk-navbar-nav">
+						<li><a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a></li>
+						<li>
+							<a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true">Libraries <span uk-navbar-parent-icon></span></a>
+							<div class="uk-navbar-dropdown">
+								<ul class="uk-nav uk-navbar-dropdown-nav">
+									{{ libraries, _ := models.GetLibraries() }}
+									if len(libraries) > 0 {
+										for _, library := range libraries {
+											<li>
+												<a
+													href={ templ.URL(fmt.Sprintf("/library/%s", library.Slug)) }
+													hx-get={ fmt.Sprintf("/library/%s", library.Slug) }
+													hx-target="#content"
+													hx-push-url="true"
+												>{ library.Name }</a>
+											</li>
+										}
+									} else {
+										<li>
+											<a href="#">No Libraries Configured</a>
+										</li>
+									}
+								</ul>
+							</div>
+						</li>
+						<li><a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true">Mangas</a></li>
+					</ul>
+				</div>
+				<div class="uk-navbar-right">
+					<ul class="uk-navbar-nav">
+						<li>
+							<a href="#">Admin <span uk-navbar-parent-icon></span></a>
+							<div class="uk-navbar-dropdown">
+								<ul class="uk-nav uk-navbar-dropdown-nav">
+									<li class="uk-active"><a href="#">Active</a></li>
+									<li><a href="#">Libraries</a></li>
+									<li><a href="#">Settings</a></li>
+									<li class="uk-nav-divider"></li>
+									<li><a href="#">Other</a></li>
+								</ul>
+							</div>
+						</li>
+					</ul>
+					<button class="uk-icon-button" id="theme-toggle">
+						<svg
+							id="theme-toggle-light-icon"
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="lucide lucide-sun dark:hidden"
+						>
+							<circle cx="12" cy="12" r="4"></circle>
+							<path d="M12 2v2"></path>
+							<path d="M12 20v2"></path>
+							<path d="m4.93 4.93 1.41 1.41"></path>
+							<path d="m17.66 17.66 1.41 1.41"></path>
+							<path d="M2 12h2"></path>
+							<path d="M20 12h2"></path>
+							<path d="m6.34 17.66-1.41 1.41"></path>
+							<path d="m19.07 4.93-1.41 1.41"></path>
+						</svg>
+						<svg
+							id="theme-toggle-dark-icon"
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="lucide lucide-moon hidden dark:block"
+						>
+							<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</div>
+	</nav>
+}

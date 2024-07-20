@@ -1,0 +1,65 @@
+//
+// Component: Thumbnav
+//
+// ========================================================================
+
+
+// Variables
+// ========================================================================
+
+//
+// New
+//
+
+@thumbnav-item-gradient:                        linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.4));
+@thumbnav-item-hover-opacity:                   0;
+@thumbnav-item-active-opacity:                  0;
+
+
+// Component
+// ========================================================================
+
+.hook-thumbnav() {}
+
+.hook-thumbnav-item() {
+
+    position: relative;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-image: @thumbnav-item-gradient;
+        transition: opacity 0.1s ease-in-out;
+    }
+
+}
+
+.hook-thumbnav-item-hover() {
+    &::after { opacity: @thumbnav-item-hover-opacity; }
+}
+
+.hook-thumbnav-item-active() {
+    &::after { opacity: @thumbnav-item-active-opacity; }
+}
+
+
+// Miscellaneous
+// ========================================================================
+
+.hook-thumbnav-misc() {}
+
+
+// Inverse
+// ========================================================================
+
+@inverse-thumbnav-item-gradient:                linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.4));
+
+.hook-inverse-thumbnav-item() {
+    &::after { background-image: @inverse-thumbnav-item-gradient; }
+}
+.hook-inverse-thumbnav-item-hover() {}
+.hook-inverse-thumbnav-item-active() {}
