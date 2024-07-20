@@ -1,6 +1,6 @@
 # Magi
 
-Magi is a simplistic and performant manga indexer, organizer and reader. Magi does **NOT** distribute copyrighted material and / or posters, metadata or any other material that belongs to the original copyright holders. Magi is strictly a local application, used to index a digital manga collection using common digital comic file formats, such as: .cbz, .cbr, .rar etc... metadata is scraped from publicly accessible API's in order to enrich the user experience.
+Magi is a simplistic and performant manga indexer, organizer and reader. Magi does **NOT** distribute copyrighted material and / or posters, metadata or any other material that belongs to the original copyright holders. Magi is strictly a local application, used to index a digital manga collection using common digital comic file formats, such as: .cbz, .cbr, .rar etc... metadata and posters are scraped from publicly accessible API's in order to enrich the user experience.
 
 ![Magi Frontpage](/assets/img/frontpage.png)
 
