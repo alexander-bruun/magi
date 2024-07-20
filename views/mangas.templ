@@ -1,6 +1,11 @@
 package views
 
-templ Mangas() {
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Mangas(mangas []models.Manga, totalCount int64) {
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -17,36 +22,47 @@ templ Mangas() {
 		</ul>
 	</nav>
 	<h1 class="uk-heading-divider uk-h2 uk-margin">Mangas</h1>
-	<div class="uk-child-width-expand@s uk-text-center" uk-grid>
-		<div>
-			<div class="uk-card uk-card-body uk-card-default">Item</div>
+	if len(mangas) > 0 {
+		<div class="uk-grid-column-small uk-grid-row-large uk-child-width-1-3 uk-text-center" uk-grid>
+			for _, manga := range mangas {
+				<div>
+					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
+						<div class="uk-card uk-card-default uk-card-body">
+							<h3 class="uk-card-title uk-heading-divider uk-h3 uk-margin">{ manga.Name }</h3>
+							<div class="uk-card-media-top flex justify-center items-center pt-12">
+								<img src={ manga.CoverArtURL } class="pt-2" width="300" height="500" alt={ manga.Name }/>
+							</div>
+						</div>
+					</a>
+				</div>
+			}
 		</div>
-		<div>
-			<div class="uk-card uk-card-body uk-card-default">Item</div>
+	} else {
+		<div class="uk-text-center">
+			<div class="uk-card uk-card-default uk-card-body">No mangas found...</div>
 		</div>
-		<div>
-			<div class="uk-card uk-card-body uk-card-default">Item</div>
-		</div>
+	}
+	<div class="uk-card-media-top flex justify-center items-center py-3">
+		<nav aria-label="Pagination">
+			<ul class="uk-pagination" uk-margin>
+				<li>
+					<a href="#"><span uk-pagination-previous></span></a>
+				</li>
+				<li><a href="#">1</a></li>
+				<li class="uk-disabled"><span>…</span></li>
+				<li><a href="#">4</a></li>
+				<li><a href="#">5</a></li>
+				<li><a href="#">6</a></li>
+				<li class="uk-active"><span aria-current="page">7</span></li>
+				<li><a href="#">8</a></li>
+				<li><a href="#">9</a></li>
+				<li><a href="#">10</a></li>
+				<li class="uk-disabled"><span>…</span></li>
+				<li><a href="#">20</a></li>
+				<li>
+					<a href="#"><span uk-pagination-next></span></a>
+				</li>
+			</ul>
+		</nav>
 	</div>
-	<nav aria-label="Pagination">
-		<ul class="uk-pagination" uk-margin>
-			<li>
-				<a href="#"><span uk-pagination-previous></span></a>
-			</li>
-			<li><a href="#">1</a></li>
-			<li class="uk-disabled"><span>…</span></li>
-			<li><a href="#">4</a></li>
-			<li><a href="#">5</a></li>
-			<li><a href="#">6</a></li>
-			<li class="uk-active"><span aria-current="page">7</span></li>
-			<li><a href="#">8</a></li>
-			<li><a href="#">9</a></li>
-			<li><a href="#">10</a></li>
-			<li class="uk-disabled"><span>…</span></li>
-			<li><a href="#">20</a></li>
-			<li>
-				<a href="#"><span uk-pagination-next></span></a>
-			</li>
-		</ul>
-	</nav>
 }
