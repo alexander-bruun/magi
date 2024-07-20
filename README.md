@@ -4,6 +4,8 @@
 
 ![Magi Frontpage](/assets/img/frontpage.png)
 
+Additional Magi screenshots, can be found under `/assets/img`, we add example page screenshots as new features are added.
+
 ## Technologies
 
 Magi is built with the following technologies:
