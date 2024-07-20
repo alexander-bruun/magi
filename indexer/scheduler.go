@@ -125,9 +125,9 @@ func (idx *Indexer) runIndexingJob() {
 		default:
 			// Continue processing
 		}
-		log.Infof("Processing folder: %s", folder.Name)
+		log.Infof("Processing folder: %s", folder)
 
-		err := filepath.Walk(folder.Name, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 			// Check for stop signal
 			select {
 			case <-idx.stop:
@@ -141,7 +141,7 @@ func (idx *Indexer) runIndexingJob() {
 			}
 			if info.IsDir() {
 				// Get the relative path to determine depth
-				relPath, err := filepath.Rel(folder.Name, path)
+				relPath, err := filepath.Rel(folder, path)
 				if err != nil {
 					return err
 				}

@@ -192,34 +192,34 @@ func serveDirectoryListing(c *fiber.Ctx, dirPath string, urlPath string) error {
 func renderDirectoryListing(c *fiber.Ctx, dirInfo *models.FileInfo, urlPath string) error {
 	// Define template for directory listing
 	const tmpl = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Index of {{ .Name }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        ul { list-style-type: none; padding-left: 0; }
-        li { margin-bottom: 5px; }
-        a { text-decoration: none; color: blue; }
-        a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>Index of {{ .Name }}</h1>
-    {{ if .Parent }}
-    <a href="{{ .Parent }}">../</a>
-    {{ end }}
-    <ul>
-        {{ range .Children }}
-            <li>
-                <a href="{{ pathJoin .Name }}">{{ .Name }}</a> 
-            </li>
-        {{ end }}
-    </ul>
-</body>
-</html>
-`
+	<!DOCTYPE html>
+	<html>
+	<head>
+			<meta charset="UTF-8">
+			<title>Index of {{ .Name }}</title>
+			<style>
+					body { font-family: Arial, sans-serif; }
+					ul { list-style-type: none; padding-left: 0; }
+					li { margin-bottom: 5px; }
+					a { text-decoration: none; color: blue; }
+					a:hover { text-decoration: underline; }
+			</style>
+	</head>
+	<body>
+			<h1>Index of {{ .Name }}</h1>
+			{{ if .Parent }}
+			<a href="{{ .Parent }}">../</a>
+			{{ end }}
+			<ul>
+					{{ range .Children }}
+							<li>
+									<a href="{{ pathJoin .Name }}">{{ .Name }}</a> 
+							</li>
+					{{ end }}
+			</ul>
+	</body>
+	</html>
+	`
 
 	// Create template function map with pathJoin function
 	funcMap := template.FuncMap{

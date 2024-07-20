@@ -27,16 +27,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	app.Use(healthcheck.New())
 
-	// - .zip (implemented)
-	// - .cbz (implemented)
-	// - .rar (implemented)
-	// - .cbr (implemented)
-	// - .pdf
-	// - .jpg (implemented)
-	// - .png (implemented)
-	// - .mobi
-	// - .epub
-	// Any other file type is blocked.
+	// Comic handler
 	app.Get("/api/comic", ComicHandler)
 
 	// Static assets and images
@@ -53,29 +44,18 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/admin", HandleAdmin)
 
 	// Register library handlers
-	app.Get("/api/libraries", GetLibrariesHandler)
-	app.Post("/api/libraries", CreateLibraryHandler)
-	app.Put("/api/libraries", UpdateLibraryHandler)
-	app.Get("/api/libraries/:id", GetLibraryHandler)
-	app.Delete("/api/libraries/:id", DeleteLibraryHandler)
-	app.Get("/api/libraries/search", SearchLibrariesHandler)
+	app.Get("/api/libraries", HandleGetLibraries)
+	app.Post("/api/libraries", HandleCreateLibrary)
+	app.Put("/api/libraries", HandleUpdateLibrary)
+	app.Get("/api/libraries/:id", HandleGetLibrary)
+	app.Delete("/api/libraries/:id", HandleDeleteLibrary)
 
-	// Register manga handlers
-	app.Get("/api/mangas", GetMangasHandler)
-	app.Post("/api/mangas", CreateMangaHandler)
-	app.Get("/api/mangas/:id", GetMangaHandler)
-	app.Put("/api/mangas/:id", UpdateMangaHandler)
-	app.Delete("/api/mangas/:id", DeleteMangaHandler)
-
-	// Register chapter handlers
-	app.Post("/api/chapters", CreateChapterHandler)
-	app.Get("/api/chapters/:id", GetChapterHandler)
-	app.Put("/api/chapters/:id", UpdateChapterHandler)
-	app.Delete("/api/chapters/:id", DeleteChapterHandler)
-	app.Get("/api/chapters/search", SearchChaptersHandler)
+	// New HTMX-specific routes for libraries
+	app.Get("/api/add-folder", HandleAddFolder)
+	app.Get("/api/remove-folder", HandleRemoveFolder)
 
 	// Fallback
-	app.Get("/*", HandleNotFound)
+	app.Use(HandleNotFound)
 
 	log.Fatal(app.Listen(":3000"))
 }
