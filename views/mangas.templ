@@ -100,13 +100,15 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 }
 
 templ PaginationNumbers(totalCount int, currentPage int) {
-	for i := 1; i <= int(math.Ceil(float64(totalCount) / 9)); i++ {
+	{{totalPages := int(math.Ceil(float64(totalCount) / 9))}}
+	for i := 1; i <= totalPages; i++ {
 		if i == currentPage {
 			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
-		} else if i == 1 || i == int(math.Ceil(float64(totalCount)/9)) || (i >= currentPage-1 && i <= currentPage+1) {
+		} else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
 			@PaginationItem(true, i, fmt.Sprint(i), "")
-		} else if (i == 2 && currentPage > 3) || (i == int(math.Ceil(float64(totalCount)/9))-1 && currentPage < int(math.Ceil(float64(totalCount)/9))-2) {
+		} else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
 			<li class="uk-disabled"><span>…</span></li>
 		}
 	}
 }
+
