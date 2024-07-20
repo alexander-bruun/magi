@@ -1,0 +1,52 @@
+package views
+
+import "github.com/alexander-bruun/magi/models"
+
+templ Library(library models.Library) {
+	<nav aria-label="Breadcrumb">
+		<ul class="uk-breadcrumb">
+			<li>
+				<a
+					href="/"
+					hx-get="/"
+					hx-target="#content"
+					hx-push-url="true"
+				>Home</a>
+			</li>
+			<li>
+				<a
+					href="/libraries"
+					hx-get="/libraries"
+					hx-target="#content"
+					hx-push-url="true"
+				>Libraries</a>
+			</li>
+			<li><span>{ library.Name }</span></li>
+		</ul>
+	</nav>
+	<div class="uk-width-1-2 uk-card uk-card-body uk-card-default mx-auto mt-10">
+		<h3 class="uk-card-title">{ library.Name }</h3>
+		<p class="uk-margin">
+			{ library.Description }
+		</p>
+		<p class="uk-margin">
+			Created at: { library.CreatedAt.String() }
+		</p>
+		<p class="uk-margin">
+			Updated at: { library.UpdatedAt.String() }
+		</p>
+		<p class="uk-margin">
+			Cron schedule: { library.Cron }
+		</p>
+		if len(library.Folders) > 0 {
+			<h4>Folders</h4>
+			<ul>
+				for _, folder := range library.Folders {
+					<li>
+						{ folder.Name }
+					</li>
+				}
+			</ul>
+		}
+	</div>
+}

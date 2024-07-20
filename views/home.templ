@@ -1,0 +1,47 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Home(mangas []models.Manga) {
+	<ul class="uk-breadcrumb">
+		<li><a href=""></a></li>
+		<li><span>Home</span></li>
+	</ul>
+	<h1 class="uk-heading-divider uk-h2 uk-margin">Recently added</h1>
+	<div class="uk-slider-container-offset" uk-slider>
+		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
+			<div class="uk-child-width-1-5 uk-grid uk-slider-items">
+				for _, manga := range mangas {
+					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
+						<div>
+							<div class="uk-card uk-card-default ">
+								<div class="uk-card-media-top flex justify-center items-center pt-12">
+									<img src={ manga.CoverArtURL } class="pt-2" width="200" height="300" alt={ manga.Name }/>
+								</div>
+								<div class="uk-card-body">
+									<h3 class="uk-card-title">{ manga.Name }</h3>
+								</div>
+							</div>
+						</div>
+					</a>
+				}
+			</div>
+			<a
+				class="uk-position-center-left uk-position-small uk-hidden-hover"
+				href
+				uk-slidenav-previous
+				uk-slider-item="previous"
+			></a>
+			<a
+				class="uk-position-center-right uk-position-small uk-hidden-hover"
+				href
+				uk-slidenav-next
+				uk-slider-item="next"
+			></a>
+		</div>
+		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin"></ul>
+	</div>
+}

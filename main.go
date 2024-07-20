@@ -1,0 +1,116 @@
+package main
+
+import (
+	"embed"
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"github.com/alexander-bruun/magi/handlers"
+	"github.com/alexander-bruun/magi/indexer"
+	"github.com/alexander-bruun/magi/models"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/template/html/v2"
+)
+
+// //go:embed views/*.go
+// var ViewsDirectory embed.FS
+
+// //go:embed assets/*
+// var AssetsDirectory embed.FS
+
+//go:embed views/*
+var viewsfs embed.FS
+
+//go:embed assets/*
+var assetsfs embed.FS
+
+var dataDirectory string
+
+func init() {
+	var defaultDataDirectory string
+
+	switch runtime.GOOS {
+	case "windows":
+		defaultDataDirectory = filepath.Join(os.Getenv("LOCALAPPDATA"), "magi")
+	case "darwin":
+		// macOS
+		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "magi")
+	case "linux", "freebsd", "openbsd", "netbsd", "dragonfly":
+		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+	case "plan9":
+		defaultDataDirectory = filepath.Join(os.Getenv("home"), "magi")
+	case "solaris":
+		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+	default:
+		// Fallback for unknown OS
+		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+	}
+
+	flag.StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
+}
+
+func main() {
+	flag.Parse()
+
+	// Cache directory under the data directory
+	joinedCacheDataDirectory := filepath.Join(dataDirectory, "cache")
+
+	// Ensure the directories exist
+	if err := os.MkdirAll(joinedCacheDataDirectory, os.ModePerm); err != nil {
+		fmt.Printf("Failed to create directories: %s\n", err)
+		return
+	}
+
+	log.Infof("Using '%s/magi.db' as the database location and '%s' as the image caching location.", dataDirectory, joinedCacheDataDirectory)
+
+	// Initialize database connection
+	err := models.Initialize(dataDirectory)
+	if err != nil {
+		log.Errorf("Failed to connect to database: %v", err)
+	}
+	defer func() {
+		if err := models.Close(); err != nil {
+			log.Errorf("Failed to close database: %v", err)
+		}
+	}()
+
+	// Create a new engine
+	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
+
+	// Custom config
+	app := fiber.New(fiber.Config{
+		Prefork:       false,
+		CaseSensitive: true,
+		StrictRouting: true,
+		ServerHeader:  "Magi",
+		AppName:       "Magi v0.0.1 (alpha)",
+		Views:         engine,
+		ViewsLayout:   "base",
+	})
+
+	app.Use("/assets", filesystem.New(filesystem.Config{
+		Root:       http.FS(assetsfs),
+		PathPrefix: "assets",
+		Browse:     true,
+	}))
+
+	go handlers.Initialize(app, joinedCacheDataDirectory)
+
+	// Start API and Indexer in separate goroutines
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		log.Warnf("Failed to get libraries: %v", err)
+		return
+	}
+	go indexer.Initialize(joinedCacheDataDirectory, libraries)
+
+	// Block main thread to keep goroutines running
+	select {}
+}
