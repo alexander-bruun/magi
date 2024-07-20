@@ -26,6 +26,9 @@ templ Manga(manga models.Manga) {
 	</nav>
 	<div class="uk-width-1-2 uk-card uk-card-body uk-card-default mx-auto mt-10">
 		<h3 class="uk-card-title">{ manga.Name }</h3>
+		<div class="uk-card-media-top flex justify-center items-center pt-12">
+			<img src={ manga.CoverArtURL } class="pt-2" width="300" height="500" alt={ manga.Name }/>
+		</div>
 		<p class="uk-margin">
 			{ manga.Description }
 		</p>

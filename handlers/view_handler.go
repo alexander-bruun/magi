@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strconv"
+
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
@@ -24,7 +26,17 @@ func HandleHome(c *fiber.Ctx) error {
 }
 
 func HandleMangas(c *fiber.Ctx) error {
-	return HandleView(c, views.Mangas())
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	mangas, count, err := models.SearchMangas("", page, 9, "name", "asc", "", 0)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	return HandleView(c, views.Mangas(mangas, int(count), page))
 }
 
 func HandleManga(c *fiber.Ctx) error {
