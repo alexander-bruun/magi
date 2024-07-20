@@ -27,9 +27,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	app.Use(healthcheck.New())
 
-	// Comic handler
-	app.Get("/api/comic", ComicHandler)
-
 	// Static assets and images
 	log.Info(cacheDirectory)
 	app.Static("/api/images", cacheDirectory)
@@ -37,25 +34,18 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Register views
 	app.Get("/", HandleHome)
-	app.Get("/mangas", HandleMangas)
-	app.Get("/manga/:slug", HandleManga)
-	app.Get("/libraries", HandleLibraries)
-	app.Get("/library/:slug", HandleLibrary)
+
+	// Admin endpoints
 	app.Get("/admin", HandleAdmin)
-
-	// Register library handlers
-	app.Get("/api/libraries", HandleGetLibraries)
-	app.Post("/api/libraries", HandleCreateLibrary)
-	app.Put("/api/libraries", HandleUpdateLibrary)
-	app.Get("/api/libraries/:id", HandleGetLibrary)
-	app.Delete("/api/libraries/:id", HandleDeleteLibrary)
-
-	// New HTMX-specific routes for libraries
-	app.Get("/api/add-folder", HandleAddFolder)
-	app.Get("/api/remove-folder", HandleRemoveFolder)
+	app.Post("/admin/create-library", HandleCreateLibrary)
+	app.Delete("/admin/delete-library/:id", HandleDeleteLibrary)
+	app.Put("/admin/update-library/:id", HandleUpdateLibrary)
+	app.Get("/admin/edit-library/:id", HandleEditLibrary)
+	app.Get("/admin/add-folder", HandleAddFolder)
+	app.Get("/admin/remove-folder", HandleRemoveFolder)
 
 	// Fallback
-	app.Use(HandleNotFound)
+	app.Get("/*", HandleNotFound)
 
 	log.Fatal(app.Listen(":3000"))
 }

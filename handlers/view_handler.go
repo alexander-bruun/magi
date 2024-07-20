@@ -28,79 +28,16 @@ func HandleHome(c *fiber.Ctx) error {
 	return HandleView(c, views.Home(mangas))
 }
 
-func HandleMangas(c *fiber.Ctx) error {
-	page, err := strconv.Atoi(c.Query("page"))
-	if err != nil || page <= 0 {
-		page = 1
-	}
-
-	mangas, count, err := models.SearchMangas("", page, 9, "name", "asc", "", 0)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	return HandleView(c, views.Mangas(mangas, int(count), page))
-}
-
-func HandleManga(c *fiber.Ctx) error {
-	slug := c.Params("slug")
-
-	id, err := models.GetMangaIDBySlug(slug)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	manga, err := models.GetManga(id)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	return HandleView(c, views.Manga(*manga))
-}
-
 func HandleNotFound(c *fiber.Ctx) error {
 	return HandleView(c, views.NotFound())
 }
 
-func HandleLibraries(c *fiber.Ctx) error {
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	return HandleView(c, views.Libraries(libraries))
-}
-
-func HandleLibrary(c *fiber.Ctx) error {
-	slug := c.Params("slug")
-
-	id, err := models.GetLibraryIDBySlug(slug)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	library, err := models.GetLibrary(id)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	return HandleView(c, views.Library(*library))
-}
-
 func HandleAdmin(c *fiber.Ctx) error {
-	return HandleView(c, views.Admin())
+	libraries, _ := models.GetLibraries()
+	return HandleView(c, views.Admin(libraries))
 }
 
-// New HTMX-specific handlers
-
-func HandleGetLibraries(c *fiber.Ctx) error {
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-	return HandleView(c, views.LibrariesTable(libraries))
-}
-
+// Admin HTMX endpoints
 func HandleCreateLibrary(c *fiber.Ctx) error {
 	var library models.Library
 	if err := c.BodyParser(&library); err != nil {
@@ -119,7 +56,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 
 	// Render the updated libraries table
 	var buf bytes.Buffer
-	err = views.LibrariesTable(libraries).Render(context.Background(), &buf)
+	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
 	}
@@ -129,33 +66,6 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	c.Response().Header.Set("Content-Type", "text/html")
 
 	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
-}
-
-func HandleGetLibrary(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
-	}
-
-	library, err := models.GetLibrary(uint(id))
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("Library not found")
-	}
-
-	return c.JSON(library)
-}
-
-func HandleUpdateLibrary(c *fiber.Ctx) error {
-	var library models.Library
-	if err := c.BodyParser(&library); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-	}
-
-	if err := models.UpdateLibrary(&library); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	return c.SendString("Library updated successfully")
 }
 
 func HandleDeleteLibrary(c *fiber.Ctx) error {
@@ -176,7 +86,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 
 	// Render the updated libraries table
 	var buf bytes.Buffer
-	err = views.LibrariesTable(libraries).Render(context.Background(), &buf)
+	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
 	}
@@ -188,8 +98,66 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
 }
 
+func HandleUpdateLibrary(c *fiber.Ctx) error {
+	var library models.Library
+	if err := c.BodyParser(&library); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
+	library.ID = uint(id)
+
+	if err := models.UpdateLibrary(&library); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	// Fetch all libraries, including the newly created one
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	// Render the updated libraries table
+	var buf bytes.Buffer
+	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+	}
+	tableContent := buf.String()
+
+	c.Response().Header.Set("HX-Trigger", "reset-form")
+	c.Response().Header.Set("Content-Type", "text/html")
+
+	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
+}
+
+func HandleEditLibrary(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
+	}
+
+	library, err := models.GetLibrary(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	// Render the updated libraries table
+	var buf bytes.Buffer
+	err = views.LibraryForm(*library, "put").Render(context.Background(), &buf)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+	}
+	tableContent := buf.String()
+
+	c.Response().Header.Set("HX-Trigger", "reset-form")
+	c.Response().Header.Set("Content-Type", "text/html")
+
+	return c.SendString(fmt.Sprintf(`<div id="library-form">%s</div>`, tableContent))
+}
+
 func HandleAddFolder(c *fiber.Ctx) error {
-	return HandleView(c, views.FolderInput())
+	return HandleView(c, views.Folder(""))
 }
 
 func HandleRemoveFolder(c *fiber.Ctx) error {

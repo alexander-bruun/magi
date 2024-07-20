@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
-	"github.com/gofiber/fiber/v2/log"
 	"gorm.io/gorm"
 )
 
@@ -83,17 +82,11 @@ func UpdateLibrary(library *Library) error {
 		return err
 	}
 
-	// Log the library data before updating
-	log.Infof("Updating library: %+v\n", library)
-
 	// Fetch the current state of the library including associated mangas
 	var currentLibrary Library
 	if err := db.Preload("Mangas").First(&currentLibrary, library.ID).Error; err != nil {
 		return err
 	}
-
-	// Log the current state of the library
-	log.Infof("Current library: %+v\n", currentLibrary)
 
 	// Save the updated library with FullSaveAssociations
 	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(library).Error; err != nil {
