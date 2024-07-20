@@ -135,8 +135,7 @@ func MangaCount(filterBy, filter string) (int, error) {
 	query := db.Model(&Manga{})
 
 	if filterBy != "" && filter != "" {
-			query = query.Where("LOWER("+filterBy+") LIKE ?", "%"+strings.ToLower(filter)+"%")
-		}
+		query = query.Where("LOWER("+filterBy+") LIKE ?", "%"+strings.ToLower(filter)+"%")
 	}
 
 	result := query.Count(&count)
