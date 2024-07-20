@@ -53,7 +53,6 @@ func GetManga(id uint) (*Manga, error) {
 
 // UpdateManga updates an existing manga record
 func UpdateManga(manga *Manga) error {
-	// Why in the fuck is this a thig? - https://github.com/go-gorm/gorm/issues/3487#issuecomment-698303344
 	err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&manga).Error
 	if err != nil {
 		return err
@@ -136,16 +135,7 @@ func MangaCount(filterBy, filter string) (int, error) {
 	query := db.Model(&Manga{})
 
 	if filterBy != "" && filter != "" {
-		// Adjust filter condition based on database
-		// For SQLite and MySQL: use LOWER() and LIKE for case-insensitive search
-		// For PostgreSQL: use ILIKE for case-insensitive search
-		switch db.Dialector.Name() {
-		case "mysql", "sqlite":
 			query = query.Where("LOWER("+filterBy+") LIKE ?", "%"+strings.ToLower(filter)+"%")
-		case "postgres":
-			query = query.Where(filterBy+" ILIKE ?", "%"+filter+"%")
-		default:
-			return 0, errors.New("unsupported database dialect")
 		}
 	}
 

@@ -74,7 +74,7 @@ func GetMangasHandler(c *fiber.Ctx) error {
 	sortBy := c.Query("sortBy")
 	sortOrder := c.Query("sortOrder")
 	filterBy := c.Query("filterBy")
-	libraryID, _ := strconv.ParseUint(c.Query("library"), 10, 32) // Assuming libraryID is passed as a query parameter
+	libraryID, _ := strconv.ParseUint(c.Query("library"), 10, 32)
 
 	mangas, count, err := models.SearchMangas(filter, page, pageSize, sortBy, sortOrder, filterBy, uint(libraryID))
 	if err != nil {

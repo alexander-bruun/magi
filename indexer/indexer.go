@@ -68,7 +68,7 @@ func IndexManga(absolutePath string, libraryID uint) (uint, error) {
 					OriginalLanguage: bestMatch.Attributes.OriginalLanguage,
 					Status:           bestMatch.Attributes.Status,
 					ContentRating:    bestMatch.Attributes.ContentRating,
-					CoverArtURL:      cachedImageURL, // Assign cover art URL
+					CoverArtURL:      cachedImageURL,
 					LibraryID:        libraryID,
 				}
 				mangaID, err := models.CreateManga(newManga)

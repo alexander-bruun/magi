@@ -27,8 +27,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	app.Use(healthcheck.New())
 
-	// This exposes the root file system, it validates whether the end-user / Magi application actually targets a path defined in a library, or the global cache directory. (other folder paths will be blocked)
-	// Additionally only the following file formats are allowed to be requests:
 	// - .zip (implemented)
 	// - .cbz (implemented)
 	// - .rar (implemented)
