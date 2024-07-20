@@ -1,0 +1,137 @@
+package views
+
+import (
+  "strconv"
+	"github.com/alexander-bruun/magi/models"
+)
+
+
+templ Admin() {
+	<nav aria-label="Breadcrumb">
+		<ul class="uk-breadcrumb">
+			<li>
+				<a
+					href="/"
+					hx-get="/"
+					hx-target="#content"
+					hx-push-url="true"
+				>Home</a>
+			</li>
+			<li>
+				<span>Admin</span>
+			</li>
+		</ul>
+	</nav>
+	<h1 class="uk-heading-divider uk-h2 uk-margin">Admin panel</h1>
+	<div class="uk-container">
+		<div class="uk-grid">
+			<div class="uk-width-1-4 uk-column-left">
+				<div class="card">
+					<h3 class="text-xl font-semibold mb-4">Library Form</h3>
+					<form id="library-form" hx-post="http://localhost:3000/api/libraries" hx-trigger="submit" hx-target="#response" hx-swap="innerHTML">
+						<fieldset class="space-y-4">
+							<div class="uk-margin">
+								<input
+									class="uk-input"
+									aria-label="Input"
+									type="text"
+									name="name"
+									placeholder="Library Name"
+									required
+								/>
+							</div>
+							<div class="uk-margin">
+								<input
+									class="uk-input"
+									aria-label="Input"
+									type="text"
+									name="cron"
+									placeholder="Cron Expression"
+									required
+								/>
+							</div>
+							<div class="uk-margin">
+								<input
+									class="uk-input"
+									aria-label="Input"
+									type="text"
+									name="description"
+									placeholder="Description"
+									rows="5"
+									required
+								/>
+							</div>
+							<div id="folders-container">
+								<!-- Folder fields will be dynamically added here -->
+								<div class="folder-row mb-4 flex items-center">
+									<input class="uk-input" type="text" name="folders[0][Name]" placeholder="Folder Path" required/>
+									<button type="button" class="uk-button uk-button-danger ml-2" onclick="removeFolder(this)"><span uk-icon="minus"></span></button>
+								</div>
+							</div>
+							<button type="button" class="uk-button uk-button-default" onclick="addFolder()"><span uk-icon="plus"></span></button>
+							<div class="mt-4">
+								<button type="submit" class="uk-button uk-button-default">Submit</button>
+								<div id="response" class="mt-8"></div>
+							</div>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+			<div class="uk-width-3-4 uk-column-right">
+				<div class="card">
+					<h3 class="text-xl font-semibold mb-4">Libraries</h3>
+          {{ libraries, _ := models.GetLibraries() }}
+					<div class="table-container"> 
+						<table class="uk-table">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Name</th>
+									<th>Cron</th>
+									<th>Created At</th>
+									<th>Updated At</th>
+									<th>Folders</th>
+									<th>Edit</th>
+									<th>Delete</th>
+								</tr>
+							</thead>
+							<tbody>
+                for _, library := range libraries {
+                  <tr>
+                    <td>{ strconv.FormatUint(uint64(library.ID), 10) }</td>
+                    <td>{ library.Name }</td>
+                    <td>{ library.Cron }</td>
+                    <td>{ library.CreatedAt.Format("2006-01-02") }</td>
+                    <td>{ library.UpdatedAt.Format("2006-01-02") }</td>
+                    <td>folders</td>
+                    <td><button type="button" class="uk-button uk-button-danger"><span uk-icon="pencil"></span></button></td>
+                    <td><button type="button" class="uk-button uk-button-danger"><span uk-icon="trash"></span></button></td>
+                  </tr>
+                }
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+    let folderIndex = 1;
+
+    function addFolder() {
+      const container = document.getElementById('folders-container');
+      const newRow = document.createElement('div');
+      newRow.classList.add('folder-row', 'mb-4', 'flex', 'items-center');
+      newRow.innerHTML = `
+        <input class="uk-input" type="text" name="folders[${folderIndex}][Name]" placeholder="Folder Path" required />
+        <button type="button" class="uk-button uk-button-danger ml-2" onclick="removeFolder(this)"><span uk-icon="minus"></span></button>
+      `;
+      container.appendChild(newRow);
+      folderIndex++;
+    }
+
+    function removeFolder(button) {
+      button.parentElement.remove();
+    }
+  </script>
+}

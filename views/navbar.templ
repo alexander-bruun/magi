@@ -57,9 +57,8 @@ templ navbar() {
 							<a href="#">Admin <span uk-navbar-parent-icon></span></a>
 							<div class="uk-navbar-dropdown">
 								<ul class="uk-nav uk-navbar-dropdown-nav">
-									<li class="uk-active"><a href="#">Active</a></li>
-									<li><a href="#">Libraries</a></li>
-									<li><a href="#">Settings</a></li>
+									<li><a href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">Libraries</a></li>
+									<li><a href="/settings" hx-get="/settings" hx-target="#content" hx-push-url="true">Settings</a></li>
 									<li class="uk-nav-divider"></li>
 									<li><a href="#">Other</a></li>
 								</ul>

@@ -83,3 +83,7 @@ func HandleLibrary(c *fiber.Ctx) error {
 
 	return HandleView(c, views.Library(*library))
 }
+
+func HandleAdmin(c *fiber.Ctx) error {
+	return HandleView(c, views.Admin())
+}
