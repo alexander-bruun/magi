@@ -28,7 +28,7 @@ templ Admin() {
       <div class="uk-width-1-4 uk-column-left">
         <div class="card">
           <h3 class="text-xl font-semibold mb-4">Library Form</h3>
-          <form id="library-form" hx-post="/api/libraries" hx-ext="json-enc" hx-trigger="submit" hx-target="#response">
+          <form id="library-form">
             <fieldset class="space-y-4">
               <div class="uk-margin">
                 <input
@@ -64,13 +64,13 @@ templ Admin() {
               <div id="folders-container">
                 <!-- Folder fields will be dynamically added here -->
                 <div class="folder-row mb-4 flex items-center">
-                  <input class="uk-input" type="text" name="folders[0].Name" placeholder="Folder Path" required />
+                  <input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" required />
                   <button type="button" class="uk-button uk-button-danger ml-2" onclick="removeFolder(this)"><span uk-icon="minus"></span></button>
                 </div>
               </div>
               <button type="button" class="uk-button uk-button-default" onclick="addFolder()"><span uk-icon="plus"></span></button>
               <div class="mt-4">
-                <button type="submit" class="uk-button uk-button-default">Submit</button>
+                <button type="button" class="uk-button uk-button-default" onclick="submitForm()">Submit</button>
                 <div id="response" class="mt-8"></div>
               </div>
             </fieldset>
@@ -131,7 +131,7 @@ templ Admin() {
       const newRow = document.createElement('div');
       newRow.classList.add('folder-row', 'mb-4', 'flex', 'items-center');
       newRow.innerHTML = `
-        <input class="uk-input" type="text" name="folders[${folderIndex}].Name" placeholder="Folder Path" />
+        <input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" />
         <button type="button" class="uk-button uk-button-danger ml-2" onclick="removeFolder(this)"><span uk-icon="minus"></span></button>
       `;
       container.appendChild(newRow);
@@ -140,6 +140,33 @@ templ Admin() {
 
     function removeFolder(button) {
       button.parentElement.remove();
+    }
+
+    function submitForm() {
+      const form = document.getElementById('library-form');
+      const formData = new FormData(form);
+      const jsonData = {
+        name: formData.get('name'),
+        cron: formData.get('cron'),
+        description: formData.get('description'),
+        folders: Array.from(formData.getAll('folders')).map(folderName => ({ Name: folderName }))
+      };
+
+      fetch('/api/libraries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData)
+      })
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('response').innerHTML = data;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('response').innerHTML = 'An error occurred while submitting the form.';
+      });
     }
   </script>
 }
