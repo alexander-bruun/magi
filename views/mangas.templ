@@ -3,9 +3,10 @@ package views
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
+	"math"
 )
 
-templ Mangas(mangas []models.Manga, totalCount int64) {
+templ Mangas(mangas []models.Manga, totalCount int64, currentPage int64) {
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -43,26 +44,57 @@ templ Mangas(mangas []models.Manga, totalCount int64) {
 		</div>
 	}
 	<div class="uk-card-media-top flex justify-center items-center py-3">
-		<nav aria-label="Pagination">
-			<ul class="uk-pagination" uk-margin>
-				<li>
-					<a href="#"><span uk-pagination-previous></span></a>
-				</li>
-				<li><a href="#">1</a></li>
-				<li class="uk-disabled"><span>…</span></li>
-				<li><a href="#">4</a></li>
-				<li><a href="#">5</a></li>
-				<li><a href="#">6</a></li>
-				<li class="uk-active"><span aria-current="page">7</span></li>
-				<li><a href="#">8</a></li>
-				<li><a href="#">9</a></li>
-				<li><a href="#">10</a></li>
-				<li class="uk-disabled"><span>…</span></li>
-				<li><a href="#">20</a></li>
-				<li>
-					<a href="#"><span uk-pagination-next></span></a>
-				</li>
-			</ul>
-		</nav>
+		@Pagination(totalCount, currentPage)
 	</div>
+}
+
+templ Pagination(totalCount int64, currentPage int64) {
+	<nav aria-label="Pagination">
+		<ul class="uk-pagination" uk-margin>
+			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "uk-pagination-previous")
+			@PaginationNumbers(totalCount, currentPage)
+			@PaginationItem(currentPage < int64(math.Ceil(float64(totalCount)/9)), currentPage+1, "Next", "uk-pagination-next")
+		</ul>
+	</nav>
+}
+
+templ PaginationItem(enabled bool, page int64, text string, icon string) {
+	if enabled {
+		<li>
+			<a
+				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
+				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
+				hx-target="#content"
+				hx-push-url="true"
+			>
+				if icon != "" {
+					<span uk-={ icon }></span>
+				} else {
+					{ text }
+				}
+			</a>
+		</li>
+	} else {
+		<li class="uk-disabled">
+			<span>
+				if icon != "" {
+					<span uk-={ icon }></span>
+				} else {
+					{ text }
+				}
+			</span>
+		</li>
+	}
+}
+
+templ PaginationNumbers(totalCount int64, currentPage int64) {
+	for i := int64(1); i <= int64(math.Ceil(float64(totalCount) / 9)); i++ {
+		if i == currentPage {
+			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
+		} else if i == 1 || i == int64(math.Ceil(float64(totalCount)/9)) || (i >= currentPage-1 && i <= currentPage+1) {
+			@PaginationItem(true, i, fmt.Sprint(i), "")
+		} else if (i == 2 && currentPage > 3) || (i == int64(math.Ceil(float64(totalCount)/9))-1 && currentPage < int64(math.Ceil(float64(totalCount)/9))-2) {
+			<li class="uk-disabled"><span>…</span></li>
+		}
+	}
 }
