@@ -1,88 +1,39 @@
 package handlers
 
 import (
-	"encoding/json"
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
-
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/views"
+	"github.com/gofiber/fiber/v2"
 )
 
-func CreateMangaHandler(c *fiber.Ctx) error {
-	var manga models.Manga
-	err := json.Unmarshal(c.Body(), &manga)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+func HandleMangas(c *fiber.Ctx) error {
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
 	}
 
-	_, err = models.CreateManga(manga)
+	mangas, count, err := models.SearchMangas("", page, 9, "name", "asc", "", 0)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return HandleView(c, views.Error(err.Error()))
 	}
 
-	return c.SendStatus(fiber.StatusCreated)
+	return HandleView(c, views.Mangas(mangas, int(count), page))
 }
 
-func GetMangaHandler(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
+func HandleManga(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	id, err := models.GetMangaIDBySlug(slug)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid manga ID")
+		return HandleView(c, views.Error(err.Error()))
 	}
 
-	manga, err := models.GetManga(uint(id))
+	manga, err := models.GetManga(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString(err.Error())
+		return HandleView(c, views.Error(err.Error()))
 	}
 
-	return c.JSON(manga)
-}
-
-func UpdateMangaHandler(c *fiber.Ctx) error {
-	var manga models.Manga
-	err := json.Unmarshal(c.Body(), &manga)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
-	}
-
-	err = models.UpdateManga(&manga)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	return c.SendStatus(fiber.StatusOK)
-}
-
-func DeleteMangaHandler(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid manga ID")
-	}
-
-	err = models.DeleteManga(uint(id))
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString(err.Error())
-	}
-
-	return c.SendStatus(fiber.StatusOK)
-}
-
-func GetMangasHandler(c *fiber.Ctx) error {
-	filter := c.Query("filter")
-	page, _ := strconv.Atoi(c.Query("page"))
-	pageSize, _ := strconv.Atoi(c.Query("pageSize"))
-	sortBy := c.Query("sortBy")
-	sortOrder := c.Query("sortOrder")
-	filterBy := c.Query("filterBy")
-	libraryID, _ := strconv.ParseUint(c.Query("library"), 10, 32)
-
-	mangas, count, err := models.SearchMangas(filter, page, pageSize, sortBy, sortOrder, filterBy, uint(libraryID))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	c.Set("X-Total-Count", strconv.FormatInt(count, 10))
-	c.Set("Access-Control-Expose-Headers", "X-Total-Count")
-
-	return c.JSON(mangas)
+	return HandleView(c, views.Manga(*manga))
 }

@@ -3,15 +3,11 @@ package handlers
 import (
 	"archive/zip"
 	"fmt"
-	"html/template"
 	"io"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/nwaples/rardecode"
 )
@@ -26,7 +22,7 @@ func ComicHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("When requesting a comic, all parameters must be provided.")
 	}
 
-	filePath := fmt.Sprintf("%s/%s", "/mnt/l/somedir", manga) // TO-DO: Use library paths.
+	filePath := fmt.Sprintf("%s/%s", "/mnt/e/Manga/", manga) // TO-DO: Use dynamic library paths.
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
@@ -151,116 +147,4 @@ func serveComicBookArchiveFromCBZ(c *fiber.Ctx, filePath string) error {
 	}
 
 	return nil
-}
-
-// Serve directory listing for one layer of directories
-func serveDirectoryListing(c *fiber.Ctx, dirPath string, urlPath string) error {
-	// Read directory entries
-	fileInfos, err := os.ReadDir(dirPath)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to read directory %s: %v", dirPath, err))
-	}
-
-	// Prepare FileInfo for current directory
-	currentDir := &models.FileInfo{
-		Name:  filepath.Base(dirPath),
-		IsDir: true,
-	}
-
-	// Iterate over directory entries
-	for _, fileInfo := range fileInfos {
-		// Skip hidden files and directories
-		if strings.HasPrefix(fileInfo.Name(), ".") {
-			continue
-		}
-
-		// Create FileInfo for current item
-		itemInfo := &models.FileInfo{
-			Name:  fileInfo.Name(),
-			IsDir: fileInfo.IsDir(),
-		}
-
-		// Add itemInfo to currentDir's children
-		currentDir.Children = append(currentDir.Children, itemInfo)
-	}
-
-	// Render directory listing template
-	return renderDirectoryListing(c, currentDir, urlPath)
-}
-
-// Render directory listing using a template
-func renderDirectoryListing(c *fiber.Ctx, dirInfo *models.FileInfo, urlPath string) error {
-	// Define template for directory listing
-	const tmpl = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Index of {{ .Name }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        ul { list-style-type: none; padding-left: 0; }
-        li { margin-bottom: 5px; }
-        a { text-decoration: none; color: blue; }
-        a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>Index of {{ .Name }}</h1>
-    {{ if .Parent }}
-    <a href="{{ .Parent }}">../</a>
-    {{ end }}
-    <ul>
-        {{ range .Children }}
-            <li>
-                <a href="{{ pathJoin .Name }}">{{ .Name }}</a> 
-            </li>
-        {{ end }}
-    </ul>
-</body>
-</html>
-`
-
-	// Create template function map with pathJoin function
-	funcMap := template.FuncMap{
-		"pathJoin": func(name string) string {
-			// Ensure urlPath ends with a trailing slash
-			if !strings.HasSuffix(urlPath, "/") {
-				urlPath += "/"
-			}
-			// Join the current URL path (urlPath) with the name of the file or directory
-			// This ensures that clicking on a file maintains the correct path structure
-			return urlPath + strings.TrimPrefix(name, "/")
-		},
-	}
-
-	// Determine parent directory path
-	parentPath := path.Dir(urlPath)
-	if parentPath == "." {
-		parentPath = "/"
-	}
-
-	// Add parent directory to dirInfo if not root
-	if urlPath != "/" {
-		dirInfo.Parent = parentPath
-	}
-
-	// Create and execute template with function map
-	t := template.Must(template.New("directory").Funcs(funcMap).Parse(tmpl))
-	err := t.Execute(c.Response().BodyWriter(), dirInfo)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to render directory listing")
-	}
-
-	return nil
-}
-
-// isAllowedPath checks if the requestedPath starts with any of the allowedPaths
-func isAllowedPath(requestedPath string, allowedPaths []string) bool {
-	for _, allowedPath := range allowedPaths {
-		if strings.HasPrefix(requestedPath, allowedPath) {
-			return true
-		}
-	}
-	return false
 }

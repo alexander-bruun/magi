@@ -30,8 +30,7 @@ func Initialize(cacheDirectory string) error {
 	// Auto migrations for models
 	err = db.AutoMigrate(&Library{},
 		&Manga{},
-		&Chapter{},
-		&Folder{})
+		&Chapter{})
 	if err != nil {
 		return err
 	}
