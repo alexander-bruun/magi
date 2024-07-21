@@ -27,6 +27,18 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	app.Use(healthcheck.New())
 
+	// - .zip (implemented)
+	// - .cbz (implemented)
+	// - .rar (implemented)
+	// - .cbr (implemented)
+	// - .pdf
+	// - .jpg (implemented)
+	// - .png (implemented)
+	// - .mobi
+	// - .epub
+	// Any other file type is blocked.
+	app.Get("/api/comic", ComicHandler)
+
 	// Static assets and images
 	log.Info(cacheDirectory)
 	app.Static("/api/images", cacheDirectory)
