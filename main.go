@@ -34,6 +34,8 @@ var assetsfs embed.FS
 var dataDirectory string
 
 func init() {
+	log.SetLevel(log.LevelInfo)
+
 	var defaultDataDirectory string
 
 	switch runtime.GOOS {
@@ -57,6 +59,8 @@ func init() {
 }
 
 func main() {
+	log.Info("Starting Magi!")
+
 	flag.Parse()
 
 	// Cache directory under the data directory
@@ -68,7 +72,8 @@ func main() {
 		return
 	}
 
-	log.Infof("Using '%s/magi.db' as the database location and '%s' as the image caching location.", dataDirectory, joinedCacheDataDirectory)
+	log.Debugf("Using '%s/magi.db' as the database location.", dataDirectory)
+	log.Debugf("Using '%s' as the image caching location.", joinedCacheDataDirectory)
 
 	// Initialize database connection
 	err := models.Initialize(dataDirectory)

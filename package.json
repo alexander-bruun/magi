@@ -1,6 +1,3 @@
 {
-  "dependencies": { "franken-ui": "^0.1.0", "postcss": "^8.4.39" },
-  "devDependencies": {
-    "daisyui": "^4.12.10"
-  }
+  "dependencies": { "franken-ui": "^0.1.0", "postcss": "^8.4.39" }
 }

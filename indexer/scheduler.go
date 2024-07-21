@@ -28,7 +28,7 @@ type Indexer struct {
 }
 
 func Initialize(cacheDirectory string, libraries []models.Library) {
-	log.Info("Initializing manga indexer!")
+	log.Info("Initializing Indexer and Scheduler")
 	cacheDataDirectory = cacheDirectory
 
 	for _, library := range libraries {

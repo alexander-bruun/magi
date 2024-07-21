@@ -24,14 +24,14 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 	</nav>
 	<h1 class="uk-heading-divider uk-h2 uk-margin">Mangas</h1>
 	if len(mangas) > 0 {
-		<div class="uk-grid-column-small uk-grid-row-large uk-child-width-1-3 uk-text-center" uk-grid>
+		<div class="uk-grid-column-small uk-grid-row-large uk-child-width-1-4 uk-text-center px-8" uk-grid>
 			for _, manga := range mangas {
 				<div>
 					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
-						<div class="uk-card uk-card-default uk-card-body">
-							<h3 class="uk-card-title uk-heading-divider uk-h3 uk-margin">{ manga.Name }</h3>
-							<div class="uk-card-media-top flex justify-center items-center pt-12">
-								<img src={ manga.CoverArtURL } class="pt-2" width="300" height="500" alt={ manga.Name }/>
+						<div class="uk-card uk-card-default uk-card-body p-2">
+							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2">{ manga.Name }</h3>
+							<div class="uk-card-media-top flex justify-center items-center">
+								<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
 							</div>
 						</div>
 					</a>
@@ -60,7 +60,7 @@ templ Pagination(totalCount int, currentPage int) {
 		<ul class="uk-pagination" uk-margin>
 			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
 			@PaginationNumbers(totalCount, currentPage)
-			@PaginationItem(currentPage < int(math.Ceil(float64(totalCount)/9)), currentPage+1, "Next", "next")
+			@PaginationItem(currentPage < int(math.Ceil(float64(totalCount)/16)), currentPage+1, "Next", "next")
 		</ul>
 	</nav>
 }
@@ -100,7 +100,7 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 }
 
 templ PaginationNumbers(totalCount int, currentPage int) {
-	{{totalPages := int(math.Ceil(float64(totalCount) / 9))}}
+	{{ totalPages := int(math.Ceil(float64(totalCount) / 16)) }}
 	for i := 1; i <= totalPages; i++ {
 		if i == currentPage {
 			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>

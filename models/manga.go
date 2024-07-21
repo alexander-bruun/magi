@@ -158,3 +158,24 @@ func GetMangaIDBySlug(slug string) (uint, error) {
 	}
 	return manga.ID, nil
 }
+
+// DeleteMangasByLibraryID deletes all mangas with the specified library ID
+func DeleteMangasByLibraryID(libraryID uint) error {
+	// Check if any mangas exist with the given library ID
+	var mangas []Manga
+	if err := db.Where("library_id = ?", libraryID).Find(&mangas).Error; err != nil {
+		return err
+	}
+
+	// If no mangas are found, return an error
+	if len(mangas) == 0 {
+		return errors.New("no mangas found with the specified library ID")
+	}
+
+	// Delete the mangas with the given library ID
+	if err := db.Unscoped().Where("library_id = ?", libraryID).Delete(&Manga{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
