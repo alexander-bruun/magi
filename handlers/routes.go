@@ -8,7 +8,7 @@ import (
 )
 
 func Initialize(app *fiber.App, cacheDirectory string) {
-	log.Info("Initializing GoFiber routes!")
+	log.Info("Initializing GoFiber view routes")
 
 	// CORS middleware configuration to allow all origins
 	app.Use(cors.New(cors.Config{
@@ -40,7 +40,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/api/comic", ComicHandler)
 
 	// Static assets and images
-	log.Info(cacheDirectory)
 	app.Static("/api/images", cacheDirectory)
 	app.Static("/assets/", "./assets/")
 
@@ -50,6 +49,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Manga endpoints
 	app.Get("/mangas", HandleMangas)
 	app.Get("/manga/:slug", HandleManga)
+	app.Get("/manga-update/:id", HandleUpdateMetadataManga)
+	app.Post("/manga-edit", HandleEditMetadataManga)
 
 	// Library endpoints
 	app.Get("/libraries", HandleLibraries)

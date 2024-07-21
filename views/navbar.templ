@@ -5,12 +5,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func GetLibraries() []models.Library {
-	libraries, _ := models.GetLibraries()
-	return libraries
-}
-
-templ navbar() {
+templ Navbar(libraries []models.Library) {
 	<nav class="uk-navbar-container">
 		<div class="uk-container">
 			<div uk-navbar>
@@ -28,7 +23,6 @@ templ navbar() {
 							<a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true">Libraries <span uk-navbar-parent-icon></span></a>
 							<div class="uk-navbar-dropdown">
 								<ul class="uk-nav uk-navbar-dropdown-nav">
-									{{ libraries, _ := models.GetLibraries() }}
 									if len(libraries) > 0 {
 										for _, library := range libraries {
 											<li>
@@ -52,19 +46,9 @@ templ navbar() {
 					</ul>
 				</div>
 				<div class="uk-navbar-right">
-					<ul class="uk-navbar-nav">
-						<li>
-							<a href="#">Admin <span uk-navbar-parent-icon></span></a>
-							<div class="uk-navbar-dropdown">
-								<ul class="uk-nav uk-navbar-dropdown-nav">
-									<li><a href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">Libraries</a></li>
-									<li><a href="/settings" hx-get="/settings" hx-target="#content" hx-push-url="true">Settings</a></li>
-									<li class="uk-nav-divider"></li>
-									<li><a href="#">Other</a></li>
-								</ul>
-							</div>
-						</li>
-					</ul>
+					<button class="uk-icon-button" href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">
+						<span uk-icon="cog"></span>
+					</button>
 					<button class="uk-icon-button" id="theme-toggle">
 						<svg
 							id="theme-toggle-light-icon"

@@ -13,14 +13,21 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		handler := adaptor.HTTPHandler(templ.Handler(content))
 		return handler(c)
 	}
-	base := views.Layout(content)
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	base := views.Layout(content, libraries)
 	handler := adaptor.HTTPHandler(templ.Handler(base))
 	return handler(c)
 }
 
 func HandleHome(c *fiber.Ctx) error {
-	mangas, _, _ := models.SearchMangas("", 1, 10, "created_at", "desc", "", 0)
-	return HandleView(c, views.Home(mangas))
+	recentlyAdded, _, _ := models.SearchMangas("", 1, 10, "created_at", "desc", "", 0)
+	recentlyUpdated, _, _ := models.SearchMangas("", 1, 10, "updated_at", "desc", "", 0)
+	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated))
 }
 
 func HandleNotFound(c *fiber.Ctx) error {

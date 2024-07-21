@@ -102,6 +102,9 @@ func DeleteLibrary(id uint) error {
 	if err != nil {
 		return err
 	}
+
+	DeleteMangasByLibraryID(id)
+
 	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
 	return nil
 }
