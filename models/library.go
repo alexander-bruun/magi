@@ -8,22 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// Define the Library model using the custom type
 type Library struct {
 	gorm.Model
-	Name        string   `gorm:"unique;not null"`
-	Slug        string   `gorm:"unique;not null"`
-	Description string   `gorm:"not null"`
-	Cron        string   `gorm:"not null"`
-	Mangas      []Manga  `gorm:"foreignKey:LibraryID"`
-	Folders     []Folder `gorm:"foreignKey:LibraryID"`
+	Name        string      `gorm:"unique;not null"`
+	Slug        string      `gorm:"unique;not null"`
+	Description string      `gorm:"not null"`
+	Cron        string      `gorm:"not null"`
+	Mangas      []Manga     `gorm:"foreignKey:LibraryID"`
+	Folders     StringArray `gorm:"type:text"`
 }
 
 func (l *Library) GetFolderNames() string {
-	var folderNames []string
-	for _, folder := range l.Folders {
-		folderNames = append(folderNames, folder.Name)
-	}
-	return strings.Join(folderNames, ", ")
+	return strings.Join(l.Folders, ", ")
 }
 
 func (l *Library) Validate() error {
@@ -63,7 +60,7 @@ func CreateLibrary(library Library) error {
 // GetLibraries retrieves all library records with their associated Mangas and Folders
 func GetLibraries() ([]Library, error) {
 	var libraries []Library
-	err := db.Preload("Folders").Find(&libraries).Error
+	err := db.Find(&libraries).Error
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +70,7 @@ func GetLibraries() ([]Library, error) {
 // GetLibrary retrieves a library record by ID
 func GetLibrary(id uint) (*Library, error) {
 	var library Library
-	err := db.Preload("Folders").Find(&library, id).Error
+	err := db.Find(&library, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -85,36 +82,8 @@ func UpdateLibrary(library *Library) error {
 		return err
 	}
 
-	// Fetch the current state of the library including associated folders
-	var currentLibrary Library
-	if err := db.Preload("Folders").First(&currentLibrary, library.ID).Error; err != nil {
-		return err
-	}
-
-	// Create a map of current folder IDs for quick lookup
-	currentFolderIDs := make(map[uint]bool)
-	for _, folder := range currentLibrary.Folders {
-		currentFolderIDs[folder.ID] = true
-	}
-
-	// Create a map of new folder IDs for quick lookup and to track seen folders
-	newFolderIDs := make(map[uint]bool)
-	for _, folder := range library.Folders {
-		newFolderIDs[folder.ID] = true
-	}
-
-	// Find folders to delete
-	for id := range currentFolderIDs {
-		if !newFolderIDs[id] {
-			// Folder is not in the new list, so delete it using Unscoped()
-			if err := db.Unscoped().Delete(&Folder{}, id).Error; err != nil {
-				return err
-			}
-		}
-	}
-
-	// Save the updated library with FullSaveAssociations
-	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(library).Error; err != nil {
+	// Save the updated library with FullSaveAssociations but omit CreatedAt and UpdatedAt
+	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Omit("CreatedAt", "UpdatedAt").Save(library).Error; err != nil {
 		return err
 	}
 

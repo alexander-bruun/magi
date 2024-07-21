@@ -46,33 +46,24 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Register views
 	app.Get("/", HandleHome)
+
+	// Manga endpoints
 	app.Get("/mangas", HandleMangas)
 	app.Get("/manga/:slug", HandleManga)
+
+	// Library endpoints
 	app.Get("/libraries", HandleLibraries)
 	app.Get("/library/:slug", HandleLibrary)
+
+	// Admin endpoints
 	app.Get("/admin", HandleAdmin)
-
-	// Register library handlers
-	app.Get("/api/libraries", GetLibrariesHandler)
-	app.Post("/api/libraries", CreateLibraryHandler)
-	app.Put("/api/libraries", UpdateLibraryHandler)
-	app.Get("/api/libraries/:id", GetLibraryHandler)
-	app.Delete("/api/libraries/:id", DeleteLibraryHandler)
-	app.Get("/api/libraries/search", SearchLibrariesHandler)
-
-	// Register manga handlers
-	app.Get("/api/mangas", GetMangasHandler)
-	app.Post("/api/mangas", CreateMangaHandler)
-	app.Get("/api/mangas/:id", GetMangaHandler)
-	app.Put("/api/mangas/:id", UpdateMangaHandler)
-	app.Delete("/api/mangas/:id", DeleteMangaHandler)
-
-	// Register chapter handlers
-	app.Post("/api/chapters", CreateChapterHandler)
-	app.Get("/api/chapters/:id", GetChapterHandler)
-	app.Put("/api/chapters/:id", UpdateChapterHandler)
-	app.Delete("/api/chapters/:id", DeleteChapterHandler)
-	app.Get("/api/chapters/search", SearchChaptersHandler)
+	app.Post("/admin/create-library", HandleCreateLibrary)
+	app.Delete("/admin/delete-library/:id", HandleDeleteLibrary)
+	app.Put("/admin/update-library/:id", HandleUpdateLibrary)
+	app.Get("/admin/edit-library/:id", HandleEditLibrary)
+	app.Get("/admin/add-folder", HandleAddFolder)
+	app.Get("/admin/remove-folder", HandleRemoveFolder)
+	app.Get("/admin/cancel-edit", HandleCancelEdit)
 
 	// Fallback
 	app.Get("/*", HandleNotFound)
