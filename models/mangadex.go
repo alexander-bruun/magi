@@ -1,12 +1,32 @@
 package models
 
-// MangaResponse represents the structure of the JSON response from MangaDex API
-type MangaResponse struct {
-	Result string        `json:"result"`
-	Data   []MangaDetail `json:"data"`
-	Limit  int           `json:"limit"`
-	Offset int           `json:"offset"`
-	Total  int           `json:"total"`
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
+)
+
+// SingleMangaResponse represents the JSON response for a single manga
+type SingleMangaResponse struct {
+	Result   string      `json:"result"`
+	Response string      `json:"response"`
+	Data     MangaDetail `json:"data"`
+}
+
+// ListMangaResponse represents the JSON response for a list of mangas
+type ListMangaResponse struct {
+	Result   string        `json:"result"`
+	Response string        `json:"response"`
+	Data     []MangaDetail `json:"data"`
+	Limit    int           `json:"limit,omitempty"`
+	Offset   int           `json:"offset,omitempty"`
+	Total    int           `json:"total,omitempty"`
 }
 
 // MangaDetail represents details of a manga item in the "data" array of MangaResponse
@@ -58,4 +78,133 @@ type Relationship struct {
 	Attributes struct {
 		FileName string `json:"fileName"`
 	} `json:"attributes"`
+}
+
+var baseURL = "https://api.mangadex.org"
+
+func GetMangadexManga(id string) (*MangaDetail, error) {
+	url := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseURL, id)
+	log.Info(url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with status: %s", resp.Status)
+	}
+
+	var mangaResponse SingleMangaResponse
+	if err := json.NewDecoder(resp.Body).Decode(&mangaResponse); err != nil {
+		return nil, err
+	}
+
+	if mangaResponse.Result != "ok" {
+		return nil, fmt.Errorf("API returned an error: %s", mangaResponse.Result)
+	}
+
+	return &mangaResponse.Data, nil
+}
+
+// GetMangadexMangas searches for manga based on title and finds all matches
+func GetMangadexMangas(title string) (*ListMangaResponse, error) {
+	titleEncoded := url.QueryEscape(title)
+
+	url := fmt.Sprintf("%s/manga?title=%s&limit=25&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art", baseURL, titleEncoded)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with status: %s", resp.Status)
+	}
+
+	var mangaResponse ListMangaResponse
+	if err := json.NewDecoder(resp.Body).Decode(&mangaResponse); err != nil {
+		return nil, err
+	}
+
+	if mangaResponse.Result != "ok" {
+		return nil, fmt.Errorf("API returned an error: %s", mangaResponse.Result)
+	}
+
+	return &mangaResponse, nil
+}
+
+// FindManga searches for manga based on the title and returns the best match
+func GetBestMatchMangadexManga(title string) (*MangaDetail, error) {
+	mangaResponse, err := GetMangadexMangas(title)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the best match for the original search title
+	bestMatch := findBestMatch(mangaResponse.Data, title)
+	if bestMatch == nil {
+		return nil, errors.New("failed to find a good match")
+	}
+
+	return bestMatch, nil
+}
+
+// findBestMatch finds the best match for the original search title
+func findBestMatch(mangaDetail []MangaDetail, originalTitle string) *MangaDetail {
+	var bestMatch *MangaDetail
+	var highestScore float64
+
+	// Convert the original title to lowercase for case-insensitive comparison
+	originalTitleLower := strings.ToLower(originalTitle)
+
+	for _, manga := range mangaDetail {
+		var mangaTitle string
+
+		// First, try to find a suitable English title from AltTitles
+		var foundEnglishTitle bool
+		for _, altTitleMap := range manga.Attributes.AltTitles {
+			if title, ok := altTitleMap["en"]; ok && title != "" {
+				mangaTitle = title
+				foundEnglishTitle = true
+				break
+			}
+		}
+
+		// If no suitable English title found in AltTitles, try the main English title
+		if !foundEnglishTitle {
+			mangaTitle = manga.Attributes.Title["en"]
+		}
+
+		// If still no English title found, try to find a suitable Japanese title from Attributes
+		if mangaTitle == "" {
+			if title, ok := manga.Attributes.Title["ja"]; ok && title != "" {
+				mangaTitle = title
+			}
+		}
+
+		// If still no Japanese title found in Attributes, try AltTitles for Japanese
+		if mangaTitle == "" {
+			for _, altTitleMap := range manga.Attributes.AltTitles {
+				if title, ok := altTitleMap["ja"]; ok && title != "" {
+					mangaTitle = title
+					break
+				}
+			}
+		}
+
+		// If no suitable title found, continue to the next manga
+		if mangaTitle == "" {
+			continue
+		}
+
+		// Calculate similarity using bigram comparison
+		similarityScore := utils.CompareStrings(originalTitleLower, strings.ToLower(mangaTitle))
+		if similarityScore > highestScore {
+			highestScore = similarityScore
+			bestMatch = &manga
+		}
+	}
+
+	return bestMatch
 }

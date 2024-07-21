@@ -26,14 +26,14 @@ templ Admin(libraries []models.Library) {
 	<div class="uk-container">
 		<div class="uk-grid">
 			<div id="form-column" class="uk-width-1-4 uk-column-left">
-				<div class="card">
-					<h3 class="text-xl font-semibold mb-4">Library Form</h3>
+				<div class="uk-card p-2">
+					<h3 class="text-xl font-semibold mb-4 text-center">Library Form</h3>
 					@LibraryForm(models.Library{}, "post")
 				</div>
 			</div>
 			<div id="table-column" class="uk-width-3-4 uk-column-right">
-				<div class="card">
-					<h3 class="text-xl font-semibold mb-4">Libraries</h3>
+				<div class="uk-card p-2">
+					<h3 class="text-xl font-semibold mb-4 text-center">Libraries</h3>
 					@LibraryTable(libraries)
 				</div>
 			</div>
@@ -167,7 +167,7 @@ templ FormContent(library models.Library) {
 					</button>
 				</div>
 			</div>
-			<div class="mt-4">
+			<div class="content-center">
 				<button type="submit" class="uk-button uk-button-default">Submit</button>
 				<div id="response" class="mt-8"></div>
 			</div>
@@ -200,7 +200,7 @@ templ Folder(folderValue string) {
 	<div class="folder-row mb-4 flex items-center">
 		<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
 		<button type="button" class="uk-button uk-button-danger ml-2" hx-get="/admin/remove-folder" hx-target="closest .folder-row" hx-swap="outerHTML">
-			<span uk-icon="minus"></span>
+			<span uk-icon="close"></span>
 		</button>
 	</div>
 }

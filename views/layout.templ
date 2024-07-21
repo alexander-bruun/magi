@@ -1,6 +1,8 @@
 package views
 
-templ Layout(content templ.Component) {
+import "github.com/alexander-bruun/magi/models"
+
+templ Layout(content templ.Component, libraries []models.Library) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dim">
 		<head>
@@ -36,9 +38,12 @@ templ Layout(content templ.Component) {
 			<title>Magi</title>
 		</head>
 		<body class="bg-background text-foreground">
-			@navbar()
+			@Navbar(libraries)
 			<div id="content" class="content uk-container uk-mx-auto mt-6">
 				@content
+			</div>
+			<div class="uk-container uk-width-1-4 uk-mx-auto my-2">
+				@Footer()
 			</div>
 			<script>
 				var themeToggleBtn = document.getElementById("theme-toggle");

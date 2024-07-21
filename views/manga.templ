@@ -1,6 +1,9 @@
 package views
 
-import "github.com/alexander-bruun/magi/models"
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
 
 templ Manga(manga models.Manga) {
 	<nav aria-label="Breadcrumb">
@@ -24,25 +27,146 @@ templ Manga(manga models.Manga) {
 			<li><span>{ manga.Name }</span></li>
 		</ul>
 	</nav>
-	<div class="uk-width-1-2 uk-card uk-card-body uk-card-default mx-auto mt-10">
-		<h3 class="uk-card-title">{ manga.Name }</h3>
-		<div class="uk-card-media-top flex justify-center items-center pt-12">
-			<img src={ manga.CoverArtURL } class="pt-2" width="300" height="500" alt={ manga.Name }/>
+	<h1 class="uk-heading-divider uk-h2 uk-margin">{ manga.Name }</h1>
+	<div class="uk-container">
+		<div class="uk-grid">
+			<div id="form-column" class="uk-width-1-4 uk-column-left">
+				<div class="uk-card p-2">
+					@Info(manga)
+				</div>
+			</div>
+			<div id="table-column" class="uk-width-3-4 uk-column-right">
+				<div class="uk-card p-2">
+					<h3 class="uk-heading-divider uk-h3">Chapters</h3>
+					<div class="p-2">
+						@Chapters()
+					</div>
+				</div>
+			</div>
 		</div>
-		<p class="uk-margin">
-			{ manga.Description }
-		</p>
-		<p class="uk-margin">
-			Author: { manga.Author }
-		</p>
-		<p class="uk-margin">
-			Status: { manga.Status }
-		</p>
-		<p class="uk-margin">
-			Original language: { manga.OriginalLanguage }
-		</p>
-		<p class="uk-margin">
-			Content rating: { manga.ContentRating }
-		</p>
 	</div>
+}
+
+templ Info(manga models.Manga) {
+	<div class="uk-card-media-top flex justify-center items-center">
+		<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+	</div>
+	<p class="uk-margin line-clamp-5">
+		{ manga.Description }
+	</p>
+	<p class="uk-margin font-bold uppercase text-center">
+		{ manga.Status }
+	</p>
+	<!-- This is a button toggling the modal -->
+	<button
+		type="button"
+		class="uk-button uk-button-default"
+		type="button"
+		uk-toggle="target: #modal-example"
+	>
+		<span uk-icon="info"></span>
+	</button>
+	<!-- This is the modal -->
+	<div id="modal-example" uk-modal>
+		<div class="uk-modal-body uk-modal-dialog">
+			<h2 class="uk-modal-title">Update metadata</h2>
+			<p>
+				This form, is used in case you believe the metadata was scraped from the wrong manga. Use the search field below to get a list of other options to pick from.
+			</p>
+			<form
+				hx-get={ fmt.Sprintf("/manga-update/%d", manga.ID) }
+				hx-target="#modal-content"
+			>
+				<div class="folder-row mb-4 flex items-center">
+					<input class="uk-input folder-input" type="text" name="search" placeholder="Manga name"/>
+					<button type="submit" class="uk-button uk-button-default">
+						<span uk-icon="search"></span>
+					</button>
+				</div>
+			</form>
+			<div id="modal-content"></div>
+		</div>
+	</div>
+}
+
+templ Chapters() {
+	<ul class="uk-accordion" uk-accordion>
+		<li class="uk-open">
+			<a class="uk-accordion-title" href>
+				Chapter 1
+				<span
+					class="uk-accordion-icon"
+					uk-icon="icon: chevron-down; ratio: 0.8"
+				></span>
+			</a>
+			<div class="uk-accordion-content">
+				<p>
+					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+					tempor incididunt ut labore et dolore magna aliqua.
+				</p>
+			</div>
+		</li>
+		<li>
+			<a class="uk-accordion-title" href>
+				Chapter 2
+				<span
+					class="uk-accordion-icon"
+					uk-icon="icon: chevron-down; ratio: 0.8"
+				></span>
+			</a>
+			<div class="uk-accordion-content">
+				<p>
+					Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+					ut aliquip ex ea commodo consequat. Duis aute irure dolor reprehenderit.
+				</p>
+			</div>
+		</li>
+		<li>
+			<a class="uk-accordion-title" href>
+				Chapter 3
+				<span
+					class="uk-accordion-icon"
+					uk-icon="icon: chevron-down; ratio: 0.8"
+				></span>
+			</a>
+			<div class="uk-accordion-content">
+				<p>
+					Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
+					dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
+					proident.
+				</p>
+			</div>
+		</li>
+	</ul>
+}
+
+templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
+	<ul class="uk-accordion" uk-accordion>
+		for _, mangaDetail := range response.Data {
+			<li>
+				<a class="uk-accordion-title" href>
+					{ mangaDetail.Attributes.Title["en"] }
+					<span
+						class="uk-accordion-icon"
+						uk-icon="icon: chevron-down; ratio: 0.8"
+					></span>
+				</a>
+				<div class="uk-accordion-content">
+					<p>
+						{ mangaDetail.Attributes.Description["en"] }
+					</p>
+					<button
+						type="button"
+						class="uk-button uk-button-default"
+						type="button"
+						uk-toggle="target: #modal-example"
+						hx-post={ fmt.Sprintf("/manga-edit?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
+						hx-target="#content"
+					>
+						Download new metadata
+					</button>
+				</div>
+			</li>
+		}
+	</ul>
 }
