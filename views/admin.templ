@@ -114,7 +114,6 @@ templ LibraryForm(library models.Library, action string) {
 				hx-put={ fmt.Sprintf("/admin/update-library/%s", strconv.FormatUint(uint64(library.ID), 10)) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
-				hx-on::after-submit="if(event.detail.successful) htmx.ajax('GET', '/admin/cancel-edit', '#library-form')"
 			>
 				@FormContent(library)
 			</form>
