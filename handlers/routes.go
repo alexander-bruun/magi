@@ -35,6 +35,14 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Register views
 	app.Get("/", HandleHome)
 
+	// Manga endpoints
+	app.Get("/mangas", HandleMangas)
+	app.Get("/manga/:slug", HandleManga)
+
+	// Library endpoints
+	app.Get("/libraries", HandleLibraries)
+	app.Get("/library/:slug", HandleLibrary)
+
 	// Admin endpoints
 	app.Get("/admin", HandleAdmin)
 	app.Post("/admin/create-library", HandleCreateLibrary)

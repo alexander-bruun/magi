@@ -82,14 +82,8 @@ func UpdateLibrary(library *Library) error {
 		return err
 	}
 
-	// Fetch the current state of the library including associated mangas
-	var currentLibrary Library
-	if err := db.Preload("Mangas").First(&currentLibrary, library.ID).Error; err != nil {
-		return err
-	}
-
-	// Save the updated library with FullSaveAssociations
-	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(library).Error; err != nil {
+	// Save the updated library with FullSaveAssociations but omit CreatedAt and UpdatedAt
+	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Omit("CreatedAt", "UpdatedAt").Save(library).Error; err != nil {
 		return err
 	}
 

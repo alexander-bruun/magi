@@ -114,7 +114,7 @@ templ LibraryForm(library models.Library, action string) {
 				hx-put={ fmt.Sprintf("/admin/update-library/%s", strconv.FormatUint(uint64(library.ID), 10)) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
-				hx-on::after-request="htmx.ajax('GET', '/admin/cancel-edit', '#library-form')"
+				hx-on::after-submit="if(event.detail.successful) htmx.ajax('GET', '/admin/cancel-edit', '#library-form')"
 			>
 				@FormContent(library)
 			</form>
@@ -162,7 +162,7 @@ templ FormContent(library models.Library) {
 			<div id="folders-container">
 				<!-- Folder fields will be dynamically added here -->
 				<div class="folder-row mb-4 flex items-center">
-					<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" required/>
+					<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path"/>
 					<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/add-folder" hx-target="#folders-container" hx-swap="beforeend">
 						<span uk-icon="plus"></span>
 					</button>
@@ -178,7 +178,7 @@ templ FormContent(library models.Library) {
 				for index, folder := range library.Folders {
 					if index == 0 {
 						<div class="folder-row mb-4 flex items-center">
-							<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folder } required/>
+							<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folder }/>
 							<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/add-folder" hx-target="#folders-container" hx-swap="beforeend">
 								<span uk-icon="plus"></span>
 							</button>
