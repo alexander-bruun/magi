@@ -65,7 +65,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	c.Response().Header.Set("HX-Trigger", "reset-form")
 	c.Response().Header.Set("Content-Type", "text/html")
 
-	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
+	return c.SendString(tableContent)
 }
 
 func HandleDeleteLibrary(c *fiber.Ctx) error {
@@ -95,7 +95,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	c.Response().Header.Set("HX-Trigger", "reset-form")
 	c.Response().Header.Set("Content-Type", "text/html")
 
-	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
+	return c.SendString(tableContent)
 }
 
 func HandleUpdateLibrary(c *fiber.Ctx) error {
@@ -128,7 +128,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	c.Response().Header.Set("HX-Trigger", "reset-form")
 	c.Response().Header.Set("Content-Type", "text/html")
 
-	return c.SendString(fmt.Sprintf(`<div id="libraries-table">%s</div>`, tableContent))
+	return c.SendString(tableContent)
 }
 
 func HandleEditLibrary(c *fiber.Ctx) error {
@@ -162,4 +162,17 @@ func HandleAddFolder(c *fiber.Ctx) error {
 
 func HandleRemoveFolder(c *fiber.Ctx) error {
 	return c.SendString("")
+}
+
+func HandleCancelEdit(c *fiber.Ctx) error {
+	// Render a fresh LibraryForm
+	var buf bytes.Buffer
+	err := views.LibraryForm(models.Library{}, "post").Render(context.Background(), &buf)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering form")
+	}
+	formContent := buf.String()
+
+	c.Response().Header.Set("Content-Type", "text/html")
+	return c.SendString(formContent)
 }

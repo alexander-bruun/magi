@@ -43,6 +43,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/admin/edit-library/:id", HandleEditLibrary)
 	app.Get("/admin/add-folder", HandleAddFolder)
 	app.Get("/admin/remove-folder", HandleRemoveFolder)
+	app.Get("/admin/cancel-edit", HandleCancelEdit)
 
 	// Fallback
 	app.Get("/*", HandleNotFound)

@@ -25,13 +25,13 @@ templ Admin(libraries []models.Library) {
 	<h1 class="uk-heading-divider uk-h2 uk-margin">Admin panel</h1>
 	<div class="uk-container">
 		<div class="uk-grid">
-			<div class="uk-width-1-4 uk-column-left">
+			<div id="form-column" class="uk-width-1-4 uk-column-left">
 				<div class="card">
 					<h3 class="text-xl font-semibold mb-4">Library Form</h3>
 					@LibraryForm(models.Library{}, "post")
 				</div>
 			</div>
-			<div class="uk-width-3-4 uk-column-right">
+			<div id="table-column" class="uk-width-3-4 uk-column-right">
 				<div class="card">
 					<h3 class="text-xl font-semibold mb-4">Libraries</h3>
 					@LibraryTable(libraries)
@@ -102,7 +102,6 @@ templ LibraryForm(library models.Library, action string) {
 				id="library-form"
 				hx-post="/admin/create-library"
 				hx-target="#libraries-table"
-				hx-swap="outerHTML"
 				hx-trigger="submit"
 			>
 				@FormContent(library)
@@ -114,8 +113,8 @@ templ LibraryForm(library models.Library, action string) {
 				id="library-form"
 				hx-put={ fmt.Sprintf("/admin/update-library/%s", strconv.FormatUint(uint64(library.ID), 10)) }
 				hx-target="#libraries-table"
-				hx-swap="outerHTML"
 				hx-trigger="submit"
+				hx-on::after-request="htmx.ajax('GET', '/admin/cancel-edit', '#library-form')"
 			>
 				@FormContent(library)
 			</form>
@@ -191,7 +190,7 @@ templ FormContent(library models.Library) {
 			</div>
 			<div class="mt-4">
 				<button type="submit" class="uk-button uk-button-default">Save</button>
-				<button type="submit" class="uk-button uk-button-default">Cancel</button>
+				<button type="button" class="uk-button uk-button-default" hx-get="/admin/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
 			</div>
 		}
 		<div id="response" class="mt-8"></div>
