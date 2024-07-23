@@ -39,63 +39,18 @@ npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 
 Make sure to update the theme in `tailwind.config.js` before running this command.
 
-## API Quick Commands
-
-You can interact with the Magi API using the following `curl` commands:
-
-- **Create a Library:**
-
-    ```sh
-    curl -X POST \
-      http://localhost:3000/api/libraries \
-      -H 'Content-Type: application/json' \
-      -d '{
-        "name": "My Manga Library",
-        "cron": "*/1 * * * *",
-        "description": "A library for all my manga!",
-        "folders": [{
-          "Name": "/mnt/e/Manga"
-        }]
-    }'
-    ```
-
-- **Update a Library:**
-
-    ```sh
-    curl -X PUT \
-      http://localhost:3000/api/libraries \
-      -H 'Content-Type: application/json' \
-      -d '{
-      "ID": 1,
-      "Name": "My Manga Library",
-      "Description": "A library for all my manga!",
-      "Cron": "0 * * * *"
-    }'
-    ```
-
-- **Delete a Library:**
-
-    ```sh
-    curl -X DELETE http://localhost:3000/api/libraries/1
-    ```
-
 ## Roadmap
 
 Here are some of the planned features and improvements for Magi:
 
 - Implement local fallback metadata scraping (e.g., cover art extraction, `.cbz` metadata files).
-- Develop a scalable logo for Magi and integrate it as a favicon and in the navbar.
-- Resolve issues with navbar dropdowns disappearing under other elements.
+- Design a scalable logo for Magi and integrate it as a favicon and in the navbar.
 - Add API middleware and configure CORS rules.
 - Implement Swagger API documentation.
-- Update library page to display manga within the library.
 - Explore better APIs for manga information scraping.
 - Enable chapter cover downloading.
-- Add a minimal, tasteful footer to the layout.
 - Enhance the home page with additional content and features.
-- Create, edit, and delete manga libraries with comprehensive functionality.
 - Implement features for managing manga and chapter metadata post-scan.
-- Develop both frontend and backend manga readers.
 - Create a Makefile for testing, building, and releasing.
 - Set up GitHub pipelines and Docker build.
 - Provide setup guides for different environments (e.g., systemd, Windows).
