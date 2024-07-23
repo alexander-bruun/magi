@@ -1,9 +1,9 @@
 package indexer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -94,83 +94,64 @@ func (idx *Indexer) Stop() {
 // runIndexingJob runs the indexing job
 func (idx *Indexer) runIndexingJob() {
 	if idx.JobRunning {
-		log.Warnf("Skipping scheduled indexer job for library: '%s', a job is already running.",
-			idx.Library.Name)
+		log.Infof("Skipping scheduled indexer job for library: '%s', a job is already running.", idx.Library.Name)
 		return
 	} else {
 		idx.JobRunning = true
 	}
 
-	log.Infof("Indexing library: '%s'",
-		idx.Library.Name)
+	log.Infof("Indexing library: '%s'", idx.Library.Name)
 	start := time.Now() // Record the start time of indexing
 
 	defer func() {
 		duration := time.Since(start)
 		if idx.CronRunning {
-			log.Infof("Indexer for library: '%s' completed in %s.",
-				idx.Library.Name, duration)
+			log.Infof("Indexer for library: '%s' completed in %s.", idx.Library.Name, duration)
 		} else {
-			log.Infof("Indexer for library: '%s' was stopped after %s.",
-				idx.Library.Name, duration)
+			log.Infof("Indexer for library: '%s' was stopped after %s.", idx.Library.Name, duration)
 		}
 	}()
 
+outerLoop:
 	for _, folder := range idx.Library.Folders {
-		// Check if the stop signal has been received
 		select {
 		case <-idx.stop:
 			idx.JobRunning = false
-			return // Stop processing this library's folders
+			break outerLoop
 		default:
-			// Continue processing
 		}
-		log.Infof("Processing folder: %s", folder)
 
-		err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-			// Check for stop signal
+		// Open the directory
+		dir, err := os.Open(folder)
+		if err != nil {
+			log.Errorf("Error opening directory: '%s' (%s)", folder, err)
+			continue
+		}
+		defer dir.Close()
+
+		// Read the directory entries
+		entries, err := dir.Readdir(-1)
+		if err != nil {
+			log.Errorf("Error reading directory: '%s' (%s)", folder, err)
+			continue
+		}
+
+		for _, entry := range entries {
 			select {
 			case <-idx.stop:
 				idx.JobRunning = false
-				return filepath.SkipDir // Stop walking this directory
+				break outerLoop
 			default:
-				// Continue processing
 			}
-			if err != nil {
-				return err
+			path := filepath.Join(folder, entry.Name())
+			if entry.IsDir() {
+				_, err = IndexManga(path, idx.Library.ID)
+				if err != nil {
+					continue
+				}
+			} else {
+				fmt.Println("File:", entry.Name())
 			}
-			if info.IsDir() {
-				// Get the relative path to determine depth
-				relPath, err := filepath.Rel(folder, path)
-				if err != nil {
-					return err
-				}
-				// Split the relative path to count the number of components
-				parts := strings.Split(relPath, string(os.PathSeparator))
-				// If the directory is deeper than one level, skip it
-				if len(parts) > 1 {
-					return filepath.SkipDir
-				}
-
-				// Get the absolute path
-				absPath, err := filepath.Abs(path)
-				if err != nil {
-					return err
-				}
-
-				mangaID, err := IndexManga(absPath, idx.Library.ID)
-				if err != nil {
-					log.Errorf("Failed to index manga: %s", absPath)
-					return filepath.SkipDir
-				}
-
-				err = IndexChapters(absPath, mangaID)
-			}
-			return nil
-		})
-
-		if err != nil {
-			log.Errorf("Error walking the path: %v", err)
 		}
 	}
 	idx.JobRunning = false

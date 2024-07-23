@@ -46,16 +46,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Register views
 	app.Get("/", HandleHome)
 
-	// Manga endpoints
-	app.Get("/mangas", HandleMangas)
-	app.Get("/manga/:slug", HandleManga)
-	app.Get("/manga-update/:id", HandleUpdateMetadataManga)
-	app.Post("/manga-edit", HandleEditMetadataManga)
-
-	// Library endpoints
-	app.Get("/libraries", HandleLibraries)
-	app.Get("/library/:slug", HandleLibrary)
-
 	// Admin endpoints
 	app.Get("/admin", HandleAdmin)
 	app.Post("/admin/create-library", HandleCreateLibrary)
@@ -65,6 +55,13 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/admin/add-folder", HandleAddFolder)
 	app.Get("/admin/remove-folder", HandleRemoveFolder)
 	app.Get("/admin/cancel-edit", HandleCancelEdit)
+
+	// Manga endpoints
+	app.Get("/mangas", HandleMangas)
+	app.Get("/metadata-form/:id", HandleUpdateMetadataManga)
+	app.Post("/overwrite-metadata", HandleEditMetadataManga)
+	app.Get("/:manga", HandleManga)
+	app.Get("/:manga/:chapter", HandleChapter)
 
 	// Fallback
 	app.Get("/*", HandleNotFound)

@@ -1,11 +1,6 @@
 package views
 
-import (
-	"fmt"
-	"github.com/alexander-bruun/magi/models"
-)
-
-templ Navbar(libraries []models.Library) {
+templ Navbar() {
 	<nav class="uk-navbar-container">
 		<div class="uk-container">
 			<div uk-navbar>
@@ -19,29 +14,6 @@ templ Navbar(libraries []models.Library) {
 				<div class="uk-navbar-center">
 					<ul class="uk-navbar-nav">
 						<li><a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a></li>
-						<li>
-							<a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true">Libraries <span uk-navbar-parent-icon></span></a>
-							<div class="uk-navbar-dropdown">
-								<ul class="uk-nav uk-navbar-dropdown-nav">
-									if len(libraries) > 0 {
-										for _, library := range libraries {
-											<li>
-												<a
-													href={ templ.URL(fmt.Sprintf("/library/%s", library.Slug)) }
-													hx-get={ fmt.Sprintf("/library/%s", library.Slug) }
-													hx-target="#content"
-													hx-push-url="true"
-												>{ library.Name }</a>
-											</li>
-										}
-									} else {
-										<li>
-											<a href="#">No Libraries Configured</a>
-										</li>
-									}
-								</ul>
-							</div>
-						</li>
 						<li><a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true">Mangas</a></li>
 					</ul>
 				</div>

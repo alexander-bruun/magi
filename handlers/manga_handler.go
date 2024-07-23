@@ -28,19 +28,68 @@ func HandleMangas(c *fiber.Ctx) error {
 }
 
 func HandleManga(c *fiber.Ctx) error {
-	slug := c.Params("slug")
+	manga := c.Params("manga")
 
-	id, err := models.GetMangaIDBySlug(slug)
+	id, err := models.GetMangaIDBySlug(manga)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	manga, err := models.GetManga(id)
+	currentManga, err := models.GetManga(id)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	return HandleView(c, views.Manga(*manga))
+	chapters, err := models.GetChapters(id)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	return HandleView(c, views.Manga(*currentManga, chapters))
+}
+
+func HandleChapter(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Params("chapter")
+
+	mangaID, err := models.GetMangaIDBySlug(mangaSlug)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	chapterID, err := models.GetChapterIDBySlug(chapterSlug, mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	manga, err := models.GetManga(mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	chapter, err := models.GetChapter(chapterID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	currentSlug := chapter.Slug
+	prevSlug, nextSlug, err := models.GetAdjacentChapters(currentSlug, mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	chapterFilePath := filepath.Join(manga.Path, chapter.File)
+	pageCount, err := utils.CountImageFilesInZip(chapterFilePath)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	var images []string
+	for i := 1; i < pageCount; i++ {
+		images = append(images, fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", mangaSlug, chapterSlug, i))
+	}
+
+	return HandleView(c, views.Chapter(prevSlug, currentSlug, nextSlug, *manga, images, *chapter))
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
@@ -86,7 +135,6 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		}
 	}
 
-	log.Infof("Cover art url: %s", coverArtURL)
 	u, err := url.Parse(coverArtURL)
 	if err != nil {
 		log.Errorf("Error parsing URL:", err)
@@ -116,10 +164,8 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	manga, err := models.GetManga(uint(mangaID))
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
+	redirectURL := fmt.Sprintf("/%s", slug)
+	c.Set("HX-Redirect", redirectURL)
 
-	return HandleView(c, views.Manga(*manga))
+	return c.SendStatus(fiber.StatusOK)
 }

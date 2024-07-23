@@ -2,31 +2,53 @@ package handlers
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
 	"github.com/nwaples/rardecode"
 )
 
 func ComicHandler(c *fiber.Ctx) error {
 	// Query parameters for extracting comic images from chapters and pages
-	manga := c.Query("comic")
-	chapter := c.Query("chapter")
-	page := c.Query("page")
+	mangaSlug := c.Query("manga")
+	chapterSlug := c.Query("chapter")
+	chapterPage := c.Query("page")
 
-	if manga != "" || chapter == "" || page == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("When requesting a comic, all parameters must be provided.")
+	if mangaSlug == "" || chapterSlug == "" || chapterPage == "" {
+		return HandleView(c, views.Error("When requesting a manga, all parameters must be provided."))
 	}
 
-	filePath := fmt.Sprintf("%s/%s", "/mnt/e/Manga/", manga) // TO-DO: Use dynamic library paths.
+	mangaID, err := models.GetMangaIDBySlug(mangaSlug)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	chapterID, err := models.GetChapterIDBySlug(chapterSlug, mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	manga, err := models.GetManga(mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	chapter, err := models.GetChapter(chapterID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	filePath := filepath.Join(manga.Path, chapter.File)
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("File or directory not found")
+		return HandleView(c, views.Error(err.Error()))
 	}
 
 	// Serve the file based on its extension
