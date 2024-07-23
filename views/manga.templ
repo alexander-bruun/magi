@@ -5,7 +5,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Manga(manga models.Manga) {
+templ Manga(manga models.Manga, chapters []models.Chapter) {
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -39,7 +39,7 @@ templ Manga(manga models.Manga) {
 				<div class="uk-card p-2">
 					<h3 class="uk-heading-divider uk-h3">Chapters</h3>
 					<div class="p-2">
-						@Chapters()
+						@Chapters(manga, chapters)
 					</div>
 				</div>
 			</div>
@@ -54,18 +54,23 @@ templ Info(manga models.Manga) {
 	<p class="uk-margin line-clamp-5">
 		{ manga.Description }
 	</p>
+	<p class="uk-margin line-clamp-5">
+		{ manga.Path }
+	</p>
 	<p class="uk-margin font-bold uppercase text-center">
 		{ manga.Status }
 	</p>
 	<!-- This is a button toggling the modal -->
-	<button
-		type="button"
-		class="uk-button uk-button-default"
-		type="button"
-		uk-toggle="target: #modal-example"
-	>
-		<span uk-icon="info"></span>
-	</button>
+	<div class="uk-flex uk-flex-center">
+		<button
+			type="button"
+			class="uk-button uk-button-default"
+			type="button"
+			uk-toggle="target: #modal-example"
+		>
+			<span uk-icon="info"></span>
+		</button>
+	</div>
 	<!-- This is the modal -->
 	<div id="modal-example" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -73,70 +78,52 @@ templ Info(manga models.Manga) {
 			<p>
 				This form, is used in case you believe the metadata was scraped from the wrong manga. Use the search field below to get a list of other options to pick from.
 			</p>
-			<form
-				hx-get={ fmt.Sprintf("/manga-update/%d", manga.ID) }
-				hx-target="#modal-content"
-			>
-				<div class="folder-row mb-4 flex items-center">
-					<input class="uk-input folder-input" type="text" name="search" placeholder="Manga name"/>
-					<button type="submit" class="uk-button uk-button-default">
-						<span uk-icon="search"></span>
-					</button>
-				</div>
-			</form>
+			<div class="uk-margin my-2">
+				<form
+					hx-get={ fmt.Sprintf("/metadata-form/%d", manga.ID) }
+					hx-target="#modal-content"
+				>
+					<div class="folder-row mb-4 flex items-center">
+						<input class="uk-input folder-input mr-1" type="text" name="search" placeholder="Manga name"/>
+						<button type="submit" class="uk-button uk-button-default ml-1">
+							<span uk-icon="search"></span>
+						</button>
+					</div>
+				</form>
+			</div>
 			<div id="modal-content"></div>
 		</div>
 	</div>
 }
 
-templ Chapters() {
+templ Chapters(manga models.Manga, chapters []models.Chapter) {
 	<ul class="uk-accordion" uk-accordion>
-		<li class="uk-open">
-			<a class="uk-accordion-title" href>
-				Chapter 1
-				<span
-					class="uk-accordion-icon"
-					uk-icon="icon: chevron-down; ratio: 0.8"
-				></span>
-			</a>
-			<div class="uk-accordion-content">
-				<p>
-					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-					tempor incididunt ut labore et dolore magna aliqua.
-				</p>
-			</div>
-		</li>
-		<li>
-			<a class="uk-accordion-title" href>
-				Chapter 2
-				<span
-					class="uk-accordion-icon"
-					uk-icon="icon: chevron-down; ratio: 0.8"
-				></span>
-			</a>
-			<div class="uk-accordion-content">
-				<p>
-					Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
-					ut aliquip ex ea commodo consequat. Duis aute irure dolor reprehenderit.
-				</p>
-			</div>
-		</li>
-		<li>
-			<a class="uk-accordion-title" href>
-				Chapter 3
-				<span
-					class="uk-accordion-icon"
-					uk-icon="icon: chevron-down; ratio: 0.8"
-				></span>
-			</a>
-			<div class="uk-accordion-content">
-				<p>
-					Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-					dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-					proident.
-				</p>
-			</div>
-		</li>
+		for _, chapter := range chapters {
+			<li class="uk-closed">
+				<a class="uk-accordion-title" href>
+					{ chapter.Name }
+					<span
+						class="uk-accordion-icon"
+						uk-icon="icon: chevron-down; ratio: 0.8"
+					></span>
+				</a>
+				<div class="uk-accordion-content">
+					<div class="uk-flex uk-flex-center">
+						<a
+							type="button"
+							class="uk-button uk-button-default"
+							type="button"
+							href={ templ.URL(fmt.Sprintf("/%s/%s", manga.Slug, chapter.Slug)) }
+							hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, chapter.Slug) }
+							hx-target="#content"
+							hx-push-url="true"
+						>
+							<span uk-icon="eye"></span>
+						</a>
+					</div>
+				</div>
+			</li>
+		}
 	</ul>
 }
 
@@ -160,7 +147,7 @@ templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
 						class="uk-button uk-button-default"
 						type="button"
 						uk-toggle="target: #modal-example"
-						hx-post={ fmt.Sprintf("/manga-edit?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
+						hx-post={ fmt.Sprintf("/overwrite-metadata?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
 						hx-target="#content"
 					>
 						Download new metadata
@@ -169,4 +156,76 @@ templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
 			</li>
 		}
 	</ul>
+}
+
+templ Chapter(previousChapter string, currentChapter string, nextChapter string, manga models.Manga, images []string, chapter models.Chapter) {
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ manga.Name }</span></h2>
+	<div class="flex justify-between p-4">
+		<button
+			type="button"
+			class="uk-button uk-button-default"
+			type="button"
+			href={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			hx-target="#content"
+			hx-push-url="true"
+			if previousChapter == "" {
+				disabled
+			}
+		>
+			<span uk-icon="arrow-left"></span>
+		</button>
+		<h2 class="uk-h2 uk-card-title uk-text-center"><span>{ chapter.Name }</span></h2>
+		<button
+			type="button"
+			class="uk-button uk-button-default"
+			type="button"
+			href={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			hx-target="#content"
+			hx-push-url="true"
+			if nextChapter == "" {
+				disabled
+			}
+		>
+			<span uk-icon="arrow-right"></span>
+		</button>
+	</div>
+	<div class="flex items-center justify-center min-h-screen">
+		<div class="flex flex-col items-center p-4 bg-white rounded shadow-md">
+			for _, image := range images {
+				<img src={ image }/>
+			}
+		</div>
+	</div>
+	<div class="flex justify-between p-4">
+		<button
+			type="button"
+			class="uk-button uk-button-default"
+			type="button"
+			href={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			hx-target="#content"
+			hx-push-url="true"
+			if previousChapter == "" {
+				disabled
+			}
+		>
+			<span uk-icon="arrow-left"></span>
+		</button>
+		<button
+			type="button"
+			class="uk-button uk-button-default"
+			type="button"
+			href={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			hx-target="#content"
+			hx-push-url="true"
+			if nextChapter == "" {
+				disabled
+			}
+		>
+			<span uk-icon="arrow-right"></span>
+		</button>
+	</div>
 }

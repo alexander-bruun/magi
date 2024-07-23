@@ -10,12 +10,12 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 		<li><a href=""></a></li>
 		<li><span>Home</span></li>
 	</ul>
-	<h1 class="uk-heading-divider uk-h2 uk-margin">Recently added</h1>
-	<div class="px-1" uk-slider>
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
+	<div class="px-1 mt-2" uk-slider>
 		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
 			<div class="uk-child-width-1-5 uk-grid uk-slider-items">
 				for _, manga := range recentlyAdded {
-					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
+					<a href={ templ.URL(fmt.Sprintf("/%s", manga.Slug)) }>
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">
@@ -44,12 +44,12 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 		</div>
 		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin"></ul>
 	</div>
-	<h1 class="uk-heading-divider uk-h2 uk-margin">Recently updated</h1>
-	<div class="px-1" uk-slider>
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
+	<div class="px-1 mt-2" uk-slider>
 		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
 			<div class="uk-child-width-1-5 uk-grid uk-slider-items">
 				for _, manga := range recentlyUpdated {
-					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
+					<a href={ templ.URL(fmt.Sprintf("/%s", manga.Slug)) }>
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">

@@ -111,7 +111,7 @@ func GetMangadexManga(id string) (*MangaDetail, error) {
 func GetMangadexMangas(title string) (*ListMangaResponse, error) {
 	titleEncoded := url.QueryEscape(title)
 
-	url := fmt.Sprintf("%s/manga?title=%s&limit=25&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art", baseURL, titleEncoded)
+	url := fmt.Sprintf("%s/manga?title=%s&limit=50&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art", baseURL, titleEncoded)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -131,6 +131,10 @@ func GetMangadexMangas(title string) (*ListMangaResponse, error) {
 		return nil, fmt.Errorf("API returned an error: %s", mangaResponse.Result)
 	}
 
+	if len(mangaResponse.Data) <= 0 {
+		return nil, errors.New("no search results found")
+	}
+
 	return &mangaResponse, nil
 }
 
@@ -142,16 +146,16 @@ func GetBestMatchMangadexManga(title string) (*MangaDetail, error) {
 	}
 
 	// Find the best match for the original search title
-	bestMatch := findBestMatch(mangaResponse.Data, title)
-	if bestMatch == nil {
-		return nil, errors.New("failed to find a good match")
+	bestMatch, err := findBestMatch(mangaResponse.Data, title)
+	if err != nil {
+		return nil, err
 	}
 
 	return bestMatch, nil
 }
 
 // findBestMatch finds the best match for the original search title
-func findBestMatch(mangaDetail []MangaDetail, originalTitle string) *MangaDetail {
+func findBestMatch(mangaDetail []MangaDetail, originalTitle string) (*MangaDetail, error) {
 	var bestMatch *MangaDetail
 	var highestScore float64
 
@@ -161,34 +165,30 @@ func findBestMatch(mangaDetail []MangaDetail, originalTitle string) *MangaDetail
 	for _, manga := range mangaDetail {
 		var mangaTitle string
 
-		// First, try to find a suitable English title from AltTitles
-		var foundEnglishTitle bool
-		for _, altTitleMap := range manga.Attributes.AltTitles {
-			if title, ok := altTitleMap["en"]; ok && title != "" {
-				mangaTitle = title
-				foundEnglishTitle = true
-				break
+		// First, try to find the main English title
+		if title, ok := manga.Attributes.Title["en"]; ok && title != "" {
+			mangaTitle = title
+		} else {
+			// If no main English title, try to find a suitable English title from AltTitles
+			for _, altTitleMap := range manga.Attributes.AltTitles {
+				if title, ok := altTitleMap["en"]; ok && title != "" {
+					mangaTitle = title
+					break
+				}
 			}
 		}
 
-		// If no suitable English title found in AltTitles, try the main English title
-		if !foundEnglishTitle {
-			mangaTitle = manga.Attributes.Title["en"]
-		}
-
-		// If still no English title found, try to find a suitable Japanese title from Attributes
+		// If no English title found, try to find the main Japanese title
 		if mangaTitle == "" {
 			if title, ok := manga.Attributes.Title["ja"]; ok && title != "" {
 				mangaTitle = title
-			}
-		}
-
-		// If still no Japanese title found in Attributes, try AltTitles for Japanese
-		if mangaTitle == "" {
-			for _, altTitleMap := range manga.Attributes.AltTitles {
-				if title, ok := altTitleMap["ja"]; ok && title != "" {
-					mangaTitle = title
-					break
+			} else {
+				// If no main Japanese title, try to find a suitable Japanese title from AltTitles
+				for _, altTitleMap := range manga.Attributes.AltTitles {
+					if title, ok := altTitleMap["ja"]; ok && title != "" {
+						mangaTitle = title
+						break
+					}
 				}
 			}
 		}
@@ -206,5 +206,5 @@ func findBestMatch(mangaDetail []MangaDetail, originalTitle string) *MangaDetail
 		}
 	}
 
-	return bestMatch
+	return bestMatch, nil
 }

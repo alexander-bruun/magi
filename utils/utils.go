@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"archive/zip"
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -55,6 +58,10 @@ func Sluggify(s string) string {
 	// Convert the string to lowercase
 	s = strings.ToLower(s)
 
+	// Replace periods and commas with a dash
+	s = strings.ReplaceAll(s, ".", "-")
+	s = strings.ReplaceAll(s, ",", "-")
+
 	// Remove all non-alphanumeric characters except hyphens and spaces
 	re := regexp.MustCompile(`[^a-z0-9\s-]`)
 	s = re.ReplaceAllString(s, "")
@@ -67,4 +74,44 @@ func Sluggify(s string) string {
 	s = strings.Trim(s, "-")
 
 	return s
+}
+
+func ExtractNumber(name string) (int, error) {
+	re := regexp.MustCompile(`\d+`)
+	match := re.FindString(name)
+	if match == "" {
+		return 0, fmt.Errorf("no number found in string")
+	}
+	return strconv.Atoi(match)
+}
+
+// isImageFile checks if the file name has an image extension.
+func isImageFile(fileName string) bool {
+	imageExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"}
+	for _, ext := range imageExtensions {
+		if strings.HasSuffix(strings.ToLower(fileName), ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func CountImageFilesInZip(zipFilePath string) (int, error) {
+	// Open the zip file.
+	zipFile, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return 0, err
+	}
+	defer zipFile.Close()
+
+	imageCount := 0
+
+	// Iterate through each file in the zip archive.
+	for _, file := range zipFile.File {
+		if isImageFile(file.Name) {
+			imageCount++
+		}
+	}
+
+	return imageCount, nil
 }

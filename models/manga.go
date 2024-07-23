@@ -22,6 +22,7 @@ type Manga struct {
 	LibraryID        uint
 	Chapters         []Chapter `gorm:"foreignKey:MangaID"`
 	CoverArtURL      string
+	Path             string
 }
 
 // CreateManga creates a new manga record in the database
