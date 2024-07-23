@@ -1,5 +1,10 @@
 package views
 
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
 templ Navbar() {
 	<nav class="uk-navbar-container">
 		<div class="uk-container">
@@ -18,6 +23,42 @@ templ Navbar() {
 					</ul>
 				</div>
 				<div class="uk-navbar-right">
+					<!-- This is a button toggling the modal -->
+					<div class="uk-flex uk-flex-center">
+						<button
+							type="button"
+							class="uk-icon-button"
+							type="button"
+							uk-toggle="target: #search-modal"
+						>
+							<span uk-icon="search"></span>
+						</button>
+					</div>
+					<!-- This is the modal -->
+					<div id="search-modal" uk-modal>
+						<div class="uk-modal-body uk-modal-dialog uk-width-4-5" style="background: none; border: 0;">
+							<form
+								hx-get="/manga-search"
+								hx-target="#search-modal-content"
+								hx-trigger="input delay:200ms"
+								hx-swap="innerHTML"
+							>
+								<div class="uk-align-center folder-row mt-8 mb-4 flex items-center uk-width-1-3">
+									<input
+										id="searchInput"
+										class="uk-input folder-input mr-1"
+										type="text"
+										name="search"
+										placeholder="One-Punch Man etc..."
+										autocomplete="off"
+									/>
+								</div>
+							</form>
+							<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4" style="background: hsl(var(--background));">
+								@OneDoesNotSimplySearch()
+							</div>
+						</div>
+					</div>
 					<button class="uk-icon-button" href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">
 						<span uk-icon="cog"></span>
 					</button>
@@ -65,4 +106,52 @@ templ Navbar() {
 			</div>
 		</div>
 	</nav>
+}
+
+templ SearchMangas(mangas []models.Manga) {
+	for _, manga := range mangas {
+		<ul class="uk-accordion" uk-accordion>
+			<li>
+				<a class="uk-accordion-title" href>
+					{ manga.Name }
+					<span
+						class="uk-accordion-icon"
+						uk-icon="icon: chevron-down; ratio: 0.8"
+					></span>
+				</a>
+				<div class="uk-accordion-content">
+					<p>
+						{ manga.Description }
+					</p>
+					<div class="uk-flex uk-flex-center">
+						<button
+							type="button"
+							class="uk-button uk-button-default uk-modal-close mt-4"
+							type="button"
+							href={ fmt.Sprintf("/%s", manga.Slug) }
+							hx-get={ fmt.Sprintf("/%s", manga.Slug) }
+							hx-target="#content"
+							hx-push-url="true"
+						>
+							Go to manga
+							<span uk-icon="arrow-right"></span>
+						</button>
+					</div>
+				</div>
+			</li>
+		</ul>
+	}
+}
+
+templ OneDoesNotSimplySearch() {
+	<img class="uk-align-center mb-0" width="200px" src="/assets/img/one-does-not-simply.jpg"/>
+	<p class="italic uk-text-center">
+		One does not simply search...
+	</p>
+}
+
+templ NoResultsSearch() {
+	<p class="text-3xl font-bold text-center">
+		Not results found
+	</p>
 }
