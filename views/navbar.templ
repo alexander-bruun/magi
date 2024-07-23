@@ -29,13 +29,13 @@ templ Navbar() {
 							type="button"
 							class="uk-icon-button"
 							type="button"
-							uk-toggle="target: #modal-example"
+							uk-toggle="target: #search-modal"
 						>
 							<span uk-icon="search"></span>
 						</button>
 					</div>
 					<!-- This is the modal -->
-					<div id="modal-example" uk-modal>
+					<div id="search-modal" uk-modal>
 						<div class="uk-modal-body uk-modal-dialog uk-width-4-5" style="background: none; border: 0;">
 							<form
 								hx-get="/manga-search"
@@ -123,18 +123,20 @@ templ SearchMangas(mangas []models.Manga) {
 					<p>
 						{ manga.Description }
 					</p>
-					<button
-						type="button"
-						class="uk-button uk-button-default uk-modal-close"
-						type="button"
-						href={ fmt.Sprintf("/%s", manga.Slug) }
-						hx-get={ fmt.Sprintf("/%s", manga.Slug) }
-						hx-target="#content"
-						hx-push-url="true"
-					>
-						Go to manga
-						<span uk-icon="arrow-right"></span>
-					</button>
+					<div class="uk-flex uk-flex-center">
+						<button
+							type="button"
+							class="uk-button uk-button-default uk-modal-close mt-4"
+							type="button"
+							href={ fmt.Sprintf("/%s", manga.Slug) }
+							hx-get={ fmt.Sprintf("/%s", manga.Slug) }
+							hx-target="#content"
+							hx-push-url="true"
+						>
+							Go to manga
+							<span uk-icon="arrow-right"></span>
+						</button>
+					</div>
 				</div>
 			</li>
 		</ul>
