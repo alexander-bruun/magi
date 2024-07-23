@@ -1,8 +1,6 @@
 package views
 
-import "github.com/alexander-bruun/magi/models"
-
-templ Layout(content templ.Component, libraries []models.Library) {
+templ Layout(content templ.Component) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dim">
 		<head>
@@ -11,6 +9,7 @@ templ Layout(content templ.Component, libraries []models.Library) {
 			<link href="/assets/css/styles.css" rel="stylesheet"/>
 			<script src="/assets/js/htmx.min.js"></script>
 			<script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
+			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
 			<style>
 				:root {
 					font-family: Inter, sans-serif;
@@ -38,7 +37,7 @@ templ Layout(content templ.Component, libraries []models.Library) {
 			<title>Magi</title>
 		</head>
 		<body class="bg-background text-foreground">
-			@Navbar(libraries)
+			@Navbar()
 			<div id="content" class="content uk-container uk-mx-auto mt-6">
 				@content
 			</div>

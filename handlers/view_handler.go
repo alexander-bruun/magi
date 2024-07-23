@@ -14,12 +14,7 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		return handler(c)
 	}
 
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	base := views.Layout(content, libraries)
+	base := views.Layout(content)
 	handler := adaptor.HTTPHandler(templ.Handler(base))
 	return handler(c)
 }

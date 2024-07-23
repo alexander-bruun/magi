@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/alexander-bruun/magi/utils"
 	"gorm.io/gorm"
@@ -10,9 +11,8 @@ import (
 type Chapter struct {
 	gorm.Model
 	Name            string `gorm:"not null"`
-	Slug            string `gorm:"unique;not null"`
-	Order           int    `gorm:"not null"`
-	Type            string `gorm:"not null"`
+	Slug            string `gorm:"not null"`
+	Type            string
 	File            string
 	ChapterCoverURL string
 	MangaID         uint
@@ -21,7 +21,7 @@ type Chapter struct {
 // CreateChapter creates a new chapter record in the database
 func CreateChapter(chapter Chapter) error {
 	chapter.Slug = utils.Sluggify(chapter.Name)
-	exists, err := ChapterExists(chapter.Slug)
+	exists, err := ChapterExists(chapter.Slug, chapter.MangaID)
 	if err != nil {
 		return err
 	}
@@ -33,6 +33,27 @@ func CreateChapter(chapter Chapter) error {
 		return errors.New("chapter already exists")
 	}
 	return nil
+}
+
+// GetChapters retrieves all chapters for a specific manga ID and returns them sorted by the chapter name
+func GetChapters(mangaID uint) ([]Chapter, error) {
+	var chapters []Chapter
+	err := db.Where("manga_id = ?", mangaID).Find(&chapters).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort the chapters by the number in the name
+	sort.Slice(chapters, func(i, j int) bool {
+		numI, errI := utils.ExtractNumber(chapters[i].Name)
+		numJ, errJ := utils.ExtractNumber(chapters[j].Name)
+		if errI != nil || errJ != nil {
+			return chapters[i].Name < chapters[j].Name
+		}
+		return numI < numJ
+	})
+
+	return chapters, nil
 }
 
 // GetChapter retrieves a chapter record by ID
@@ -99,12 +120,59 @@ func SearchChapters(keyword string, page int, pageSize int, sortBy string, sortO
 	return chapters, nil
 }
 
-// ChapterExists checks if a chapter already exists with the given slug
-func ChapterExists(slug string) (bool, error) {
+// ChapterExists checks if a chapter already exists with the given slug and manga ID
+func ChapterExists(slug string, mangaID uint) (bool, error) {
 	var count int64
-	err := db.Model(&Chapter{}).Where("slug = ?", slug).Count(&count).Error
+	err := db.Model(&Chapter{}).Where("slug = ? AND manga_id = ?", slug, mangaID).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GetChapterIDBySlug retrieves the ID of a chapter record by its slug
+func GetChapterIDBySlug(slug string, mangaID uint) (uint, error) {
+	var chapter Chapter
+	err := db.Select("id").Where("slug = ? AND manga_id = ?", slug, mangaID).First(&chapter).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, errors.New("manga not found")
+		}
+		return 0, err
+	}
+	return chapter.ID, nil
+}
+
+// GetAdjacentChapters returns the previous and next chapter slugs for a given chapter based on its order
+func GetAdjacentChapters(chapterSlug string, mangaID uint) (prevSlug, nextSlug string, err error) {
+	// Get all chapters for the manga and sort them
+	chapters, err := GetChapters(mangaID)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Find the position of the given chapter slug in the sorted list
+	var currentIndex int
+	found := false
+	for i, chapter := range chapters {
+		if chapter.Slug == chapterSlug {
+			currentIndex = i
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return "", "", errors.New("chapter not found")
+	}
+
+	// Determine the previous and next chapter slugs
+	if currentIndex > 0 {
+		prevSlug = chapters[currentIndex-1].Slug
+	}
+	if currentIndex < len(chapters)-1 {
+		nextSlug = chapters[currentIndex+1].Slug
+	}
+
+	return prevSlug, nextSlug, nil
 }

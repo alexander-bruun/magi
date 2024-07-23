@@ -22,12 +22,12 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			</li>
 		</ul>
 	</nav>
-	<h1 class="uk-heading-divider uk-h2 uk-margin">Mangas</h1>
+	<h2 class="uk-heading-line text-xl font-semibold mb-4 uk-h2 uk-text-center"><span>Mangas</span></h2>
 	if len(mangas) > 0 {
 		<div class="uk-grid-column-small uk-grid-row-large uk-child-width-1-4 uk-text-center px-8" uk-grid>
 			for _, manga := range mangas {
 				<div>
-					<a href={ templ.URL(fmt.Sprintf("/manga/%s", manga.Slug)) }>
+					<a href={ templ.URL(fmt.Sprintf("/%s", manga.Slug)) }>
 						<div class="uk-card uk-card-default uk-card-body p-2">
 							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2">{ manga.Name }</h3>
 							<div class="uk-card-media-top flex justify-center items-center">

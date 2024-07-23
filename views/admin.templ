@@ -22,18 +22,17 @@ templ Admin(libraries []models.Library) {
 			</li>
 		</ul>
 	</nav>
-	<h1 class="uk-heading-divider uk-h2 uk-margin">Admin panel</h1>
-	<div class="uk-container">
+	<div class="uk-container mt-2">
 		<div class="uk-grid">
 			<div id="form-column" class="uk-width-1-4 uk-column-left">
+				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Creator</span></h3>
 				<div class="uk-card p-2">
-					<h3 class="text-xl font-semibold mb-4 text-center">Library Form</h3>
 					@LibraryForm(models.Library{}, "post")
 				</div>
 			</div>
 			<div id="table-column" class="uk-width-3-4 uk-column-right">
+				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Libraries</span></h3>
 				<div class="uk-card p-2">
-					<h3 class="text-xl font-semibold mb-4 text-center">Libraries</h3>
 					@LibraryTable(libraries)
 				</div>
 			</div>
@@ -46,47 +45,86 @@ templ LibraryTable(libraries []models.Library) {
 		<table class="uk-table">
 			<thead>
 				<tr>
+					<th></th>
 					<th>ID</th>
 					<th>Name</th>
 					<th>Cron</th>
 					<th>Created At</th>
 					<th>Updated At</th>
 					<th>Folders</th>
-					<th>Edit</th>
-					<th>Delete</th>
+					<th></th>
+					<th></th>
 				</tr>
 			</thead>
 			<tbody>
 				for _, library := range libraries {
 					<tr>
-						<td>{ strconv.FormatUint(uint64(library.ID), 10) }</td>
-						<td>{ library.Name }</td>
-						<td>{ library.Cron }</td>
-						<td>{ library.CreatedAt.Format("2006-01-02") }</td>
-						<td>{ library.UpdatedAt.Format("2006-01-02") }</td>
-						<td>{ library.GetFolderNames() }</td>
 						<td>
-							<button
-								type="button"
-								class="uk-button uk-button-default"
-								hx-get={ fmt.Sprintf("/admin/edit-library/%d", library.ID) }
-								hx-trigger="click"
-								hx-target="#library-form"
-							>
-								<span uk-icon="pencil"></span>
-							</button>
+							<div class="flex items-center justify-center">
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+								>
+									<span uk-icon="refresh"></span>
+								</button>
+							</div>
 						</td>
 						<td>
-							<button
-								type="button"
-								class="uk-button uk-button-danger"
-								hx-delete={ fmt.Sprintf("/admin/delete-library/%d", library.ID) }
-								hx-trigger="click"
-								hx-target="#libraries-table"
-								hx-confirm="Are you sure you want to delete this library?"
-							>
-								<span uk-icon="trash"></span>
-							</button>
+							<div class="flex items-center justify-center">
+								{ strconv.FormatUint(uint64(library.ID), 10) }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								<p>{ library.Name }</p>
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								{ library.Cron }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								{ library.CreatedAt.Format("2006-01-02") }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								{ library.UpdatedAt.Format("2006-01-02") }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								{ library.GetFolderNames() }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/admin/edit-library/%d", library.ID) }
+									hx-trigger="click"
+									hx-target="#library-form"
+								>
+									<span uk-icon="pencil"></span>
+								</button>
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								<button
+									type="button"
+									class="uk-button uk-button-danger"
+									hx-delete={ fmt.Sprintf("/admin/delete-library/%d", library.ID) }
+									hx-trigger="click"
+									hx-target="#libraries-table"
+									hx-confirm="Are you sure you want to delete this library?"
+								>
+									<span uk-icon="trash"></span>
+								</button>
+							</div>
 						</td>
 					</tr>
 				}
@@ -167,7 +205,7 @@ templ FormContent(library models.Library) {
 					</button>
 				</div>
 			</div>
-			<div class="content-center">
+			<div class="uk-flex uk-flex-center">
 				<button type="submit" class="uk-button uk-button-default">Submit</button>
 				<div id="response" class="mt-8"></div>
 			</div>
@@ -187,9 +225,9 @@ templ FormContent(library models.Library) {
 					}
 				}
 			</div>
-			<div class="mt-4">
-				<button type="submit" class="uk-button uk-button-default">Save</button>
-				<button type="button" class="uk-button uk-button-default" hx-get="/admin/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
+			<div class="mt-4 uk-flex uk-flex-center">
+				<button type="submit" class="uk-button uk-button-default mr-2">Save</button>
+				<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
 			</div>
 		}
 		<div id="response" class="mt-8"></div>
