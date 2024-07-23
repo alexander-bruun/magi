@@ -40,7 +40,7 @@ templ Navbar() {
 							<form
 								hx-get="/manga-search"
 								hx-target="#search-modal-content"
-								hx-trigger="input delay:200ms"
+								hx-trigger="input delay:200ms, submit"
 								hx-swap="innerHTML"
 							>
 								<div class="uk-align-center folder-row mt-8 mb-4 flex items-center uk-width-1-3">
