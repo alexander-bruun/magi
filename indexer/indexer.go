@@ -111,7 +111,8 @@ func IndexChapters(id uint, path string) (int, error) {
 	}
 
 	for _, entry := range entries {
-		cleanedName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+		fileWithoutExtension := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+		cleanedName := utils.RemovePatterns(fileWithoutExtension)
 		chapter := models.Chapter{
 			Name:    cleanedName,
 			Slug:    utils.Sluggify(cleanedName),
