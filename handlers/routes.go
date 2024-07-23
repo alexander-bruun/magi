@@ -60,6 +60,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/mangas", HandleMangas)
 	app.Get("/metadata-form/:id", HandleUpdateMetadataManga)
 	app.Post("/overwrite-metadata", HandleEditMetadataManga)
+	app.Get("/manga-search", HandleMangaSearch)
 	app.Get("/:manga", HandleManga)
 	app.Get("/:manga/:chapter", HandleChapter)
 
