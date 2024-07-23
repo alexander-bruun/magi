@@ -169,3 +169,22 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
+
+func HandleMangaSearch(c *fiber.Ctx) error {
+	searchParam := c.Query("search")
+
+	if searchParam == "" {
+		return HandleView(c, views.OneDoesNotSimplySearch())
+	}
+
+	mangas, _, err := models.SearchMangas(searchParam, 1, 10, "name", "desc", "", 0)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	if len(mangas) <= 0 {
+		return HandleView(c, views.NoResultsSearch())
+	}
+
+	return HandleView(c, views.SearchMangas(mangas))
+}

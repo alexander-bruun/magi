@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -150,7 +149,7 @@ outerLoop:
 					continue
 				}
 			} else {
-				fmt.Println("File:", entry.Name())
+				log.Debugf("File:", entry.Name())
 			}
 		}
 	}
