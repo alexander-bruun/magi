@@ -39,23 +39,6 @@ npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 
 Make sure to update the theme in `tailwind.config.js` before running this command.
 
-## Roadmap
-
-Here are some of the planned features and improvements for Magi:
-
-- Implement local fallback metadata scraping (e.g., cover art extraction, `.cbz` metadata files).
-- Design a scalable logo for Magi and integrate it as a favicon and in the navbar.
-- Add API middleware and configure CORS rules.
-- Implement Swagger API documentation.
-- Explore better APIs for manga information scraping.
-- Enable chapter cover downloading.
-- Enhance the home page with additional content and features.
-- Implement features for managing manga and chapter metadata post-scan.
-- Create a Makefile for testing, building, and releasing.
-- Set up GitHub pipelines and Docker build.
-- Provide setup guides for different environments (e.g., systemd, Windows).
-- Improve documentation with GitHub MkDocs Material.
-
 ## Contributing
 
 Magi is in its early stages of development, and many features are still in progress. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
