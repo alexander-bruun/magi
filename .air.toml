@@ -42,3 +42,8 @@ clean_on_exit = false
 [screen]
 clear_on_rebuild = false
 keep_scroll = true
+
+[proxy]
+enabled = true
+proxy_port = 3001
+app_port = 3000
