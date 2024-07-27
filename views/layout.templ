@@ -1,6 +1,6 @@
 package views
 
-templ Layout(content templ.Component) {
+templ Layout(content templ.Component, userRole string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dim">
 		<head>
@@ -37,7 +37,7 @@ templ Layout(content templ.Component) {
 			<title>Magi</title>
 		</head>
 		<body class="bg-background text-foreground">
-			@Navbar()
+			@Navbar(userRole)
 			<div id="content" class="content uk-container uk-mx-auto mt-6">
 				@content
 			</div>

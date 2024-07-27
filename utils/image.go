@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"net/http"
@@ -119,4 +120,58 @@ func cropImage(img image.Image, x, y, width, height int) image.Image {
 		SubImage(r image.Rectangle) image.Image
 	}).SubImage(rect)
 	return croppedImg
+}
+
+// processImage function to handle image processing from file to file
+func ProcessImage(fromPath, toPath string) error {
+	// Check if file exists
+	if _, err := os.Stat(fromPath); os.IsNotExist(err) {
+		return fmt.Errorf("source file does not exist: %s", fromPath)
+	}
+
+	// Open the source image file
+	srcFile, err := os.Open(fromPath)
+	if err != nil {
+		return fmt.Errorf("failed to open source image file: %w", err)
+	}
+	defer srcFile.Close()
+
+	// Reset file pointer
+	if _, err := srcFile.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to reset file pointer: %w", err)
+	}
+
+	// Attempt to decode the image
+	img, _, err := image.Decode(srcFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode image (%s): %w", fromPath, err)
+	}
+
+	// Process the image (resize and crop)
+	processedImg := resizeAndCrop(img, targetWidth, targetHeight)
+
+	// Create the destination image file
+	dstFile, err := os.Create(toPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination image file: %w", err)
+	}
+	defer dstFile.Close()
+
+	// Encode the processed image to the destination file
+	switch {
+	case strings.HasSuffix(toPath, ".jpg") || strings.HasSuffix(toPath, ".jpeg"):
+		err = jpeg.Encode(dstFile, processedImg, nil)
+	case strings.HasSuffix(toPath, ".png"):
+		err = png.Encode(dstFile, processedImg)
+	case strings.HasSuffix(toPath, ".gif"):
+		err = gif.Encode(dstFile, processedImg, nil)
+	default:
+		return fmt.Errorf("unsupported file format: %s", toPath)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to encode image to file: %w", err)
+	}
+
+	return nil
 }

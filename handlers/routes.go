@@ -45,24 +45,30 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Register views
 	app.Get("/", HandleHome)
+	app.Get("/login", LoginHandler)
+	app.Get("/register", RegisterHandler)
+	app.Post("/register", CreateUserHandler)
+	app.Post("/login", LoginUserHandler)
 
 	// Admin endpoints
-	app.Get("/admin", HandleAdmin)
-	app.Post("/admin/create-library", HandleCreateLibrary)
-	app.Delete("/admin/delete-library/:id", HandleDeleteLibrary)
-	app.Put("/admin/update-library/:id", HandleUpdateLibrary)
-	app.Get("/admin/edit-library/:id", HandleEditLibrary)
-	app.Get("/admin/add-folder", HandleAddFolder)
-	app.Get("/admin/remove-folder", HandleRemoveFolder)
-	app.Get("/admin/cancel-edit", HandleCancelEdit)
+	admin := app.Group("/admin", AuthMiddleware("admin"))
+	admin.Get("", HandleAdmin)
+	admin.Post("/create-library", HandleCreateLibrary)
+	admin.Delete("/delete-library/:id", HandleDeleteLibrary)
+	admin.Put("/update-library/:id", HandleUpdateLibrary)
+	admin.Get("/edit-library/:id", HandleEditLibrary)
+	admin.Get("/add-folder", HandleAddFolder)
+	admin.Get("/remove-folder", HandleRemoveFolder)
+	admin.Get("/cancel-edit", HandleCancelEdit)
 
 	// Manga endpoints
-	app.Get("/mangas", HandleMangas)
-	app.Get("/metadata-form/:id", HandleUpdateMetadataManga)
-	app.Post("/overwrite-metadata", HandleEditMetadataManga)
-	app.Get("/manga-search", HandleMangaSearch)
-	app.Get("/:manga", HandleManga)
-	app.Get("/:manga/:chapter", HandleChapter)
+	mangas := app.Group("/mangas")
+	mangas.Get("", HandleMangas)
+	mangas.Get("/metadata-form/:id", HandleUpdateMetadataManga)
+	mangas.Post("/overwrite-metadata", HandleEditMetadataManga)
+	mangas.Get("/search", HandleMangaSearch)
+	mangas.Get("/:manga", HandleManga)
+	mangas.Get("/:manga/:chapter", HandleChapter)
 
 	// Fallback
 	app.Get("/*", HandleNotFound)

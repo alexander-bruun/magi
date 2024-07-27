@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -14,7 +15,19 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		return handler(c)
 	}
 
-	base := views.Layout(content)
+	userRole := ""
+	accessToken := c.Cookies("access_token")
+	if accessToken != "" {
+		claims, err := utils.ValidateToken(accessToken)
+		if err == nil {
+			user, err := models.FindUserByUsername(claims.Username)
+			if err == nil {
+				userRole = user.Role
+			}
+		}
+	}
+
+	base := views.Layout(content, userRole)
 	handler := adaptor.HTTPHandler(templ.Handler(base))
 	return handler(c)
 }

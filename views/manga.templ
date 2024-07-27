@@ -80,7 +80,7 @@ templ Info(manga models.Manga) {
 			</p>
 			<div class="uk-margin my-2">
 				<form
-					hx-get={ fmt.Sprintf("/metadata-form/%d", manga.ID) }
+					hx-get={ fmt.Sprintf("/mangas/metadata-form/%d", manga.ID) }
 					hx-target="#modal-content"
 				>
 					<div class="folder-row mb-4 flex items-center">
@@ -110,11 +110,10 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 				<div class="uk-accordion-content">
 					<div class="uk-flex uk-flex-center">
 						<a
-							type="button"
 							class="uk-button uk-button-default"
 							type="button"
-							href={ templ.URL(fmt.Sprintf("/%s/%s", manga.Slug, chapter.Slug)) }
-							hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, chapter.Slug) }
+							href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)) }
+							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug) }
 							hx-target="#content"
 							hx-push-url="true"
 						>
@@ -147,7 +146,7 @@ templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
 						class="uk-button uk-button-default"
 						type="button"
 						uk-toggle="target: #metadata-modal"
-						hx-post={ fmt.Sprintf("/overwrite-metadata?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
+						hx-post={ fmt.Sprintf("/mangas/overwrite-metadata?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
 						hx-target="#content"
 					>
 						Download new metadata
@@ -165,8 +164,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			type="button"
 			class="uk-button uk-button-default"
 			type="button"
-			href={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
-			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter) }
+			hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter) }
 			hx-target="#content"
 			hx-push-url="true"
 			if previousChapter == "" {
@@ -180,8 +179,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			type="button"
 			class="uk-button uk-button-default"
 			type="button"
-			href={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
-			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter) }
+			hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter) }
 			hx-target="#content"
 			hx-push-url="true"
 			if nextChapter == "" {
@@ -192,7 +191,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		</button>
 	</div>
 	<div class="flex items-center justify-center min-h-screen">
-		<div class="flex flex-col items-center p-4">
+		<div class="flex flex-col items-center p-4 uk-width-3-5">
 			for _, image := range images {
 				<img src={ image }/>
 			}
@@ -203,8 +202,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			type="button"
 			class="uk-button uk-button-default"
 			type="button"
-			href={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
-			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, previousChapter) }
+			href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter) }
+			hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter) }
 			hx-target="#content"
 			hx-push-url="true"
 			if previousChapter == "" {
@@ -217,8 +216,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			type="button"
 			class="uk-button uk-button-default"
 			type="button"
-			href={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
-			hx-get={ fmt.Sprintf("/%s/%s", manga.Slug, nextChapter) }
+			href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter) }
+			hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter) }
 			hx-target="#content"
 			hx-push-url="true"
 			if nextChapter == "" {

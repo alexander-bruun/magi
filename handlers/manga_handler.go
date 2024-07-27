@@ -79,7 +79,7 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 
 	chapterFilePath := filepath.Join(manga.Path, chapter.File)
-	pageCount, err := utils.CountImageFilesInZip(chapterFilePath)
+	pageCount, err := utils.CountImageFiles(chapterFilePath)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
@@ -125,7 +125,6 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	}
 
 	mangaName := mangaDetail.Attributes.Title["en"]
-	slug := utils.Sluggify(mangaName)
 	coverArtURL := ""
 	for _, rel := range mangaDetail.Relationships {
 		if rel.Type == "cover_art" {
@@ -143,15 +142,14 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	filename := filepath.Base(u.Path)
 	fileExt := filepath.Ext(filename)
 	fileExt = fileExt[1:]
-	cachedImageURL := fmt.Sprintf("http://localhost:3000/api/images/%s.%s", slug, fileExt)
+	cachedImageURL := fmt.Sprintf("http://localhost:3000/api/images/%s.%s", existingManga.Slug, fileExt)
 
-	err = utils.DownloadImage("/home/alexa/magi/cache", slug, coverArtURL)
+	err = utils.DownloadImage("/home/alexa/magi/cache", existingManga.Slug, coverArtURL)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
 	existingManga.Name = mangaName
-	existingManga.Slug = slug
 	existingManga.Description = mangaDetail.Attributes.Description["en"]
 	existingManga.Year = mangaDetail.Attributes.Year
 	existingManga.OriginalLanguage = mangaDetail.Attributes.OriginalLanguage
@@ -164,7 +162,7 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	redirectURL := fmt.Sprintf("/%s", slug)
+	redirectURL := fmt.Sprintf("/%s", existingManga.Slug)
 	c.Set("HX-Redirect", redirectURL)
 
 	return c.SendStatus(fiber.StatusOK)
