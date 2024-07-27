@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
-	"github.com/gofiber/fiber/v2/log"
 )
 
 // SingleMangaResponse represents the JSON response for a single manga
@@ -84,7 +83,7 @@ var baseURL = "https://api.mangadex.org"
 
 func GetMangadexManga(id string) (*MangaDetail, error) {
 	url := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseURL, id)
-	log.Info(url)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

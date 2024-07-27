@@ -5,7 +5,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Navbar() {
+templ Navbar(userRole string) {
 	<nav class="uk-navbar-container">
 		<div class="uk-container">
 			<div uk-navbar>
@@ -38,7 +38,7 @@ templ Navbar() {
 					<div id="search-modal" uk-modal>
 						<div class="uk-modal-body uk-modal-dialog uk-width-4-5" style="background: none; border: 0;">
 							<form
-								hx-get="/manga-search"
+								hx-get="/mangas/search"
 								hx-target="#search-modal-content"
 								hx-trigger="input delay:200ms, submit"
 								hx-swap="innerHTML"
@@ -60,9 +60,11 @@ templ Navbar() {
 							</div>
 						</div>
 					</div>
-					<button class="uk-icon-button" href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">
-						<span uk-icon="cog"></span>
-					</button>
+					if userRole == "admin" {
+						<button class="uk-icon-button" href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">
+							<span uk-icon="cog"></span>
+						</button>
+					}
 					<button class="uk-icon-button" id="theme-toggle">
 						<svg
 							id="theme-toggle-light-icon"
@@ -129,8 +131,8 @@ templ SearchMangas(mangas []models.Manga) {
 							type="button"
 							class="uk-button uk-button-default uk-modal-close mt-4"
 							type="button"
-							href={ fmt.Sprintf("/%s", manga.Slug) }
-							hx-get={ fmt.Sprintf("/%s", manga.Slug) }
+							href={ fmt.Sprintf("/mangas/%s", manga.Slug) }
+							hx-get={ fmt.Sprintf("/mangas/%s", manga.Slug) }
 							hx-target="#content"
 							hx-push-url="true"
 						>

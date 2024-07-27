@@ -51,21 +51,29 @@ func ComicHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	// Serve the file based on its extension
+	lowerFileName := strings.ToLower(fileInfo.Name())
+
+	// Serve the file based on its extension - cbr, cbz, zip/rar/rar5, 7zip, raw images, epub, pdf)
 	switch {
-	case strings.HasSuffix(strings.ToLower(fileInfo.Name()), ".jpg"), strings.HasSuffix(strings.ToLower(fileInfo.Name()), ".png"):
+	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".png"):
 		return c.SendFile(filePath)
-	case strings.HasSuffix(strings.ToLower(fileInfo.Name()), ".rar"):
+	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
 		return serveComicBookArchiveFromRAR(c, filePath)
-	case strings.HasSuffix(strings.ToLower(fileInfo.Name()), ".cbz"):
-		return serveComicBookArchiveFromCBZ(c, filePath)
+	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
+		return serveComicBookArchiveFromZIP(c, filePath)
 	default:
-		return c.Status(fiber.StatusUnsupportedMediaType).SendString("Unsupported file type")
+		return HandleView(c, views.Error("Unsupported file type"))
 	}
 }
 
-// Serve images from RAR archives using rardecode
 func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
+	// Get the page parameter from the query string
+	pageStr := c.Query("page")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
 	// Open the RAR archive
 	rarFile, err := os.Open(filePath)
 	if err != nil {
@@ -79,7 +87,8 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to create RAR reader")
 	}
 
-	// Read through the archive entries
+	// Track the current page and scan entries
+	currentPage := 0
 	for {
 		header, err := rarReader.Next()
 		if err == io.EOF {
@@ -89,29 +98,32 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to read archive entry")
 		}
 
-		// Check if the entry is a file and ends with .jpg or .png
+		// Check if the entry is an image and matches the requested page
 		if !header.IsDir && (strings.HasSuffix(strings.ToLower(header.Name), ".jpg") || strings.HasSuffix(strings.ToLower(header.Name), ".png")) {
-			// Set Content-Type header based on file extension
-			contentType := "image/jpeg" // Default to JPEG
-			if strings.HasSuffix(strings.ToLower(header.Name), ".png") {
-				contentType = "image/png"
-			}
-			c.Set("Content-Type", contentType)
+			currentPage++
+			if currentPage == page {
+				// Set Content-Type header based on file extension
+				contentType := "image/jpeg"
+				if strings.HasSuffix(strings.ToLower(header.Name), ".png") {
+					contentType = "image/png"
+				}
+				c.Set("Content-Type", contentType)
 
-			// Copy the image data to the response writer
-			if _, err := io.Copy(c.Response().BodyWriter(), rarReader); err != nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
+				// Copy the image data to the response writer
+				if _, err := io.Copy(c.Response().BodyWriter(), rarReader); err != nil {
+					return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
+				}
+				return nil
 			}
-			return nil
 		}
 	}
 
-	// If no image was found in the archive
-	return c.Status(fiber.StatusNotFound).SendString("No images found in archive")
+	// If we've reached this point, the requested page was not found
+	return c.Status(fiber.StatusNotFound).SendString("Page not found in archive")
 }
 
-// Serve images from CBZ archives using archive/zip
-func serveComicBookArchiveFromCBZ(c *fiber.Ctx, filePath string) error {
+// Serve images from ZIP archives using archive/zip
+func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
 	// Get the page parameter from the query string
 	pageStr := c.Query("page")
 	page, _ := strconv.Atoi(pageStr)
@@ -119,12 +131,12 @@ func serveComicBookArchiveFromCBZ(c *fiber.Ctx, filePath string) error {
 		page = 1
 	}
 
-	// Open the CBZ archive
-	cbzFile, err := os.Open(filePath)
+	// Open the ZIP archive
+	zipFile, err := os.Open(filePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open archive")
 	}
-	defer cbzFile.Close()
+	defer zipFile.Close()
 
 	// Create a new ZIP reader
 	zipReader, err := zip.OpenReader(filePath)

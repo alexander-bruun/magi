@@ -15,7 +15,7 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
 			<div class="uk-child-width-1-5 uk-grid uk-slider-items">
 				for _, manga := range recentlyAdded {
-					<a href={ templ.URL(fmt.Sprintf("/%s", manga.Slug)) }>
+					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">
@@ -49,7 +49,7 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
 			<div class="uk-child-width-1-5 uk-grid uk-slider-items">
 				for _, manga := range recentlyUpdated {
-					<a href={ templ.URL(fmt.Sprintf("/%s", manga.Slug)) }>
+					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">
