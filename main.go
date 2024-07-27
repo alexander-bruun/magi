@@ -12,6 +12,7 @@ import (
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -85,6 +86,24 @@ func main() {
 			log.Errorf("Failed to close database: %v", err)
 		}
 	}()
+
+	// Retrieve or generate JWT key
+	key, err := models.GetKey()
+	if err != nil {
+		log.Info("Error retrieving JWT key:", err)
+		key, err = models.GenerateRandomKey(32)
+		if err != nil {
+			log.Fatal("Failed to generate JWT key:", err)
+		}
+		if err := models.StoreKey(key); err != nil {
+			log.Fatal("Failed to store JWT key:", err)
+		}
+		log.Info("New JWT key generated and stored.")
+	} else {
+		log.Info("JWT key retrieved from database.")
+	}
+
+	utils.SetJWTKey(key)
 
 	// Create a new engine
 	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
