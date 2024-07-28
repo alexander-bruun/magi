@@ -21,6 +21,8 @@ Magi is built with the following technologies:
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine. The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
+> Mangadex APi was chosen over other solutions due to it allowing anonymous requests and not forcing the end-user to provide API tokens or keys. Alternatives like MAL was explored, and worked just fine, but was a pain for people to indiviually create their own API tokens etc...
+
 ## Getting Started
 
 To set up Magi for development, use the following command in the project directory:

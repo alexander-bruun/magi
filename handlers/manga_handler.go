@@ -67,6 +67,11 @@ func HandleChapter(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
+	chapters, err := models.GetChapters(mangaID)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
 	chapter, err := models.GetChapter(chapterID)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
@@ -89,7 +94,7 @@ func HandleChapter(c *fiber.Ctx) error {
 		images = append(images, fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", mangaSlug, chapterSlug, i))
 	}
 
-	return HandleView(c, views.Chapter(prevSlug, currentSlug, nextSlug, *manga, images, *chapter))
+	return HandleView(c, views.Chapter(prevSlug, currentSlug, nextSlug, *manga, images, *chapter, chapters))
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
@@ -162,7 +167,7 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	redirectURL := fmt.Sprintf("/%s", existingManga.Slug)
+	redirectURL := fmt.Sprintf("/mangas/%s", existingManga.Slug)
 	c.Set("HX-Redirect", redirectURL)
 
 	return c.SendStatus(fiber.StatusOK)
