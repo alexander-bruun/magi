@@ -162,7 +162,7 @@ type NotificationListener struct {
 }
 
 func (nl *NotificationListener) Notify(notification models.Notification) {
-	log.Infof("Notification of type %s named '%s' was received, taking action!",
+	log.Debugf("Notification of type %s named '%s' was received, taking action!",
 		notification.Type,
 		notification.Payload.(models.Library).Name)
 	switch notification.Type {
