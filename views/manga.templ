@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
+	"strconv"
 )
 
 templ Manga(manga models.Manga, chapters []models.Chapter) {
@@ -36,8 +37,40 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 				</div>
 			</div>
 			<div id="table-column" class="uk-width-3-4 uk-column-right">
-				<div class="uk-card p-2">
-					<h3 class="uk-heading-divider uk-h3">Chapters</h3>
+				<div class="flex justify-between px-4">
+					<button
+						type="button"
+						class="uk-button uk-button-default"
+						type="button"
+						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
+						hx-target="#content"
+						hx-push-url="true"
+					>
+						<span uk-icon="arrow-left"></span>
+						Go to first chapter
+					</button>
+					<h2 class="text-xl font-bold mb-4 uk-h2 uk-text-center"><span>Chapters ({ strconv.Itoa(len(chapters)) })</span></h2>
+					<button
+						type="button"
+						class="uk-button uk-button-default"
+						type="button"
+						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[len(chapters)-1].Slug) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[len(chapters)-1].Slug) }
+						hx-target="#content"
+						hx-push-url="true"
+					>
+						Go to last chapter
+						<span uk-icon="arrow-right"></span>
+					</button>
+				</div>
+				<hr class="uk-divider-icon mb-4"/>
+				<style>
+					.uk-card::-webkit-scrollbar {
+						display: none;
+					}
+				</style>
+				<div class="uk-card p-2" style="max-height:650px;overflow-y: auto;">
 					<div class="p-2">
 						@Chapters(manga, chapters)
 					</div>
@@ -53,9 +86,6 @@ templ Info(manga models.Manga) {
 	</div>
 	<p class="uk-margin line-clamp-5">
 		{ manga.Description }
-	</p>
-	<p class="uk-margin line-clamp-5">
-		{ manga.Path }
 	</p>
 	<p class="uk-margin font-bold uppercase text-center">
 		{ manga.Status }
@@ -157,7 +187,30 @@ templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
 	</ul>
 }
 
-templ Chapter(previousChapter string, currentChapter string, nextChapter string, manga models.Manga, images []string, chapter models.Chapter) {
+templ Chapter(previousChapter string, currentChapter string, nextChapter string, manga models.Manga, images []string, chapter models.Chapter, chapters []models.Chapter) {
+	<style>
+		.scroll-to-top {
+			position: fixed; /* Fix the button to the viewport */
+			bottom: 20px; /* Distance from the bottom */
+			right: 20px; /* Distance from the right */
+			border-radius: 50%;
+			width: 50px;
+			height: 50px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			z-index: 1000; /* Ensure the button is on top */
+		}
+	</style>
+	<div class="uk-icon-button scroll-to-top" onclick="scrollToTop()">
+		<span uk-icon="icon: chevron-up"></span>
+	</div>
+	<script>
+		function scrollToTop() {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+	</script>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ manga.Name }</span></h2>
 	<div class="flex justify-between p-4">
 		<button
@@ -174,7 +227,32 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		>
 			<span uk-icon="arrow-left"></span>
 		</button>
-		<h2 class="uk-h2 uk-card-title uk-text-center"><span>{ chapter.Name }</span></h2>
+		<div class="mt-2 uk-flex uk-flex-center">
+			<button class="uk-button uk-button-default" type="button">{ chapter.Name }</button>
+		</div>
+		<div class="uk-drop uk-dropdown" uk-dropdown="mode: click">
+			<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;">
+				for i := len(chapters) - 1; i >= 0; i-- {
+					if chapters[i].Name == chapter.Name {
+						<li class="uk-active">
+							<a href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
+								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
+								hx-target="#content"
+								hx-push-url="true"
+							>{ chapters[i].Name }</a>
+						</li>
+					} else {
+						<li>
+							<a href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
+								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
+								hx-target="#content"
+								hx-push-url="true"
+							>{ chapters[i].Name }</a>
+						</li>
+					}
+				}
+			</ul>
+		</div>
 		<button
 			type="button"
 			class="uk-button uk-button-default"
