@@ -6,7 +6,7 @@ import (
 )
 
 templ Navbar(userRole string) {
-	<nav class="uk-navbar-container">
+	<nav class="uk-navbar-container" style="position:relative;z-index:1;">
 		<div class="uk-container">
 			<div uk-navbar>
 				<div class="uk-navbar-left">
@@ -22,7 +22,7 @@ templ Navbar(userRole string) {
 						<li><a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true">Mangas</a></li>
 					</ul>
 				</div>
-				<div class="uk-navbar-right">
+				<div class="uk-navbar-right" style="gap: 0.5rem;">
 					<!-- This is a button toggling the modal -->
 					<div class="uk-flex uk-flex-center">
 						<button
@@ -60,51 +60,71 @@ templ Navbar(userRole string) {
 							</div>
 						</div>
 					</div>
-					if userRole == "admin" {
-						<button class="uk-icon-button" href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true">
-							<span uk-icon="cog"></span>
-						</button>
-					}
-					<button class="uk-icon-button" id="theme-toggle">
-						<svg
-							id="theme-toggle-light-icon"
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="lucide lucide-sun dark:hidden"
-						>
-							<circle cx="12" cy="12" r="4"></circle>
-							<path d="M12 2v2"></path>
-							<path d="M12 20v2"></path>
-							<path d="m4.93 4.93 1.41 1.41"></path>
-							<path d="m17.66 17.66 1.41 1.41"></path>
-							<path d="M2 12h2"></path>
-							<path d="M20 12h2"></path>
-							<path d="m6.34 17.66-1.41 1.41"></path>
-							<path d="m19.07 4.93-1.41 1.41"></path>
-						</svg>
-						<svg
-							id="theme-toggle-dark-icon"
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="lucide lucide-moon hidden dark:block"
-						>
-							<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-						</svg>
-					</button>
+					<a href="#" class="uk-icon-button"><span uk-icon="more-vertical"></span></a>
+					<div class="uk-navbar-dropdown">
+						<ul class="uk-nav uk-navbar-dropdown-nav">
+							if userRole != "" {
+								<li><a href="#"><span uk-icon="user" style="padding-right:5px;"></span> Account</a></li>
+								<li><a href="#"><span uk-icon="star" style="padding-right:5px;"></span> Favorites</a></li>
+								<li><a href="#"><span uk-icon="bookmark" style="padding-right:5px;"></span> Reading lists</a></li>
+							}
+							if userRole == "admin" {
+								<li class="uk-nav-header">Admin</li>
+								<li><a href="/admin" hx-get="/admin" hx-target="#content" hx-push-url="true"><span uk-icon="album" style="padding-right:5px;"></span> Libraries</a></li>
+								<li><a href="#"><span uk-icon="users" style="padding-right:5px;"></span> Users</a></li>
+								<li><a href="#"><span uk-icon="settings" style="padding-right:5px;"></span> Configuration</a></li>
+							}
+							<li class="uk-nav-divider"></li>
+							if userRole == "" {
+								<li><a href="#"><span uk-icon="sign-in" style="padding-right:5px;"></span> Login</a></li>
+							} else {
+								<li><a href="#"><span uk-icon="sign-out" style="padding-right:5px;"></span> Logout</a></li>
+							}
+							<li class="uk-nav-divider"></li>
+							<div class="my-1 uk-flex uk-flex-center">
+								<button class="uk-icon-button" id="theme-toggle">
+									<svg
+										id="theme-toggle-light-icon"
+										xmlns="http://www.w3.org/2000/svg"
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="lucide lucide-sun dark:hidden"
+									>
+										<circle cx="12" cy="12" r="4"></circle>
+										<path d="M12 2v2"></path>
+										<path d="M12 20v2"></path>
+										<path d="m4.93 4.93 1.41 1.41"></path>
+										<path d="m17.66 17.66 1.41 1.41"></path>
+										<path d="M2 12h2"></path>
+										<path d="M20 12h2"></path>
+										<path d="m6.34 17.66-1.41 1.41"></path>
+										<path d="m19.07 4.93-1.41 1.41"></path>
+									</svg>
+									<svg
+										id="theme-toggle-dark-icon"
+										xmlns="http://www.w3.org/2000/svg"
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="lucide lucide-moon hidden dark:block"
+									>
+										<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+									</svg>
+								</button>
+							</div>
+						</ul>
+					</div>
 				</div>
 			</div>
 		</div>
