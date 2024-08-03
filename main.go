@@ -12,7 +12,6 @@ import (
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -102,8 +101,6 @@ func main() {
 	} else {
 		log.Info("JWT key retrieved from database.")
 	}
-
-	utils.SetJWTKey(key)
 
 	// Create a new engine
 	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
