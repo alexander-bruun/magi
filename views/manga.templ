@@ -235,7 +235,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 				for i := len(chapters) - 1; i >= 0; i-- {
 					if chapters[i].Name == chapter.Name {
 						<li class="uk-active">
-							<a href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
+							<a
+								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
 								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
 								hx-target="#content"
 								hx-push-url="true"
@@ -243,7 +244,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 						</li>
 					} else {
 						<li>
-							<a href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
+							<a
+								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
 								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
 								hx-target="#content"
 								hx-push-url="true"
@@ -271,10 +273,11 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 	<div class="flex items-center justify-center min-h-screen">
 		<div class="flex flex-col items-center p-4 uk-width-3-5">
 			for _, image := range images {
-				<img src={ image }/>
+				<img data-src={ image } class="lazyload" alt="loading page..."/>
 			}
 		</div>
 	</div>
+	<script src="/assets/js/lazysizes.min.js"></script>
 	<div class="flex justify-between p-4">
 		<button
 			type="button"
