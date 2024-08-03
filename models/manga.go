@@ -79,23 +79,6 @@ func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrde
 	// Create a base query
 	baseQuery := db.Model(&Manga{})
 
-	// Apply filters based on the presence of filter and filterBy
-	if filter != "" {
-		if filterBy != "" {
-			// Apply the filter using the filterBy column
-			baseQuery = baseQuery.Where(filterBy+" LIKE ?", "%"+filter+"%")
-		} else {
-			// Perform Bigram search if filter is provided without filterBy
-			var mangaNames []string
-			err = db.Model(&Manga{}).Pluck("name", &mangaNames).Error
-			if err != nil {
-				return nil, 0, err
-			}
-			matchingNames := utils.BigramSearch(filter, mangaNames)
-			baseQuery = baseQuery.Where("name IN (?)", matchingNames)
-		}
-	}
-
 	// Apply LibraryID filter if provided
 	if libraryID != 0 {
 		baseQuery = baseQuery.Where("library_id = ?", libraryID)
@@ -107,16 +90,69 @@ func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrde
 		return nil, 0, err
 	}
 
-	// Apply sorting, pagination and fetch the results
+	// Apply sorting
 	if sortBy != "" && sortOrder != "" {
 		baseQuery = baseQuery.Order(fmt.Sprintf("%s %s", sortBy, sortOrder))
 	}
-	err = baseQuery.Offset((page - 1) * pageSize).Limit(pageSize).Find(&mangas).Error
+
+	// Fetch all mangas (without pagination)
+	err = baseQuery.Find(&mangas).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return mangas, total, nil
+	// Apply bigram search if filter is provided
+	if filter != "" {
+		filteredMangas := applyBigramSearch(filter, mangas)
+		total = int64(len(filteredMangas))
+
+		// Apply pagination to filtered results
+		start := (page - 1) * pageSize
+		end := start + pageSize
+		if start < len(filteredMangas) {
+			if end > len(filteredMangas) {
+				end = len(filteredMangas)
+			}
+			return filteredMangas[start:end], total, nil
+		}
+		return []Manga{}, total, nil
+	}
+
+	// Apply pagination if no filter
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start < len(mangas) {
+		if end > len(mangas) {
+			end = len(mangas)
+		}
+		return mangas[start:end], total, nil
+	}
+	return []Manga{}, total, nil
+}
+
+// applyBigramSearch uses the existing BigramSearch function to filter mangas
+func applyBigramSearch(filter string, mangas []Manga) []Manga {
+	var mangaNames []string
+	nameToManga := make(map[string]Manga)
+
+	// Extract manga names and create a map for lookup
+	for _, manga := range mangas {
+		mangaNames = append(mangaNames, manga.Name)
+		nameToManga[manga.Name] = manga
+	}
+
+	// Use the existing BigramSearch function
+	matchingNames := utils.BigramSearch(filter, mangaNames)
+
+	// Create the filtered manga slice
+	var filteredMangas []Manga
+	for _, name := range matchingNames {
+		if manga, ok := nameToManga[name]; ok {
+			filteredMangas = append(filteredMangas, manga)
+		}
+	}
+
+	return filteredMangas
 }
 
 // MangaExists checks if a manga already exists with the given slug
