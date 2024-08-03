@@ -1,5 +1,7 @@
 package utils
 
+import "strings"
+
 // BigramSearch performs a bigram search algorithm
 func BigramSearch(keyword string, items []string) []string {
 	var results []string
@@ -16,13 +18,13 @@ func BigramSearch(keyword string, items []string) []string {
 // compareStrings compares two strings using a bigram-based similarity algorithm
 func CompareStrings(str1, str2 string) float64 {
 	if str1 == str2 {
-		return 1
+		return 1.0
 	}
 
 	len1 := len(str1)
 	len2 := len(str2)
 	if len1 < 2 || len2 < 2 {
-		return 0
+		return 0.0
 	}
 
 	bigramCounts := make(map[string]int)
@@ -48,5 +50,14 @@ func CompareStrings(str1, str2 string) float64 {
 	// Include remaining bigrams from the first string
 	totalBigrams += len1 - 1
 
-	return (2.0 * float64(commonBigramsCount)) / float64(totalBigrams)
+	// Calculate the base similarity score
+	baseScore := (2.0 * float64(commonBigramsCount)) / float64(totalBigrams)
+
+	// Add a boost if one string is a substring of the other
+	boost := 0.0
+	if strings.Contains(str1, str2) || strings.Contains(str2, str1) {
+		boost = 0.2 // Adjust this boost value as needed
+	}
+
+	return baseScore + boost
 }
