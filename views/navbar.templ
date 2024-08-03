@@ -78,7 +78,7 @@ templ Navbar(userRole string) {
 							if userRole == "" {
 								<li><a href="/login" hx-get="/login" hx-target="#content" hx-push-url="true"><span uk-icon="sign-in" style="padding-right:5px;"></span> Login</a></li>
 							} else {
-								<li><a href="#"><span uk-icon="sign-out" style="padding-right:5px;"></span> Logout</a></li>
+								<li><a href="/" hx-post="/logout"><span uk-icon="sign-out" style="padding-right:5px;"></span> Logout</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							<div class="my-1 uk-flex uk-flex-center">

@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -15,13 +16,17 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		return handler(c)
 	}
 
-	userRole := ""
 	accessToken := c.Cookies("access_token")
+
+	userRole := ""
 	if accessToken != "" {
-		claims, err := utils.ValidateToken(accessToken)
-		if err == nil {
-			user, err := models.FindUserByUsername(claims.Username)
-			if err == nil {
+		claims, err := models.ValidateToken(accessToken)
+		if err == nil && claims != nil {
+			userName := claims["user_name"].(string)
+			user, err := models.FindUserByUsername(userName)
+			if err != nil {
+				return fmt.Errorf("failed to find user: %s", userName)
+			} else {
 				userRole = user.Role
 			}
 		}

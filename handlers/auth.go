@@ -1,13 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,31 +22,14 @@ func CreateUserHandler(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	user := models.User{
-		Username:            username,
-		Password:            password,
-		RefreshTokenVersion: 0,
-		Role:                "reader", // Default role
-	}
-
-	count, _ := models.CountUsers()
-	if count == 0 {
-		log.Infof("No users has yet been registered, promoting '%s' to 'admin' role.", user.Username)
-		user.Role = "admin"
-	}
-
-	err := user.CreateUser()
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
+	err := models.CreateUser(username, password)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
 	c.Set("HX-Redirect", "/login")
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusUnauthorized)
 }
 
 func LoginUserHandler(c *fiber.Ctx) error {
@@ -55,45 +37,60 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	password := c.FormValue("password")
 
 	user, err := models.FindUserByUsername(username)
-	if err != nil {
-		return HandleView(c, views.WrongCredentials())
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid username or password"})
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	accessToken, err := models.CreateAccessToken(user.Username)
 	if err != nil {
-		return HandleView(c, views.WrongCredentials())
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create access token"})
 	}
 
-	accessExpirationTime := time.Now().Add(15 * time.Minute)
-	accessToken, err := utils.GenerateToken(user.Username, "access", user.RefreshTokenVersion, accessExpirationTime)
+	refreshToken, err := models.GenerateNewRefreshToken(user.Username)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create refresh token"})
 	}
 
-	refreshExpirationTime := time.Now().Add(30 * 24 * time.Hour)
-	refreshToken, err := utils.GenerateToken(user.Username, "refresh", user.RefreshTokenVersion, refreshExpirationTime)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	// Setting the access token cookie
 	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Expires:  accessExpirationTime,
-		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "Strict", // Use "Strict" for SameSite attribute
+		Name:    "access_token",
+		Value:   accessToken,
+		Expires: time.Now().Add(time.Minute * 15),
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:    "refresh_token",
+		Value:   refreshToken,
+		Expires: time.Now().Add(time.Hour * 24 * 7),
 	})
 
-	// Setting the refresh token cookie
+	c.Set("HX-Redirect", "/")
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// LogoutHandler handles user logout by clearing cookies and invalidating tokens
+func LogoutHandler(c *fiber.Ctx) error {
+	refreshToken := c.Cookies("refresh_token")
+
+	claims, err := models.ValidateToken(refreshToken)
+	if err == nil && claims != nil {
+		userName := claims["user_name"].(string)
+		user, err := models.FindUserByUsername(userName)
+		if err != nil {
+			return fmt.Errorf("failed to find user: %s", userName)
+		} else {
+			models.IncrementRefreshTokenVersion(user)
+		}
+	}
+
 	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Expires:  refreshExpirationTime,
-		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "Strict", // Use "Strict" for SameSite attribute
+		Name:    "access_token",
+		Value:   "",
+		Expires: time.Now().Add(-time.Hour),
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:    "refresh_token",
+		Value:   "",
+		Expires: time.Now().Add(-time.Hour),
 	})
 
 	c.Set("HX-Redirect", "/")

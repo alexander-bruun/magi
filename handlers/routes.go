@@ -49,6 +49,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Get("/register", RegisterHandler)
 	app.Post("/register", CreateUserHandler)
 	app.Post("/login", LoginUserHandler)
+	app.Post("/logout", LogoutHandler)
 
 	// Admin endpoints
 	admin := app.Group("/admin", AuthMiddleware("admin"))
