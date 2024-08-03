@@ -14,7 +14,9 @@ Magi is built with the following technologies:
 - [Gorm](https://gorm.io/index.html) - Database Migrations
 - [GoFiber](https://docs.gofiber.io/) - HTTP Server
 - [Templ](https://templ.guide/) - HTML Templating
-- [HTMX](https://htmx.org/) - Hypermedia
+- JavaScript libraries:
+  - [HTMX](https://htmx.org/) - Hypermedia
+  - [Lazysizes]([https://htmx.org/)](https://github.com/aFarkas/lazysizes) - Lazy image loading
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
 - [Franken UI](https://franken-ui.dev/) - Predefined Components
 - [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
