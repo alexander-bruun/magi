@@ -17,7 +17,7 @@ RUN go install github.com/a-h/templ/cmd/templ@latest
 COPY . .
 
 # Generate necessary files using `templ`
-RUN $GOPATH/bin/templ generate
+RUN TEMPL_EXPERIMENT=rawgo $GOPATH/bin/templ generate
 
 # Build the Go app
 RUN go build -o main .
