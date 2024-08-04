@@ -4,6 +4,10 @@ TAG := latest
 REGISTRY := docker.io
 REGISTRY_URL := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
 
+# Ensure 'templ' is available and generate necessary files
+generate:
+	templ generate
+
 # Build the Docker image
 build:
 	docker build -t $(REGISTRY_URL) .

@@ -1,5 +1,4 @@
 # Use the official Golang image to create a build artifact.
-# This image will contain both Golang and necessary build tools.
 FROM golang:1.22.5 AS builder
 
 # Set the Current Working Directory inside the container
@@ -11,8 +10,14 @@ COPY go.mod go.sum ./
 # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
+# Install `templ` using Go
+RUN go install github.com/a-h/templ/cmd/templ@latest
+
 # Copy the source code into the container
 COPY . .
+
+# Generate necessary files using `templ`
+RUN $GOPATH/bin/templ generate
 
 # Build the Go app
 RUN go build -o main .
