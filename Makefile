@@ -5,10 +5,6 @@ REGISTRY := docker.io/alexbruun
 REGISTRY_URL := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
 PLATFORMS := linux/amd64,linux/arm64,linux/arm/v7
 
-# Ensure 'templ' is available and generate necessary files
-generate:
-	templ generate
-
 # Set up Docker Buildx
 setup-buildx:
 	docker buildx create --name mybuilder --use
@@ -27,4 +23,4 @@ push:
 	docker push $(REGISTRY_URL)
 
 # Run all the above commands
-all: generate setup-buildx build tag push
+all: setup-buildx build tag push
