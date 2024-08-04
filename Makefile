@@ -3,7 +3,7 @@ IMAGE_NAME := magi
 TAG := latest
 REGISTRY := ghcr.io/alexander-bruun
 REGISTRY_URL := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
-PLATFORMS := linux/amd64,linux/arm64,linux/arm/v7
+PLATFORMS := linux/amd64,linux/arm64
 
 # Set up Docker Buildx
 setup-buildx:

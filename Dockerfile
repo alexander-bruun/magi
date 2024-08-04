@@ -8,7 +8,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-RUN go mod download -x
+RUN go mod download
 
 # Install `templ` using Go
 RUN go install github.com/a-h/templ/cmd/templ@latest
