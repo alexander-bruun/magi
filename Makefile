@@ -1,7 +1,7 @@
 # Variables
 IMAGE_NAME := magi
 TAG := latest
-REGISTRY := docker.io/alexander-bruun
+REGISTRY := docker.io/alexbruun
 REGISTRY_URL := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
 
 # Ensure 'templ' is available and generate necessary files
