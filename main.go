@@ -19,6 +19,8 @@ import (
 	"github.com/gofiber/template/html/v2"
 )
 
+var Version = "develop"
+
 // //go:embed views/*.go
 // var ViewsDirectory embed.FS
 
@@ -59,6 +61,11 @@ func init() {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Printf("Version: %s\n", Version)
+		return
+	}
+
 	log.Info("Starting Magi!")
 
 	flag.Parse()
