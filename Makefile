@@ -1,7 +1,7 @@
 # Variables
 IMAGE_NAME := magi
 TAG := latest
-REGISTRY := docker.io/alexbruun
+REGISTRY := ghcr.io/alexander-bruun
 REGISTRY_URL := $(REGISTRY)/$(IMAGE_NAME):$(TAG)
 PLATFORMS := linux/amd64,linux/arm64,linux/arm/v7
 
