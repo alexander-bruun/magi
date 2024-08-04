@@ -23,10 +23,7 @@ RUN TEMPL_EXPERIMENT=rawgo $GOPATH/bin/templ generate
 RUN go build -o main .
 
 # Start a new stage from scratch
-FROM alpine:latest  
-
-# Install ca-certificates (required for HTTPS connections)
-RUN apk --no-cache add ca-certificates
+FROM alpine:latest
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/
