@@ -1,7 +1,12 @@
-name: ci
+name: Build Docker Images and release
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 env:
   REGISTRY_IMAGE: alexbruun/magi
@@ -34,6 +39,25 @@ jobs:
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Version with Semantic Release
+        id: release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Set version environment variable
+        id: set-version
+        run: echo "VERSION=${{ steps.release.outputs.version }}" >> $GITHUB_ENV
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -99,9 +123,28 @@ jobs:
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ env.VERSION }}") \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
       
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
+
+      - name: Create GitHub Release
+        if: ${{ env.VERSION }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = process.env.VERSION;
+            const releaseTitle = `Release ${version}`;
+            const releaseBody = `This release includes version ${version}.`;
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              name: releaseTitle,
+              body: releaseBody,
+              draft: false,
+              prerelease: false
+            });
+            console.log(`Release created: ${release.html_url}`);
