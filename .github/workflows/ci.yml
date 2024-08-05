@@ -28,7 +28,7 @@ jobs:
           extra_plugins: |
             conventional-changelog-conventionalcommits@^7.0.2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build:
     runs-on: arc-runner-set
