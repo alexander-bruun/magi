@@ -25,7 +25,7 @@ ARG TARGETPLATFORM
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o magi .
 
 # Start a new stage from scratch
-FROM alpine:latest
+FROM --platform=$BUILDPLATFORM alpine:3.20.2
 
 # Install ca-certificates (required for HTTPS connections)
 RUN apk --no-cache add ca-certificates
