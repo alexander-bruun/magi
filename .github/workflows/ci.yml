@@ -129,27 +129,3 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
-
-  release:
-    runs-on: arc-runner-set
-    needs:
-      - merge
-    steps:
-      - name: Create GitHub Release
-        if: ${{ env.VERSION }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const version = process.env.VERSION;
-            const releaseTitle = `Release ${version}`;
-            const releaseBody = `This release includes version ${version}.`;
-            const { data: release } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: version,
-              name: releaseTitle,
-              body: releaseBody,
-              draft: false,
-              prerelease: false
-            });
-            console.log(`Release created: ${release.html_url}`);
