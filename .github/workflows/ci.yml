@@ -31,6 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build:
+    name: Build partial platform images
     runs-on: arc-runner-set
     needs:
       - version
@@ -56,6 +57,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY_IMAGE }}
+        tags: |
+          type=raw,value=${{ needs.version.outputs.version }}
+          type=raw,value=latest
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -74,6 +78,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: ${{ matrix.platform }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
       
@@ -92,6 +97,7 @@ jobs:
           retention-days: 1
 
   merge:
+    name: Merge and push image
     runs-on: arc-runner-set
     needs:
       - version
