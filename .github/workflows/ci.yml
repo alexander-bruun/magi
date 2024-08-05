@@ -57,9 +57,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY_IMAGE }}
-        tags: |
-          type=raw,value=${{ needs.version.outputs.version }}
-          type=raw,value=latest
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}
+            type=raw,value=latest
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
