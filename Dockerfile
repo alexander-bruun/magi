@@ -11,20 +11,24 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Install `templ` using Go
-# RUN go install github.com/a-h/templ/cmd/templ@latest
+RUN go install github.com/a-h/templ/cmd/templ@latest
 
 # Copy the source code into the container
 COPY . .
 
 # Generate necessary files using `templ`
-# RUN TEMPL_EXPERIMENT=rawgo $GOPATH/bin/templ generate
+RUN TEMPL_EXPERIMENT=rawgo $GOPATH/bin/templ generate
 
 # Build the Go app
-ARG TARGETOS TARGETARCH
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o magi .
 
 # Start a new stage from scratch
 FROM alpine:latest
+
+# Install ca-certificates (required for HTTPS connections)
+RUN apk --no-cache add ca-certificates
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/
