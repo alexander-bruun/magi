@@ -130,6 +130,11 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
 
+  release:
+    runs-on: arc-runner-set
+    needs:
+      - merge
+    steps:
       - name: Create GitHub Release
         if: ${{ env.VERSION }}
         uses: actions/github-script@v6
