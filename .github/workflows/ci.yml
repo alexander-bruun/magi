@@ -1,16 +1,17 @@
-name: Build Docker Images
+name: Build Docker Images & binaries and Release
 
 on:
   push:
     branches:
       - main
+
 env:
   REGISTRY_IMAGE: alexbruun/magi
 
 jobs:
   version:
-    name: Bump version
-    runs-on: ubuntu-latest
+    name: Determine the next release version
+    runs-on: arc-runner-set
 
     outputs:
       version: ${{ steps.semantic.outputs.new_release_version }}
@@ -21,17 +22,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Semantic Release
-        id: semantic
+      - name: Determine the next release version
         uses: cycjimmy/semantic-release-action@v4
         with:
+          dry_run: true
           extra_plugins: |
-            conventional-changelog-conventionalcommits@^7.0.2
+            @semantic-release/git
+            @semantic-release/exec
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      - name: Nothing to release
+        if: ${{ env.NEXT_RELEASE_VERSION == '' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('Nothing to release')
+
   build:
-    name: Build partial platform images
+    name: Build partial platform images (${{ matrix.platform }})
     runs-on: arc-runner-set
     needs:
       - version
@@ -49,17 +58,7 @@ jobs:
     steps:
       - name: Prepare
         run: |
-          platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-      
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY_IMAGE }}
-          tags: |
-            type=raw,value=${{ needs.version.outputs.version }}
-            type=raw,value=latest
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -72,6 +71,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}-${{ matrix.platform }}
+            type=raw,value=latest-${{ matrix.platform }}
       
       - name: Build and push by digest
         id: build
@@ -81,6 +89,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          provenance: false
       
       - name: Export digest
         run: |
@@ -147,19 +156,32 @@ jobs:
       - merge
 
     steps:
-      - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
-
-      # - name: Run GoLang command
-      #   run: |
-      #     gradle build
-      #     mv build/libs/*.jar build/libs/vcspeaker-kt.jar
-
-      - name: Publish Release on main
-        uses: softprops/action-gh-release@v2
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
         with:
-          body: ${{ needs.bump-version.outputs.changelog }}
-          tag_name: ${{ needs.bump-version.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          # files: |
-          #   build/libs/vcspeaker-kt.jar
+          dry_run: false
+          extra_plugins: |
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Release failed
+        if: steps.semantic.outputs.new_release_published == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('Release failed')
+
+      - name: Release published
+        run: |
+          echo ${{ steps.semantic.outputs.new_release_version }}
+          echo ${{ steps.semantic.outputs.new_release_major_version }}
+          echo ${{ steps.semantic.outputs.new_release_minor_version }}
+          echo ${{ steps.semantic.outputs.new_release_patch_version }}
+
+      # - name: Upload build artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: build
+      #     path: ./build
