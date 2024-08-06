@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - name: Display Release Version
-        run: echo "Release version: ${{ needs.semantic.outputs.version }}"
+        run: echo "Release version ${{ needs.semantic.outputs.version }}"
 
       - name: Prepare
         run: |
