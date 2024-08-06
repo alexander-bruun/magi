@@ -47,7 +47,7 @@ jobs:
             core.setFailed('Nothing to release')
 
   build:
-    name: Build partial platform images (${{ matrix.platform }})
+    name: Build partial (${{ matrix.platform }})
     runs-on: arc-runner-set
     needs:
       - version
@@ -65,7 +65,14 @@ jobs:
     steps:
       - name: Prepare
         run: |
+          platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -78,12 +85,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY_IMAGE }}
       
       - name: Build and push by digest
         id: build
@@ -91,13 +92,13 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ env.DOCKER_REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
       
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "/tmp/digests/${digest#sha256:}"          
       
       - name: Upload digest
         uses: actions/upload-artifact@v4
