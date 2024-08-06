@@ -14,7 +14,7 @@ jobs:
     runs-on: arc-runner-set
 
     outputs:
-      version: ${{ steps.determine_version.outputs.NEXT_RELEASE }}
+      version: ${{ steps.determine_version.outputs.version }}
 
     steps:
       - name: Install git
