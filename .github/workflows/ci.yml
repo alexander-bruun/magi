@@ -19,13 +19,11 @@ jobs:
       changelog: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
+      - name: Install git
+        run: sudo apt-get update && sudo apt-get install -y git
+
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          submodules: true
-          ref: main
 
       - uses: actions/setup-node@v4
         with:
