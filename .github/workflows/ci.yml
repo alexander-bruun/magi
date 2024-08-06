@@ -19,14 +19,12 @@ jobs:
       changelog: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Determine the next release version
         uses: cycjimmy/semantic-release-action@v4
