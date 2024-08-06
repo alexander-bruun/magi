@@ -1,14 +1,19 @@
 {
+  "branches": [
+    {
+      "name": "main"
+    }
+  ],
   "plugins": [
     [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github",
+      "@semantic-release/git",
       "@semantic-release/exec",
       {
         "verifyReleaseCmd": "echo \"VERSION=${nextRelease.version}\" >> $GITHUB_ENV"
       }
     ],
-    "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
-    "@semantic-release/github",
-    "@semantic-release/git"
   ]
 }
