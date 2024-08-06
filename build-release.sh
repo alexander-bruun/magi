@@ -14,14 +14,7 @@ platforms=(
     "freebsd/arm64"
     "openbsd/amd64"
     "netbsd/amd64"
-    "solaris/amd64"
     "aix/ppc64"    # AIX on PPC64 (Note: AIX support may require specific build considerations)
-    "riscv64/linux/riscv64"
-    "mips/softfloat"
-    "mipsle/softfloat"
-    "arm64/darwin"
-    "armv6l/linux"
-    "armv7l/linux"
 )
 
 # Output directory
