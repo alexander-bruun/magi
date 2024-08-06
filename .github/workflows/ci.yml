@@ -14,7 +14,7 @@ jobs:
     runs-on: arc-runner-set
 
     outputs:
-      version: ${{ steps.semantic.outputs.NEXT_RELEASE }}
+      version: ${{ steps.something.outputs.NEXT_RELEASE }}
 
     steps:
       - name: Install git
@@ -28,6 +28,7 @@ jobs:
           node-version: '20'
 
       - name: Determine the next release version
+        id: something
         uses: cycjimmy/semantic-release-action@v4
         with:
           dry_run: true
