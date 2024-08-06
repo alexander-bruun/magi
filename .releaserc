@@ -8,7 +8,7 @@
     [
       "@semantic-release/exec",
       {
-        "verifyReleaseCmd": "echo \"RELEASE_VERSION=${nextRelease.version}\" >> $GITHUB_ENV"
+        "verifyReleaseCmd": "echo \"RELEASE_VERSION=${nextRelease.version}\" >> $GITHUB_OUTPUT"
       }
     ],
     "@semantic-release/release-notes-generator",

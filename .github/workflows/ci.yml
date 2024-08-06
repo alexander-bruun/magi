@@ -14,7 +14,7 @@ jobs:
     runs-on: arc-runner-set
 
     outputs:
-      version: ${{ steps.something.outputs.NEXT_RELEASE }}
+      version: ${{ steps.determine_version.outputs.NEXT_RELEASE }}
 
     steps:
       - name: Install git
@@ -28,7 +28,7 @@ jobs:
           node-version: '20'
 
       - name: Determine the next release version
-        id: something
+        id: determine_version
         uses: cycjimmy/semantic-release-action@v4
         with:
           dry_run: true
@@ -39,7 +39,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Nothing to release
-        if: ${{ env.RELEASE_VERSION == '' }}
+        if: ${{ steps.determine_version.outputs.version == '' }}
         uses: actions/github-script@v6
         with:
           script: |
@@ -62,7 +62,9 @@ jobs:
           - linux/s390x
 
     steps:
-      - run: echo "${{ needs.semantic.outputs.version }}"
+      - name: Display Release Version
+        run: echo "Release version: ${{ needs.semantic.outputs.version }}"
+
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
