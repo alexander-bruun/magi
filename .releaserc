@@ -1,15 +1,19 @@
 {
-  "branches": ["main"],
+  "branches": [
+    {"name": "main"},
+    {"name": "next", "channel": "alpha", "prerelease": "alpha"}
+  ],
+  "tagFormat": "v${version}",
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
-    "@semantic-release/github",
-    "@semantic-release/git",
     [
       "@semantic-release/exec",
       {
-        "verifyReleaseCmd": "echo \"VERSION=${nextRelease.version}\" >> $GITHUB_ENV"
+        "verifyReleaseCmd": "echo \"NEXT_RELEASE_VERSION=${nextRelease.version}\" >> $GITHUB_ENV"
       }
-    ]
+    ],
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    "@semantic-release/git"
   ]
 }
