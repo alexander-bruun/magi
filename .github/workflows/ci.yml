@@ -62,9 +62,6 @@ jobs:
           - linux/s390x
 
     steps:
-      - name: Display Release Version
-        run: echo "Release version ${{ needs.semantic.outputs.version }}"
-
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
@@ -164,6 +161,9 @@ jobs:
       - merge
 
     steps:
+      - name: Install git
+        run: sudo apt-get update && sudo apt-get install -y git
+
       - name: Semantic Release
         id: semantic
         uses: cycjimmy/semantic-release-action@v4
@@ -181,15 +181,16 @@ jobs:
           script: |
             core.setFailed('Release failed')
 
-      - name: Release published
-        run: |
-          echo ${{ steps.semantic.outputs.new_release_version }}
-          echo ${{ steps.semantic.outputs.new_release_major_version }}
-          echo ${{ steps.semantic.outputs.new_release_minor_version }}
-          echo ${{ steps.semantic.outputs.new_release_patch_version }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.5'
 
-      # - name: Upload build artifacts
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: build
-      #     path: ./build
+      - name: Build binaries
+        run: make go-build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: ./builds

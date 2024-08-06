@@ -6,8 +6,22 @@ platforms=(
     "windows/386"
     "linux/amd64"
     "linux/386"
+    "linux/arm64"
+    "linux/arm"
     "darwin/amd64"
     "darwin/arm64" # Apple Silicon
+    "freebsd/amd64"
+    "freebsd/arm64"
+    "openbsd/amd64"
+    "netbsd/amd64"
+    "solaris/amd64"
+    "aix/ppc64"    # AIX on PPC64 (Note: AIX support may require specific build considerations)
+    "riscv64/linux/riscv64"
+    "mips/softfloat"
+    "mipsle/softfloat"
+    "arm64/darwin"
+    "armv6l/linux"
+    "armv7l/linux"
 )
 
 # Output directory

@@ -22,5 +22,9 @@ tag:
 push:
 	docker push $(REGISTRY_URL)
 
+# Run the Go build script
+go-build:
+	./build-release.sh
+
 # Run all the above commands
 all: setup-buildx build tag push
