@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Install git
-        run: sudo apt-get update && sudo apt-get install -y git
+        run: sudo apt-get install -y git
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Nothing to release
-        if: ${{ env.VERSION == '' }}
+        if: ${{ env.RELEASE_VERSION == '' }}
         uses: actions/github-script@v6
         with:
           script: |
@@ -140,7 +140,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+        run: sudo apt-get install -y jq
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
