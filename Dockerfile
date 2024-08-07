@@ -1,5 +1,5 @@
 # Use the official Golang image to create a build artifact.
-FROM --platform=$BUILDPLATFORM golang:1.22.5 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.22.6 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
