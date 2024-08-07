@@ -161,11 +161,19 @@ jobs:
       - merge
 
     steps:
-      - name: Install git
-        run: sudo apt-get update && sudo apt-get install -y git
-
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up GoLang
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.5'
+
+      - name: Build binaries
+        run: make go-build
+
+      - name: Install git
+        run: sudo apt-get update && sudo apt-get install -y git
 
       - name: Semantic Release
         id: semantic
@@ -174,6 +182,7 @@ jobs:
           dry_run: false
           extra_plugins: |
             @semantic-release/git
+            @semantic-release/exec
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -183,14 +192,6 @@ jobs:
         with:
           script: |
             core.setFailed('Release failed')
-
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.22.5'
-
-      - name: Build binaries
-        run: make go-build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
