@@ -10,11 +10,11 @@ import (
 )
 
 type Library struct {
-	Slug        string      `json:"slug"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Cron        string      `json:"cron"`
-	Folders     StringArray `json:"folders"`
+	Slug        string   `json:"slug"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Cron        string   `json:"cron"`
+	Folders     []string `json:"folders"`
 }
 
 func (l *Library) GetFolderNames() string {
@@ -44,7 +44,7 @@ func CreateLibrary(library Library) error {
 		return err
 	}
 	if !exists {
-		NotifyListeners(Notification{Type: "library_created", Payload: library.Slug})
+		NotifyListeners(Notification{Type: "library_created", Payload: library})
 		return create("libraries", library.Slug, library)
 	} else {
 		return errors.New("library already exists")
@@ -80,16 +80,18 @@ func UpdateLibrary(library *Library) error {
 	if err := library.Validate(); err != nil {
 		return err
 	}
-	NotifyListeners(Notification{Type: "library_updated", Payload: library.Slug})
+	NotifyListeners(Notification{Type: "library_updated", Payload: *library})
 	return update("libraries", library.Slug, library)
 }
 
 func DeleteLibrary(slug string) error {
+	library, _ := GetLibrary(slug)
+
 	err := delete("libraries", slug)
 	if err != nil {
 		return err
 	}
-	NotifyListeners(Notification{Type: "library_deleted", Payload: slug})
+	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
 	return DeleteMangasByLibrarySlug(slug)
 }
 

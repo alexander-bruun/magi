@@ -4,24 +4,29 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
 	"go.etcd.io/bbolt"
 )
 
 type Manga struct {
-	Slug             string `json:"slug"`
-	Name             string `json:"name"`
-	Author           string `json:"author"`
-	Description      string `json:"description"`
-	Year             int    `json:"year"`
-	OriginalLanguage string `json:"original_language"`
-	Status           string `json:"status"`
-	ContentRating    string `json:"content_rating"`
-	LibrarySlug      string `json:"library_slug"`
-	CoverArtURL      string `json:"cover_art_url"`
-	Path             string `json:"path"`
+	Slug             string    `json:"slug"`
+	Name             string    `json:"name"`
+	Author           string    `json:"author"`
+	Description      string    `json:"description"`
+	Year             int       `json:"year"`
+	OriginalLanguage string    `json:"original_language"`
+	Status           string    `json:"status"`
+	ContentRating    string    `json:"content_rating"`
+	LibrarySlug      string    `json:"library_slug"`
+	CoverArtURL      string    `json:"cover_art_url"`
+	Path             string    `json:"path"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 func CreateManga(manga Manga) error {
@@ -31,6 +36,9 @@ func CreateManga(manga Manga) error {
 		return err
 	}
 	if !exists {
+		timeNow := time.Now()
+		manga.CreatedAt = timeNow
+		manga.UpdatedAt = timeNow
 		return create("mangas", manga.Slug, manga)
 	} else {
 		return errors.New("manga already exists")
@@ -47,11 +55,22 @@ func GetManga(slug string) (*Manga, error) {
 }
 
 func UpdateManga(manga *Manga) error {
+	manga.UpdatedAt = time.Now()
 	return update("mangas", manga.Slug, manga)
 }
 
 func DeleteManga(slug string) error {
-	return delete("mangas", slug)
+	err := delete("mangas", slug)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteChaptersByMangaSlug(slug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrder string, filterBy string, librarySlug string) ([]Manga, int64, error) {
@@ -89,7 +108,7 @@ func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrde
 	}
 
 	// Sort mangas based on sortBy and sortOrder
-	// Implement sorting logic here
+	sortMangas(mangas, sortBy, sortOrder)
 
 	// Apply pagination
 	start := (page - 1) * pageSize
@@ -167,24 +186,54 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 		return err
 	}
 
-	count := 0
+	log.Warn(len(dataList))
+
 	for _, data := range dataList {
+		// asd := string(data[:])
+		// log.Error(asd)
+
 		var manga Manga
 		if err := json.Unmarshal(data, &manga); err != nil {
+			// log.Infof("Failed to unmarshel: '%s'", data)
 			return err
 		}
+		// log.Infof("Manga slug: %s", manga.Slug)
+		// log.Infof("Comparing: %s with %s", librarySlug, manga.LibrarySlug)
 		if manga.LibrarySlug == librarySlug {
 			err := delete("mangas", manga.Slug)
 			if err != nil {
+				log.Errorf("Failed to delete: '%s'", manga.Slug)
 				return err
 			}
-			count++
 		}
 	}
 
-	if count == 0 {
-		return errors.New("no mangas found with the specified library slug")
-	}
-
 	return nil
+}
+
+func sortMangas(mangas []Manga, sortBy, sortOrder string) {
+	switch sortBy {
+	case "created_at":
+		if sortOrder == "asc" {
+			sort.Slice(mangas, func(i, j int) bool {
+				return mangas[i].CreatedAt.Before(mangas[j].CreatedAt)
+			})
+		} else {
+			sort.Slice(mangas, func(i, j int) bool {
+				return mangas[i].CreatedAt.After(mangas[j].CreatedAt)
+			})
+		}
+	case "updated_at":
+		if sortOrder == "asc" {
+			sort.Slice(mangas, func(i, j int) bool {
+				return mangas[i].UpdatedAt.Before(mangas[j].UpdatedAt)
+			})
+		} else {
+			sort.Slice(mangas, func(i, j int) bool {
+				return mangas[i].UpdatedAt.After(mangas[j].UpdatedAt)
+			})
+		}
+	default:
+		// Handle unknown sortBy or no sorting
+	}
 }

@@ -81,6 +81,29 @@ func DeleteChapter(mangaSlug, chapterSlug string) error {
 	return delete("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug))
 }
 
+func DeleteChaptersByMangaSlug(mangaSlug string) error {
+	dataList, err := getAll("chapters")
+	if err != nil {
+		return err
+	}
+
+	for _, data := range dataList {
+		var chapter Chapter
+		if err := json.Unmarshal(data, &chapter); err != nil {
+			return err
+		}
+
+		if chapter.MangaSlug == mangaSlug {
+			err := delete("mangas", chapter.Slug)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func SearchChapters(keyword string, page int, pageSize int, sortBy string, sortOrder string) ([]Chapter, error) {
 	dataList, err := getAll("chapters")
 	if err != nil {
