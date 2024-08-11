@@ -34,6 +34,9 @@ We can be found on Discord for help, questions or just hanging around.
 
 <a target="_blank" href="https://discord.gg/2VDmSUxGkE"><img src="https://dcbadge.limes.pink/api/server/2VDmSUxGkE" /></a>
 
+> [!NOTE]
+> If you are a Discord wizard, reach out, we are looking for help configuring the Discord server.
+
 ## Technologies
 
 Magi is built with the following technologies:
