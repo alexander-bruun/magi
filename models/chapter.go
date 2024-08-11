@@ -1,49 +1,57 @@
 package models
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/alexander-bruun/magi/utils"
-	"gorm.io/gorm"
+	"go.etcd.io/bbolt"
 )
 
 type Chapter struct {
-	gorm.Model
-	Name            string `gorm:"not null"`
-	Slug            string `gorm:"not null"`
-	Type            string
-	File            string
-	ChapterCoverURL string
-	MangaID         uint
+	Slug            string `json:"slug"`
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	File            string `json:"file"`
+	ChapterCoverURL string `json:"chapter_cover_url"`
+	MangaSlug       string `json:"manga_slug"`
 }
 
-// CreateChapter creates a new chapter record in the database
 func CreateChapter(chapter Chapter) error {
 	chapter.Slug = utils.Sluggify(chapter.Name)
-	exists, err := ChapterExists(chapter.Slug, chapter.MangaID)
+	exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		if err := db.Create(&chapter).Error; err != nil {
-			return err
-		}
+		return create("chapters", fmt.Sprintf("%s:%s", chapter.MangaSlug, chapter.Slug), chapter)
 	} else {
 		return errors.New("chapter already exists")
 	}
-	return nil
 }
 
-// GetChapters retrieves all chapters for a specific manga ID and returns them sorted by the chapter name
-func GetChapters(mangaID uint) ([]Chapter, error) {
+func GetChapters(mangaSlug string) ([]Chapter, error) {
 	var chapters []Chapter
-	err := db.Where("manga_id = ?", mangaID).Find(&chapters).Error
+	err := db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("chapters"))
+		c := b.Cursor()
+		prefix := []byte(fmt.Sprintf("%s:", mangaSlug))
+		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+			var chapter Chapter
+			if err := json.Unmarshal(v, &chapter); err != nil {
+				return err
+			}
+			chapters = append(chapters, chapter)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Sort the chapters by the number in the name
 	sort.Slice(chapters, func(i, j int) bool {
 		numI, errI := utils.ExtractNumber(chapters[i].Name)
 		numJ, errJ := utils.ExtractNumber(chapters[j].Name)
@@ -56,102 +64,89 @@ func GetChapters(mangaID uint) ([]Chapter, error) {
 	return chapters, nil
 }
 
-// GetChapter retrieves a chapter record by ID
-func GetChapter(id uint) (*Chapter, error) {
+func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 	var chapter Chapter
-	err := db.First(&chapter, id).Error
+	err := get("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug), &chapter)
 	if err != nil {
 		return nil, err
 	}
 	return &chapter, nil
 }
 
-// UpdateChapter updates an existing chapter record
 func UpdateChapter(chapter *Chapter) error {
-	err := db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&chapter).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return update("chapters", fmt.Sprintf("%s:%s", chapter.MangaSlug, chapter.Slug), chapter)
 }
 
-// DeleteChapter deletes a chapter record by ID
-func DeleteChapter(id uint) error {
-	chapter, err := GetChapter(id)
-	if err != nil {
-		return err
-	}
-	err = db.Unscoped().Delete(chapter).Error
-	if err != nil {
-		return err
-	}
-	return nil
+func DeleteChapter(mangaSlug, chapterSlug string) error {
+	return delete("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug))
 }
 
-// SearchChapters performs a bigram search on chapter volume names with pagination and sorting
 func SearchChapters(keyword string, page int, pageSize int, sortBy string, sortOrder string) ([]Chapter, error) {
-	var chapters []Chapter
-	var err error
-
-	// Bigram search
-	if keyword != "" {
-		var chapterTitles []string
-		err = db.Model(&Chapter{}).Pluck("volume_name", &chapterTitles).Error
-		if err != nil {
-			return nil, err
-		}
-
-		matchingTitles := utils.BigramSearch(keyword, chapterTitles)
-		err = db.Where("volume_name IN (?)", matchingTitles).
-			Order(sortBy + " " + sortOrder).
-			Offset((page - 1) * pageSize).
-			Limit(pageSize).
-			Find(&chapters).Error
-	} else {
-		err = db.Order(sortBy + " " + sortOrder).
-			Offset((page - 1) * pageSize).
-			Limit(pageSize).
-			Find(&chapters).Error
-	}
-
+	dataList, err := getAll("chapters")
 	if err != nil {
 		return nil, err
 	}
-	return chapters, nil
+
+	var chapters []Chapter
+	for _, data := range dataList {
+		var chapter Chapter
+		if err := json.Unmarshal(data, &chapter); err != nil {
+			return nil, err
+		}
+		chapters = append(chapters, chapter)
+	}
+
+	if keyword != "" {
+		var chapterNames []string
+		for _, ch := range chapters {
+			chapterNames = append(chapterNames, ch.Name)
+		}
+		matchingNames := utils.BigramSearch(keyword, chapterNames)
+		var filteredChapters []Chapter
+		for _, ch := range chapters {
+			for _, name := range matchingNames {
+				if ch.Name == name {
+					filteredChapters = append(filteredChapters, ch)
+					break
+				}
+			}
+		}
+		chapters = filteredChapters
+	}
+
+	// Sort chapters based on sortBy and sortOrder
+	// Implement sorting logic here
+
+	// Apply pagination
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start < len(chapters) {
+		if end > len(chapters) {
+			end = len(chapters)
+		}
+		return chapters[start:end], nil
+	}
+	return []Chapter{}, nil
 }
 
-// ChapterExists checks if a chapter already exists with the given slug and manga ID
-func ChapterExists(slug string, mangaID uint) (bool, error) {
-	var count int64
-	err := db.Model(&Chapter{}).Where("slug = ? AND manga_id = ?", slug, mangaID).Count(&count).Error
+func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
+	var chapter Chapter
+	err := get("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug), &chapter)
+	if err == bbolt.ErrBucketNotFound {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
-	return count > 0, nil
+	return true, nil
 }
 
-// GetChapterIDBySlug retrieves the ID of a chapter record by its slug
-func GetChapterIDBySlug(slug string, mangaID uint) (uint, error) {
-	var chapter Chapter
-	err := db.Select("id").Where("slug = ? AND manga_id = ?", slug, mangaID).First(&chapter).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, errors.New("manga not found")
-		}
-		return 0, err
-	}
-	return chapter.ID, nil
-}
-
-// GetAdjacentChapters returns the previous and next chapter slugs for a given chapter based on its order
-func GetAdjacentChapters(chapterSlug string, mangaID uint) (prevSlug, nextSlug string, err error) {
-	// Get all chapters for the manga and sort them
-	chapters, err := GetChapters(mangaID)
+func GetAdjacentChapters(chapterSlug string, mangaSlug string) (prevSlug, nextSlug string, err error) {
+	chapters, err := GetChapters(mangaSlug)
 	if err != nil {
 		return "", "", err
 	}
 
-	// Find the position of the given chapter slug in the sorted list
 	var currentIndex int
 	found := false
 	for i, chapter := range chapters {
@@ -166,7 +161,6 @@ func GetAdjacentChapters(chapterSlug string, mangaID uint) (prevSlug, nextSlug s
 		return "", "", errors.New("chapter not found")
 	}
 
-	// Determine the previous and next chapter slugs
 	if currentIndex > 0 {
 		prevSlug = chapters[currentIndex-1].Slug
 	}

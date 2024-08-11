@@ -14,7 +14,7 @@ import (
 var cacheDataDirectory = ""
 
 // activeIndexers stores active indexer instances by library ID
-var activeIndexers = make(map[uint]*Indexer)
+var activeIndexers = make(map[string]*Indexer)
 
 // Indexer represents the indexer state (requred to be local type)
 type Indexer struct {
@@ -54,7 +54,7 @@ func (idx *Indexer) Start() {
 	idx.Cron.Start()
 	idx.CronRunning = true
 
-	activeIndexers[idx.Library.ID] = idx
+	activeIndexers[idx.Library.Slug] = idx
 
 	log.Infof("Library indexer: '%s' has been registered (%s)!",
 		idx.Library.Name,
@@ -86,8 +86,7 @@ func (idx *Indexer) Stop() {
 	close(idx.stop)
 
 	// Remove from activeIndexers
-	delete(activeIndexers,
-		idx.Library.ID)
+	delete(activeIndexers, idx.Library.Slug)
 }
 
 // runIndexingJob runs the indexing job
@@ -144,7 +143,7 @@ outerLoop:
 			}
 			path := filepath.Join(folder, entry.Name())
 			if entry.IsDir() {
-				_, err = IndexManga(path, idx.Library.ID)
+				_, err = IndexManga(path, idx.Library.Slug)
 				if err != nil {
 					continue
 				}
@@ -173,33 +172,33 @@ func (nl *NotificationListener) Notify(notification models.Notification) {
 			stop:    make(chan struct{}),
 		}
 
-		activeIndexers[newLibrary.ID] = indexer
+		activeIndexers[newLibrary.Slug] = indexer
 
 		go indexer.Start()
 
 	case "library_updated":
 		updatedLibrary := notification.Payload.(models.Library)
 
-		if existingIndexer, exists := activeIndexers[updatedLibrary.ID]; exists {
+		if existingIndexer, exists := activeIndexers[updatedLibrary.Slug]; exists {
 			// Stop the existing indexer
 			existingIndexer.Stop()
-			delete(activeIndexers, updatedLibrary.ID)
+			delete(activeIndexers, updatedLibrary.Slug)
 		}
 		// Create and start a new indexer for the updated library
 		newIndexer := &Indexer{
 			Library: updatedLibrary,
 			stop:    make(chan struct{}),
 		}
-		activeIndexers[updatedLibrary.ID] = newIndexer
+		activeIndexers[updatedLibrary.Slug] = newIndexer
 
 		go newIndexer.Start()
 
 	case "library_deleted":
-		deletedLibraryID := notification.Payload.(models.Library).ID
+		deletedLibrarySlug := notification.Payload.(models.Library).Slug
 
-		if existingIndexer, exists := activeIndexers[deletedLibraryID]; exists {
+		if existingIndexer, exists := activeIndexers[deletedLibrarySlug]; exists {
 			existingIndexer.Stop()
-			delete(activeIndexers, deletedLibraryID)
+			delete(activeIndexers, deletedLibrarySlug)
 		}
 
 	default:

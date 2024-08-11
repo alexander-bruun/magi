@@ -38,8 +38,8 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 }
 
 func HandleHome(c *fiber.Ctx) error {
-	recentlyAdded, _, _ := models.SearchMangas("", 1, 10, "created_at", "desc", "", 0)
-	recentlyUpdated, _, _ := models.SearchMangas("", 1, 10, "updated_at", "desc", "", 0)
+	recentlyAdded, _, _ := models.SearchMangas("", 1, 10, "created_at", "desc", "", "")
+	recentlyUpdated, _, _ := models.SearchMangas("", 1, 10, "updated_at", "desc", "", "")
 	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated))
 }
 

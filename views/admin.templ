@@ -3,7 +3,6 @@ package views
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
-	"strconv"
 )
 
 templ Admin(libraries []models.Library) {
@@ -71,7 +70,7 @@ templ LibraryTable(libraries []models.Library) {
 						</td>
 						<td>
 							<div class="flex items-center justify-center">
-								{ strconv.FormatUint(uint64(library.ID), 10) }
+								{ library.Slug }
 							</div>
 						</td>
 						<td>
@@ -86,16 +85,6 @@ templ LibraryTable(libraries []models.Library) {
 						</td>
 						<td>
 							<div class="flex items-center justify-center">
-								{ library.CreatedAt.Format("2006-01-02") }
-							</div>
-						</td>
-						<td>
-							<div class="flex items-center justify-center">
-								{ library.UpdatedAt.Format("2006-01-02") }
-							</div>
-						</td>
-						<td>
-							<div class="flex items-center justify-center">
 								{ library.GetFolderNames() }
 							</div>
 						</td>
@@ -104,7 +93,7 @@ templ LibraryTable(libraries []models.Library) {
 								<button
 									type="button"
 									class="uk-button uk-button-default"
-									hx-get={ fmt.Sprintf("/admin/edit-library/%d", library.ID) }
+									hx-get={ fmt.Sprintf("/admin/edit-library/%s", library.Slug) }
 									hx-trigger="click"
 									hx-target="#library-form"
 								>
@@ -117,7 +106,7 @@ templ LibraryTable(libraries []models.Library) {
 								<button
 									type="button"
 									class="uk-button uk-button-danger"
-									hx-delete={ fmt.Sprintf("/admin/delete-library/%d", library.ID) }
+									hx-delete={ fmt.Sprintf("/admin/delete-library/%s", library.Slug) }
 									hx-trigger="click"
 									hx-target="#libraries-table"
 									hx-confirm="Are you sure you want to delete this library?"
@@ -149,7 +138,7 @@ templ LibraryForm(library models.Library, action string) {
 		<div id="library-form">
 			<form
 				id="library-form"
-				hx-put={ fmt.Sprintf("/admin/update-library/%s", strconv.FormatUint(uint64(library.ID), 10)) }
+				hx-put={ fmt.Sprintf("/admin/update-library/%s", library.Slug) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
 			>

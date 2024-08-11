@@ -13,14 +13,14 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 )
 
-func IndexManga(absolutePath string, libraryID uint) (uint, error) {
+func IndexManga(absolutePath string, librarySlug string) (string, error) {
 	deepestFolder := filepath.Base(absolutePath)
 	cleanedName := utils.RemovePatterns(deepestFolder)
 	if cleanedName != "" {
 		slug := utils.Sluggify(cleanedName)
 		exists, err := models.MangaExists(slug)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		if !exists {
@@ -111,33 +111,30 @@ func IndexManga(absolutePath string, libraryID uint) (uint, error) {
 				Status:           status,
 				ContentRating:    contentRating,
 				CoverArtURL:      cachedImageURL,
-				LibraryID:        libraryID,
+				LibrarySlug:      librarySlug,
 				Path:             absolutePath,
 			}
-			mangaID, err := models.CreateManga(newManga)
+			err = models.CreateManga(newManga)
 			if err != nil {
-				return 0, err
+				return "", err
 			}
 
-			if mangaID != 0 {
-
-				length, err := IndexChapters(mangaID, absolutePath)
-				if err != nil {
-					return 0, err
-				}
-
-				log.Infof("Indexed manga: '%s' (%d)", cleanedName, length)
-
-				return mangaID, err
+			length, err := IndexChapters(slug, absolutePath)
+			if err != nil {
+				return "", err
 			}
+
+			log.Infof("Indexed manga: '%s' (%d)", cleanedName, length)
+
+			return slug, err
 		} else {
 			log.Debugf("Skipping: '%s', it has already been indexed.", cleanedName)
 		}
 	}
-	return 0, nil
+	return "", nil
 }
 
-func IndexChapters(id uint, path string) (int, error) {
+func IndexChapters(slug string, path string) (int, error) {
 	// Open the directory
 	dir, err := os.Open(path)
 	if err != nil {
@@ -155,10 +152,10 @@ func IndexChapters(id uint, path string) (int, error) {
 		fileWithoutExtension := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 		cleanedName := utils.RemovePatterns(fileWithoutExtension)
 		chapter := models.Chapter{
-			Name:    cleanedName,
-			Slug:    utils.Sluggify(cleanedName),
-			File:    entry.Name(),
-			MangaID: id,
+			Name:      cleanedName,
+			Slug:      utils.Sluggify(cleanedName),
+			File:      entry.Name(),
+			MangaSlug: slug,
 		}
 		err := models.CreateChapter(chapter)
 		if err != nil {

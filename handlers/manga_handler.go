@@ -19,7 +19,7 @@ func HandleMangas(c *fiber.Ctx) error {
 		page = 1
 	}
 
-	mangas, count, err := models.SearchMangas("", page, 16, "name", "asc", "", 0)
+	mangas, count, err := models.SearchMangas("", page, 16, "name", "asc", "", "")
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
@@ -28,19 +28,14 @@ func HandleMangas(c *fiber.Ctx) error {
 }
 
 func HandleManga(c *fiber.Ctx) error {
-	manga := c.Params("manga")
+	slug := c.Params("manga")
 
-	id, err := models.GetMangaIDBySlug(manga)
+	currentManga, err := models.GetManga(slug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	currentManga, err := models.GetManga(id)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	chapters, err := models.GetChapters(id)
+	chapters, err := models.GetChapters(slug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
@@ -52,33 +47,23 @@ func HandleChapter(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Params("chapter")
 
-	mangaID, err := models.GetMangaIDBySlug(mangaSlug)
+	manga, err := models.GetManga(mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	chapterID, err := models.GetChapterIDBySlug(chapterSlug, mangaID)
+	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	manga, err := models.GetManga(mangaID)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	chapters, err := models.GetChapters(mangaID)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	chapter, err := models.GetChapter(chapterID)
+	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
 	currentSlug := chapter.Slug
-	prevSlug, nextSlug, err := models.GetAdjacentChapters(currentSlug, mangaID)
+	prevSlug, nextSlug, err := models.GetAdjacentChapters(currentSlug, mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
@@ -114,12 +99,12 @@ func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 
 func HandleEditMetadataManga(c *fiber.Ctx) error {
 	mangadexID := c.Query("mangadexid")
-	mangaID, err := strconv.ParseUint(c.Query("mangaid"), 10, 64)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+	mangaSlug := c.Query("manga")
+	if mangaSlug == "" {
+		return HandleView(c, views.Error("Manga slug can't be empty."))
 	}
 
-	existingManga, err := models.GetManga(uint(mangaID))
+	existingManga, err := models.GetManga(mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
@@ -180,7 +165,7 @@ func HandleMangaSearch(c *fiber.Ctx) error {
 		return HandleView(c, views.OneDoesNotSimplySearch())
 	}
 
-	mangas, _, err := models.SearchMangas(searchParam, 1, 10, "name", "desc", "", 0)
+	mangas, _, err := models.SearchMangas(searchParam, 1, 10, "name", "desc", "", "")
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}

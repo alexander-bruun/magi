@@ -3,16 +3,15 @@ package models
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v4"
-	"gorm.io/gorm"
+	"go.etcd.io/bbolt"
 )
 
 type JWTKey struct {
-	ID  uint `gorm:"primaryKey"`
 	Key string
 }
 
@@ -26,23 +25,28 @@ func GenerateRandomKey(length int) (string, error) {
 }
 
 func StoreKey(key string) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		var existingKey JWTKey
-		if err := tx.First(&existingKey).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("jwt"))
+		jwtKey := JWTKey{Key: key}
+		encoded, err := json.Marshal(jwtKey)
+		if err != nil {
 			return err
 		}
-		if existingKey.ID > 0 {
-			existingKey.Key = key
-			return tx.Save(&existingKey).Error
-		}
-		newKey := JWTKey{Key: key}
-		return tx.Create(&newKey).Error
+		return b.Put([]byte("jwt_key"), encoded)
 	})
 }
 
 func GetKey() (string, error) {
 	var key JWTKey
-	if err := db.First(&key).Error; err != nil {
+	err := db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("jwt"))
+		v := b.Get([]byte("jwt_key"))
+		if v == nil {
+			return errors.New("JWT key not found")
+		}
+		return json.Unmarshal(v, &key)
+	})
+	if err != nil {
 		return "", err
 	}
 	return key.Key, nil
@@ -111,11 +115,7 @@ func RefreshAccessToken(refreshToken string) (string, string, error) {
 	userName := claims["user_name"].(string)
 	version := int(claims["version"].(float64))
 
-	log.Infof("user_name: %s", userName)
-	log.Infof("version: %d", version)
-
 	user, err := FindUserByUsername(userName)
-	log.Infof("expected version: %d", user.RefreshTokenVersion)
 	if err != nil || user.RefreshTokenVersion != version {
 		return "", "", errors.New("invalid refresh token version")
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
@@ -43,12 +42,12 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 }
 
 func HandleDeleteLibrary(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
+	slug := c.Params("slug")
+	if slug == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("A slug, can't be empty.")
 	}
 
-	if err := models.DeleteLibrary(uint(id)); err != nil {
+	if err := models.DeleteLibrary(slug); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
@@ -78,8 +77,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	id, _ := strconv.ParseUint(c.Params("id"), 10, 64)
-	library.ID = uint(id)
+	library.Slug = c.Params("slug")
 
 	if err := models.UpdateLibrary(&library); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
@@ -106,12 +104,12 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 }
 
 func HandleEditLibrary(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid ID")
+	slug := c.Params("slug")
+	if slug == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("A slug, can't be empty.")
 	}
 
-	library, err := models.GetLibrary(uint(id))
+	library, err := models.GetLibrary(slug)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}

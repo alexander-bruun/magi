@@ -24,22 +24,12 @@ func ComicHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.Error("When requesting a manga, all parameters must be provided."))
 	}
 
-	mangaID, err := models.GetMangaIDBySlug(mangaSlug)
+	manga, err := models.GetManga(mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	chapterID, err := models.GetChapterIDBySlug(chapterSlug, mangaID)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	manga, err := models.GetManga(mangaID)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	chapter, err := models.GetChapter(chapterID)
+	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}

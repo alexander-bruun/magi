@@ -110,7 +110,7 @@ templ Info(manga models.Manga) {
 			</p>
 			<div class="uk-margin my-2">
 				<form
-					hx-get={ fmt.Sprintf("/mangas/metadata-form/%d", manga.ID) }
+					hx-get={ fmt.Sprintf("/mangas/metadata-form/%s", manga.Slug) }
 					hx-target="#modal-content"
 				>
 					<div class="folder-row mb-4 flex items-center">

@@ -1,22 +1,20 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
-	"gorm.io/gorm"
+	"go.etcd.io/bbolt"
 )
 
-// Define the Library model using the custom type
 type Library struct {
-	gorm.Model
-	Name        string      `gorm:"unique;not null"`
-	Slug        string      `gorm:"unique;not null"`
-	Description string      `gorm:"not null"`
-	Cron        string      `gorm:"not null"`
-	Mangas      []Manga     `gorm:"foreignKey:LibraryID"`
-	Folders     StringArray `gorm:"type:text"`
+	Slug        string      `json:"slug"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Cron        string      `json:"cron"`
+	Folders     StringArray `json:"folders"`
 }
 
 func (l *Library) GetFolderNames() string {
@@ -37,7 +35,6 @@ func (l *Library) Validate() error {
 	return nil
 }
 
-// CreateLibrary creates a new library record in the database
 func CreateLibrary(library Library) error {
 	if err := library.Validate(); err != nil {
 		return err
@@ -47,30 +44,32 @@ func CreateLibrary(library Library) error {
 		return err
 	}
 	if !exists {
-		if err := db.Create(&library).Error; err != nil {
-			return err
-		}
-		NotifyListeners(Notification{Type: "library_created", Payload: library})
+		NotifyListeners(Notification{Type: "library_created", Payload: library.Slug})
+		return create("libraries", library.Slug, library)
 	} else {
 		return errors.New("library already exists")
 	}
-	return nil
 }
 
-// GetLibraries retrieves all library records with their associated Mangas and Folders
 func GetLibraries() ([]Library, error) {
-	var libraries []Library
-	err := db.Find(&libraries).Error
+	dataList, err := getAll("libraries")
 	if err != nil {
 		return nil, err
+	}
+	var libraries []Library
+	for _, data := range dataList {
+		var library Library
+		if err := json.Unmarshal(data, &library); err != nil {
+			return nil, err
+		}
+		libraries = append(libraries, library)
 	}
 	return libraries, nil
 }
 
-// GetLibrary retrieves a library record by ID
-func GetLibrary(id uint) (*Library, error) {
+func GetLibrary(slug string) (*Library, error) {
 	var library Library
-	err := db.Find(&library, id).Error
+	err := get("libraries", slug, &library)
 	if err != nil {
 		return nil, err
 	}
@@ -81,88 +80,66 @@ func UpdateLibrary(library *Library) error {
 	if err := library.Validate(); err != nil {
 		return err
 	}
-
-	// Save the updated library with FullSaveAssociations but omit CreatedAt and UpdatedAt
-	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Omit("CreatedAt", "UpdatedAt").Save(library).Error; err != nil {
-		return err
-	}
-
-	NotifyListeners(Notification{Type: "library_updated", Payload: *library})
-	return nil
+	NotifyListeners(Notification{Type: "library_updated", Payload: library.Slug})
+	return update("libraries", library.Slug, library)
 }
 
-// DeleteLibrary deletes a library record by ID
-func DeleteLibrary(id uint) error {
-	library, err := GetLibrary(id)
+func DeleteLibrary(slug string) error {
+	err := delete("libraries", slug)
 	if err != nil {
 		return err
 	}
-
-	err = db.Unscoped().Delete(&Library{}, id).Error
-	if err != nil {
-		return err
-	}
-
-	err = DeleteMangasByLibraryID(id)
-	if err != nil {
-		return err
-	}
-
-	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
-	return nil
+	NotifyListeners(Notification{Type: "library_deleted", Payload: slug})
+	return DeleteMangasByLibrarySlug(slug)
 }
 
-// SearchLibraries performs a bigram search on library names with pagination and sorting
 func SearchLibraries(keyword string, page int, pageSize int, sortBy string, sortOrder string) ([]Library, error) {
-	var libraries []Library
-	var err error
-
-	// Bigram search
-	if keyword != "" {
-		var libraryNames []string
-		err = db.Model(&Library{}).Pluck("name", &libraryNames).Error
-		if err != nil {
-			return nil, err
-		}
-
-		matchingNames := utils.BigramSearch(keyword, libraryNames)
-		err = db.Where("name IN (?)", matchingNames).
-			Order(sortBy + " " + sortOrder).
-			Offset((page - 1) * pageSize).
-			Limit(pageSize).
-			Find(&libraries).Error
-	} else {
-		err = db.Order(sortBy + " " + sortOrder).
-			Offset((page - 1) * pageSize).
-			Limit(pageSize).
-			Find(&libraries).Error
-	}
-
+	libraries, err := GetLibraries()
 	if err != nil {
 		return nil, err
 	}
-	return libraries, nil
+
+	if keyword != "" {
+		var libraryNames []string
+		for _, lib := range libraries {
+			libraryNames = append(libraryNames, lib.Name)
+		}
+		matchingNames := utils.BigramSearch(keyword, libraryNames)
+		var filteredLibraries []Library
+		for _, lib := range libraries {
+			for _, name := range matchingNames {
+				if lib.Name == name {
+					filteredLibraries = append(filteredLibraries, lib)
+					break
+				}
+			}
+		}
+		libraries = filteredLibraries
+	}
+
+	// Sort libraries based on sortBy and sortOrder
+	// Implement sorting logic here
+
+	// Apply pagination
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start < len(libraries) {
+		if end > len(libraries) {
+			end = len(libraries)
+		}
+		return libraries[start:end], nil
+	}
+	return []Library{}, nil
 }
 
-// LibraryExists checks if a library already exists with the given slug
 func LibraryExists(slug string) (bool, error) {
-	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM libraries WHERE slug = ?)`
-	if err := db.Raw(query, slug).Scan(&exists).Error; err != nil {
+	var library Library
+	err := get("libraries", slug, &library)
+	if err == bbolt.ErrBucketNotFound {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
-	return exists, nil
-}
-
-// GetLibraryIDBySlug retrieves the ID of a library record by its slug
-func GetLibraryIDBySlug(slug string) (uint, error) {
-	var library Library
-	err := db.Select("id").Where("slug = ?", slug).First(&library).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, errors.New("library not found")
-		}
-		return 0, err
-	}
-	return library.ID, nil
+	return true, nil
 }
