@@ -1,3 +1,14 @@
+<div align="center">
+  <img src="assets/img/icon.png" alt="Magi Icon" height="130"/>
+</div>
+
+<div align="center">
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/alexander-bruun/magi">
+  <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/alexander-bruun/magi">
+  <img alt="GitHub License" src="https://img.shields.io/github/license/alexander-bruun/magi">
+  <img alt="GitHub Sponsors" src="https://img.shields.io/github/sponsors/alexander-bruun">
+</div>
+
 # Magi
 
 **Magi** is a minimalist and efficient manga indexer, organizer, and reader. It does **NOT** distribute copyrighted material, including posters, metadata, or any other content owned by original copyright holders. Magi is designed solely as a local application to manage your digital manga collection using common file formats like `.cbz`, `.cbr`, `.zip`, `.rar`, etc. Metadata and posters are fetched from publicly accessible APIs to enhance the user experience.
@@ -6,6 +17,7 @@
 
 Additional Magi screenshots, can be found under `/docs/images`, we add example page screenshots as new features are added.
 
+> [!TIP]
 > Due to the heavy compression of rar files, you will incur performance issues. So it is recommended to use traditional zip files when possible, due to their performance benefits for random reads and writes.
 
 Magi builds to a single binary targeting: `Linux`, `MacOS` and `Windows` on the following architectures: `amd64` and `arm64`. If additional platforms should be supported, then feel free to open a merge request to the pipelines so more people can enjoy Magi.
@@ -17,6 +29,10 @@ If you wish to run Magi as a Docker container, then fear not! We build Docker co
 When running with native binaries it is heavily recommended to use something like [shawl](https://github.com/mtkennerly/shawl) on Windows to run Magi as a service in the backgounrd, and registering a Unit on Linux.
 
 Alternatively, run Magi in a container solution such as Kubernetes, Docker Desktop or Podman... the sky is the limit! Just make sure the underlying data is made available to the native or container environment.
+
+We can be found on Discord for help, questions or just hanging around.
+
+<a target="_blank" href="https://discord.gg/2VDmSUxGkE"><img src="https://dcbadge.limes.pink/api/server/2VDmSUxGkE" /></a>
 
 ## Technologies
 
@@ -35,6 +51,7 @@ Magi is built with the following technologies:
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
+> [!NOTE]
 > Mangadex APi was chosen over other solutions due to it allowing anonymous requests and not forcing the end-user to provide API tokens or keys. Alternatives like MAL was explored, and worked just fine, but was a pain for people to indiviually create their own API tokens etc...
 
 ## Getting Started
@@ -55,6 +72,7 @@ To regenerate the Tailwind CSS theme with a new color scheme, run:
 npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 ```
 
+> [!NOTE]
 > Make sure to update the theme in `tailwind.config.js` before running this command.
 
 If you want to inspect the data stored in the Bolt key-value store, the `bbolt` CLI can be used. Alternatively a community Open-Source project named `boltbrowser` can be used, the project can be found [here](https://github.com/br0xen/boltbrowser).
