@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
 	"go.etcd.io/bbolt"
 )
 
@@ -52,10 +53,11 @@ func CreateLibrary(library Library) error {
 }
 
 func GetLibraries() ([]Library, error) {
-	dataList, err := getAll("libraries")
-	if err != nil {
-		return nil, err
+	var dataList [][]byte
+	if err := getAll("libraries", &dataList); err != nil {
+		log.Fatalf("Failed to get all data: %v", err)
 	}
+
 	var libraries []Library
 	for _, data := range dataList {
 		var library Library

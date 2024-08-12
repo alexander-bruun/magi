@@ -1,6 +1,8 @@
 package main
 
 import (
+	// _ "net/http/pprof" // Import for side-effect of registering pprof handlers
+
 	"embed"
 	"flag"
 	"fmt"
@@ -36,6 +38,12 @@ var assetsfs embed.FS
 var dataDirectory string
 
 func init() {
+	// f, err := os.OpenFile("output.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	// if err != nil {
+	// 	return
+	// }
+	// log.SetOutput(f)
+
 	log.SetLevel(log.LevelInfo)
 
 	var defaultDataDirectory string
@@ -61,6 +69,10 @@ func init() {
 }
 
 func main() {
+	// go func() {
+	// 	log.Info(http.ListenAndServe("localhost:6060", nil))
+	// }()
+
 	if len(os.Args) > 1 && os.Args[1] == "version" {
 		fmt.Printf("Version: %s\n", Version)
 		return
@@ -79,25 +91,25 @@ func main() {
 		return
 	}
 
-	log.Debugf("Using '%s/magi.db' as the database location.", dataDirectory)
+	log.Debugf("Using '%s/magi.db' as the key-value store location.", dataDirectory)
 	log.Debugf("Using '%s' as the image caching location.", joinedCacheDataDirectory)
 
-	// Initialize database connection
+	// Initialize key-value connection
 	err := models.Initialize(dataDirectory)
 	if err != nil {
-		log.Errorf("Failed to connect to database: %v", err)
+		log.Errorf("Failed to connect to key-value store: %v", err)
 	}
 	defer func() {
 		if err := models.Close(); err != nil {
-			log.Errorf("Failed to close database: %v", err)
+			log.Errorf("Failed to close key-value store: %v", err)
 		}
 	}()
 
 	// Retrieve or generate JWT key
-	key, err := models.GetKey()
+	_, err = models.GetKey()
 	if err != nil {
 		log.Info("Error retrieving JWT key:", err)
-		key, err = models.GenerateRandomKey(32)
+		key, err := models.GenerateRandomKey(32)
 		if err != nil {
 			log.Fatal("Failed to generate JWT key:", err)
 		}
@@ -106,7 +118,7 @@ func main() {
 		}
 		log.Info("New JWT key generated and stored.")
 	} else {
-		log.Info("JWT key retrieved from database.")
+		log.Info("JWT key retrieved from key-value store.")
 	}
 
 	// Create a new engine
@@ -118,7 +130,7 @@ func main() {
 		CaseSensitive: true,
 		StrictRouting: true,
 		ServerHeader:  "Magi",
-		AppName:       "Magi v0.0.1 (alpha)",
+		AppName:       fmt.Sprintf("Magi %s", Version),
 		Views:         engine,
 		ViewsLayout:   "base",
 	})

@@ -69,9 +69,10 @@ func IncrementRefreshTokenVersion(user *User) error {
 }
 
 func CountUsers() (int64, error) {
-	dataList, err := getAll("users")
-	if err != nil {
-		return 0, err
+	var dataList [][]byte
+	if err := getAll("users", &dataList); err != nil {
+		log.Fatalf("Failed to get all data: %v", err)
 	}
+
 	return int64(len(dataList)), nil
 }

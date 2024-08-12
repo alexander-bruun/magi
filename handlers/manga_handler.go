@@ -104,41 +104,64 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return HandleView(c, views.Error("Manga slug can't be empty."))
 	}
 
+	// Fetch the existing manga
 	existingManga, err := models.GetManga(mangaSlug)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
+	// Fetch manga details from Mangadex
 	mangaDetail, err := models.GetMangadexManga(mangadexID)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
+	// Extract manga details
 	mangaName := mangaDetail.Attributes.Title["en"]
-	coverArtURL := ""
+	var coverArtURL string
+
+	// Extract cover art URL
 	for _, rel := range mangaDetail.Relationships {
 		if rel.Type == "cover_art" {
-			coverArtURL = fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s",
-				mangadexID,
-				rel.Attributes.FileName)
+			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
+				if fileName, exists := attributes["fileName"].(string); exists {
+					coverArtURL = fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s",
+						mangadexID,
+						fileName)
+					break // Assuming there's only one cover art
+				}
+			}
 		}
 	}
 
+	// Handle local image if coverArtURL is empty
+	if coverArtURL == "" {
+		return HandleView(c, views.Error("Cover art URL not found."))
+	}
+
+	// Parse the cover art URL
 	u, err := url.Parse(coverArtURL)
 	if err != nil {
-		log.Errorf("Error parsing URL:", err)
+		log.Errorf("Error parsing URL: %v", err)
+		return HandleView(c, views.Error("Error parsing cover art URL."))
 	}
 
+	// Extract file extension
 	filename := filepath.Base(u.Path)
 	fileExt := filepath.Ext(filename)
-	fileExt = fileExt[1:]
+	fileExt = fileExt[1:] // remove leading dot
+
+	// Create cached image URL
 	cachedImageURL := fmt.Sprintf("http://localhost:3000/api/images/%s.%s", existingManga.Slug, fileExt)
 
+	// Download and cache the image
 	err = utils.DownloadImage("/home/alexa/magi/cache", existingManga.Slug, coverArtURL)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		log.Errorf("Error downloading image: %v", err)
+		return HandleView(c, views.Error("Error downloading cover art image."))
 	}
 
+	// Update manga details
 	existingManga.Name = mangaName
 	existingManga.Description = mangaDetail.Attributes.Description["en"]
 	existingManga.Year = mangaDetail.Attributes.Year
@@ -147,11 +170,13 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	existingManga.ContentRating = mangaDetail.Attributes.ContentRating
 	existingManga.CoverArtURL = cachedImageURL
 
+	// Save updated manga details
 	err = models.UpdateManga(existingManga)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
+	// Redirect to updated manga page
 	redirectURL := fmt.Sprintf("/mangas/%s", existingManga.Slug)
 	c.Set("HX-Redirect", redirectURL)
 

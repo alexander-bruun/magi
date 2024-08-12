@@ -74,9 +74,9 @@ func DeleteManga(slug string) error {
 }
 
 func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrder string, filterBy string, librarySlug string) ([]Manga, int64, error) {
-	dataList, err := getAll("mangas")
-	if err != nil {
-		return nil, 0, err
+	var dataList [][]byte
+	if err := getAll("mangas", &dataList); err != nil {
+		log.Fatalf("Failed to get all data: %v", err)
 	}
 
 	var mangas []Manga
@@ -144,21 +144,20 @@ func applyBigramSearch(filter string, mangas []Manga) []Manga {
 }
 
 func MangaExists(slug string) (bool, error) {
-	var manga Manga
-	err := get("mangas", slug, &manga)
+	exists, err := exists("mangas", slug)
 	if err == bbolt.ErrBucketNotFound {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+	return exists, nil
 }
 
 func MangaCount(filterBy, filter string) (int, error) {
-	dataList, err := getAll("mangas")
-	if err != nil {
-		return 0, err
+	var dataList [][]byte
+	if err := getAll("mangas", &dataList); err != nil {
+		log.Fatalf("Failed to get all data: %v", err)
 	}
 
 	count := 0
@@ -181,30 +180,34 @@ func MangaCount(filterBy, filter string) (int, error) {
 }
 
 func DeleteMangasByLibrarySlug(librarySlug string) error {
-	dataList, err := getAll("mangas")
+	keys, err := getAllKeys("mangas")
 	if err != nil {
+		log.Errorf("Failed to get all data: %v", err)
 		return err
 	}
 
-	log.Warn(len(dataList))
-
-	for _, data := range dataList {
-		// asd := string(data[:])
-		// log.Error(asd)
-
+	for _, key := range keys {
 		var manga Manga
-		if err := json.Unmarshal(data, &manga); err != nil {
-			// log.Infof("Failed to unmarshel: '%s'", data)
+		err := get("mangas", key, &manga)
+		if err != nil {
+			log.Errorf("Failed to get key: %s", key)
 			return err
 		}
-		// log.Infof("Manga slug: %s", manga.Slug)
-		// log.Infof("Comparing: %s with %s", librarySlug, manga.LibrarySlug)
+
 		if manga.LibrarySlug == librarySlug {
-			err := delete("mangas", manga.Slug)
+			err := DeleteChaptersByMangaSlug(manga.Slug)
 			if err != nil {
-				log.Errorf("Failed to delete: '%s'", manga.Slug)
+				log.Errorf("Failed to delete chapters for manga slug '%s': %s", manga.Slug, err.Error())
 				return err
 			}
+			log.Infof("Deleted chapters for manga: '%s'", manga.Slug)
+
+			err = delete("mangas", manga.Slug)
+			if err != nil {
+				log.Errorf("Failed to delete manga with slug '%s': %s", manga.Slug, err.Error())
+				return err
+			}
+			log.Infof("Deleted manga with slug '%s'", manga.Slug)
 		}
 	}
 

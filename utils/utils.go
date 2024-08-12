@@ -6,88 +6,326 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
+	"time"
+	"unicode"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/nwaples/rardecode"
 )
 
-func RemovePatterns(path string) string {
-	patterns := []string{
-		`\([^)]*\)`,                      // Matches anything inside parentheses
-		`\[[^\]]*\]`,                     // Matches anything inside square brackets
-		`\{[^}]*\}`,                      // Matches anything inside curly brackets
-		`(?i)^manga\s*`,                  // Matches "manga" at the beginning of the string, case-insensitively
-		`(?i)\smanga$`,                   // Matches "manga" at the end of the string, case-insensitively
-		` - archived$`,                   // Matches exact phrase " - archived" at the end of the string
-		`v\d+\s*-\s*v\d+`,                // Matches vNUMBER - vNUMBER
-		`c\d+\s*-\s*c\d+`,                // Matches cNUMBER - cNUMBER
-		`v\d+\s*-\s*\d+`,                 // Matches vNUMBER - NUMBER
-		`c\d+\s*-\s*\d+`,                 // Matches cNUMBER - NUMBER
-		` -\s*$`,                         // Matches trailing " -" with optional whitespace at the end of the string
-		`\b\d{1,2}-\d{1,2}\b`,            // Matches patterns like "1-3", "10-20", etc.
-		`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`, // Matches "Vol. 1 + Vol. 2"
-		`\sS\d+\b`,                       // Matches season numbers like " S1", " S2", etc., with preceding whitespace and word boundary
-		`\bVolumes?\d+-\d+\+\w+\b`,       // Matches patterns like "Volumes1-2+Bonus", where \w+ matches one or more word characters
-		` RAR$`,                          // Matches exact phrase " RAR" at the end of the string
-		` ZIP$`,                          // Matches exact phrase " ZIP" at the end of the string
-		` rar$`,                          // Matches exact phrase " rar" at the end of the string
-		` zip$`,                          // Matches exact phrase " zip" at the end of the string
-		` \+Plus$`,                       // Matches exact phrase " +Plus" at the end of the string
-	}
+// Regex pattern removal times took on average ~250µs, the pure go pattern removal takes ~15µs.
 
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
-		path = re.ReplaceAllString(path, "")
-	}
+// RemovePatterns applies custom parsing to clean up the path string.
+func RemovePatterns(path string) string {
+	// Apply custom parsing functions
+	path = removeParenthesesContent(path)
+	path = removeBracketsContent(path)
+	path = removeBracesContent(path)
+	path = handleSpecialCases(path)
+	path = processComplexPatterns(path)
+
+	// Remove trailing specific suffixes
+	path = removeTrailingSuffixes(path)
 
 	// Remove multiple spaces
-	reSpaces := regexp.MustCompile(`\s+`)
-	path = reSpaces.ReplaceAllString(path, " ")
+	path = strings.Join(strings.Fields(path), " ")
 
-	path = strings.TrimSpace(path) // Trim leading and trailing whitespace
+	// Trim leading and trailing whitespace
+	path = strings.TrimSpace(path)
 
-	// Check if the path ends with ", The"
+	// Remove non-ASCII characters
+	path = removeNonASCII(path)
+
+	// Check if the path ends with ", The" and modify if necessary
 	if strings.HasSuffix(path, ", The") {
-		// Remove ", The" from the end
-		path = strings.TrimSuffix(path, ", The")
-		// Prepend "The " to the beginning
-		path = "The " + path
+		path = "The " + strings.TrimSuffix(path, ", The")
 	}
 
 	return path
 }
 
+// removeNonASCII removes non-ASCII characters from the string.
+func removeNonASCII(s string) string {
+	var builder strings.Builder
+	for _, r := range s {
+		if r <= unicode.MaxASCII {
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
+func removeParenthesesContent(path string) string {
+	for i := strings.Index(path, "("); i != -1; i = strings.Index(path, "(") {
+		end := strings.Index(path[i:], ")")
+		if end == -1 {
+			break
+		}
+		path = path[:i] + path[i+end+1:]
+	}
+	return path
+}
+
+func removeBracketsContent(path string) string {
+	for i := strings.Index(path, "["); i != -1; i = strings.Index(path, "[") {
+		end := strings.Index(path[i:], "]")
+		if end == -1 {
+			break
+		}
+		path = path[:i] + path[i+end+1:]
+	}
+	return path
+}
+
+func removeBracesContent(path string) string {
+	for i := strings.Index(path, "{"); i != -1; i = strings.Index(path, "{") {
+		end := strings.Index(path[i:], "}")
+		if end == -1 {
+			break
+		}
+		path = path[:i] + path[i+end+1:]
+	}
+	return path
+}
+
+func removeTrailingSuffixes(path string) string {
+	suffixes := []string{" - archived", " RAR", " ZIP", " rar", " zip", " +Plus"}
+	for _, suffix := range suffixes {
+		path = strings.TrimSuffix(path, suffix)
+	}
+	return path
+}
+
+func handleSpecialCases(path string) string {
+	if strings.Contains(strings.ToLower(path), "manga") {
+		path = strings.ReplaceAll(strings.ToLower(path), "manga", "")
+	}
+	return path
+}
+
+func processComplexPatterns(path string) string {
+	patterns := []struct {
+		pattern string
+	}{
+		{`v\d+\s*-\s*v\d+`},                // Matches vNUMBER - vNUMBER
+		{`c\d+\s*-\s*c\d+`},                // Matches cNUMBER - cNUMBER
+		{`v\d+\s*-\s*\d+`},                 // Matches vNUMBER - NUMBER
+		{`c\d+\s*-\s*\d+`},                 // Matches cNUMBER - NUMBER
+		{`\b\d{1,2}-\d{1,2}\b`},            // Matches patterns like "1-3", "10-20", etc.
+		{`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`}, // Matches "Vol. 1 + Vol. 2"
+		{`\sS\d+\b`},                       // Matches season numbers like " S1", " S2", etc.
+		{`\bVolumes?\d+-\d+\+\w+\b`},       // Matches patterns like "Volumes1-2+Bonus"
+	}
+
+	for _, pat := range patterns {
+		path = removePattern(path, pat.pattern)
+	}
+	return path
+}
+
+func removePattern(path, pattern string) string {
+	switch pattern {
+	case `v\d+\s*-\s*v\d+`:
+		path = removePatternByPrefix(path, 'v', '-')
+	case `c\d+\s*-\s*c\d+`:
+		path = removePatternByPrefix(path, 'c', '-')
+	case `v\d+\s*-\s*\d+`:
+		path = removePatternByPrefix(path, 'v', '-')
+	case `c\d+\s*-\s*\d+`:
+		path = removePatternByPrefix(path, 'c', '-')
+	case `\b\d{1,2}-\d{1,2}\b`:
+		path = removeDashRange(path)
+	case `Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`:
+		path = removeVolumeRange(path)
+	case `\sS\d+\b`:
+		path = removeSeasonNumbers(path)
+	case `\bVolumes?\d+-\d+\+\w+\b`:
+		path = removeVolumesPattern(path)
+	}
+	return path
+}
+
+// Custom functions to handle specific patterns
+func removePatternByPrefix(path string, prefix rune, separator rune) string {
+	var builder strings.Builder
+	for i := 0; i < len(path); i++ {
+		if i < len(path)-1 && path[i] == byte(prefix) && isDigit(path[i+1]) {
+			j := i + 1
+			for j < len(path) && isDigit(path[j]) {
+				j++
+			}
+			if j < len(path) && path[j] == byte(separator) {
+				j++
+				for j < len(path) && isDigit(path[j]) {
+					j++
+				}
+				if j < len(path) && (path[j] == ' ' || path[j] == '-' || path[j] == '\n') {
+					// Skip the entire matched part
+					for j < len(path) && (path[j] == ' ' || path[j] == '-' || path[j] == '\n') {
+						j++
+					}
+					i = j - 1
+					continue
+				}
+			}
+		}
+		builder.WriteByte(path[i])
+	}
+	return builder.String()
+}
+
+func removeDashRange(path string) string {
+	var builder strings.Builder
+	for i := 0; i < len(path); i++ {
+		if i < len(path)-3 && isDigit(path[i]) && path[i+2] == '-' && isDigit(path[i+3]) {
+			// Skip the pattern
+			for i < len(path) && (path[i] == ' ' || path[i] == '-' || path[i] == '\n') {
+				i++
+			}
+			i--
+			continue
+		}
+		builder.WriteByte(path[i])
+	}
+	return builder.String()
+}
+
+func removeVolumeRange(path string) string {
+	var builder strings.Builder
+	for i := 0; i < len(path); i++ {
+		if i < len(path)-7 && strings.HasPrefix(path[i:], "Vol. ") && isDigit(path[i+5]) && path[i+6] == ' ' && path[i+7] == '+' && path[i+8] == ' ' && strings.HasPrefix(path[i+9:], "Vol. ") && isDigit(path[i+14]) {
+			// Skip the pattern
+			for i < len(path) && (path[i] == ' ' || path[i] == '+' || path[i] == '\n') {
+				i++
+			}
+			i--
+			continue
+		}
+		builder.WriteByte(path[i])
+	}
+	return builder.String()
+}
+
+func removeSeasonNumbers(path string) string {
+	var builder strings.Builder
+	for i := 0; i < len(path); i++ {
+		if i < len(path)-2 && path[i] == 'S' && isDigit(path[i+1]) {
+			j := i + 1
+			for j < len(path) && isDigit(path[j]) {
+				j++
+			}
+			if j < len(path) && (path[j] == ' ' || path[j] == '\n') {
+				// Skip the pattern
+				for j < len(path) && (path[j] == ' ' || path[j] == '\n') {
+					j++
+				}
+				i = j - 1
+				continue
+			}
+		}
+		builder.WriteByte(path[i])
+	}
+	return builder.String()
+}
+
+func removeVolumesPattern(path string) string {
+	var builder strings.Builder
+	for i := 0; i < len(path); i++ {
+		if i < len(path)-5 && (strings.HasPrefix(path[i:], "Volume") || strings.HasPrefix(path[i:], "Volumes")) && isDigit(path[i+6]) && path[i+7] == '-' && isDigit(path[i+8]) && path[i+9] == '+' {
+			// Skip the pattern
+			for i < len(path) && (path[i] == ' ' || path[i] == '+' || path[i] == '\n') {
+				i++
+			}
+			i--
+			continue
+		}
+		builder.WriteByte(path[i])
+	}
+	return builder.String()
+}
+
+func isDigit(b byte) bool {
+	return b >= '0' && b <= '9'
+}
+
+// Regex sluggify times took on average ~35µs, the pure go sluggifying takes ~3µs.
+
+// Sluggify transforms a string into a URL-friendly slug.
 func Sluggify(s string) string {
 	// Convert the string to lowercase
 	s = strings.ToLower(s)
 
-	// Replace periods and commas with a dash
-	s = strings.ReplaceAll(s, ".", "-")
-	s = strings.ReplaceAll(s, ",", "-")
+	// Create a buffer to build the slug
+	var builder strings.Builder
 
-	// Remove all non-alphanumeric characters except hyphens and spaces
-	re := regexp.MustCompile(`[^a-z0-9\s-]`)
-	s = re.ReplaceAllString(s, "")
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			// Append alphanumeric characters directly
+			builder.WriteRune(r)
+		} else if r == '.' || r == ',' {
+			// Replace periods and commas with a dash
+			builder.WriteRune('-')
+		} else if unicode.IsSpace(r) {
+			// Replace spaces with a dash
+			builder.WriteRune('-')
+		}
+	}
 
-	// Replace spaces and multiple hyphens with a single hyphen
-	re = regexp.MustCompile(`[\s-]+`)
-	s = re.ReplaceAllString(s, "-")
+	// Convert the builder to a string
+	result := builder.String()
 
-	// Trim any leading or trailing hyphens
-	s = strings.Trim(s, "-")
+	// Replace multiple hyphens with a single hyphen and trim leading/trailing hyphens
+	result = collapseHyphens(result)
 
-	return s
+	return result
 }
 
+// collapseHyphens reduces multiple hyphens to a single hyphen and trims leading/trailing hyphens.
+func collapseHyphens(s string) string {
+	var builder strings.Builder
+	inHyphen := false
+
+	for _, r := range s {
+		if r == '-' {
+			if !inHyphen {
+				builder.WriteRune(r)
+				inHyphen = true
+			}
+		} else {
+			builder.WriteRune(r)
+			inHyphen = false
+		}
+	}
+
+	// Convert the builder to a string
+	result := builder.String()
+
+	// Trim leading and trailing hyphens
+	return strings.Trim(result, "-")
+}
+
+// ExtractNumber extracts the first number found in the given string.
 func ExtractNumber(name string) (int, error) {
-	re := regexp.MustCompile(`\d+`)
-	match := re.FindString(name)
-	if match == "" {
+	var numStr string
+	found := false
+
+	for _, r := range name {
+		if unicode.IsDigit(r) {
+			numStr += string(r)
+			found = true
+		} else if found {
+			// Stop if we have already started and encounter a non-digit character
+			break
+		}
+	}
+
+	if numStr == "" {
 		return 0, fmt.Errorf("no number found in string")
 	}
-	return strconv.Atoi(match)
+
+	return strconv.Atoi(numStr)
 }
 
 // isImageFile checks if a file is an image based on its extension.
@@ -274,4 +512,14 @@ func CopyFile(src, dst string) error {
 	// Copy the content
 	_, err = io.Copy(destinationFile, sourceFile)
 	return err
+}
+
+// LogDuration logs the duration of a function execution
+func LogDuration(functionName string, start time.Time, args ...interface{}) {
+	duration := time.Since(start)
+	if len(args) > 0 {
+		log.Debugf("%s took %v with args %v\n", functionName, duration, args)
+	} else {
+		log.Debugf("%s took %v\n", functionName, duration)
+	}
 }

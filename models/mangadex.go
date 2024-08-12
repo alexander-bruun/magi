@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/utils"
 )
@@ -38,45 +39,46 @@ type MangaDetail struct {
 
 // MangaAttributes represents the attributes of a manga in MangaDetail
 type MangaAttributes struct {
-	Title                  map[string]string   `json:"title"`
-	AltTitles              []map[string]string `json:"altTitles"`
-	Description            map[string]string   `json:"description"`
-	IsLocked               bool                `json:"isLocked"`
-	Links                  map[string]string   `json:"links"`
-	OriginalLanguage       string              `json:"originalLanguage"`
-	LastVolume             string              `json:"lastVolume"`
-	LastChapter            string              `json:"lastChapter"`
-	PublicationDemographic interface{}         `json:"publicationDemographic"`
-	Status                 string              `json:"status"`
-	Year                   int                 `json:"year"`
-	ContentRating          string              `json:"contentRating"`
-	Tags                   []struct {
-		ID         string `json:"id"`
-		Type       string `json:"type"`
-		Attributes struct {
-			Name        map[string]string `json:"name"`
-			Description map[string]string `json:"description"`
-			Group       string            `json:"group"`
-			Version     int               `json:"version"`
-		} `json:"attributes"`
-		Relationships []interface{} `json:"relationships"`
-	} `json:"tags"`
-	State                          string   `json:"state"`
-	ChapterNumbersResetOnNewVolume bool     `json:"chapterNumbersResetOnNewVolume"`
-	CreatedAt                      string   `json:"createdAt"`
-	UpdatedAt                      string   `json:"updatedAt"`
-	Version                        int      `json:"version"`
-	AvailableTranslatedLanguages   []string `json:"availableTranslatedLanguages"`
-	LatestUploadedChapter          string   `json:"latestUploadedChapter"`
+	Title                          map[string]string   `json:"title"`
+	AltTitles                      []map[string]string `json:"altTitles"`
+	Description                    map[string]string   `json:"description"`
+	IsLocked                       bool                `json:"isLocked"`
+	Links                          map[string]string   `json:"links"`
+	OriginalLanguage               string              `json:"originalLanguage"`
+	LastVolume                     string              `json:"lastVolume"`
+	LastChapter                    string              `json:"lastChapter"`
+	PublicationDemographic         interface{}         `json:"publicationDemographic"`
+	Status                         string              `json:"status"`
+	Year                           int                 `json:"year"`
+	ContentRating                  string              `json:"contentRating"`
+	Tags                           []Tag               `json:"tags"`
+	State                          string              `json:"state"`
+	ChapterNumbersResetOnNewVolume bool                `json:"chapterNumbersResetOnNewVolume"`
+	CreatedAt                      time.Time           `json:"createdAt"`
+	UpdatedAt                      time.Time           `json:"updatedAt"`
+	Version                        int                 `json:"version"`
+	AvailableTranslatedLanguages   []string            `json:"availableTranslatedLanguages"`
+	LatestUploadedChapter          string              `json:"latestUploadedChapter"`
+}
+
+// Tag represents a tag in MangaAttributes
+type Tag struct {
+	ID         string `json:"id"`
+	Type       string `json:"type"`
+	Attributes struct {
+		Name        map[string]string `json:"name"`
+		Description map[string]string `json:"description"`
+		Group       string            `json:"group"`
+		Version     int               `json:"version"`
+	} `json:"attributes"`
+	Relationships []interface{} `json:"relationships"`
 }
 
 // Relationship represents the relationship details in MangaDetail
 type Relationship struct {
-	ID         string `json:"id"`
-	Type       string `json:"type"`
-	Attributes struct {
-		FileName string `json:"fileName"`
-	} `json:"attributes"`
+	ID         string      `json:"id"`
+	Type       string      `json:"type"`
+	Attributes interface{} `json:"attributes"` // General type for flexibility
 }
 
 var baseURL = "https://api.mangadex.org"
