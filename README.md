@@ -89,7 +89,7 @@ This will open a interactive console browser, here you can explore individual bu
 
 ## Contributing
 
-Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi. When Magi has come into its "working" phase, the README will updated to reflect this, and releases will most likely be reset to clean up the versions that are used for development and testing of release flows.
+Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
 
 ## License
 
