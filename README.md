@@ -22,7 +22,7 @@ Additional Magi screenshots, can be found under `/docs/images`, we add example p
 
 Magi builds to a single binary targeting: `Linux`, `MacOS` and `Windows` on the following architectures: `amd64` and `arm64`. If additional platforms should be supported, then feel free to open a merge request to the pipelines so more people can enjoy Magi.
 
-Binary releases are uploaded to the corresponding [GitHub Release](https://github.com/alexander-bruun/magi/releases) bound to a Git Tag generated through the GitHub workflow pipelines triggered by a merge to main, because of this we primarily work in the `next` branch, and merge to `main` when significant changes has been made for a tag bump to be reasonable.
+Binary releases are uploaded to the corresponding [GitHub Release](https://github.com/alexander-bruun/magi/releases) bound to a Git Tag generated through the GitHub workflow pipelines triggered by a merge to main, because of this we primarily work in the `next` branch, and merge to `main` when significant changes has been made for a tag bump to be reasonable. Due to Magi being in its early stages we also push unsafe directly to `main` branch, this is due to the project being in a early development stage where we have not yet determined everything.
 
 If you wish to run Magi as a Docker container, then fear not! We build Docker container images for `linux` on `amd64` and `arm64`, which can be found on [Docker Hub](https://hub.docker.com/repository/docker/alexbruun/magi/tags) and GHCR (Coming soon).
 
@@ -89,7 +89,7 @@ This will open a interactive console browser, here you can explore individual bu
 
 ## Contributing
 
-Magi is in its early stages of development, and many features are still in progress. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
+Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi. When Magi has come into its "working" phase, the README will updated to reflect this, and releases will most likely be reset to clean up the versions that are used for development and testing of release flows.
 
 ## License
 
