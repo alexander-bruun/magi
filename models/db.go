@@ -28,18 +28,8 @@ func Initialize(cacheDirectory string) error {
 	}
 
 	// Create buckets
-	err = db.Update(func(tx *bbolt.Tx) error {
-		buckets := []string{"libraries", "mangas", "chapters", "users", "jwt"}
-		for _, bucket := range buckets {
-			_, err := tx.CreateBucketIfNotExists([]byte(bucket))
-			if err != nil {
-				return fmt.Errorf("create bucket: %s", err)
-			}
-		}
-		return nil
-	})
-
-	return err
+	buckets := []string{"libraries", "mangas", "chapters", "users", "jwt"}
+	return createBuckets(buckets)
 }
 
 // Close closes the database connection
@@ -55,10 +45,7 @@ func Close() error {
 
 // Helper functions for CRUD operations
 
-func create(bucket string, slug string, data interface{}) error {
-	start := time.Now()
-	defer utils.LogDuration("create", start, bucket, slug)
-
+func create(bucket, slug string, data interface{}) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		encoded, err := json.Marshal(data)
@@ -69,10 +56,7 @@ func create(bucket string, slug string, data interface{}) error {
 	})
 }
 
-func get(bucket string, slug string, data interface{}) error {
-	start := time.Now()
-	defer utils.LogDuration("get", start, bucket, slug)
-
+func get(bucket, slug string, data interface{}) error {
 	return db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		v := b.Get([]byte(slug))
@@ -83,32 +67,26 @@ func get(bucket string, slug string, data interface{}) error {
 	})
 }
 
-func update(bucket string, slug string, data interface{}) error {
-	start := time.Now()
-	defer utils.LogDuration("update", start, bucket, slug)
-
+func update(bucket, slug string, data interface{}) error {
 	return create(bucket, slug, data)
 }
 
-func delete(bucket string, slug string) error {
-	start := time.Now()
-	defer utils.LogDuration("delete", start, bucket, slug)
-
+func delete(bucket, slug string) error {
 	return db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		return b.Delete([]byte(slug))
 	})
 }
 
-func deleteKeysWithPattern(bucket string, pattern string) error {
+func deleteKeysWithPattern(bucket, pattern string) error {
 	start := time.Now()
 	defer utils.LogDuration("deleteKeysWithPattern", start, bucket, pattern)
 
-	// Convert wildcard pattern to regular expression
+	// Compile pattern to regex
 	regexPattern := "^" + strings.ReplaceAll(regexp.QuoteMeta(pattern), `\*`, `.*`) + "$"
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return fmt.Errorf("compile regex: %s", err)
+		return fmt.Errorf("compile regex: %w", err)
 	}
 
 	return db.Update(func(tx *bbolt.Tx) error {
@@ -117,10 +95,9 @@ func deleteKeysWithPattern(bucket string, pattern string) error {
 			return fmt.Errorf("bucket %s not found", bucket)
 		}
 
-		// Iterate over all keys in the bucket
-		return b.ForEach(func(k, v []byte) error {
+		// Delete matching keys
+		return b.ForEach(func(k, _ []byte) error {
 			if re.Match(k) {
-				// Delete key if it matches the pattern
 				return b.Delete(k)
 			}
 			return nil
@@ -137,14 +114,14 @@ func getAll(bucket string, dataList *[]([]byte)) error {
 
 	return db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		return b.ForEach(func(k, v []byte) error {
+		return b.ForEach(func(_, v []byte) error {
 			*dataList = append(*dataList, v)
 			return nil
 		})
 	})
 }
 
-func exists(bucket string, key string) (bool, error) {
+func exists(bucket, key string) (bool, error) {
 	start := time.Now()
 	defer utils.LogDuration("exists", start, bucket, key)
 
@@ -169,14 +146,13 @@ func getAllKeys(bucket string) ([]string, error) {
 	defer utils.LogDuration("getAllKeys", start, bucket)
 
 	var keys []string
-
 	err := db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
 			return fmt.Errorf("bucket %s not found", bucket)
 		}
 
-		return b.ForEach(func(k, v []byte) error {
+		return b.ForEach(func(k, _ []byte) error {
 			keys = append(keys, string(k))
 			return nil
 		})
@@ -185,6 +161,17 @@ func getAllKeys(bucket string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return keys, nil
+}
+
+// createBuckets creates the necessary buckets in the database
+func createBuckets(buckets []string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		for _, bucket := range buckets {
+			if _, err := tx.CreateBucketIfNotExists([]byte(bucket)); err != nil {
+				return fmt.Errorf("create bucket %s: %w", bucket, err)
+			}
+		}
+		return nil
+	})
 }

@@ -14,8 +14,8 @@ import (
 	"github.com/nwaples/rardecode"
 )
 
+// ComicHandler processes requests to serve comic book pages based on the provided query parameters.
 func ComicHandler(c *fiber.Ctx) error {
-	// Query parameters for extracting comic images from chapters and pages
 	mangaSlug := c.Query("manga")
 	chapterSlug := c.Query("chapter")
 	chapterPage := c.Query("page")
@@ -43,7 +43,7 @@ func ComicHandler(c *fiber.Ctx) error {
 
 	lowerFileName := strings.ToLower(fileInfo.Name())
 
-	// Serve the file based on its extension - cbr, cbz, zip/rar/rar5, 7zip, raw images, epub, pdf)
+	// Serve the file based on its extension
 	switch {
 	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".png"):
 		return c.SendFile(filePath)
@@ -56,28 +56,25 @@ func ComicHandler(c *fiber.Ctx) error {
 	}
 }
 
+// serveComicBookArchiveFromRAR handles serving images from a RAR archive.
 func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
-	// Get the page parameter from the query string
 	pageStr := c.Query("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
-		page = 1
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
 	}
 
-	// Open the RAR archive
 	rarFile, err := os.Open(filePath)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open archive")
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open RAR file")
 	}
 	defer rarFile.Close()
 
-	// Create a new RAR reader
 	rarReader, err := rardecode.NewReader(rarFile, "")
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to create RAR reader")
 	}
 
-	// Track the current page and scan entries
 	currentPage := 0
 	for {
 		header, err := rarReader.Next()
@@ -88,18 +85,12 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to read archive entry")
 		}
 
-		// Check if the entry is an image and matches the requested page
 		if !header.IsDir && (strings.HasSuffix(strings.ToLower(header.Name), ".jpg") || strings.HasSuffix(strings.ToLower(header.Name), ".png")) {
 			currentPage++
 			if currentPage == page {
-				// Set Content-Type header based on file extension
-				contentType := "image/jpeg"
-				if strings.HasSuffix(strings.ToLower(header.Name), ".png") {
-					contentType = "image/png"
-				}
+				contentType := getContentType(header.Name)
 				c.Set("Content-Type", contentType)
 
-				// Copy the image data to the response writer
 				if _, err := io.Copy(c.Response().BodyWriter(), rarReader); err != nil {
 					return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
 				}
@@ -108,34 +99,29 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 		}
 	}
 
-	// If we've reached this point, the requested page was not found
 	return c.Status(fiber.StatusNotFound).SendString("Page not found in archive")
 }
 
-// Serve images from ZIP archives using archive/zip
+// serveComicBookArchiveFromZIP handles serving images from a ZIP archive.
 func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
-	// Get the page parameter from the query string
 	pageStr := c.Query("page")
-	page, _ := strconv.Atoi(pageStr)
-	if page < 1 {
-		page = 1
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
 	}
 
-	// Open the ZIP archive
 	zipFile, err := os.Open(filePath)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open archive")
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open ZIP file")
 	}
 	defer zipFile.Close()
 
-	// Create a new ZIP reader
 	zipReader, err := zip.OpenReader(filePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to create ZIP reader")
 	}
 	defer zipReader.Close()
 
-	// Filter out only image files
 	var imageFiles []*zip.File
 	for _, file := range zipReader.File {
 		if !file.FileInfo().IsDir() && (strings.HasSuffix(strings.ToLower(file.Name), ".jpg") || strings.HasSuffix(strings.ToLower(file.Name), ".png")) {
@@ -143,32 +129,31 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
 		}
 	}
 
-	// Check if the page number is within the range of available images
 	if page > len(imageFiles) {
 		return c.Status(fiber.StatusBadRequest).SendString("Page number out of range")
 	}
 
-	// Get the specified image file
 	imageFile := imageFiles[page-1]
-
-	// Set Content-Type header based on file extension
-	contentType := "image/jpeg" // Default to JPEG
-	if strings.HasSuffix(strings.ToLower(imageFile.Name), ".png") {
-		contentType = "image/png"
-	}
+	contentType := getContentType(imageFile.Name)
 	c.Set("Content-Type", contentType)
 
-	// Open the file from the ZIP archive
 	rc, err := imageFile.Open()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image from archive")
 	}
 	defer rc.Close()
 
-	// Copy the image data to the response writer
 	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
 	}
 
 	return nil
+}
+
+// getContentType determines the Content-Type header based on file extension.
+func getContentType(fileName string) string {
+	if strings.HasSuffix(strings.ToLower(fileName), ".png") {
+		return "image/png"
+	}
+	return "image/jpeg"
 }

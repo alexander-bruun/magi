@@ -11,12 +11,12 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-var cacheDataDirectory = ""
+var (
+	cacheDataDirectory = ""
+	activeIndexers     = make(map[string]*Indexer)
+)
 
-// activeIndexers stores active indexer instances by library ID
-var activeIndexers = make(map[string]*Indexer)
-
-// Indexer represents the indexer state (requred to be local type)
+// Indexer represents the state of an indexer
 type Indexer struct {
 	Library     models.Library
 	Cron        *cron.Cron
@@ -26,182 +26,169 @@ type Indexer struct {
 	stop        chan struct{}
 }
 
+// Initialize sets up indexers and notifications
 func Initialize(cacheDirectory string, libraries []models.Library) {
-	log.Info("Initializing Indexer and Scheduler")
 	cacheDataDirectory = cacheDirectory
+	log.Info("Initializing Indexer and Scheduler")
 
 	for _, library := range libraries {
-		indexer := &Indexer{
-			Library: library,
-			stop:    make(chan struct{}),
-		}
-
+		indexer := NewIndexer(library)
 		go indexer.Start()
 	}
 
-	listener := &NotificationListener{
+	// Register NotificationListener
+	models.AddListener(&NotificationListener{
 		notifications: make(chan models.Notification),
-	}
-	// Register indexer as a listener
-	models.AddListener(listener)
+	})
 }
 
-// Start starts the Indexer for the given library
+// NewIndexer creates a new Indexer instance
+func NewIndexer(library models.Library) *Indexer {
+	return &Indexer{
+		Library: library,
+		stop:    make(chan struct{}),
+	}
+}
+
+// Start initializes and starts the Indexer
 func (idx *Indexer) Start() {
 	idx.Cron = cron.New()
-	idx.CronJobID, _ = idx.Cron.AddFunc(idx.Library.Cron,
-		idx.runIndexingJob)
+	var err error
+	idx.CronJobID, err = idx.Cron.AddFunc(idx.Library.Cron, idx.runIndexingJob)
+	if err != nil {
+		log.Errorf("Error adding cron job: %s", err)
+		return
+	}
 	idx.Cron.Start()
 	idx.CronRunning = true
 
 	activeIndexers[idx.Library.Slug] = idx
 
-	log.Infof("Library indexer: '%s' has been registered (%s)!",
-		idx.Library.Name,
-		idx.Library.Cron)
+	log.Infof("Library indexer '%s' registered with cron schedule '%s'.",
+		idx.Library.Name, idx.Library.Cron)
 
 	// Listen for stop signal
-	for {
-		select {
-		case <-idx.stop:
-			idx.Cron.Stop()
-			idx.CronRunning = false
-			log.Infof("Stop signal received for '%s' indexer. Cron scheduler stopped.",
-				idx.Library.Name)
-			return
-		}
-	}
+	<-idx.stop
+	idx.Stop()
 }
 
-// Stop stops the indexer
+// Stop stops the indexer and cleans up
 func (idx *Indexer) Stop() {
 	if idx.CronRunning {
 		idx.Cron.Stop()
 		idx.CronRunning = false
-		log.Infof("Stopping indexer for library: '%s'.",
-			idx.Library.Name)
+		log.Infof("Stopped indexer for library: '%s'.", idx.Library.Name)
 	}
 
-	// Signal stop to the goroutine listening for updates
 	close(idx.stop)
-
-	// Remove from activeIndexers
 	delete(activeIndexers, idx.Library.Slug)
 }
 
-// runIndexingJob runs the indexing job
+// runIndexingJob performs the indexing job
 func (idx *Indexer) runIndexingJob() {
 	if idx.JobRunning {
-		log.Infof("Skipping scheduled indexer job for library: '%s', a job is already running.", idx.Library.Name)
+		log.Infof("Indexing job for library '%s' already running, skipping.", idx.Library.Name)
 		return
-	} else {
-		idx.JobRunning = true
 	}
-
-	log.Infof("Indexing library: '%s'", idx.Library.Name)
-	start := time.Now() // Record the start time of indexing
-
 	defer func() {
-		duration := time.Since(start)
-		if idx.CronRunning {
-			log.Infof("Indexer for library: '%s' completed in %s.", idx.Library.Name, duration)
-		} else {
-			log.Infof("Indexer for library: '%s' was stopped after %s.", idx.Library.Name, duration)
-		}
+		idx.JobRunning = false
+		log.Infof("Indexing job for library '%s' completed.", idx.Library.Name)
 	}()
 
-outerLoop:
+	idx.JobRunning = true
+	log.Infof("Starting indexing for library '%s'.", idx.Library.Name)
+	start := time.Now()
+
 	for _, folder := range idx.Library.Folders {
+		if err := idx.processFolder(folder); err != nil {
+			log.Errorf("Error processing folder '%s': %s", folder, err)
+		}
+
 		select {
 		case <-idx.stop:
-			idx.JobRunning = false
-			break outerLoop
+			log.Infof("Indexing for library '%s' interrupted.", idx.Library.Name)
+			return
+		default:
+		}
+	}
+
+	duration := time.Since(start)
+	log.Infof("Indexing for library '%s' completed in %s.", idx.Library.Name, duration)
+}
+
+// processFolder processes files and directories in a given folder
+func (idx *Indexer) processFolder(folder string) error {
+	dir, err := os.Open(folder)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+
+	entries, err := dir.Readdir(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		select {
+		case <-idx.stop:
+			return nil
 		default:
 		}
 
-		// Open the directory
-		dir, err := os.Open(folder)
-		if err != nil {
-			log.Errorf("Error opening directory: '%s' (%s)", folder, err)
-			continue
-		}
-		defer dir.Close()
-
-		// Read the directory entries
-		entries, err := dir.Readdir(-1)
-		if err != nil {
-			log.Errorf("Error reading directory: '%s' (%s)", folder, err)
-			continue
-		}
-
-		for _, entry := range entries {
-			select {
-			case <-idx.stop:
-				idx.JobRunning = false
-				break outerLoop
-			default:
+		path := filepath.Join(folder, entry.Name())
+		if entry.IsDir() {
+			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing manga at '%s': %s", path, err)
 			}
-			path := filepath.Join(folder, entry.Name())
-			if entry.IsDir() {
-				_, err = IndexManga(path, idx.Library.Slug)
-				if err != nil {
-					continue
-				}
-			} else {
-				log.Debugf("File:", entry.Name())
-			}
+		} else {
+			log.Debugf("File: %s", entry.Name())
 		}
 	}
-	idx.JobRunning = false
+	return nil
 }
 
-// NotificationListener is a global channel for all notifications
+// NotificationListener listens for notifications and handles them
 type NotificationListener struct {
 	notifications chan models.Notification
 }
 
+// Notify processes incoming notifications
 func (nl *NotificationListener) Notify(notification models.Notification) {
-	log.Debugf("Notification of type %s named '%s' was received, taking action!",
-		notification.Type,
-		notification.Payload.(models.Library).Name)
+	log.Debugf("Received notification of type '%s' for library '%s'.", notification.Type, notification.Payload.(models.Library).Name)
+
 	switch notification.Type {
 	case "library_created":
-		newLibrary := notification.Payload.(models.Library)
-		indexer := &Indexer{
-			Library: newLibrary,
-			stop:    make(chan struct{}),
-		}
-
-		activeIndexers[newLibrary.Slug] = indexer
-
-		go indexer.Start()
-
+		nl.handleLibraryCreated(notification.Payload.(models.Library))
 	case "library_updated":
-		updatedLibrary := notification.Payload.(models.Library)
-
-		if existingIndexer, exists := activeIndexers[updatedLibrary.Slug]; exists {
-			// Stop the existing indexer
-			existingIndexer.Stop()
-			delete(activeIndexers, updatedLibrary.Slug)
-		}
-		// Create and start a new indexer for the updated library
-		newIndexer := &Indexer{
-			Library: updatedLibrary,
-			stop:    make(chan struct{}),
-		}
-		activeIndexers[updatedLibrary.Slug] = newIndexer
-
-		go newIndexer.Start()
-
+		nl.handleLibraryUpdated(notification.Payload.(models.Library))
 	case "library_deleted":
-		deletedLibrarySlug := notification.Payload.(models.Library).Slug
-
-		if existingIndexer, exists := activeIndexers[deletedLibrarySlug]; exists {
-			existingIndexer.Stop()
-			delete(activeIndexers, deletedLibrarySlug)
-		}
-
+		nl.handleLibraryDeleted(notification.Payload.(models.Library))
 	default:
 		log.Warnf("Unknown notification type: %s", notification.Type)
+	}
+}
+
+func (nl *NotificationListener) handleLibraryCreated(newLibrary models.Library) {
+	indexer := NewIndexer(newLibrary)
+	activeIndexers[newLibrary.Slug] = indexer
+	go indexer.Start()
+}
+
+func (nl *NotificationListener) handleLibraryUpdated(updatedLibrary models.Library) {
+	if existingIndexer, exists := activeIndexers[updatedLibrary.Slug]; exists {
+		existingIndexer.Stop()
+		delete(activeIndexers, updatedLibrary.Slug)
+	}
+
+	newIndexer := NewIndexer(updatedLibrary)
+	activeIndexers[updatedLibrary.Slug] = newIndexer
+	go newIndexer.Start()
+}
+
+func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Library) {
+	if existingIndexer, exists := activeIndexers[deletedLibrary.Slug]; exists {
+		existingIndexer.Stop()
+		delete(activeIndexers, deletedLibrary.Slug)
 	}
 }
