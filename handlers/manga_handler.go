@@ -83,10 +83,7 @@ func HandleChapter(c *fiber.Ctx) error {
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
-	if err != err {
-		return HandleView(c, views.Error(err.Error()))
-	}
+	mangaSlug := c.Params("slug")
 	search := c.Query("search")
 
 	response, err := models.GetMangadexMangas(search)
@@ -94,12 +91,12 @@ func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	return HandleView(c, views.UpdateMetadata(*response, uint(id)))
+	return HandleView(c, views.UpdateMetadata(*response, mangaSlug))
 }
 
 func HandleEditMetadataManga(c *fiber.Ctx) error {
-	mangadexID := c.Query("mangadexid")
-	mangaSlug := c.Query("manga")
+	mangadexID := c.Query("id")
+	mangaSlug := c.Query("slug")
 	if mangaSlug == "" {
 		return HandleView(c, views.Error("Manga slug can't be empty."))
 	}

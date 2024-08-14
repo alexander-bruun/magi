@@ -156,7 +156,7 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 	</ul>
 }
 
-templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
+templ UpdateMetadata(response models.ListMangaResponse, mangaSlug string) {
 	<ul class="uk-accordion" uk-accordion>
 		for _, mangaDetail := range response.Data {
 			<li>
@@ -176,7 +176,7 @@ templ UpdateMetadata(response models.ListMangaResponse, mangaID uint) {
 						class="uk-button uk-button-default"
 						type="button"
 						uk-toggle="target: #metadata-modal"
-						hx-post={ fmt.Sprintf("/mangas/overwrite-metadata?mangadexid=%s&mangaid=%d", mangaDetail.ID, mangaID) }
+						hx-post={ fmt.Sprintf("/mangas/overwrite-metadata?id=%s&slug=%s", mangaDetail.ID, mangaSlug) }
 						hx-target="#content"
 					>
 						Download new metadata

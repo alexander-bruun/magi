@@ -22,7 +22,7 @@ build-develop:
 # Run the Go build script
 # PLATFORM is passed as a positional argument
 go-build:
-	./build-release.sh $(PLATFORM) $(VERSION)
+	./scripts/build-release.sh $(PLATFORM) $(VERSION)
 
 # Run all the above commands
 all: setup-buildx build
