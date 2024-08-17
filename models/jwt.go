@@ -12,9 +12,10 @@ import (
 )
 
 type JWTKey struct {
-	Key string
+	Key string `json:"key"`
 }
 
+// GenerateRandomKey creates a new random key of the specified length
 func GenerateRandomKey(length int) (string, error) {
 	key := make([]byte, length)
 	_, err := rand.Read(key)
@@ -24,81 +25,49 @@ func GenerateRandomKey(length int) (string, error) {
 	return base64.StdEncoding.EncodeToString(key), nil
 }
 
+// StoreKey saves the JWT key to the database
 func StoreKey(key string) error {
-	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("jwt"))
-		jwtKey := JWTKey{Key: key}
-		encoded, err := json.Marshal(jwtKey)
-		if err != nil {
-			return err
-		}
-		return b.Put([]byte("jwt_key"), encoded)
-	})
+	return updateBucket("jwt", "jwt_key", JWTKey{Key: key})
 }
 
+// GetKey retrieves the JWT key from the database
 func GetKey() (string, error) {
-	var key JWTKey
-	err := db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("jwt"))
-		v := b.Get([]byte("jwt_key"))
-		if v == nil {
-			return errors.New("JWT key not found")
-		}
-		return json.Unmarshal(v, &key)
-	})
+	var jwtKey JWTKey
+	err := getFromBucket("jwt", "jwt_key", &jwtKey)
 	if err != nil {
 		return "", err
 	}
-	return key.Key, nil
+	return jwtKey.Key, nil
 }
 
-// CreateAccessToken generates a new access token
+// CreateAccessToken generates a new access token with a 15-minute expiry
 func CreateAccessToken(userName string) (string, error) {
-	secret, err := GetKey()
-	if err != nil {
-		return "", errors.New("failed to get secret")
-	}
-	claims := jwt.MapClaims{
-		"user_name": userName,
-		"exp":       time.Now().Add(time.Minute * 15).Unix(), // Access token expires in 15 minutes
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	return createToken(userName, nil, 15*time.Minute)
 }
 
-// CreateRefreshToken generates a new refresh token including the version
+// CreateRefreshToken generates a new refresh token with a 7-day expiry
 func CreateRefreshToken(userName string, version int) (string, error) {
-	secret, err := GetKey()
-	if err != nil {
-		return "", errors.New("failed to get secret")
-	}
 	claims := jwt.MapClaims{
 		"user_name": userName,
 		"version":   version,
-		"exp":       time.Now().Add(time.Hour * 24 * 7).Unix(), // Refresh token expires in 7 days
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	return createToken(userName, claims, 7*24*time.Hour)
 }
 
-// ValidateToken validates a token and returns the claims
+// ValidateToken validates a token and returns its claims
 func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	secret, err := GetKey()
 	if err != nil {
 		return nil, errors.New("failed to get secret")
 	}
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 	if err != nil {
-		if ve, ok := err.(*jwt.ValidationError); ok {
-			if ve.Errors&jwt.ValidationErrorExpired != 0 {
-				return nil, errors.New("token expired")
-			}
-			return nil, errors.New("token invalid")
-		}
-		return nil, err
+		return handleTokenValidationError(err)
 	}
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
 	}
@@ -112,9 +81,7 @@ func RefreshAccessToken(refreshToken string) (string, string, error) {
 		return "", "", err
 	}
 
-	userName := claims["user_name"].(string)
-	version := int(claims["version"].(float64))
-
+	userName, version := claims["user_name"].(string), int(claims["version"].(float64))
 	user, err := FindUserByUsername(userName)
 	if err != nil || user.RefreshTokenVersion != version {
 		return "", "", errors.New("invalid refresh token version")
@@ -127,17 +94,72 @@ func RefreshAccessToken(refreshToken string) (string, string, error) {
 	return newAccessToken, userName, nil
 }
 
-// GenerateNewRefreshToken generates a new refresh token and updates the user's version
+// GenerateNewRefreshToken creates a new refresh token and updates the user's version
 func GenerateNewRefreshToken(userName string) (string, error) {
 	user, err := FindUserByUsername(userName)
 	if err != nil {
 		return "", errors.New("user not found")
 	}
 
-	err = IncrementRefreshTokenVersion(user)
-	if err != nil {
+	if err := IncrementRefreshTokenVersion(user.Username); err != nil {
 		return "", errors.New("failed to increment refresh token version")
 	}
 
 	return CreateRefreshToken(userName, user.RefreshTokenVersion)
+}
+
+// createToken generates a JWT token with specified claims and expiry duration
+func createToken(userName string, additionalClaims jwt.MapClaims, expiry time.Duration) (string, error) {
+	secret, err := GetKey()
+	if err != nil {
+		return "", errors.New("failed to get secret")
+	}
+
+	claims := jwt.MapClaims{
+		"user_name": userName,
+		"exp":       time.Now().Add(expiry).Unix(),
+	}
+
+	// Add additional claims if provided
+	for k, v := range additionalClaims {
+		claims[k] = v
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// handleTokenValidationError interprets JWT validation errors
+func handleTokenValidationError(err error) (jwt.MapClaims, error) {
+	if ve, ok := err.(*jwt.ValidationError); ok {
+		if ve.Errors&jwt.ValidationErrorExpired != 0 {
+			return nil, errors.New("token expired")
+		}
+		return nil, errors.New("token invalid")
+	}
+	return nil, err
+}
+
+// Helper functions for bucket operations
+
+func updateBucket(bucket, key string, data interface{}) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(bucket))
+		encoded, err := json.Marshal(data)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(key), encoded)
+	})
+}
+
+func getFromBucket(bucket, key string, data interface{}) error {
+	return db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(bucket))
+		v := b.Get([]byte(key))
+		if v == nil {
+			return errors.New("key not found")
+		}
+		return json.Unmarshal(v, data)
+	})
 }

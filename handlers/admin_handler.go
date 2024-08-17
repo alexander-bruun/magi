@@ -10,7 +10,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Admin specific handlers
+func renderLibraryTable(libraries []models.Library) (string, error) {
+	var buf bytes.Buffer
+	err := views.LibraryTable(libraries).Render(context.Background(), &buf)
+	if err != nil {
+		return "", fmt.Errorf("error rendering table: %w", err)
+	}
+	return buf.String(), nil
+}
+
+func setCommonHeaders(c *fiber.Ctx) {
+	c.Response().Header.Set("HX-Trigger", "reset-form")
+	c.Response().Header.Set("Content-Type", "text/html")
+}
+
 func HandleCreateLibrary(c *fiber.Ctx) error {
 	var library models.Library
 	if err := c.BodyParser(&library); err != nil {
@@ -21,53 +34,41 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Fetch all libraries, including the newly created one
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Render the updated libraries table
-	var buf bytes.Buffer
-	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
+	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
-	tableContent := buf.String()
 
-	c.Response().Header.Set("HX-Trigger", "reset-form")
-	c.Response().Header.Set("Content-Type", "text/html")
-
+	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
 
 func HandleDeleteLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("A slug, can't be empty.")
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty.")
 	}
 
 	if err := models.DeleteLibrary(slug); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Fetch all libraries, excluding the deleted one
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Render the updated libraries table
-	var buf bytes.Buffer
-	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
+	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
-	tableContent := buf.String()
 
-	c.Response().Header.Set("HX-Trigger", "reset-form")
-	c.Response().Header.Set("Content-Type", "text/html")
-
+	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
 
@@ -83,30 +84,24 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Fetch all libraries, including the newly created one
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Render the updated libraries table
-	var buf bytes.Buffer
-	err = views.LibraryTable(libraries).Render(context.Background(), &buf)
+	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
-	tableContent := buf.String()
 
-	c.Response().Header.Set("HX-Trigger", "reset-form")
-	c.Response().Header.Set("Content-Type", "text/html")
-
+	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
 
 func HandleEditLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("A slug, can't be empty.")
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty.")
 	}
 
 	library, err := models.GetLibrary(slug)
@@ -114,18 +109,14 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	// Render the updated libraries table
 	var buf bytes.Buffer
 	err = views.LibraryForm(*library, "put").Render(context.Background(), &buf)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering table")
+		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering form")
 	}
-	tableContent := buf.String()
 
-	c.Response().Header.Set("HX-Trigger", "reset-form")
-	c.Response().Header.Set("Content-Type", "text/html")
-
-	return c.SendString(fmt.Sprintf(`<div id="library-form">%s</div>`, tableContent))
+	setCommonHeaders(c)
+	return c.SendString(fmt.Sprintf(`<div id="library-form">%s</div>`, buf.String()))
 }
 
 func HandleAddFolder(c *fiber.Ctx) error {
@@ -137,14 +128,12 @@ func HandleRemoveFolder(c *fiber.Ctx) error {
 }
 
 func HandleCancelEdit(c *fiber.Ctx) error {
-	// Render a fresh LibraryForm
 	var buf bytes.Buffer
 	err := views.LibraryForm(models.Library{}, "post").Render(context.Background(), &buf)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering form")
 	}
-	formContent := buf.String()
 
 	c.Response().Header.Set("Content-Type", "text/html")
-	return c.SendString(formContent)
+	return c.SendString(buf.String())
 }

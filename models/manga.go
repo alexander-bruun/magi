@@ -10,7 +10,6 @@ import (
 
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/gofiber/fiber/v2/log"
-	"go.etcd.io/bbolt"
 )
 
 type Manga struct {
@@ -29,74 +28,56 @@ type Manga struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
+// CreateManga adds a new Manga to the database
 func CreateManga(manga Manga) error {
 	manga.Slug = utils.Sluggify(manga.Name)
 	exists, err := MangaExists(manga.Slug)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		timeNow := time.Now()
-		manga.CreatedAt = timeNow
-		manga.UpdatedAt = timeNow
-		return create("mangas", manga.Slug, manga)
-	} else {
+	if exists {
 		return errors.New("manga already exists")
 	}
+
+	now := time.Now()
+	manga.CreatedAt = now
+	manga.UpdatedAt = now
+	return create("mangas", manga.Slug, manga)
 }
 
+// GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
 	var manga Manga
-	err := get("mangas", slug, &manga)
-	if err != nil {
+	if err := get("mangas", slug, &manga); err != nil {
 		return nil, err
 	}
 	return &manga, nil
 }
 
+// UpdateManga modifies an existing Manga
 func UpdateManga(manga *Manga) error {
 	manga.UpdatedAt = time.Now()
 	return update("mangas", manga.Slug, manga)
 }
 
+// DeleteManga removes a Manga and its associated chapters
 func DeleteManga(slug string) error {
-	err := delete("mangas", slug)
-	if err != nil {
+	if err := delete("mangas", slug); err != nil {
 		return err
 	}
-
-	err = DeleteChaptersByMangaSlug(slug)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return DeleteChaptersByMangaSlug(slug)
 }
 
-func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrder string, filterBy string, librarySlug string) ([]Manga, int64, error) {
-	var dataList [][]byte
-	if err := getAll("mangas", &dataList); err != nil {
-		log.Fatalf("Failed to get all data: %v", err)
-	}
-
+// SearchMangas filters, sorts, and paginates mangas based on provided criteria
+func SearchMangas(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string) ([]Manga, int64, error) {
 	var mangas []Manga
-	for _, data := range dataList {
-		var manga Manga
-		if err := json.Unmarshal(data, &manga); err != nil {
-			return nil, 0, err
-		}
-		mangas = append(mangas, manga)
+	if err := loadAllMangas(&mangas); err != nil {
+		return nil, 0, err
 	}
 
 	// Filter by librarySlug
 	if librarySlug != "" {
-		var filteredMangas []Manga
-		for _, manga := range mangas {
-			if manga.LibrarySlug == librarySlug {
-				filteredMangas = append(filteredMangas, manga)
-			}
-		}
-		mangas = filteredMangas
+		mangas = filterByLibrarySlug(mangas, librarySlug)
 	}
 
 	total := int64(len(mangas))
@@ -111,15 +92,95 @@ func SearchMangas(filter string, page int, pageSize int, sortBy string, sortOrde
 	sortMangas(mangas, sortBy, sortOrder)
 
 	// Apply pagination
-	start := (page - 1) * pageSize
-	end := start + pageSize
-	if start < len(mangas) {
-		if end > len(mangas) {
-			end = len(mangas)
-		}
-		return mangas[start:end], total, nil
+	return paginateMangas(mangas, page, pageSize), total, nil
+}
+
+// MangaExists checks if a Manga exists by slug
+func MangaExists(slug string) (bool, error) {
+	return exists("mangas", slug)
+}
+
+// MangaCount counts the number of mangas based on filter criteria
+func MangaCount(filterBy, filter string) (int, error) {
+	var mangas []Manga
+	if err := loadAllMangas(&mangas); err != nil {
+		return 0, err
 	}
-	return []Manga{}, total, nil
+
+	count := 0
+	for _, manga := range mangas {
+		if filterBy != "" && filter != "" {
+			value := reflect.ValueOf(manga).FieldByName(filterBy).String()
+			if strings.Contains(strings.ToLower(value), strings.ToLower(filter)) {
+				count++
+			}
+		} else {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// DeleteMangasByLibrarySlug removes all mangas associated with a specific library
+func DeleteMangasByLibrarySlug(librarySlug string) error {
+	keys, err := getAllKeys("mangas")
+	if err != nil {
+		log.Errorf("Failed to get all keys: %v", err)
+		return err
+	}
+
+	for _, key := range keys {
+		var manga Manga
+		if err := get("mangas", key, &manga); err != nil {
+			log.Errorf("Failed to get manga with key: %s", key)
+			return err
+		}
+
+		if manga.LibrarySlug == librarySlug {
+			if err := DeleteChaptersByMangaSlug(manga.Slug); err != nil {
+				log.Errorf("Failed to delete chapters for manga slug '%s': %s", manga.Slug, err.Error())
+				return err
+			}
+			log.Infof("Deleted chapters for manga: '%s'", manga.Slug)
+
+			if err := delete("mangas", manga.Slug); err != nil {
+				log.Errorf("Failed to delete manga with slug '%s': %s", manga.Slug, err.Error())
+				return err
+			}
+			log.Infof("Deleted manga with slug '%s'", manga.Slug)
+		}
+	}
+
+	return nil
+}
+
+// Helper functions
+
+func loadAllMangas(mangas *[]Manga) error {
+	var dataList [][]byte
+	if err := getAll("mangas", &dataList); err != nil {
+		log.Fatalf("Failed to get all data: %v", err)
+		return err
+	}
+
+	for _, data := range dataList {
+		var manga Manga
+		if err := json.Unmarshal(data, &manga); err != nil {
+			return err
+		}
+		*mangas = append(*mangas, manga)
+	}
+	return nil
+}
+
+func filterByLibrarySlug(mangas []Manga, librarySlug string) []Manga {
+	var filteredMangas []Manga
+	for _, manga := range mangas {
+		if manga.LibrarySlug == librarySlug {
+			filteredMangas = append(filteredMangas, manga)
+		}
+	}
+	return filteredMangas
 }
 
 func applyBigramSearch(filter string, mangas []Manga) []Manga {
@@ -143,75 +204,16 @@ func applyBigramSearch(filter string, mangas []Manga) []Manga {
 	return filteredMangas
 }
 
-func MangaExists(slug string) (bool, error) {
-	exists, err := exists("mangas", slug)
-	if err == bbolt.ErrBucketNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
-func MangaCount(filterBy, filter string) (int, error) {
-	var dataList [][]byte
-	if err := getAll("mangas", &dataList); err != nil {
-		log.Fatalf("Failed to get all data: %v", err)
-	}
-
-	count := 0
-	for _, data := range dataList {
-		var manga Manga
-		if err := json.Unmarshal(data, &manga); err != nil {
-			return 0, err
+func paginateMangas(mangas []Manga, page, pageSize int) []Manga {
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start < len(mangas) {
+		if end > len(mangas) {
+			end = len(mangas)
 		}
-		if filterBy != "" && filter != "" {
-			value := reflect.ValueOf(manga).FieldByName(filterBy).String()
-			if strings.Contains(strings.ToLower(value), strings.ToLower(filter)) {
-				count++
-			}
-		} else {
-			count++
-		}
+		return mangas[start:end]
 	}
-
-	return count, nil
-}
-
-func DeleteMangasByLibrarySlug(librarySlug string) error {
-	keys, err := getAllKeys("mangas")
-	if err != nil {
-		log.Errorf("Failed to get all data: %v", err)
-		return err
-	}
-
-	for _, key := range keys {
-		var manga Manga
-		err := get("mangas", key, &manga)
-		if err != nil {
-			log.Errorf("Failed to get key: %s", key)
-			return err
-		}
-
-		if manga.LibrarySlug == librarySlug {
-			err := DeleteChaptersByMangaSlug(manga.Slug)
-			if err != nil {
-				log.Errorf("Failed to delete chapters for manga slug '%s': %s", manga.Slug, err.Error())
-				return err
-			}
-			log.Infof("Deleted chapters for manga: '%s'", manga.Slug)
-
-			err = delete("mangas", manga.Slug)
-			if err != nil {
-				log.Errorf("Failed to delete manga with slug '%s': %s", manga.Slug, err.Error())
-				return err
-			}
-			log.Infof("Deleted manga with slug '%s'", manga.Slug)
-		}
-	}
-
-	return nil
+	return []Manga{}
 }
 
 func sortMangas(mangas []Manga, sortBy, sortOrder string) {
@@ -237,6 +239,6 @@ func sortMangas(mangas []Manga, sortBy, sortOrder string) {
 			})
 		}
 	default:
-		// Handle unknown sortBy or no sorting
+		// No sorting applied
 	}
 }
