@@ -20,26 +20,27 @@ type Chapter struct {
 	MangaSlug       string `json:"manga_slug"`
 }
 
+// CreateChapter adds a new chapter if it does not already exist
 func CreateChapter(chapter Chapter) error {
 	chapter.Slug = utils.Sluggify(chapter.Name)
-	exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug)
-	if err != nil {
+	if exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug); err != nil {
 		return err
-	}
-	if !exists {
-		return create("chapters", fmt.Sprintf("%s:%s", chapter.MangaSlug, chapter.Slug), chapter)
-	} else {
+	} else if exists {
 		return errors.New("chapter already exists")
 	}
+
+	return create("chapters", chapterKey(chapter.MangaSlug, chapter.Slug), chapter)
 }
 
+// GetChapters retrieves all chapters for a specific manga, sorted by name
 func GetChapters(mangaSlug string) ([]Chapter, error) {
 	var chapters []Chapter
 	err := db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("chapters"))
-		c := b.Cursor()
-		prefix := []byte(fmt.Sprintf("%s:", mangaSlug))
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+		bucket := tx.Bucket([]byte("chapters"))
+		cursor := bucket.Cursor()
+		prefix := []byte(mangaSlug + ":")
+
+		for k, v := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cursor.Next() {
 			var chapter Chapter
 			if err := json.Unmarshal(v, &chapter); err != nil {
 				return err
@@ -52,120 +53,54 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 		return nil, err
 	}
 
-	sort.Slice(chapters, func(i, j int) bool {
-		numI, errI := utils.ExtractNumber(chapters[i].Name)
-		numJ, errJ := utils.ExtractNumber(chapters[j].Name)
-		if errI != nil || errJ != nil {
-			return chapters[i].Name < chapters[j].Name
-		}
-		return numI < numJ
-	})
-
+	sortChaptersByNumber(chapters)
 	return chapters, nil
 }
 
+// GetChapter retrieves a specific chapter by its slug
 func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 	var chapter Chapter
-	err := get("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug), &chapter)
+	err := get("chapters", chapterKey(mangaSlug, chapterSlug), &chapter)
 	if err != nil {
 		return nil, err
 	}
 	return &chapter, nil
 }
 
+// UpdateChapter modifies an existing chapter
 func UpdateChapter(chapter *Chapter) error {
-	return update("chapters", fmt.Sprintf("%s:%s", chapter.MangaSlug, chapter.Slug), chapter)
+	return update("chapters", chapterKey(chapter.MangaSlug, chapter.Slug), chapter)
 }
 
+// DeleteChapter removes a specific chapter
 func DeleteChapter(mangaSlug, chapterSlug string) error {
-	return delete("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug))
+	return delete("chapters", chapterKey(mangaSlug, chapterSlug))
 }
 
+// DeleteChaptersByMangaSlug removes all chapters for a specific manga
 func DeleteChaptersByMangaSlug(mangaSlug string) error {
-	err := deleteKeysWithPattern("chapters", fmt.Sprintf("%s:*", mangaSlug))
-	if err != nil {
-		return err
-	}
-	return nil
+	return deleteKeysWithPattern("chapters", mangaSlug+"*")
 }
 
-func SearchChapters(keyword string, page int, pageSize int, sortBy string, sortOrder string) ([]Chapter, error) {
-	var dataList [][]byte
-	if err := getAll("chapters", &dataList); err != nil {
-		return nil, err
-	}
-
-	var chapters []Chapter
-	for _, data := range dataList {
-		var chapter Chapter
-		if err := json.Unmarshal(data, &chapter); err != nil {
-			return nil, err
-		}
-		chapters = append(chapters, chapter)
-	}
-
-	if keyword != "" {
-		var chapterNames []string
-		for _, ch := range chapters {
-			chapterNames = append(chapterNames, ch.Name)
-		}
-		matchingNames := utils.BigramSearch(keyword, chapterNames)
-		var filteredChapters []Chapter
-		for _, ch := range chapters {
-			for _, name := range matchingNames {
-				if ch.Name == name {
-					filteredChapters = append(filteredChapters, ch)
-					break
-				}
-			}
-		}
-		chapters = filteredChapters
-	}
-
-	// Sort chapters based on sortBy and sortOrder
-	// Implement sorting logic here
-
-	// Apply pagination
-	start := (page - 1) * pageSize
-	end := start + pageSize
-	if start < len(chapters) {
-		if end > len(chapters) {
-			end = len(chapters)
-		}
-		return chapters[start:end], nil
-	}
-	return []Chapter{}, nil
-}
-
+// ChapterExists checks if a chapter already exists
 func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
 	var chapter Chapter
-	err := get("chapters", fmt.Sprintf("%s:%s", mangaSlug, chapterSlug), &chapter)
+	err := get("chapters", chapterKey(mangaSlug, chapterSlug), &chapter)
 	if err == bbolt.ErrBucketNotFound {
 		return false, nil
 	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return err == nil, err
 }
 
-func GetAdjacentChapters(chapterSlug string, mangaSlug string) (prevSlug, nextSlug string, err error) {
+// GetAdjacentChapters finds the previous and next chapters based on the current chapter slug
+func GetAdjacentChapters(chapterSlug, mangaSlug string) (prevSlug, nextSlug string, err error) {
 	chapters, err := GetChapters(mangaSlug)
 	if err != nil {
 		return "", "", err
 	}
 
-	var currentIndex int
-	found := false
-	for i, chapter := range chapters {
-		if chapter.Slug == chapterSlug {
-			currentIndex = i
-			found = true
-			break
-		}
-	}
-
-	if !found {
+	currentIndex := indexOfChapter(chapters, chapterSlug)
+	if currentIndex == -1 {
 		return "", "", errors.New("chapter not found")
 	}
 
@@ -177,4 +112,30 @@ func GetAdjacentChapters(chapterSlug string, mangaSlug string) (prevSlug, nextSl
 	}
 
 	return prevSlug, nextSlug, nil
+}
+
+// Helper functions
+
+func chapterKey(mangaSlug, chapterSlug string) string {
+	return fmt.Sprintf("%s:%s", mangaSlug, chapterSlug)
+}
+
+func sortChaptersByNumber(chapters []Chapter) {
+	sort.Slice(chapters, func(i, j int) bool {
+		numI, errI := utils.ExtractNumber(chapters[i].Name)
+		numJ, errJ := utils.ExtractNumber(chapters[j].Name)
+		if errI != nil || errJ != nil {
+			return chapters[i].Name < chapters[j].Name
+		}
+		return numI < numJ
+	})
+}
+
+func indexOfChapter(chapters []Chapter, chapterSlug string) int {
+	for i, chapter := range chapters {
+		if chapter.Slug == chapterSlug {
+			return i
+		}
+	}
+	return -1
 }

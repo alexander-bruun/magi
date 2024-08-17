@@ -10,76 +10,61 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+)
+
+const (
+	defaultPage     = 1
+	defaultPageSize = 16
+	searchPageSize  = 10
 )
 
 func HandleMangas(c *fiber.Ctx) error {
-	page, err := strconv.Atoi(c.Query("page"))
-	if err != nil || page <= 0 {
-		page = 1
-	}
-
-	mangas, count, err := models.SearchMangas("", page, 16, "name", "asc", "", "")
+	page := getPageNumber(c.Query("page"))
+	mangas, count, err := models.SearchMangas("", page, defaultPageSize, "name", "asc", "", "")
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
-
 	return HandleView(c, views.Mangas(mangas, int(count), page))
 }
 
 func HandleManga(c *fiber.Ctx) error {
 	slug := c.Params("manga")
-
-	currentManga, err := models.GetManga(slug)
+	manga, err := models.GetManga(slug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
-
 	chapters, err := models.GetChapters(slug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
-
-	return HandleView(c, views.Manga(*currentManga, chapters))
+	return HandleView(c, views.Manga(*manga, chapters))
 }
 
 func HandleChapter(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Params("chapter")
 
-	manga, err := models.GetManga(mangaSlug)
+	manga, chapters, err := getMangaAndChapters(mangaSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
-	}
-
-	chapters, err := models.GetChapters(mangaSlug)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	currentSlug := chapter.Slug
-	prevSlug, nextSlug, err := models.GetAdjacentChapters(currentSlug, mangaSlug)
+	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapter.Slug, mangaSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	chapterFilePath := filepath.Join(manga.Path, chapter.File)
-	pageCount, err := utils.CountImageFiles(chapterFilePath)
+	images, err := getChapterImages(manga, chapter)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	var images []string
-	for i := 1; i < pageCount; i++ {
-		images = append(images, fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", mangaSlug, chapterSlug, i))
-	}
-
-	return HandleView(c, views.Chapter(prevSlug, currentSlug, nextSlug, *manga, images, *chapter, chapters))
+	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, chapters))
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
@@ -87,8 +72,8 @@ func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 	search := c.Query("search")
 
 	response, err := models.GetMangadexMangas(search)
-	if err != err {
-		return HandleView(c, views.Error(err.Error()))
+	if err != nil {
+		return handleError(c, err)
 	}
 
 	return HandleView(c, views.UpdateMetadata(*response, mangaSlug))
@@ -98,85 +83,37 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	mangadexID := c.Query("id")
 	mangaSlug := c.Query("slug")
 	if mangaSlug == "" {
-		return HandleView(c, views.Error("Manga slug can't be empty."))
+		return handleError(c, fmt.Errorf("manga slug can't be empty"))
 	}
 
-	// Fetch the existing manga
 	existingManga, err := models.GetManga(mangaSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	// Fetch manga details from Mangadex
 	mangaDetail, err := models.GetMangadexManga(mangadexID)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	// Extract manga details
-	mangaName := mangaDetail.Attributes.Title["en"]
-	var coverArtURL string
-
-	// Extract cover art URL
-	for _, rel := range mangaDetail.Relationships {
-		if rel.Type == "cover_art" {
-			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
-				if fileName, exists := attributes["fileName"].(string); exists {
-					coverArtURL = fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s",
-						mangadexID,
-						fileName)
-					break // Assuming there's only one cover art
-				}
-			}
-		}
-	}
-
-	// Handle local image if coverArtURL is empty
-	if coverArtURL == "" {
-		return HandleView(c, views.Error("Cover art URL not found."))
-	}
-
-	// Parse the cover art URL
-	u, err := url.Parse(coverArtURL)
+	coverArtURL, err := extractCoverArtURL(mangaDetail, mangadexID)
 	if err != nil {
-		log.Errorf("Error parsing URL: %v", err)
-		return HandleView(c, views.Error("Error parsing cover art URL."))
+		return handleError(c, err)
 	}
 
-	// Extract file extension
-	filename := filepath.Base(u.Path)
-	fileExt := filepath.Ext(filename)
-	fileExt = fileExt[1:] // remove leading dot
-
-	// Create cached image URL
-	cachedImageURL := fmt.Sprintf("http://localhost:3000/api/images/%s.%s", existingManga.Slug, fileExt)
-
-	// Download and cache the image
-	err = utils.DownloadImage("/home/alexa/magi/cache", existingManga.Slug, coverArtURL)
+	cachedImageURL, err := cacheAndGetImageURL(existingManga.Slug, coverArtURL)
 	if err != nil {
-		log.Errorf("Error downloading image: %v", err)
-		return HandleView(c, views.Error("Error downloading cover art image."))
+		return handleError(c, err)
 	}
 
-	// Update manga details
-	existingManga.Name = mangaName
-	existingManga.Description = mangaDetail.Attributes.Description["en"]
-	existingManga.Year = mangaDetail.Attributes.Year
-	existingManga.OriginalLanguage = mangaDetail.Attributes.OriginalLanguage
-	existingManga.Status = mangaDetail.Attributes.Status
-	existingManga.ContentRating = mangaDetail.Attributes.ContentRating
-	existingManga.CoverArtURL = cachedImageURL
+	updateMangaDetails(existingManga, mangaDetail, cachedImageURL)
 
-	// Save updated manga details
-	err = models.UpdateManga(existingManga)
-	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+	if err := models.UpdateManga(existingManga); err != nil {
+		return handleError(c, err)
 	}
 
-	// Redirect to updated manga page
 	redirectURL := fmt.Sprintf("/mangas/%s", existingManga.Slug)
 	c.Set("HX-Redirect", redirectURL)
-
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -187,14 +124,93 @@ func HandleMangaSearch(c *fiber.Ctx) error {
 		return HandleView(c, views.OneDoesNotSimplySearch())
 	}
 
-	mangas, _, err := models.SearchMangas(searchParam, 1, 10, "name", "desc", "", "")
+	mangas, _, err := models.SearchMangas(searchParam, defaultPage, searchPageSize, "name", "desc", "", "")
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 
-	if len(mangas) <= 0 {
+	if len(mangas) == 0 {
 		return HandleView(c, views.NoResultsSearch())
 	}
 
 	return HandleView(c, views.SearchMangas(mangas))
+}
+
+// Helper functions
+
+func getPageNumber(pageStr string) int {
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		return defaultPage
+	}
+	return page
+}
+
+func getMangaAndChapters(mangaSlug string) (*models.Manga, []models.Chapter, error) {
+	manga, err := models.GetManga(mangaSlug)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	chapters, err := models.GetChapters(mangaSlug)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return manga, chapters, nil
+}
+
+func getChapterImages(manga *models.Manga, chapter *models.Chapter) ([]string, error) {
+	chapterFilePath := filepath.Join(manga.Path, chapter.File)
+	pageCount, err := utils.CountImageFiles(chapterFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	images := make([]string, pageCount-1)
+	for i := range images {
+		images[i] = fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", manga.Slug, chapter.Slug, i+1)
+	}
+
+	return images, nil
+}
+
+func extractCoverArtURL(mangaDetail *models.MangaDetail, mangadexID string) (string, error) {
+	for _, rel := range mangaDetail.Relationships {
+		if rel.Type == "cover_art" {
+			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
+				if fileName, exists := attributes["fileName"].(string); exists {
+					return fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s", mangadexID, fileName), nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("cover art URL not found")
+}
+
+func cacheAndGetImageURL(slug, coverArtURL string) (string, error) {
+	u, err := url.Parse(coverArtURL)
+	if err != nil {
+		return "", fmt.Errorf("error parsing URL: %w", err)
+	}
+
+	filename := filepath.Base(u.Path)
+	fileExt := filepath.Ext(filename)[1:] // remove leading dot
+
+	err = utils.DownloadImage("/home/alexa/magi/cache", slug, coverArtURL)
+	if err != nil {
+		return "", fmt.Errorf("error downloading image: %w", err)
+	}
+
+	return fmt.Sprintf("http://localhost:3000/api/images/%s.%s", slug, fileExt), nil
+}
+
+func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, coverArtURL string) {
+	manga.Name = mangaDetail.Attributes.Title["en"]
+	manga.Description = mangaDetail.Attributes.Description["en"]
+	manga.Year = mangaDetail.Attributes.Year
+	manga.OriginalLanguage = mangaDetail.Attributes.OriginalLanguage
+	manga.Status = mangaDetail.Attributes.Status
+	manga.ContentRating = mangaDetail.Attributes.ContentRating
+	manga.CoverArtURL = coverArtURL
 }
