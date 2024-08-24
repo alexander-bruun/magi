@@ -24,7 +24,7 @@ Magi builds to a single binary targeting: `Linux`, `MacOS` and `Windows` on the 
 
 Binary releases are uploaded to the corresponding [GitHub Release](https://github.com/alexander-bruun/magi/releases) bound to a Git Tag generated through the GitHub workflow pipelines triggered by a merge to main, because of this we primarily work in the `next` branch, and merge to `main` when significant changes has been made for a tag bump to be reasonable. Due to Magi being in its early stages we also push unsafe directly to `main` branch, this is due to the project being in a early development stage where we have not yet determined everything.
 
-If you wish to run Magi as a Docker container, then fear not! We build Docker container images for `linux` on `amd64` and `arm64`, which can be found on [Docker Hub](https://hub.docker.com/repository/docker/alexbruun/magi/tags) and GHCR (Coming soon).
+If you wish to run Magi as a Docker container, then fear not! We build Docker container images for `linux` on `amd64` and `arm64`, which can be found on [Docker Hub](https://hub.docker.com/r/alexbruun/magi) and GHCR (Coming soon).
 
 When running with native binaries it is heavily recommended to use something like [shawl](https://github.com/mtkennerly/shawl) on Windows to run Magi as a service in the backgounrd, and registering a Unit on Linux.
 
