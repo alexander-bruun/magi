@@ -51,23 +51,28 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Post("/login", LoginUserHandler)
 	app.Post("/logout", LogoutHandler)
 
-	// Admin endpoints
-	admin := app.Group("/admin", AuthMiddleware("admin"))
+	// Libraries endpoint group
+	libraries := app.Group("/libraries", AuthMiddleware("admin"))
 
-	// Admin library endpoints
-	admin.Get("", HandleAdmin)
-	admin.Post("/create-library", HandleCreateLibrary)
-	admin.Delete("/delete-library/:slug", HandleDeleteLibrary)
-	admin.Put("/update-library/:slug", HandleUpdateLibrary)
-	admin.Get("/edit-library/:slug", HandleEditLibrary)
-	admin.Get("/add-folder", HandleAddFolder)
-	admin.Get("/remove-folder", HandleRemoveFolder)
-	admin.Get("/cancel-edit", HandleCancelEdit)
+	// CRUD endpoints
+	libraries.Get("", HandleLibraries)
+	libraries.Post("", HandleCreateLibrary)
+	libraries.Delete("/:slug", HandleDeleteLibrary)
+	libraries.Put("/:slug", HandleUpdateLibrary)
 
-	// Admin user endpoints
-	admin.Get("/users", HandleUsers)
+	// Form endpoints
+	libraries.Get("/edit-library/:slug", HandleEditLibrary)
+	libraries.Get("/add-folder", HandleAddFolder)
+	libraries.Get("/remove-folder", HandleRemoveFolder)
+	libraries.Get("/cancel-edit", HandleCancelEdit)
 
-	// Manga endpoints
+	// Users endpoint group
+	users := app.Group("/users", AuthMiddleware("moderator"))
+
+	// CRUD endpoints
+	users.Get("", HandleUsers)
+
+	// Manga endpoint group
 	mangas := app.Group("/mangas")
 	mangas.Get("", HandleMangas)
 	mangas.Get("/metadata-form/:slug", HandleUpdateMetadataManga)

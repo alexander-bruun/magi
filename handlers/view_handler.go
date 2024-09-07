@@ -49,12 +49,12 @@ func HandleNotFound(c *fiber.Ctx) error {
 	return HandleView(c, views.NotFound())
 }
 
-func HandleAdmin(c *fiber.Ctx) error {
+func HandleLibraries(c *fiber.Ctx) error {
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return handleError(c, err)
 	}
-	return HandleView(c, views.Admin(libraries))
+	return HandleView(c, views.Libraries(libraries))
 }
 
 func HandleUsers(c *fiber.Ctx) error {
