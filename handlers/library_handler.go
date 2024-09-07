@@ -10,6 +10,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func HandleLibraries(c *fiber.Ctx) error {
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return handleError(c, err)
+	}
+	return HandleView(c, views.Libraries(libraries))
+}
+
 func renderLibraryTable(libraries []models.Library) (string, error) {
 	var buf bytes.Buffer
 	err := views.LibraryTable(libraries).Render(context.Background(), &buf)
