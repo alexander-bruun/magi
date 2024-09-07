@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -13,6 +14,26 @@ type User struct {
 	Password            string `json:"password"`
 	RefreshTokenVersion int    `json:"refresh_token_version"`
 	Role                string `json:"role"`
+}
+
+// GetUsers retrieves all Users from the database
+func GetUsers() ([]User, error) {
+	var dataList [][]byte
+	if err := getAll("users", &dataList); err != nil {
+		log.Errorf("Failed to get all users: %v", err)
+		return nil, err
+	}
+
+	var users []User
+	for _, data := range dataList {
+		var user User
+		if err := json.Unmarshal(data, &user); err != nil {
+			log.Errorf("Failed to unmarshal user data: %v", err)
+			continue
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 // CreateUser creates a new user with hashed password and default role.

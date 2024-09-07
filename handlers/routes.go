@@ -53,6 +53,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Admin endpoints
 	admin := app.Group("/admin", AuthMiddleware("admin"))
+
+	// Admin library endpoints
 	admin.Get("", HandleAdmin)
 	admin.Post("/create-library", HandleCreateLibrary)
 	admin.Delete("/delete-library/:slug", HandleDeleteLibrary)
@@ -61,6 +63,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	admin.Get("/add-folder", HandleAddFolder)
 	admin.Get("/remove-folder", HandleRemoveFolder)
 	admin.Get("/cancel-edit", HandleCancelEdit)
+
+	// Admin user endpoints
+	admin.Get("/users", HandleUsers)
 
 	// Manga endpoints
 	mangas := app.Group("/mangas")

@@ -57,6 +57,14 @@ func HandleAdmin(c *fiber.Ctx) error {
 	return HandleView(c, views.Admin(libraries))
 }
 
+func HandleUsers(c *fiber.Ctx) error {
+	users, err := models.GetUsers()
+	if err != nil {
+		return handleError(c, err)
+	}
+	return HandleView(c, views.Users(users))
+}
+
 // Helper functions
 
 func renderComponent(c *fiber.Ctx, component templ.Component) error {

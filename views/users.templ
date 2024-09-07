@@ -1,0 +1,80 @@
+package views
+
+import (
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Users(users []models.User) {
+	<nav aria-label="Breadcrumb">
+		<ul class="uk-breadcrumb">
+			<li>
+				<a
+					href="/"
+					hx-get="/"
+					hx-target="#content"
+					hx-push-url="true"
+				>Home</a>
+			</li>
+			<li>
+				<span>Users</span>
+			</li>
+		</ul>
+	</nav>
+	<div class="uk-container mt-2">
+		<div class="uk-grid uk-flex uk-flex-center">
+			<div id="table-column" class="uk-width-3-4 uk-column-right">
+				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
+				<div class="uk-card p-2">
+					@UsersTable(users)
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ UsersTable(users []models.User) {
+	<div id="libraries-table">
+		<table class="uk-table">
+			<thead>
+				<tr>
+					<th>Username</th>
+					<th>Role</th>
+					<th>Promote</th>
+					<th>Demote</th>
+					<th>Ban</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, user := range users {
+					<tr>
+						<td>
+							<div class="flex items-center justify-center">
+								{ user.Username }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								<p>{ user.Role }</p>
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								Promote
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								Demote
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								Ban
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
