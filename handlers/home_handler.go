@@ -25,7 +25,7 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 	if err != nil {
 		// Log the error, but continue with an empty user role
 		// This allows the page to render for non-authenticated users
-		log.Errorf("Error getting user role: %v\n", err)
+		log.Errorf("Error getting user role: %v", err)
 	}
 
 	base := views.Layout(content, userRole)
