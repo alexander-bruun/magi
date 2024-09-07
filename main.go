@@ -74,7 +74,7 @@ func main() {
 	// }()
 
 	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Printf("Version: %s\n", Version)
+		log.Infof("Version: %s\n", Version)
 		return
 	}
 
@@ -87,7 +87,7 @@ func main() {
 
 	// Ensure the directories exist
 	if err := os.MkdirAll(joinedCacheDataDirectory, os.ModePerm); err != nil {
-		fmt.Printf("Failed to create directories: %s\n", err)
+		log.Errorf("Failed to create directories: %s\n", err)
 		return
 	}
 
