@@ -35,7 +35,7 @@ func CreateUser(username, password string) error {
 	}
 
 	if count == 0 {
-		log.Infof("No users have yet been registered, promoting '%s' to 'admin' role.", user.Username)
+		log.Infof("No users have yet been registered, promoting '%s' to 'admin' role", user.Username)
 		user.Role = "admin"
 	}
 

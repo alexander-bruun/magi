@@ -51,7 +51,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 func HandleDeleteLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty.")
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
 	}
 
 	if err := models.DeleteLibrary(slug); err != nil {
@@ -101,7 +101,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 func HandleEditLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty.")
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
