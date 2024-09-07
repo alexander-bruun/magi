@@ -14,6 +14,7 @@ type User struct {
 	Password            string `json:"password"`
 	RefreshTokenVersion int    `json:"refresh_token_version"`
 	Role                string `json:"role"`
+	Banned              bool   `json:"banned"`
 }
 
 // GetUsers retrieves all Users from the database
@@ -118,4 +119,44 @@ func isValidRole(role string) bool {
 	default:
 		return false
 	}
+}
+
+// BanUser bans a user by setting the Banned field to true.
+func BanUser(username string) error {
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return fmt.Errorf("failed to find user to ban: %w", err)
+	}
+
+	if user.Banned {
+		return fmt.Errorf("user '%s' is already banned", username)
+	}
+
+	user.Banned = true
+	if err := update("users", username, user); err != nil {
+		return fmt.Errorf("failed to ban user: %w", err)
+	}
+
+	log.Infof("User '%s' has been banned", username)
+	return nil
+}
+
+// UnbanUser unbans a user by setting the Banned field to false.
+func UnbanUser(username string) error {
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return fmt.Errorf("failed to find user to unban: %w", err)
+	}
+
+	if !user.Banned {
+		return fmt.Errorf("user '%s' is not banned", username)
+	}
+
+	user.Banned = false
+	if err := update("users", username, user); err != nil {
+		return fmt.Errorf("failed to unban user: %w", err)
+	}
+
+	log.Infof("User '%s' has been unbanned", username)
+	return nil
 }

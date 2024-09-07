@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -48,29 +49,81 @@ templ UsersTable(users []models.User) {
 				for _, user := range users {
 					<tr>
 						<td>
-							<div class="flex items-center justify-center">
-								{ user.Username }
-							</div>
+							{ user.Username }
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
-								<p>{ user.Role }</p>
-							</div>
+							<p>{ user.Role }</p>
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
-								Promote
-							</div>
+							if user.Role == "admin" {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+									disabled
+								>
+									<span uk-icon="chevron-up"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+								>
+									<span uk-icon="chevron-up"></span>
+								</button>
+							}
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
-								Demote
-							</div>
+							if user.Role == "reader" {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+									disabled
+								>
+									<span uk-icon="chevron-down"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+								>
+									<span uk-icon="chevron-down"></span>
+								</button>
+							}
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
-								Ban
-							</div>
+							if user.Banned {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+								>
+									<span uk-icon="check"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#library-form"
+								>
+									<span uk-icon="ban"></span>
+								</button>
+							}
 						</td>
 					</tr>
 				}
