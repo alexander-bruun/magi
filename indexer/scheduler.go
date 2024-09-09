@@ -64,7 +64,7 @@ func (idx *Indexer) Start() {
 
 	activeIndexers[idx.Library.Slug] = idx
 
-	log.Infof("Library indexer '%s' registered with cron schedule '%s'.",
+	log.Infof("Library indexer '%s' registered with cron schedule '%s'",
 		idx.Library.Name, idx.Library.Cron)
 
 	// Listen for stop signal
@@ -77,7 +77,7 @@ func (idx *Indexer) Stop() {
 	if idx.CronRunning {
 		idx.Cron.Stop()
 		idx.CronRunning = false
-		log.Infof("Stopped indexer for library: '%s'.", idx.Library.Name)
+		log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
 	}
 
 	close(idx.stop)
@@ -87,16 +87,16 @@ func (idx *Indexer) Stop() {
 // runIndexingJob performs the indexing job
 func (idx *Indexer) runIndexingJob() {
 	if idx.JobRunning {
-		log.Infof("Indexing job for library '%s' already running, skipping.", idx.Library.Name)
+		log.Infof("Indexing job for library '%s' already running, skipping", idx.Library.Name)
 		return
 	}
 	defer func() {
 		idx.JobRunning = false
-		log.Infof("Indexing job for library '%s' completed.", idx.Library.Name)
+		log.Infof("Indexing job for library '%s' completed", idx.Library.Name)
 	}()
 
 	idx.JobRunning = true
-	log.Infof("Starting indexing for library '%s'.", idx.Library.Name)
+	log.Infof("Starting indexing for library '%s'", idx.Library.Name)
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
@@ -106,14 +106,14 @@ func (idx *Indexer) runIndexingJob() {
 
 		select {
 		case <-idx.stop:
-			log.Infof("Indexing for library '%s' interrupted.", idx.Library.Name)
+			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
 			return
 		default:
 		}
 	}
 
 	duration := time.Since(start)
-	log.Infof("Indexing for library '%s' completed in %s.", idx.Library.Name, duration)
+	log.Infof("Indexing for library '%s' completed in %s", idx.Library.Name, duration)
 }
 
 // processFolder processes files and directories in a given folder
@@ -155,7 +155,7 @@ type NotificationListener struct {
 
 // Notify processes incoming notifications
 func (nl *NotificationListener) Notify(notification models.Notification) {
-	log.Debugf("Received notification of type '%s' for library '%s'.", notification.Type, notification.Payload.(models.Library).Name)
+	log.Debugf("Received notification of type '%s' for library '%s'", notification.Type, notification.Payload.(models.Library).Name)
 
 	switch notification.Type {
 	case "library_created":

@@ -1,0 +1,147 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Users(users []models.User) {
+	<nav aria-label="Breadcrumb">
+		<ul class="uk-breadcrumb">
+			<li>
+				<a
+					href="/"
+					hx-get="/"
+					hx-target="#content"
+					hx-push-url="true"
+				>Home</a>
+			</li>
+			<li>
+				<span>Users</span>
+			</li>
+		</ul>
+	</nav>
+	<div class="uk-container mt-2">
+		<div class="uk-grid uk-flex uk-flex-center">
+			<div id="table-column" class="uk-width-3-4 uk-column-right">
+				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
+				<div class="uk-card p-2">
+					@UsersTable(users)
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ UsersTable(users []models.User) {
+	<div id="users-table">
+		<table class="uk-table">
+			<thead>
+				<tr>
+					<th>Username</th>
+					<th>Promote</th>
+					<th>Demote</th>
+					<th>Ban</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, user := range users {
+					<tr>
+						<td>
+							if user.Banned {
+								<p class="text-rose-600 line-through">
+									{ user.Username }
+								</p>
+							} else {
+								if user.Role == "admin" {
+									<p class="text-lime-500 underline decoration-wavy">
+										{ user.Username }
+									</p>
+								} else if user.Role == "moderator" {
+									<p class="text-sky-500 underline decoration-dashed">
+										{ user.Username }
+									</p>
+								} else {
+									<p class="text-stone-400">
+										{ user.Username }
+									</p>
+								}
+							}
+						</td>
+						<td>
+							if user.Role == "admin" {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+									disabled
+								>
+									<span uk-icon="chevron-up"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+								>
+									<span uk-icon="chevron-up"></span>
+								</button>
+							}
+						</td>
+						<td>
+							if user.Role == "reader" {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+									disabled
+								>
+									<span uk-icon="chevron-down"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+								>
+									<span uk-icon="chevron-down"></span>
+								</button>
+							}
+						</td>
+						<td>
+							if user.Banned {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+								>
+									<span uk-icon="check"></span>
+								</button>
+							} else {
+								<button
+									type="button"
+									class="uk-button uk-button-default"
+									hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
+									hx-trigger="click"
+									hx-target="#users-table"
+								>
+									<span uk-icon="ban"></span>
+								</button>
+							}
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

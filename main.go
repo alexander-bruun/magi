@@ -74,7 +74,7 @@ func main() {
 	// }()
 
 	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Printf("Version: %s\n", Version)
+		log.Infof("Version: %s", Version)
 		return
 	}
 
@@ -87,12 +87,12 @@ func main() {
 
 	// Ensure the directories exist
 	if err := os.MkdirAll(joinedCacheDataDirectory, os.ModePerm); err != nil {
-		fmt.Printf("Failed to create directories: %s\n", err)
+		log.Errorf("Failed to create directories: %s", err)
 		return
 	}
 
-	log.Debugf("Using '%s/magi.db' as the key-value store location.", dataDirectory)
-	log.Debugf("Using '%s' as the image caching location.", joinedCacheDataDirectory)
+	log.Debugf("Using '%s/magi.db' as the key-value store location", dataDirectory)
+	log.Debugf("Using '%s' as the image caching location", joinedCacheDataDirectory)
 
 	// Initialize key-value connection
 	err := models.Initialize(dataDirectory)
@@ -116,9 +116,9 @@ func main() {
 		if err := models.StoreKey(key); err != nil {
 			log.Fatal("Failed to store JWT key:", err)
 		}
-		log.Info("New JWT key generated and stored.")
+		log.Info("New JWT key generated and stored")
 	} else {
-		log.Info("JWT key retrieved from key-value store.")
+		log.Info("JWT key retrieved from key-value store")
 	}
 
 	// Create a new engine
