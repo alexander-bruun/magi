@@ -8,7 +8,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Footer() templ.Component {
+func Banned() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,7 +29,7 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<footer class=\"mt-6 uk-card rounded-lg shadow\"><div class=\"w-full mx-auto p-4 flex flex-col items-center justify-between\"><span class=\"text-sm sm:text-center font-bold\">© 2024 <a href=\"https://github.com/alexander-bruun/magi/\" class=\"hover:underline\">Magi™</a>. All Rights Reserved.</span></div></footer>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<section class=\"flex items-center justify-center min-h-screen\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-7xl tracking-tight font-extrabold lg:text-9xl text-primary-600 dark:text-primary-500\">You have been banned...</h1><p class=\"mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white\">You did something naughty...</p></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -80,6 +80,10 @@ func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 		return fiber.ErrForbidden
 	}
 
+	if user.Banned {
+		return fiber.ErrForbidden
+	}
+
 	c.Locals("user_name", userName)
 	return nil
 }

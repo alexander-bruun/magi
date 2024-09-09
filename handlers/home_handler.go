@@ -7,6 +7,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
@@ -24,7 +25,7 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 	if err != nil {
 		// Log the error, but continue with an empty user role
 		// This allows the page to render for non-authenticated users
-		fmt.Printf("Error getting user role: %v\n", err)
+		log.Errorf("Error getting user role: %v", err)
 	}
 
 	base := views.Layout(content, userRole)
@@ -47,14 +48,6 @@ func HandleHome(c *fiber.Ctx) error {
 
 func HandleNotFound(c *fiber.Ctx) error {
 	return HandleView(c, views.NotFound())
-}
-
-func HandleAdmin(c *fiber.Ctx) error {
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return handleError(c, err)
-	}
-	return HandleView(c, views.Admin(libraries))
 }
 
 // Helper functions

@@ -5,7 +5,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Admin(libraries []models.Library) {
+templ Libraries(libraries []models.Library) {
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -17,7 +17,7 @@ templ Admin(libraries []models.Library) {
 				>Home</a>
 			</li>
 			<li>
-				<span>Admin</span>
+				<span>Libraries</span>
 			</li>
 		</ul>
 	</nav>
@@ -91,7 +91,7 @@ templ LibraryTable(libraries []models.Library) {
 								<button
 									type="button"
 									class="uk-button uk-button-default"
-									hx-get={ fmt.Sprintf("/admin/edit-library/%s", library.Slug) }
+									hx-get={ fmt.Sprintf("/libraries/edit-library/%s", library.Slug) }
 									hx-trigger="click"
 									hx-target="#library-form"
 								>
@@ -104,7 +104,7 @@ templ LibraryTable(libraries []models.Library) {
 								<button
 									type="button"
 									class="uk-button uk-button-danger"
-									hx-delete={ fmt.Sprintf("/admin/delete-library/%s", library.Slug) }
+									hx-delete={ fmt.Sprintf("/libraries/%s", library.Slug) }
 									hx-trigger="click"
 									hx-target="#libraries-table"
 									hx-confirm="Are you sure you want to delete this library?"
@@ -125,7 +125,7 @@ templ LibraryForm(library models.Library, action string) {
 		<div id="library-form">
 			<form
 				id="library-form"
-				hx-post="/admin/create-library"
+				hx-post="/libraries"
 				hx-target="#libraries-table"
 				hx-trigger="submit"
 			>
@@ -136,7 +136,7 @@ templ LibraryForm(library models.Library, action string) {
 		<div id="library-form">
 			<form
 				id="library-form"
-				hx-put={ fmt.Sprintf("/admin/update-library/%s", library.Slug) }
+				hx-put={ fmt.Sprintf("/libraries/%s", library.Slug) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
 			>
@@ -187,7 +187,7 @@ templ FormContent(library models.Library) {
 				<!-- Folder fields will be dynamically added here -->
 				<div class="folder-row mb-4 flex items-center">
 					<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path"/>
-					<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/add-folder" hx-target="#folders-container" hx-swap="beforeend">
+					<button type="button" class="uk-button uk-button-default ml-2" hx-get="/libraries/add-folder" hx-target="#folders-container" hx-swap="beforeend">
 						<span uk-icon="plus"></span>
 					</button>
 				</div>
@@ -203,7 +203,7 @@ templ FormContent(library models.Library) {
 					if index == 0 {
 						<div class="folder-row mb-4 flex items-center">
 							<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folder }/>
-							<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/add-folder" hx-target="#folders-container" hx-swap="beforeend">
+							<button type="button" class="uk-button uk-button-default ml-2" hx-get="/libraries/add-folder" hx-target="#folders-container" hx-swap="beforeend">
 								<span uk-icon="plus"></span>
 							</button>
 						</div>
@@ -214,7 +214,7 @@ templ FormContent(library models.Library) {
 			</div>
 			<div class="mt-4 uk-flex uk-flex-center">
 				<button type="submit" class="uk-button uk-button-default mr-2">Save</button>
-				<button type="button" class="uk-button uk-button-default ml-2" hx-get="/admin/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
+				<button type="button" class="uk-button uk-button-default ml-2" hx-get="/libraries/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
 			</div>
 		}
 		<div id="response" class="mt-8"></div>
@@ -224,7 +224,7 @@ templ FormContent(library models.Library) {
 templ Folder(folderValue string) {
 	<div class="folder-row mb-4 flex items-center">
 		<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
-		<button type="button" class="uk-button uk-button-danger ml-2" hx-get="/admin/remove-folder" hx-target="closest .folder-row" hx-swap="outerHTML">
+		<button type="button" class="uk-button uk-button-danger ml-2" hx-get="/libraries/remove-folder" hx-target="closest .folder-row" hx-swap="outerHTML">
 			<span uk-icon="close"></span>
 		</button>
 	</div>

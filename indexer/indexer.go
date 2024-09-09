@@ -29,13 +29,13 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	slug := utils.Sluggify(cleanedName)
 	if exists, _ := models.MangaExists(slug); exists {
-		log.Debugf("Skipping: '%s', it has already been indexed.", cleanedName)
+		log.Debugf("Skipping: '%s', it has already been indexed", cleanedName)
 		return "", nil
 	}
 
 	bestMatch, err := models.GetBestMatchMangadexManga(cleanedName)
 	if err != nil {
-		log.Warnf("No search result found for: '%s', falling back to local metadata.", slug)
+		log.Warnf("No search result found for: '%s', falling back to local metadata", slug)
 	}
 
 	cachedImageURL, err := handleCoverArt(bestMatch, slug, absolutePath)

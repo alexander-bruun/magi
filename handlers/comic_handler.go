@@ -21,7 +21,7 @@ func ComicHandler(c *fiber.Ctx) error {
 	chapterPage := c.Query("page")
 
 	if mangaSlug == "" || chapterSlug == "" || chapterPage == "" {
-		return HandleView(c, views.Error("When requesting a manga, all parameters must be provided."))
+		return HandleView(c, views.Error("When requesting a manga, all parameters must be provided"))
 	}
 
 	manga, err := models.GetManga(mangaSlug)
