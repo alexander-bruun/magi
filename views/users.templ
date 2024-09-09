@@ -34,12 +34,11 @@ templ Users(users []models.User) {
 }
 
 templ UsersTable(users []models.User) {
-	<div id="libraries-table">
+	<div id="users-table">
 		<table class="uk-table">
 			<thead>
 				<tr>
 					<th>Username</th>
-					<th>Role</th>
 					<th>Promote</th>
 					<th>Demote</th>
 					<th>Ban</th>
@@ -49,10 +48,25 @@ templ UsersTable(users []models.User) {
 				for _, user := range users {
 					<tr>
 						<td>
-							{ user.Username }
-						</td>
-						<td>
-							<p>{ user.Role }</p>
+							if user.Banned {
+								<p class="text-rose-600 line-through">
+									{ user.Username }
+								</p>
+							} else {
+								if user.Role == "admin" {
+									<p class="text-lime-500 underline decoration-wavy">
+										{ user.Username }
+									</p>
+								} else if user.Role == "moderator" {
+									<p class="text-sky-500 underline decoration-dashed">
+										{ user.Username }
+									</p>
+								} else {
+									<p class="text-stone-400">
+										{ user.Username }
+									</p>
+								}
+							}
 						</td>
 						<td>
 							if user.Role == "admin" {
@@ -61,7 +75,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 									disabled
 								>
 									<span uk-icon="chevron-up"></span>
@@ -72,7 +86,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 								>
 									<span uk-icon="chevron-up"></span>
 								</button>
@@ -85,7 +99,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 									disabled
 								>
 									<span uk-icon="chevron-down"></span>
@@ -96,7 +110,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 								>
 									<span uk-icon="chevron-down"></span>
 								</button>
@@ -109,7 +123,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 								>
 									<span uk-icon="check"></span>
 								</button>
@@ -119,7 +133,7 @@ templ UsersTable(users []models.User) {
 									class="uk-button uk-button-default"
 									hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
 									hx-trigger="click"
-									hx-target="#library-form"
+									hx-target="#users-table"
 								>
 									<span uk-icon="ban"></span>
 								</button>

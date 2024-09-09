@@ -17,6 +17,9 @@ type User struct {
 	Banned              bool   `json:"banned"`
 }
 
+// roleHierarchy defines the order of roles from lowest to highest.
+var roleHierarchy = []string{"reader", "moderator", "admin"}
+
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
 	var dataList [][]byte
@@ -119,6 +122,74 @@ func isValidRole(role string) bool {
 	default:
 		return false
 	}
+}
+
+// getNextRole finds the next role in the hierarchy.
+func getNextRole(currentRole string) (string, error) {
+	for i, role := range roleHierarchy {
+		if role == currentRole && i < len(roleHierarchy)-1 {
+			return roleHierarchy[i+1], nil
+		}
+	}
+	return "", errors.New("no higher role available")
+}
+
+// getPreviousRole finds the previous role in the hierarchy.
+func getPreviousRole(currentRole string) (string, error) {
+	for i, role := range roleHierarchy {
+		if role == currentRole && i > 0 {
+			return roleHierarchy[i-1], nil
+		}
+	}
+	return "", errors.New("no lower role available")
+}
+
+// PromoteUser promotes a user to the next role in the hierarchy.
+func PromoteUser(username string) error {
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return fmt.Errorf("failed to find user to promote: %w", err)
+	}
+
+	if user.Banned {
+		return fmt.Errorf("user '%s' is banned and cannot be promoted", username)
+	}
+
+	nextRole, err := getNextRole(user.Role)
+	if err != nil {
+		return fmt.Errorf("failed to promote user: %w", err)
+	}
+
+	if err := UpdateUserRole(username, nextRole); err != nil {
+		return fmt.Errorf("failed to update user role: %w", err)
+	}
+
+	log.Infof("User '%s' has been promoted to '%s'", username, nextRole)
+	return nil
+}
+
+// DemoteUser demotes a user to the previous role in the hierarchy.
+func DemoteUser(username string) error {
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return fmt.Errorf("failed to find user to demote: %w", err)
+	}
+
+	if user.Banned {
+		return fmt.Errorf("user '%s' is banned and cannot be demoted", username)
+	}
+
+	previousRole, err := getPreviousRole(user.Role)
+	if err != nil {
+		return fmt.Errorf("failed to demote user: %w", err)
+	}
+
+	if err := UpdateUserRole(username, previousRole); err != nil {
+		return fmt.Errorf("failed to update user role: %w", err)
+	}
+
+	log.Infof("User '%s' has been demoted to '%s'", username, previousRole)
+	return nil
 }
 
 // BanUser bans a user by setting the Banned field to true.

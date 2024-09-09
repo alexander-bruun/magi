@@ -71,6 +71,10 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// CRUD endpoints
 	users.Get("", HandleUsers)
+	users.Get("/ban/:username", HandleUserBan)
+	users.Get("/unban/:username", HandleUserUnban)
+	users.Get("/promote/:username", HandleUserPromote)
+	users.Get("/demote/:username", HandleUserDemote)
 
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
