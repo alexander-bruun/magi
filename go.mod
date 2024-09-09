@@ -3,7 +3,7 @@ module github.com/alexander-bruun/magi
 go 1.22.5
 
 require (
-	github.com/a-h/templ v0.2.771
+	github.com/a-h/templ v0.2.778
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/template/html/v2 v2.1.2
 	github.com/golang-jwt/jwt/v4 v4.5.0
