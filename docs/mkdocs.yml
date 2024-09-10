@@ -1,0 +1,49 @@
+site_name: Magi
+site_url: https://alexander-bruun.github.io/magi/
+site_author: Alexander Bruun
+site_description: >-
+  Magi is a simplistic and performant manga indexer, organizer and reader written in GoLang.
+
+repo_name: alexander-bruun/magi
+repo_url: https://github.com/alexander-bruun/magi
+
+theme:
+  name: material
+  language: en
+
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.tooltips
+    - navigation.sections
+
+  logo: https://raw.githubusercontent.com/alexander-bruun/magi/main/assets/img/icon.png
+  favicon: https://raw.githubusercontent.com/alexander-bruun/magi/main/assets/img/icon.png
+
+  palette:
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+  features:
+    - search.suggest
+    - search.highlight
+    - search.share
+
+plugins:
+  - search
+  - optimize
+  - offline
