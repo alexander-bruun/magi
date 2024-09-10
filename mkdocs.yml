@@ -45,5 +45,4 @@ theme:
 
 plugins:
   - search
-  - optimize
   - offline
