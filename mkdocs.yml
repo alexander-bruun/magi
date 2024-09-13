@@ -7,6 +7,19 @@ site_description: >-
 repo_name: alexander-bruun/magi
 repo_url: https://github.com/alexander-bruun/magi
 
+nav:
+  - Home: index.md
+  - Usage:
+    - Getting Started: usage/getting_started.md
+    - Configuration: usage/configuration.md
+    - Troubleshooting: usage/troubleshooting.md
+  - Installation:
+    - Windows: installation/windows.md
+    - Linux: installation/linux.md
+    - Docker: installation/docker.md
+    - Podman: installation/podman.md
+    - Kubernetes: installation/kubernetes.md
+
 theme:
   name: material
   language: en
@@ -16,6 +29,10 @@ theme:
     - content.action.view
     - content.tooltips
     - navigation.sections
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
 
   logo: https://raw.githubusercontent.com/alexander-bruun/magi/main/assets/img/icon.png
   favicon: https://raw.githubusercontent.com/alexander-bruun/magi/main/assets/img/icon.png
@@ -38,11 +55,15 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
-  features:
-    - search.suggest
-    - search.highlight
-    - search.share
-
 plugins:
   - search
   - offline
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
