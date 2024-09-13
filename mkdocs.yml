@@ -42,7 +42,7 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: teal
+      primary: light blue
       toggle:
         icon: material/weather-night
         name: Switch to dark mode

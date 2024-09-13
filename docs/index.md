@@ -72,7 +72,6 @@ To regenerate the Tailwind CSS theme with a new color scheme, run:
 npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 ```
 
-> [!NOTE]
 > Make sure to update the theme in `tailwind.config.js` before running this command.
 
 If you want to inspect the data stored in the Bolt key-value store, the `bbolt` CLI can be used. Alternatively a community Open-Source project named `boltbrowser` can be used, the project can be found [here](https://github.com/br0xen/boltbrowser).
