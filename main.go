@@ -134,9 +134,10 @@ func main() {
 		Browse:     true,
 	}))
 
+	// Start API in its own goroutine
 	go handlers.Initialize(app, joinedCacheDataDirectory)
 
-	// Start API and Indexer in separate goroutines
+	// Start Indexer in its own goroutine
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		log.Warnf("Failed to get libraries: %v", err)

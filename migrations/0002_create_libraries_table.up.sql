@@ -1,3 +1,4 @@
+-- Create the libraries table
 CREATE TABLE IF NOT EXISTS libraries (
     slug TEXT PRIMARY KEY,
     name TEXT NOT NULL,

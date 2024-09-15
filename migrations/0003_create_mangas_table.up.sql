@@ -1,3 +1,4 @@
+-- Create the mangas table
 CREATE TABLE IF NOT EXISTS mangas (
     slug TEXT PRIMARY KEY,
     name TEXT NOT NULL,
