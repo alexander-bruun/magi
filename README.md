@@ -38,14 +38,13 @@ Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
 - [Sqlite](https://github.com/ncruces/go-sqlite3) - Database
-- [GoFiber](https://docs.gofiber.io/) - HTTP Server
-- [Templ](https://templ.guide/) - HTML Templating
-- JavaScript libraries:
-  - [HTMX](https://htmx.org/) - Hypermedia
-  - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
-- [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
-- [Franken UI](https://franken-ui.dev/) - Predefined Components
-- [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
+- [GoFiber](https://docs.gofiber.io/) - Web framework
+- [Templ](https://templ.guide/) - HTML / Go templating
+- [HTMX](https://htmx.org/) - Hypermedia
+- [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
+- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
+- [Franken UI](https://franken-ui.dev/) - Predefined CSS components
+- [Mangadex API](https://api.mangadex.org/docs/) - Metadata
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
