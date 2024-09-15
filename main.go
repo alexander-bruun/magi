@@ -23,7 +23,7 @@ import (
 
 var Version = "develop"
 
-// //go:embed migrations/*.go
+// //go:embed migrations/*.sql
 // var MigrationsDirectory embed.FS
 
 // //go:embed views/*.go
