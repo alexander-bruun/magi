@@ -35,7 +35,7 @@ Alternatively, run Magi in a container solution such as Kubernetes, Docker Deskt
 Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
-- [Sqlite](https://github.com/ncruces/go-sqlite3) - Database
+- [Sqlite](https://github.com/ncruces/go-sqlite3) - Relational database
 - [GoFiber](https://docs.gofiber.io/) - Web framework
 - [Templ](https://templ.guide/) - HTML / Go templating
 - [HTMX](https://htmx.org/) - Hypermedia
