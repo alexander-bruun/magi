@@ -19,7 +19,11 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">
-									<img src={ manga.CoverArtURL } class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									if manga.CoverArtURL == "" {
+										<img src="https://placehold.co/200x300?text=N/A" class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									} else {
+										<img src={ manga.CoverArtURL } class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									}
 								</div>
 								<div class="uk-card-body">
 									<h3 class="uk-card-title">{ manga.Name }</h3>
@@ -53,7 +57,11 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
 						<div>
 							<div class="uk-card uk-card-default ">
 								<div class="uk-card-media-top flex justify-center items-center">
-									<img src={ manga.CoverArtURL } class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									if manga.CoverArtURL == "" {
+										<img src="https://placehold.co/200x300?text=N/A" class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									} else {
+										<img src={ manga.CoverArtURL } class="pt-2" width="200" height="300" alt={ manga.Name }/>
+									}
 								</div>
 								<div class="uk-card-body">
 									<h3 class="uk-card-title">{ manga.Name }</h3>
