@@ -2,15 +2,16 @@ package models
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"go.etcd.io/bbolt"
 )
 
+// JWTKey represents the JWT key table schema
 type JWTKey struct {
 	Key string `json:"key"`
 }
@@ -27,17 +28,36 @@ func GenerateRandomKey(length int) (string, error) {
 
 // StoreKey saves the JWT key to the database
 func StoreKey(key string) error {
-	return updateBucket("jwt", "jwt_key", JWTKey{Key: key})
+	query := `
+	INSERT INTO jwt_keys (key) VALUES (?)
+	ON CONFLICT(key) DO UPDATE SET key = excluded.key
+	`
+	_, err := db.Exec(query, key)
+	if err != nil {
+		return fmt.Errorf("failed to store key: %w", err)
+	}
+
+	return nil
 }
 
 // GetKey retrieves the JWT key from the database
 func GetKey() (string, error) {
-	var jwtKey JWTKey
-	err := getFromBucket("jwt", "jwt_key", &jwtKey)
+	query := `
+	SELECT key FROM jwt_keys
+	LIMIT 1
+	`
+	row := db.QueryRow(query)
+
+	var key JWTKey
+	err := row.Scan(&key.Key)
 	if err != nil {
-		return "", err
+		if err == sql.ErrNoRows {
+			return "", errors.New("key not found")
+		}
+		return "", fmt.Errorf("failed to get key: %w", err)
 	}
-	return jwtKey.Key, nil
+
+	return key.Key, nil
 }
 
 // CreateAccessToken generates a new access token with a 15-minute expiry
@@ -138,28 +158,4 @@ func handleTokenValidationError(err error) (jwt.MapClaims, error) {
 		return nil, errors.New("token invalid")
 	}
 	return nil, err
-}
-
-// Helper functions for bucket operations
-
-func updateBucket(bucket, key string, data interface{}) error {
-	return db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
-		encoded, err := json.Marshal(data)
-		if err != nil {
-			return err
-		}
-		return b.Put([]byte(key), encoded)
-	})
-}
-
-func getFromBucket(bucket, key string, data interface{}) error {
-	return db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
-		v := b.Get([]byte(key))
-		if v == nil {
-			return errors.New("key not found")
-		}
-		return json.Unmarshal(v, data)
-	})
 }

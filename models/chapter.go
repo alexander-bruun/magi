@@ -1,16 +1,14 @@
 package models
 
 import (
-	"bytes"
-	"encoding/json"
+	"database/sql"
 	"errors"
-	"fmt"
 	"sort"
 
 	"github.com/alexander-bruun/magi/utils"
-	"go.etcd.io/bbolt"
 )
 
+// Chapter represents the chapter table schema
 type Chapter struct {
 	Slug            string `json:"slug"`
 	Name            string `json:"name"`
@@ -23,33 +21,51 @@ type Chapter struct {
 // CreateChapter adds a new chapter if it does not already exist
 func CreateChapter(chapter Chapter) error {
 	chapter.Slug = utils.Sluggify(chapter.Name)
-	if exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug); err != nil {
+	exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug)
+	if err != nil {
 		return err
-	} else if exists {
+	}
+	if exists {
 		return errors.New("chapter already exists")
 	}
 
-	return create("chapters", chapterKey(chapter.MangaSlug, chapter.Slug), chapter)
+	query := `
+	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, manga_slug)
+	VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetChapters retrieves all chapters for a specific manga, sorted by name
 func GetChapters(mangaSlug string) ([]Chapter, error) {
-	var chapters []Chapter
-	err := db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte("chapters"))
-		cursor := bucket.Cursor()
-		prefix := []byte(mangaSlug + ":")
+	query := `
+	SELECT slug, name, type, file, chapter_cover_url, manga_slug
+	FROM chapters
+	WHERE manga_slug = ?
+	`
 
-		for k, v := cursor.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = cursor.Next() {
-			var chapter Chapter
-			if err := json.Unmarshal(v, &chapter); err != nil {
-				return err
-			}
-			chapters = append(chapters, chapter)
-		}
-		return nil
-	})
+	rows, err := db.Query(query, mangaSlug)
 	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chapters []Chapter
+	for rows.Next() {
+		var chapter Chapter
+		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug); err != nil {
+			return nil, err
+		}
+		chapters = append(chapters, chapter)
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -59,37 +75,90 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 
 // GetChapter retrieves a specific chapter by its slug
 func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
+	query := `
+	SELECT slug, name, type, file, chapter_cover_url, manga_slug
+	FROM chapters
+	WHERE manga_slug = ? AND slug = ?
+	`
+
+	row := db.QueryRow(query, mangaSlug, chapterSlug)
+
 	var chapter Chapter
-	err := get("chapters", chapterKey(mangaSlug, chapterSlug), &chapter)
+	err := row.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No chapter found
+		}
 		return nil, err
 	}
+
 	return &chapter, nil
 }
 
 // UpdateChapter modifies an existing chapter
 func UpdateChapter(chapter *Chapter) error {
-	return update("chapters", chapterKey(chapter.MangaSlug, chapter.Slug), chapter)
+	query := `
+	UPDATE chapters
+	SET name = ?, type = ?, file = ?, chapter_cover_url = ?
+	WHERE manga_slug = ? AND slug = ?
+	`
+
+	_, err := db.Exec(query, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug, chapter.Slug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteChapter removes a specific chapter
 func DeleteChapter(mangaSlug, chapterSlug string) error {
-	return delete("chapters", chapterKey(mangaSlug, chapterSlug))
+	query := `
+	DELETE FROM chapters
+	WHERE manga_slug = ? AND slug = ?
+	`
+
+	_, err := db.Exec(query, mangaSlug, chapterSlug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteChaptersByMangaSlug removes all chapters for a specific manga
 func DeleteChaptersByMangaSlug(mangaSlug string) error {
-	return deleteKeysWithPattern("chapters", mangaSlug+"*")
+	query := `
+	DELETE FROM chapters
+	WHERE manga_slug = ?
+	`
+
+	_, err := db.Exec(query, mangaSlug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ChapterExists checks if a chapter already exists
 func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
-	var chapter Chapter
-	err := get("chapters", chapterKey(mangaSlug, chapterSlug), &chapter)
-	if err == bbolt.ErrBucketNotFound {
+	query := `
+	SELECT 1
+	FROM chapters
+	WHERE manga_slug = ? AND slug = ?
+	`
+
+	row := db.QueryRow(query, mangaSlug, chapterSlug)
+	var exists int
+	err := row.Scan(&exists)
+	if err == sql.ErrNoRows {
 		return false, nil
 	}
-	return err == nil, err
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // GetAdjacentChapters finds the previous and next chapters based on the current chapter slug
@@ -115,10 +184,6 @@ func GetAdjacentChapters(chapterSlug, mangaSlug string) (prevSlug, nextSlug stri
 }
 
 // Helper functions
-
-func chapterKey(mangaSlug, chapterSlug string) string {
-	return fmt.Sprintf("%s:%s", mangaSlug, chapterSlug)
-}
 
 func sortChaptersByNumber(chapters []Chapter) {
 	sort.Slice(chapters, func(i, j int) bool {

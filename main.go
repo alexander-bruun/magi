@@ -23,6 +23,9 @@ import (
 
 var Version = "develop"
 
+// //go:embed migrations/*.go
+// var MigrationsDirectory embed.FS
+
 // //go:embed views/*.go
 // var ViewsDirectory embed.FS
 
@@ -38,12 +41,6 @@ var assetsfs embed.FS
 var dataDirectory string
 
 func init() {
-	// f, err := os.OpenFile("output.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	// if err != nil {
-	// 	return
-	// }
-	// log.SetOutput(f)
-
 	log.SetLevel(log.LevelInfo)
 
 	var defaultDataDirectory string
@@ -69,10 +66,6 @@ func init() {
 }
 
 func main() {
-	// go func() {
-	// 	log.Info(http.ListenAndServe("localhost:6060", nil))
-	// }()
-
 	if len(os.Args) > 1 && os.Args[1] == "version" {
 		log.Infof("Version: %s", Version)
 		return
@@ -91,17 +84,17 @@ func main() {
 		return
 	}
 
-	log.Debugf("Using '%s/magi.db' as the key-value store location", dataDirectory)
+	log.Debugf("Using '%s/magi.db' as the database location", dataDirectory)
 	log.Debugf("Using '%s' as the image caching location", joinedCacheDataDirectory)
 
-	// Initialize key-value connection
+	// Initialize database connection
 	err := models.Initialize(dataDirectory)
 	if err != nil {
-		log.Errorf("Failed to connect to key-value store: %v", err)
+		log.Errorf("Failed to connect to database: %v", err)
 	}
 	defer func() {
 		if err := models.Close(); err != nil {
-			log.Errorf("Failed to close key-value store: %v", err)
+			log.Errorf("Failed to close database: %v", err)
 		}
 	}()
 
