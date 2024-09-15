@@ -61,25 +61,6 @@ air
 
 This will start the application and provide you with logs indicating the status of the server and other components. You can then access the application at `http://localhost:3000`. Air also provides similar functionaly to something like `next run dev` where you get a proxy page that reloads for you, by opening the application on port `:3001` then you will get proxy refresh's when you change the source code.
 
-This provides a smoother developer experience instead of having to refresh the page every time you made a change.
-
-To regenerate the Tailwind CSS theme with a new color scheme, run:
-
-```sh
-npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
-```
-
-> [!NOTE]
-> Make sure to update the theme in `tailwind.config.js` before running this command.
-
-If you want to inspect the data stored in the Sqlite database, the `sqlite3` CLI can be used.
-
-```sh
-sqlite3 ~/magi/magi.db
-```
-
-This will open a interactive console browser, here you can explore individual buckets, and the data contained within them.
-
 ## Contributing
 
 Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
