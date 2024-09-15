@@ -82,7 +82,11 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 
 templ Info(manga models.Manga) {
 	<div class="uk-card-media-top flex justify-center items-center">
-		<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+		if manga.CoverArtURL == "" {
+			<img src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
+		} else {
+			<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+		}
 	</div>
 	<p class="uk-margin line-clamp-5">
 		{ manga.Description }
