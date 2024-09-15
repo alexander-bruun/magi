@@ -37,7 +37,7 @@ The full documentation, can be found [here](https://alexander-bruun.github.io/ma
 Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
-- [Bolt](https://github.com/etcd-io/bbolt) - Key value store
+- [Sqlite](https://github.com/ncruces/go-sqlite3) - Database
 - [GoFiber](https://docs.gofiber.io/) - HTTP Server
 - [Templ](https://templ.guide/) - HTML Templating
 - JavaScript libraries:
@@ -73,11 +73,10 @@ npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 > [!NOTE]
 > Make sure to update the theme in `tailwind.config.js` before running this command.
 
-If you want to inspect the data stored in the Bolt key-value store, the `bbolt` CLI can be used. Alternatively a community Open-Source project named `boltbrowser` can be used, the project can be found [here](https://github.com/br0xen/boltbrowser).
+If you want to inspect the data stored in the Sqlite database, the `sqlite3` CLI can be used.
 
 ```sh
-go install github.com/br0xen/boltbrowser@latest
-boltbrowser ~/magi/magi.db
+sqlite3 ~/magi/magi.db
 ```
 
 This will open a interactive console browser, here you can explore individual buckets, and the data contained within them.

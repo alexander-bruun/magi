@@ -111,7 +111,7 @@ func main() {
 		}
 		log.Info("New JWT key generated and stored")
 	} else {
-		log.Info("JWT key retrieved from key-value store")
+		log.Info("JWT key retrieved from database store")
 	}
 
 	// Create a new engine
