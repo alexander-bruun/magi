@@ -73,11 +73,11 @@ go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 Migrate the database up:
 
 ```bash
-migrate -path ./migrations -database "sqlite3://path_to_your_db_file.db" up
+migrate -path ./migrations -database "sqlite3://~/magi/magi.db" up
 ```
 
 Migrate the database down:
 
 ```bash
-migrate -path ./migrations -database "sqlite3://path_to_your_db_file.db" down
+migrate -path ./migrations -database "sqlite3://~/magi/magi.db" down
 ```
