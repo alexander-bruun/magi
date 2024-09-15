@@ -1,7 +1,7 @@
 package models
 
 import (
-	"encoding/json"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// User represents the user table schema
 type User struct {
 	Username            string `json:"username"`
 	Password            string `json:"password"`
@@ -22,21 +23,30 @@ var roleHierarchy = []string{"reader", "moderator", "admin"}
 
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
-	var dataList [][]byte
-	if err := getAll("users", &dataList); err != nil {
-		log.Errorf("Failed to get all users: %v", err)
+	query := `
+	SELECT username, password, refresh_token_version, role, banned
+	FROM users
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var users []User
-	for _, data := range dataList {
+	for rows.Next() {
 		var user User
-		if err := json.Unmarshal(data, &user); err != nil {
-			log.Errorf("Failed to unmarshal user data: %v", err)
-			continue
+		if err := rows.Scan(&user.Username, &user.Password, &user.RefreshTokenVersion, &user.Role, &user.Banned); err != nil {
+			return nil, err
 		}
 		users = append(users, user)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return users, nil
 }
 
@@ -64,16 +74,38 @@ func CreateUser(username, password string) error {
 		user.Role = "admin"
 	}
 
-	return create("users", username, user)
+	query := `
+	INSERT INTO users (username, password, refresh_token_version, role, banned)
+	VALUES (?, ?, ?, ?, ?)
+	`
+
+	_, err = db.Exec(query, user.Username, user.Password, user.RefreshTokenVersion, user.Role, user.Banned)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FindUserByUsername retrieves a user by their username.
 func FindUserByUsername(username string) (*User, error) {
+	query := `
+	SELECT username, password, refresh_token_version, role, banned
+	FROM users
+	WHERE username = ?
+	`
+
+	row := db.QueryRow(query, username)
+
 	var user User
-	err := get("users", username, &user)
+	err := row.Scan(&user.Username, &user.Password, &user.RefreshTokenVersion, &user.Role, &user.Banned)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find user by username: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, nil // No user found
+		}
+		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -89,7 +121,18 @@ func UpdateUserRole(username, newRole string) error {
 	}
 
 	user.Role = newRole
-	return update("users", username, user)
+	query := `
+	UPDATE users
+	SET role = ?
+	WHERE username = ?
+	`
+
+	_, err = db.Exec(query, user.Role, username)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // IncrementRefreshTokenVersion increments the refresh token version for a user.
@@ -100,28 +143,44 @@ func IncrementRefreshTokenVersion(username string) error {
 	}
 
 	user.RefreshTokenVersion++
-	return update("users", username, user)
+	query := `
+	UPDATE users
+	SET refresh_token_version = ?
+	WHERE username = ?
+	`
+
+	_, err = db.Exec(query, user.RefreshTokenVersion, username)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CountUsers returns the total number of users.
 func CountUsers() (int64, error) {
-	var dataList [][]byte
-	if err := getAll("users", &dataList); err != nil {
-		log.Errorf("Failed to get all users: %v", err)
-		return 0, fmt.Errorf("failed to count users: %w", err)
+	query := `
+	SELECT COUNT(*)
+	FROM users
+	`
+
+	var count int64
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
 	}
 
-	return int64(len(dataList)), nil
+	return count, nil
 }
 
 // isValidRole checks if the provided role is valid.
 func isValidRole(role string) bool {
-	switch role {
-	case "reader", "moderator", "admin":
-		return true
-	default:
-		return false
+	for _, r := range roleHierarchy {
+		if r == role {
+			return true
+		}
 	}
+	return false
 }
 
 // getNextRole finds the next role in the hierarchy.
@@ -204,8 +263,15 @@ func BanUser(username string) error {
 	}
 
 	user.Banned = true
-	if err := update("users", username, user); err != nil {
-		return fmt.Errorf("failed to ban user: %w", err)
+	query := `
+	UPDATE users
+	SET banned = ?
+	WHERE username = ?
+	`
+
+	_, err = db.Exec(query, user.Banned, username)
+	if err != nil {
+		return err
 	}
 
 	log.Infof("User '%s' has been banned", username)
@@ -224,8 +290,15 @@ func UnbanUser(username string) error {
 	}
 
 	user.Banned = false
-	if err := update("users", username, user); err != nil {
-		return fmt.Errorf("failed to unban user: %w", err)
+	query := `
+	UPDATE users
+	SET banned = ?
+	WHERE username = ?
+	`
+
+	_, err = db.Exec(query, user.Banned, username)
+	if err != nil {
+		return err
 	}
 
 	log.Infof("User '%s' has been unbanned", username)

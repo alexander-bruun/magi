@@ -9,6 +9,11 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/a-h/templ v0.2.793
+	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/gofiber/template/html/v2 v2.1.2
+	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/ncruces/go-sqlite3 v0.18.3
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nwaples/rardecode v1.1.3
 	github.com/robfig/cron/v3 v3.0.1
