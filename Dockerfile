@@ -13,7 +13,6 @@ COPY . .
 RUN go install github.com/a-h/templ/cmd/templ@latest
 
 # Generate necessary files using `templ`
-ENV TEMPL_EXPERIMENT=rawgo
 RUN templ generate
 
 # Copy go mod and sum files
