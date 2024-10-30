@@ -11,7 +11,7 @@ env:
 jobs:
   semantic:
     name: Determine the next release version
-    runs-on: arc-runner-set
+    runs-on: ubuntu-20.04
 
     outputs:
       version: ${{ steps.determine_version.outputs.version }}
@@ -47,7 +47,7 @@ jobs:
 
   build:
     name: Build partial (${{ matrix.platform }})
-    runs-on: arc-runner-set
+    runs-on: ubuntu-20.04
     needs:
       - semantic
     strategy:
@@ -105,7 +105,7 @@ jobs:
 
   merge:
     name: Merge and push image
-    runs-on: arc-runner-set
+    runs-on: ubuntu-20.04
     needs:
       - semantic
       - build
@@ -150,7 +150,7 @@ jobs:
 
   create-release:
     name: Create Release
-    runs-on: arc-runner-set
+    runs-on: ubuntu-20.04
     needs:
       - semantic
       - build

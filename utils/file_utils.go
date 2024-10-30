@@ -90,12 +90,10 @@ func extractFirstImageFromZip(zipPath, outputFolder string) error {
 	defer reader.Close()
 
 	for _, file := range reader.File {
-		if isImageFile(file.Name) {
-			// Validate the file path
-			if !isValidPath(file.Name, outputFolder) {
-				return fmt.Errorf("invalid file path: %s", file.Name)
+		if strings.Contains(fileName, "..") {
+			if isImageFile(file.Name) {
+				return extractZipFile(file, outputFolder)
 			}
-			return extractZipFile(file, outputFolder)
 		}
 	}
 	return fmt.Errorf("no image file found in the archive")
@@ -144,23 +142,6 @@ func extractZipFile(file *zip.File, outputFolder string) error {
 
 	_, err = io.Copy(dst, src)
 	return err
-}
-
-func isValidPath(fileName, outputFolder string) bool {
-	// Check for directory traversal
-	if strings.Contains(fileName, "..") {
-		return false
-	}
-	// Ensure the file path is within the output folder
-	absOutputFolder, err := filepath.Abs(outputFolder)
-	if err != nil {
-		return false
-	}
-	absFilePath, err := filepath.Abs(filepath.Join(outputFolder, fileName))
-	if err != nil {
-		return false
-	}
-	return strings.HasPrefix(absFilePath, absOutputFolder)
 }
 
 func extractRarFile(reader io.Reader, fileName, outputFolder string) error {
