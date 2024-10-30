@@ -1,0 +1,14 @@
+{
+    "name": "Magi Codespace",
+    "customizations": {
+        "vscode": {
+          "extensions": [
+            "ms-azuretools.vscode-docker",
+            "visualstudioexptteam.vscodeintellicode",
+            "ms-vscode.go",
+            "a-h.templ"
+          ]
+        }
+      },
+    "dockerFile": "Dockerfile"
+}
