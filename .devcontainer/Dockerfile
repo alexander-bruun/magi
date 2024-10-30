@@ -8,6 +8,8 @@ ENV PATH "$PATH:/usr/local/go/bin:/home/user/go/bin:/home/user/.cargo/bin"
 RUN dnf update -y
 RUN dnf install -y curl git jq go
 
+RUN useradd -m user
+
 USER user
 
 RUN go install
