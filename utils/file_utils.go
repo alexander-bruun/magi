@@ -90,7 +90,7 @@ func extractFirstImageFromZip(zipPath, outputFolder string) error {
 	defer reader.Close()
 
 	for _, file := range reader.File {
-		if strings.Contains(fileName, "..") {
+		if !strings.Contains(file.Name, "..") {
 			if isImageFile(file.Name) {
 				return extractZipFile(file, outputFolder)
 			}
@@ -133,7 +133,10 @@ func extractZipFile(file *zip.File, outputFolder string) error {
 	}
 	defer src.Close()
 
-	outputPath := filepath.Join(outputFolder, filepath.Base(file.Name))
+	outputPath := filepath.Join(outputFolder, file.Name)
+	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder) + string(os.PathSeparator)) {
+		return fmt.Errorf("invalid file path: %s", outputPath)
+	}
 	dst, err := os.Create(outputPath)
 	if err != nil {
 		return err
