@@ -1,8 +1,6 @@
 {
     "name": "Codespaces Go Template Repository",
     "extensions": [
-        "github.vscode-pull-request-github",
-        "ms-azuretools.vscode-docker",
         "visualstudioexptteam.vscodeintellicode",
         "ms-vscode.go",
         "a-h.templ"
