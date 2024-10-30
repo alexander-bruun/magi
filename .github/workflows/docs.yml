@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: arc-runner-set
+    runs-on: ubuntu-20.04
     steps:
       - name: Install git
         run: sudo apt-get update && sudo apt-get install -y git
