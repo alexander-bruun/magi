@@ -1,15 +1,14 @@
 {
-    "name": "Codespaces Go Template Repository",
-    "extensions": [
-        "visualstudioexptteam.vscodeintellicode",
-        "ms-vscode.go",
-        "a-h.templ"
-    ],
-    "dockerFile": "Dockerfile",
-    "settings": {
-        "files.exclude": {
-            "**/CODE_OF_CONDUCT.md": true,
-            "**/LICENSE": true
+    "name": "Magi Codespace",
+    "customizations": {
+        "vscode": {
+          "extensions": [
+            "ms-azuretools.vscode-docker",
+            "visualstudioexptteam.vscodeintellicode",
+            "ms-vscode.go",
+            "a-h.templ"
+          ]
         }
-    }
+      },
+    "dockerFile": "Dockerfile"
 }
