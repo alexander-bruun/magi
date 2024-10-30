@@ -9,7 +9,10 @@ RUN dnf update -y
 RUN dnf install -y curl git jq go
 
 RUN useradd -m user
-
 USER user
 
+RUN pwd
+RUN ls -lhrt
+
+RUN go install github.com/air-verse/air@latest
 RUN go install
