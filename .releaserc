@@ -1,10 +1,26 @@
 {
   "branches": [
-    {"name": "main"},
+    { "name": "main" }
   ],
   "tagFormat": "v${version}",
   "plugins": [
-    "@semantic-release/commit-analyzer",
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "angular",
+        "releaseRules": [
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" },
+          { "type": "chore", "scope": "deps", "release": "patch" },
+          { "type": "chore", "scope": "dev-deps", "release": "patch" },
+          { "type": "build", "scope": "deps", "release": "patch" },
+          { "type": "build", "scope": "dev-deps", "release": "patch" }
+        ],
+        "parserOpts": {
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+        }
+      }
+    ],
     [
       "@semantic-release/exec",
       {
