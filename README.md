@@ -30,10 +30,6 @@ When running with native binaries it is heavily recommended to use something lik
 
 Alternatively, run Magi in a container solution such as Kubernetes, Docker Desktop or Podman... the sky is the limit! Just make sure the underlying data is made available to the native or container environment.
 
-We can be found on Discord for help, questions or just hanging around.
-
-<a target="_blank" href="https://discord.gg/2VDmSUxGkE"><img src="https://dcbadge.limes.pink/api/server/2VDmSUxGkE" /></a>
-
 The full documentation, can be found [here](https://alexander-bruun.github.io/magi/).
 
 ## Technologies
