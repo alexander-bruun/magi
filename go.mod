@@ -13,7 +13,7 @@ require (
 	github.com/nwaples/rardecode v1.1.3
 	github.com/robfig/cron/v3 v3.0.1
 	go.etcd.io/bbolt v1.3.11
-	golang.org/x/crypto v0.29.0
+	golang.org/x/crypto v0.30.0
 )
 
 require (
@@ -29,5 +29,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.57.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 )
