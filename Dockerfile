@@ -1,5 +1,5 @@
 # Use the official Golang image to create a build artifact.
-FROM --platform=$BUILDPLATFORM golang:1.23.4-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.23.5-alpine AS builder
 
 ARG VERSION TARGETOS TARGETARCH TARGETPLATFORM
 
