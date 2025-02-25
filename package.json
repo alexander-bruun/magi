@@ -2,6 +2,6 @@
   "name": "magi",
   "description": "Magi is a simplistic and performant manga indexer, organizer and reader written in GoLang.",
   "license": "MIT",
-  "dependencies": { "franken-ui": "^1.0.0", "postcss": "^8.4.39" },
+  "dependencies": { "franken-ui": "^2.0.0", "postcss": "^8.4.39" },
   "author": "alexander-bruun"
 }
