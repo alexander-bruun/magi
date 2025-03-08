@@ -38,13 +38,14 @@ Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
 - [Sqlite](https://github.com/ncruces/go-sqlite3) - Relational database
-- [GoFiber](https://docs.gofiber.io/) - Web framework
-- [Templ](https://templ.guide/) - HTML / Go templating
-- [HTMX](https://htmx.org/) - Hypermedia
-- [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [Franken UI](https://franken-ui.dev/) - Predefined CSS components
-- [Mangadex API](https://api.mangadex.org/docs/) - Metadata
+- [GoFiber](https://docs.gofiber.io/) - HTTP Server
+- [Templ](https://templ.guide/) - HTML Templating
+- JavaScript libraries:
+  - [HTMX](https://htmx.org/) - Hypermedia
+  - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
+- [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
+- [Franken UI](https://franken-ui.dev/) - Predefined Components
+- [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
@@ -61,6 +62,8 @@ air
 
 This will start the application and provide you with logs indicating the status of the server and other components. You can then access the application at `http://localhost:3000`. Air also provides similar functionaly to something like `next run dev` where you get a proxy page that reloads for you, by opening the application on port `:3001` then you will get proxy refresh's when you change the source code.
 
+This provides a smoother developer experience instead of having to refresh the page every time you made a change.
+
 ## Contributing
 
 Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
@@ -68,3 +71,6 @@ Magi is in its early stages of development, and many features are still in progr
 ## License
 
 [MIT License](LICENSE)
+
+
+npx tailwindcss -i ./input.css -o ./assets/css/styles.css

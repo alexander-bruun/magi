@@ -48,16 +48,12 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\"><img src=\"")
-=======
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\">")
->>>>>>> be296c2 (fix: Added placeholder image)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if manga.CoverArtURL == "" {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<img src=\"https://placehold.co/200x300?text=N/A\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<img src=\"https://placehold.co/200x300?text=N/A\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -70,12 +66,12 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -88,7 +84,7 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -101,61 +97,35 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
-=======
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
->>>>>>> be296c2 (fix: Added placeholder image)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 29, Col: 47}
 			}
-<<<<<<< HEAD
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 22, Col: 94}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"></div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 25, Col: 47}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-=======
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
->>>>>>> be296c2 (fix: Added placeholder image)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</h3></div></div></div></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</h3></div></div></div></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin\"></ul></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently updated</span></h2><div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><div class=\"uk-child-width-1-5 uk-grid uk-slider-items\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin\"></ul></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently updated</span></h2><div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><div class=\"uk-child-width-1-5 uk-grid uk-slider-items\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, manga := range recentlyUpdated {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -164,16 +134,12 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\"><img src=\"")
-=======
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\">")
->>>>>>> be296c2 (fix: Added placeholder image)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"><div><div class=\"uk-card uk-card-default \"><div class=\"uk-card-media-top flex justify-center items-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if manga.CoverArtURL == "" {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<img src=\"https://placehold.co/200x300?text=N/A\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<img src=\"https://placehold.co/200x300?text=N/A\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -186,12 +152,12 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -204,7 +170,7 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -217,56 +183,30 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-<<<<<<< HEAD
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" class=\"pt-2\" width=\"200\" height=\"300\" alt=\"")
-=======
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
->>>>>>> be296c2 (fix: Added placeholder image)
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 67, Col: 47}
 			}
-<<<<<<< HEAD
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 56, Col: 94}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"></div><div class=\"uk-card-body\"><h3 class=\"uk-card-title\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 59, Col: 47}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-=======
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
->>>>>>> be296c2 (fix: Added placeholder image)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</h3></div></div></div></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</h3></div></div></div></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin\"></ul></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin\"></ul></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

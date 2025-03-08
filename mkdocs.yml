@@ -55,11 +55,6 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
-extra:
-  social:
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/2VDmSUxGkE
-
 plugins:
   - search
   - offline
@@ -72,4 +67,3 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-

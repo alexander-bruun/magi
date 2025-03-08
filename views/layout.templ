@@ -6,10 +6,10 @@ templ Layout(content templ.Component, userRole string) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<link href="/assets/css/styles.css" rel="stylesheet"/>
-			<script src="/assets/js/htmx.min.js"></script>
-			// <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
+			<title>Magi</title>
+
+			<link href="/assets/css/styles.css" rel="stylesheet"/>
 			<style>
 				:root {
 					font-family: Inter, sans-serif;
@@ -44,20 +44,32 @@ templ Layout(content templ.Component, userRole string) {
 					background: rgba(255, 255, 255, 0.3);
 				}
 			</style>
+
 			<script>
+				const htmlElement = document.documentElement;
+
+				const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+
 				if (
-					localStorage.getItem("color-theme") === "dark" ||
-					(!("color-theme" in localStorage) &&
+					__FRANKEN__.mode === "dark" ||
+					(!__FRANKEN__.mode &&
 						window.matchMedia("(prefers-color-scheme: dark)").matches)
 				) {
-					document.documentElement.classList.add("dark");
+					htmlElement.classList.add("dark");
 				} else {
-					document.documentElement.classList.remove("dark");
+					htmlElement.classList.remove("dark");
 				}
+
+				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-slate");
+				htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
+				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
+				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
+				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
-			<script src="/assets/js/uikit.min.js"></script>
-			<script src="/assets/js/uikit-icons.min.js"></script>
-			<title>Magi</title>
+
+			<script src="/assets/js/core.iife.js" type="module"></script>
+			<script src="/assets/js/icon.iife.js" type="module"></script>
+			<script src="/assets/js/htmx.min.js"></script>
 		</head>
 		<body class="bg-background text-foreground">
 			@Navbar(userRole)

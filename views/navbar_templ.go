@@ -53,11 +53,7 @@ func Navbar(userRole string) templ.Component {
 			}
 		}
 		if userRole == "admin" {
-<<<<<<< HEAD
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/libraries\" hx-get=\"/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"album\" style=\"padding-right:5px;\"></span> Libraries</a></li><li><a href=\"/users\"><span uk-icon=\"users\" style=\"padding-right:5px;\"></span> Users</a></li><li><a href=\"#\"><span uk-icon=\"settings\" style=\"padding-right:5px;\"></span> Configuration</a></li>")
-=======
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<li class=\"uk-nav-header\">Admin</li><li><a href=\"/libraries\" hx-get=\"/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"album\" style=\"padding-right:5px;\"></span> Libraries</a></li><li><a href=\"/users\" hx-get=\"/users\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"users\" style=\"padding-right:5px;\"></span> Users</a></li><li><a href=\"#\"><span uk-icon=\"settings\" style=\"padding-right:5px;\"></span> Configuration</a></li>")
->>>>>>> f8b63af (fix: User page change caused page refresh)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/libraries\" hx-get=\"/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"album\" style=\"padding-right:5px;\"></span> Libraries</a></li><li><a href=\"/users\" hx-get=\"/users\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"users\" style=\"padding-right:5px;\"></span> Users</a></li><li><a href=\"#\"><span uk-icon=\"settings\" style=\"padding-right:5px;\"></span> Configuration</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
