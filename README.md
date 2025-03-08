@@ -71,6 +71,3 @@ Magi is in its early stages of development, and many features are still in progr
 ## License
 
 [MIT License](LICENSE)
-
-
-npx tailwindcss -i ./input.css -o ./assets/css/styles.css
