@@ -95,7 +95,7 @@ func Manga(manga models.Manga, chapters []models.Chapter) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"arrow-left\"></span> Go to first chapter</button><h2 class=\"text-xl font-bold mb-4 uk-h2 uk-text-center\"><span>Chapters (")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"MoveLeft\"></uk-icon> Go to first chapter</button><h2 class=\"text-xl font-bold mb-4 uk-h2 uk-text-center\"><span>Chapters (")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -134,7 +134,7 @@ func Manga(manga models.Manga, chapters []models.Chapter) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" hx-target=\"#content\" hx-push-url=\"true\">Go to last chapter <span uk-icon=\"arrow-right\"></span></button></div><hr class=\"uk-divider-icon mb-4\"><style>\n\t\t\t\t\t.uk-card::-webkit-scrollbar {\n\t\t\t\t\t\tdisplay: none;\n\t\t\t\t\t}\n\t\t\t\t</style><div class=\"uk-card p-2\" style=\"max-height:650px;overflow: auto;\"><div class=\"p-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" hx-target=\"#content\" hx-push-url=\"true\">Go to last chapter <uk-icon icon=\"MoveRight\"></uk-icon></button></div><hr class=\"uk-divider-icon mb-4\"><style>\n\t\t\t\t\t.uk-card::-webkit-scrollbar {\n\t\t\t\t\t\tdisplay: none;\n\t\t\t\t\t}\n\t\t\t\t</style><div class=\"uk-card p-2\" style=\"max-height:650px;overflow: auto;\"><div class=\"p-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -251,7 +251,7 @@ func Info(manga models.Manga) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</p><!-- This is a button toggling the modal --><div class=\"uk-flex uk-flex-center\"><button type=\"button\" class=\"uk-button uk-button-default\" type=\"button\" uk-toggle=\"target: #metadata-modal\"><span uk-icon=\"info\"></span></button></div><!-- This is the modal --><div id=\"metadata-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title\">Update metadata</h2><p>This form, is used in case you believe the metadata was scraped from the wrong manga. Use the search field below to get a list of other options to pick from.</p><div class=\"uk-margin my-2\"><form hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</p><!-- This is a button toggling the modal --><div class=\"uk-flex uk-flex-center\"><button type=\"button\" class=\"uk-button uk-button-default\" type=\"button\" uk-toggle=\"target: #metadata-modal\"><uk-icon icon=\"Info\"></uk-icon></button></div><!-- This is the modal --><div id=\"metadata-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title\">Update metadata</h2><p>This form, is used in case you believe the metadata was scraped from the wrong manga. Use the search field below to get a list of other options to pick from.</p><div class=\"uk-margin my-2\"><form hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -264,7 +264,7 @@ func Info(manga models.Manga) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" hx-target=\"#modal-content\"><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Manga name\"> <button type=\"submit\" class=\"uk-button uk-button-default ml-1\"><span uk-icon=\"search\"></span></button></div></form></div><div id=\"modal-content\"></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" hx-target=\"#modal-content\"><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Manga name\"> <button type=\"submit\" class=\"uk-button uk-button-default ml-1\"><uk-icon icon=\"Search\"></uk-icon></button></div></form></div><div id=\"modal-content\"></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -333,7 +333,7 @@ func Chapters(manga models.Manga, chapters []models.Chapter) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" hx-target=\"#content\" hx-push-url=\"true\"><span uk-icon=\"eye\"></span></a></div></div></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Eye\"></uk-icon></a></div></div></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -445,7 +445,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed; /* Fix the button to the viewport */\n\t\t\tbottom: 20px; /* Distance from the bottom */\n\t\t\tright: 20px; /* Distance from the right */\n\t\t\tborder-radius: 50%;\n\t\t\twidth: 50px;\n\t\t\theight: 50px;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000; /* Ensure the button is on top */\n\t\t}\n\t</style><div class=\"uk-icon-button scroll-to-top\" onclick=\"scrollToTop()\"><span uk-icon=\"icon: chevron-up\"></span></div><script>\n\t\tfunction scrollToTop() {\n\t\t\twindow.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t}\n\t</script><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed; /* Fix the button to the viewport */\n\t\t\tbottom: 20px; /* Distance from the bottom */\n\t\t\tright: 20px; /* Distance from the right */\n\t\t\tborder-radius: 50%;\n\t\t\twidth: 50px;\n\t\t\theight: 50px;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000; /* Ensure the button is on top */\n\t\t}\n\t</style><div class=\"uk-icon-button scroll-to-top\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\"></uk-icon></div><script>\n\t\tfunction scrollToTop() {\n\t\t\twindow.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t}\n\t</script><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -494,7 +494,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "><span uk-icon=\"arrow-left\"></span></button><div class=\"mt-2 uk-flex uk-flex-center\"><button class=\"uk-button uk-button-default\" type=\"button\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "><uk-icon icon=\"MoveLeft\"></uk-icon></button><div class=\"mt-2 uk-flex uk-flex-center\"><button class=\"uk-button uk-button-default\" type=\"button\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -630,7 +630,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "><span uk-icon=\"arrow-right\"></span></button></div><div class=\"flex items-center justify-center min-h-screen\"><div class=\"flex flex-col items-center p-4 uk-width-3-5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "><uk-icon icon=\"MoveRight\"></uk-icon></button></div><div class=\"flex items-center justify-center min-h-screen\"><div class=\"flex flex-col items-center p-4 uk-width-3-5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -689,7 +689,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "><span uk-icon=\"arrow-left\"></span></button> <button type=\"button\" class=\"uk-button uk-button-default\" type=\"button\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "><uk-icon icon=\"MoveLeft\"></uk-icon></button> <button type=\"button\" class=\"uk-button uk-button-default\" type=\"button\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -725,7 +725,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "><span uk-icon=\"arrow-right\"></span></button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "><uk-icon icon=\"MoveRight\"></uk-icon></button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

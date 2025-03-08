@@ -33,7 +33,7 @@ templ Navbar(userRole string) {
 							type="button"
 							uk-toggle="target: #search-modal"
 						>
-							<span uk-icon="search"></span>
+							<uk-icon icon="Search" style="padding-right:5px;"></uk-icon>
 						</button>
 					</div>
 					<!-- This is the modal -->
@@ -62,25 +62,25 @@ templ Navbar(userRole string) {
 							</div>
 						</div>
 					</div>
-					<a href="#" class="uk-icon-button"><span uk-icon="more-vertical"></span></a>
+					<a href="#" class="uk-icon-button"><uk-icon icon="EllipsisVertical" style="padding-right:5px;"></uk-icon></a>
 					<div class="uk-navbar-dropdown">
 						<ul class="uk-nav uk-navbar-dropdown-nav">
 							if userRole != "" {
-								<li><a href="#"><span uk-icon="user" style="padding-right:5px;"></span> Account</a></li>
-								<li><a href="#"><span uk-icon="star" style="padding-right:5px;"></span> Favorites</a></li>
-								<li><a href="#"><span uk-icon="bookmark" style="padding-right:5px;"></span> Reading lists</a></li>
+								<li><a href="#"><uk-icon icon="User" style="padding-right:5px;"></uk-icon>Account</a></li>
+								<li><a href="#"><uk-icon icon="Star" style="padding-right:5px;"></uk-icon>Favorites</a></li>
+								<li><a href="#"><uk-icon icon="Bookmark" style="padding-right:5px;"></uk-icon>Reading lists</a></li>
 							}
 							if userRole == "admin" {
 								<li class="uk-nav-header">Admin</li>
-								<li><a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true"><span uk-icon="album" style="padding-right:5px;"></span> Libraries</a></li>
-								<li><a href="/users" hx-get="/users" hx-target="#content" hx-push-url="true"><span uk-icon="users" style="padding-right:5px;"></span> Users</a></li>
-								<li><a href="#"><span uk-icon="settings" style="padding-right:5px;"></span> Configuration</a></li>
+								<li><a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" style="padding-right:5px;"></uk-icon>Libraries</a></li>
+								<li><a href="/users" hx-get="/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" style="padding-right:5px;"></uk-icon>Users</a></li>
+								<li><a href="#"><uk-icon icon="Settings" style="padding-right:5px;"></uk-icon>Configuration</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							if userRole == "" {
-								<li><a href="/login" hx-get="/login" hx-target="#content" hx-push-url="true"><span uk-icon="sign-in" style="padding-right:5px;"></span> Login</a></li>
+								<li><a href="/login" hx-get="/login" hx-target="#content" hx-push-url="true"><uk-icon icon="LogIn" style="padding-right:5px;"></uk-icon>Login</a></li>
 							} else {
-								<li><a href="/" hx-post="/logout"><span uk-icon="sign-out" style="padding-right:5px;"></span> Logout</a></li>
+								<li><a href="/" hx-post="/logout"><uk-icon icon="LogOut" style="padding-right:5px;"></uk-icon> Logout</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							<div class="my-1 uk-flex uk-flex-center">
@@ -159,7 +159,7 @@ templ SearchMangas(mangas []models.Manga) {
 							hx-push-url="true"
 						>
 							Go to manga
-							<span uk-icon="arrow-right"></span>
+							<uk-icon icon="MoveRight"></uk-icon>
 						</button>
 					</div>
 				</div>
