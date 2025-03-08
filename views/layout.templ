@@ -8,7 +8,6 @@ templ Layout(content templ.Component, userRole string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
 			<title>Magi</title>
-
 			<link href="/assets/css/styles.css" rel="stylesheet"/>
 			<style>
 				:root {
@@ -44,7 +43,6 @@ templ Layout(content templ.Component, userRole string) {
 					background: rgba(255, 255, 255, 0.3);
 				}
 			</style>
-
 			<script>
 				const htmlElement = document.documentElement;
 
@@ -66,7 +64,6 @@ templ Layout(content templ.Component, userRole string) {
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
-
 			<script src="/assets/js/core.iife.js" type="module"></script>
 			<script src="/assets/js/icon.iife.js" type="module"></script>
 			<script src="/assets/js/htmx.min.js"></script>
