@@ -1,6 +1,7 @@
 package views
 
 templ Register() {
+	@templ.JSFuncCall("titleHandler", "Magi - Register"))
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -20,16 +21,16 @@ templ Register() {
 	<div class="grid place-content-center my-4">
 		<form hx-post="/register" hx-redirect="/login">
 			<div class="mb-2">
-				<div class="uk-inline w-1/1">
-					<a class="uk-form-icon" href="#">
+				<div class="uk-inline">
+					<a class="uk-form-icon">
 						<uk-icon icon="User"></uk-icon>
 					</a>
 					<input class="uk-input" type="text" name="username" placeholder="Username" required aria-label="Not clickable icon" required/>
 				</div>
 			</div>
 			<div class="mt-2">
-				<div class="uk-inline w-1/1">
-					<a class="uk-form-icon" href="#">
+				<div class="uk-inline">
+					<a class="uk-form-icon">
 						<uk-icon icon="Lock"></uk-icon>
 					</a>
 					<input class="uk-input" type="password" name="password" placeholder="Password" required aria-label="Not clickable icon" required/>

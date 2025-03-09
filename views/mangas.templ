@@ -7,6 +7,7 @@ import (
 )
 
 templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
+	@templ.JSFuncCall("titleHandler", fmt.Sprintf("Magi - Mangas Page %d", currentPage))
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -22,7 +23,7 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			</li>
 		</ul>
 	</nav>
-	<h2 class="uk-heading-line text-xl font-semibold mb-4 uk-h2 uk-text-center"><span>Mangas</span></h2>
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
 	if len(mangas) > 0 {
 		<div class="grid sm:grid-cols-2 md:grid-cols-4">
 			for _, manga := range mangas {
@@ -39,11 +40,11 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			}
 		</div>
 	} else {
-		<div class="uk-text-center">
+		<div class="text-center">
 			<div class="uk-card uk-card-default uk-card-body">No mangas found...</div>
 		</div>
 	}
-	<div class="uk-card-media-top flex justify-center items-center py-8">
+	<div class="flex justify-center items-center py-8">
 		@Pagination(totalCount, currentPage)
 	</div>
 	<script>
@@ -56,13 +57,6 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 }
 
 templ Pagination(totalCount int, currentPage int) {
-	// <li><a href="#">1</a></li>
-	// <li class="uk-disabled"><span>...</span></li>
-	// <li><a href="#">6</a></li>
-	// <li class="uk-active"><span aria-current="page">7</span></li>
-	// <li><a href="#">8</a></li>
-	// <li class="uk-disabled"><span>...</span></li>
-	// <li><a href="#">20</a></li>
 	<nav class="mt-4" aria-label="Pagination">
 		<ul class="uk-pgn uk-pgn-default">
 			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")

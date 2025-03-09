@@ -197,7 +197,7 @@ func cacheAndGetImageURL(slug, coverArtURL string) (string, error) {
 	filename := filepath.Base(u.Path)
 	fileExt := filepath.Ext(filename)[1:] // remove leading dot
 
-	err = utils.DownloadImage("/home/alexa/magi/cache", slug, coverArtURL)
+	err = utils.DownloadImage(savedCacheDirectory, slug, coverArtURL)
 	if err != nil {
 		return "", fmt.Errorf("error downloading image: %w", err)
 	}

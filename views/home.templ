@@ -6,8 +6,8 @@ import (
 )
 
 templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
+	@templ.JSFuncCall("titleHandler", "Magi - Home")
 	<ul class="uk-breadcrumb">
-		<li><a href=""></a></li>
 		<li><span>Home</span></li>
 	</ul>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>

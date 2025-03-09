@@ -7,8 +7,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 )
 
+// Local export of the cache directory, so the image download function knows where to store the cached images.
+var savedCacheDirectory string
+
 func Initialize(app *fiber.App, cacheDirectory string) {
 	log.Info("Initializing GoFiber view routes")
+
+	savedCacheDirectory = cacheDirectory
 
 	// CORS middleware configuration to allow all origins
 	app.Use(cors.New(cors.Config{

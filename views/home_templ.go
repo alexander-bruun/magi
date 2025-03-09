@@ -34,7 +34,11 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<ul class=\"uk-breadcrumb\"><li><a href=\"\"></a></li><li><span>Home</span></li></ul><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently added</span></h2><div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><div class=\"uk-child-width-1-5 flex uk-slider-items gap-2\">")
+		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", "Magi - Home").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<ul class=\"uk-breadcrumb\"><li><span>Home</span></li></ul><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently added</span></h2><div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><div class=\"uk-child-width-1-5 flex uk-slider-items gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

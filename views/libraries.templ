@@ -6,6 +6,7 @@ import (
 )
 
 templ Libraries(libraries []models.Library) {
+	@templ.JSFuncCall("titleHandler", "Magi - Libraries")
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
