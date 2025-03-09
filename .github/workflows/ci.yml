@@ -6,7 +6,8 @@ on:
       - main
 
 env:
-  REGISTRY_IMAGE: alexbruun/magi
+  DOCKERHUB_IMAGE: alexbruun/magi
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/magi
 
 jobs:
   semantic:
@@ -60,7 +61,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
+          images: ${{ env.DOCKERHUB_IMAGE }}
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -80,7 +81,7 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.DOCKERHUB_IMAGE }},push-by-digest=true,name-canonical=true,push=true
       
       - name: Export digest
         run: |
@@ -97,7 +98,7 @@ jobs:
           retention-days: 1
 
   merge:
-    name: Merge and push image
+    name: Merge and push images
     runs-on: ubuntu-20.04
     needs:
       - semantic
@@ -119,7 +120,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
+          images: ${{ env.DOCKERHUB_IMAGE }}
           tags: |
             type=raw,value=${{ needs.semantic.outputs.version }}
             type=raw,value=latest
@@ -130,18 +131,49 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Create manifest list and push
+      - name: Create manifest list and push to Docker Hub
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+            $(printf '${{ env.DOCKERHUB_IMAGE }}@sha256:%s ' *)
       
-      - name: Inspect image
+      - name: Copy manifests to GHCR
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ needs.semantic.outputs.version }}
+          # Get all tags from the metadata
+          TAGS=$(jq -cr '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON" | sed 's|^|${{ env.DOCKERHUB_IMAGE }}:|')
+          
+          # For each tag, pull and push to GHCR with the same tag
+          for TAG in $TAGS; do
+            GHCR_TAG=$(echo $TAG | sed "s|${{ env.DOCKERHUB_IMAGE }}|${{ env.GHCR_IMAGE }}|")
+            echo "Copying $TAG to $GHCR_TAG"
+            
+            # Pull the image from Docker Hub
+            docker pull $TAG
+            
+            # Retag for GHCR
+            docker tag $TAG $GHCR_TAG
+            
+            # Push to GHCR
+            docker push $GHCR_TAG
+          done
+      
+      - name: Inspect Docker Hub image
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_IMAGE }}:${{ needs.semantic.outputs.version }}
+      
+      - name: Inspect GHCR image
+        run: |
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ needs.semantic.outputs.version }}
 
   create-release:
     name: Create Release
@@ -208,3 +240,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload v${{ needs.semantic.outputs.version }} ./builds/* --clobber
+
+      - name: Add Container Registry URLs to Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.semantic.outputs.version }}
+        run: |
+          # Get current release body
+          RELEASE_BODY=$(gh release view v$VERSION --json body -q .body)
+          
+          # Append container registry information
+          UPDATED_BODY="${RELEASE_BODY}
+
+          ## Container Images
+
+          Docker Hub: \`docker pull ${{ env.DOCKERHUB_IMAGE }}:${VERSION}\`
+          GitHub Container Registry: \`docker pull ${{ env.GHCR_IMAGE }}:${VERSION}\`
+
+          Both images are multi-architecture builds supporting:
+          - linux/amd64
+          - linux/arm64"
+          
+          # Update the release notes
+          gh release edit v$VERSION --notes "$UPDATED_BODY"
