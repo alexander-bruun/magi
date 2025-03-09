@@ -47,7 +47,7 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 						hx-target="#content"
 						hx-push-url="true"
 					>
-						<span uk-icon="arrow-left"></span>
+						<uk-icon icon="MoveLeft"></uk-icon>
 						Go to first chapter
 					</button>
 					<h2 class="text-xl font-bold mb-4 uk-h2 uk-text-center"><span>Chapters ({ strconv.Itoa(len(chapters)) })</span></h2>
@@ -61,7 +61,7 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 						hx-push-url="true"
 					>
 						Go to last chapter
-						<span uk-icon="arrow-right"></span>
+						<uk-icon icon="MoveRight"></uk-icon>
 					</button>
 				</div>
 				<hr class="uk-divider-icon mb-4"/>
@@ -82,7 +82,11 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 
 templ Info(manga models.Manga) {
 	<div class="uk-card-media-top flex justify-center items-center">
-		<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+		if manga.CoverArtURL == "" {
+			<img src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
+		} else {
+			<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+		}
 	</div>
 	<p class="uk-margin line-clamp-5">
 		{ manga.Description }
@@ -98,7 +102,7 @@ templ Info(manga models.Manga) {
 			type="button"
 			uk-toggle="target: #metadata-modal"
 		>
-			<span uk-icon="info"></span>
+			<uk-icon icon="Info"></uk-icon>
 		</button>
 	</div>
 	<!-- This is the modal -->
@@ -116,7 +120,7 @@ templ Info(manga models.Manga) {
 					<div class="folder-row mb-4 flex items-center">
 						<input class="uk-input folder-input mr-1" type="text" name="search" placeholder="Manga name"/>
 						<button type="submit" class="uk-button uk-button-default ml-1">
-							<span uk-icon="search"></span>
+							<uk-icon icon="Search"></uk-icon>
 						</button>
 					</div>
 				</form>
@@ -147,7 +151,7 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 							hx-target="#content"
 							hx-push-url="true"
 						>
-							<span uk-icon="eye"></span>
+							<uk-icon icon="Eye"></uk-icon>
 						</a>
 					</div>
 				</div>
@@ -204,7 +208,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		}
 	</style>
 	<div class="uk-icon-button scroll-to-top" onclick="scrollToTop()">
-		<span uk-icon="icon: chevron-up"></span>
+		<uk-icon icon="ChevronUp"></uk-icon>
 	</div>
 	<script>
 		function scrollToTop() {
@@ -225,7 +229,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 				disabled
 			}
 		>
-			<span uk-icon="arrow-left"></span>
+			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
 		<div class="mt-2 uk-flex uk-flex-center">
 			<button class="uk-button uk-button-default" type="button">{ chapter.Name }</button>
@@ -267,7 +271,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 				disabled
 			}
 		>
-			<span uk-icon="arrow-right"></span>
+			<uk-icon icon="MoveRight"></uk-icon>
 		</button>
 	</div>
 	<div class="flex items-center justify-center min-h-screen">
@@ -291,7 +295,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 				disabled
 			}
 		>
-			<span uk-icon="arrow-left"></span>
+			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
 		<button
 			type="button"
@@ -305,7 +309,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 				disabled
 			}
 		>
-			<span uk-icon="arrow-right"></span>
+			<uk-icon icon="MoveRight"></uk-icon>
 		</button>
 	</div>
 }

@@ -84,7 +84,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, library := range libraries {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<tr><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-button uk-button-default\"><span uk-icon=\"refresh\"></span></button></div></td><td><div class=\"flex items-center justify-center\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<tr><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-button uk-button-default\"><uk-icon icon=\"RefreshCw\"></uk-icon></button></div></td><td><div class=\"flex items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -149,7 +149,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" hx-trigger=\"click\" hx-target=\"#library-form\"><span uk-icon=\"pencil\"></span></button></div></td><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-button uk-button-danger\" hx-delete=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" hx-trigger=\"click\" hx-target=\"#library-form\"><uk-icon icon=\"Pencil\"></uk-icon></button></div></td><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-button uk-button-danger\" hx-delete=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -162,7 +162,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" hx-trigger=\"click\" hx-target=\"#libraries-table\" hx-confirm=\"Are you sure you want to delete this library?\"><span uk-icon=\"trash\"></span></button></div></td></tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" hx-trigger=\"click\" hx-target=\"#libraries-table\" hx-confirm=\"Are you sure you want to delete this library?\"><uk-icon icon=\"Trash\"></uk-icon></button></div></td></tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -305,7 +305,7 @@ func FormContent(library models.Library) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(library.Folders) <= 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div id=\"folders-container\"><!-- Folder fields will be dynamically added here --><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input\" type=\"text\" name=\"folders\" placeholder=\"Folder Path\"> <button type=\"button\" class=\"uk-button uk-button-default ml-2\" hx-get=\"/libraries/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><span uk-icon=\"plus\"></span></button></div></div><div class=\"uk-flex uk-flex-center\"><button type=\"submit\" class=\"uk-button uk-button-default\">Submit</button><div id=\"response\" class=\"mt-8\"></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div id=\"folders-container\"><!-- Folder fields will be dynamically added here --><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input\" type=\"text\" name=\"folders\" placeholder=\"Folder Path\"> <button type=\"button\" class=\"uk-button uk-button-default ml-2\" hx-get=\"/libraries/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><uk-icon icon=\"Plus\"></uk-icon></button></div></div><div class=\"uk-flex uk-flex-center\"><button type=\"submit\" class=\"uk-button uk-button-default\">Submit</button><div id=\"response\" class=\"mt-8\"></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -329,7 +329,7 @@ func FormContent(library models.Library) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"> <button type=\"button\" class=\"uk-button uk-button-default ml-2\" hx-get=\"/libraries/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><span uk-icon=\"plus\"></span></button></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"> <button type=\"button\" class=\"uk-button uk-button-default ml-2\" hx-get=\"/libraries/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><uk-icon icon=\"Plus\"></uk-icon></button></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -387,7 +387,7 @@ func Folder(folderValue string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\"> <button type=\"button\" class=\"uk-button uk-button-danger ml-2\" hx-get=\"/libraries/remove-folder\" hx-target=\"closest .folder-row\" hx-swap=\"outerHTML\"><span uk-icon=\"close\"></span></button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\"> <button type=\"button\" class=\"uk-button uk-button-danger ml-2\" hx-get=\"/libraries/remove-folder\" hx-target=\"closest .folder-row\" hx-swap=\"outerHTML\"><uk-icon icon=\"X\"></uk-icon></button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

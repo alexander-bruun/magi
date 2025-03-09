@@ -1,15 +1,15 @@
 package models
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"sort"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/gofiber/fiber/v2/log"
-	"go.etcd.io/bbolt"
 )
 
 type Library struct {
@@ -60,7 +60,18 @@ func CreateLibrary(library Library) error {
 	library.CreatedAt = now
 	library.UpdatedAt = now
 
-	if err := create("libraries", library.Slug, library); err != nil {
+	foldersJson, err := json.Marshal(library.Folders)
+	if err != nil {
+		return fmt.Errorf("failed to marshal folders: %w", err)
+	}
+
+	query := `
+	INSERT INTO libraries (slug, name, description, cron, folders, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
+
+	_, err = db.Exec(query, library.Slug, library.Name, library.Description, library.Cron, foldersJson, library.CreatedAt, library.UpdatedAt)
+	if err != nil {
 		return err
 	}
 
@@ -70,29 +81,54 @@ func CreateLibrary(library Library) error {
 
 // GetLibraries retrieves all Libraries from the database
 func GetLibraries() ([]Library, error) {
-	var dataList [][]byte
-	if err := getAll("libraries", &dataList); err != nil {
+	query := `SELECT slug, name, description, cron, folders, created_at, updated_at FROM libraries`
+
+	rows, err := db.Query(query)
+	if err != nil {
 		log.Errorf("Failed to get all libraries: %v", err)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var libraries []Library
-	for _, data := range dataList {
+	for rows.Next() {
 		var library Library
-		if err := json.Unmarshal(data, &library); err != nil {
-			log.Errorf("Failed to unmarshal library data: %v", err)
+		var foldersJson string
+		if err := rows.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.CreatedAt, &library.UpdatedAt); err != nil {
+			log.Errorf("Failed to scan library row: %v", err)
+			continue
+		}
+		if err := json.Unmarshal([]byte(foldersJson), &library.Folders); err != nil {
+			log.Errorf("Failed to unmarshal folders JSON: %v", err)
 			continue
 		}
 		libraries = append(libraries, library)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return libraries, nil
 }
 
 // GetLibrary retrieves a single Library by slug
 func GetLibrary(slug string) (*Library, error) {
+	query := `
+	SELECT slug, name, description, cron, folders, created_at, updated_at
+	FROM libraries
+	WHERE slug = ?
+	`
+	row := db.QueryRow(query, slug)
+
 	var library Library
-	if err := get("libraries", slug, &library); err != nil {
+	var foldersJson string
+	if err := row.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.CreatedAt, &library.UpdatedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("library with slug %s not found", slug)
+		}
 		return nil, err
+	}
+	if err := json.Unmarshal([]byte(foldersJson), &library.Folders); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal folders JSON: %w", err)
 	}
 	return &library, nil
 }
@@ -104,7 +140,19 @@ func UpdateLibrary(library *Library) error {
 	}
 	library.UpdatedAt = time.Now().Unix() // Update the timestamp
 
-	if err := update("libraries", library.Slug, library); err != nil {
+	foldersJson, err := json.Marshal(library.Folders)
+	if err != nil {
+		return fmt.Errorf("failed to marshal folders: %w", err)
+	}
+
+	query := `
+	UPDATE libraries
+	SET name = ?, description = ?, cron = ?, folders = ?, updated_at = ?
+	WHERE slug = ?
+	`
+
+	_, err = db.Exec(query, library.Name, library.Description, library.Cron, foldersJson, library.UpdatedAt, library.Slug)
+	if err != nil {
 		return err
 	}
 
@@ -119,7 +167,10 @@ func DeleteLibrary(slug string) error {
 		return err
 	}
 
-	if err := delete("libraries", slug); err != nil {
+	query := `DELETE FROM libraries WHERE slug = ?`
+
+	_, err = db.Exec(query, slug)
+	if err != nil {
 		return err
 	}
 
@@ -130,105 +181,17 @@ func DeleteLibrary(slug string) error {
 	return nil
 }
 
-// SearchLibraries finds Libraries matching the keyword and applies pagination and sorting
-func SearchLibraries(keyword string, page, pageSize int, sortBy, sortOrder string) ([]Library, int64, error) {
-	libraries, err := GetLibraries()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	if keyword != "" {
-		libraries = filterLibrariesByKeyword(libraries, keyword)
-	}
-
-	// Apply sorting
-	sortLibraries(libraries, sortBy, sortOrder)
-
-	total := int64(len(libraries))
-	return paginateLibraries(libraries, page, pageSize), total, nil
-}
-
 // LibraryExists checks if a Library exists by slug
 func LibraryExists(slug string) (bool, error) {
-	var library Library
-	err := get("libraries", slug, &library)
-	if err == bbolt.ErrBucketNotFound {
+	query := `SELECT 1 FROM libraries WHERE slug = ?`
+	row := db.QueryRow(query, slug)
+	var exists int
+	err := row.Scan(&exists)
+	if err == sql.ErrNoRows {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-// filterLibrariesByKeyword filters the libraries based on the keyword
-func filterLibrariesByKeyword(libraries []Library, keyword string) []Library {
-	var libraryNames []string
-	nameToLibrary := make(map[string]Library)
-
-	for _, lib := range libraries {
-		libraryNames = append(libraryNames, lib.Name)
-		nameToLibrary[lib.Name] = lib
-	}
-
-	matchingNames := utils.BigramSearch(keyword, libraryNames)
-
-	var filteredLibraries []Library
-	for _, name := range matchingNames {
-		if lib, ok := nameToLibrary[name]; ok {
-			filteredLibraries = append(filteredLibraries, lib)
-		}
-	}
-	return filteredLibraries
-}
-
-// paginateLibraries applies pagination to the libraries slice
-func paginateLibraries(libraries []Library, page, pageSize int) []Library {
-	start := (page - 1) * pageSize
-	end := start + pageSize
-	if start < len(libraries) {
-		if end > len(libraries) {
-			end = len(libraries)
-		}
-		return libraries[start:end]
-	}
-	return []Library{}
-}
-
-// sortLibraries sorts libraries based on the given sortBy and sortOrder
-func sortLibraries(libraries []Library, sortBy, sortOrder string) {
-	switch sortBy {
-	case "name":
-		if sortOrder == "asc" {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].Name < libraries[j].Name
-			})
-		} else {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].Name > libraries[j].Name
-			})
-		}
-	case "created_at":
-		if sortOrder == "asc" {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].CreatedAt < libraries[j].CreatedAt
-			})
-		} else {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].CreatedAt > libraries[j].CreatedAt
-			})
-		}
-	case "updated_at":
-		if sortOrder == "asc" {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].UpdatedAt < libraries[j].UpdatedAt
-			})
-		} else {
-			sort.Slice(libraries, func(i, j int) bool {
-				return libraries[i].UpdatedAt > libraries[j].UpdatedAt
-			})
-		}
-	default:
-		// Default or no sorting
-	}
 }

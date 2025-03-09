@@ -40,15 +40,14 @@ The full documentation, can be found [here](https://alexander-bruun.github.io/ma
 Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
-- [Bolt](https://github.com/etcd-io/bbolt) - Key value store
-- [GoFiber](https://docs.gofiber.io/) - HTTP Server
+- [Sqlite](https://github.com/ncruces/go-sqlite3) - Database
+- [GoFiber](https://docs.gofiber.io/) - Web framework
 - [Templ](https://templ.guide/) - HTML Templating
-- JavaScript libraries:
-    - [HTMX](https://htmx.org/) - Hypermedia
-    - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
+- [HTMX](https://htmx.org/) - Hypermedia
+- [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
-- [Franken UI](https://franken-ui.dev/) - Predefined Components
-- [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
+- [Franken UI](https://franken-ui.dev/) - Predefined CSS components
+- [Mangadex API](https://api.mangadex.org/docs/) - Metadata
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
@@ -74,11 +73,10 @@ npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
 
 > Make sure to update the theme in `tailwind.config.js` before running this command.
 
-If you want to inspect the data stored in the Bolt key-value store, the `bbolt` CLI can be used. Alternatively a community Open-Source project named `boltbrowser` can be used, the project can be found [here](https://github.com/br0xen/boltbrowser).
+If you want to inspect the data stored in the Sqlite database, the `sqlite3` CLI can be used.
 
-```bash
-go install github.com/br0xen/boltbrowser@latest
-boltbrowser ~/magi/magi.db
+```sh
+sqlite3 ~/magi/magi.db
 ```
 
 This will open a interactive console browser, here you can explore individual buckets, and the data contained within them.

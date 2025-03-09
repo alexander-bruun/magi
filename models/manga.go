@@ -1,7 +1,7 @@
 package models
 
 import (
-	"encoding/json"
+	"database/sql"
 	"errors"
 	"reflect"
 	"sort"
@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// Manga represents the manga table schema
 type Manga struct {
 	Slug             string    `json:"slug"`
 	Name             string    `json:"name"`
@@ -42,29 +43,68 @@ func CreateManga(manga Manga) error {
 	now := time.Now()
 	manga.CreatedAt = now
 	manga.UpdatedAt = now
-	return create("mangas", manga.Slug, manga)
+
+	query := `
+	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.CreatedAt.Unix(), manga.UpdatedAt.Unix())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at FROM mangas WHERE slug = ?`
+
+	row := db.QueryRow(query, slug)
+
 	var manga Manga
-	if err := get("mangas", slug, &manga); err != nil {
+	var createdAt, updatedAt int64
+	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &createdAt, &updatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No manga found
+		}
 		return nil, err
 	}
+
+	manga.CreatedAt = time.Unix(createdAt, 0)
+	manga.UpdatedAt = time.Unix(updatedAt, 0)
 	return &manga, nil
 }
 
 // UpdateManga modifies an existing Manga
 func UpdateManga(manga *Manga) error {
 	manga.UpdatedAt = time.Now()
-	return update("mangas", manga.Slug, manga)
+
+	query := `
+	UPDATE mangas
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, updated_at = ?
+	WHERE slug = ?
+	`
+
+	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.UpdatedAt.Unix(), manga.Slug)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteManga removes a Manga and its associated chapters
 func DeleteManga(slug string) error {
-	if err := delete("mangas", slug); err != nil {
+	query := `DELETE FROM mangas WHERE slug = ?`
+
+	_, err := db.Exec(query, slug)
+	if err != nil {
 		return err
 	}
+
 	return DeleteChaptersByMangaSlug(slug)
 }
 
@@ -97,7 +137,18 @@ func SearchMangas(filter string, page, pageSize int, sortBy, sortOrder, filterBy
 
 // MangaExists checks if a Manga exists by slug
 func MangaExists(slug string) (bool, error) {
-	return exists("mangas", slug)
+	query := `SELECT 1 FROM mangas WHERE slug = ?`
+
+	row := db.QueryRow(query, slug)
+	var exists int
+	err := row.Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // MangaCount counts the number of mangas based on filter criteria
@@ -123,31 +174,29 @@ func MangaCount(filterBy, filter string) (int, error) {
 
 // DeleteMangasByLibrarySlug removes all mangas associated with a specific library
 func DeleteMangasByLibrarySlug(librarySlug string) error {
-	keys, err := getAllKeys("mangas")
+	query := `SELECT slug FROM mangas WHERE library_slug = ?`
+
+	rows, err := db.Query(query, librarySlug)
 	if err != nil {
-		log.Errorf("Failed to get all keys: %v", err)
+		log.Errorf("Failed to query mangas by librarySlug: %v", err)
 		return err
 	}
+	defer rows.Close()
 
-	for _, key := range keys {
-		var manga Manga
-		if err := get("mangas", key, &manga); err != nil {
-			log.Errorf("Failed to get manga with key: %s", key)
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			log.Errorf("Failed to scan row: %v", err)
 			return err
 		}
+		slugs = append(slugs, slug)
+	}
 
-		if manga.LibrarySlug == librarySlug {
-			if err := DeleteChaptersByMangaSlug(manga.Slug); err != nil {
-				log.Errorf("Failed to delete chapters for manga slug '%s': %s", manga.Slug, err.Error())
-				return err
-			}
-			log.Infof("Deleted chapters for manga: '%s'", manga.Slug)
-
-			if err := delete("mangas", manga.Slug); err != nil {
-				log.Errorf("Failed to delete manga with slug '%s': %s", manga.Slug, err.Error())
-				return err
-			}
-			log.Infof("Deleted manga with slug '%s'", manga.Slug)
+	for _, slug := range slugs {
+		if err := DeleteManga(slug); err != nil {
+			log.Errorf("Failed to delete manga with slug '%s': %s", slug, err.Error())
+			return err
 		}
 	}
 
@@ -157,17 +206,23 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {
-	var dataList [][]byte
-	if err := getAll("mangas", &dataList); err != nil {
-		log.Fatalf("Failed to get all data: %v", err)
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at FROM mangas`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatalf("Failed to get all mangas: %v", err)
 		return err
 	}
+	defer rows.Close()
 
-	for _, data := range dataList {
+	for rows.Next() {
 		var manga Manga
-		if err := json.Unmarshal(data, &manga); err != nil {
+		var createdAt, updatedAt int64
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &createdAt, &updatedAt); err != nil {
 			return err
 		}
+		manga.CreatedAt = time.Unix(createdAt, 0)
+		manga.UpdatedAt = time.Unix(updatedAt, 0)
 		*mangas = append(*mangas, manga)
 	}
 	return nil
