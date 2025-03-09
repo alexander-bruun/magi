@@ -22,9 +22,9 @@ templ Users(users []models.User) {
 		</ul>
 	</nav>
 	<div class="uk-container mt-2">
-		<div class="uk-grid uk-flex uk-flex-center">
-			<div id="table-column" class="uk-width-3-4 uk-column-right">
-				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
+		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
+		<div class="flex place-content-center">
+			<div class="w-2/4">
 				<div class="uk-card p-2">
 					@UsersTable(users)
 				</div>
@@ -72,7 +72,7 @@ templ UsersTable(users []models.User) {
 							if user.Role == "admin" {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"
@@ -83,7 +83,7 @@ templ UsersTable(users []models.User) {
 							} else {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"
@@ -96,7 +96,7 @@ templ UsersTable(users []models.User) {
 							if user.Role == "reader" {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"
@@ -107,7 +107,7 @@ templ UsersTable(users []models.User) {
 							} else {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"
@@ -120,7 +120,7 @@ templ UsersTable(users []models.User) {
 							if user.Banned {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"
@@ -130,7 +130,7 @@ templ UsersTable(users []models.User) {
 							} else {
 								<button
 									type="button"
-									class="uk-button uk-button-default"
+									class="uk-btn uk-btn-default"
 									hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
 									hx-trigger="click"
 									hx-target="#users-table"

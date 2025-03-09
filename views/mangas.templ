@@ -24,11 +24,11 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 	</nav>
 	<h2 class="uk-heading-line text-xl font-semibold mb-4 uk-h2 uk-text-center"><span>Mangas</span></h2>
 	if len(mangas) > 0 {
-		<div class="uk-grid-column-small uk-grid-row-large uk-child-width-1-4 uk-text-center px-8" uk-grid>
+		<div class="grid sm:grid-cols-2 md:grid-cols-4">
 			for _, manga := range mangas {
 				<div>
 					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
-						<div class="uk-card uk-card-default uk-card-body p-2">
+						<div class="uk-card uk-card-default uk-card-body p-2 m-2">
 							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2">{ manga.Name }</h3>
 							<div class="uk-card-media-top flex justify-center items-center">
 								<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
@@ -56,8 +56,15 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 }
 
 templ Pagination(totalCount int, currentPage int) {
-	<nav aria-label="Pagination">
-		<ul class="uk-pagination" uk-margin>
+	// <li><a href="#">1</a></li>
+	// <li class="uk-disabled"><span>...</span></li>
+	// <li><a href="#">6</a></li>
+	// <li class="uk-active"><span aria-current="page">7</span></li>
+	// <li><a href="#">8</a></li>
+	// <li class="uk-disabled"><span>...</span></li>
+	// <li><a href="#">20</a></li>
+	<nav class="mt-4" aria-label="Pagination">
+		<ul class="uk-pgn uk-pgn-default">
 			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
 			@PaginationNumbers(totalCount, currentPage)
 			@PaginationItem(currentPage < int(math.Ceil(float64(totalCount)/16)), currentPage+1, "Next", "next")
@@ -76,25 +83,33 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 			>
 				if icon != "" {
 					if icon == "next" {
-						<span uk-pagination-next></span>
+						<uk-icon icon="ChevronRight"></uk-icon>
 					} else {
-						<span uk-pagination-previous></span>
+						<uk-icon icon="ChevronLeft"></uk-icon>
 					}
-					<span uk-={ icon }></span>
 				} else {
 					{ text }
 				}
 			</a>
 		</li>
-	} else {
+	}	else {
 		<li class="uk-disabled">
-			<span>
+			<a
+				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
+				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
+				hx-target="#content"
+				hx-push-url="true"
+			>
 				if icon != "" {
-					<span uk-={ icon }></span>
+					if icon == "next" {
+						<uk-icon icon="ChevronRight"></uk-icon>
+					} else {
+						<uk-icon icon="ChevronLeft"></uk-icon>
+					}
 				} else {
 					{ text }
 				}
-			</span>
+			</a>
 		</li>
 	}
 }
