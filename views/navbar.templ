@@ -77,12 +77,12 @@ templ Navbar(userRole string) {
 						}
 						if userRole == "moderator" || userRole == "admin" {
 							<li class="uk-nav-header">Moderator</li>
+							<li><a href="/users" hx-get="/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" style="padding-right:5px;"></uk-icon>Users</a></li>
 							<li><a href="/better" hx-get="/better" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" style="padding-right:5px;"></uk-icon>Better</a></li>
 						}
 						if userRole == "admin" {
 							<li class="uk-nav-header">Admin</li>
 							<li><a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" style="padding-right:5px;"></uk-icon>Libraries</a></li>
-							<li><a href="/users" hx-get="/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" style="padding-right:5px;"></uk-icon>Users</a></li>
 							<li><a href="#"><uk-icon icon="Settings" style="padding-right:5px;"></uk-icon>Configuration</a></li>
 						}
 						<li class="uk-nav-divider"></li>

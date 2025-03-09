@@ -1,6 +1,12 @@
 package views
 
 templ Register() {
+	<script>
+		function titleHandler(title) {
+			document.title=title
+		}
+	</script>
+	@templ.JSFuncCall("titleHandler", "Magi - Register"))
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>

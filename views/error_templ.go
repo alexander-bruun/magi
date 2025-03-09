@@ -29,6 +29,10 @@ func Error(message string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", "Magi - Error").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"flex items-center justify-center min-h-screen\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-7xl tracking-tight font-extrabold lg:text-9xl text-primary-600 dark:text-primary-500\">500?</h1><p class=\"mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white\">Something went wrong</p><p class=\"mb-4 text-lg font-light text-gray-500 dark:text-gray-400\">Sorry, we failed to handle that request, please try again.</p><p class=\"mb-4 text-lg font-light text-gray-500 dark:text-gray-400\">Error: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -36,7 +40,7 @@ func Error(message string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/error.templ`, Line: 17, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/error.templ`, Line: 18, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {

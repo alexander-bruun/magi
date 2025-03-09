@@ -71,6 +71,12 @@ templ Layout(content templ.Component, userRole string) {
 			<script src="/assets/js/icon.iife.js" type="module"></script>
 			<script src="/assets/js/charts.iife.js" type="module"></script>
 			<script src="/assets/js/htmx.min.js"></script>
+
+			<script>
+				function titleHandler(title) {
+					document.title=title
+				}
+			</script>
 		</head>
 		<body class="bg-background text-foreground">
 			@Navbar(userRole)

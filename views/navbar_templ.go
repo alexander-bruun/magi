@@ -53,13 +53,13 @@ func Navbar(userRole string) templ.Component {
 			}
 		}
 		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/better\" hx-get=\"/better\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"WandSparkles\" style=\"padding-right:5px;\"></uk-icon>Better</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/users\" hx-get=\"/users\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Users\" style=\"padding-right:5px;\"></uk-icon>Users</a></li><li><a href=\"/better\" hx-get=\"/better\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"WandSparkles\" style=\"padding-right:5px;\"></uk-icon>Better</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/libraries\" hx-get=\"/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Library\" style=\"padding-right:5px;\"></uk-icon>Libraries</a></li><li><a href=\"/users\" hx-get=\"/users\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Users\" style=\"padding-right:5px;\"></uk-icon>Users</a></li><li><a href=\"#\"><uk-icon icon=\"Settings\" style=\"padding-right:5px;\"></uk-icon>Configuration</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/libraries\" hx-get=\"/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Library\" style=\"padding-right:5px;\"></uk-icon>Libraries</a></li><li><a href=\"#\"><uk-icon icon=\"Settings\" style=\"padding-right:5px;\"></uk-icon>Configuration</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

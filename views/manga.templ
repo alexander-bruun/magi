@@ -7,6 +7,7 @@ import (
 )
 
 templ Manga(manga models.Manga, chapters []models.Chapter) {
+	@templ.JSFuncCall("titleHandler", fmt.Sprintf("Magi - %s", manga.Name))
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
