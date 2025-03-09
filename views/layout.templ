@@ -8,6 +8,8 @@ templ Layout(content templ.Component, userRole string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
 			<title>Magi</title>
+			<link rel="preconnect" href="https://rsms.me/"/>
+			<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
 			<link href="/assets/css/styles.css" rel="stylesheet"/>
 			<style>
 				:root {
@@ -65,7 +67,9 @@ templ Layout(content templ.Component, userRole string) {
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
 			<script src="/assets/js/core.iife.js" type="module"></script>
-			<script src="/assets/js/icon.iife.js" type="module"></script> <!--https://lucide.dev/icons/chevron-up?search=ban-->
+			<!--https://lucide.dev/icons/chevron-up?search=ban-->
+			<script src="/assets/js/icon.iife.js" type="module"></script>
+			<script src="/assets/js/charts.iife.js" type="module"></script>
 			<script src="/assets/js/htmx.min.js"></script>
 		</head>
 		<body class="bg-background text-foreground">

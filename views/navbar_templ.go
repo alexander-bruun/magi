@@ -34,7 +34,7 @@ func Navbar(userRole string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"uk-navbar-container\" style=\"position:relative;z-index:1;\"><div class=\"uk-container\"><div uk-navbar><div class=\"uk-navbar-left\"><ul class=\"uk-navbar-nav\"><li class=\"uk-active\"><a class=\"btn btn-ghost text-xl\" href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\"><img src=\"/assets/img/icon.png\" style=\"height:40px;\"></a></li></ul></div><div class=\"uk-navbar-center\"><ul class=\"uk-navbar-nav\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\">Home</a></li><li><a href=\"/mangas\" hx-get=\"/mangas\" hx-target=\"#content\" hx-push-url=\"true\">Mangas</a></li></ul></div><div class=\"uk-navbar-right\" style=\"gap: 0.5rem;\"><!-- This is a button toggling the modal --><div class=\"uk-flex uk-flex-center\"><button type=\"button\" class=\"uk-icon-button\" type=\"button\" uk-toggle=\"target: #search-modal\"><uk-icon icon=\"Search\" style=\"padding-right:5px;\"></uk-icon></button></div><!-- This is the modal --><div id=\"search-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog uk-width-4-5\" style=\"background: none; border: 0;\"><form hx-get=\"/mangas/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\"><div class=\"uk-align-center folder-row mt-8 mb-4 flex items-center uk-width-1-3\"><input id=\"searchInput\" class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"One-Punch Man etc...\" autocomplete=\"off\" style=\"background: hsl(var(--background));\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4\" style=\"background: hsl(var(--background));\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container uk-mx-auto mt-6\"><ul class=\"uk-subnav flex items-center w-full\"><!-- Left aligned image --><li class=\"flex-shrink-0 flex items-center w-1/4\"><a class=\"btn btn-ghost text-xl\" href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\"><img src=\"/assets/img/icon.png\" alt=\"Logo\" class=\"h-10 w-auto\"> <span class=\"ml-2 font-semibold\">Magi</span></a></li><!-- Center aligned navigation items --><li class=\"w-2/4 flex justify-center\"><ul class=\"uk-subnav flex space-x-4\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\">Home</a></li><li><a href=\"/mangas\" hx-get=\"/mangas\" hx-target=\"#content\" hx-push-url=\"true\">Mangas</a></li></ul></li><!-- Right aligned dropdown container --><li class=\"flex-shrink-0 w-1/4 flex justify-end\"><!-- This is a button toggling the modal --><button class=\"uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0\" type=\"button\" uk-toggle=\"target: #search-modal\"><uk-icon icon=\"Search\" ratio=\"0.8\"></uk-icon></button><!-- This is the modal --><div id=\"search-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog uk-width-4-5\" style=\"background: none; border: 0;\"><form hx-get=\"/mangas/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\"><div class=\"uk-align-center folder-row mt-8 mb-4 flex items-center uk-width-1-3\"><input id=\"searchInput\" class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"One-Punch Man etc...\" autocomplete=\"off\" style=\"background: hsl(var(--background));\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4\" style=\"background: hsl(var(--background));\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +42,7 @@ func Navbar(userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><a href=\"#\" class=\"uk-icon-button\"><uk-icon icon=\"EllipsisVertical\" style=\"padding-right:5px;\"></uk-icon></a><div class=\"uk-navbar-dropdown\"><ul class=\"uk-nav uk-navbar-dropdown-nav\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><button class=\"uk-btn uk-btn-default mr-2\" type=\"button\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-uk-dropdown=\"mode: click\"><ul class=\"uk-nav uk-navbar-dropdown-nav\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -73,7 +73,7 @@ func Navbar(userRole string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<li class=\"uk-nav-divider\"></li><div class=\"my-1 uk-flex uk-flex-center\"><button class=\"uk-icon-button\" id=\"theme-toggle\"><svg id=\"theme-toggle-light-icon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-sun dark:hidden\"><circle cx=\"12\" cy=\"12\" r=\"4\"></circle> <path d=\"M12 2v2\"></path> <path d=\"M12 20v2\"></path> <path d=\"m4.93 4.93 1.41 1.41\"></path> <path d=\"m17.66 17.66 1.41 1.41\"></path> <path d=\"M2 12h2\"></path> <path d=\"M20 12h2\"></path> <path d=\"m6.34 17.66-1.41 1.41\"></path> <path d=\"m19.07 4.93-1.41 1.41\"></path></svg> <svg id=\"theme-toggle-dark-icon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-moon hidden dark:block\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"></path></svg></button></div></ul></div></div></div></div></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</ul></div></li></ul></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -110,7 +110,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 141, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 95, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -123,7 +123,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 149, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 103, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -136,7 +136,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 156, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 110, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -149,7 +149,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 157, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 111, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
