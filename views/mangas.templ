@@ -22,7 +22,7 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			</li>
 		</ul>
 	</nav>
-	<h2 class="uk-heading-line text-xl font-semibold mb-4 uk-h2 uk-text-center"><span>Mangas</span></h2>
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
 	if len(mangas) > 0 {
 		<div class="grid sm:grid-cols-2 md:grid-cols-4">
 			for _, manga := range mangas {

@@ -35,7 +35,7 @@ func Mangas(mangas []models.Manga, totalCount int, currentPage int) templ.Compon
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav aria-label=\"Breadcrumb\"><ul class=\"uk-breadcrumb\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\">Home</a></li><li><span>Mangas</span></li></ul></nav><h2 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h2 uk-text-center\"><span>Mangas</span></h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav aria-label=\"Breadcrumb\"><ul class=\"uk-breadcrumb\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\">Home</a></li><li><span>Mangas</span></li></ul></nav><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Mangas</span></h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
