@@ -30,7 +30,7 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 				<div>
 					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
 						<div class="uk-card uk-card-default uk-card-body p-2 m-2">
-							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2">{ manga.Name }</h3>
+							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2 uk-text-center">{ manga.Name }</h3>
 							<div class="uk-card-media-top flex justify-center items-center">
 								<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
 							</div>
