@@ -35,7 +35,7 @@ func Mangas(mangas []models.Manga, totalCount int, currentPage int) templ.Compon
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", fmt.Sprintf("Magi - Mangas Page %d", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", fmt.Sprintf("Mangas page #%d", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
