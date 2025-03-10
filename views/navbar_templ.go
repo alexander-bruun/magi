@@ -42,7 +42,7 @@ func Navbar(userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><button class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-uk-dropdown=\"mode: click\"><ul class=\"uk-dropdown-nav uk-nav\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><button class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-uk-dropdown=\"mode: click; pos: bottom-right; boundary: !.uk-container\"><ul class=\"uk-dropdown-nav uk-nav\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
