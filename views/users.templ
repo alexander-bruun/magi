@@ -6,7 +6,7 @@ import (
 )
 
 templ Users(users []models.User) {
-	@templ.JSFuncCall("titleHandler", "Magi - Users"))
+	@templ.JSFuncCall("titleHandler", "Magi - Users")
 	<nav aria-label="Breadcrumb">
 		<ul class="uk-breadcrumb">
 			<li>
@@ -39,106 +39,112 @@ templ UsersTable(users []models.User) {
 		<table class="uk-table">
 			<thead>
 				<tr>
-					<th>Username</th>
-					<th>Promote</th>
-					<th>Demote</th>
-					<th>Ban</th>
+					<th style="text-align: center;">Username</th>
+					<th style="text-align: center;">Promote</th>
+					<th style="text-align: center;">Demote</th>
+					<th style="text-align: center;">Ban</th>
 				</tr>
 			</thead>
 			<tbody>
 				for _, user := range users {
 					<tr>
-						<td>
+						<td class="flex items-center justify-center h-full">
 							if user.Banned {
-								<p class="text-rose-600 line-through">
+								<p class="text-rose-600 line-through text-center">
 									{ user.Username }
 								</p>
 							} else {
 								if user.Role == "admin" {
-									<p class="text-lime-500 underline decoration-wavy">
+									<p class="text-lime-500 underline decoration-wavy text-center">
 										{ user.Username }
 									</p>
 								} else if user.Role == "moderator" {
-									<p class="text-sky-500 underline decoration-dashed">
+									<p class="text-sky-500 underline decoration-dashed text-center">
 										{ user.Username }
 									</p>
 								} else {
-									<p class="text-stone-400">
+									<p class="text-stone-400 text-center">
 										{ user.Username }
 									</p>
 								}
 							}
 						</td>
 						<td>
-							if user.Role == "admin" {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-									disabled
-								>
-									<uk-icon icon="ChevronUp"></uk-icon>
-								</button>
-							} else {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-								>
-									<uk-icon icon="ChevronUp"></uk-icon>
-								</button>
-							}
+							<div class="flex place-content-center">
+								if user.Role == "admin" {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+										disabled
+									>
+										<uk-icon icon="ChevronUp"></uk-icon>
+									</button>
+								} else {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+									>
+										<uk-icon icon="ChevronUp"></uk-icon>
+									</button>
+								}
+							</div>
 						</td>
 						<td>
-							if user.Role == "reader" {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-									disabled
-								>
-									<uk-icon icon="ChevronDown"></uk-icon>
-								</button>
-							} else {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-								>
-									<uk-icon icon="ChevronDown"></uk-icon>
-								</button>
-							}
+							<div class="flex place-content-center">
+								if user.Role == "reader" {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+										disabled
+									>
+										<uk-icon icon="ChevronDown"></uk-icon>
+									</button>
+								} else {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+									>
+										<uk-icon icon="ChevronDown"></uk-icon>
+									</button>
+								}
+							</div>
 						</td>
 						<td>
-							if user.Banned {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-								>
-									<uk-icon icon="Check"></uk-icon>
-								</button>
-							} else {
-								<button
-									type="button"
-									class="uk-btn uk-btn-default"
-									hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
-									hx-trigger="click"
-									hx-target="#users-table"
-								>
-									<uk-icon icon="Ban"></uk-icon>
-								</button>
-							}
+							<div class="flex place-content-center">
+								if user.Banned {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+									>
+										<uk-icon icon="Check"></uk-icon>
+									</button>
+								} else {
+									<button
+										type="button"
+										class="uk-btn uk-btn-default"
+										hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
+										hx-trigger="click"
+										hx-target="#users-table"
+									>
+										<uk-icon icon="Ban"></uk-icon>
+									</button>
+								}
+							</div>
 						</td>
 					</tr>
 				}
