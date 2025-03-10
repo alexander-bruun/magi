@@ -45,13 +45,13 @@ templ LibraryTable(libraries []models.Library) {
 		<table class="uk-table">
 			<thead>
 				<tr>
-					<th></th>
-					<th>ID</th>
-					<th>Name</th>
-					<th>Cron</th>
-					<th>Folders</th>
-					<th></th>
-					<th></th>
+					<th style="text-align: center;"></th>
+					<th style="text-align: center;">ID</th>
+					<th style="text-align: center;">Name</th>
+					<th style="text-align: center;">Cron</th>
+					<th style="text-align: center;">Folders</th>
+					<th style="text-align: center;"></th>
+					<th style="text-align: center;"></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -68,22 +68,22 @@ templ LibraryTable(libraries []models.Library) {
 							</div>
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
+							<div class="mt-2 flex items-center justify-center">
 								{ library.Slug }
 							</div>
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
+							<div class="mt-2 flex items-center justify-center">
 								<p>{ library.Name }</p>
 							</div>
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
+							<div class="mt-2 flex items-center justify-center">
 								{ library.Cron }
 							</div>
 						</td>
 						<td>
-							<div class="flex items-center justify-center">
+							<div class="mt-2 flex items-center justify-center">
 								{ library.GetFolderNames() }
 							</div>
 						</td>
