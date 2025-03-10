@@ -3,3 +3,5 @@ node_modules/
 builds/
 cache/
 magi.db
+assets/css/styles.css
+views/*.go
