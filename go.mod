@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/a-h/templ v0.3.937
-	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/ncruces/go-sqlite3 v0.25.1
