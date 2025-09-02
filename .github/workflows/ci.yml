@@ -1,5 +1,8 @@
 name: Build Docker Images & binaries and Release
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -151,6 +154,8 @@ jobs:
       - build
       - merge
     if: needs.semantic.outputs.version != ''  # Run only if a new version is available
+    permissions:
+      contents: write
 
     steps:
       - name: Install git
