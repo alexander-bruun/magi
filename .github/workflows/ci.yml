@@ -11,7 +11,7 @@ env:
 jobs:
   semantic:
     name: Determine the next release version
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.determine_version.outputs.version }}
 
@@ -39,7 +39,7 @@ jobs:
 
   build:
     name: Build partial (${{ matrix.platform }})
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs:
       - semantic
     if: needs.semantic.outputs.version != ''  # Run only if a new version is available
@@ -98,7 +98,7 @@ jobs:
 
   merge:
     name: Merge and push image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs:
       - semantic
       - build
@@ -145,7 +145,7 @@ jobs:
 
   create-release:
     name: Create Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs:
       - semantic
       - build
