@@ -46,25 +46,25 @@ templ Layout(content templ.Component, userRole string) {
 				}
 			</style>
 			<script>
-				const htmlElement = document.documentElement;
+			const htmlElement = document.documentElement;
 
-				const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+			const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
 
-				if (
-					__FRANKEN__.mode === "dark" ||
-					(!__FRANKEN__.mode &&
-						window.matchMedia("(prefers-color-scheme: dark)").matches)
-				) {
-					htmlElement.classList.add("dark");
-				} else {
-					htmlElement.classList.remove("dark");
-				}
+			if (
+				__FRANKEN__.mode === "dark" ||
+				(!__FRANKEN__.mode &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches)
+			) {
+				htmlElement.classList.add("dark");
+			} else {
+				htmlElement.classList.remove("dark");
+			}
 
-				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-slate");
-				htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
-				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
-				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
-				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
+			htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-neutral");
+			htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
+			htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
+			htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
+			htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
 			<script src="/assets/js/core.iife.js" type="module"></script>
 			<!--https://lucide.dev/icons/chevron-up?search=ban-->

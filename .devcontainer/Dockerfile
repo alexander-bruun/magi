@@ -16,3 +16,5 @@ USER user
 
 RUN go install github.com/air-verse/air@latest
 RUN go install github.com/a-h/templ/cmd/templ@latest
+
+RUN air
