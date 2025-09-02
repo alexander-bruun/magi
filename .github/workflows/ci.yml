@@ -1,4 +1,6 @@
 name: Build Docker Images & binaries and Release
+permissions:
+  contents: read
 
 permissions:
   contents: read
