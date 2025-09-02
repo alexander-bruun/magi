@@ -35,7 +35,7 @@ func Mangas(mangas []models.Manga, totalCount int, currentPage int) templ.Compon
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", fmt.Sprintf("Magi - Mangas Page %d", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", fmt.Sprintf("Mangas page #%d", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -58,14 +58,14 @@ func Mangas(mangas []models.Manga, totalCount int, currentPage int) templ.Compon
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"uk-card uk-card-default uk-card-body p-2 m-2\"><h3 class=\"uk-card-title uk-h3 uk-margin line-clamp-1 mb-2\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"uk-card uk-card-default uk-card-body p-2 m-2\"><h3 class=\"uk-card-title uk-h3 uk-margin line-clamp-1 mb-2 uk-text-center\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 33, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 33, Col: 94}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {

@@ -34,7 +34,7 @@ func Libraries(libraries []models.Library) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", "Magi - Libraries").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", "Libraries").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -83,12 +83,12 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"libraries-table\"><table class=\"uk-table\"><thead><tr><th></th><th>ID</th><th>Name</th><th>Cron</th><th>Folders</th><th></th><th></th></tr></thead> <tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"libraries-table\"><table class=\"uk-table\"><thead><tr><th style=\"text-align: center;\"></th><th style=\"text-align: center;\">ID</th><th style=\"text-align: center;\">Name</th><th style=\"text-align: center;\">Cron</th><th style=\"text-align: center;\">Folders</th><th style=\"text-align: center;\"></th><th style=\"text-align: center;\"></th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, library := range libraries {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<tr><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10\"><uk-icon icon=\"RefreshCw\"></uk-icon></button></div></td><td><div class=\"flex items-center justify-center\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<tr><td><div class=\"flex items-center justify-center\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10\"><uk-icon icon=\"RefreshCw\"></uk-icon></button></div></td><td><div class=\"mt-2 flex items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -101,7 +101,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></td><td><div class=\"flex items-center justify-center\"><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></td><td><div class=\"mt-2 flex items-center justify-center\"><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -114,7 +114,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div></td><td><div class=\"flex items-center justify-center\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div></td><td><div class=\"mt-2 flex items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -127,7 +127,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></td><td><div class=\"flex items-center justify-center\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></td><td><div class=\"mt-2 flex items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
