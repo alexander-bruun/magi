@@ -207,7 +207,7 @@ jobs:
 
       - name: Release failed
         if: steps.semantic.outputs.new_release_published == 'false'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             core.setFailed('Release failed')
