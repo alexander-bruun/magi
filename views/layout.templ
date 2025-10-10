@@ -10,7 +10,8 @@ templ Layout(content templ.Component, userRole string) {
 			<title>Magi</title>
 			<link rel="preconnect" href="https://rsms.me/"/>
 			<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
-			<link href="/assets/css/styles.css" rel="stylesheet"/>
+			<link href="/assets/css/core.min.css" rel="stylesheet"/>
+			<link href="/assets/css/utilities.min.css" rel="stylesheet"/>
 			<style>
 				:root {
 					font-family: Inter, sans-serif;
@@ -60,7 +61,7 @@ templ Layout(content templ.Component, userRole string) {
 				htmlElement.classList.remove("dark");
 			}
 
-			htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-neutral");
+			htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-zinc");
 			htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
 			htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
 			htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");

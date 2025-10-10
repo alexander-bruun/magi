@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 func HandleLibraries(c *fiber.Ctx) error {
@@ -87,6 +89,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	}
 
 	library.Slug = c.Params("slug")
+	log.Infof("Updating library: %s", library.Slug)
 
 	if err := models.UpdateLibrary(&library); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
@@ -118,7 +121,7 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 	}
 
 	var buf bytes.Buffer
-	err = views.LibraryForm(*library, "put").Render(context.Background(), &buf)
+	err = views.LibraryForm(*library, "put", true).Render(context.Background(), &buf)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering form")
 	}
@@ -126,6 +129,28 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 	setCommonHeaders(c)
 	return c.SendString(fmt.Sprintf(`<div id="library-form">%s</div>`, buf.String()))
 }
+
+func HandleScanLibrary(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	log.Infof("Starting manual scan for library: %s", library.Name)
+	// Create a temporary Indexer for this library and run the job so we
+	// preserve the same logging and lifecycle as scheduled jobs.
+	idx := indexer.NewIndexer(*library)
+	// RunIndexingJob will process all folders for the library.
+	idx.RunIndexingJob()
+	
+	return c.SendString(`<uk-icon icon="Check"></uk-icon>`)
+}
+
 
 func HandleAddFolder(c *fiber.Ctx) error {
 	return HandleView(c, views.Folder(""))
@@ -137,7 +162,7 @@ func HandleRemoveFolder(c *fiber.Ctx) error {
 
 func HandleCancelEdit(c *fiber.Ctx) error {
 	var buf bytes.Buffer
-	err := views.LibraryForm(models.Library{}, "post").Render(context.Background(), &buf)
+	err := views.LibraryForm(models.Library{}, "post", false).Render(context.Background(), &buf)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error rendering form")
 	}

@@ -67,6 +67,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Form endpoints
 	libraries.Get("/edit-library/:slug", HandleEditLibrary)
+	libraries.Get("/scan/:slug", HandleScanLibrary)
 	libraries.Get("/add-folder", HandleAddFolder)
 	libraries.Get("/remove-folder", HandleRemoveFolder)
 	libraries.Get("/cancel-edit", HandleCancelEdit)

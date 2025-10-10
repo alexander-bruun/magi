@@ -32,18 +32,18 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 						<div class="uk-card uk-card-default uk-card-body p-2 m-2">
 							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2 uk-text-center">{ manga.Name }</h3>
 							<div class="uk-card-media-top flex justify-center items-center">
-								<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+								if manga.CoverArtURL == "" {
+									<img src="https://placehold.co/300x450?text=N/A" width="300" height="450" alt={ manga.Name }/>
+								} else {
+									<img src={ manga.CoverArtURL } width="300" height="450" alt={ manga.Name }/>
+								}
 							</div>
 						</div>
 					</a>
 				</div>
 			}
 		</div>
-	} else {
-		<div class="text-center">
-			<div class="uk-card uk-card-default uk-card-body">No mangas found...</div>
-		</div>
-	}
+
 	<div class="flex justify-center items-center py-8">
 		@Pagination(totalCount, currentPage)
 	</div>
@@ -54,6 +54,12 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			}
 	});
 	</script>
+	} else {
+		<div class="flex items-center justify-center mx-auto my-6 p-6 rounded-lg max-w-md">
+			<span class="text-xl font-semibold">No mangas have been indexed yet.</span>
+		</div>
+	}
+
 }
 
 templ Pagination(totalCount int, currentPage int) {

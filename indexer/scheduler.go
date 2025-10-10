@@ -3,6 +3,7 @@ package indexer
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -24,6 +25,7 @@ type Indexer struct {
 	CronRunning bool
 	JobRunning  bool
 	stop        chan struct{}
+	stopOnce    sync.Once
 }
 
 // Initialize sets up indexers and notifications
@@ -74,14 +76,22 @@ func (idx *Indexer) Start() {
 
 // Stop stops the indexer and cleans up
 func (idx *Indexer) Stop() {
-	if idx.CronRunning {
-		idx.Cron.Stop()
-		idx.CronRunning = false
-		log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
-	}
+	// Ensure Stop is only executed once to avoid closing the stop channel twice
+	idx.stopOnce.Do(func() {
+		if idx.CronRunning {
+			// Remove the cron job so it won't be scheduled again
+			if idx.Cron != nil {
+				idx.Cron.Remove(idx.CronJobID)
+			}
+			idx.Cron.Stop()
+			idx.CronRunning = false
+			log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
+		}
 
-	close(idx.stop)
-	delete(activeIndexers, idx.Library.Slug)
+		// close the stop channel to signal any goroutines waiting on it
+		close(idx.stop)
+		delete(activeIndexers, idx.Library.Slug)
+	})
 }
 
 // runIndexingJob performs the indexing job
@@ -92,7 +102,6 @@ func (idx *Indexer) runIndexingJob() {
 	}
 	defer func() {
 		idx.JobRunning = false
-		log.Infof("Indexing job for library '%s' completed", idx.Library.Name)
 	}()
 
 	idx.JobRunning = true
@@ -104,6 +113,7 @@ func (idx *Indexer) runIndexingJob() {
 			log.Errorf("Error processing folder '%s': %s", folder, err)
 		}
 
+		// Check for stop signal after each folder
 		select {
 		case <-idx.stop:
 			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
@@ -114,9 +124,46 @@ func (idx *Indexer) runIndexingJob() {
 
 	duration := time.Since(start)
 	log.Infof("Indexing for library '%s' completed in %s", idx.Library.Name, duration)
+
+	// Cleanup: remove any mangas from DB whose folders no longer exist on disk
+	go func(library models.Library) {
+		mangas, err := models.GetMangasByLibrarySlug(library.Slug)
+		if err != nil {
+			log.Errorf("Failed to list mangas for cleanup for library '%s': %s", library.Name, err)
+			return
+		}
+
+		for _, m := range mangas {
+			// If the path for the manga no longer exists on disk, delete the manga
+			if m.Path == "" {
+				continue
+			}
+			if _, err := os.Stat(m.Path); os.IsNotExist(err) {
+				log.Infof("Manga path missing on disk, deleting manga '%s' (slug=%s)", m.Name, m.Slug)
+				if err := models.DeleteManga(m.Slug); err != nil {
+					log.Errorf("Failed to delete manga '%s': %s", m.Slug, err)
+				}
+			}
+		}
+	}(idx.Library)
 }
 
-// processFolder processes files and directories in a given folder
+// ProcessFolder processes files and directories in a given folder. This is a
+// package-level function so it can be called from outside an Indexer. The
+// librarySlug parameter is used when indexing discovered manga directories.
+// If stop is non-nil it will be observed for cancellation and the function
+// will return early when a value is received.
+// RunIndexingJob triggers the indexer job immediately. It's exported so
+// callers outside the package can request a manual scan while preserving
+// the Indexer's logging and lifecycle behavior.
+func (idx *Indexer) RunIndexingJob() {
+	// reuse existing runIndexingJob implementation
+	idx.runIndexingJob()
+}
+
+// processFolder processes files and directories in a given folder and uses
+// the Indexer's internal state (like Library.Slug and stop channel). This
+// function is unexported to keep the implementation private to the package.
 func (idx *Indexer) processFolder(folder string) error {
 	dir, err := os.Open(folder)
 	if err != nil {

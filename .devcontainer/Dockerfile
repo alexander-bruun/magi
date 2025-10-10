@@ -8,9 +8,6 @@ ENV PATH "$PATH:/usr/local/go/bin:/home/user/go/bin:/home/user/.cargo/bin"
 RUN dnf update -y
 RUN dnf install -y git go nodejs
 
-# install npx globally
-RUN npm i -g npx
-
 RUN useradd -m user
 USER user
 

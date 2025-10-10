@@ -203,6 +203,35 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 	return nil
 }
 
+// GetMangasByLibrarySlug returns all mangas that belong to a specific library
+func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
+	var mangas []Manga
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at FROM mangas WHERE library_slug = ?`
+
+	rows, err := db.Query(query, librarySlug)
+	if err != nil {
+		log.Errorf("Failed to query mangas by librarySlug: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var manga Manga
+		var createdAt, updatedAt int64
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &createdAt, &updatedAt); err != nil {
+			log.Errorf("Failed to scan manga row: %v", err)
+			return nil, err
+		}
+		manga.CreatedAt = time.Unix(createdAt, 0)
+		manga.UpdatedAt = time.Unix(updatedAt, 0)
+		mangas = append(mangas, manga)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return mangas, nil
+}
+
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {

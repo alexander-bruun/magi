@@ -27,7 +27,7 @@ templ Libraries(libraries []models.Library) {
 			<div id="form-column" class="col-span-1">
 				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Creator</span></h3>
 				<div class="uk-card p-2">
-					@LibraryForm(models.Library{}, "post")
+					@LibraryForm(models.Library{}, "post", false)
 				</div>
 			</div>
 			<div id="table-column" class="col-span-3">
@@ -62,6 +62,8 @@ templ LibraryTable(libraries []models.Library) {
 								<button
 									type="button"
 									class="uk-btn uk-btn-secondary h-10 w-10"
+									hx-get={ fmt.Sprintf("/libraries/scan/%s", library.Slug) }
+									hx-trigger="click"
 								>
 									<uk-icon icon="RefreshCw"></uk-icon>
 								</button>
@@ -121,7 +123,7 @@ templ LibraryTable(libraries []models.Library) {
 	</div>
 }
 
-templ LibraryForm(library models.Library, action string) {
+templ LibraryForm(library models.Library, action string, editing bool) {
 	if action == "post" {
 		<div id="library-form">
 			<form
@@ -130,7 +132,7 @@ templ LibraryForm(library models.Library, action string) {
 				hx-target="#libraries-table"
 				hx-trigger="submit"
 			>
-				@FormContent(library)
+				@FormContent(library, editing)
 			</form>
 		</div>
 	} else {
@@ -141,24 +143,38 @@ templ LibraryForm(library models.Library, action string) {
 				hx-target="#libraries-table"
 				hx-trigger="submit"
 			>
-				@FormContent(library)
+				@FormContent(library, editing)
 			</form>
 		</div>
 	}
 }
 
-templ FormContent(library models.Library) {
+templ FormContent(library models.Library, editing bool) {
 	<fieldset class="space-y-4">
 		<div class="uk-margin">
-			<input
-				class="uk-input"
-				aria-label="Input"
-				type="text"
-				name="name"
-				placeholder="Library Name"
-				value={ library.Name }
-				required
-			/>
+			if editing {
+				<input
+					class="uk-input"
+					aria-label="Input"
+					type="text"
+					name="name"
+					placeholder="Library Name"
+					value={ library.Name }
+					required
+					readonly
+				/>
+				<input type="hidden" name="name" value={ library.Name } />
+			} else {
+				<input
+					class="uk-input"
+					aria-label="Input"
+					type="text"
+					name="name"
+					placeholder="Library Name"
+					value={ library.Name }
+					required
+				/>
+			}
 		</div>
 		<div class="uk-margin">
 			<input

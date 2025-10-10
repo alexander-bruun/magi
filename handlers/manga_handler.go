@@ -167,8 +167,12 @@ func getChapterImages(manga *models.Manga, chapter *models.Chapter) ([]string, e
 		return nil, err
 	}
 
-	images := make([]string, pageCount-1)
-	for i := range images {
+	if pageCount <= 0 {
+		return []string{}, nil
+	}
+
+	images := make([]string, pageCount)
+	for i := 0; i < pageCount; i++ {
 		images[i] = fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", manga.Slug, chapter.Slug, i+1)
 	}
 
