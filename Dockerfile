@@ -25,7 +25,7 @@ RUN go mod download
 RUN go build --tags extended -ldflags="-extldflags '-static' -X 'main.Version=${VERSION}'" -o magi ./main.go
 
 # Start a new stage from scratch
-FROM --platform=$BUILDPLATFORM alpine:3.22.1
+FROM --platform=$BUILDPLATFORM alpine:3.22.2
 
 # Install ca-certificates (required for HTTPS connections)
 RUN apk --no-cache add ca-certificates
