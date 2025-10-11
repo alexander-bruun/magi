@@ -241,9 +241,15 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 			if(!el) return;
 			const open = el.querySelector('.eye-open');
 			const closed = el.querySelector('.eye-closed');
-			if(open && closed){
+			if(!open || !closed) return;
+			// Invert whichever icon is currently shown so hover toggles visual state
+			const openVisible = window.getComputedStyle(open).display !== 'none';
+			if(openVisible){
 				open.style.display = 'none';
 				closed.style.display = 'inline-flex';
+			} else {
+				open.style.display = 'inline-flex';
+				closed.style.display = 'none';
 			}
 		});
 		document.addEventListener('mouseout', function(e){
