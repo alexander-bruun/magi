@@ -93,6 +93,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Post("/overwrite-metadata", HandleEditMetadataManga)
 	mangas.Get("/search", HandleMangaSearch)
 	mangas.Get("/:manga", HandleManga)
+	// Voting endpoints (HTMX) - register before the chapter wildcard so they match first
+	mangas.Post("/:manga/vote", AuthMiddleware("reader"), HandleMangaVote)
+	mangas.Get("/:manga/vote-fragment", HandleMangaVoteFragment)
 	mangas.Get("/:manga/:chapter", HandleChapter)
 	// Reading state endpoints (HTMX)
 	mangas.Post("/:manga/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)

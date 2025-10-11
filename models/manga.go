@@ -327,3 +327,68 @@ func sortMangas(mangas []Manga, sortBy, sortOrder string) {
 		// No sorting applied
 	}
 }
+
+// Vote represents a user's vote on a manga
+type Vote struct {
+	ID           int64
+	UserUsername string
+	MangaSlug    string
+	Value        int // 1 for upvote, -1 for downvote
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// GetMangaVotes returns the aggregated score and counts for a manga
+func GetMangaVotes(mangaSlug string) (score int, upvotes int, downvotes int, err error) {
+	// Use COALESCE so aggregates return 0 instead of NULL when there are no rows
+	query := `SELECT COALESCE(SUM(value),0) as score, COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes FROM votes WHERE manga_slug = ?`
+	row := db.QueryRow(query, mangaSlug)
+	if err := row.Scan(&score, &upvotes, &downvotes); err != nil {
+		return 0, 0, 0, err
+	}
+	return score, upvotes, downvotes, nil
+}
+
+// GetUserVoteForManga returns the vote value (1, -1) for a user on a manga. If none, returns 0.
+func GetUserVoteForManga(username, mangaSlug string) (int, error) {
+	query := `SELECT value FROM votes WHERE user_username = ? AND manga_slug = ?`
+	row := db.QueryRow(query, username, mangaSlug)
+	var val int
+	err := row.Scan(&val)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return val, nil
+}
+
+// SetVote inserts or updates a user's vote for a manga. value must be 1 or -1.
+func SetVote(username, mangaSlug string, value int) error {
+	if value != 1 && value != -1 {
+		return errors.New("invalid vote value")
+	}
+	now := time.Now().Unix()
+	// Try update first
+	res, err := db.Exec(`UPDATE votes SET value = ?, updated_at = ? WHERE user_username = ? AND manga_slug = ?`, value, now, username, mangaSlug)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	// Insert
+	_, err = db.Exec(`INSERT INTO votes (user_username, manga_slug, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, username, mangaSlug, value, now, now)
+	return err
+}
+
+// RemoveVote deletes a user's vote for a manga
+func RemoveVote(username, mangaSlug string) error {
+	_, err := db.Exec(`DELETE FROM votes WHERE user_username = ? AND manga_slug = ?`, username, mangaSlug)
+	return err
+}

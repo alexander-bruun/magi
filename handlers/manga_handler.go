@@ -272,3 +272,59 @@ func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, co
 	manga.ContentRating = mangaDetail.Attributes.ContentRating
 	manga.CoverArtURL = coverArtURL
 }
+
+// HandleMangaVote handles a user's upvote/downvote for a manga via HTMX.
+// Expected form values: "value" = "1" or "-1". User must be authenticated.
+func HandleMangaVote(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	// parse value
+	valStr := c.FormValue("value")
+	if valStr == "" {
+		return fiber.ErrBadRequest
+	}
+	v, err := strconv.Atoi(valStr)
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+
+	// If value == 0, remove vote
+	if v == 0 {
+		if err := models.RemoveVote(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	} else {
+		if err := models.SetVote(userName, mangaSlug, v); err != nil {
+			return handleError(c, err)
+		}
+	}
+
+			// Return updated fragment so HTMX can refresh the vote UI in-place.
+			score, up, down, err := models.GetMangaVotes(mangaSlug)
+			if err != nil {
+					return handleError(c, err)
+			}
+			userVote, _ := models.GetUserVoteForManga(userName, mangaSlug)
+			return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
+}
+
+// HandleMangaVoteFragment returns the vote UI fragment for a manga. If user is logged in,
+// it will show their current selection highlighted.
+func HandleMangaVoteFragment(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	score, up, down, err := models.GetMangaVotes(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	userVote := 0
+	if userName != "" {
+		v, _ := models.GetUserVoteForManga(userName, mangaSlug)
+		userVote = v
+	}
+	return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
+}

@@ -39,21 +39,28 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 			</div>
 			<div id="table-column" class="w-3/4 m-2">
 				<div class="flex justify-between px-4">
-					<button
-						type="button"
-						class="uk-btn uk-btn-default"
-						type="button"
-						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
-						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
-						hx-target="#content"
-						hx-push-url="true"
-						onclick="scrollToTopInstant()"
-					>
-						<uk-icon icon="MoveLeft"></uk-icon>
-						Go to first chapter
-					</button>
+					if len(chapters) > 0 {
+						<button
+							type="button"
+							class="uk-btn uk-btn-default"
+							type="button"
+							href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
+							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
+							hx-target="#content"
+							hx-push-url="true"
+							onclick="scrollToTopInstant()"
+						>
+							<uk-icon icon="MoveLeft"></uk-icon>
+							Go to first chapter
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to first chapter</button>
+					}
+
 					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ strconv.Itoa(len(chapters)) })</span></h2>
-					<button
+
+					if len(chapters) > 0 {
+						<button
 						type="button"
 						class="uk-btn uk-btn-default"
 						type="button"
@@ -65,7 +72,10 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 					>
 						Go to last chapter
 						<uk-icon icon="MoveRight"></uk-icon>
-					</button>
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to last chapter</button>
+					}
 				</div>
 				<hr class="uk-divider-icon mb-4"/>
 				<style>
@@ -140,6 +150,16 @@ templ Info(manga models.Manga) {
 			<uk-icon icon="Info"></uk-icon>
 		</button>
 	</div>
+
+	<!-- Vote fragment loaded via HTMX so it can be interactive and update in-place -->
+	<style>
+		/* ensure vote active state is styled when fragment HTML is inserted */
+		.vote-btn.active { font-weight: 700; }
+		.vote-btn.up.active { color: #16a34a; }
+		.vote-btn.down.active { color: #dc2626; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="flex justify-center mt-4" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -162,6 +182,49 @@ templ Info(manga models.Manga) {
 			</div>
 			<div id="modal-content"></div>
 		</div>
+	</div>
+}
+
+// Vote fragment for a manga. This small fragment is returned by HTMX when voting
+// so the UI can be updated in-place.
+templ MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
+	<style>
+		.vote-btn.active { font-weight: 700; color: #16a34a; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="manga-vote-fragment inline-flex items-center">
+		<!-- Upvote -->
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+			if userVote == 1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up active" title="Remove upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up" title="Upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
+				</button>
+			}
+		</form>
+
+		<!-- Downvote -->
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
+			if userVote == -1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down active" title="Remove downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="-1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down" title="Downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
+				</button>
+			}
+		</form>
+
+		<span class="vote-count">{ fmt.Sprint(score) }</span>
+		<span class="ml-2 text-sm text-gray-500">({ fmt.Sprint(upvotes) } up, { fmt.Sprint(downvotes) } down)</span>
 	</div>
 }
 
