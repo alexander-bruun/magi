@@ -37,6 +37,19 @@ func HandleManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	// If a user is logged in, fetch their read chapters and annotate the list
+	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
+		readMap, err := models.GetReadChaptersForUser(userName, slug)
+		if err == nil {
+			for i := range chapters {
+				if _, found := readMap[chapters[i].Slug]; found {
+					chapters[i].Read = true
+				} else {
+					chapters[i].Read = false
+				}
+			}
+		}
+	}
 	return HandleView(c, views.Manga(*manga, chapters))
 }
 
@@ -54,6 +67,17 @@ func HandleChapter(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// Note: chapter is normally marked read by an HTMX trigger in the view.
+	// As a safe fallback, if this request is a full page load (not an HTMX request)
+	// and the user is logged in, mark the chapter read server-side so the
+	// manga list can reflect the read state for non-HTMX navigation.
+	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
+		// HTMX includes the header HX-Request: true for requests it initiates.
+		if c.Get("HX-Request") != "true" {
+			_ = models.MarkChapterRead(userName, mangaSlug, chapterSlug)
+		}
+	}
+
 	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapter.Slug, mangaSlug)
 	if err != nil {
 		return handleError(c, err)
@@ -65,6 +89,36 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 
 	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, chapters))
+}
+
+// HandleMarkRead marks a chapter as read for the logged-in user via HTMX
+func HandleMarkRead(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Params("chapter")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+	if err := models.MarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
+		return handleError(c, err)
+	}
+	// Return the inline eye toggle fragment so HTMX will swap the icon in-place.
+	return HandleView(c, views.InlineEyeToggle(true, mangaSlug, chapterSlug))
+}
+
+// HandleMarkUnread unmarks a chapter as read for the logged-in user via HTMX
+func HandleMarkUnread(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Params("chapter")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+	if err := models.UnmarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
+		return handleError(c, err)
+	}
+	// Return the inline eye toggle fragment with read=false so HTMX swaps to the closed-eye.
+	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {

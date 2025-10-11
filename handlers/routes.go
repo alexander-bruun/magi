@@ -22,6 +22,10 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 		AllowHeaders: "Content-Type,Authorization",
 	}))
 
+	// Optional auth: populate c.Locals("user_name") when cookies are set so pages
+	// can show personalized UI without forcing login.
+	app.Use(OptionalAuthMiddleware())
+
 	// Handle preflight requests for CORS
 	app.Options("/*", func(c *fiber.Ctx) error {
 		c.Set("Access-Control-Allow-Origin", "*")
@@ -90,6 +94,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Get("/search", HandleMangaSearch)
 	mangas.Get("/:manga", HandleManga)
 	mangas.Get("/:manga/:chapter", HandleChapter)
+	// Reading state endpoints (HTMX)
+	mangas.Post("/:manga/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
+	mangas.Post("/:manga/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
 
 	// Fallback
 	app.Get("/*", HandleNotFound)

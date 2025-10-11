@@ -114,3 +114,27 @@ func setAuthCookies(c *fiber.Ctx, accessToken, refreshToken string) {
 		Expires: time.Now().Add(refreshTokenDuration),
 	})
 }
+
+// OptionalAuthMiddleware attempts to authenticate a user if auth cookies are present
+// but does not enforce authentication. It sets c.Locals("user_name") when a valid
+// token is found so handlers can optionally adapt views for logged-in users.
+func OptionalAuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		accessToken := c.Cookies("access_token")
+		refreshToken := c.Cookies("refresh_token")
+
+		if accessToken != "" {
+			// Try to validate token and set user info; ignore errors
+			_ = validateAccessToken(c, accessToken, "reader")
+			return c.Next()
+		}
+
+		if refreshToken != "" {
+			// Try to refresh tokens and set cookies/locals; ignore errors
+			_ = refreshAndValidateTokens(c, refreshToken, "reader")
+			return c.Next()
+		}
+
+		return c.Next()
+	}
+}

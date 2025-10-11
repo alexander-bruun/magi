@@ -83,6 +83,38 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 	</div>
 }
 
+// Inline eye toggle used in the chapters list. Returns a small fragment that HTMX
+// can swap when toggling unread/read.
+templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
+	if read {
+		<div class="chapter-read-icon ml-3 text-green-600 inline-flex items-center" title="Read">
+			<form
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-target="this"
+				hx-swap="outerHTML"
+			>
+				<button type="submit" class="uk-icon-button" title="Mark as unread" aria-label="Mark as unread">
+					<uk-icon class="eye-open" icon="eye" style="display:inline-flex"></uk-icon>
+					<uk-icon class="eye-closed" icon="eye-closed" style="display:none"></uk-icon>
+				</button>
+			</form>
+		</div>
+	} else {
+		<div class="chapter-read-icon ml-3 text-gray-500 inline-flex items-center" title="Unread">
+			<form
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-target="this"
+				hx-swap="outerHTML"
+			>
+				<button type="submit" class="uk-icon-button" title="Mark as read" aria-label="Mark as read">
+					<uk-icon class="eye-open" icon="eye" style="display:none"></uk-icon>
+					<uk-icon class="eye-closed" icon="eye-closed" style="display:inline-flex"></uk-icon>
+				</button>
+			</form>
+		</div>
+	}
+}
+
 templ Info(manga models.Manga) {
 	<div class="flex justify-center items-center">
 		if manga.CoverArtURL == "" {
@@ -134,21 +166,63 @@ templ Info(manga models.Manga) {
 }
 
 templ Chapters(manga models.Manga, chapters []models.Chapter) {
+	<style>
+		/* Base layout for the inline icon container */
+		.chapter-read-icon .eye-open { display: inline-flex; }
+		.chapter-read-icon .eye-closed { display: none; }
+	</style>
+	<script>
+		// Use event delegation so dynamically swapped HTMX fragments still respond.
+		document.addEventListener('mouseover', function(e){
+			const el = e.target.closest('.chapter-read-icon');
+			if(!el) return;
+			const open = el.querySelector('.eye-open');
+			const closed = el.querySelector('.eye-closed');
+			if(open && closed){
+				open.style.display = 'none';
+				closed.style.display = 'inline-flex';
+			}
+		});
+		document.addEventListener('mouseout', function(e){
+			const el = e.target.closest('.chapter-read-icon');
+			if(!el) return;
+			const open = el.querySelector('.eye-open');
+			const closed = el.querySelector('.eye-closed');
+			if(!open || !closed) return;
+			// Restore based on whether this fragment contains the unread->read form
+			const form = el.querySelector('form');
+			if(form && form.getAttribute('hx-post') && form.getAttribute('hx-post').includes('/unread')){
+				// This is the read state fragment (form posts to unread) -> show open
+				open.style.display = 'inline-flex';
+				closed.style.display = 'none';
+			} else {
+				// Unread state fragment (form posts to read) -> show closed
+				open.style.display = 'none';
+				closed.style.display = 'inline-flex';
+			}
+		});
+	</script>
 	<ul class="uk-accordion" uk-accordion>
 		for _, chapter := range chapters {
 			<li class="uk-closed">
-				<a class="uk-accordion-title"
-							href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)) }
-							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug) }
-							hx-target="#content"
-							hx-push-url="true"
+				<!-- Row layout: left = link/title, right = optional icon -->
+				<div class="flex items-center justify-between w-full">
+					<a class="uk-accordion-title flex-1 min-w-0 pr-2 truncate"
+						href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug) }
+						hx-target="#content"
+						hx-push-url="true"
 					>
-					{ chapter.Name }
-					<span
-						class="uk-accordion-icon"
-						uk-icon="icon: chevron-down; ratio: 0.8"
-					></span>
-				</a>
+						{ chapter.Name }
+						<span
+							class="uk-accordion-icon"
+							uk-icon="icon: chevron-down; ratio: 0.8"
+						></span>
+					</a>
+					if chapter.Read {
+						@InlineEyeToggle(chapter.Read, manga.Slug, chapter.Slug)
+					}
+				</div>
 			</li>
 		}
 	</ul>
@@ -227,6 +301,15 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
        	}, false);
        	</script>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ manga.Name }</span></h2>
+	<!-- Auto-mark as read on load: invisible placeholder, do not inject UI into reader page -->
+	<div id="read-state"
+		hx-post={ fmt.Sprintf("/mangas/%s/%s/read", manga.Slug, chapter.Slug) }
+		hx-trigger="load"
+		hx-swap="none"
+		class="hidden"
+	>
+		<!-- no visible UI here; reader will not show badges -->
+	</div>
 	<div class="flex justify-between p-4">
 		<button
 			type="button"
@@ -257,6 +340,11 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 								hx-target="#content"
 								hx-push-url="true"
 							>{ chapters[i].Name }</a>
+							if chapters[i].Read {
+								<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+									<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+								</span>
+							}
 						</li>
 					} else {
 						<li>
@@ -266,6 +354,11 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 								hx-target="#content"
 								hx-push-url="true"
 							>{ chapters[i].Name }</a>
+							if chapters[i].Read {
+								<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+									<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+								</span>
+							}
 						</li>
 					}
 				}
@@ -327,4 +420,37 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			<uk-icon icon="MoveRight"></uk-icon>
 		</button>
 	</div>
+}
+
+// Small fragment that renders the read state badge and a toggle button
+templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
+	if read {
+		<div id="read-state" class="flex items-center justify-center gap-2 my-2">
+			<span class="uk-badge inline-flex items-center gap-1">
+				<uk-icon icon="BadgeCheck" ratio="0.9"></uk-icon>
+				Read
+			</span>
+			<button
+				type="button"
+				class="uk-btn uk-btn-default uk-button-small"
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-target="#read-state"
+				hx-swap="outerHTML"
+			>Mark as unread</button>
+		</div>
+	} else {
+		<div id="read-state" class="flex items-center justify-center gap-2 my-2">
+			<span class="uk-badge uk-badge-warning inline-flex items-center gap-1">
+				<uk-icon icon="Circle" ratio="0.9"></uk-icon>
+				Unread
+			</span>
+			<button
+				type="button"
+				class="uk-btn uk-btn-default uk-button-small"
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-target="#read-state"
+				hx-swap="outerHTML"
+			>Mark as read</button>
+		</div>
+	}
 }

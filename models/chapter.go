@@ -16,6 +16,7 @@ type Chapter struct {
 	File            string `json:"file"`
 	ChapterCoverURL string `json:"chapter_cover_url"`
 	MangaSlug       string `json:"manga_slug"`
+	Read            bool   `json:"read"`
 }
 
 // CreateChapter adds a new chapter if it does not already exist
