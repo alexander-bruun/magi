@@ -160,6 +160,12 @@ templ Info(manga models.Manga) {
 		.vote-count { font-weight: 600; margin-left: 0.5rem; }
 	</style>
 	<div id="manga-vote" class="flex justify-center mt-4" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	<!-- Favorite fragment loaded via HTMX so it can be toggled in-place -->
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-favorite" class="flex justify-center mt-2" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -182,6 +188,30 @@ templ Info(manga models.Manga) {
 			</div>
 			<div id="modal-content"></div>
 		</div>
+	</div>
+}
+
+// Favorite fragment for a manga. Returned by HTMX when toggling favorite state.
+templ MangaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-favorite" class="manga-favorite-fragment inline-flex items-center">
+		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+			if isFavorite {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn active" title="Remove favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn" title="Add favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			}
+		</form>
+		<span class="favorite-count">{ fmt.Sprint(favCount) }</span>
 	</div>
 }
 

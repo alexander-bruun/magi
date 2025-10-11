@@ -328,3 +328,52 @@ func HandleMangaVoteFragment(c *fiber.Ctx) error {
 	}
 	return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
 }
+
+// HandleMangaFavorite handles toggling a favorite for the logged-in user via HTMX.
+// Expected form values: "value" = "1" to favorite or "0" to unfavorite.
+func HandleMangaFavorite(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	valStr := c.FormValue("value")
+	if valStr == "" {
+		return fiber.ErrBadRequest
+	}
+
+	if valStr == "0" {
+		if err := models.RemoveFavorite(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	} else {
+		if err := models.SetFavorite(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	}
+
+	// Return updated fragment so HTMX can refresh the favorite UI in-place.
+	favCount, err := models.GetFavoritesCount(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	isFav, _ := models.IsFavoriteForUser(userName, mangaSlug)
+	return HandleView(c, views.MangaFavoriteFragment(mangaSlug, favCount, isFav))
+}
+
+// HandleMangaFavoriteFragment returns the favorite UI fragment for a manga.
+func HandleMangaFavoriteFragment(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	favCount, err := models.GetFavoritesCount(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	isFav := false
+	if userName != "" {
+		f, _ := models.IsFavoriteForUser(userName, mangaSlug)
+		isFav = f
+	}
+	return HandleView(c, views.MangaFavoriteFragment(mangaSlug, favCount, isFav))
+}
