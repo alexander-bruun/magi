@@ -134,7 +134,7 @@ func extractZipFile(file *zip.File, outputFolder string) error {
 	defer src.Close()
 
 	outputPath := filepath.Join(outputFolder, file.Name)
-	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder) + string(os.PathSeparator)) {
+	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder)+string(os.PathSeparator)) {
 		return fmt.Errorf("invalid file path: %s", outputPath)
 	}
 	dst, err := os.Create(outputPath)

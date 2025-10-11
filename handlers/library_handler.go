@@ -147,10 +147,9 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	idx := indexer.NewIndexer(*library)
 	// RunIndexingJob will process all folders for the library.
 	idx.RunIndexingJob()
-	
+
 	return c.SendString(`<uk-icon icon="Check"></uk-icon>`)
 }
-
 
 func HandleAddFolder(c *fiber.Ctx) error {
 	return HandleView(c, views.Folder(""))

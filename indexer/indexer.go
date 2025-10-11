@@ -256,8 +256,8 @@ func IndexChapters(slug, path string) (int, int, error) {
 	// Build map of files currently present (slug -> relPath). This is a
 	// full scan but cheaper than many DB ops; we only do it when file_count
 	// mismatch was observed.
-	type presentInfo struct{
-		Rel string
+	type presentInfo struct {
+		Rel  string
 		Name string
 	}
 	presentMap := make(map[string]presentInfo)
