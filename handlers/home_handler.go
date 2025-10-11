@@ -43,7 +43,21 @@ func HandleHome(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated))
+	// Fetch basic stats for the homepage
+	totalMangas, err := models.GetTotalMangas()
+	if err != nil {
+		return handleError(c, err)
+	}
+	totalChapters, err := models.GetTotalChapters()
+	if err != nil {
+		return handleError(c, err)
+	}
+	totalChaptersRead, err := models.GetTotalChaptersRead()
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, totalMangas, totalChapters, totalChaptersRead))
 }
 
 func HandleNotFound(c *fiber.Ctx) error {

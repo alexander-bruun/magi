@@ -90,27 +90,88 @@ func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 
 func clearAuthCookies(c *fiber.Ctx) {
 	expiredTime := time.Now().Add(-time.Hour)
+	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
 		Name:    "access_token",
 		Value:   "",
 		Expires: expiredTime,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
 	})
 	c.Cookie(&fiber.Cookie{
 		Name:    "refresh_token",
 		Value:   "",
 		Expires: expiredTime,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
 	})
 }
 
 func setAuthCookies(c *fiber.Ctx, accessToken, refreshToken string) {
+	// Note: Secure requires HTTPS; we detect TLS or X-Forwarded-Proto to set it.
+	// Using Lax so top-level navigations send cookies.
+	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
-		Name:    "access_token",
-		Value:   accessToken,
-		Expires: time.Now().Add(accessTokenDuration),
+		Name:     "access_token",
+		Value:    accessToken,
+		Expires:  time.Now().Add(accessTokenDuration),
+		MaxAge:   int(accessTokenDuration.Seconds()),
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
 	})
 	c.Cookie(&fiber.Cookie{
-		Name:    "refresh_token",
-		Value:   refreshToken,
-		Expires: time.Now().Add(refreshTokenDuration),
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Expires:  time.Now().Add(refreshTokenDuration),
+		MaxAge:   int(refreshTokenDuration.Seconds()),
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+		Path:     "/",
 	})
+}
+
+// isSecureRequest returns true if the request is using HTTPS or forwarded as HTTPS.
+func isSecureRequest(c *fiber.Ctx) bool {
+	if c.Secure() || c.Protocol() == "https" {
+		return true
+	}
+	// Respect common proxy headers
+	if proto := c.Get("X-Forwarded-Proto"); proto == "https" {
+		return true
+	}
+	if https := c.Get("X-Forwarded-SSL"); https == "on" || https == "1" {
+		return true
+	}
+	return false
+}
+
+// OptionalAuthMiddleware attempts to authenticate a user if auth cookies are present
+// but does not enforce authentication. It sets c.Locals("user_name") when a valid
+// token is found so handlers can optionally adapt views for logged-in users.
+func OptionalAuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		accessToken := c.Cookies("access_token")
+		refreshToken := c.Cookies("refresh_token")
+
+		// If access token exists, try validate; if invalid and refresh exists, try refresh.
+		if accessToken != "" {
+			if err := validateAccessToken(c, accessToken, "reader"); err == nil {
+				return c.Next()
+			}
+		}
+
+		if refreshToken != "" {
+			// Try to refresh tokens and set cookies/locals; ignore errors
+			_ = refreshAndValidateTokens(c, refreshToken, "reader")
+		}
+
+		return c.Next()
+	}
 }

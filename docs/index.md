@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/alexander-bruun/magi/main/assets/img/icon.png" alt="Magi Icon" width="150"/>
+  <img src="assets/img/icon.png" alt="Magi Icon" height="130"/>
 </div>
 
 <div align="center">
@@ -13,10 +13,11 @@
 
 **Magi** is a minimalist and efficient manga indexer, organizer, and reader. It does **NOT** distribute copyrighted material, including posters, metadata, or any other content owned by original copyright holders. Magi is designed solely as a local application to manage your digital manga collection using common file formats like `.cbz`, `.cbr`, `.zip`, `.rar`, etc. Metadata and posters are fetched from publicly accessible APIs to enhance the user experience.
 
-![Magi Frontpage](images/frontpage.png)
+![Magi Frontpage](/docs/images/frontpage.png)
 
 Additional Magi screenshots, can be found under `/docs/images`, we add example page screenshots as new features are added.
 
+> [!TIP]
 > Due to the heavy compression of rar files, you will incur performance issues. So it is recommended to use traditional zip files when possible, due to their performance benefits for random reads and writes.
 
 Magi builds to a single binary targeting: `Linux`, `MacOS` and `Windows` on the following architectures: `amd64` and `arm64`. If additional platforms should be supported, then feel free to open a merge request to the pipelines so more people can enjoy Magi.
@@ -29,10 +30,6 @@ When running with native binaries it is heavily recommended to use something lik
 
 Alternatively, run Magi in a container solution such as Kubernetes, Docker Desktop or Podman... the sky is the limit! Just make sure the underlying data is made available to the native or container environment.
 
-We can be found on Discord for help, questions or just hanging around.
-
-<a target="_blank" href="https://discord.gg/2VDmSUxGkE"><img src="https://dcbadge.limes.pink/api/server/2VDmSUxGkE" /></a>
-
 The full documentation, can be found [here](https://alexander-bruun.github.io/magi/).
 
 ## Technologies
@@ -40,24 +37,26 @@ The full documentation, can be found [here](https://alexander-bruun.github.io/ma
 Magi is built with the following technologies:
 
 - [GoLang](https://go.dev/) - Programming Language
-- [Sqlite](https://github.com/ncruces/go-sqlite3) - Database
-- [GoFiber](https://docs.gofiber.io/) - Web framework
+- [Sqlite](https://github.com/ncruces/go-sqlite3) - Relational database
+- [GoFiber](https://docs.gofiber.io/) - HTTP Server
 - [Templ](https://templ.guide/) - HTML Templating
-- [HTMX](https://htmx.org/) - Hypermedia
-- [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
+- JavaScript libraries:
+  - [HTMX](https://htmx.org/) - Hypermedia
+  - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
-- [Franken UI](https://franken-ui.dev/) - Predefined CSS components
-- [Mangadex API](https://api.mangadex.org/docs/) - Metadata
+- [Franken UI](https://franken-ui.dev/) - Predefined Components
+- [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
 
 Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
 
+> [!NOTE]
 > Mangadex APi was chosen over other solutions due to it allowing anonymous requests and not forcing the end-user to provide API tokens or keys. Alternatives like MAL was explored, and worked just fine, but was a pain for people to indiviually create their own API tokens etc...
 
 ## Getting Started
 
 To set up Magi for development, use the following command in the project directory:
 
-```bash
+```sh
 air
 ```
 
@@ -65,18 +64,10 @@ This will start the application and provide you with logs indicating the status 
 
 This provides a smoother developer experience instead of having to refresh the page every time you made a change.
 
-To regenerate the Tailwind CSS theme with a new color scheme, run:
+## Contributing
 
-```bash
-npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
-```
+Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
 
-> Make sure to update the theme in `tailwind.config.js` before running this command.
+## License
 
-If you want to inspect the data stored in the Sqlite database, the `sqlite3` CLI can be used.
-
-```sh
-sqlite3 ~/magi/magi.db
-```
-
-This will open a interactive console browser, here you can explore individual buckets, and the data contained within them.
+[MIT License](LICENSE)

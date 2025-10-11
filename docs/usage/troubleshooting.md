@@ -1,16 +1,5 @@
 # Troubleshooting and debugging Magi
 
-## Generate a new Tailwind theme
-
-To regenerate the Tailwind CSS theme with a new color scheme, run:
-
-```sh
-npx tailwindcss -i ./input.css -o ./assets/css/styles.css --minify
-```
-
-> [!NOTE]
-> Make sure to update the theme in `tailwind.config.js` before running this command.
-
 ## Sqlite inspection
 
 If you want to inspect the data stored in the Sqlite database, the `sqlite3` CLI can be used.

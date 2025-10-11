@@ -3,32 +3,15 @@ package views
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
-	"strconv"
 )
 
-templ Manga(manga models.Manga, chapters []models.Chapter) {
-	@templ.JSFuncCall("titleHandler", manga.Name)
-	<nav aria-label="Breadcrumb">
-		<ul class="uk-breadcrumb">
-			<li>
-				<a
-					href="/"
-					hx-get="/"
-					hx-target="#content"
-					hx-push-url="true"
-				>Home</a>
-			</li>
-			<li>
-				<a
-					href="/mangas"
-					hx-get="/mangas"
-					hx-target="#content"
-					hx-push-url="true"
-				>Mangas</a>
-			</li>
-			<li><span>{ manga.Name }</span></li>
-		</ul>
-	</nav>
+templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int) {
+	@PageTitle(manga.Name)
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Mangas", Href: "/mangas" },
+		{ Label: manga.Name, Href: fmt.Sprintf("/mangas/%s", manga.Slug) },
+	})
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ manga.Name }</h1>
 	<div class="uk-container">
 		<div class="flex mt-2">
@@ -39,31 +22,43 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 			</div>
 			<div id="table-column" class="w-3/4 m-2">
 				<div class="flex justify-between px-4">
-					<button
+					if firstChapterSlug != "" {
+						<button
+							type="button"
+							class="uk-btn uk-btn-default"
+							type="button"
+							href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+							hx-target="#content"
+							hx-push-url="true"
+							onclick="scrollToTopInstant()"
+						>
+							<uk-icon icon="MoveLeft"></uk-icon>
+							Go to first chapter
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to first chapter</button>
+					}
+
+					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
+
+					if lastChapterSlug != "" {
+						<button
 						type="button"
 						class="uk-btn uk-btn-default"
 						type="button"
-						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
-						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[0].Slug) }
+						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
 						hx-target="#content"
 						hx-push-url="true"
-					>
-						<uk-icon icon="MoveLeft"></uk-icon>
-						Go to first chapter
-					</button>
-					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ strconv.Itoa(len(chapters)) })</span></h2>
-					<button
-						type="button"
-						class="uk-btn uk-btn-default"
-						type="button"
-						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[len(chapters)-1].Slug) }
-						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[len(chapters)-1].Slug) }
-						hx-target="#content"
-						hx-push-url="true"
+						onclick="scrollToTopInstant()"
 					>
 						Go to last chapter
 						<uk-icon icon="MoveRight"></uk-icon>
-					</button>
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to last chapter</button>
+					}
 				</div>
 				<hr class="uk-divider-icon mb-4"/>
 				<style>
@@ -79,6 +74,38 @@ templ Manga(manga models.Manga, chapters []models.Chapter) {
 			</div>
 		</div>
 	</div>
+}
+
+// Inline eye toggle used in the chapters list. Returns a small fragment that HTMX
+// can swap when toggling unread/read.
+templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
+	if read {
+		<div class="chapter-read-icon ml-3 text-green-600 inline-flex items-center" title="Read">
+			<form
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-target="this"
+				hx-swap="outerHTML"
+			>
+				<button type="submit" class="uk-icon-button" title="Mark as unread" aria-label="Mark as unread">
+					<uk-icon class="eye-open" icon="eye" style="display:inline-flex"></uk-icon>
+					<uk-icon class="eye-closed" icon="eye-closed" style="display:none"></uk-icon>
+				</button>
+			</form>
+		</div>
+	} else {
+		<div class="chapter-read-icon ml-3 text-gray-500 inline-flex items-center" title="Unread">
+			<form
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-target="this"
+				hx-swap="outerHTML"
+			>
+				<button type="submit" class="uk-icon-button" title="Mark as read" aria-label="Mark as read">
+					<uk-icon class="eye-open" icon="eye" style="display:none"></uk-icon>
+					<uk-icon class="eye-closed" icon="eye-closed" style="display:inline-flex"></uk-icon>
+				</button>
+			</form>
+		</div>
+	}
 }
 
 templ Info(manga models.Manga) {
@@ -106,6 +133,22 @@ templ Info(manga models.Manga) {
 			<uk-icon icon="Info"></uk-icon>
 		</button>
 	</div>
+
+	<!-- Vote fragment loaded via HTMX so it can be interactive and update in-place -->
+	<style>
+		/* ensure vote active state is styled when fragment HTML is inserted */
+		.vote-btn.active { font-weight: 700; }
+		.vote-btn.up.active { color: #16a34a; }
+		.vote-btn.down.active { color: #dc2626; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="flex justify-center mt-4" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	<!-- Favorite fragment loaded via HTMX so it can be toggled in-place -->
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-favorite" class="flex justify-center mt-2" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -131,30 +174,136 @@ templ Info(manga models.Manga) {
 	</div>
 }
 
+// Favorite fragment for a manga. Returned by HTMX when toggling favorite state.
+templ MangaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-favorite" class="manga-favorite-fragment inline-flex items-center">
+		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+			if isFavorite {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn active" title="Remove favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn" title="Add favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			}
+		</form>
+		<span class="favorite-count">{ fmt.Sprint(favCount) }</span>
+	</div>
+}
+
+// Vote fragment for a manga. This small fragment is returned by HTMX when voting
+// so the UI can be updated in-place.
+templ MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
+	<style>
+		.vote-btn.active { font-weight: 700; color: #16a34a; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="manga-vote-fragment inline-flex items-center">
+		<!-- Upvote -->
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+			if userVote == 1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up active" title="Remove upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up" title="Upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
+				</button>
+			}
+		</form>
+
+		<!-- Downvote -->
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
+			if userVote == -1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down active" title="Remove downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="-1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down" title="Downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
+				</button>
+			}
+		</form>
+
+		<span class="vote-count">{ fmt.Sprint(score) }</span>
+		<span class="ml-2 text-sm text-gray-500">({ fmt.Sprint(upvotes) } up, { fmt.Sprint(downvotes) } down)</span>
+	</div>
+}
+
 templ Chapters(manga models.Manga, chapters []models.Chapter) {
+	<style>
+		/* Base layout for the inline icon container */
+		.chapter-read-icon .eye-open { display: inline-flex; }
+		.chapter-read-icon .eye-closed { display: none; }
+	</style>
+	<script>
+		// Use event delegation so dynamically swapped HTMX fragments still respond.
+		document.addEventListener('mouseover', function(e){
+			const el = e.target.closest('.chapter-read-icon');
+			if(!el) return;
+			const open = el.querySelector('.eye-open');
+			const closed = el.querySelector('.eye-closed');
+			if(!open || !closed) return;
+			// Invert whichever icon is currently shown so hover toggles visual state
+			const openVisible = window.getComputedStyle(open).display !== 'none';
+			if(openVisible){
+				open.style.display = 'none';
+				closed.style.display = 'inline-flex';
+			} else {
+				open.style.display = 'inline-flex';
+				closed.style.display = 'none';
+			}
+		});
+		document.addEventListener('mouseout', function(e){
+			const el = e.target.closest('.chapter-read-icon');
+			if(!el) return;
+			const open = el.querySelector('.eye-open');
+			const closed = el.querySelector('.eye-closed');
+			if(!open || !closed) return;
+			// Restore based on whether this fragment contains the unread->read form
+			const form = el.querySelector('form');
+			if(form && form.getAttribute('hx-post') && form.getAttribute('hx-post').includes('/unread')){
+				// This is the read state fragment (form posts to unread) -> show open
+				open.style.display = 'inline-flex';
+				closed.style.display = 'none';
+			} else {
+				// Unread state fragment (form posts to read) -> show closed
+				open.style.display = 'none';
+				closed.style.display = 'inline-flex';
+			}
+		});
+	</script>
 	<ul class="uk-accordion" uk-accordion>
 		for _, chapter := range chapters {
 			<li class="uk-closed">
-				<a class="uk-accordion-title" href>
-					{ chapter.Name }
-					<span
-						class="uk-accordion-icon"
-						uk-icon="icon: chevron-down; ratio: 0.8"
-					></span>
-				</a>
-				<div class="uk-accordion-content">
-					<div class="uk-flex uk-flex-center">
-						<a
-							class="uk-btn uk-btn-default"
-							type="button"
-							href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)) }
-							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug) }
-							hx-target="#content"
-							hx-push-url="true"
-						>
-							<uk-icon icon="Eye"></uk-icon>
-						</a>
-					</div>
+				<!-- Row layout: left = link/title, right = optional icon -->
+				<div class="flex items-center justify-between w-full">
+					<a class="uk-accordion-title flex-1 min-w-0 pr-2 truncate"
+						href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug) }
+						hx-target="#content"
+						hx-push-url="true"
+					>
+						{ chapter.Name }
+						<span
+							class="uk-accordion-icon"
+							uk-icon="icon: chevron-down; ratio: 0.8"
+						></span>
+					</a>
+					if chapter.Read {
+						@InlineEyeToggle(chapter.Read, manga.Slug, chapter.Slug)
+					}
 				</div>
 			</li>
 		}
@@ -213,12 +362,36 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 	>
 		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
 	</button>
-	<script>
-		function scrollToTop() {
-			window.scrollTo({ top: 0, behavior: 'smooth' });
-		}
-	</script>
+       <script>
+       	function scrollToTop() {
+       		window.scrollTo({ top: 0, behavior: 'smooth' });
+       	}
+
+       	// Instant scroll for navigation buttons
+       	function scrollToTopInstant() {
+       		window.scrollTo({ top: 0, behavior: 'auto' });
+       	}
+
+       	// Use 'show' event for UIkit dropdowns to ensure element is visible before scrolling
+       	document.addEventListener('show', function(e) {
+       		if (e.target.classList.contains('uk-dropdown')) {
+       			const activeChapter = e.target.querySelector('.uk-active');
+       			if (activeChapter) {
+       				activeChapter.scrollIntoView({ block: 'center', behavior: 'auto' });
+       			}
+       		}
+       	}, false);
+       	</script>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ manga.Name }</span></h2>
+	<!-- Auto-mark as read on load: invisible placeholder, do not inject UI into reader page -->
+	<div id="read-state"
+		hx-post={ fmt.Sprintf("/mangas/%s/%s/read", manga.Slug, chapter.Slug) }
+		hx-trigger="load"
+		hx-swap="none"
+		class="hidden"
+	>
+		<!-- no visible UI here; reader will not show badges -->
+	</div>
 	<div class="flex justify-between p-4">
 		<button
 			type="button"
@@ -231,32 +404,43 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			if previousChapter == "" {
 				disabled
 			}
+				onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
 		<div class="mt-2 uk-flex uk-flex-center">
 			<button class="uk-btn uk-btn-default" type="button">{ chapter.Name }</button>
 		</div>
-		<div class="uk-drop uk-dropdown" uk-dropdown="mode: click">
-			<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;">
-				for i := len(chapters) - 1; i >= 0; i-- {
-					if chapters[i].Name == chapter.Name {
+		<div class="uk-drop uk-dropdown" uk-dropdown="mode: click; offset: 5; animation: uk-animation-slide-top-small; duration: 100">
+			<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
+				for _, ch := range chapters {
+					if ch.Name == chapter.Name {
 						<li class="uk-active">
 							<a
-								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
-								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
+								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug)) }
+								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug) }
 								hx-target="#content"
 								hx-push-url="true"
-							>{ chapters[i].Name }</a>
+							>{ ch.Name }</a>
+							if ch.Read {
+								<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+									<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+								</span>
+							}
 						</li>
 					} else {
 						<li>
 							<a
-								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug)) }
-								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapters[i].Slug) }
+								href={ templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug)) }
+								hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug) }
 								hx-target="#content"
 								hx-push-url="true"
-							>{ chapters[i].Name }</a>
+							>{ ch.Name }</a>
+							if ch.Read {
+								<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+									<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+								</span>
+							}
 						</li>
 					}
 				}
@@ -273,6 +457,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			if nextChapter == "" {
 				disabled
 			}
+				onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveRight"></uk-icon>
 		</button>
@@ -297,6 +482,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			if previousChapter == "" {
 				disabled
 			}
+			onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
@@ -311,8 +497,42 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			if nextChapter == "" {
 				disabled
 			}
+			onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveRight"></uk-icon>
 		</button>
 	</div>
+}
+
+// Small fragment that renders the read state badge and a toggle button
+templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
+	if read {
+		<div id="read-state" class="flex items-center justify-center gap-2 my-2">
+			<span class="uk-badge inline-flex items-center gap-1">
+				<uk-icon icon="BadgeCheck" ratio="0.9"></uk-icon>
+				Read
+			</span>
+			<button
+				type="button"
+				class="uk-btn uk-btn-default uk-button-small"
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-target="#read-state"
+				hx-swap="outerHTML"
+			>Mark as unread</button>
+		</div>
+	} else {
+		<div id="read-state" class="flex items-center justify-center gap-2 my-2">
+			<span class="uk-badge uk-badge-warning inline-flex items-center gap-1">
+				<uk-icon icon="Circle" ratio="0.9"></uk-icon>
+				Unread
+			</span>
+			<button
+				type="button"
+				class="uk-btn uk-btn-default uk-button-small"
+				hx-post={ fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-target="#read-state"
+				hx-swap="outerHTML"
+			>Mark as read</button>
+		</div>
+	}
 }

@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -28,13 +29,69 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	slug := utils.Sluggify(cleanedName)
-	if exists, _ := models.MangaExists(slug); exists {
-		log.Debugf("Skipping: '%s', it has already been indexed", cleanedName)
-		return "", nil
+
+	// If manga already exists, avoid external API calls and heavy image work.
+	// Only update the path if needed and index any new chapters.
+	existingManga, err := models.GetManga(slug)
+	if err != nil {
+		log.Errorf("Failed to lookup manga '%s': %s", slug, err)
 	}
 
-	bestMatch, err := models.GetBestMatchMangadexManga(cleanedName)
-	if err != nil {
+	if existingManga != nil {
+		// Fast path 1: use stored file_count on the Manga. If the number of
+		// candidate files (files that look like chapters) matches the stored
+		// FileCount, assume no changes and skip.
+		if absolutePath != "" {
+			// Count files (fast): we only need to count entries that look
+			// like chapters (contain a number after cleaning). This is a
+			// fast directory read that avoids creating objects.
+			var candidateCount int
+			_ = filepath.WalkDir(absolutePath, func(p string, d fs.DirEntry, walkErr error) error {
+				if walkErr != nil {
+					return nil
+				}
+				if d.IsDir() {
+					return nil
+				}
+				name := d.Name()
+				cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
+				if containsNumber(cleanedName) {
+					candidateCount++
+				}
+				return nil
+			})
+			if candidateCount == existingManga.FileCount {
+				return slug, nil
+			}
+		}
+
+		// Only update path if changed
+		if existingManga.Path == "" || existingManga.Path != absolutePath {
+			existingManga.Path = absolutePath
+			if err := models.UpdateManga(existingManga); err != nil {
+				log.Errorf("Failed to update manga path for '%s': %s", slug, err)
+			}
+		}
+
+		// Index chapters recursively; returns added and deleted counts.
+		added, deleted, err := IndexChapters(slug, absolutePath)
+		if err != nil {
+			log.Errorf("Failed to index chapters for existing manga '%s': %s", slug, err)
+			return slug, err
+		}
+		if added > 0 || deleted > 0 {
+			// Update manga updated_at to mark the index time
+			if err := models.UpdateManga(existingManga); err != nil {
+				log.Errorf("Failed to update manga timestamp for '%s': %s", slug, err)
+			}
+			log.Infof("Indexed manga: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+		}
+		return slug, nil
+	}
+
+	// Manga does not exist yet — fetch metadata, create it and index chapters
+	bestMatch, _ := models.GetBestMatchMangadexManga(cleanedName)
+	if bestMatch == nil {
 		log.Warnf("No search result found for: '%s', falling back to local metadata", slug)
 	}
 
@@ -51,13 +108,15 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		return "", err
 	}
 
-	chapterCount, err := IndexChapters(slug, absolutePath)
+	added, deleted, err := IndexChapters(slug, absolutePath)
 	if err != nil {
 		log.Errorf("Failed to index chapters: %s (%s)", slug, err.Error())
 		return "", err
 	}
 
-	log.Infof("Indexed manga: '%s' (%d chapters)", cleanedName, chapterCount)
+	if added > 0 || deleted > 0 {
+		log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+	}
 	return slug, nil
 }
 
@@ -180,37 +239,89 @@ func getAuthor(match *models.MangaDetail) string {
 	return ""
 }
 
-func IndexChapters(slug, path string) (int, error) {
-	entries, err := os.ReadDir(path)
+func IndexChapters(slug, path string) (int, int, error) {
+	var addedCount int
+	var deletedCount int
+
+	// Load existing chapters once to avoid querying the DB per file.
+	existing, err := models.GetChapters(slug)
 	if err != nil {
-		return 0, err
+		return 0, 0, fmt.Errorf("failed to load existing chapters for manga '%s': %w", slug, err)
+	}
+	existingMap := make(map[string]models.Chapter, len(existing))
+	for _, c := range existing {
+		existingMap[c.Slug] = c
 	}
 
-	var chapterCount int
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	// Build map of files currently present (slug -> relPath). This is a
+	// full scan but cheaper than many DB ops; we only do it when file_count
+	// mismatch was observed.
+	type presentInfo struct {
+		Rel  string
+		Name string
+	}
+	presentMap := make(map[string]presentInfo)
+	err = filepath.WalkDir(path, func(p string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
-
-		cleanedName := utils.RemovePatterns(strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name())))
+		if d.IsDir() {
+			return nil
+		}
+		name := d.Name()
+		cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
 		if !containsNumber(cleanedName) {
-			log.Debugf("Chapter index was skipped for: '%s' - '%s' (no numeric value)", slug, cleanedName)
-			continue
+			return nil
 		}
-
-		chapter := models.Chapter{
-			Name:      cleanedName,
-			Slug:      utils.Sluggify(cleanedName),
-			File:      entry.Name(),
-			MangaSlug: slug,
+		chapterSlug := utils.Sluggify(cleanedName)
+		relPath, err := filepath.Rel(path, p)
+		if err != nil {
+			relPath = name
 		}
-		if err := models.CreateChapter(chapter); err != nil {
-			return 0, fmt.Errorf("failed to index chapter '%s' for manga '%s': %w", cleanedName, slug, err)
-		}
-		chapterCount++
+		presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: cleanedName}
+		return nil
+	})
+	if err != nil {
+		return 0, 0, err
 	}
 
-	return chapterCount, nil
+	// Create missing chapters
+	for slugKey, info := range presentMap {
+		if _, ok := existingMap[slugKey]; !ok {
+			// not present in DB -> create with pretty name
+			chapter := models.Chapter{
+				Name:      info.Name,
+				Slug:      slugKey,
+				File:      info.Rel,
+				MangaSlug: slug,
+			}
+			if err := models.CreateChapter(chapter); err != nil {
+				return addedCount, deletedCount, fmt.Errorf("failed to create chapter '%s' for manga '%s': %w", info.Name, slug, err)
+			}
+			addedCount++
+		}
+	}
+
+	// Delete chapters that are no longer present on disk
+	for slugKey := range existingMap {
+		if _, ok := presentMap[slugKey]; !ok {
+			if err := models.DeleteChapter(slug, slugKey); err != nil {
+				return addedCount, deletedCount, fmt.Errorf("failed to delete missing chapter '%s' for manga '%s': %w", slugKey, slug, err)
+			}
+			deletedCount++
+		}
+	}
+
+	// Update manga file count and timestamp
+	m, err := models.GetManga(slug)
+	if err == nil && m != nil {
+		m.FileCount = len(presentMap)
+		if err := models.UpdateManga(m); err != nil {
+			log.Errorf("Failed to update manga file_count for '%s': %s", slug, err)
+		}
+	}
+
+	return addedCount, deletedCount, nil
 }
 
 func containsNumber(s string) bool {

@@ -24,7 +24,11 @@ func HandleMangas(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	return HandleView(c, views.Mangas(mangas, int(count), page))
+	totalPages := int((count + defaultPageSize - 1) / defaultPageSize)
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	return HandleView(c, views.Mangas(mangas, page, totalPages))
 }
 
 func HandleManga(c *fiber.Ctx) error {
@@ -37,7 +41,26 @@ func HandleManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	return HandleView(c, views.Manga(*manga, chapters))
+	// If a user is logged in, fetch their read chapters and annotate the list
+	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
+		readMap, err := models.GetReadChaptersForUser(userName, slug)
+		if err == nil {
+			for i := range chapters {
+				if _, found := readMap[chapters[i].Slug]; found {
+					chapters[i].Read = true
+				} else {
+					chapters[i].Read = false
+				}
+			}
+		}
+	}
+	// Precompute first/last chapter slugs and count for the view
+	firstSlug, lastSlug := "", ""
+	if len(chapters) > 0 {
+		firstSlug = chapters[0].Slug
+		lastSlug = chapters[len(chapters)-1].Slug
+	}
+	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters)))
 }
 
 func HandleChapter(c *fiber.Ctx) error {
@@ -54,6 +77,17 @@ func HandleChapter(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// Note: chapter is normally marked read by an HTMX trigger in the view.
+	// As a safe fallback, if this request is a full page load (not an HTMX request)
+	// and the user is logged in, mark the chapter read server-side so the
+	// manga list can reflect the read state for non-HTMX navigation.
+	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
+		// HTMX includes the header HX-Request: true for requests it initiates.
+		if c.Get("HX-Request") != "true" {
+			_ = models.MarkChapterRead(userName, mangaSlug, chapterSlug)
+		}
+	}
+
 	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapter.Slug, mangaSlug)
 	if err != nil {
 		return handleError(c, err)
@@ -64,7 +98,42 @@ func HandleChapter(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, chapters))
+	// Provide chapters in reverse order for dropdown (newest first) to avoid view-side reversing
+	rev := make([]models.Chapter, len(chapters))
+	for i := range chapters {
+		rev[i] = chapters[len(chapters)-1-i]
+	}
+	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, rev))
+}
+
+// HandleMarkRead marks a chapter as read for the logged-in user via HTMX
+func HandleMarkRead(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Params("chapter")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+	if err := models.MarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
+		return handleError(c, err)
+	}
+	// Return the inline eye toggle fragment so HTMX will swap the icon in-place.
+	return HandleView(c, views.InlineEyeToggle(true, mangaSlug, chapterSlug))
+}
+
+// HandleMarkUnread unmarks a chapter as read for the logged-in user via HTMX
+func HandleMarkUnread(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Params("chapter")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+	if err := models.UnmarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
+		return handleError(c, err)
+	}
+	// Return the inline eye toggle fragment with read=false so HTMX swaps to the closed-eye.
+	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
 }
 
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
@@ -167,8 +236,12 @@ func getChapterImages(manga *models.Manga, chapter *models.Chapter) ([]string, e
 		return nil, err
 	}
 
-	images := make([]string, pageCount-1)
-	for i := range images {
+	if pageCount <= 0 {
+		return []string{}, nil
+	}
+
+	images := make([]string, pageCount)
+	for i := 0; i < pageCount; i++ {
 		images[i] = fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", manga.Slug, chapter.Slug, i+1)
 	}
 
@@ -213,4 +286,109 @@ func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, co
 	manga.Status = mangaDetail.Attributes.Status
 	manga.ContentRating = mangaDetail.Attributes.ContentRating
 	manga.CoverArtURL = coverArtURL
+}
+
+// HandleMangaVote handles a user's upvote/downvote for a manga via HTMX.
+// Expected form values: "value" = "1" or "-1". User must be authenticated.
+func HandleMangaVote(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	// parse value
+	valStr := c.FormValue("value")
+	if valStr == "" {
+		return fiber.ErrBadRequest
+	}
+	v, err := strconv.Atoi(valStr)
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+
+	// If value == 0, remove vote
+	if v == 0 {
+		if err := models.RemoveVote(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	} else {
+		if err := models.SetVote(userName, mangaSlug, v); err != nil {
+			return handleError(c, err)
+		}
+	}
+
+			// Return updated fragment so HTMX can refresh the vote UI in-place.
+			score, up, down, err := models.GetMangaVotes(mangaSlug)
+			if err != nil {
+					return handleError(c, err)
+			}
+			userVote, _ := models.GetUserVoteForManga(userName, mangaSlug)
+			return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
+}
+
+// HandleMangaVoteFragment returns the vote UI fragment for a manga. If user is logged in,
+// it will show their current selection highlighted.
+func HandleMangaVoteFragment(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	score, up, down, err := models.GetMangaVotes(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	userVote := 0
+	if userName != "" {
+		v, _ := models.GetUserVoteForManga(userName, mangaSlug)
+		userVote = v
+	}
+	return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
+}
+
+// HandleMangaFavorite handles toggling a favorite for the logged-in user via HTMX.
+// Expected form values: "value" = "1" to favorite or "0" to unfavorite.
+func HandleMangaFavorite(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	valStr := c.FormValue("value")
+	if valStr == "" {
+		return fiber.ErrBadRequest
+	}
+
+	if valStr == "0" {
+		if err := models.RemoveFavorite(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	} else {
+		if err := models.SetFavorite(userName, mangaSlug); err != nil {
+			return handleError(c, err)
+		}
+	}
+
+	// Return updated fragment so HTMX can refresh the favorite UI in-place.
+	favCount, err := models.GetFavoritesCount(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	isFav, _ := models.IsFavoriteForUser(userName, mangaSlug)
+	return HandleView(c, views.MangaFavoriteFragment(mangaSlug, favCount, isFav))
+}
+
+// HandleMangaFavoriteFragment returns the favorite UI fragment for a manga.
+func HandleMangaFavoriteFragment(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	userName, _ := c.Locals("user_name").(string)
+	favCount, err := models.GetFavoritesCount(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	isFav := false
+	if userName != "" {
+		f, _ := models.IsFavoriteForUser(userName, mangaSlug)
+		isFav = f
+	}
+	return HandleView(c, views.MangaFavoriteFragment(mangaSlug, favCount, isFav))
 }

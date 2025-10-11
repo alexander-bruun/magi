@@ -3,49 +3,20 @@ package views
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
-	"math"
 )
 
-templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
-	@templ.JSFuncCall("titleHandler", fmt.Sprintf("Mangas page #%d", currentPage))
-	<nav aria-label="Breadcrumb">
-		<ul class="uk-breadcrumb">
-			<li>
-				<a
-					href="/"
-					hx-get="/"
-					hx-target="#content"
-					hx-push-url="true"
-				>Home</a>
-			</li>
-			<li>
-				<span>Mangas</span>
-			</li>
-		</ul>
-	</nav>
+templ Mangas(mangas []models.Manga, currentPage int, totalPages int) {
+	@PageTitle(fmt.Sprintf("Mangas page #%d", currentPage))
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Mangas", Href: "/mangas" },
+	})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
 	if len(mangas) > 0 {
-		<div class="grid sm:grid-cols-2 md:grid-cols-4">
-			for _, manga := range mangas {
-				<div>
-					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
-						<div class="uk-card uk-card-default uk-card-body p-2 m-2">
-							<h3 class="uk-card-title uk-h3 uk-margin line-clamp-1 mb-2 uk-text-center">{ manga.Name }</h3>
-							<div class="uk-card-media-top flex justify-center items-center">
-								<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
-							</div>
-						</div>
-					</a>
-				</div>
-			}
-		</div>
-	} else {
-		<div class="text-center">
-			<div class="uk-card uk-card-default uk-card-body">No mangas found...</div>
-		</div>
-	}
+	@MangaGrid(mangas, 300, 450, false)
+    
 	<div class="flex justify-center items-center py-8">
-		@Pagination(totalCount, currentPage)
+		@Pagination(totalPages, currentPage)
 	</div>
 	<script>
 	document.addEventListener('htmx:afterSwap', (event) => {
@@ -54,14 +25,18 @@ templ Mangas(mangas []models.Manga, totalCount int, currentPage int) {
 			}
 	});
 	</script>
+	} else {
+		@EmptyState("No mangas have been indexed yet.")
+	}
+
 }
 
-templ Pagination(totalCount int, currentPage int) {
+templ Pagination(totalPages int, currentPage int) {
 	<nav class="mt-4" aria-label="Pagination">
 		<ul class="uk-pgn uk-pgn-default">
 			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
-			@PaginationNumbers(totalCount, currentPage)
-			@PaginationItem(currentPage < int(math.Ceil(float64(totalCount)/16)), currentPage+1, "Next", "next")
+			@PaginationNumbers(totalPages, currentPage)
+			@PaginationItem(currentPage < totalPages, currentPage+1, "Next", "next")
 		</ul>
 	</nav>
 }
@@ -108,8 +83,7 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 	}
 }
 
-templ PaginationNumbers(totalCount int, currentPage int) {
-	{{ totalPages := int(math.Ceil(float64(totalCount) / 16)) }}
+templ PaginationNumbers(totalPages int, currentPage int) {
 	for i := 1; i <= totalPages; i++ {
 		if i == currentPage {
 			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>

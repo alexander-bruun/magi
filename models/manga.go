@@ -25,6 +25,7 @@ type Manga struct {
 	LibrarySlug      string    `json:"library_slug"`
 	CoverArtURL      string    `json:"cover_art_url"`
 	Path             string    `json:"path"`
+	FileCount        int       `json:"file_count"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
@@ -45,11 +46,11 @@ func CreateManga(manga Manga) error {
 	manga.UpdatedAt = now
 
 	query := `
-	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.CreatedAt.Unix(), manga.UpdatedAt.Unix())
+	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.CreatedAt.Unix(), manga.UpdatedAt.Unix())
 	if err != nil {
 		return err
 	}
@@ -59,13 +60,13 @@ func CreateManga(manga Manga) error {
 
 // GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at FROM mangas WHERE slug = ?`
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
 
 	var manga Manga
 	var createdAt, updatedAt int64
-	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &createdAt, &updatedAt)
+	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No manga found
@@ -84,11 +85,11 @@ func UpdateManga(manga *Manga) error {
 
 	query := `
 	UPDATE mangas
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, updated_at = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.UpdatedAt.Unix(), manga.Slug)
+	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.UpdatedAt.Unix(), manga.Slug)
 	if err != nil {
 		return err
 	}
@@ -203,10 +204,39 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 	return nil
 }
 
+// GetMangasByLibrarySlug returns all mangas that belong to a specific library
+func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
+	var mangas []Manga
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE library_slug = ?`
+
+	rows, err := db.Query(query, librarySlug)
+	if err != nil {
+		log.Errorf("Failed to query mangas by librarySlug: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var manga Manga
+		var createdAt, updatedAt int64
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+			log.Errorf("Failed to scan manga row: %v", err)
+			return nil, err
+		}
+		manga.CreatedAt = time.Unix(createdAt, 0)
+		manga.UpdatedAt = time.Unix(updatedAt, 0)
+		mangas = append(mangas, manga)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return mangas, nil
+}
+
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, created_at, updated_at FROM mangas`
+	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -218,7 +248,7 @@ func loadAllMangas(mangas *[]Manga) error {
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
 			return err
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
@@ -296,4 +326,222 @@ func sortMangas(mangas []Manga, sortBy, sortOrder string) {
 	default:
 		// No sorting applied
 	}
+}
+
+// Vote represents a user's vote on a manga
+type Vote struct {
+	ID           int64
+	UserUsername string
+	MangaSlug    string
+	Value        int // 1 for upvote, -1 for downvote
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// GetMangaVotes returns the aggregated score and counts for a manga
+func GetMangaVotes(mangaSlug string) (score int, upvotes int, downvotes int, err error) {
+	// Use COALESCE so aggregates return 0 instead of NULL when there are no rows
+	query := `SELECT COALESCE(SUM(value),0) as score, COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes FROM votes WHERE manga_slug = ?`
+	row := db.QueryRow(query, mangaSlug)
+	if err := row.Scan(&score, &upvotes, &downvotes); err != nil {
+		return 0, 0, 0, err
+	}
+	return score, upvotes, downvotes, nil
+}
+
+// GetUserVoteForManga returns the vote value (1, -1) for a user on a manga. If none, returns 0.
+func GetUserVoteForManga(username, mangaSlug string) (int, error) {
+	query := `SELECT value FROM votes WHERE user_username = ? AND manga_slug = ?`
+	row := db.QueryRow(query, username, mangaSlug)
+	var val int
+	err := row.Scan(&val)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return val, nil
+}
+
+// SetVote inserts or updates a user's vote for a manga. value must be 1 or -1.
+func SetVote(username, mangaSlug string, value int) error {
+	if value != 1 && value != -1 {
+		return errors.New("invalid vote value")
+	}
+	now := time.Now().Unix()
+	// Try update first
+	res, err := db.Exec(`UPDATE votes SET value = ?, updated_at = ? WHERE user_username = ? AND manga_slug = ?`, value, now, username, mangaSlug)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	// Insert
+	_, err = db.Exec(`INSERT INTO votes (user_username, manga_slug, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, username, mangaSlug, value, now, now)
+	return err
+}
+
+// RemoveVote deletes a user's vote for a manga
+func RemoveVote(username, mangaSlug string) error {
+	_, err := db.Exec(`DELETE FROM votes WHERE user_username = ? AND manga_slug = ?`, username, mangaSlug)
+	return err
+}
+
+// Favorite represents a user's favorite manga
+type Favorite struct {
+	ID           int64
+	UserUsername string
+	MangaSlug    string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// SetFavorite inserts a favorite relationship for a user and manga.
+func SetFavorite(username, mangaSlug string) error {
+	now := time.Now().Unix()
+	// Try update first (in case row exists) - this keeps updated_at current
+	res, err := db.Exec(`UPDATE favorites SET updated_at = ? WHERE user_username = ? AND manga_slug = ?`, now, username, mangaSlug)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err = db.Exec(`INSERT INTO favorites (user_username, manga_slug, created_at, updated_at) VALUES (?, ?, ?, ?)`, username, mangaSlug, now, now)
+	return err
+}
+
+// RemoveFavorite deletes a user's favorite for a manga
+func RemoveFavorite(username, mangaSlug string) error {
+	_, err := db.Exec(`DELETE FROM favorites WHERE user_username = ? AND manga_slug = ?`, username, mangaSlug)
+	return err
+}
+
+// IsFavoriteForUser returns true if the user has favorited the manga
+func IsFavoriteForUser(username, mangaSlug string) (bool, error) {
+	query := `SELECT 1 FROM favorites WHERE user_username = ? AND manga_slug = ?`
+	row := db.QueryRow(query, username, mangaSlug)
+	var exists int
+	err := row.Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// GetFavoritesCount returns the number of users who favorited the manga
+func GetFavoritesCount(mangaSlug string) (int, error) {
+	query := `SELECT COUNT(*) FROM favorites WHERE manga_slug = ?`
+	row := db.QueryRow(query, mangaSlug)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetFavoritesForUser returns manga slugs favorited by the user ordered by most recent update
+func GetFavoritesForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM favorites WHERE user_username = ? ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetReadingMangasForUser returns distinct manga slugs that the user has reading state records for,
+// ordered by most recent activity.
+func GetReadingMangasForUser(username string) ([]string, error) {
+	query := `SELECT DISTINCT manga_slug FROM reading_states WHERE user_name = ? ORDER BY created_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetUpvotedMangasForUser returns manga slugs the user has upvoted (value = 1), ordered by most recent vote
+func GetUpvotedMangasForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM votes WHERE user_username = ? AND value = 1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetDownvotedMangasForUser returns manga slugs the user has downvoted (value = -1), ordered by most recent vote
+func GetDownvotedMangasForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM votes WHERE user_username = ? AND value = -1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
 }

@@ -82,6 +82,10 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Ensure token uses HMAC signing
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return []byte(secret), nil
 	})
 	if err != nil {
@@ -120,12 +124,14 @@ func GenerateNewRefreshToken(userName string) (string, error) {
 	if err != nil {
 		return "", errors.New("user not found")
 	}
-
+	// Increment the persisted version first so DB state reflects the new version
 	if err := IncrementRefreshTokenVersion(user.Username); err != nil {
 		return "", errors.New("failed to increment refresh token version")
 	}
 
-	return CreateRefreshToken(userName, user.RefreshTokenVersion)
+	// IMPORTANT: Use the incremented version when issuing the token.
+	// The user struct has the old value, so add 1 here to match DB state.
+	return CreateRefreshToken(userName, user.RefreshTokenVersion+1)
 }
 
 // createToken generates a JWT token with specified claims and expiry duration

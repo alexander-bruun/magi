@@ -1,89 +1,32 @@
 package views
 
 import (
-	"fmt"
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
-	@templ.JSFuncCall("titleHandler", "Magi")
-	<ul class="uk-breadcrumb">
-		<li><span>Home</span></li>
-	</ul>
+templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, totalMangas int, totalChapters int, totalChaptersRead int) {
+	@PageTitle("Magi")
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+	})
+	<div class="uk-container mt-4">
+		<div class="grid grid-cols-3 gap-4">
+			@StatCard("Total mangas", totalMangas)
+			@StatCard("Total chapters", totalChapters)
+			@StatCard("Chapters read", totalChaptersRead)
+		</div>
+	</div>
+
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
-	<div class="px-1 mt-2" uk-slider>
-		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-			<div class="uk-child-width-1-5 flex uk-slider-items gap-2">
-				for _, manga := range recentlyAdded {
-					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
-						<div>
-							<div class="uk-card uk-card-default ">
-								<div class="uk-card-media-top flex justify-center items-center">
-									if manga.CoverArtURL == "" {
-										<img src="https://placehold.co/200x300?text=N/A" class="pt-2 pl-2 pr-2" width="200" height="300" alt={ manga.Name }/>
-									} else {
-										<img src={ manga.CoverArtURL } class="pt-2 pl-2 pr-2" width="200" height="300" alt={ manga.Name }/>
-									}
-								</div>
-								<div class="uk-card-body" style="max-width: 200px;">
-									<h3 class="uk-card-title truncate">{ manga.Name }</h3>
-								</div>
-							</div>
-						</div>
-					</a>
-				}
-			</div>
-			<a
-				class="uk-position-center-left uk-position-small uk-hidden-hover"
-				href
-				uk-slidenav-previous
-				uk-slider-item="previous"
-			></a>
-			<a
-				class="uk-position-center-right uk-position-small uk-hidden-hover"
-				href
-				uk-slidenav-next
-				uk-slider-item="next"
-			></a>
-		</div>
-		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
-	</div>
+	if len(recentlyAdded) == 0 {
+		@EmptyState("No mangas have been indexed yet.")
+	} else {
+	@MangaSlider(recentlyAdded, 200, 300, true)
+	}
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
-	<div class="px-1 mt-2" uk-slider>
-		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-			<div class="uk-child-width-1-5 flex uk-slider-items gap-2">
-				for _, manga := range recentlyUpdated {
-					<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
-						<div>
-							<div class="uk-card uk-card-default ">
-								<div class="uk-card-media-top flex justify-center items-center">
-									if manga.CoverArtURL == "" {
-										<img src="https://placehold.co/200x300?text=N/A" class="pt-2 pl-2 pr-2" width="200" height="300" alt={ manga.Name }/>
-									} else {
-										<img src={ manga.CoverArtURL } class="pt-2 pl-2 pr-2" width="200" height="300" alt={ manga.Name }/>
-									}
-								</div>
-								<div class="uk-card-body" style="max-width: 200px;">
-									<h3 class="uk-card-title truncate">{ manga.Name }</h3>
-								</div>
-							</div>
-						</div>
-					</a>
-				}
-			</div>
-			<a
-				class="uk-position-center-left uk-position-small uk-hidden-hover"
-				href
-				uk-slidenav-previous
-				uk-slider-item="previous"
-			></a>
-			<a
-				class="uk-position-center-right uk-position-small uk-hidden-hover"
-				href
-				uk-slidenav-next
-				uk-slider-item="next"
-			></a>
-		</div>
-		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
-	</div>
+	if len(recentlyUpdated) == 0 {
+		@EmptyState("No mangas have been indexed yet.")
+	} else {
+	@MangaSlider(recentlyUpdated, 200, 300, true)
+	}
 }
