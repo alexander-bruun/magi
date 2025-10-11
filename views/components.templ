@@ -78,6 +78,39 @@ templ MangaCard(manga models.Manga, width int, height int, truncate bool) {
     </a>
 }
 
+// (Card component removed; MangaCard uses inline markup to avoid closure syntax issues.)
+
+// StatCard shows a small statistic with label and numeric value
+templ StatCard(label string, value int) {
+    <div class="uk-card uk-card-default uk-card-body p-4 m-2 rounded-lg shadow-sm text-center">
+        <div class="text-sm text-gray-500">{ label }</div>
+        <div class="text-2xl font-bold mt-2">{ fmt.Sprint(value) }</div>
+    </div>
+}
+
+// ProfileCard renders a user's profile summary used on the account page
+templ ProfileCard(user models.User) {
+    <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
+        <div class="flex items-center space-x-6">
+            <div class="w-32 flex-shrink-0">
+                <img src="/assets/img/icon.png" alt="avatar" class="rounded-full w-32 h-32 object-cover" />
+            </div>
+            <div class="flex-1">
+                if user.Role == "admin" {
+                    <h3  class="role-admin uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
+                } else if user.Role == "moderator" {
+                    <h3 class="role-moderator uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
+                } else {
+                    <h3 class="role-reader uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
+                }
+                if user.Banned {
+                    <p class="role-banned font-semibold">This account is banned</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 // MangaGrid renders a grid of manga cards.
 templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool) {
     <div class="grid sm:grid-cols-2 md:grid-cols-4">

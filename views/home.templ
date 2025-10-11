@@ -4,11 +4,19 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) {
+templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, totalMangas int, totalChapters int, totalChaptersRead int) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
 	})
+	<div class="uk-container mt-4">
+		<div class="grid grid-cols-3 gap-4">
+			@StatCard("Total mangas", totalMangas)
+			@StatCard("Total chapters", totalChapters)
+			@StatCard("Chapters read", totalChaptersRead)
+		</div>
+	</div>
+
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
 	if len(recentlyAdded) == 0 {
 		@EmptyState("No mangas have been indexed yet.")

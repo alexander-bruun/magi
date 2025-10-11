@@ -75,6 +75,15 @@ func HandleAccount(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
+	// Load user profile
+	user, err := models.FindUserByUsername(userName)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if user == nil {
+		return fiber.ErrNotFound
+	}
+
 	// Load favorite mangas for the user
 	favSlugs, err := models.GetFavoritesForUser(userName)
 	if err != nil {
@@ -134,7 +143,7 @@ func HandleAccount(c *fiber.Ctx) error {
 			downvoted = append(downvoted, *m)
 		}
 	}
-	return HandleView(c, views.Account(userName, favorites, reading, liked, downvoted))
+	return HandleView(c, views.Account(*user, userName, favorites, reading, liked, downvoted))
 }
 
 // Helpers for paginated account lists

@@ -1,0 +1,28 @@
+:root {
+  --role-admin: #84cc16; /* lime-500-ish */
+  --role-moderator: #06b6d4; /* sky-500-ish */
+  --role-reader: #9ca3af; /* stone-400-ish */
+  --role-banned: #dc2626; /* red-600-ish */
+  --avatar-border: rgba(0, 0, 0, 0.12);
+}
+
+/* Role color utilities (replaces tailwind color classes used previously) */
+.role-admin { color: var(--role-admin); }
+.role-moderator { color: var(--role-moderator); }
+.role-reader { color: var(--role-reader); }
+.role-banned { color: var(--role-banned); text-decoration: line-through; }
+
+/* Underline styles used in users table */
+.role-underline-wavy { text-decoration: underline; text-decoration-style: wavy; }
+.role-underline-dashed { text-decoration: underline; text-decoration-style: dashed; }
+
+/* Small helpers to keep previous spacing/center behaviour if utilities are missing */
+.text-center { text-align: center; }
+.mt-2 { margin-top: 0.5rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+
+/* Button fallback for edit profile if utilities are not present */
+.uk-button { display: inline-block; padding: 0.5rem 0.75rem; border-radius: 0.375rem; background: transparent; border: 1px solid rgba(0,0,0,0.06); }
+.uk-button-default { background: rgba(0,0,0,0.02); }

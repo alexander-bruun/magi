@@ -36,20 +36,20 @@ templ UsersTable(users []models.User) {
 					<tr>
 						<td class="flex items-center justify-center h-full">
 							if user.Banned {
-								<p class="mt-2 text-rose-600 line-through text-center">
+								<p class="mt-2 role-banned text-center">
 									{ user.Username }
 								</p>
 							} else {
 								if user.Role == "admin" {
-									<p class="mt-2 text-lime-500 underline decoration-wavy text-center">
+									<p class="mt-2 role-admin role-underline-wavy text-center">
 										{ user.Username }
 									</p>
 								} else if user.Role == "moderator" {
-									<p class="mt-2 text-sky-500 underline decoration-dashed text-center">
+									<p class="mt-2 role-moderator role-underline-dashed text-center">
 										{ user.Username }
 									</p>
 								} else {
-									<p class="mt-2 text-stone-400 text-center">
+									<p class="mt-2 role-reader text-center">
 										{ user.Username }
 									</p>
 								}
