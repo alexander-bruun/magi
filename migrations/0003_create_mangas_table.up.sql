@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS mangas (
     library_slug TEXT,
     cover_art_url TEXT,
     path TEXT,
+    file_count INTEGER DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
