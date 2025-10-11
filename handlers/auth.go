@@ -32,7 +32,7 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	password := c.FormValue("password")
 
 	user, err := models.FindUserByUsername(username)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+	if err != nil || user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid username or password"})
 	}
 

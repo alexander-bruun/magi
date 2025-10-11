@@ -21,6 +21,6 @@ templ AccountDownvoted(mangas []models.Manga, currentPage int, totalPages int) {
             @Pagination(totalPages, currentPage)
         </div>
     } else {
-            @EmptyState("You have not downvoted any mangas yet.")
+        @EmptyState("You have not downvoted any mangas yet.")
     }
 }
