@@ -1,0 +1,108 @@
+package views
+
+import (
+    "fmt"
+    "github.com/alexander-bruun/magi/models"
+)
+
+// PageTitle sets the document title via the global JS handler
+templ PageTitle(title string) {
+    @templ.JSFuncCall("titleHandler", title)
+}
+
+// BreadcrumbItem defines a single crumb with label and link
+type BreadcrumbItem struct {
+    Label string
+    Href  string
+}
+
+// Breadcrumb renders a clickable breadcrumb trail
+templ Breadcrumb(items []BreadcrumbItem) {
+    <nav aria-label="Breadcrumb">
+        <ul class="uk-breadcrumb">
+            {{ n := len(items) }}
+            for i, it := range items {
+                if i < n-1 {
+                    <li>
+                        <a
+                            href={ it.Href }
+                            hx-get={ it.Href }
+                            hx-target="#content"
+                            hx-push-url="true"
+                        >{ it.Label }</a>
+                    </li>
+                } else {
+                    <li><span class="uk-text-muted">{ it.Label }</span></li>
+                }
+            }
+        </ul>
+    </nav>
+}
+
+// Simple, reusable empty state block
+templ EmptyState(message string) {
+    <div class="flex items-center justify-center mx-auto my-6 p-6 rounded-lg max-w-md">
+        <span class="text-xl font-semibold">{ message }</span>
+    </div>
+}
+
+// Breadcrumbs: Home > Current
+templ BreadcrumbHome(current string) {
+    <nav aria-label="Breadcrumb">
+        <ul class="uk-breadcrumb">
+            <li>
+                <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
+            </li>
+            <li><span>{ current }</span></li>
+        </ul>
+    </nav>
+}
+
+// MangaCard renders a single manga card with a link and cover image.
+templ MangaCard(manga models.Manga, width int, height int, truncate bool) {
+    <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
+        <div class="uk-card uk-card-default uk-card-body p-2 m-2" style={ fmt.Sprintf("width:%dpx", width) }>
+            if truncate {
+                <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center" style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%">{ manga.Name }</h3>
+            } else {
+                <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
+            }
+            <div class="uk-card-media-top flex justify-center items-center">
+                if manga.CoverArtURL == "" {
+                    <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name }/>
+                } else {
+                    <img src={ manga.CoverArtURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name }/>
+                }
+            </div>
+        </div>
+    </a>
+}
+
+// MangaGrid renders a grid of manga cards.
+templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool) {
+    <div class="grid sm:grid-cols-2 md:grid-cols-4">
+        for _, manga := range mangas {
+            <div>
+                @MangaCard(manga, width, height, truncate)
+            </div>
+        }
+    </div>
+}
+
+// MangaSlider renders a reusable UIkit slider for mangas.
+templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool) {
+    <div class="px-1 mt-2" uk-slider>
+        <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
+            <ul class="uk-slider-items uk-child-width-auto">
+                for _, manga := range mangas {
+                    <li class="px-1">
+                        @MangaCard(manga, width, height, truncate)
+                    </li>
+                }
+            </ul>
+            <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous"></a>
+            <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next"></a>
+        </div>
+        <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
+    </div>
+}

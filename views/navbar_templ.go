@@ -47,7 +47,7 @@ func Navbar(userRole string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if userRole != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<li><a href=\"#\"><uk-icon icon=\"User\" style=\"padding-right:5px;\"></uk-icon>Account</a></li><li><a href=\"#\"><uk-icon icon=\"Star\" style=\"padding-right:5px;\"></uk-icon>Favorites</a></li><li><a href=\"#\"><uk-icon icon=\"Bookmark\" style=\"padding-right:5px;\"></uk-icon>Reading lists</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<li><a href=\"/account\" hx-get=\"/account\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"User\" style=\"padding-right:5px;\"></uk-icon>Account</a></li><li><a href=\"/account#favorites\" hx-get=\"/account\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Star\" style=\"padding-right:5px;\"></uk-icon>Favorites</a></li><li><a href=\"/account#reading\" hx-get=\"/account\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Bookmark\" style=\"padding-right:5px;\"></uk-icon>Reading lists</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

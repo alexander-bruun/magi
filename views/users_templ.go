@@ -34,11 +34,15 @@ func Users(users []models.User) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templ.JSFuncCall("titleHandler", "Users").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PageTitle("Users").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav aria-label=\"Breadcrumb\"><ul class=\"uk-breadcrumb\"><li><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\">Home</a></li><li><span>Users</span></li></ul></nav><div class=\"uk-container mt-2\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Users</span></h3><div class=\"flex place-content-center\"><div class=\"w-2/4\"><div class=\"uk-card p-2\">")
+		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Users", Href: "/users"}}).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container mt-2\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Users</span></h3><div class=\"flex place-content-center\"><div class=\"w-2/4\"><div class=\"uk-card p-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -92,7 +96,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 54, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 40, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -111,7 +115,7 @@ func UsersTable(users []models.User) templ.Component {
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 59, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 45, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -129,7 +133,7 @@ func UsersTable(users []models.User) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 63, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 49, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -147,7 +151,7 @@ func UsersTable(users []models.User) templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 67, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 53, Col: 25}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -171,7 +175,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/promote/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 78, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 64, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -189,7 +193,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/promote/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 89, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 75, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -212,7 +216,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/demote/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 104, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 90, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -230,7 +234,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/demote/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 115, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 101, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -253,7 +257,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/unban/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 130, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 116, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -271,7 +275,7 @@ func UsersTable(users []models.User) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/users/ban/%s", user.Username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 140, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/users.templ`, Line: 126, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {

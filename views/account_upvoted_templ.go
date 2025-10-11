@@ -9,10 +9,11 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"fmt"
 	"github.com/alexander-bruun/magi/models"
 )
 
-func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Component {
+func AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -33,42 +34,41 @@ func Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga) templ.Co
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PageTitle("Magi").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("Your Upvoted - page #%d", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{
 			{Label: "Home", Href: "/"},
+			{Label: "Account", Href: "/account"},
+			{Label: "Upvoted", Href: "/account/upvoted"},
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently added</span></h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Your Upvoted Mangas</span></h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if len(recentlyAdded) == 0 {
-			templ_7745c5c3_Err = EmptyState("No mangas have been indexed yet.").Render(ctx, templ_7745c5c3_Buffer)
+		if len(mangas) > 0 {
+			templ_7745c5c3_Err = MangaGrid(mangas, 300, 450, true).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <div class=\"flex justify-center items-center py-8\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = Pagination(totalPages, currentPage).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = MangaSlider(recentlyAdded, 200, 300, true).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Recently updated</span></h2>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(recentlyUpdated) == 0 {
-			templ_7745c5c3_Err = EmptyState("No mangas have been indexed yet.").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = MangaSlider(recentlyUpdated, 200, 300, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = EmptyState("You have not upvoted any mangas yet.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

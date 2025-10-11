@@ -6,22 +6,8 @@ import (
 )
 
 templ Users(users []models.User) {
-	@templ.JSFuncCall("titleHandler", "Users")
-	<nav aria-label="Breadcrumb">
-		<ul class="uk-breadcrumb">
-			<li>
-				<a
-					href="/"
-					hx-get="/"
-					hx-target="#content"
-					hx-push-url="true"
-				>Home</a>
-			</li>
-			<li>
-				<span>Users</span>
-			</li>
-		</ul>
-	</nav>
+	@PageTitle("Users")
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/users" }})
 	<div class="uk-container mt-2">
 		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
 		<div class="flex place-content-center">

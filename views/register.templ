@@ -1,22 +1,8 @@
 package views
 
 templ Register() {
-	@templ.JSFuncCall("titleHandler", "Register")
-	<nav aria-label="Breadcrumb">
-		<ul class="uk-breadcrumb">
-			<li>
-				<a
-					href="/"
-					hx-get="/"
-					hx-target="#content"
-					hx-push-url="true"
-				>Home</a>
-			</li>
-			<li>
-				<span>Register</span>
-			</li>
-		</ul>
-	</nav>
+	@PageTitle("Register")
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/register" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Register</span></h2>
 	<div class="grid place-content-center my-4">
 		<form hx-post="/register" hx-redirect="/login">

@@ -452,3 +452,96 @@ func GetFavoritesCount(mangaSlug string) (int, error) {
 	}
 	return count, nil
 }
+
+// GetFavoritesForUser returns manga slugs favorited by the user ordered by most recent update
+func GetFavoritesForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM favorites WHERE user_username = ? ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetReadingMangasForUser returns distinct manga slugs that the user has reading state records for,
+// ordered by most recent activity.
+func GetReadingMangasForUser(username string) ([]string, error) {
+	query := `SELECT DISTINCT manga_slug FROM reading_states WHERE user_name = ? ORDER BY created_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetUpvotedMangasForUser returns manga slugs the user has upvoted (value = 1), ordered by most recent vote
+func GetUpvotedMangasForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM votes WHERE user_username = ? AND value = 1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetDownvotedMangasForUser returns manga slugs the user has downvoted (value = -1), ordered by most recent vote
+func GetDownvotedMangasForUser(username string) ([]string, error) {
+	query := `SELECT manga_slug FROM votes WHERE user_username = ? AND value = -1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}

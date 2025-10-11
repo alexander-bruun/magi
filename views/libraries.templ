@@ -6,22 +6,11 @@ import (
 )
 
 templ Libraries(libraries []models.Library) {
-	@templ.JSFuncCall("titleHandler", "Libraries")
-	<nav aria-label="Breadcrumb">
-		<ul class="uk-breadcrumb">
-			<li>
-				<a
-					href="/"
-					hx-get="/"
-					hx-target="#content"
-					hx-push-url="true"
-				>Home</a>
-			</li>
-			<li>
-				<span>Libraries</span>
-			</li>
-		</ul>
-	</nav>
+	@PageTitle("Libraries")
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Libraries", Href: "/libraries" },
+	})
 	<div class="uk-container mt-2">
 		<div class="grid grid-cols-4 gap-4">
 			<div id="form-column" class="col-span-1">

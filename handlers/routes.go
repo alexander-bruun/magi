@@ -104,6 +104,15 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Post("/:manga/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
 	mangas.Post("/:manga/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
 
+	// Account page for authenticated users
+	app.Get("/account", AuthMiddleware("reader"), HandleAccount)
+
+	// Account paginated lists
+	app.Get("/account/favorites", AuthMiddleware("reader"), HandleAccountFavorites)
+	app.Get("/account/upvoted", AuthMiddleware("reader"), HandleAccountUpvoted)
+	app.Get("/account/downvoted", AuthMiddleware("reader"), HandleAccountDownvoted)
+	app.Get("/account/reading", AuthMiddleware("reader"), HandleAccountReading)
+
 	// Fallback
 	app.Get("/*", HandleNotFound)
 

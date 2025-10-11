@@ -1,0 +1,26 @@
+package views
+
+import (
+    "fmt"
+    "github.com/alexander-bruun/magi/models"
+)
+
+templ AccountReading(mangas []models.Manga, currentPage int, totalPages int) {
+    @PageTitle(fmt.Sprintf("Your Reading - page #%d", currentPage))
+    @Breadcrumb([]BreadcrumbItem{
+        { Label: "Home", Href: "/" },
+        { Label: "Account", Href: "/account" },
+        { Label: "Currently Reading", Href: "/account/reading" },
+    })
+
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Currently Reading</span></h2>
+    if len(mangas) > 0 {
+	@MangaGrid(mangas, 300, 450, true)
+
+        <div class="flex justify-center items-center py-8">
+            @Pagination(totalPages, currentPage)
+        </div>
+	} else {
+		@EmptyState("You are not reading any mangas right now.")
+	}
+}

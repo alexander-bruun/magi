@@ -24,7 +24,11 @@ func HandleMangas(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	return HandleView(c, views.Mangas(mangas, int(count), page))
+	totalPages := int((count + defaultPageSize - 1) / defaultPageSize)
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	return HandleView(c, views.Mangas(mangas, page, totalPages))
 }
 
 func HandleManga(c *fiber.Ctx) error {
@@ -50,7 +54,13 @@ func HandleManga(c *fiber.Ctx) error {
 			}
 		}
 	}
-	return HandleView(c, views.Manga(*manga, chapters))
+	// Precompute first/last chapter slugs and count for the view
+	firstSlug, lastSlug := "", ""
+	if len(chapters) > 0 {
+		firstSlug = chapters[0].Slug
+		lastSlug = chapters[len(chapters)-1].Slug
+	}
+	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters)))
 }
 
 func HandleChapter(c *fiber.Ctx) error {
@@ -88,7 +98,12 @@ func HandleChapter(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, chapters))
+	// Provide chapters in reverse order for dropdown (newest first) to avoid view-side reversing
+	rev := make([]models.Chapter, len(chapters))
+	for i := range chapters {
+		rev[i] = chapters[len(chapters)-1-i]
+	}
+	return HandleView(c, views.Chapter(prevSlug, chapter.Slug, nextSlug, *manga, images, *chapter, rev))
 }
 
 // HandleMarkRead marks a chapter as read for the logged-in user via HTMX
