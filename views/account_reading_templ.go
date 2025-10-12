@@ -13,7 +13,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func AccountReading(mangas []models.Manga, currentPage int, totalPages int) templ.Component {
+func AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -59,7 +59,7 @@ func AccountReading(mangas []models.Manga, currentPage int, totalPages int) temp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = Pagination(totalPages, currentPage).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = Pagination(totalPages, currentPage, sort, order).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

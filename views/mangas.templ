@@ -5,18 +5,19 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Mangas(mangas []models.Manga, currentPage int, totalPages int) {
-	@PageTitle(fmt.Sprintf("Mangas page #%d", currentPage))
+templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
+	@PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage))
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
 		{ Label: "Mangas", Href: "/mangas" },
 	})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
+	@SortControls(sort, order)
 	if len(mangas) > 0 {
 	@MangaGrid(mangas, 300, 450, false, false)
     
 	<div class="flex justify-center items-center py-8">
-		@Pagination(totalPages, currentPage)
+		@Pagination(totalPages, currentPage, sort, order)
 	</div>
 	<script>
 	document.addEventListener('htmx:afterSwap', (event) => {
@@ -31,22 +32,22 @@ templ Mangas(mangas []models.Manga, currentPage int, totalPages int) {
 
 }
 
-templ Pagination(totalPages int, currentPage int) {
+templ Pagination(totalPages int, currentPage int, sort string, order string) {
 	<nav class="mt-4" aria-label="Pagination">
 		<ul class="uk-pgn uk-pgn-default">
-			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
-			@PaginationNumbers(totalPages, currentPage)
-			@PaginationItem(currentPage < totalPages, currentPage+1, "Next", "next")
+			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous", sort, order)
+			@PaginationNumbers(totalPages, currentPage, sort, order)
+			@PaginationItem(currentPage < totalPages, currentPage+1, "Next", "next", sort, order)
 		</ul>
 	</nav>
 }
 
-templ PaginationItem(enabled bool, page int, text string, icon string) {
+templ PaginationItem(enabled bool, page int, text string, icon string, sort string, order string) {
 	if enabled {
 		<li>
 			<a
-				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
-				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
+				href={ templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)) }
+				hx-get={ fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order) }
 				hx-target="#content"
 				hx-push-url="true"
 			>
@@ -64,8 +65,8 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 	}	else {
 		<li class="uk-disabled">
 			<a
-				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
-				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
+				href={ templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)) }
+				hx-get={ fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order) }
 				hx-target="#content"
 				hx-push-url="true"
 			>
@@ -83,14 +84,162 @@ templ PaginationItem(enabled bool, page int, text string, icon string) {
 	}
 }
 
-templ PaginationNumbers(totalPages int, currentPage int) {
+templ PaginationNumbers(totalPages int, currentPage int, sort string, order string) {
 	for i := 1; i <= totalPages; i++ {
 		if i == currentPage {
 			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
 		} else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
-			@PaginationItem(true, i, fmt.Sprint(i), "")
+			@PaginationItem(true, i, fmt.Sprint(i), "", sort, order)
 		} else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
 			<li class="uk-disabled"><span>…</span></li>
 		}
 	}
+}
+
+templ SortControls(currentSort string, currentOrder string) {
+	<div class="flex justify-end items-center gap-2 my-4">
+		{{
+			sorts := []struct{ Key, Label string }{
+				{"name", "Title"},
+				{"year", "Year"},
+				{"status", "Status"},
+				{"content_rating", "Content rating"},
+				{"created_at", "Created"},
+				{"updated_at", "Updated"},
+			}
+		}}
+
+		<div class="uk-inline">
+			<button id="manga-sort-btn" class="uk-btn uk-btn-default uk-btn-small" type="button" aria-expanded="false">
+				{{
+					// show the current label for the active sort
+					label := ""
+					for _, s := range sorts {
+						if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
+							label = s.Label
+							break
+						}
+					}
+					if label == "" {
+						label = "Title"
+					}
+				}}
+				<span class="inline-flex items-center gap-2"><span class="sort-label">{ label }</span>
+					<uk-icon class="chev-down inline-block" icon="ChevronDown" ratio="0.9"></uk-icon>
+					<uk-icon class="chev-up inline-block" icon="ChevronUp" ratio="0.9" style="display:none"></uk-icon>
+				</span>
+			</button>
+			<div id="manga-sort-drop" class="uk-drop uk-dropdown" uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100">
+				<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
+					for _, s := range sorts {
+						if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
+							<li class="uk-active">
+								<a
+									href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)) }
+									hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder) }
+									hx-target="#content"
+									hx-push-url="true"
+								>{ s.Label }</a>
+								if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
+									if false {
+									} // placeholder to keep templ indentation consistent
+								}
+								if false {
+								} // placeholder
+							</li>
+						} else {
+							<li>
+								<a
+									href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)) }
+									hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder) }
+									hx-target="#content"
+									hx-push-url="true"
+								>{ s.Label }</a>
+							</li>
+						}
+					}
+				</ul>
+			</div>
+		</div>
+
+		<script>
+		// Toggle active styling and chevron icon when the sort dropdown opens/closes
+		(function(){
+			function onShow(e){
+				if(!e.target || e.target.id !== 'manga-sort-drop') return;
+				var btn = document.getElementById('manga-sort-btn');
+				if(!btn) return;
+				btn.classList.add('uk-active');
+				btn.setAttribute('aria-expanded', 'true');
+				var down = btn.querySelector('.chev-down');
+				var up = btn.querySelector('.chev-up');
+				if(down) down.style.display = 'none';
+				if(up) up.style.display = 'inline-flex';
+			}
+			function onHide(e){
+				if(!e.target || e.target.id !== 'manga-sort-drop') return;
+				var btn = document.getElementById('manga-sort-btn');
+				if(!btn) return;
+				btn.classList.remove('uk-active');
+				btn.setAttribute('aria-expanded', 'false');
+				var down = btn.querySelector('.chev-down');
+				var up = btn.querySelector('.chev-up');
+				if(down) down.style.display = 'inline-flex';
+				if(up) up.style.display = 'none';
+			}
+			document.addEventListener('show', onShow);
+			document.addEventListener('hide', onHide);
+
+			// When a dropdown item is clicked, update the active state immediately and update the label
+			var drop = document.getElementById('manga-sort-drop');
+			if(drop) {
+				drop.addEventListener('click', function(ev){
+					var a = ev.target.closest ? ev.target.closest('a') : null;
+					if(!a) return; // clicked outside a link
+					var li = a.closest('li');
+					if(!li) return;
+					// remove uk-active from all siblings
+					var ul = li.parentElement;
+					if(ul) {
+						Array.prototype.forEach.call(ul.children, function(child){
+							child.classList.remove('uk-active');
+						});
+					}
+					// set active on clicked
+					li.classList.add('uk-active');
+					// update label text in the button
+					var btn = document.getElementById('manga-sort-btn');
+					if(btn){
+						var labelEl = btn.querySelector('.sort-label');
+						if(labelEl) {
+							// use the anchor text as label
+							var txt = a.textContent || a.innerText || '';
+							labelEl.textContent = txt.trim();
+						}
+					}
+				}, true);
+			}
+		})();
+		</script>
+
+		{{ toggled := "desc" }}
+		if currentOrder == "desc" {
+			{{ toggled = "asc" }}
+		}
+
+		<a
+			class="uk-btn uk-btn-default uk-btn-small"
+			href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)) }
+			hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled) }
+			hx-target="#content"
+			hx-push-url="true"
+			aria-label="Toggle sort order"
+		>
+			if currentOrder == "asc" {
+				<uk-icon icon="ChevronUp"></uk-icon>
+			} else {
+				<uk-icon icon="ChevronDown"></uk-icon>
+			}
+		</a>
+	</div>
 }

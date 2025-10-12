@@ -5,7 +5,7 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int) {
+templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
     @PageTitle(fmt.Sprintf("Your Upvoted - page #%d", currentPage))
     @Breadcrumb([]BreadcrumbItem{
         { Label: "Home", Href: "/" },
@@ -17,7 +17,7 @@ templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int) {
     if len(mangas) > 0 {
     @MangaGrid(mangas, 300, 450, true, true)
         <div class="flex justify-center items-center py-8">
-            @Pagination(totalPages, currentPage)
+            @Pagination(totalPages, currentPage, sort, order)
         </div>
     } else {
         @EmptyState("You have not upvoted any mangas yet.")

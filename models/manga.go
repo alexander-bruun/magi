@@ -302,29 +302,77 @@ func paginateMangas(mangas []Manga, page, pageSize int) []Manga {
 }
 
 func sortMangas(mangas []Manga, sortBy, sortOrder string) {
-	switch sortBy {
-	case "created_at":
-		if sortOrder == "asc" {
+	// Normalize inputs
+	s := strings.ToLower(sortBy)
+	if s == "title" { // allow alias
+		s = "name"
+	}
+	if s == "contentrating" {
+		s = "content_rating"
+	}
+	if s == "createdat" {
+		s = "created_at"
+	}
+	if s == "updatedat" {
+		s = "updated_at"
+	}
+
+	asc := strings.ToLower(sortOrder) != "desc"
+
+	switch s {
+	case "name":
+		if asc {
 			sort.Slice(mangas, func(i, j int) bool {
-				return mangas[i].CreatedAt.Before(mangas[j].CreatedAt)
+				return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name)
 			})
 		} else {
 			sort.Slice(mangas, func(i, j int) bool {
-				return mangas[i].CreatedAt.After(mangas[j].CreatedAt)
+				return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name)
 			})
+		}
+	case "year":
+		if asc {
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year < mangas[j].Year })
+		} else {
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year > mangas[j].Year })
+		}
+	case "status":
+		if asc {
+			sort.Slice(mangas, func(i, j int) bool {
+				return strings.ToLower(mangas[i].Status) < strings.ToLower(mangas[j].Status)
+			})
+		} else {
+			sort.Slice(mangas, func(i, j int) bool {
+				return strings.ToLower(mangas[i].Status) > strings.ToLower(mangas[j].Status)
+			})
+		}
+	case "content_rating":
+		if asc {
+			sort.Slice(mangas, func(i, j int) bool {
+				return strings.ToLower(mangas[i].ContentRating) < strings.ToLower(mangas[j].ContentRating)
+			})
+		} else {
+			sort.Slice(mangas, func(i, j int) bool {
+				return strings.ToLower(mangas[i].ContentRating) > strings.ToLower(mangas[j].ContentRating)
+			})
+		}
+	case "created_at":
+		if asc {
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.Before(mangas[j].CreatedAt) })
+		} else {
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.After(mangas[j].CreatedAt) })
 		}
 	case "updated_at":
-		if sortOrder == "asc" {
-			sort.Slice(mangas, func(i, j int) bool {
-				return mangas[i].UpdatedAt.Before(mangas[j].UpdatedAt)
-			})
+		if asc {
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.Before(mangas[j].UpdatedAt) })
 		} else {
-			sort.Slice(mangas, func(i, j int) bool {
-				return mangas[i].UpdatedAt.After(mangas[j].UpdatedAt)
-			})
+			sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.After(mangas[j].UpdatedAt) })
 		}
 	default:
-		// No sorting applied
+		// Default: name asc
+		sort.Slice(mangas, func(i, j int) bool {
+			return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name)
+		})
 	}
 }
 

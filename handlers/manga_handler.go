@@ -20,7 +20,17 @@ const (
 
 func HandleMangas(c *fiber.Ctx) error {
 	page := getPageNumber(c.Query("page"))
-	mangas, count, err := models.SearchMangas("", page, defaultPageSize, "name", "asc", "", "")
+	// Parse sorting parameters with defaults
+	sortBy := c.Query("sort")
+	if sortBy == "" {
+		sortBy = "name"
+	}
+	sortOrder := c.Query("order")
+	if sortOrder == "" {
+		sortOrder = "asc"
+	}
+
+	mangas, count, err := models.SearchMangas("", page, defaultPageSize, sortBy, sortOrder, "", "")
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -28,7 +38,7 @@ func HandleMangas(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	return HandleView(c, views.Mangas(mangas, page, totalPages))
+	return HandleView(c, views.Mangas(mangas, page, totalPages, sortBy, sortOrder))
 }
 
 func HandleManga(c *fiber.Ctx) error {

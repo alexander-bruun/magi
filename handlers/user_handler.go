@@ -195,7 +195,9 @@ func HandleAccountFavorites(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	return HandleView(c, views.AccountFavorites(mangas, page, totalPages))
+	sortBy := c.Query("sort", "name")
+	order := c.Query("order", "asc")
+	return HandleView(c, views.AccountFavorites(mangas, page, totalPages, sortBy, order))
 }
 
 // HandleAccountUpvoted shows paginated upvoted mangas for the current user
@@ -229,7 +231,9 @@ func HandleAccountUpvoted(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	return HandleView(c, views.AccountUpvoted(mangas, page, totalPages))
+	sortBy := c.Query("sort", "name")
+	order := c.Query("order", "asc")
+	return HandleView(c, views.AccountUpvoted(mangas, page, totalPages, sortBy, order))
 }
 
 // HandleAccountReading shows paginated reading list for the current user
@@ -263,7 +267,9 @@ func HandleAccountReading(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	return HandleView(c, views.AccountReading(mangas, page, totalPages))
+	sortBy := c.Query("sort", "name")
+	order := c.Query("order", "asc")
+	return HandleView(c, views.AccountReading(mangas, page, totalPages, sortBy, order))
 }
 
 // HandleAccountDownvoted shows paginated downvoted mangas for the current user
@@ -297,6 +303,8 @@ func HandleAccountDownvoted(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
+	sortBy := c.Query("sort", "name")
+	order := c.Query("order", "asc")
 	// The downvoted template was generated with the name AccountDownvoted (contains "Your Downvoted"), so render that.
-	return HandleView(c, views.AccountDownvoted(mangas, page, totalPages))
+	return HandleView(c, views.AccountDownvoted(mangas, page, totalPages, sortBy, order))
 }
