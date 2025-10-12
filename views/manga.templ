@@ -116,48 +116,72 @@ templ Info(manga models.Manga) {
 			<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
 		}
 	</div>
-	<p class="uk-margin line-clamp-5">
-		{ manga.Description }
-	</p>
-	<p class="uk-margin font-bold uppercase text-center my-2">
-		{ manga.Status }
-	</p>
-	if len(manga.Tags) > 0 {
-		<div class="uk-flex uk-flex-center uk-margin-top">
-			<div class="tags uk-flex uk-flex-wrap">
-				for _, tag := range manga.Tags {
-					<span class="uk-tag">{ tag }</span>
+	<div class="mt-3">
+		<p class="uk-margin line-clamp-5 text-gray-700 leading-relaxed">
+			{ manga.Description }
+		</p>
+	</div>
+
+	<!-- Improved metadata grid -->
+	<div class="grid grid-cols-2 gap-2 mt-3 text-sm text-gray-600">
+		if manga.Year != 0 {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Year</strong><span class="ml-2">{ fmt.Sprint(manga.Year) }</span></div>
+		}
+		if manga.OriginalLanguage != "" {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Language</strong><span class="ml-2">{ manga.OriginalLanguage }</span></div>
+		}
+		if manga.ContentRating != "" {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Rating</strong><span class="ml-2">{ manga.ContentRating }</span></div>
+		}
+		if manga.FileCount != 0 {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Files</strong><span class="ml-2">{ fmt.Sprint(manga.FileCount) }</span></div>
+		}
+		if !manga.CreatedAt.IsZero() {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Added</strong><span class="ml-2">{ manga.CreatedAt.Format("2006-01-02") }</span></div>
+		}
+		if !manga.UpdatedAt.IsZero() {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Updated</strong><span class="ml-2">{ manga.UpdatedAt.Format("2006-01-02") }</span></div>
+		}
+	</div>
+
+	<!-- Mobile: show status under metadata grid; Desktop: center column will show it -->
+	<div class="mt-2 flex justify-center">
+		<span class="uk-badge">{ manga.Status }</span>
+	</div>
+
+	<!-- stack on small/medium screens, switch to row on large screens -->
+	<div class="mt-3 flex flex-col lg:flex-row justify-center items-center gap-2">
+		<!-- Left: author/metadata compact -->
+		<div class="flex items-center space-x-3">
+			<div>
+				if manga.Author != "" {
+					<span class="uk-text-muted">By { manga.Author }</span>
 				}
 			</div>
 		</div>
-	}
-	<!-- This is a button toggling the modal -->
-	<div class="flex place-content-center">
-		<button
-			type="button"
-			class="uk-btn uk-btn-default"
-			type="button"
-			uk-toggle="target: #metadata-modal"
-		>
-			<uk-icon icon="Info"></uk-icon>
-		</button>
-	</div>
+		<div class="w-full">
+			<!-- First row: voting centered -->
+			<div class="controls-row mb-1">
+				<div id="manga-vote" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+			</div>
 
-	<!-- Vote fragment loaded via HTMX so it can be interactive and update in-place -->
-	<style>
-		/* ensure vote active state is styled when fragment HTML is inserted */
-		.vote-btn.active { font-weight: 700; }
-		.vote-btn.up.active { color: #16a34a; }
-		.vote-btn.down.active { color: #dc2626; }
-		.vote-count { font-weight: 600; margin-left: 0.5rem; }
-	</style>
-	<div id="manga-vote" class="flex justify-center mt-4" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
-	<!-- Favorite fragment loaded via HTMX so it can be toggled in-place -->
-	<style>
-		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
-		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
-	</style>
-	<div id="manga-favorite" class="flex justify-center mt-2" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+			<!-- Second row: metadata + favorite centered and tighter -->
+			<div class="controls-row">
+				<button
+					type="button"
+					class="uk-btn uk-btn-default ctrl-btn"
+					uk-toggle="target: #metadata-modal"
+					title="Edit metadata"
+					aria-label="Edit metadata"
+				>
+					<uk-icon icon="Info"></uk-icon>
+				</button>
+				<div class="controls-tight">
+					<div id="manga-favorite" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+				</div>
+			</div>
+		</div>
+	</div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -185,68 +209,59 @@ templ Info(manga models.Manga) {
 
 // Favorite fragment for a manga. Returned by HTMX when toggling favorite state.
 templ MangaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
-	<style>
-		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
-		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
-	</style>
 	<div id="manga-favorite" class="manga-favorite-fragment inline-flex items-center">
-		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center">
 			if isFavorite {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default favorite-btn active" title="Remove favorite">
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn active ctrl-btn" title="Remove favorite" aria-label="Remove favorite">
 					<uk-icon icon="Star"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="1" />
-				<button type="submit" class="uk-btn uk-btn-default favorite-btn" title="Add favorite">
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn ctrl-btn" title="Add favorite" aria-label="Add favorite">
 					<uk-icon icon="Star"></uk-icon>
 				</button>
 			}
 		</form>
-		<span class="favorite-count">{ fmt.Sprint(favCount) }</span>
 	</div>
 }
 
 // Vote fragment for a manga. This small fragment is returned by HTMX when voting
 // so the UI can be updated in-place.
 templ MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
-	<style>
-		.vote-btn.active { font-weight: 700; color: #16a34a; }
-		.vote-count { font-weight: 600; margin-left: 0.5rem; }
-	</style>
-	<div id="manga-vote" class="manga-vote-fragment inline-flex items-center">
-		<!-- Upvote -->
-		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center mr-2">
+	<div id="manga-vote" class="manga-vote-fragment vote-stack">
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
 			if userVote == 1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn up active" title="Remove upvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up active ctrl-btn" title="Remove upvote" aria-label="Remove upvote">
 					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn up" title="Upvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up ctrl-btn" title="Upvote" aria-label="Upvote">
 					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			}
 		</form>
 
-		<!-- Downvote -->
+		<div class="vote-stats flex flex-col items-center my-2 md:my-0">
+			<div class="vote-count">{ fmt.Sprint(score) }</div>
+			<div class="vote-small">{ fmt.Sprint(upvotes) } ↑ · { fmt.Sprint(downvotes) } ↓</div>
+		</div>
+
 		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
 			if userVote == -1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn down active" title="Remove downvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down active ctrl-btn" title="Remove downvote" aria-label="Remove downvote">
 					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="-1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn down" title="Downvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down ctrl-btn" title="Downvote" aria-label="Downvote">
 					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			}
 		</form>
-
-		<span class="vote-count">{ fmt.Sprint(score) }</span>
-		<span class="ml-2 text-sm text-gray-500">({ fmt.Sprint(upvotes) } up, { fmt.Sprint(downvotes) } down)</span>
 	</div>
 }
 
