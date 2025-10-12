@@ -115,6 +115,42 @@ function titleHandler(title) {
     } catch (e) {
       console.error('site.js nav sync error', e);
     }
+
+    // Sync dropdown active item for sort dropdowns
+    try {
+      document.addEventListener('show', function (e) {
+        try {
+          if (!e.target.classList.contains('uk-dropdown')) return;
+          const drop = e.target;
+          // parse sort param from current URL
+          const params = new URLSearchParams(window.location.search);
+          let sort = params.get('sort') || '';
+          if (sort === 'title') sort = 'name';
+          // clear existing uk-active
+          const items = drop.querySelectorAll('.uk-dropdown-nav.uk-nav li');
+          items.forEach(i => i.classList.remove('uk-active'));
+          if (!sort) {
+            // fallback: try matching the button label
+            const btn = document.getElementById('manga-sort-btn');
+            if (btn) {
+              const labelEl = btn.querySelector('.sort-label');
+              if (labelEl) sort = labelEl.textContent.trim().toLowerCase();
+            }
+          }
+          if (sort) {
+            const match = Array.from(drop.querySelectorAll('[data-sort-key]')).find(a => a.getAttribute('data-sort-key') === sort || a.textContent.trim().toLowerCase() === sort);
+            if (match) {
+              const li = match.closest('li');
+              if (li) li.classList.add('uk-active');
+            }
+          }
+        } catch (err) {
+          // ignore
+        }
+      }, false);
+    } catch (e) {
+      console.error('site.js dropdown sync error', e);
+    }
   }
 
   if (document.readyState === 'loading') {

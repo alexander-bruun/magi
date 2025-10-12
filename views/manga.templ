@@ -13,55 +13,63 @@ templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug stri
 		{ Label: manga.Name, Href: fmt.Sprintf("/mangas/%s", manga.Slug) },
 	})
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ manga.Name }</h1>
-	<div class="flex flex-col lg:flex-row mt-2">
-		<div id="form-column" class="w-full lg:w-1/4 m-2">
-			<div class="uk-card p-2">
-				@Info(manga)
+	<div class="uk-container">
+		<div class="flex mt-2">
+			<div id="form-column" class="w-1/4 m-2">
+				<div class="uk-card p-2">
+					@Info(manga)
+				</div>
 			</div>
-		</div>
-		<div id="table-column" class="w-full lg:w-3/4 m-2">
-			<div class="flex justify-between px-4">
-				if firstChapterSlug != "" {
-					<button
+			<div id="table-column" class="w-3/4 m-2">
+				<div class="flex justify-between px-4">
+					if firstChapterSlug != "" {
+						<button
+							type="button"
+							class="uk-btn uk-btn-default"
+							type="button"
+							href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+							hx-target="#content"
+							hx-push-url="true"
+							onclick="scrollToTopInstant()"
+						>
+							<uk-icon icon="MoveLeft"></uk-icon>
+							Go to first chapter
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to first chapter</button>
+					}
+
+					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
+
+					if lastChapterSlug != "" {
+						<button
 						type="button"
 						class="uk-btn uk-btn-default"
 						type="button"
-						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
-						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
+						hx-target="#content"
 						hx-push-url="true"
 						onclick="scrollToTopInstant()"
 					>
-						<uk-icon icon="MoveLeft"></uk-icon>
-						<span class="hidden md:inline">Go to first chapter</span>
-					</button>
-				} else {
-					<button type="button" class="uk-btn uk-btn-default" disabled><span class="hidden md:inline">Go to first chapter</span><uk-icon icon="MoveLeft"></uk-icon></button>
-				}
-
-				<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
-
-				if lastChapterSlug != "" {
-					<button
-					type="button"
-					class="uk-btn uk-btn-default"
-					type="button"
-					href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
-					hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
-					hx-target="#content"
-					hx-push-url="true"
-					onclick="scrollToTopInstant()"
-				>
-					<span class="hidden md:inline">Go to last chapter</span>
-					<uk-icon icon="MoveRight"></uk-icon>
-					</button>
-				} else {
-					<button type="button" class="uk-btn uk-btn-default" disabled><span class="hidden md:inline">Go to last chapter</span><uk-icon icon="MoveRight"></uk-icon></button>
-				}
-			</div>
-			<hr class="uk-divider-icon mb-4"/>
-			<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
-				<div class="p-2">
-					@Chapters(manga, chapters)
+						Go to last chapter
+						<uk-icon icon="MoveRight"></uk-icon>
+						</button>
+					} else {
+						<button type="button" class="uk-btn uk-btn-default" disabled>Go to last chapter</button>
+					}
+				</div>
+				<hr class="uk-divider-icon mb-4"/>
+				<style>
+					.uk-card::-webkit-scrollbar {
+						display: none;
+					}
+				</style>
+				<div class="uk-card p-2" style="max-height:650px;overflow: auto;">
+					<div class="p-2">
+						@Chapters(manga, chapters)
+					</div>
 				</div>
 			</div>
 		</div>
@@ -108,72 +116,48 @@ templ Info(manga models.Manga) {
 			<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
 		}
 	</div>
-	<div class="mt-3">
-		<p class="uk-margin line-clamp-5 text-gray-700 leading-relaxed">
-			{ manga.Description }
-		</p>
-	</div>
-
-	<!-- Improved metadata grid -->
-	<div class="grid grid-cols-2 gap-2 mt-3 text-sm text-gray-600">
-		if manga.Year != 0 {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Year</strong><span class="ml-2">{ fmt.Sprint(manga.Year) }</span></div>
-		}
-		if manga.OriginalLanguage != "" {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Language</strong><span class="ml-2">{ manga.OriginalLanguage }</span></div>
-		}
-		if manga.ContentRating != "" {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Rating</strong><span class="ml-2">{ manga.ContentRating }</span></div>
-		}
-		if manga.FileCount != 0 {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Files</strong><span class="ml-2">{ fmt.Sprint(manga.FileCount) }</span></div>
-		}
-		if !manga.CreatedAt.IsZero() {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Added</strong><span class="ml-2">{ manga.CreatedAt.Format("2006-01-02") }</span></div>
-		}
-		if !manga.UpdatedAt.IsZero() {
-			<div class="flex items-center"><strong class="w-20 text-gray-800">Updated</strong><span class="ml-2">{ manga.UpdatedAt.Format("2006-01-02") }</span></div>
-		}
-	</div>
-
-	<!-- Mobile: show status under metadata grid; Desktop: center column will show it -->
-	<div class="mt-2 flex justify-center">
-		<span class="uk-badge">{ manga.Status }</span>
-	</div>
-
-	<!-- stack on small/medium screens, switch to row on large screens -->
-	<div class="mt-3 flex flex-col lg:flex-row justify-center items-center gap-2">
-		<!-- Left: author/metadata compact -->
-		<div class="flex items-center space-x-3">
-			<div>
-				if manga.Author != "" {
-					<span class="uk-text-muted">By { manga.Author }</span>
+	<p class="uk-margin line-clamp-5">
+		{ manga.Description }
+	</p>
+	<p class="uk-margin font-bold uppercase text-center my-2">
+		{ manga.Status }
+	</p>
+	if len(manga.Tags) > 0 {
+		<div class="uk-flex uk-flex-center uk-margin-top">
+			<div class="tags uk-flex uk-flex-wrap">
+				for _, tag := range manga.Tags {
+					<span class="uk-tag">{ tag }</span>
 				}
 			</div>
 		</div>
-		<div class="w-full">
-			<!-- First row: voting centered -->
-			<div class="controls-row mb-1">
-				<div id="manga-vote" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
-			</div>
-
-			<!-- Second row: metadata + favorite centered and tighter -->
-			<div class="controls-row">
-				<button
-					type="button"
-					class="uk-btn uk-btn-default ctrl-btn"
-					uk-toggle="target: #metadata-modal"
-					title="Edit metadata"
-					aria-label="Edit metadata"
-				>
-					<uk-icon icon="Info"></uk-icon>
-				</button>
-				<div class="controls-tight">
-					<div id="manga-favorite" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
-				</div>
-			</div>
-		</div>
+	}
+	<!-- This is a button toggling the modal -->
+	<div class="flex place-content-center">
+		<button
+			type="button"
+			class="uk-btn uk-btn-default"
+			type="button"
+			uk-toggle="target: #metadata-modal"
+		>
+			<uk-icon icon="Info"></uk-icon>
+		</button>
 	</div>
+
+	<!-- Vote fragment loaded via HTMX so it can be interactive and update in-place -->
+	<style>
+		/* ensure vote active state is styled when fragment HTML is inserted */
+		.vote-btn.active { font-weight: 700; }
+		.vote-btn.up.active { color: #16a34a; }
+		.vote-btn.down.active { color: #dc2626; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="flex justify-center mt-4" hx-get={ fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	<!-- Favorite fragment loaded via HTMX so it can be toggled in-place -->
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-favorite" class="flex justify-center mt-2" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal>
 		<div class="uk-modal-body uk-modal-dialog">
@@ -201,63 +185,77 @@ templ Info(manga models.Manga) {
 
 // Favorite fragment for a manga. Returned by HTMX when toggling favorite state.
 templ MangaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
+	<style>
+		.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+		.favorite-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
 	<div id="manga-favorite" class="manga-favorite-fragment inline-flex items-center">
-		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center">
+		<form hx-post={ fmt.Sprintf("/mangas/%s/favorite", mangaSlug) } hx-target="#manga-favorite" hx-swap="outerHTML" class="inline-flex items-center mr-2">
 			if isFavorite {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default favorite-btn active ctrl-btn" title="Remove favorite" aria-label="Remove favorite">
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn active" title="Remove favorite">
 					<uk-icon icon="Star"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="1" />
-				<button type="submit" class="uk-btn uk-btn-default favorite-btn ctrl-btn" title="Add favorite" aria-label="Add favorite">
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn" title="Add favorite">
 					<uk-icon icon="Star"></uk-icon>
 				</button>
 			}
 		</form>
+		<span class="favorite-count">{ fmt.Sprint(favCount) }</span>
 	</div>
 }
 
 // Vote fragment for a manga. This small fragment is returned by HTMX when voting
 // so the UI can be updated in-place.
 templ MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
-	<div id="manga-vote" class="manga-vote-fragment vote-stack">
-		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
+	<style>
+		.vote-btn.active { font-weight: 700; color: #16a34a; }
+		.vote-count { font-weight: 600; margin-left: 0.5rem; }
+	</style>
+	<div id="manga-vote" class="manga-vote-fragment inline-flex items-center">
+		<!-- Upvote -->
+		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center mr-2">
 			if userVote == 1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn up active ctrl-btn" title="Remove upvote" aria-label="Remove upvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up active" title="Remove upvote">
 					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn up ctrl-btn" title="Upvote" aria-label="Upvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up" title="Upvote">
 					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			}
 		</form>
 
-		<div class="vote-stats flex flex-col items-center my-2 md:my-0">
-			<div class="vote-count">{ fmt.Sprint(score) }</div>
-			<div class="vote-small">{ fmt.Sprint(upvotes) } ↑ · { fmt.Sprint(downvotes) } ↓</div>
-		</div>
-
+		<!-- Downvote -->
 		<form hx-post={ fmt.Sprintf("/mangas/%s/vote", mangaSlug) } hx-target="#manga-vote" hx-swap="outerHTML" class="inline-flex items-center">
 			if userVote == -1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn down active ctrl-btn" title="Remove downvote" aria-label="Remove downvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down active" title="Remove downvote">
 					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="-1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn down ctrl-btn" title="Downvote" aria-label="Downvote">
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down" title="Downvote">
 					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			}
 		</form>
+
+		<span class="vote-count">{ fmt.Sprint(score) }</span>
+		<span class="ml-2 text-sm text-gray-500">({ fmt.Sprint(upvotes) } up, { fmt.Sprint(downvotes) } down)</span>
 	</div>
 }
 
 templ Chapters(manga models.Manga, chapters []models.Chapter) {
+	<style>
+		/* Base layout for the inline icon container */
+		.chapter-read-icon .eye-open { display: inline-flex; }
+		.chapter-read-icon .eye-closed { display: none; }
+	</style>
 	<script>
 		// Use event delegation so dynamically swapped HTMX fragments still respond.
 		document.addEventListener('mouseover', function(e){
@@ -420,13 +418,9 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
 		<div class="mt-2 uk-flex uk-flex-center">
-			<!-- Show full chapter name on sm+; on small devices show a compact down-arrow to avoid overflow -->
-			<button class="uk-btn uk-btn-default" type="button">
-				<span class="hidden sm:inline">{ chapter.Name }</span>
-				<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
-			</button>
+			<button class="uk-btn uk-btn-default" type="button">{ chapter.Name }</button>
 		</div>
-		<div class="uk-drop uk-dropdown" uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100">
+		<div class="uk-drop uk-dropdown" uk-dropdown="mode: click; offset: 5; animation: uk-animation-slide-top-small; duration: 100">
 			<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
 				for _, ch := range chapters {
 					if ch.Name == chapter.Name {
@@ -478,11 +472,9 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		</button>
 	</div>
 	<div class="flex items-center justify-center min-h-screen">
-		<!-- Small screens: full width with slight horizontal padding so images fill more;
-			 Medium+ screens: use 3/5 width as before -->
-		<div class="flex flex-col items-center p-4 w-full px-2 sm:w-3/5 sm:px-0">
+		<div class="flex flex-col items-center p-4 w-3/5">
 			for _, image := range images {
-				<img data-src={ image } class="lazyload w-full h-auto max-w-full" alt="loading page..."/>
+				<img data-src={ image } class="lazyload" alt="loading page..."/>
 			}
 		</div>
 	</div>

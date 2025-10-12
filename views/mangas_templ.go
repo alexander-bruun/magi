@@ -386,80 +386,92 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span> <uk-icon class=\"chev-down inline-block\" icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon> <uk-icon class=\"chev-up inline-block\" icon=\"ChevronUp\" ratio=\"0.9\" style=\"display:none\"></uk-icon></span></button><div id=\"manga-sort-drop\" class=\"uk-drop uk-dropdown\" uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span> <uk-icon class=\"chev-down inline-block\" icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon> <uk-icon class=\"chev-up inline-block\" icon=\"ChevronUp\" ratio=\"0.9\" style=\"display:none\"></uk-icon></span></button><div id=\"manga-sort-drop\" data-trigger-id=\"manga-sort-btn\" class=\"uk-drop uk-dropdown\" uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, s := range sorts {
 			if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<li class=\"uk-active\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<li class=\"uk-active\"><a data-sort-key=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var14 templ.SafeURL
-				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(s.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 138, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 137, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var15 string
-				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
+				var templ_7745c5c3_Var15 templ.SafeURL
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 139, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 138, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 142, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 139, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</a> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#content\" hx-push-url=\"true\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-					if false {
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " ")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
+				var templ_7745c5c3_Var17 string
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 142, Col: 18}
 				}
-				if false {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<li><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<li><a data-sort-key=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var17 templ.SafeURL
-				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
+				var templ_7745c5c3_Var18 string
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(s.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 153, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 146, Col: 32}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var19 templ.SafeURL
+				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 147, Col: 87}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -467,12 +479,12 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var18 string
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
+				var templ_7745c5c3_Var20 string
+				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 154, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 148, Col: 78}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -480,12 +492,12 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var19 string
-				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
+				var templ_7745c5c3_Var21 string
+				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 157, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 151, Col: 18}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -495,7 +507,7 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</ul></div></div><script>\n\t\t// Toggle active styling and chevron icon when the sort dropdown opens/closes\n\t\t(function(){\n\t\t\tfunction onShow(e){\n\t\t\t\tif(!e.target || e.target.id !== 'manga-sort-drop') return;\n\t\t\t\tvar btn = document.getElementById('manga-sort-btn');\n\t\t\t\tif(!btn) return;\n\t\t\t\tbtn.classList.add('uk-active');\n\t\t\t\tbtn.setAttribute('aria-expanded', 'true');\n\t\t\t\tvar down = btn.querySelector('.chev-down');\n\t\t\t\tvar up = btn.querySelector('.chev-up');\n\t\t\t\tif(down) down.style.display = 'none';\n\t\t\t\tif(up) up.style.display = 'inline-flex';\n\t\t\t}\n\t\t\tfunction onHide(e){\n\t\t\t\tif(!e.target || e.target.id !== 'manga-sort-drop') return;\n\t\t\t\tvar btn = document.getElementById('manga-sort-btn');\n\t\t\t\tif(!btn) return;\n\t\t\t\tbtn.classList.remove('uk-active');\n\t\t\t\tbtn.setAttribute('aria-expanded', 'false');\n\t\t\t\tvar down = btn.querySelector('.chev-down');\n\t\t\t\tvar up = btn.querySelector('.chev-up');\n\t\t\t\tif(down) down.style.display = 'inline-flex';\n\t\t\t\tif(up) up.style.display = 'none';\n\t\t\t}\n\t\t\tdocument.addEventListener('show', onShow);\n\t\t\tdocument.addEventListener('hide', onHide);\n\n\t\t\t// When a dropdown item is clicked, update the active state immediately and update the label\n\t\t\tvar drop = document.getElementById('manga-sort-drop');\n\t\t\tif(drop) {\n\t\t\t\tdrop.addEventListener('click', function(ev){\n\t\t\t\t\tvar a = ev.target.closest ? ev.target.closest('a') : null;\n\t\t\t\t\tif(!a) return; // clicked outside a link\n\t\t\t\t\tvar li = a.closest('li');\n\t\t\t\t\tif(!li) return;\n\t\t\t\t\t// remove uk-active from all siblings\n\t\t\t\t\tvar ul = li.parentElement;\n\t\t\t\t\tif(ul) {\n\t\t\t\t\t\tArray.prototype.forEach.call(ul.children, function(child){\n\t\t\t\t\t\t\tchild.classList.remove('uk-active');\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\t\t\t\t\t// set active on clicked\n\t\t\t\t\tli.classList.add('uk-active');\n\t\t\t\t\t// update label text in the button\n\t\t\t\t\tvar btn = document.getElementById('manga-sort-btn');\n\t\t\t\t\tif(btn){\n\t\t\t\t\t\tvar labelEl = btn.querySelector('.sort-label');\n\t\t\t\t\t\tif(labelEl) {\n\t\t\t\t\t\t\t// use the anchor text as label\n\t\t\t\t\t\t\tvar txt = a.textContent || a.innerText || '';\n\t\t\t\t\t\t\tlabelEl.textContent = txt.trim();\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}, true);\n\t\t\t}\n\t\t})();\n\t\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</ul></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -507,12 +519,12 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 templ.SafeURL
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)))
+		var templ_7745c5c3_Var22 templ.SafeURL
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 232, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 166, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -520,12 +532,12 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled))
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 233, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 167, Col: 73}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -187,6 +187,11 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 
 	updateMangaDetails(existingManga, mangaDetail, cachedImageURL)
 
+	// Persist tags from Mangadex
+	if err := persistMangadexTags(existingManga.Slug, mangaDetail); err != nil {
+		return handleError(c, err)
+	}
+
 	if err := models.UpdateManga(existingManga); err != nil {
 		return handleError(c, err)
 	}
@@ -296,6 +301,30 @@ func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, co
 	manga.Status = mangaDetail.Attributes.Status
 	manga.ContentRating = mangaDetail.Attributes.ContentRating
 	manga.CoverArtURL = coverArtURL
+}
+
+// persist tags from Mangadex metadata for a manga
+func persistMangadexTags(mangaSlug string, mangaDetail *models.MangaDetail) error {
+	if mangaDetail == nil || len(mangaDetail.Attributes.Tags) == 0 {
+		return nil
+	}
+	var tags []string
+	for _, t := range mangaDetail.Attributes.Tags {
+		if name, ok := t.Attributes.Name["en"]; ok && name != "" {
+			tags = append(tags, name)
+		} else {
+			for _, v := range t.Attributes.Name {
+				if v != "" {
+					tags = append(tags, v)
+					break
+				}
+			}
+		}
+	}
+	if len(tags) == 0 {
+		return nil
+	}
+	return models.SetTagsForManga(mangaSlug, tags)
 }
 
 // HandleMangaVote handles a user's upvote/downvote for a manga via HTMX.

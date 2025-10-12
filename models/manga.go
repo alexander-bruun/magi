@@ -26,6 +26,7 @@ type Manga struct {
 	CoverArtURL      string    `json:"cover_art_url"`
 	Path             string    `json:"path"`
 	FileCount        int       `json:"file_count"`
+	Tags             []string  `json:"tags"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
@@ -76,6 +77,10 @@ func GetManga(slug string) (*Manga, error) {
 
 	manga.CreatedAt = time.Unix(createdAt, 0)
 	manga.UpdatedAt = time.Unix(updatedAt, 0)
+	// Load tags for this manga if any
+	if tags, err := GetTagsForManga(manga.Slug); err == nil {
+		manga.Tags = tags
+	}
 	return &manga, nil
 }
 
@@ -106,7 +111,17 @@ func DeleteManga(slug string) error {
 		return err
 	}
 
-	return DeleteChaptersByMangaSlug(slug)
+	// Delete associated chapters first
+	if err := DeleteChaptersByMangaSlug(slug); err != nil {
+		return err
+	}
+
+	// Delete associated tags
+	if err := DeleteTagsByMangaSlug(slug); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SearchMangas filters, sorts, and paginates mangas based on provided criteria
