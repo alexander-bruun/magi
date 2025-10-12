@@ -13,63 +13,55 @@ templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug stri
 		{ Label: manga.Name, Href: fmt.Sprintf("/mangas/%s", manga.Slug) },
 	})
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ manga.Name }</h1>
-	<div class="uk-container">
-		<div class="flex mt-2">
-			<div id="form-column" class="w-1/4 m-2">
-				<div class="uk-card p-2">
-					@Info(manga)
-				</div>
+	<div class="flex flex-col lg:flex-row mt-2">
+		<div id="form-column" class="w-full lg:w-1/4 m-2">
+			<div class="uk-card p-2">
+				@Info(manga)
 			</div>
-			<div id="table-column" class="w-3/4 m-2">
-				<div class="flex justify-between px-4">
-					if firstChapterSlug != "" {
-						<button
-							type="button"
-							class="uk-btn uk-btn-default"
-							type="button"
-							href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
-							hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
-							hx-target="#content"
-							hx-push-url="true"
-							onclick="scrollToTopInstant()"
-						>
-							<uk-icon icon="MoveLeft"></uk-icon>
-							Go to first chapter
-						</button>
-					} else {
-						<button type="button" class="uk-btn uk-btn-default" disabled>Go to first chapter</button>
-					}
-
-					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
-
-					if lastChapterSlug != "" {
-						<button
+		</div>
+		<div id="table-column" class="w-full lg:w-3/4 m-2">
+			<div class="flex justify-between px-4">
+				if firstChapterSlug != "" {
+					<button
 						type="button"
 						class="uk-btn uk-btn-default"
 						type="button"
-						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
-						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
-						hx-target="#content"
+						href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
+						hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, firstChapterSlug) }
 						hx-push-url="true"
 						onclick="scrollToTopInstant()"
 					>
-						Go to last chapter
-						<uk-icon icon="MoveRight"></uk-icon>
-						</button>
-					} else {
-						<button type="button" class="uk-btn uk-btn-default" disabled>Go to last chapter</button>
-					}
-				</div>
-				<hr class="uk-divider-icon mb-4"/>
-				<style>
-					.uk-card::-webkit-scrollbar {
-						display: none;
-					}
-				</style>
-				<div class="uk-card p-2" style="max-height:650px;overflow: auto;">
-					<div class="p-2">
-						@Chapters(manga, chapters)
-					</div>
+						<uk-icon icon="MoveLeft"></uk-icon>
+						<span class="hidden md:inline">Go to first chapter</span>
+					</button>
+				} else {
+					<button type="button" class="uk-btn uk-btn-default" disabled><span class="hidden md:inline">Go to first chapter</span><uk-icon icon="MoveLeft"></uk-icon></button>
+				}
+
+				<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
+
+				if lastChapterSlug != "" {
+					<button
+					type="button"
+					class="uk-btn uk-btn-default"
+					type="button"
+					href={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
+					hx-get={ fmt.Sprintf("/mangas/%s/%s", manga.Slug, lastChapterSlug) }
+					hx-target="#content"
+					hx-push-url="true"
+					onclick="scrollToTopInstant()"
+				>
+					<span class="hidden md:inline">Go to last chapter</span>
+					<uk-icon icon="MoveRight"></uk-icon>
+					</button>
+				} else {
+					<button type="button" class="uk-btn uk-btn-default" disabled><span class="hidden md:inline">Go to last chapter</span><uk-icon icon="MoveRight"></uk-icon></button>
+				}
+			</div>
+			<hr class="uk-divider-icon mb-4"/>
+			<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
+				<div class="p-2">
+					@Chapters(manga, chapters)
 				</div>
 			</div>
 		</div>
@@ -266,11 +258,6 @@ templ MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int,
 }
 
 templ Chapters(manga models.Manga, chapters []models.Chapter) {
-	<style>
-		/* Base layout for the inline icon container */
-		.chapter-read-icon .eye-open { display: inline-flex; }
-		.chapter-read-icon .eye-closed { display: none; }
-	</style>
 	<script>
 		// Use event delegation so dynamically swapped HTMX fragments still respond.
 		document.addEventListener('mouseover', function(e){
