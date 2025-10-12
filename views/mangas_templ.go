@@ -53,12 +53,16 @@ func Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string,
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!-- Tags dropdown moved into SortControls --><script>\n\t// Simple toggle for the dropdown visibility; HTMX will fill #tag-list when the button is first clicked\n\t(function(){\n\t\tconst btn = document.getElementById('tag-filter-btn');\n\t\tconst drop = document.getElementById('tag-filter-drop');\n\t\t// also manage the sort dropdown so it centers under its trigger\n\t\tconst sortBtn = document.getElementById('manga-sort-btn');\n\t\tconst sortDrop = document.getElementById('manga-sort-drop');\n\t\tfunction openTagDropdown() {\n\t\t\ttry {\n\t\t\t\tdrop.style.display = 'block';\n\t\t\t\tdrop.style.position = 'fixed';\n\t\t\t\tpositionTagDropdown();\n\t\t\t\t// small timeout to allow focus/click handlers to settle\n\t\t\t\tsetTimeout(() => document.addEventListener('mousedown', outsideClickHandler), 0);\n\t\t\t} catch (_) {}\n\t\t}\n\n\t\tfunction closeTagDropdown() {\n\t\t\ttry {\n\t\t\t\tdrop.style.display = 'none';\n\t\t\t\tdocument.removeEventListener('mousedown', outsideClickHandler);\n\t\t\t} catch (_) {}\n\t\t}\n\n\t\tbtn.addEventListener('click', function(){\n\t\t\ttry {\n\t\t\t\tif (drop.style.display === 'block') {\n\t\t\t\t\tcloseTagDropdown();\n\t\t\t\t} else {\n\t\t\t\t\topenTagDropdown();\n\t\t\t\t}\n\t\t\t} catch (_) {}\n\t\t});\n\n\t\tfunction positionTagDropdown() {\n\t\t\ttry {\n\t\t\t\tif (!btn || !drop) return;\n\t\t\t\t// ensure visible to measure\n\t\t\t\tconst btnRect = btn.getBoundingClientRect();\n\t\t\t\t// reset any inline maxHeight so measurement is accurate\n\t\t\t\tdrop.style.maxHeight = '';\n\t\t\t\tconst dropRect = drop.getBoundingClientRect();\n\t\t\t\tconst margin = 8;\n\t\t\t\t// Default place below button, horizontally centered to the button\n\t\t\t\tlet left = btnRect.left + (btnRect.width / 2) - (dropRect.width / 2);\n\t\t\t\tlet top = btnRect.bottom + margin;\n\t\t\t\t// if dropdown would overflow right edge, shift left\n\t\t\t\tif (left + dropRect.width + margin > window.innerWidth) {\n\t\t\t\t\tleft = Math.max(margin, window.innerWidth - dropRect.width - margin);\n\t\t\t\t}\n\t\t\t\t// if dropdown would overflow left edge, shift right\n\t\t\t\tif (left < margin) {\n\t\t\t\t\tleft = margin;\n\t\t\t\t}\n\t\t\t\t// if dropdown would overflow bottom, try place above the button\n\t\t\t\tif (top + dropRect.height + margin > window.innerHeight) {\n\t\t\t\t\tconst altTop = btnRect.top - dropRect.height - margin;\n\t\t\t\t\tif (altTop >= margin) {\n\t\t\t\t\t\ttop = altTop;\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// shrink height to fit\n\t\t\t\t\t\tconst availableBelow = window.innerHeight - btnRect.bottom - (margin * 2);\n\t\t\t\t\t\tconst availableAbove = btnRect.top - margin * 2;\n\t\t\t\t\t\tconst maxH = Math.max(80, Math.max(availableBelow, availableAbove));\n\t\t\t\t\t\tdrop.style.maxHeight = (maxH) + 'px';\n\t\t\t\t\t\t// recompute dropRect after changing maxHeight\n\t\t\t\t\t\tconst newDropRect = drop.getBoundingClientRect();\n\t\t\t\t\t\tif (top + newDropRect.height + margin > window.innerHeight) {\n\t\t\t\t\t\t\t// prefer placing above if it fits\n\t\t\t\t\t\t\tconst altTop2 = btnRect.top - newDropRect.height - margin;\n\t\t\t\t\t\t\tif (altTop2 >= margin) top = altTop2; else top = Math.max(margin, window.innerHeight - newDropRect.height - margin);\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tdrop.style.left = Math.round(left) + 'px';\n\t\t\t\tdrop.style.top = Math.round(top) + 'px';\n\t\t\t\tdrop.style.right = 'auto';\n\t\t\t} catch (_) {}\n\t\t}\n\n\t\tfunction positionSortDropdown() {\n\t\t\ttry {\n\t\t\t\tif (!sortBtn || !sortDrop) return;\n\t\t\t\t// ensure visible to measure\n\t\t\t\tsortDrop.style.maxHeight = '';\n\t\t\t\tconst btnRect = sortBtn.getBoundingClientRect();\n\t\t\t\tconst dropRect = sortDrop.getBoundingClientRect();\n\t\t\t\tconst margin = 8;\n\t\t\t\t// center under button\n\t\t\t\tlet left = btnRect.left + (btnRect.width / 2) - (dropRect.width / 2);\n\t\t\t\tlet top = btnRect.bottom + margin;\n\t\t\t\t// if overflow right, shift left\n\t\t\t\tif (left + dropRect.width + margin > window.innerWidth) {\n\t\t\t\t\tleft = Math.max(margin, window.innerWidth - dropRect.width - margin);\n\t\t\t\t}\n\t\t\t\t// if overflow left, shift right\n\t\t\t\tif (left < margin) left = margin;\n\t\t\t\t// if would overflow bottom, try place above\n\t\t\t\tif (top + dropRect.height + margin > window.innerHeight) {\n\t\t\t\t\tconst altTop = btnRect.top - dropRect.height - margin;\n\t\t\t\t\tif (altTop >= margin) {\n\t\t\t\t\t\ttop = altTop;\n\t\t\t\t\t} else {\n\t\t\t\t\t\t// shrink height to fit\n\t\t\t\t\t\tconst availableBelow = window.innerHeight - btnRect.bottom - (margin * 2);\n\t\t\t\t\t\tconst availableAbove = btnRect.top - margin * 2;\n\t\t\t\t\t\tconst maxH = Math.max(80, Math.max(availableBelow, availableAbove));\n\t\t\t\t\t\tsortDrop.style.maxHeight = (maxH) + 'px';\n\t\t\t\t\t\tconst newDropRect = sortDrop.getBoundingClientRect();\n\t\t\t\t\t\tif (top + newDropRect.height + margin > window.innerHeight) {\n\t\t\t\t\t\t\tconst altTop2 = btnRect.top - newDropRect.height - margin;\n\t\t\t\t\t\t\tif (altTop2 >= margin) top = altTop2; else top = Math.max(margin, window.innerHeight - newDropRect.height - margin);\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tsortDrop.style.left = Math.round(left) + 'px';\n\t\t\t\tsortDrop.style.top = Math.round(top) + 'px';\n\t\t\t\tsortDrop.style.right = 'auto';\n\t\t\t} catch (_) {}\n\t\t}\n\n\t\tfunction outsideClickHandler(e) {\n\t\t\ttry {\n\t\t\t\tif (!drop || !btn) return;\n\t\t\t\tconst target = e.target;\n\t\t\t\tif (drop.contains(target) || btn.contains(target)) return; // click inside -> ignore\n\t\t\t\tcloseTagDropdown();\n\t\t\t} catch (_) {}\n\t\t}\n\n\t\t// reposition on resize and scroll (debounced via rAF to avoid jank)\n\t\tlet _tagRaf = null;\n\t\tfunction schedulePosition() {\n\t\t\tif (_tagRaf) cancelAnimationFrame(_tagRaf);\n\t\t\t_tagRaf = requestAnimationFrame(function() {\n\t\t\t\t_tagRaf = null;\n\t\t\t\ttry {\n\t\t\t\t\t// position tag dropdown if visible\n\t\t\t\t\tif (drop && (drop.style.display === 'block' || getComputedStyle(drop).display !== 'none')) positionTagDropdown();\n\t\t\t\t\t// position sort dropdown if visible (UIkit may toggle visibility differently)\n\t\t\t\t\tif (sortDrop && (sortDrop.style.display === 'block' || getComputedStyle(sortDrop).display !== 'none')) positionSortDropdown();\n\t\t\t\t} catch (_) {}\n\t\t\t});\n\t\t}\n\t\twindow.addEventListener('resize', function(){ schedulePosition(); }, { passive: true });\n\t\twindow.addEventListener('scroll', function(){ schedulePosition(); }, { passive: true });\n\n\t\t// close on Escape\n\t\tdocument.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeTagDropdown(); });\n\t\t// Helper: ensure hidden summary of tags is present on every request using hx-include\n\t\tfunction updateTagSummaryHidden() {\n\t\t\ttry {\n\t\t\t\tconst form = document.getElementById('tag-filter-form');\n\t\t\t\tif (!form) return;\n\t\t\t\tconst hidden = form.querySelector('#tag-hidden-summary');\n\t\t\t\tif (!hidden) return;\n\t\t\t\tconst cbs = form.querySelectorAll('input[name=\"tags\"][type=\"checkbox\"]:checked');\n\t\t\t\tlet values = Array.from(cbs).map(cb => cb.value).filter(Boolean);\n\t\t\t\tif (values.length === 0) {\n\t\t\t\t\t// Fallback to URL params so pagination/sort still carry active tags\n\t\t\t\t\tconst params = new URLSearchParams(window.location.search);\n\t\t\t\t\tconst urlVals = params.getAll('tags');\n\t\t\t\t\t// url may have repeated tags params or a comma-separated string\n\t\t\t\t\tlet acc = [];\n\t\t\t\t\turlVals.forEach(v => v.split(',').forEach(x => { x = x.trim(); if (x) acc.push(x); }));\n\t\t\t\t\tvalues = acc;\n\t\t\t\t}\n\t\t\t\thidden.value = values.join(',');\n\t\t\t} catch (_) { /* ignore */ }\n\t\t}\n\n\t\t// Update hidden summary before any HTMX-triggered navigation that includes the tag form\n\t\tdocument.addEventListener('click', function(e){\n\t\t\tconst el = e.target.closest && e.target.closest('[hx-include=\"#tag-filter-form\"]');\n\t\t\tif (el) updateTagSummaryHidden();\n\t\t}, true);\n\n\t\t// Ensure sort clicks are pre-processed early (pointerdown capture) so other handlers\n\t\t// (UIkit or outside click handlers) don't close dropdowns before the HTMX request fires.\n\t\tdocument.addEventListener('pointerdown', function(e){\n\t\t\ttry {\n\t\t\t\tconst a = e.target.closest && e.target.closest('a[data-sort-key]');\n\t\t\t\tif (!a) return;\n\t\t\t\t// update hidden summary and set sort/order inputs immediately\n\t\t\t\tupdateTagSummaryHidden();\n\t\t\t\tconst form = document.getElementById('tag-filter-form');\n\t\t\t\tif (!form) return;\n\t\t\t\tconst sortInput = form.querySelector('input[name=\"sort\"]');\n\t\t\t\tconst orderInput = form.querySelector('input[name=\"order\"]');\n\t\t\t\tconst key = a.getAttribute('data-sort-key');\n\t\t\t\tif (sortInput && key) sortInput.value = key;\n\t\t\t\ttry {\n\t\t\t\t\tconst href = a.getAttribute('href') || '';\n\t\t\t\t\tconst u = new URL(href, window.location.origin);\n\t\t\t\t\tconst ord = u.searchParams.get('order');\n\t\t\t\t\tif (ord && orderInput) orderInput.value = ord;\n\t\t\t\t} catch (_) {}\n\t\t\t} catch (_) {}\n\t\t}, true);\n\n\t\t// Keep hidden sort/order inputs in the tag form synced with the current URL & sort controls\n\t\tfunction syncTagFormSortOrder() {\n\t\t\ttry {\n\t\t\t\tconst form = document.getElementById('tag-filter-form');\n\t\t\t\tif (!form) return;\n\t\t\t\tconst params = new URLSearchParams(window.location.search);\n\t\t\t\t// read from URL first\n\t\t\t\tlet sort = params.get('sort') || '';\n\t\t\t\tlet order = params.get('order') || '';\n\t\t\t\tlet tagMode = (params.get('tag_mode') || '').toLowerCase();\n\t\t\t\t// fallback to current UI state if URL missing\n\t\t\t\tif (!sort) {\n\t\t\t\t\t// Try to infer from active item in the sort dropdown button label\n\t\t\t\t\tconst btn = document.getElementById('manga-sort-btn');\n\t\t\t\t\tconst labelEl = btn && btn.querySelector('.sort-label');\n\t\t\t\t\tif (labelEl) {\n\t\t\t\t\t\tconst txt = labelEl.textContent.trim().toLowerCase();\n\t\t\t\t\t\tif (txt === 'title') sort = 'name';\n\t\t\t\t\t\telse if (txt) sort = txt; // keys match labels except Title->name\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif (!order) {\n\t\t\t\t\t// Detect order from the toggle icon state (best effort)\n\t\t\t\t\tconst toggle = document.querySelector('a[aria-label=\"Toggle sort order\"]');\n\t\t\t\t\tif (toggle) {\n\t\t\t\t\t\t// If we had server-provided currentOrder, the icon indicates it; default to asc when ChevronUp is visible\n\t\t\t\t\t\torder = (toggle.querySelector('svg[data-icon=\"ChevronUp\"], uk-icon[icon=\"ChevronUp\"]') ? 'asc' : 'desc');\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tif (tagMode !== 'any' && tagMode !== 'all') {\n\t\t\t\t\t// default\n\t\t\t\t\ttagMode = 'all';\n\t\t\t\t}\n\n\t\t\t\tconst sortInput = form.querySelector('input[name=\"sort\"]');\n\t\t\t\tconst orderInput = form.querySelector('input[name=\"order\"]');\n\t\t\t\tconst modeInput = form.querySelector('input[name=\"tag_mode\"]');\n\t\t\t\tif (sort && sortInput) sortInput.value = sort;\n\t\t\t\tif (order && orderInput) orderInput.value = order;\n\t\t\t\tif (modeInput) modeInput.value = tagMode;\n\n\t\t\t\t// Update toggle button label and mode\n\t\t\t\tconst toggle = document.getElementById('tag-mode-toggle');\n\t\t\t\tif (toggle) {\n\t\t\t\t\ttoggle.setAttribute('data-mode', tagMode);\n\t\t\t\t\ttoggle.textContent = (tagMode === 'any') ? 'Any' : 'All';\n\t\t\t\t}\n\t\t\t} catch (e) { /* no-op */ }\n\t\t}\n\n\t\t// Initial sync and keep in sync on navigation/htmx swaps\n\t\tif (document.readyState === 'loading') {\n\t\t\tdocument.addEventListener('DOMContentLoaded', syncTagFormSortOrder);\n\t\t} else {\n\t\t\tsyncTagFormSortOrder();\n\t\t}\n\t\twindow.addEventListener('popstate', syncTagFormSortOrder);\n\t\tdocument.addEventListener('htmx:afterSwap', function (e) {\n\t\t\t// after content is swapped, the form is re-rendered; resync values\n\t\t\tif (e.detail && e.detail.target && (e.detail.target.id === 'content' || e.detail.target.id === 'tag-list')) {\n\t\t\t\tsyncTagFormSortOrder();\n\t\t\t\t// reposition dropdown if visible\n\t\t\t\ttry { positionTagDropdown(); } catch(_) {}\n\t\t\t}\n\t\t});\n\n\t\t// Proactively update hidden inputs when clicking sort controls so included params don't conflict\n\t\tdocument.addEventListener('click', function(e){\n\t\t\tconst a = e.target.closest && e.target.closest('a[href]');\n\t\t\tif (!a) return;\n\t\t\tconst form = document.getElementById('tag-filter-form');\n\t\t\tif (!form) return;\n\t\t\tconst sortInput = form.querySelector('input[name=\"sort\"]');\n\t\t\tconst orderInput = form.querySelector('input[name=\"order\"]');\n\t\t\tif (a.hasAttribute('data-sort-key')) {\n\t\t\t\tconst key = a.getAttribute('data-sort-key');\n\t\t\t\tif (sortInput && key) sortInput.value = key;\n\t\t\t}\n\t\t\tif (a.getAttribute('aria-label') === 'Toggle sort order') {\n\t\t\t\t// Determine target order from link href (?order=...)\n\t\t\t\ttry {\n\t\t\t\t\tconst href = a.getAttribute('href') || '';\n\t\t\t\t\tconst u = new URL(href, window.location.origin);\n\t\t\t\t\tconst ord = u.searchParams.get('order');\n\t\t\t\t\tif (ord && orderInput) orderInput.value = ord;\n\t\t\t\t} catch (_) { /* ignore */ }\n\t\t\t}\n\t\t});\n\n\n\t\t// Single tag mode toggle button\n\t\tdocument.addEventListener('click', function(e){\n\t\t\tconst btn = e.target.closest && e.target.closest('#tag-mode-toggle');\n\t\t\tif (!btn) return;\n\t\t\tconst form = document.getElementById('tag-filter-form');\n\t\t\tif (!form) return;\n\t\t\tconst modeInput = form.querySelector('input[name=\"tag_mode\"]');\n\t\t\tconst current = (modeInput && modeInput.value) ? modeInput.value.toLowerCase() : 'all';\n\t\t\tconst next = current === 'any' ? 'all' : 'any';\n\t\t\tif (modeInput) modeInput.value = next;\n\t\t\tbtn.setAttribute('data-mode', next);\n\t\t\tbtn.textContent = (next === 'any') ? 'Any' : 'All';\n\t\t\t// Persist to URL so subsequent navigations reflect mode even before an Apply\n\t\t\ttry {\n\t\t\t\tconst u = new URL(window.location.href);\n\t\t\t\tu.searchParams.set('tag_mode', next);\n\t\t\t\twindow.history.replaceState({}, '', u);\n\t\t\t} catch(_) {}\n\t\t});\n\t})();\n\t</script>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		if len(mangas) > 0 {
 			templ_7745c5c3_Err = MangaGrid(mangas, 300, 450, false, false).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <div class=\"flex justify-center items-center py-8\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " <div class=\"flex justify-center items-center py-8\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -66,7 +70,7 @@ func Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string,
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><script>\n\tdocument.addEventListener('htmx:afterSwap', (event) => {\n\t\t\tif (event.detail.target.id === 'content') {\n\t\t\t\t\twindow.scrollTo(0, 0);\n\t\t\t}\n\t});\n\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><script>\n\tdocument.addEventListener('htmx:afterSwap', (event) => {\n\t\t\tif (event.detail.target.id === 'content') {\n\t\t\t\t\twindow.scrollTo(0, 0);\n\t\t\t}\n\t});\n\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -101,7 +105,7 @@ func Pagination(totalPages int, currentPage int, sort string, order string) temp
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<nav class=\"mt-4\" aria-label=\"Pagination\"><ul class=\"uk-pgn uk-pgn-default\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<nav class=\"mt-4\" aria-label=\"Pagination\"><ul class=\"uk-pgn uk-pgn-default\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -117,7 +121,7 @@ func Pagination(totalPages int, currentPage int, sort string, order string) temp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</ul></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</ul></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -147,44 +151,44 @@ func PaginationItem(enabled bool, page int, text string, icon string, sort strin
 		}
 		ctx = templ.ClearChildren(ctx)
 		if enabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 templ.SafeURL
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 49, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 364, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 50, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 365, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" hx-include=\"#tag-filter-form\" hx-target=\"#content\" hx-push-url=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if icon != "" {
 				if icon == "next" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<uk-icon icon=\"ChevronRight\"></uk-icon>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<uk-icon icon=\"ChevronRight\"></uk-icon>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<uk-icon icon=\"ChevronLeft\"></uk-icon>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<uk-icon icon=\"ChevronLeft\"></uk-icon>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -193,56 +197,56 @@ func PaginationItem(enabled bool, page int, text string, icon string, sort strin
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 61, Col: 11}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 377, Col: 11}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<li class=\"uk-disabled\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<li class=\"uk-disabled\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 templ.SafeURL
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 68, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 384, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 69, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 385, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" hx-include=\"#tag-filter-form\" hx-target=\"#content\" hx-push-url=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if icon != "" {
 				if icon == "next" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<uk-icon icon=\"ChevronRight\"></uk-icon>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<uk-icon icon=\"ChevronRight\"></uk-icon>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<uk-icon icon=\"ChevronLeft\"></uk-icon>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<uk-icon icon=\"ChevronLeft\"></uk-icon>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -251,14 +255,14 @@ func PaginationItem(enabled bool, page int, text string, icon string, sort strin
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 80, Col: 11}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 397, Col: 11}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -290,20 +294,20 @@ func PaginationNumbers(totalPages int, currentPage int, sort string, order strin
 		ctx = templ.ClearChildren(ctx)
 		for i := 1; i <= totalPages; i++ {
 			if i == currentPage {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<li class=\"uk-active\"><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<li class=\"uk-active\"><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 90, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 407, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -313,7 +317,7 @@ func PaginationNumbers(totalPages int, currentPage int, sort string, order strin
 					return templ_7745c5c3_Err
 				}
 			} else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<li class=\"uk-disabled\"><span>…</span></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<li class=\"uk-disabled\"><span>…</span></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -344,7 +348,7 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 			templ_7745c5c3_Var12 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"flex justify-end items-center gap-2 my-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"flex justify-end items-center gap-2 my-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -357,7 +361,7 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 			{"created_at", "Created"},
 			{"updated_at", "Updated"},
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"uk-inline\"><button id=\"manga-sort-btn\" class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" aria-expanded=\"false\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"uk-inline\"><button id=\"manga-sort-btn\" class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" aria-expanded=\"false\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -373,141 +377,167 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 		if label == "" {
 			label = "Title"
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<span class=\"inline-flex items-center gap-2\"><span class=\"sort-label\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span class=\"inline-flex items-center gap-2\"><span class=\"sort-label\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 127, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 444, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span> <uk-icon class=\"chev-down inline-block\" icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon> <uk-icon class=\"chev-up inline-block\" icon=\"ChevronUp\" ratio=\"0.9\" style=\"display:none\"></uk-icon></span></button><div id=\"manga-sort-drop\" data-trigger-id=\"manga-sort-btn\" class=\"uk-drop uk-dropdown\" uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</span></span></button><div id=\"manga-sort-drop\" data-trigger-id=\"manga-sort-btn\" class=\"uk-drop uk-dropdown\" uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, s := range sorts {
 			if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<li class=\"uk-active\"><a data-sort-key=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<li class=\"uk-active\"><a data-sort-key=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(s.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 137, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 451, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var15 templ.SafeURL
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 138, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 452, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 139, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 453, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" hx-include=\"#tag-filter-form\" hx-target=\"#content\" hx-push-url=\"true\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 142, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 457, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</a></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<li><a data-sort-key=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<li><a data-sort-key=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(s.Key)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 146, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 461, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 147, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 462, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 148, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 463, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" hx-include=\"#tag-filter-form\" hx-target=\"#content\" hx-push-url=\"true\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(s.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 151, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 467, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</a></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</ul></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</ul></div></div><!-- Tags dropdown (populated client-side) --><div class=\"uk-inline\" style=\"display:inline-block;margin-left:8px;\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" hx-get=\"/mangas/tags-fragment\" hx-target=\"#tag-list\" hx-swap=\"innerHTML\" hx-trigger=\"click\" hx-include=\"#tag-filter-form\">Tags</button><div id=\"tag-filter-drop\" class=\"uk-drop uk-dropdown bg-surface text-foreground uk-box-shadow-small uk-border-rounded\" style=\"position:absolute; z-index:50; padding:8px; max-height:360px; overflow:auto; display:none; min-width:260px;\"><form id=\"tag-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(currentSort)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 483, Col: 57}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"> <input type=\"hidden\" name=\"order\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(currentOrder)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 484, Col: 59}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\"> <input type=\"hidden\" name=\"tag_mode\" value=\"all\"> <input type=\"hidden\" id=\"tag-hidden-summary\" name=\"tags\" value=\"\"><div class=\"flex justify-center items-center gap-3 my-2\" style=\"margin-bottom:8px;\"><button type=\"button\" id=\"tag-mode-toggle\" class=\"uk-btn uk-btn-default uk-btn-small mx-1\" data-mode=\"all\" title=\"Choose whether results must match all tags or any tag\">Match all tags</button> <button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-small mx-1\" aria-label=\"Apply filters\" title=\"Apply filters\" hx-get=\"/mangas\" hx-target=\"#content\" hx-push-url=\"true\" hx-include=\"#tag-filter-form\"><uk-icon icon=\"Check\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-default uk-btn-small mx-1\" aria-label=\"Clear filters\" title=\"Clear filters\" hx-get=\"/mangas\" hx-target=\"#content\" hx-push-url=\"true\" hx-include=\"#tag-filter-form\" hx-on:click=\"document.querySelectorAll('#tag-filter-form input[name=tags]')?.forEach(cb=>cb.checked=false); const hs=document.getElementById('tag-hidden-summary'); if(hs) hs.value=''\"><uk-icon icon=\"x\"></uk-icon></button></div><div id=\"tag-list\" class=\"uk-margin-small-top\">Loading…</div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -515,48 +545,48 @@ func SortControls(currentSort string, currentOrder string) templ.Component {
 		if currentOrder == "desc" {
 			toggled = "asc"
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<a class=\"uk-btn uk-btn-default uk-btn-small\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<a class=\"uk-btn uk-btn-default uk-btn-small\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var22 templ.SafeURL
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)))
+		var templ_7745c5c3_Var24 templ.SafeURL
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 166, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 521, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" hx-get=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 167, Col: 73}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" hx-target=\"#content\" hx-push-url=\"true\" aria-label=\"Toggle sort order\">")
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/mangas.templ`, Line: 522, Col: 73}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\" hx-include=\"#tag-filter-form\" hx-target=\"#content\" hx-push-url=\"true\" aria-label=\"Toggle sort order\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if currentOrder == "asc" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<uk-icon icon=\"ChevronUp\"></uk-icon>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<uk-icon icon=\"ChevronUp\"></uk-icon>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<uk-icon icon=\"ChevronDown\"></uk-icon>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<uk-icon icon=\"ChevronDown\"></uk-icon>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</a></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

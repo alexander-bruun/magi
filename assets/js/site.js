@@ -116,38 +116,74 @@ function titleHandler(title) {
       console.error('site.js nav sync error', e);
     }
 
-    // Sync dropdown active item for sort dropdowns
+    // Generic dropdown active sync: mark active <li> when a dropdown is shown.
     try {
-      document.addEventListener('show', function (e) {
+      function updateDropdownActive(e) {
         try {
           if (!e.target.classList.contains('uk-dropdown')) return;
           const drop = e.target;
-          // parse sort param from current URL
-          const params = new URLSearchParams(window.location.search);
-          let sort = params.get('sort') || '';
-          if (sort === 'title') sort = 'name';
-          // clear existing uk-active
-          const items = drop.querySelectorAll('.uk-dropdown-nav.uk-nav li');
-          items.forEach(i => i.classList.remove('uk-active'));
-          if (!sort) {
-            // fallback: try matching the button label
-            const btn = document.getElementById('manga-sort-btn');
-            if (btn) {
-              const labelEl = btn.querySelector('.sort-label');
-              if (labelEl) sort = labelEl.textContent.trim().toLowerCase();
+
+          // clear existing uk-active within this dropdown
+          drop.querySelectorAll('.uk-dropdown-nav.uk-nav li.uk-active').forEach(i => i.classList.remove('uk-active'));
+
+          // Normalize current path
+          const current = normalizePath(location.pathname);
+
+          // Collect anchors inside the dropdown
+          const anchors = Array.from(drop.querySelectorAll('a[href]'))
+            .filter(a => a.getAttribute('href'))
+            .map(a => ({ a: a, path: normalizePath(a.getAttribute('href')) }));
+
+          if (anchors.length === 0) return;
+
+          // Special-case: sort-style dropdowns that use data-sort-key attribute
+          const hasSortKeys = anchors.some(({ a }) => a.hasAttribute('data-sort-key'));
+          if (hasSortKeys) {
+            // parse sort param from current URL
+            const params = new URLSearchParams(window.location.search);
+            let sort = params.get('sort') || '';
+            if (sort === 'title') sort = 'name';
+
+            if (!sort) {
+              // fallback: try matching the button label if the drop has a trigger id
+              const triggerId = drop.getAttribute('data-trigger-id');
+              if (triggerId) {
+                const btn = document.getElementById(triggerId);
+                if (btn) {
+                  const labelEl = btn.querySelector('.sort-label');
+                  if (labelEl) sort = labelEl.textContent.trim().toLowerCase();
+                }
+              }
+            }
+
+            if (sort) {
+              const match = Array.from(drop.querySelectorAll('[data-sort-key]')).find(a => a.getAttribute('data-sort-key') === sort || a.textContent.trim().toLowerCase() === sort);
+              if (match) {
+                const li = match.closest('li');
+                if (li) li.classList.add('uk-active');
+                return;
+              }
             }
           }
-          if (sort) {
-            const match = Array.from(drop.querySelectorAll('[data-sort-key]')).find(a => a.getAttribute('data-sort-key') === sort || a.textContent.trim().toLowerCase() === sort);
-            if (match) {
-              const li = match.closest('li');
-              if (li) li.classList.add('uk-active');
-            }
-          }
+
+          // Generic matching: find the anchor with the longest path that matches the current path
+          let best = null;
+          anchors.forEach(({ a, path }) => {
+            const li = a.closest('li');
+            if (!li) return;
+            const matches = (path === '/') ? (current === '/') : (current === path || current.startsWith(path + '/'));
+            if (!matches) return;
+            const score = path.length;
+            if (!best || score > best.score) best = { li, score };
+          });
+
+          if (best && best.li) best.li.classList.add('uk-active');
         } catch (err) {
-          // ignore
+          // ignore dropdown errors
         }
-      }, false);
+      }
+
+      document.addEventListener('show', updateDropdownActive, false);
     } catch (e) {
       console.error('site.js dropdown sync error', e);
     }

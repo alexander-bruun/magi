@@ -151,6 +151,144 @@ func SearchMangas(filter string, page, pageSize int, sortBy, sortOrder, filterBy
 	return paginateMangas(mangas, page, pageSize), total, nil
 }
 
+// SearchMangasWithTags extends SearchMangas to filter by selected tags (all must match)
+func SearchMangasWithTags(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string, selectedTags []string) ([]Manga, int64, error) {
+	var mangas []Manga
+	if err := loadAllMangas(&mangas); err != nil {
+		return nil, 0, err
+	}
+
+	// Filter by librarySlug
+	if librarySlug != "" {
+		mangas = filterByLibrarySlug(mangas, librarySlug)
+	}
+
+	// Build tag map once
+	tagMap, err := GetAllMangaTagsMap()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// If tags selected, keep only mangas that have all selected tags
+	if len(selectedTags) > 0 {
+		selectedSet := make(map[string]struct{}, len(selectedTags))
+		for _, t := range selectedTags {
+			t = strings.TrimSpace(strings.ToLower(t))
+			if t == "" {
+				continue
+			}
+			selectedSet[t] = struct{}{}
+		}
+		filtered := make([]Manga, 0, len(mangas))
+		for _, m := range mangas {
+			tags := tagMap[m.Slug]
+			if hasAllTags(tags, selectedSet) {
+				filtered = append(filtered, m)
+			}
+		}
+		mangas = filtered
+	}
+
+	total := int64(len(mangas))
+
+	// Apply bigram search if filter is provided
+	if filter != "" {
+		mangas = applyBigramSearch(filter, mangas)
+		total = int64(len(mangas))
+	}
+
+	// Sort mangas based on sortBy and sortOrder
+	sortMangas(mangas, sortBy, sortOrder)
+
+	// Apply pagination
+	return paginateMangas(mangas, page, pageSize), total, nil
+}
+
+// SearchMangasWithAnyTags filters mangas to those that have at least one of the selected tags
+func SearchMangasWithAnyTags(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string, selectedTags []string) ([]Manga, int64, error) {
+	var mangas []Manga
+	if err := loadAllMangas(&mangas); err != nil {
+		return nil, 0, err
+	}
+
+	if librarySlug != "" {
+		mangas = filterByLibrarySlug(mangas, librarySlug)
+	}
+
+	tagMap, err := GetAllMangaTagsMap()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(selectedTags) > 0 {
+		anySet := make(map[string]struct{}, len(selectedTags))
+		for _, t := range selectedTags {
+			t = strings.TrimSpace(strings.ToLower(t))
+			if t == "" {
+				continue
+			}
+			anySet[t] = struct{}{}
+		}
+		filtered := make([]Manga, 0, len(mangas))
+		for _, m := range mangas {
+			tags := tagMap[m.Slug]
+			if hasAnyTag(tags, anySet) {
+				filtered = append(filtered, m)
+			}
+		}
+		mangas = filtered
+	}
+
+	total := int64(len(mangas))
+
+	if filter != "" {
+		mangas = applyBigramSearch(filter, mangas)
+		total = int64(len(mangas))
+	}
+
+	sortMangas(mangas, sortBy, sortOrder)
+	return paginateMangas(mangas, page, pageSize), total, nil
+}
+
+func hasAnyTag(tags []string, any map[string]struct{}) bool {
+	if len(any) == 0 {
+		return true
+	}
+	for _, t := range tags {
+		lt := strings.TrimSpace(strings.ToLower(t))
+		if lt == "" {
+			continue
+		}
+		if _, ok := any[lt]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hasAllTags(tags []string, required map[string]struct{}) bool {
+	if len(required) == 0 {
+		return true
+	}
+	if len(tags) == 0 {
+		return false
+	}
+	present := make(map[string]struct{}, len(tags))
+	for _, t := range tags {
+		lt := strings.TrimSpace(strings.ToLower(t))
+		if lt == "" {
+			continue
+		}
+		present[lt] = struct{}{}
+	}
+	for t := range required {
+		if _, ok := present[t]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // MangaExists checks if a Manga exists by slug
 func MangaExists(slug string) (bool, error) {
 	query := `SELECT 1 FROM mangas WHERE slug = ?`

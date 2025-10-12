@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
@@ -20,17 +21,77 @@ const (
 
 func HandleMangas(c *fiber.Ctx) error {
 	page := getPageNumber(c.Query("page"))
-	// Parse sorting parameters with defaults
-	sortBy := c.Query("sort")
+	// Parse sorting parameters with defaults. Prefer the last occurrence
+	// when duplicates exist (e.g., hx-include form + link query params).
+	var sortBy, sortOrder string
+	if raw := string(c.Request().URI().QueryString()); raw != "" {
+		if valsMap, err := url.ParseQuery(raw); err == nil {
+			// Prefer the first occurrence so explicit link query params take precedence
+			// over hx-included form fields which are typically appended later.
+			if vals, ok := valsMap["sort"]; ok && len(vals) > 0 {
+				sortBy = vals[0]
+			}
+			if vals, ok := valsMap["order"]; ok && len(vals) > 0 {
+				sortOrder = vals[0]
+			}
+		}
+	}
+	if sortBy == "" {
+		sortBy = c.Query("sort")
+	}
+	if sortOrder == "" {
+		sortOrder = c.Query("order")
+	}
 	if sortBy == "" {
 		sortBy = "name"
 	}
-	sortOrder := c.Query("order")
 	if sortOrder == "" {
 		sortOrder = "asc"
 	}
 
-	mangas, count, err := models.SearchMangas("", page, defaultPageSize, sortBy, sortOrder, "", "")
+	// parse selected tags: support repeated ?tags=tag1&tags=tag2 and comma-separated values
+	var selectedTags []string
+	// Parse raw query string into map[string][]string to handle repeated params reliably
+	if raw := string(c.Request().URI().QueryString()); raw != "" {
+		if valsMap, err := url.ParseQuery(raw); err == nil {
+			if vals, ok := valsMap["tags"]; ok {
+				for _, v := range vals {
+					for _, t := range strings.Split(v, ",") {
+						t = strings.TrimSpace(t)
+						if t != "" {
+							selectedTags = append(selectedTags, t)
+						}
+					}
+				}
+			}
+		}
+	}
+	// fallback: single comma-separated tags param
+	if len(selectedTags) == 0 {
+		if raw := c.Query("tags"); raw != "" {
+			for _, t := range strings.Split(raw, ",") {
+				t = strings.TrimSpace(t)
+				if t != "" {
+					selectedTags = append(selectedTags, t)
+				}
+			}
+		}
+	}
+
+	var mangas []models.Manga
+	var count int64
+	var err error
+	if len(selectedTags) > 0 {
+		// Determine tag match mode: all (default) or any
+		tagMode := strings.ToLower(c.Query("tag_mode"))
+		if tagMode == "any" {
+			mangas, count, err = models.SearchMangasWithAnyTags("", page, defaultPageSize, sortBy, sortOrder, "", "", selectedTags)
+		} else {
+			mangas, count, err = models.SearchMangasWithTags("", page, defaultPageSize, sortBy, sortOrder, "", "", selectedTags)
+		}
+	} else {
+		mangas, count, err = models.SearchMangas("", page, defaultPageSize, sortBy, sortOrder, "", "")
+	}
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -218,6 +279,66 @@ func HandleMangaSearch(c *fiber.Ctx) error {
 	}
 
 	return HandleView(c, views.SearchMangas(mangas))
+}
+
+// HandleTags returns a JSON array of all known tags for client-side consumption
+func HandleTags(c *fiber.Ctx) error {
+	tags, err := models.GetAllTags()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(tags)
+}
+
+// HandleTagsFragment returns an HTMX-ready fragment with tag checkboxes
+func HandleTagsFragment(c *fiber.Ctx) error {
+	tags, err := models.GetAllTags()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tags")
+	}
+
+	// Determine currently selected tags from the query
+	selected := make(map[string]struct{})
+	if raw := string(c.Request().URI().QueryString()); raw != "" {
+		if valsMap, err := url.ParseQuery(raw); err == nil {
+			if vals, ok := valsMap["tags"]; ok {
+				for _, v := range vals {
+					for _, t := range strings.Split(v, ",") {
+						t = strings.TrimSpace(strings.ToLower(t))
+						if t != "" {
+							selected[t] = struct{}{}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Render a small HTML fragment with checked state
+	html := ""
+	for _, t := range tags {
+		escaped := templEscape(t)
+		lower := strings.ToLower(t)
+		_, isSel := selected[lower]
+		html += "<div style=\"margin-bottom:6px\"><label style=\"display:flex;gap:8px;align-items:center;\">"
+		if isSel {
+			html += "<input type=\"checkbox\" name=\"tags\" value=\"" + escaped + "\" checked> <span>" + escaped + "</span>"
+		} else {
+			html += "<input type=\"checkbox\" name=\"tags\" value=\"" + escaped + "\"> <span>" + escaped + "</span>"
+		}
+		html += "</label></div>"
+	}
+	return c.Type("html").SendString(html)
+}
+
+// templEscape provides a minimal HTML escape for values inserted into the fragment
+func templEscape(s string) string {
+	r := s
+	r = strings.ReplaceAll(r, "&", "&amp;")
+	r = strings.ReplaceAll(r, "<", "&lt;")
+	r = strings.ReplaceAll(r, ">", "&gt;")
+	r = strings.ReplaceAll(r, "\"", "&quot;")
+	return r
 }
 
 // Helper functions

@@ -34,6 +34,10 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
+			<script>
+				// Ensure titleHandler exists before any inline PageTitle() calls run
+				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+			</script>
 			<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/core.iife.js
 			<!--https://lucide.dev/icons/chevron-up?search=ban-->
 			<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/icon.iife.js

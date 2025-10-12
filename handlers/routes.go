@@ -89,6 +89,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
 	mangas.Get("", HandleMangas)
+	mangas.Get("/tags", HandleTags)
+	mangas.Get("/tags-fragment", HandleTagsFragment)
 	mangas.Get("/metadata-form/:slug", HandleUpdateMetadataManga)
 	mangas.Post("/overwrite-metadata", HandleEditMetadataManga)
 	mangas.Get("/search", HandleMangaSearch)
