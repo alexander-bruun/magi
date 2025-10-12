@@ -90,7 +90,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"libraries-table\"><table class=\"uk-table\"><thead><tr><th style=\"text-align: center;\"></th><th style=\"text-align: center;\">ID</th><th style=\"text-align: center;\">Name</th><th style=\"text-align: center;\">Cron</th><th style=\"text-align: center;\">Folders</th><th style=\"text-align: center;\"></th><th style=\"text-align: center;\"></th></tr></thead> <tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"libraries-table\"><table class=\"uk-table\"><thead><tr><th class=\"text-center\"></th><th class=\"text-center\">ID</th><th class=\"text-center\">Name</th><th class=\"text-center\">Cron</th><th class=\"text-center\">Folders</th><th class=\"text-center\"></th><th class=\"text-center\"></th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

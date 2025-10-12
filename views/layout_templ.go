@@ -8,7 +8,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Layout(content templ.Component, userRole string) templ.Component {
+func Layout(content templ.Component, userRole string, currentPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,15 +29,15 @@ func Layout(content templ.Component, userRole string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dim\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"icon\" type=\"image/x-icon\" href=\"/assets/img/icon.png\"><title>Magi</title><link rel=\"preconnect\" href=\"https://rsms.me/\"><link rel=\"stylesheet\" href=\"https://rsms.me/inter/inter.css\"><link href=\"/assets/css/core.min.css\" rel=\"stylesheet\"><link href=\"/assets/css/utilities.min.css\" rel=\"stylesheet\"><link href=\"/assets/css/styles.css\" rel=\"stylesheet\"><style>\n\t\t\t\t:root {\n\t\t\t\t\tfont-family: Inter, sans-serif;\n\t\t\t\t\tfont-feature-settings: \"liga\" 1, \"calt\" 1; /* fix for Chrome */\n\t\t\t\t}\n\t\t\t\t@supports (font-variation-settings: normal) {\n\t\t\t\t\t:root {\n\t\t\t\t\t\tfont-family: InterVariable, sans-serif;\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\t/* scrollbar */\n\t\t\t\t::-webkit-scrollbar {\n\t\t\t\t\twidth: 5px;\n\t\t\t\t\theight: 5px;\n\t\t\t\t}\n\n\t\t\t\t::-webkit-scrollbar-track {\n\t\t\t\t\t-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);\n\t\t\t\t\t-webkit-border-radius: 10px;\n\t\t\t\t\tborder-radius: 10px;\n\t\t\t\t}\n\n\t\t\t\t::-webkit-scrollbar-thumb {\n\t\t\t\t\t-webkit-border-radius: 10px;\n\t\t\t\t\tborder-radius: 10px;\n\t\t\t\t\tbackground: rgba(255, 255, 255, 0.3);\n\t\t\t\t\t-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);\n\t\t\t\t}\n\n\t\t\t\t::-webkit-scrollbar-thumb:window-inactive {\n\t\t\t\t\tbackground: rgba(255, 255, 255, 0.3);\n\t\t\t\t}\n\t\t\t</style><script>\n\t\t\tconst htmlElement = document.documentElement;\n\n\t\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(\"__FRANKEN__\") || \"{}\");\n\n\t\t\tif (\n\t\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t\t) {\n\t\t\t\thtmlElement.classList.add(\"dark\");\n\t\t\t} else {\n\t\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t\t}\n\n\t\t\thtmlElement.classList.add(__FRANKEN__.theme || \"uk-theme-zinc\");\n\t\t\thtmlElement.classList.add(__FRANKEN__.radii || \"uk-radii-md\");\n\t\t\thtmlElement.classList.add(__FRANKEN__.shadows || \"uk-shadows-sm\");\n\t\t\thtmlElement.classList.add(__FRANKEN__.font || \"uk-font-sm\");\n\t\t\thtmlElement.classList.add(__FRANKEN__.chart || \"uk-chart-default\");\n\t\t\t</script><script src=\"/assets/js/core.iife.js\" type=\"module\"></script><!--https://lucide.dev/icons/chevron-up?search=ban--><script src=\"/assets/js/icon.iife.js\" type=\"module\"></script><script src=\"/assets/js/charts.iife.js\" type=\"module\"></script><script src=\"/assets/js/htmx.min.js\"></script><script>\n\t\t\t\tfunction titleHandler(title) {\n\t\t\t\t\tdocument.title=title\n\t\t\t\t}\n\t\t\t</script></head><body class=\"bg-background text-foreground\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dim\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"icon\" type=\"image/x-icon\" href=\"/assets/img/icon.png\"><title>Magi</title><link rel=\"preconnect\" href=\"https://rsms.me/\"><link rel=\"stylesheet\" href=\"https://rsms.me/inter/inter.css\"><link href=\"/assets/css/core.min.css\" rel=\"stylesheet\"><link href=\"/assets/css/utilities.min.css\" rel=\"stylesheet\"><link href=\"/assets/css/styles.css\" rel=\"stylesheet\"><script>\n\t\t\t\tconst htmlElement = document.documentElement;\n\n\t\t\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(\"__FRANKEN__\") || \"{}\");\n\n\t\t\t\tif (\n\t\t\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t\t\t) {\n\t\t\t\t\thtmlElement.classList.add(\"dark\");\n\t\t\t\t} else {\n\t\t\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t\t\t}\n\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.theme || \"uk-theme-zinc\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.radii || \"uk-radii-md\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.shadows || \"uk-shadows-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.font || \"uk-font-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.chart || \"uk-chart-default\");\n\t\t\t</script><script src=\"/assets/js/core.iife.js\" type=\"module\"></script><!--https://lucide.dev/icons/chevron-up?search=ban--><script src=\"/assets/js/icon.iife.js\" type=\"module\"></script><script src=\"/assets/js/htmx.min.js\"></script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Navbar(userRole).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Navbar(userRole, currentPath).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"content\" class=\"uk-container uk-mx-auto mt-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<main class=\"site-main\"><div id=\"content\" class=\"uk-container uk-container-xl\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +45,7 @@ func Layout(content templ.Component, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"uk-container uk-mx-auto my-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"uk-container uk-mx-auto my-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -53,7 +53,7 @@ func Layout(content templ.Component, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><script>\n\t\t\t\tvar themeToggleBtn = document.getElementById(\"theme-toggle\");\n\n\t\t\t\tthemeToggleBtn?.addEventListener(\"click\", function () {\n\t\t\t\t\t// if set via local storage previously\n\t\t\t\t\tif (localStorage.getItem(\"color-theme\")) {\n\t\t\t\t\t\tif (localStorage.getItem(\"color-theme\") === \"light\") {\n\t\t\t\t\t\t\tdocument.documentElement.classList.add(\"dark\");\n\t\t\t\t\t\t\tlocalStorage.setItem(\"color-theme\", \"dark\");\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tdocument.documentElement.classList.remove(\"dark\");\n\t\t\t\t\t\t\tlocalStorage.setItem(\"color-theme\", \"light\");\n\t\t\t\t\t\t}\n\n\t\t\t\t\t\t// if NOT set via local storage previously\n\t\t\t\t\t} else {\n\t\t\t\t\t\tif (document.documentElement.classList.contains(\"dark\")) {\n\t\t\t\t\t\t\tdocument.documentElement.classList.remove(\"dark\");\n\t\t\t\t\t\t\tlocalStorage.setItem(\"color-theme\", \"light\");\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tdocument.documentElement.classList.add(\"dark\");\n\t\t\t\t\t\t\tlocalStorage.setItem(\"color-theme\", \"dark\");\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t</script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></main></div><script src=\"/assets/js/site.js\" defer></script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

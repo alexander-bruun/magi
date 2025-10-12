@@ -50,7 +50,7 @@ func Mangas(mangas []models.Manga, currentPage int, totalPages int) templ.Compon
 			return templ_7745c5c3_Err
 		}
 		if len(mangas) > 0 {
-			templ_7745c5c3_Err = MangaGrid(mangas, 300, 450, false).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MangaGrid(mangas, 300, 450, false, false).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

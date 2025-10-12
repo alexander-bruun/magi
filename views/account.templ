@@ -23,10 +23,11 @@ templ Account(user models.User, userName string, favorites []models.Manga, readi
         <h3 class="uk-h4 mb-2">Upvoted</h3>
         <a href={ templ.URL("/account/upvoted") } hx-get={ templ.URL("/account/upvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
     </div>
+
     if len(liked) == 0 {
         <p class="role-reader">You have not upvoted any mangas yet.</p>
     } else {
-    @MangaSlider(liked, 200, 300, true)
+        @MangaSlider(liked, 200, 300, true, true)
     }
 
     <div class="flex items-center justify-between mt-6">
@@ -36,6 +37,6 @@ templ Account(user models.User, userName string, favorites []models.Manga, readi
     if len(downvoted) == 0 {
         <p class="role-reader">You have not downvoted any mangas yet.</p>
     } else {
-    @MangaSlider(downvoted, 200, 300, true)
+        @MangaSlider(downvoted, 200, 300, true, true)
     }
 }
