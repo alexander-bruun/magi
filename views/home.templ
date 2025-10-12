@@ -9,6 +9,20 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, totalMa
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
 	})
+
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
+	if len(recentlyAdded) == 0 {
+		@EmptyState("No mangas have been indexed yet.")
+	} else {
+		@MangaSlider(recentlyAdded, 200, 300, true, true)
+	}
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
+	if len(recentlyUpdated) == 0 {
+		@EmptyState("No mangas have been indexed yet.")
+	} else {
+		@MangaSlider(recentlyUpdated, 200, 300, true, true)
+	}
+
 	<div class="uk-container mt-4">
 		<div class="grid grid-cols-3 gap-4">
 			@StatCard("Total mangas", totalMangas)
@@ -16,17 +30,4 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, totalMa
 			@StatCard("Chapters read", totalChaptersRead)
 		</div>
 	</div>
-
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
-	if len(recentlyAdded) == 0 {
-		@EmptyState("No mangas have been indexed yet.")
-	} else {
-	@MangaSlider(recentlyAdded, 200, 300, true)
-	}
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
-	if len(recentlyUpdated) == 0 {
-		@EmptyState("No mangas have been indexed yet.")
-	} else {
-	@MangaSlider(recentlyUpdated, 200, 300, true)
-	}
 }

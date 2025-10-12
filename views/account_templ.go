@@ -89,7 +89,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = MangaSlider(liked, 200, 300, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MangaSlider(liked, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -101,7 +101,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 34, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 35, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -114,7 +114,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 34, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 35, Col: 92}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -130,7 +130,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = MangaSlider(downvoted, 200, 300, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MangaSlider(downvoted, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

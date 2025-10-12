@@ -79,7 +79,7 @@ func UsersTable(users []models.User) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"users-table\"><table class=\"uk-table\"><thead><tr><th style=\"text-align: center;\">Username</th><th style=\"text-align: center;\">Promote</th><th style=\"text-align: center;\">Demote</th><th style=\"text-align: center;\">Ban</th></tr></thead> <tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"users-table\"><table class=\"uk-table\"><thead><tr><th class=\"text-center\">Username</th><th class=\"text-center\">Promote</th><th class=\"text-center\">Demote</th><th class=\"text-center\">Ban</th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

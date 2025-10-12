@@ -26,3 +26,157 @@
 /* Button fallback for edit profile if utilities are not present */
 .uk-button { display: inline-block; padding: 0.5rem 0.75rem; border-radius: 0.375rem; background: transparent; border: 1px solid rgba(0,0,0,0.06); }
 .uk-button-default { background: rgba(0,0,0,0.02); }
+
+.uk-card-scroll { max-height: 650px; overflow: auto; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Dropdown scrolling helper used for long chapter lists */
+.dropdown-scroll { max-height: 300px; overflow: auto; margin: 0; }
+
+/* Eye icon toggle defaults */
+.eye-open { display: inline-flex; }
+.eye-closed { display: none; }
+
+/* Vote / favorite controls (previously inline in templates) */
+.vote-btn.active { font-weight: 700; }
+.vote-btn.up.active { color: #16a34a; }
+.vote-btn.down.active { color: #dc2626; }
+.vote-count { font-weight: 800; font-size: 1.125rem; margin-left: 0.5rem; }
+.vote-small { font-size: 0.85rem; color: #6b7280; }
+.favorite-btn.active { font-weight: 700; color: #f59e0b; }
+.favorite-count { font-weight: 700; margin-left: 0.5rem; }
+
+/* Circular control button used across fragments */
+.ctrl-btn { border-radius: 9999px; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Controls layout helpers */
+.controls-tight { display:flex; gap: 0.125rem; justify-content:center; }
+.controls-row { display:flex; justify-content:center; gap:0.5rem; }
+
+/* Responsive vote stack */
+.vote-stack { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.vote-stack > form, .vote-stack > .vote-stats { margin: 0 0.25rem; }
+@media (min-width: 1024px) {
+  .vote-stack { flex-direction: row; gap: 0.75rem; }
+  .vote-count { margin-left: 0.5rem; }
+}
+
+/* Truncated heading helper */
+.truncate-header { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; }
+
+/* Scroll to top floating button */
+.scroll-to-top { position: fixed; bottom: 20px; right: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; }
+
+/* Navbar / brand helpers */
+.brand-title { font-size: 1.5rem; }
+.brand-gradient { background-image: linear-gradient(90deg, #e4e405 0%, #f01ebb 100%); display: inline; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.modal-body-transparent { background: none; border: 0; }
+.input-bg { background: hsl(var(--background)); }
+.icon-pad { padding-right: 5px; }
+
+/* Layout + sidebar styles */
+:root {
+  --sidebar-width: 220px;
+  --sidebar-slim-width: 68px;
+  --ui-sep: rgba(0, 0, 0, 0.08);
+  --ui-sep-edge: rgba(0, 0, 0, 0.06);
+  --ui-shadow: rgba(0, 0, 0, 0.12);
+  --nav-icon-size: 20px;
+  --nav-icon-size-collapsed: 26px;
+  --nav-item-radius: 10px;
+  --nav-item-pad-y: 0.5rem;
+  --nav-item-pad-x: 0.5rem;
+  --nav-item-pad-collapsed: 0.375rem;
+}
+
+.dark {
+  --ui-sep: rgba(255, 255, 255, 0.12);
+  --ui-sep-edge: rgba(255, 255, 255, 0.10);
+  --ui-shadow: rgba(0, 0, 0, 0.55);
+}
+
+#app { display: block; min-height: 100vh; transition: grid-template-columns 200ms ease; }
+
+/* Keep header above other content (sidebar, drops). Keep it below modals so modal overlays can appear on top. */
+header.site-header {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+  background: hsl(var(--background));
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
+.nav-inner>.uk-navbar-left, .nav-inner>.uk-navbar-right { display: flex; align-items: center; gap: 0.5rem; }
+
+/* Make the sidebar fixed so it stays visible while scrolling */
+.sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  padding: 1rem;
+  border-right: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+  box-shadow: inset -1px 0 0 hsl(var(--border) / var(--border-alpha, 1)), 6px 0 12px -10px hsl(var(--ui-shadow) / var(--ui-shadow-alpha, 1));
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  transition: width 200ms ease, padding 200ms ease, left 200ms ease;
+  z-index: 30;
+}
+
+main.site-main { padding: 2rem; overflow: auto; margin-left: var(--sidebar-width); transition: margin-left 200ms ease; }
+
+body.sidebar-collapsed .sidebar { width: var(--sidebar-slim-width); padding-left: 0.5rem; padding-right: 0.5rem; }
+body.sidebar-collapsed main.site-main { margin-left: var(--sidebar-slim-width); }
+
+.sidebar .nav-text { display: inline-block; margin-left: 0.6rem; transition: opacity 180ms ease, transform 180ms ease; }
+body.sidebar-collapsed .sidebar .nav-text { display: none; width: 0; margin: 0; padding: 0; opacity: 0; transform: none; pointer-events: none; }
+
+.sidebar .uk-nav>li>a { display: flex; align-items: center; gap: 0.625rem; padding: var(--nav-item-pad-y) var(--nav-item-pad-x); border-radius: var(--nav-item-radius); line-height: 1; transition: background-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease; }
+.sidebar>.uk-nav { flex: 1 1 auto; overflow: auto; margin: 0; padding: 0; }
+.sidebar .uk-nav>li>a uk-icon, .sidebar .uk-nav>li>a svg { flex-shrink: 0; width: var(--nav-icon-size); height: var(--nav-icon-size); transition: transform 160ms ease; }
+.sidebar .uk-nav>li>a:hover { background-color: rgba(0, 0, 0, 0.02); }
+.sidebar .uk-nav>li.uk-active>a { box-shadow: inset 0 0 0 1px hsl(var(--border) / var(--border-alpha, 1)); background-color: rgba(0, 0, 0, 0.04); }
+
+/* Also style active items in header/nav dropdowns (top navbar) */
+header.site-header .uk-nav>li.uk-active>a, header.site-header .uk-dropdown-nav.uk-nav>li.uk-active>a, .uk-drop .uk-nav>li.uk-active>a, .uk-dropdown .uk-nav>li.uk-active>a { box-shadow: inset 0 0 0 1px hsl(var(--border) / var(--border-alpha, 1)); background-color: rgba(0, 0, 0, 0.04); }
+
+body.sidebar-collapsed .sidebar .uk-nav>li>a { justify-content: center; gap: 0; padding: var(--nav-item-pad-collapsed); min-inline-size: 44px; min-block-size: 44px; overflow: hidden; }
+body.sidebar-collapsed .sidebar .uk-nav>li>a uk-icon, body.sidebar-collapsed .sidebar .uk-nav>li>a svg { width: var(--nav-icon-size-collapsed); height: var(--nav-icon-size-collapsed); }
+
+.sidebar-footer { display: flex; align-items: center; justify-content: flex-start; padding: 0.5rem 1rem; margin-top: auto; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.02)); }
+.sidebar-footer .uk-btn { width: 100%; display: flex; align-items: center; gap: 0.625rem; padding: var(--nav-item-pad-y) var(--nav-item-pad-x); border-radius: var(--nav-item-radius); }
+body.sidebar-collapsed .sidebar-footer { justify-content: center; padding-left: 0.5rem; padding-right: 0.5rem; }
+body.sidebar-collapsed .sidebar-footer .uk-btn { justify-content: center; gap: 0; padding: var(--nav-item-pad-collapsed); min-inline-size: 44px; min-block-size: 44px; }
+
+header.site-header a, header.site-header .uk-navbar-item a, header.site-header .uk-navbar-left a, header.site-header .uk-navbar-right a, .sidebar a, .sidebar .uk-nav a, .sidebar .uk-nav li a, .sidebar .nav-text { text-decoration: none !important; }
+header.site-header a:hover, header.site-header a:focus, .sidebar a:hover, .sidebar a:focus, .sidebar .uk-nav a:hover, .sidebar .uk-nav a:focus { text-decoration: none !important; outline: none; }
+
+@media (max-width: 768px) {
+  .sidebar { position: fixed; width: var(--sidebar-slim-width); padding-left: 0.5rem; padding-right: 0.5rem; left: 0; }
+  body:not(.sidebar-collapsed) main.site-main { margin-left: var(--sidebar-slim-width); }
+  body.sidebar-collapsed main.site-main { margin-left: 0; }
+  .sidebar .nav-text { display: none; width: 0; margin: 0; padding: 0; opacity: 0; transform: none; pointer-events: none; }
+  .sidebar .uk-nav>li>a { justify-content: center; gap: 0; padding: var(--nav-item-pad-collapsed); min-inline-size: 44px; min-block-size: 44px; overflow: hidden; }
+  .sidebar-footer { justify-content: center; padding-left: 0.5rem; padding-right: 0.5rem; }
+  .sidebar-footer .uk-btn { justify-content: center; gap: 0; padding: var(--nav-item-pad-collapsed); min-inline-size: 44px; min-block-size: 44px; }
+  #sidebar-toggle { display: inline-block !important; }
+}
+
+/* Font / root feature settings */
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: InterVariable, sans-serif;
+  }
+}

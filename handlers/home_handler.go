@@ -28,7 +28,8 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		log.Errorf("Error getting user role: %v", err)
 	}
 
-	base := views.Layout(content, userRole)
+	// pass current request path so templates can mark active nav items
+	base := views.Layout(content, userRole, c.Path())
 	return renderComponent(c, base)
 }
 

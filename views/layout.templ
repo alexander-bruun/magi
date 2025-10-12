@@ -1,6 +1,6 @@
 package views
 
-templ Layout(content templ.Component, userRole string) {
+templ Layout(content templ.Component, userRole string, currentPath string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dim">
 		<head>
@@ -10,110 +10,49 @@ templ Layout(content templ.Component, userRole string) {
 			<title>Magi</title>
 			<link rel="preconnect" href="https://rsms.me/"/>
 			<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
-			<link href="/assets/css/core.min.css" rel="stylesheet"/>
-			<link href="/assets/css/utilities.min.css" rel="stylesheet"/>
+			<link href="/assets/css/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/css/core.min.css
+			<link href="/assets/css/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/css/utilities.min.css
 			<link href="/assets/css/styles.css" rel="stylesheet"/>
-			<style>
-				:root {
-					font-family: Inter, sans-serif;
-					font-feature-settings: "liga" 1, "calt" 1; /* fix for Chrome */
-				}
-				@supports (font-variation-settings: normal) {
-					:root {
-						font-family: InterVariable, sans-serif;
-					}
-				}
-
-				/* scrollbar */
-				::-webkit-scrollbar {
-					width: 5px;
-					height: 5px;
-				}
-
-				::-webkit-scrollbar-track {
-					-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-					-webkit-border-radius: 10px;
-					border-radius: 10px;
-				}
-
-				::-webkit-scrollbar-thumb {
-					-webkit-border-radius: 10px;
-					border-radius: 10px;
-					background: rgba(255, 255, 255, 0.3);
-					-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
-				}
-
-				::-webkit-scrollbar-thumb:window-inactive {
-					background: rgba(255, 255, 255, 0.3);
-				}
-			</style>
 			<script>
-			const htmlElement = document.documentElement;
+				const htmlElement = document.documentElement;
 
-			const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+				const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
 
-			if (
-				__FRANKEN__.mode === "dark" ||
-				(!__FRANKEN__.mode &&
-				window.matchMedia("(prefers-color-scheme: dark)").matches)
-			) {
-				htmlElement.classList.add("dark");
-			} else {
-				htmlElement.classList.remove("dark");
-			}
+				if (
+					__FRANKEN__.mode === "dark" ||
+					(!__FRANKEN__.mode &&
+					window.matchMedia("(prefers-color-scheme: dark)").matches)
+				) {
+					htmlElement.classList.add("dark");
+				} else {
+					htmlElement.classList.remove("dark");
+				}
 
-			htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-zinc");
-			htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
-			htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
-			htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
-			htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
+				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-zinc");
+				htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
+				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
+				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
+				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
-			<script src="/assets/js/core.iife.js" type="module"></script>
+			<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/core.iife.js
 			<!--https://lucide.dev/icons/chevron-up?search=ban-->
-			<script src="/assets/js/icon.iife.js" type="module"></script>
-			<script src="/assets/js/charts.iife.js" type="module"></script>
-			<script src="/assets/js/htmx.min.js"></script>
-
-			<script>
-				function titleHandler(title) {
-					document.title=title
-				}
-			</script>
+			<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/icon.iife.js
+			<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js
 		</head>
 		<body class="bg-background text-foreground">
-			@Navbar(userRole)
-			<div id="content" class="uk-container uk-mx-auto mt-6">
-				@content
+			<div id="app">
+				@Navbar(userRole, currentPath)
+				<main class="site-main">
+					<div id="content" class="uk-container uk-container-xl">
+						@content
+					</div>
+					<div class="uk-container uk-mx-auto my-8">
+						@Footer()
+					</div>
+				</main>
 			</div>
-			<div class="uk-container uk-mx-auto my-2">
-				@Footer()
-			</div>
-			<script>
-				var themeToggleBtn = document.getElementById("theme-toggle");
 
-				themeToggleBtn?.addEventListener("click", function () {
-					// if set via local storage previously
-					if (localStorage.getItem("color-theme")) {
-						if (localStorage.getItem("color-theme") === "light") {
-							document.documentElement.classList.add("dark");
-							localStorage.setItem("color-theme", "dark");
-						} else {
-							document.documentElement.classList.remove("dark");
-							localStorage.setItem("color-theme", "light");
-						}
-
-						// if NOT set via local storage previously
-					} else {
-						if (document.documentElement.classList.contains("dark")) {
-							document.documentElement.classList.remove("dark");
-							localStorage.setItem("color-theme", "light");
-						} else {
-							document.documentElement.classList.add("dark");
-							localStorage.setItem("color-theme", "dark");
-						}
-					}
-				});
-			</script>
+			<script src="/assets/js/site.js" defer></script>
 		</body>
 	</html>
 }

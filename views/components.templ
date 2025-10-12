@@ -59,22 +59,45 @@ templ BreadcrumbHome(current string) {
 }
 
 // MangaCard renders a single manga card with a link and cover image.
-templ MangaCard(manga models.Manga, width int, height int, truncate bool) {
-    <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) }>
-        <div class="uk-card uk-card-default uk-card-body p-2 m-2" style={ fmt.Sprintf("width:%dpx", width) }>
-            if truncate {
-                <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center" style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%">{ manga.Name }</h3>
-            } else {
-                <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
-            }
-            <div class="uk-card-media-top flex justify-center items-center">
-                if manga.CoverArtURL == "" {
-                    <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name }/>
+templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed bool) {
+    // If fixed is true, render a fixed-size card (useful for sliders and places
+    // that require explicit pixel dimensions). If fixed is false, render a
+    // fluid card that scales to the grid column width using CSS aspect-ratio.
+    <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
+        if fixed {
+            <div class="uk-card uk-card-default uk-card-body p-2 m-2" style={ fmt.Sprintf("width:%dpx;", width) }>
+                if truncate {
+                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center truncate-header">{ manga.Name }</h3>
                 } else {
-                    <img src={ manga.CoverArtURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name }/>
+                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
                 }
+                <div class="uk-card-media-top flex justify-center items-center">
+                    if manga.CoverArtURL == "" {
+                        <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name } class="object-cover"/>
+                    } else {
+                        <img src={ manga.CoverArtURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name } class="object-cover"/>
+                    }
+                </div>
             </div>
-        </div>
+        } else {
+            <div class="uk-card uk-card-default uk-card-body p-2 m-2 w-full">
+                if truncate {
+                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center truncate-header">{ manga.Name }</h3>
+                } else {
+                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
+                }
+                <div class="uk-card-media-top flex justify-center items-center">
+                    <!-- Aspect wrapper enforces consistent height relative to width -->
+                    <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
+                        if manga.CoverArtURL == "" {
+                            <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } alt={ manga.Name } class="w-full h-full object-cover"/>
+                        } else {
+                            <img src={ manga.CoverArtURL } alt={ manga.Name } class="w-full h-full object-cover"/>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
     </a>
 }
 
@@ -112,24 +135,25 @@ templ ProfileCard(user models.User) {
 }
 
 // MangaGrid renders a grid of manga cards.
-templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool) {
-    <div class="grid sm:grid-cols-2 md:grid-cols-4">
+templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
+    <!-- Responsive grid: 1 column (xs), 2 (sm), 3 (md), 4 (lg) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         for _, manga := range mangas {
             <div>
-                @MangaCard(manga, width, height, truncate)
+                @MangaCard(manga, width, height, truncate, fixed)
             </div>
         }
     </div>
 }
 
 // MangaSlider renders a reusable UIkit slider for mangas.
-templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool) {
+templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
     <div class="px-1 mt-2" uk-slider>
         <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
             <ul class="uk-slider-items uk-child-width-auto">
                 for _, manga := range mangas {
                     <li class="px-1">
-                        @MangaCard(manga, width, height, truncate)
+                        @MangaCard(manga, width, height, truncate, fixed)
                     </li>
                 }
             </ul>
