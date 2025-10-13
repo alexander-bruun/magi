@@ -99,7 +99,21 @@ func HandleMangas(c *fiber.Ctx) error {
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	return HandleView(c, views.Mangas(mangas, page, totalPages, sortBy, sortOrder))
+	// Fetch all known tags to render the dropdown inline without an extra request
+	allTags, tagsErr := models.GetAllTags()
+	if tagsErr != nil {
+		return handleError(c, tagsErr)
+	}
+	// Pass selected tags and tag mode to the view so dropdown can render state server-side
+	tagMode := strings.ToLower(c.Query("tag_mode"))
+	if tagMode != "any" {
+		tagMode = "all"
+	}
+	// If this is an HTMX request targeting the listing container, render listing (controls + results)
+	if c.Get("HX-Request") == "true" && c.Get("HX-Target") == "manga-listing" {
+		return HandleView(c, views.MangaListing(mangas, page, totalPages, sortBy, sortOrder, selectedTags, tagMode, allTags))
+	}
+	return HandleView(c, views.Mangas(mangas, page, totalPages, sortBy, sortOrder, selectedTags, tagMode, allTags))
 }
 
 func HandleManga(c *fiber.Ctx) error {
@@ -294,41 +308,27 @@ func HandleTags(c *fiber.Ctx) error {
 func HandleTagsFragment(c *fiber.Ctx) error {
 	tags, err := models.GetAllTags()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to load tags")
+		return handleError(c, err)
 	}
 
-	// Determine currently selected tags from the query
-	selected := make(map[string]struct{})
+	// Determine currently selected tags from the query (support repeated and comma-separated)
+	var selectedTags []string
 	if raw := string(c.Request().URI().QueryString()); raw != "" {
 		if valsMap, err := url.ParseQuery(raw); err == nil {
 			if vals, ok := valsMap["tags"]; ok {
 				for _, v := range vals {
 					for _, t := range strings.Split(v, ",") {
-						t = strings.TrimSpace(strings.ToLower(t))
+						t = strings.TrimSpace(t)
 						if t != "" {
-							selected[t] = struct{}{}
+							selectedTags = append(selectedTags, t)
 						}
 					}
 				}
 			}
 		}
 	}
-
-	// Render a small HTML fragment with checked state
-	html := ""
-	for _, t := range tags {
-		escaped := templEscape(t)
-		lower := strings.ToLower(t)
-		_, isSel := selected[lower]
-		html += "<div style=\"margin-bottom:6px\"><label style=\"display:flex;gap:8px;align-items:center;\">"
-		if isSel {
-			html += "<input type=\"checkbox\" name=\"tags\" value=\"" + escaped + "\" checked> <span>" + escaped + "</span>"
-		} else {
-			html += "<input type=\"checkbox\" name=\"tags\" value=\"" + escaped + "\"> <span>" + escaped + "</span>"
-		}
-		html += "</label></div>"
-	}
-	return c.Type("html").SendString(html)
+	// Render a templ fragment instead of building HTML in JS
+	return HandleView(c, views.TagsFragment(tags, selectedTags))
 }
 
 // templEscape provides a minimal HTML escape for values inserted into the fragment

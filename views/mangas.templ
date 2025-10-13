@@ -5,346 +5,37 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
+templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
 	@PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage))
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
 		{ Label: "Mangas", Href: "/mangas" },
 	})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
-	@SortControls(sort, order)
-
-	<!-- Tags dropdown moved into SortControls -->
-	<script>
-	// Simple toggle for the dropdown visibility; HTMX will fill #tag-list when the button is first clicked
-	(function(){
-		const btn = document.getElementById('tag-filter-btn');
-		const drop = document.getElementById('tag-filter-drop');
-		// also manage the sort dropdown so it centers under its trigger
-		const sortBtn = document.getElementById('manga-sort-btn');
-		const sortDrop = document.getElementById('manga-sort-drop');
-		function openTagDropdown() {
-			try {
-				drop.style.display = 'block';
-				drop.style.position = 'fixed';
-				positionTagDropdown();
-				// small timeout to allow focus/click handlers to settle
-				setTimeout(() => document.addEventListener('mousedown', outsideClickHandler), 0);
-			} catch (_) {}
-		}
-
-		function closeTagDropdown() {
-			try {
-				drop.style.display = 'none';
-				document.removeEventListener('mousedown', outsideClickHandler);
-			} catch (_) {}
-		}
-
-		btn.addEventListener('click', function(){
-			try {
-				if (drop.style.display === 'block') {
-					closeTagDropdown();
-				} else {
-					openTagDropdown();
-				}
-			} catch (_) {}
-		});
-
-		function positionTagDropdown() {
-			try {
-				if (!btn || !drop) return;
-				// ensure visible to measure
-				const btnRect = btn.getBoundingClientRect();
-				// reset any inline maxHeight so measurement is accurate
-				drop.style.maxHeight = '';
-				const dropRect = drop.getBoundingClientRect();
-				const margin = 8;
-				// Default place below button, horizontally centered to the button
-				let left = btnRect.left + (btnRect.width / 2) - (dropRect.width / 2);
-				let top = btnRect.bottom + margin;
-				// if dropdown would overflow right edge, shift left
-				if (left + dropRect.width + margin > window.innerWidth) {
-					left = Math.max(margin, window.innerWidth - dropRect.width - margin);
-				}
-				// if dropdown would overflow left edge, shift right
-				if (left < margin) {
-					left = margin;
-				}
-				// if dropdown would overflow bottom, try place above the button
-				if (top + dropRect.height + margin > window.innerHeight) {
-					const altTop = btnRect.top - dropRect.height - margin;
-					if (altTop >= margin) {
-						top = altTop;
-					} else {
-						// shrink height to fit
-						const availableBelow = window.innerHeight - btnRect.bottom - (margin * 2);
-						const availableAbove = btnRect.top - margin * 2;
-						const maxH = Math.max(80, Math.max(availableBelow, availableAbove));
-						drop.style.maxHeight = (maxH) + 'px';
-						// recompute dropRect after changing maxHeight
-						const newDropRect = drop.getBoundingClientRect();
-						if (top + newDropRect.height + margin > window.innerHeight) {
-							// prefer placing above if it fits
-							const altTop2 = btnRect.top - newDropRect.height - margin;
-							if (altTop2 >= margin) top = altTop2; else top = Math.max(margin, window.innerHeight - newDropRect.height - margin);
-						}
-					}
-				}
-				drop.style.left = Math.round(left) + 'px';
-				drop.style.top = Math.round(top) + 'px';
-				drop.style.right = 'auto';
-			} catch (_) {}
-		}
-
-		function positionSortDropdown() {
-			try {
-				if (!sortBtn || !sortDrop) return;
-				// ensure visible to measure
-				sortDrop.style.maxHeight = '';
-				const btnRect = sortBtn.getBoundingClientRect();
-				const dropRect = sortDrop.getBoundingClientRect();
-				const margin = 8;
-				// center under button
-				let left = btnRect.left + (btnRect.width / 2) - (dropRect.width / 2);
-				let top = btnRect.bottom + margin;
-				// if overflow right, shift left
-				if (left + dropRect.width + margin > window.innerWidth) {
-					left = Math.max(margin, window.innerWidth - dropRect.width - margin);
-				}
-				// if overflow left, shift right
-				if (left < margin) left = margin;
-				// if would overflow bottom, try place above
-				if (top + dropRect.height + margin > window.innerHeight) {
-					const altTop = btnRect.top - dropRect.height - margin;
-					if (altTop >= margin) {
-						top = altTop;
-					} else {
-						// shrink height to fit
-						const availableBelow = window.innerHeight - btnRect.bottom - (margin * 2);
-						const availableAbove = btnRect.top - margin * 2;
-						const maxH = Math.max(80, Math.max(availableBelow, availableAbove));
-						sortDrop.style.maxHeight = (maxH) + 'px';
-						const newDropRect = sortDrop.getBoundingClientRect();
-						if (top + newDropRect.height + margin > window.innerHeight) {
-							const altTop2 = btnRect.top - newDropRect.height - margin;
-							if (altTop2 >= margin) top = altTop2; else top = Math.max(margin, window.innerHeight - newDropRect.height - margin);
-						}
-					}
-				}
-				sortDrop.style.left = Math.round(left) + 'px';
-				sortDrop.style.top = Math.round(top) + 'px';
-				sortDrop.style.right = 'auto';
-			} catch (_) {}
-		}
-
-		function outsideClickHandler(e) {
-			try {
-				if (!drop || !btn) return;
-				const target = e.target;
-				if (drop.contains(target) || btn.contains(target)) return; // click inside -> ignore
-				closeTagDropdown();
-			} catch (_) {}
-		}
-
-		// reposition on resize and scroll (debounced via rAF to avoid jank)
-		let _tagRaf = null;
-		function schedulePosition() {
-			if (_tagRaf) cancelAnimationFrame(_tagRaf);
-			_tagRaf = requestAnimationFrame(function() {
-				_tagRaf = null;
-				try {
-					// position tag dropdown if visible
-					if (drop && (drop.style.display === 'block' || getComputedStyle(drop).display !== 'none')) positionTagDropdown();
-					// position sort dropdown if visible (UIkit may toggle visibility differently)
-					if (sortDrop && (sortDrop.style.display === 'block' || getComputedStyle(sortDrop).display !== 'none')) positionSortDropdown();
-				} catch (_) {}
-			});
-		}
-		window.addEventListener('resize', function(){ schedulePosition(); }, { passive: true });
-		window.addEventListener('scroll', function(){ schedulePosition(); }, { passive: true });
-
-		// close on Escape
-		document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeTagDropdown(); });
-		// Helper: ensure hidden summary of tags is present on every request using hx-include
-		function updateTagSummaryHidden() {
-			try {
-				const form = document.getElementById('tag-filter-form');
-				if (!form) return;
-				const hidden = form.querySelector('#tag-hidden-summary');
-				if (!hidden) return;
-				const cbs = form.querySelectorAll('input[name="tags"][type="checkbox"]:checked');
-				let values = Array.from(cbs).map(cb => cb.value).filter(Boolean);
-				if (values.length === 0) {
-					// Fallback to URL params so pagination/sort still carry active tags
-					const params = new URLSearchParams(window.location.search);
-					const urlVals = params.getAll('tags');
-					// url may have repeated tags params or a comma-separated string
-					let acc = [];
-					urlVals.forEach(v => v.split(',').forEach(x => { x = x.trim(); if (x) acc.push(x); }));
-					values = acc;
-				}
-				hidden.value = values.join(',');
-			} catch (_) { /* ignore */ }
-		}
-
-		// Update hidden summary before any HTMX-triggered navigation that includes the tag form
-		document.addEventListener('click', function(e){
-			const el = e.target.closest && e.target.closest('[hx-include="#tag-filter-form"]');
-			if (el) updateTagSummaryHidden();
-		}, true);
-
-		// Ensure sort clicks are pre-processed early (pointerdown capture) so other handlers
-		// (UIkit or outside click handlers) don't close dropdowns before the HTMX request fires.
-		document.addEventListener('pointerdown', function(e){
-			try {
-				const a = e.target.closest && e.target.closest('a[data-sort-key]');
-				if (!a) return;
-				// update hidden summary and set sort/order inputs immediately
-				updateTagSummaryHidden();
-				const form = document.getElementById('tag-filter-form');
-				if (!form) return;
-				const sortInput = form.querySelector('input[name="sort"]');
-				const orderInput = form.querySelector('input[name="order"]');
-				const key = a.getAttribute('data-sort-key');
-				if (sortInput && key) sortInput.value = key;
-				try {
-					const href = a.getAttribute('href') || '';
-					const u = new URL(href, window.location.origin);
-					const ord = u.searchParams.get('order');
-					if (ord && orderInput) orderInput.value = ord;
-				} catch (_) {}
-			} catch (_) {}
-		}, true);
-
-		// Keep hidden sort/order inputs in the tag form synced with the current URL & sort controls
-		function syncTagFormSortOrder() {
-			try {
-				const form = document.getElementById('tag-filter-form');
-				if (!form) return;
-				const params = new URLSearchParams(window.location.search);
-				// read from URL first
-				let sort = params.get('sort') || '';
-				let order = params.get('order') || '';
-				let tagMode = (params.get('tag_mode') || '').toLowerCase();
-				// fallback to current UI state if URL missing
-				if (!sort) {
-					// Try to infer from active item in the sort dropdown button label
-					const btn = document.getElementById('manga-sort-btn');
-					const labelEl = btn && btn.querySelector('.sort-label');
-					if (labelEl) {
-						const txt = labelEl.textContent.trim().toLowerCase();
-						if (txt === 'title') sort = 'name';
-						else if (txt) sort = txt; // keys match labels except Title->name
-					}
-				}
-				if (!order) {
-					// Detect order from the toggle icon state (best effort)
-					const toggle = document.querySelector('a[aria-label="Toggle sort order"]');
-					if (toggle) {
-						// If we had server-provided currentOrder, the icon indicates it; default to asc when ChevronUp is visible
-						order = (toggle.querySelector('svg[data-icon="ChevronUp"], uk-icon[icon="ChevronUp"]') ? 'asc' : 'desc');
-					}
-				}
-
-				if (tagMode !== 'any' && tagMode !== 'all') {
-					// default
-					tagMode = 'all';
-				}
-
-				const sortInput = form.querySelector('input[name="sort"]');
-				const orderInput = form.querySelector('input[name="order"]');
-				const modeInput = form.querySelector('input[name="tag_mode"]');
-				if (sort && sortInput) sortInput.value = sort;
-				if (order && orderInput) orderInput.value = order;
-				if (modeInput) modeInput.value = tagMode;
-
-				// Update toggle button label and mode
-				const toggle = document.getElementById('tag-mode-toggle');
-				if (toggle) {
-					toggle.setAttribute('data-mode', tagMode);
-					toggle.textContent = (tagMode === 'any') ? 'Any' : 'All';
-				}
-			} catch (e) { /* no-op */ }
-		}
-
-		// Initial sync and keep in sync on navigation/htmx swaps
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', syncTagFormSortOrder);
-		} else {
-			syncTagFormSortOrder();
-		}
-		window.addEventListener('popstate', syncTagFormSortOrder);
-		document.addEventListener('htmx:afterSwap', function (e) {
-			// after content is swapped, the form is re-rendered; resync values
-			if (e.detail && e.detail.target && (e.detail.target.id === 'content' || e.detail.target.id === 'tag-list')) {
-				syncTagFormSortOrder();
-				// reposition dropdown if visible
-				try { positionTagDropdown(); } catch(_) {}
-			}
-		});
-
-		// Proactively update hidden inputs when clicking sort controls so included params don't conflict
-		document.addEventListener('click', function(e){
-			const a = e.target.closest && e.target.closest('a[href]');
-			if (!a) return;
-			const form = document.getElementById('tag-filter-form');
-			if (!form) return;
-			const sortInput = form.querySelector('input[name="sort"]');
-			const orderInput = form.querySelector('input[name="order"]');
-			if (a.hasAttribute('data-sort-key')) {
-				const key = a.getAttribute('data-sort-key');
-				if (sortInput && key) sortInput.value = key;
-			}
-			if (a.getAttribute('aria-label') === 'Toggle sort order') {
-				// Determine target order from link href (?order=...)
-				try {
-					const href = a.getAttribute('href') || '';
-					const u = new URL(href, window.location.origin);
-					const ord = u.searchParams.get('order');
-					if (ord && orderInput) orderInput.value = ord;
-				} catch (_) { /* ignore */ }
-			}
-		});
-
-
-		// Single tag mode toggle button
-		document.addEventListener('click', function(e){
-			const btn = e.target.closest && e.target.closest('#tag-mode-toggle');
-			if (!btn) return;
-			const form = document.getElementById('tag-filter-form');
-			if (!form) return;
-			const modeInput = form.querySelector('input[name="tag_mode"]');
-			const current = (modeInput && modeInput.value) ? modeInput.value.toLowerCase() : 'all';
-			const next = current === 'any' ? 'all' : 'any';
-			if (modeInput) modeInput.value = next;
-			btn.setAttribute('data-mode', next);
-			btn.textContent = (next === 'any') ? 'Any' : 'All';
-			// Persist to URL so subsequent navigations reflect mode even before an Apply
-			try {
-				const u = new URL(window.location.href);
-				u.searchParams.set('tag_mode', next);
-				window.history.replaceState({}, '', u);
-			} catch(_) {}
-		});
-	})();
-	</script>
-	if len(mangas) > 0 {
-	@MangaGrid(mangas, 300, 450, false, false)
-    
-	<div class="flex justify-center items-center py-8">
-		@Pagination(totalPages, currentPage, sort, order)
+	<div id="manga-listing">
+		@MangaListing(mangas, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags)
 	</div>
-	<script>
-	document.addEventListener('htmx:afterSwap', (event) => {
-			if (event.detail.target.id === 'content') {
-					window.scrollTo(0, 0);
-			}
-	});
-	</script>
+}
+
+// MangaResults renders only the results grid and pagination.
+// Used for HTMX swaps targeting #manga-results so we don't inject a full page.
+templ MangaResults(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
+	if len(mangas) > 0 {
+		@MangaGrid(mangas, 300, 450, false, false)
+		<div class="flex justify-center items-center py-8">
+			@Pagination(totalPages, currentPage, sort, order)
+		</div>
 	} else {
 		@EmptyState("No mangas have been indexed yet.")
 	}
+}
 
+// MangaListing renders the SortControls and the MangaResults together.
+templ MangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+	@SortControls(sort, order, selectedTags, tagMode, allTags)
+	<div id="manga-results">
+		@MangaResults(mangas, currentPage, totalPages, sort, order)
+	</div>
 }
 
 templ Pagination(totalPages int, currentPage int, sort string, order string) {
@@ -363,9 +54,10 @@ templ PaginationItem(enabled bool, page int, text string, icon string, sort stri
 			<a
 				href={ templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)) }
 				hx-get={ fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order) }
-				hx-include="#tag-filter-form"
-				hx-target="#content"
-				hx-push-url="true"
+					hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]"
+					hx-replace-url="true"
+					hx-target="#manga-listing"
+					hx-push-url="true"
 			>
 				if icon != "" {
 					if icon == "next" {
@@ -383,9 +75,10 @@ templ PaginationItem(enabled bool, page int, text string, icon string, sort stri
 			<a
 				href={ templ.URL(fmt.Sprintf("?page=%d&sort=%s&order=%s", page, sort, order)) }
 				hx-get={ fmt.Sprintf("/mangas?page=%d&sort=%s&order=%s", page, sort, order) }
-				hx-include="#tag-filter-form"
-				hx-target="#content"
-				hx-push-url="true"
+					hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]"
+					hx-replace-url="true"
+					hx-target="#manga-listing"
+					hx-push-url="true"
 			>
 				if icon != "" {
 					if icon == "next" {
@@ -413,7 +106,7 @@ templ PaginationNumbers(totalPages int, currentPage int, sort string, order stri
 	}
 }
 
-templ SortControls(currentSort string, currentOrder string) {
+templ SortControls(currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
 	<div class="flex justify-end items-center gap-2 my-4">
 		{{
 			sorts := []struct{ Key, Label string }{
@@ -427,89 +120,20 @@ templ SortControls(currentSort string, currentOrder string) {
 		}}
 
 		<div class="uk-inline">
-			<button id="manga-sort-btn" class="uk-btn uk-btn-default uk-btn-small" type="button" aria-expanded="false">
-				{{
-					// show the current label for the active sort
-					label := ""
+			<uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get="/mangas" hx-target="#manga-listing" hx-include="#manga-sort-select, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input">
+				<select id="manga-sort-select" hidden name="sort">
 					for _, s := range sorts {
 						if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-							label = s.Label
-							break
-						}
-					}
-					if label == "" {
-						label = "Title"
-					}
-				}}
-				<span class="inline-flex items-center gap-2"><span class="sort-label">{ label }</span></span>
-			</button>
-			<div id="manga-sort-drop" data-trigger-id="manga-sort-btn" class="uk-drop uk-dropdown" uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-animation-slide-top-small; duration: 100">
-				<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
-					for _, s := range sorts {
-						if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-							<li class="uk-active">
-								<a data-sort-key={ s.Key }
-									href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)) }
-									hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder) }
-									hx-include="#tag-filter-form"
-									hx-target="#content"
-									hx-push-url="true"
-								>{ s.Label }</a>
-							</li>
+							<option value={ s.Key } selected>{ s.Label }</option>
 						} else {
-							<li>
-								<a data-sort-key={ s.Key }
-									href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder)) }
-									hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", s.Key, currentOrder) }
-									hx-include="#tag-filter-form"
-									hx-target="#content"
-									hx-push-url="true"
-								>{ s.Label }</a>
-							</li>
+							<option value={ s.Key }>{ s.Label }</option>
 						}
 					}
-				</ul>
-			</div>
+				</select>
+			</uk-select>
 		</div>
 
-		<!-- Tags dropdown (populated client-side) -->
-		<div class="uk-inline" style="display:inline-block;margin-left:8px;">
-			<button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-small" type="button"
-				hx-get="/mangas/tags-fragment" hx-target="#tag-list" hx-swap="innerHTML" hx-trigger="click" hx-include="#tag-filter-form">
-				Tags
-			</button>
-			<div id="tag-filter-drop" class="uk-drop uk-dropdown bg-surface text-foreground uk-box-shadow-small uk-border-rounded" style="position:absolute; z-index:50; padding:8px; max-height:360px; overflow:auto; display:none; min-width:260px;">
-				<form id="tag-filter-form" class="uk-form">
-					<input type="hidden" name="sort" value={ currentSort }>
-					<input type="hidden" name="order" value={ currentOrder }>
-					<input type="hidden" name="tag_mode" value="all">
-					<input type="hidden" id="tag-hidden-summary" name="tags" value="">
-					<div class="flex justify-center items-center gap-3 my-2" style="margin-bottom:8px;">
-						<button type="button" id="tag-mode-toggle" class="uk-btn uk-btn-default uk-btn-small mx-1" data-mode="all" title="Choose whether results must match all tags or any tag">
-							Match all tags
-						</button>
-						<button type="button" class="uk-btn uk-btn-primary uk-btn-small mx-1" aria-label="Apply filters" title="Apply filters"
-							hx-get="/mangas"
-							hx-target="#content"
-							hx-push-url="true"
-							hx-include="#tag-filter-form"
-						>
-							<uk-icon icon="Check"></uk-icon>
-						</button>
-						<button type="button" class="uk-btn uk-btn-default uk-btn-small mx-1" aria-label="Clear filters" title="Clear filters"
-							hx-get="/mangas"
-							hx-target="#content"
-							hx-push-url="true"
-							hx-include="#tag-filter-form"
-							hx-on:click="document.querySelectorAll('#tag-filter-form input[name=tags]')?.forEach(cb=>cb.checked=false); const hs=document.getElementById('tag-hidden-summary'); if(hs) hs.value=''"
-						>
-							<uk-icon icon="x"></uk-icon>
-						</button>
-					</div>
-					<div id="tag-list" class="uk-margin-small-top">Loading…</div>
-				</form>
-			</div>
-		</div>
+		@TagsDropdown(currentSort, currentOrder, selectedTags, tagMode, allTags)
 
 		{{ toggled := "desc" }}
 		if currentOrder == "desc" {
@@ -517,11 +141,12 @@ templ SortControls(currentSort string, currentOrder string) {
 		}
 
 		<a
-			class="uk-btn uk-btn-default uk-btn-small"
+			class="uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn"
 			href={ templ.URL(fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled)) }
 			hx-get={ fmt.Sprintf("/mangas?sort=%s&order=%s", currentSort, toggled) }
-			hx-include="#tag-filter-form"
-			hx-target="#content"
+			hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]"
+			hx-replace-url="true"
+			hx-target="#manga-listing"
 			hx-push-url="true"
 			aria-label="Toggle sort order"
 		>

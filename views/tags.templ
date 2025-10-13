@@ -1,0 +1,82 @@
+package views
+
+import (
+    "strings"
+)
+
+// TagsDropdown renders the Tags filter button and dropdown form.
+// It includes hidden inputs for sort/order/tag_mode and the currently selected tags
+// so that HTMX interactions persist filter state without client-side JS.
+templ TagsDropdown(currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
+    <div class="uk-inline" style="display:inline-block;margin-left:8px;">
+        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-small" type="button">
+            Tags
+        </button>
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+            <form id="tag-filter-form" class="uk-form">
+                <input type="hidden" name="sort" value={ currentSort }>
+                <input type="hidden" name="order" value={ currentOrder }>
+                <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
+                <div class="uk-width-1-1 uk-margin-small">
+                    <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                        <div class="uk-inline">
+                            <div class="uk-btn-group uk-width-auto">
+                                // Toggle match mode with an overriding tag_mode value (no native form submit)
+                                if strings.ToLower(tagMode) == "any" {
+                                    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
+                                        hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form"
+                                        hx-vals='{"tag_mode":"all"}'
+                                        title="Choose whether results must match all tags or any tag">
+                                        Match all tags
+                                    </button>
+                                } else {
+                                    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
+                                        hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form"
+                                        hx-vals='{"tag_mode":"any"}'
+                                        title="Choose whether results must match all tags or any tag">
+                                        Match any tag
+                                    </button>
+                                }
+                                <button type="submit" class="uk-btn uk-btn-primary uk-btn-icon uk-btn-small" aria-label="Apply filters" title="Apply filters"
+                                    hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form">
+                                    <uk-icon icon="Check"></uk-icon>
+                                </button>
+                                <button type="button" class="uk-btn uk-btn-destructive uk-btn-icon uk-btn-small" aria-label="Clear filters" title="Clear filters"
+                                    hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode]">
+                                    <uk-icon icon="x"></uk-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                    @TagsFragment(allTags, selectedTags)
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+// TagsFragment renders the grid of tag checkboxes for the dropdown content.
+// The handler will fetch all tags and pass the list along with the currently selected tags.
+templ TagsFragment(allTags []string, selected []string) {
+    {{ sel := map[string]bool{} }}
+    for _, v := range selected {
+        {{ sel[strings.ToLower(strings.TrimSpace(v))] = true }}
+    }
+    <div class="grid grid-cols-2 gap-x-6 gap-y-3" style="padding-top: 5px;">
+        for _, t := range allTags {
+            {{ lower := strings.ToLower(t) }}
+            <div class="uk-margin-small flex items-center">
+                <label class="inline-flex items-center gap-3 min-w-0 w-full">
+                    if sel[lower] {
+                        <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ t } checked>
+                    } else {
+                        <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ t }>
+                    }
+                    <span class="leading-none flex-1 min-w-0" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ t }</span>
+                </label>
+            </div>
+        }
+    </div>
+}
