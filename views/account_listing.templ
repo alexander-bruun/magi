@@ -1,0 +1,36 @@
+package views
+
+import (
+    "fmt"
+    "github.com/alexander-bruun/magi/models"
+)
+
+// AccountMangaListing is a generic component for account manga lists (favorites, reading, upvoted, downvoted)
+// Use includeTags=true to enable tag filtering on account pages
+templ AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string) {
+    @GenericMangaListing(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags)
+}
+
+// AccountMangaListingWithTags includes selected tags and tag mode for filtered views
+templ AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) {
+    @GenericMangaListing(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags)
+}
+
+// Generic account page layout - consolidates all account list pages
+templ AccountPageLayout(title string, breadcrumbLabel string, path string, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string) {
+    @PageTitle(fmt.Sprintf("%s - page #%d", title, currentPage))
+    @Breadcrumb([]BreadcrumbItem{
+        { Label: "Home", Href: "/" },
+        { Label: "Account", Href: "/account" },
+        { Label: breadcrumbLabel, Href: path },
+    })
+
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ title }</span></h2>
+    <div id="account-manga-list">
+        if len(selectedTags) > 0 || tagMode != "" {
+            @AccountMangaListingWithTags(mangas, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags)
+        } else {
+            @AccountMangaListing(mangas, currentPage, totalPages, sort, order, path, emptyMessage, allTags)
+        }
+    </div>
+}

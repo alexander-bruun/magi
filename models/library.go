@@ -183,15 +183,5 @@ func DeleteLibrary(slug string) error {
 
 // LibraryExists checks if a Library exists by slug
 func LibraryExists(slug string) (bool, error) {
-	query := `SELECT 1 FROM libraries WHERE slug = ?`
-	row := db.QueryRow(query, slug)
-	var exists int
-	err := row.Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return ExistsChecker(`SELECT 1 FROM libraries WHERE slug = ?`, slug)
 }

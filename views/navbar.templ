@@ -9,7 +9,7 @@ templ Navbar(userRole string, currentPath string) {
 	<header class="site-header uk-navbar uk-navbar-container p-3 bg-surface" role="banner">
 		<div class="nav-inner">
 			<div class="uk-navbar-left">
-				<button id="sidebar-toggle" class="uk-btn uk-btn-default uk-btn-icon" aria-label="Toggle sidebar" aria-expanded="true" type="button">
+				<button id="sidebar-toggle" class="uk-btn uk-btn-default uk-btn-icon" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true" type="button">
 					<uk-icon icon="menu"></uk-icon>
 				</button>
 				<a href="/" hx-get="/" hx-target="#content" hx-push-url="true" class="flex items-center">
@@ -42,7 +42,7 @@ templ Navbar(userRole string, currentPath string) {
 						<button class="uk-btn uk-btn-default uk-btn-icon" aria-label="Customize">
 							<uk-icon icon="palette"></uk-icon>
 						</button>
-						<div class="uk-card uk-card-body uk-drop w-96" data-uk-drop="mode: click; offset: 8">
+						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; animation: uk-anmt-slide-top-sm">
 							<div class="uk-h3">Customize</div>
 							<uk-theme-switcher id="theme-switcher">
 								<select hidden>
@@ -82,10 +82,10 @@ templ Navbar(userRole string, currentPath string) {
 					</div>
 				</div>
 				<div class="uk-navbar-item">
-					<button class="uk-btn uk-btn-default h-10 w-10" type="button">
+					<button id="navbar-more-btn" class="uk-btn uk-btn-default h-10 w-10" type="button">
 						<uk-icon icon="EllipsisVertical"></uk-icon>
 					</button>
-					<div class="uk-drop uk-dropdown min-w-72" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar">
+					<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm">
 						<ul class="uk-dropdown-nav uk-nav">
 							if userRole != "" {
 								<li><a href="/account" hx-get="/account" hx-target="#content" hx-push-url="true"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
@@ -115,27 +115,13 @@ templ Navbar(userRole string, currentPath string) {
 		</div>
 	</header>
 
+	<!-- mobile backdrop for off-canvas sidebar -->
+	<div id="sidebar-backdrop" hidden></div>
+
 	<aside class="sidebar bg-surface" id="sidebar" role="navigation">
 		<ul class="uk-nav uk-nav-default">
-			if currentPath == "/" {
-				<li class="uk-active">
-					<a href="/" hx-get="/" hx-target="#content" hx-push-url="true"><uk-icon icon="home"></uk-icon><span class="nav-text">Home</span></a>
-				</li>
-			} else {
-				<li>
-					<a href="/" hx-get="/" hx-target="#content" hx-push-url="true"><uk-icon icon="home"></uk-icon><span class="nav-text">Home</span></a>
-				</li>
-			}
-
-			if currentPath == "/mangas" || (len(currentPath) >= 8 && currentPath[:8] == "/mangas/") {
-				<li class="uk-active">
-					<a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true"><uk-icon icon="book"></uk-icon><span class="nav-text">Mangas</span></a>
-				</li>
-			} else {
-				<li>
-					<a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true"><uk-icon icon="book"></uk-icon><span class="nav-text">Mangas</span></a>
-				</li>
-			}
+			@NavItem("/", "home", "Home", currentPath)
+			@NavItem("/mangas", "book", "Mangas", currentPath)
 		</ul>
 		<div class="sidebar-footer" aria-hidden="false">
 			<a class="uk-btn uk-btn-default" href="https://github.com/sponsors/alexander-bruun">
@@ -143,6 +129,17 @@ templ Navbar(userRole string, currentPath string) {
 			</a>
 		</div>
 	</aside>
+}
+
+// NavItem renders a single navigation item with active state handling
+templ NavItem(path string, icon string, label string, currentPath string) {
+	{{ isActive := currentPath == path || (path != "/" && len(currentPath) >= len(path) && currentPath[:len(path)] == path) }}
+	<li class={ templ.KV("uk-active", isActive) }>
+		<a href={ templ.URL(path) } hx-get={ path } hx-target="#content" hx-push-url="true">
+			<uk-icon icon={ icon }></uk-icon>
+			<span class="nav-text">{ label }</span>
+		</a>
+	</li>
 }
 
 templ SearchMangas(mangas []models.Manga) {

@@ -114,52 +114,17 @@ func UpdateChapter(chapter *Chapter) error {
 
 // DeleteChapter removes a specific chapter
 func DeleteChapter(mangaSlug, chapterSlug string) error {
-	query := `
-	DELETE FROM chapters
-	WHERE manga_slug = ? AND slug = ?
-	`
-
-	_, err := db.Exec(query, mangaSlug, chapterSlug)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return DeleteRecord(`DELETE FROM chapters WHERE manga_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
 // DeleteChaptersByMangaSlug removes all chapters for a specific manga
 func DeleteChaptersByMangaSlug(mangaSlug string) error {
-	query := `
-	DELETE FROM chapters
-	WHERE manga_slug = ?
-	`
-
-	_, err := db.Exec(query, mangaSlug)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return DeleteRecord(`DELETE FROM chapters WHERE manga_slug = ?`, mangaSlug)
 }
 
 // ChapterExists checks if a chapter already exists
 func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
-	query := `
-	SELECT 1
-	FROM chapters
-	WHERE manga_slug = ? AND slug = ?
-	`
-
-	row := db.QueryRow(query, mangaSlug, chapterSlug)
-	var exists int
-	err := row.Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return ExistsChecker(`SELECT 1 FROM chapters WHERE manga_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
 // GetAdjacentChapters finds the previous and next chapters based on the current chapter slug

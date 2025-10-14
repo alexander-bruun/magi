@@ -1,96 +1,20 @@
 package views
 
 import (
-	"fmt"
-	"github.com/alexander-bruun/magi/models"
+    "fmt"
+    "github.com/alexander-bruun/magi/models"
 )
 
-templ Mangas(mangas []models.Manga, currentPage int, totalPages int) {
-	@PageTitle(fmt.Sprintf("Mangas page #%d", currentPage))
-	@Breadcrumb([]BreadcrumbItem{
-		{ Label: "Home", Href: "/" },
-		{ Label: "Mangas", Href: "/mangas" },
-	})
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
-	if len(mangas) > 0 {
-	@MangaGrid(mangas, 300, 450, false, false)
-    
-	<div class="flex justify-center items-center py-8">
-		@Pagination(totalPages, currentPage)
-	</div>
-	<script>
-	document.addEventListener('htmx:afterSwap', (event) => {
-			if (event.detail.target.id === 'content') {
-					window.scrollTo(0, 0);
-			}
-	});
-	</script>
-	} else {
-		@EmptyState("No mangas have been indexed yet.")
-	}
-
+templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage))
+    @Breadcrumb([]BreadcrumbItem{
+        { Label: "Home", Href: "/" },
+        { Label: "Mangas", Href: "/mangas" },
+    })
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
+    <div id="manga-listing">
+        @GenericMangaListing("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas have been indexed yet.", selectedTags, tagMode, allTags)
+    </div>
 }
 
-templ Pagination(totalPages int, currentPage int) {
-	<nav class="mt-4" aria-label="Pagination">
-		<ul class="uk-pgn uk-pgn-default">
-			@PaginationItem(currentPage > 1, currentPage-1, "Previous", "previous")
-			@PaginationNumbers(totalPages, currentPage)
-			@PaginationItem(currentPage < totalPages, currentPage+1, "Next", "next")
-		</ul>
-	</nav>
-}
-
-templ PaginationItem(enabled bool, page int, text string, icon string) {
-	if enabled {
-		<li>
-			<a
-				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
-				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
-				hx-target="#content"
-				hx-push-url="true"
-			>
-				if icon != "" {
-					if icon == "next" {
-						<uk-icon icon="ChevronRight"></uk-icon>
-					} else {
-						<uk-icon icon="ChevronLeft"></uk-icon>
-					}
-				} else {
-					{ text }
-				}
-			</a>
-		</li>
-	}	else {
-		<li class="uk-disabled">
-			<a
-				href={ templ.URL(fmt.Sprintf("?page=%d", page)) }
-				hx-get={ fmt.Sprintf("/mangas?page=%d", page) }
-				hx-target="#content"
-				hx-push-url="true"
-			>
-				if icon != "" {
-					if icon == "next" {
-						<uk-icon icon="ChevronRight"></uk-icon>
-					} else {
-						<uk-icon icon="ChevronLeft"></uk-icon>
-					}
-				} else {
-					{ text }
-				}
-			</a>
-		</li>
-	}
-}
-
-templ PaginationNumbers(totalPages int, currentPage int) {
-	for i := 1; i <= totalPages; i++ {
-		if i == currentPage {
-			<li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
-		} else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
-			@PaginationItem(true, i, fmt.Sprint(i), "")
-		} else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
-			<li class="uk-disabled"><span>…</span></li>
-		}
-	}
-}
+// Removed page-specific Pagination & SortControls in favor of GenericMangaListing / Unified* components.

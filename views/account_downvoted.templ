@@ -1,25 +1,13 @@
 package views
 
 import (
-    "fmt"
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountDownvoted(mangas []models.Manga, currentPage int, totalPages int) {
-    @PageTitle(fmt.Sprintf("Your Downvoted - page #%d", currentPage))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-        { Label: "Downvoted", Href: "/account/downvoted" },
-    })
+templ AccountDownvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
+    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, nil, "")
+}
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Your Downvoted Mangas</span></h2>
-    if len(mangas) > 0 {
-    @MangaGrid(mangas, 300, 450, true, true)
-        <div class="flex justify-center items-center py-8">
-            @Pagination(totalPages, currentPage)
-        </div>
-    } else {
-        @EmptyState("You have not downvoted any mangas yet.")
-    }
+templ AccountDownvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, selectedTags, tagMode)
 }

@@ -3,4 +3,5 @@ node_modules/
 builds/
 cache/
 magi.db
+magi.db-journal
 magi

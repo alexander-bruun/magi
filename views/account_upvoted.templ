@@ -1,25 +1,13 @@
 package views
 
 import (
-    "fmt"
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int) {
-    @PageTitle(fmt.Sprintf("Your Upvoted - page #%d", currentPage))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-        { Label: "Upvoted", Href: "/account/upvoted" },
-    })
+templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
+    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, nil, "")
+}
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Your Upvoted Mangas</span></h2>
-    if len(mangas) > 0 {
-    @MangaGrid(mangas, 300, 450, true, true)
-        <div class="flex justify-center items-center py-8">
-            @Pagination(totalPages, currentPage)
-        </div>
-    } else {
-        @EmptyState("You have not upvoted any mangas yet.")
-    }
+templ AccountUpvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, selectedTags, tagMode)
 }

@@ -20,6 +20,7 @@ const (
 	localServerBaseURL = "http://localhost:3000/api/images"
 )
 
+// IndexManga inspects a manga directory, syncing metadata and chapters with the database.
 func IndexManga(absolutePath, librarySlug string) (string, error) {
 	defer utils.LogDuration("IndexManga", time.Now(), absolutePath)
 
@@ -106,6 +107,30 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	if err := models.CreateManga(newManga); err != nil {
 		log.Errorf("Failed to create manga: %s (%s)", slug, err.Error())
 		return "", err
+	}
+
+	// Persist tags from Mangadex response (if any)
+	if bestMatch != nil && len(bestMatch.Attributes.Tags) > 0 {
+		var tags []string
+		for _, t := range bestMatch.Attributes.Tags {
+			// prefer English name if available
+			if name, ok := t.Attributes.Name["en"]; ok && name != "" {
+				tags = append(tags, name)
+			} else {
+				// fallback: pick the first available name
+				for _, v := range t.Attributes.Name {
+					if v != "" {
+						tags = append(tags, v)
+						break
+					}
+				}
+			}
+		}
+		if len(tags) > 0 {
+			if err := models.SetTagsForManga(slug, tags); err != nil {
+				log.Errorf("Failed to set tags for manga '%s': %s", slug, err)
+			}
+		}
 	}
 
 	added, deleted, err := IndexChapters(slug, absolutePath)
@@ -239,6 +264,7 @@ func getAuthor(match *models.MangaDetail) string {
 	return ""
 }
 
+// IndexChapters reconciles chapter files on disk with the stored chapter records.
 func IndexChapters(slug, path string) (int, int, error) {
 	var addedCount int
 	var deletedCount int

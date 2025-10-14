@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// HandleLibraries renders the libraries dashboard with the current library list.
 func HandleLibraries(c *fiber.Ctx) error {
 	libraries, err := models.GetLibraries()
 	if err != nil {
@@ -34,6 +35,7 @@ func setCommonHeaders(c *fiber.Ctx) {
 	c.Response().Header.Set("Content-Type", "text/html")
 }
 
+// HandleCreateLibrary persists a new library and returns the refreshed table markup.
 func HandleCreateLibrary(c *fiber.Ctx) error {
 	var library models.Library
 	if err := c.BodyParser(&library); err != nil {
@@ -58,6 +60,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	return c.SendString(tableContent)
 }
 
+// HandleDeleteLibrary removes an existing library and responds with the updated table fragment.
 func HandleDeleteLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
@@ -82,6 +85,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	return c.SendString(tableContent)
 }
 
+// HandleUpdateLibrary updates library information and returns the refreshed listing.
 func HandleUpdateLibrary(c *fiber.Ctx) error {
 	var library models.Library
 	if err := c.BodyParser(&library); err != nil {
@@ -109,6 +113,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	return c.SendString(tableContent)
 }
 
+// HandleEditLibrary renders the inline edit form for the requested library.
 func HandleEditLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
@@ -130,6 +135,7 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 	return c.SendString(fmt.Sprintf(`<div id="library-form">%s</div>`, buf.String()))
 }
 
+// HandleScanLibrary triggers an immediate indexing pass for the specified library.
 func HandleScanLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
@@ -151,14 +157,17 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	return c.SendString(`<uk-icon icon="Check"></uk-icon>`)
 }
 
+// HandleAddFolder returns an empty folder form fragment for HTMX inserts.
 func HandleAddFolder(c *fiber.Ctx) error {
 	return HandleView(c, views.Folder(""))
 }
 
+// HandleRemoveFolder acknowledges folder removal requests without returning content.
 func HandleRemoveFolder(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+// HandleCancelEdit resets the library form to its default state.
 func HandleCancelEdit(c *fiber.Ctx) error {
 	var buf bytes.Buffer
 	err := views.LibraryForm(models.Library{}, "post", false).Render(context.Background(), &buf)

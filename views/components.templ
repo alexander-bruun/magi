@@ -59,49 +59,40 @@ templ BreadcrumbHome(current string) {
 }
 
 // MangaCard renders a single manga card with a link and cover image.
+// When fixed=true, uses explicit pixel dimensions. When fixed=false, uses CSS aspect-ratio for fluid scaling.
 templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed bool) {
-    // If fixed is true, render a fixed-size card (useful for sliders and places
-    // that require explicit pixel dimensions). If fixed is false, render a
-    // fluid card that scales to the grid column width using CSS aspect-ratio.
     <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
-        if fixed {
-            <div class="uk-card uk-card-default uk-card-body p-2 m-2" style={ fmt.Sprintf("width:%dpx;", width) }>
-                if truncate {
-                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center truncate-header">{ manga.Name }</h3>
-                } else {
-                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
-                }
-                <div class="uk-card-media-top flex justify-center items-center">
-                    if manga.CoverArtURL == "" {
-                        <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name } class="object-cover"/>
-                    } else {
-                        <img src={ manga.CoverArtURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ manga.Name } class="object-cover"/>
-                    }
-                </div>
+        <div 
+            class={ "uk-card uk-card-default uk-card-body p-2 m-2", templ.KV("w-full", !fixed) } 
+            if fixed {
+                style={ fmt.Sprintf("width:%dpx;", width) }
+            }
+        >
+            <h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
+                { manga.Name }
+            </h3>
+            <div class="uk-card-media-top flex justify-center items-center">
+                @MangaCover(manga.CoverArtURL, manga.Name, width, height, fixed)
             </div>
-        } else {
-            <div class="uk-card uk-card-default uk-card-body p-2 m-2 w-full">
-                if truncate {
-                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center truncate-header">{ manga.Name }</h3>
-                } else {
-                    <h3 class="uk-card-title uk-h3 uk-margin mb-2 uk-text-center">{ manga.Name }</h3>
-                }
-                <div class="uk-card-media-top flex justify-center items-center">
-                    <!-- Aspect wrapper enforces consistent height relative to width -->
-                    <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-                        if manga.CoverArtURL == "" {
-                            <img src={ fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) } alt={ manga.Name } class="w-full h-full object-cover"/>
-                        } else {
-                            <img src={ manga.CoverArtURL } alt={ manga.Name } class="w-full h-full object-cover"/>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
+        </div>
     </a>
 }
 
-// (Card component removed; MangaCard uses inline markup to avoid closure syntax issues.)
+// MangaCover renders the manga cover image with proper sizing
+templ MangaCover(coverURL string, altText string, width int, height int, fixed bool) {
+    {{ imageURL := coverURL }}
+    if imageURL == "" {
+        {{ imageURL = fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) }}
+    }
+    
+    if fixed {
+        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
+    } else {
+        <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
+            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
+        </div>
+    }
+}
 
 // StatCard shows a small statistic with label and numeric value
 templ StatCard(label string, value int) {

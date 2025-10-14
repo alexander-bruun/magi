@@ -10,6 +10,7 @@ import (
 // Local export of the cache directory, so the image download function knows where to store the cached images.
 var savedCacheDirectory string
 
+// Initialize wires up all HTTP routes, middleware, and static assets for the Fiber app.
 func Initialize(app *fiber.App, cacheDirectory string) {
 	log.Info("Initializing GoFiber view routes")
 
@@ -89,6 +90,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
 	mangas.Get("", HandleMangas)
+	mangas.Get("/tags", HandleTags)
+	mangas.Get("/tags-fragment", HandleTagsFragment)
 	mangas.Get("/metadata-form/:slug", HandleUpdateMetadataManga)
 	mangas.Post("/overwrite-metadata", HandleEditMetadataManga)
 	mangas.Get("/search", HandleMangaSearch)

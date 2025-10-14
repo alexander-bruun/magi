@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	htmxRequestHeader = "HX-Request"
 	accessTokenCookie = "access_token"
 )
 
+// HandleView wraps a page component with the layout unless the request is an HTMX fragment.
 func HandleView(c *fiber.Ctx, content templ.Component) error {
-	if c.Get(htmxRequestHeader) != "" {
+	if IsHTMXRequest(c) {
 		return renderComponent(c, content)
 	}
 
@@ -33,6 +33,7 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 	return renderComponent(c, base)
 }
 
+// HandleHome renders the landing page with recent manga activity and aggregate stats.
 func HandleHome(c *fiber.Ctx) error {
 	recentlyAdded, err := getRecentMangas("created_at")
 	if err != nil {
@@ -61,6 +62,7 @@ func HandleHome(c *fiber.Ctx) error {
 	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, totalMangas, totalChapters, totalChaptersRead))
 }
 
+// HandleNotFound renders the generic not-found page for unrouted paths.
 func HandleNotFound(c *fiber.Ctx) error {
 	return HandleView(c, views.NotFound())
 }

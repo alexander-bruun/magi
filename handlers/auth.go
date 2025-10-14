@@ -7,14 +7,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// RegisterHandler renders the registration form page.
 func RegisterHandler(c *fiber.Ctx) error {
 	return HandleView(c, views.Register())
 }
 
+// LoginHandler renders the login page.
 func LoginHandler(c *fiber.Ctx) error {
 	return HandleView(c, views.Login())
 }
 
+// CreateUserHandler processes a registration submission and redirects to login on success.
 func CreateUserHandler(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -27,6 +30,7 @@ func CreateUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
+// LoginUserHandler validates credentials and issues access/refresh tokens.
 func LoginUserHandler(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -51,6 +55,7 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+// LogoutHandler revokes refresh tokens and clears authentication cookies.
 func LogoutHandler(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 
