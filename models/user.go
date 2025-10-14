@@ -159,18 +159,7 @@ func IncrementRefreshTokenVersion(username string) error {
 
 // CountUsers returns the total number of users.
 func CountUsers() (int64, error) {
-	query := `
-	SELECT COUNT(*)
-	FROM users
-	`
-
-	var count int64
-	err := db.QueryRow(query).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return CountRecords(`SELECT COUNT(*) FROM users`)
 }
 
 // isValidRole checks if the provided role is valid.

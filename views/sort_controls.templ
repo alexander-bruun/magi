@@ -1,0 +1,182 @@
+package views
+
+import (
+    "fmt"
+    "github.com/alexander-bruun/magi/models"
+)
+
+// Usage examples:
+//  Global mangas page:
+//    @GenericMangaListing("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas...", selectedTags, tagMode, allTags)
+//  Account favorites page:
+//    @GenericMangaListing("/account/favorites", "account-manga-list", false, mangas, currentPage, totalPages, sort, order, "You have no favorites yet.", nil, "", nil)
+// The targetID must match the container div id so HTMX swaps update the correct region.
+
+// GenericMangaListing consolidates sort controls + optional tag filters + results grid + pagination.
+// Parameters:
+//  - path: base path for the listing (e.g. /mangas or /account/favorites)
+//  - targetID: DOM id that HTMX swaps (e.g. "manga-listing" or "account-manga-list")
+//  - includeTags: when true, render tag dropdown & include tag filter htmx includes
+//  - mangas: slice of mangas to render
+//  - currentPage / totalPages / sort / order: listing state
+//  - emptyMessage: message when no results
+//  - selectedTags/tagMode/allTags: only used when includeTags is true
+// For account pages, pass includeTags=false. For the global mangas page, pass includeTags=true.
+templ GenericMangaListing(path string, targetID string, includeTags bool, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) {
+    @UnifiedSortControls(path, targetID, includeTags, sort, order, selectedTags, tagMode, allTags)
+    if len(mangas) > 0 {
+        @MangaGrid(mangas, 300, 450, false, false)
+        <div class="flex justify-center items-center py-8">
+            @UnifiedPagination(path, targetID, includeTags, totalPages, currentPage, sort, order)
+        </div>
+    } else {
+        @EmptyState(emptyMessage)
+    }
+}
+
+// UnifiedSortControls merges previous SortControls + SharedSortControls logic.
+// When includeTags=true it renders the tag dropdown and mimics original mangas page behaviour.
+templ UnifiedSortControls(path string, targetID string, includeTags bool, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
+    <div class="flex justify-end items-center gap-2 my-4">
+        {{ sorts := []struct{ Key, Label string }{
+            {"name", "Title"},
+            {"year", "Year"},
+            {"status", "Status"},
+            {"content_rating", "Content rating"},
+            {"created_at", "Created"},
+            {"updated_at", "Updated"},
+        }}}
+        if includeTags {
+            // Original mangas page behavior (depends on #tag-filter-form produced by TagsDropdown)
+            <div class="uk-inline">
+                <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include="#manga-sort-select, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input, change">
+                    <select id="manga-sort-select" hidden name="sort">
+                        for _, s := range sorts {
+                            if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
+                                <option value={ s.Key } selected>{ s.Label }</option>
+                            } else {
+                                <option value={ s.Key }>{ s.Label }</option>
+                            }
+                        }
+                    </select>
+                </uk-select>
+            </div>
+            @TagsDropdown(path, targetID, currentSort, currentOrder, selectedTags, tagMode, allTags)
+            {{ toggled := "desc" }}
+            if currentOrder == "desc" {
+                {{ toggled = "asc" }}
+            }
+            <a
+                class="uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn"
+                href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
+                hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
+                hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags]"
+                hx-replace-url="true"
+                hx-target={ "#" + targetID }
+                hx-push-url="true"
+                aria-label="Toggle sort order"
+            >
+                if currentOrder == "asc" {
+                    <uk-icon icon="ChevronUp"></uk-icon>
+                } else {
+                    <uk-icon icon="ChevronDown"></uk-icon>
+                }
+            </a>
+        } else {
+            // Account pages variant using form-based include
+            <div class="uk-inline">
+                <form id={ targetID + "-sort-form" }>
+                    <input type="hidden" name="order" value={ currentOrder }>
+                    <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include={ "#" + targetID + "-sort-form" } hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input">
+                        <select hidden name="sort" id={ targetID + "-sort-select" }>
+                            for _, s := range sorts {
+                                if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
+                                    <option value={ s.Key } selected>{ s.Label }</option>
+                                } else {
+                                    <option value={ s.Key }>{ s.Label }</option>
+                                }
+                            }
+                        </select>
+                    </uk-select>
+                </form>
+            </div>
+            {{ toggled := "desc" }}
+            if currentOrder == "desc" {
+                {{ toggled = "asc" }}
+            }
+            <a
+                class="uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn"
+                href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
+                hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
+                hx-include={ "#" + targetID + "-sort-form" }
+                hx-replace-url="true"
+                hx-target={ "#" + targetID }
+                hx-push-url="true"
+                aria-label="Toggle sort order"
+            >
+                if currentOrder == "asc" {
+                    <uk-icon icon="ChevronUp"></uk-icon>
+                } else {
+                    <uk-icon icon="ChevronDown"></uk-icon>
+                }
+            </a>
+        }
+    </div>
+}
+
+// UnifiedPagination consolidates Pagination + AccountPagination.
+templ UnifiedPagination(path string, targetID string, includeTags bool, totalPages int, currentPage int, sort string, order string) {
+    <nav class="mt-4" aria-label="Pagination">
+        <ul class="uk-pgn uk-pgn-default">
+            @UnifiedPaginationItem(path, targetID, includeTags, currentPage > 1, currentPage-1, "Previous", "previous", sort, order)
+            @UnifiedPaginationNumbers(path, targetID, includeTags, totalPages, currentPage, sort, order)
+            @UnifiedPaginationItem(path, targetID, includeTags, currentPage < totalPages, currentPage+1, "Next", "next", sort, order)
+        </ul>
+    </nav>
+}
+
+templ UnifiedPaginationItem(path string, targetID string, includeTags bool, enabled bool, page int, text string, icon string, sort string, order string) {
+    {{ href := fmt.Sprintf("%s?page=%d&sort=%s&order=%s", path, page, sort, order) }}
+    {{ includeSelector := "#" + targetID + "-sort-form" }}
+    if enabled {
+        <li>
+            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
+                if icon != "" {
+                    if icon == "next" {
+                        <uk-icon icon="ChevronRight"></uk-icon>
+                    } else {
+                        <uk-icon icon="ChevronLeft"></uk-icon>
+                    }
+                } else {
+                    { text }
+                }
+            </a>
+        </li>
+    } else {
+        <li class="uk-disabled">
+            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
+                if icon != "" {
+                    if icon == "next" {
+                        <uk-icon icon="ChevronRight"></uk-icon>
+                    } else {
+                        <uk-icon icon="ChevronLeft"></uk-icon>
+                    }
+                } else {
+                    { text }
+                }
+            </a>
+        </li>
+    }
+}
+
+templ UnifiedPaginationNumbers(path string, targetID string, includeTags bool, totalPages int, currentPage int, sort string, order string) {
+    for i := 1; i <= totalPages; i++ {
+        if i == currentPage {
+            <li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
+        } else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
+            @UnifiedPaginationItem(path, targetID, includeTags, true, i, fmt.Sprint(i), "", sort, order)
+        } else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
+            <li class="uk-disabled"><span>…</span></li>
+        }
+    }
+}

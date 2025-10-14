@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
-	"sort"
 	"strings"
 	"time"
 
@@ -42,21 +41,18 @@ func CreateManga(manga Manga) error {
 		return errors.New("manga already exists")
 	}
 
-	now := time.Now()
-	manga.CreatedAt = now
-	manga.UpdatedAt = now
+	timestamps := NewTimestamps()
+	manga.CreatedAt = timestamps.CreatedAt
+	manga.UpdatedAt = timestamps.UpdatedAt
 
 	query := `
 	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.CreatedAt.Unix(), manga.UpdatedAt.Unix())
-	if err != nil {
-		return err
-	}
-
-	return nil
+	createdAt, updatedAt := timestamps.UnixTimestamps()
+	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, createdAt, updatedAt)
+	return err
 }
 
 // GetManga retrieves a single Manga by slug
@@ -104,13 +100,6 @@ func UpdateManga(manga *Manga) error {
 
 // DeleteManga removes a Manga and its associated chapters
 func DeleteManga(slug string) error {
-	query := `DELETE FROM mangas WHERE slug = ?`
-
-	_, err := db.Exec(query, slug)
-	if err != nil {
-		return err
-	}
-
 	// Delete associated chapters first
 	if err := DeleteChaptersByMangaSlug(slug); err != nil {
 		return err
@@ -121,188 +110,55 @@ func DeleteManga(slug string) error {
 		return err
 	}
 
-	return nil
+	return DeleteRecord(`DELETE FROM mangas WHERE slug = ?`, slug)
 }
 
 // SearchMangas filters, sorts, and paginates mangas based on provided criteria
 func SearchMangas(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string) ([]Manga, int64, error) {
-	var mangas []Manga
-	if err := loadAllMangas(&mangas); err != nil {
-		return nil, 0, err
-	}
-
-	// Filter by librarySlug
-	if librarySlug != "" {
-		mangas = filterByLibrarySlug(mangas, librarySlug)
-	}
-
-	total := int64(len(mangas))
-
-	// Apply bigram search if filter is provided
-	if filter != "" {
-		mangas = applyBigramSearch(filter, mangas)
-		total = int64(len(mangas))
-	}
-
-	// Sort mangas based on sortBy and sortOrder
-	sortMangas(mangas, sortBy, sortOrder)
-
-	// Apply pagination
-	return paginateMangas(mangas, page, pageSize), total, nil
+	return SearchMangasWithOptions(SearchOptions{
+		Filter:      filter,
+		Page:        page,
+		PageSize:    pageSize,
+		SortBy:      sortBy,
+		SortOrder:   sortOrder,
+		FilterBy:    filterBy,
+		LibrarySlug: librarySlug,
+	})
 }
 
 // SearchMangasWithTags extends SearchMangas to filter by selected tags (all must match)
 func SearchMangasWithTags(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string, selectedTags []string) ([]Manga, int64, error) {
-	var mangas []Manga
-	if err := loadAllMangas(&mangas); err != nil {
-		return nil, 0, err
-	}
-
-	// Filter by librarySlug
-	if librarySlug != "" {
-		mangas = filterByLibrarySlug(mangas, librarySlug)
-	}
-
-	// Build tag map once
-	tagMap, err := GetAllMangaTagsMap()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// If tags selected, keep only mangas that have all selected tags
-	if len(selectedTags) > 0 {
-		selectedSet := make(map[string]struct{}, len(selectedTags))
-		for _, t := range selectedTags {
-			t = strings.TrimSpace(strings.ToLower(t))
-			if t == "" {
-				continue
-			}
-			selectedSet[t] = struct{}{}
-		}
-		filtered := make([]Manga, 0, len(mangas))
-		for _, m := range mangas {
-			tags := tagMap[m.Slug]
-			if hasAllTags(tags, selectedSet) {
-				filtered = append(filtered, m)
-			}
-		}
-		mangas = filtered
-	}
-
-	total := int64(len(mangas))
-
-	// Apply bigram search if filter is provided
-	if filter != "" {
-		mangas = applyBigramSearch(filter, mangas)
-		total = int64(len(mangas))
-	}
-
-	// Sort mangas based on sortBy and sortOrder
-	sortMangas(mangas, sortBy, sortOrder)
-
-	// Apply pagination
-	return paginateMangas(mangas, page, pageSize), total, nil
+	return SearchMangasWithOptions(SearchOptions{
+		Filter:      filter,
+		Page:        page,
+		PageSize:    pageSize,
+		SortBy:      sortBy,
+		SortOrder:   sortOrder,
+		FilterBy:    filterBy,
+		LibrarySlug: librarySlug,
+		Tags:        selectedTags,
+		TagMode:     "all",
+	})
 }
 
 // SearchMangasWithAnyTags filters mangas to those that have at least one of the selected tags
 func SearchMangasWithAnyTags(filter string, page, pageSize int, sortBy, sortOrder, filterBy, librarySlug string, selectedTags []string) ([]Manga, int64, error) {
-	var mangas []Manga
-	if err := loadAllMangas(&mangas); err != nil {
-		return nil, 0, err
-	}
-
-	if librarySlug != "" {
-		mangas = filterByLibrarySlug(mangas, librarySlug)
-	}
-
-	tagMap, err := GetAllMangaTagsMap()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	if len(selectedTags) > 0 {
-		anySet := make(map[string]struct{}, len(selectedTags))
-		for _, t := range selectedTags {
-			t = strings.TrimSpace(strings.ToLower(t))
-			if t == "" {
-				continue
-			}
-			anySet[t] = struct{}{}
-		}
-		filtered := make([]Manga, 0, len(mangas))
-		for _, m := range mangas {
-			tags := tagMap[m.Slug]
-			if hasAnyTag(tags, anySet) {
-				filtered = append(filtered, m)
-			}
-		}
-		mangas = filtered
-	}
-
-	total := int64(len(mangas))
-
-	if filter != "" {
-		mangas = applyBigramSearch(filter, mangas)
-		total = int64(len(mangas))
-	}
-
-	sortMangas(mangas, sortBy, sortOrder)
-	return paginateMangas(mangas, page, pageSize), total, nil
-}
-
-func hasAnyTag(tags []string, any map[string]struct{}) bool {
-	if len(any) == 0 {
-		return true
-	}
-	for _, t := range tags {
-		lt := strings.TrimSpace(strings.ToLower(t))
-		if lt == "" {
-			continue
-		}
-		if _, ok := any[lt]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAllTags(tags []string, required map[string]struct{}) bool {
-	if len(required) == 0 {
-		return true
-	}
-	if len(tags) == 0 {
-		return false
-	}
-	present := make(map[string]struct{}, len(tags))
-	for _, t := range tags {
-		lt := strings.TrimSpace(strings.ToLower(t))
-		if lt == "" {
-			continue
-		}
-		present[lt] = struct{}{}
-	}
-	for t := range required {
-		if _, ok := present[t]; !ok {
-			return false
-		}
-	}
-	return true
+	return SearchMangasWithOptions(SearchOptions{
+		Filter:      filter,
+		Page:        page,
+		PageSize:    pageSize,
+		SortBy:      sortBy,
+		SortOrder:   sortOrder,
+		FilterBy:    filterBy,
+		LibrarySlug: librarySlug,
+		Tags:        selectedTags,
+		TagMode:     "any",
+	})
 }
 
 // MangaExists checks if a Manga exists by slug
 func MangaExists(slug string) (bool, error) {
-	query := `SELECT 1 FROM mangas WHERE slug = ?`
-
-	row := db.QueryRow(query, slug)
-	var exists int
-	err := row.Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return ExistsChecker(`SELECT 1 FROM mangas WHERE slug = ?`, slug)
 }
 
 // MangaCount counts the number of mangas based on filter criteria
@@ -411,19 +267,9 @@ func loadAllMangas(mangas *[]Manga) error {
 	return nil
 }
 
-func filterByLibrarySlug(mangas []Manga, librarySlug string) []Manga {
-	var filteredMangas []Manga
-	for _, manga := range mangas {
-		if manga.LibrarySlug == librarySlug {
-			filteredMangas = append(filteredMangas, manga)
-		}
-	}
-	return filteredMangas
-}
-
 func applyBigramSearch(filter string, mangas []Manga) []Manga {
 	var mangaNames []string
-	nameToManga := make(map[string]Manga)
+	nameToManga := make(map[string]Manga, len(mangas))
 
 	for _, manga := range mangas {
 		mangaNames = append(mangaNames, manga.Name)
@@ -432,7 +278,7 @@ func applyBigramSearch(filter string, mangas []Manga) []Manga {
 
 	matchingNames := utils.BigramSearch(filter, mangaNames)
 
-	var filteredMangas []Manga
+	filteredMangas := make([]Manga, 0, len(matchingNames))
 	for _, name := range matchingNames {
 		if manga, ok := nameToManga[name]; ok {
 			filteredMangas = append(filteredMangas, manga)
@@ -442,92 +288,7 @@ func applyBigramSearch(filter string, mangas []Manga) []Manga {
 	return filteredMangas
 }
 
-func paginateMangas(mangas []Manga, page, pageSize int) []Manga {
-	start := (page - 1) * pageSize
-	end := start + pageSize
-	if start < len(mangas) {
-		if end > len(mangas) {
-			end = len(mangas)
-		}
-		return mangas[start:end]
-	}
-	return []Manga{}
-}
-
-func sortMangas(mangas []Manga, sortBy, sortOrder string) {
-	// Normalize inputs
-	s := strings.ToLower(sortBy)
-	if s == "title" { // allow alias
-		s = "name"
-	}
-	if s == "contentrating" {
-		s = "content_rating"
-	}
-	if s == "createdat" {
-		s = "created_at"
-	}
-	if s == "updatedat" {
-		s = "updated_at"
-	}
-
-	asc := strings.ToLower(sortOrder) != "desc"
-
-	switch s {
-	case "name":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name)
-			})
-		} else {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name)
-			})
-		}
-	case "year":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year < mangas[j].Year })
-		} else {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year > mangas[j].Year })
-		}
-	case "status":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].Status) < strings.ToLower(mangas[j].Status)
-			})
-		} else {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].Status) > strings.ToLower(mangas[j].Status)
-			})
-		}
-	case "content_rating":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].ContentRating) < strings.ToLower(mangas[j].ContentRating)
-			})
-		} else {
-			sort.Slice(mangas, func(i, j int) bool {
-				return strings.ToLower(mangas[i].ContentRating) > strings.ToLower(mangas[j].ContentRating)
-			})
-		}
-	case "created_at":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.Before(mangas[j].CreatedAt) })
-		} else {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.After(mangas[j].CreatedAt) })
-		}
-	case "updated_at":
-		if asc {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.Before(mangas[j].UpdatedAt) })
-		} else {
-			sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.After(mangas[j].UpdatedAt) })
-		}
-	default:
-		// Default: name asc
-		sort.Slice(mangas, func(i, j int) bool {
-			return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name)
-		})
-	}
-}
+// sortMangas moved to sorting.go (exported as SortMangas) for reuse across account pages.
 
 // Vote represents a user's vote on a manga
 type Vote struct {

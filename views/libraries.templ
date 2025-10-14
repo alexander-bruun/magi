@@ -141,29 +141,16 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 templ FormContent(library models.Library, editing bool) {
 	<fieldset class="space-y-4">
 		<div class="uk-margin">
-			if editing {
-				<input
-					class="uk-input"
-					aria-label="Input"
-					type="text"
-					name="name"
-					placeholder="Library Name"
-					value={ library.Name }
-					required
-					readonly
-				/>
-				<input type="hidden" name="name" value={ library.Name } />
-			} else {
-				<input
-					class="uk-input"
-					aria-label="Input"
-					type="text"
-					name="name"
-					placeholder="Library Name"
-					value={ library.Name }
-					required
-				/>
-			}
+			<input
+				class="uk-input"
+				aria-label="Input"
+				type="text"
+				name="name"
+				placeholder="Library Name"
+				value={ library.Name }
+				required
+				readonly?={ editing }
+			/>
 		</div>
 		<div class="uk-margin">
 			<input
@@ -188,50 +175,51 @@ templ FormContent(library models.Library, editing bool) {
 				required
 			/>
 		</div>
-		if len(library.Folders) <= 0 {
-			<div id="folders-container">
-				<!-- Folder fields will be dynamically added here -->
-				<div class="folder-row mb-4 flex items-center">
-					<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path"/>
-					<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" hx-get="/libraries/add-folder" hx-target="#folders-container" hx-swap="beforeend">
-						<uk-icon icon="Plus"></uk-icon>
-					</button>
-				</div>
-			</div>
-			<div class="flex justify-center">
-				<button type="submit" class="uk-btn uk-btn-default">SUBMIT</button>
-				<div id="response" class="mt-8"></div>
-			</div>
-		} else {
-			<div id="folders-container">
-				<!-- Folder fields will be dynamically added here -->
-				for index, folder := range library.Folders {
-					if index == 0 {
-						<div class="folder-row mb-4 flex items-center">
-							<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folder }/>
-							<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/libraries/add-folder" hx-target="#folders-container" hx-swap="beforeend">
-								<uk-icon icon="Plus"></uk-icon>
-							</button>
-						</div>
-					} else {
-						@Folder(folder)
-					}
-				}
-			</div>
-			<div class="mt-4 uk-flex uk-flex-center">
-				<button type="submit" class="uk-btn uk-btn-default mr-2">Save</button>
-				<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/libraries/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
-			</div>
-		}
+		@FolderInputs(library.Folders, editing)
 		<div id="response" class="mt-8"></div>
 	</fieldset>
 }
 
-templ Folder(folderValue string) {
+// FolderInputs renders the folder management section
+templ FolderInputs(folders []string, editing bool) {
+	<div id="folders-container">
+		if len(folders) == 0 {
+			@FolderRow("", true, false)
+		} else {
+			for index, folder := range folders {
+				@FolderRow(folder, index == 0, true)
+			}
+		}
+	</div>
+	if editing {
+		<div class="mt-4 uk-flex uk-flex-center">
+			<button type="submit" class="uk-btn uk-btn-default mr-2">Save</button>
+			<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/libraries/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
+		</div>
+	} else {
+		<div class="flex justify-center">
+			<button type="submit" class="uk-btn uk-btn-default">SUBMIT</button>
+		</div>
+	}
+}
+
+// FolderRow renders a single folder input row with add/remove button
+templ FolderRow(folderValue string, isFirst bool, canRemove bool) {
 	<div class="folder-row mb-4 flex items-center">
 		<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
-		<button type="button" class="uk-btn uk-btn-destructive ml-2 h-10 w-10" hx-get="/libraries/remove-folder" hx-target="closest .folder-row" hx-swap="outerHTML">
-			<uk-icon icon="X"></uk-icon>
-		</button>
+		if isFirst {
+			<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" hx-get="/libraries/add-folder" hx-target="#folders-container" hx-swap="beforeend">
+				<uk-icon icon="Plus"></uk-icon>
+			</button>
+		} else if canRemove {
+			<button type="button" class="uk-btn uk-btn-destructive ml-2 h-10 w-10" hx-get="/libraries/remove-folder" hx-target="closest .folder-row" hx-swap="outerHTML">
+				<uk-icon icon="X"></uk-icon>
+			</button>
+		}
 	</div>
+}
+
+// Folder component kept for backward compatibility with HTMX responses
+templ Folder(folderValue string) {
+	@FolderRow(folderValue, false, true)
 }

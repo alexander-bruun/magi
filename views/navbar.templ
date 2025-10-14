@@ -120,25 +120,8 @@ templ Navbar(userRole string, currentPath string) {
 
 	<aside class="sidebar bg-surface" id="sidebar" role="navigation">
 		<ul class="uk-nav uk-nav-default">
-			if currentPath == "/" {
-				<li class="uk-active">
-					<a href="/" hx-get="/" hx-target="#content" hx-push-url="true"><uk-icon icon="home"></uk-icon><span class="nav-text">Home</span></a>
-				</li>
-			} else {
-				<li>
-					<a href="/" hx-get="/" hx-target="#content" hx-push-url="true"><uk-icon icon="home"></uk-icon><span class="nav-text">Home</span></a>
-				</li>
-			}
-
-			if currentPath == "/mangas" || (len(currentPath) >= 8 && currentPath[:8] == "/mangas/") {
-				<li class="uk-active">
-					<a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true"><uk-icon icon="book"></uk-icon><span class="nav-text">Mangas</span></a>
-				</li>
-			} else {
-				<li>
-					<a href="/mangas" hx-get="/mangas" hx-target="#content" hx-push-url="true"><uk-icon icon="book"></uk-icon><span class="nav-text">Mangas</span></a>
-				</li>
-			}
+			@NavItem("/", "home", "Home", currentPath)
+			@NavItem("/mangas", "book", "Mangas", currentPath)
 		</ul>
 		<div class="sidebar-footer" aria-hidden="false">
 			<a class="uk-btn uk-btn-default" href="https://github.com/sponsors/alexander-bruun">
@@ -146,6 +129,17 @@ templ Navbar(userRole string, currentPath string) {
 			</a>
 		</div>
 	</aside>
+}
+
+// NavItem renders a single navigation item with active state handling
+templ NavItem(path string, icon string, label string, currentPath string) {
+	{{ isActive := currentPath == path || (path != "/" && len(currentPath) >= len(path) && currentPath[:len(path)] == path) }}
+	<li class={ templ.KV("uk-active", isActive) }>
+		<a href={ templ.URL(path) } hx-get={ path } hx-target="#content" hx-push-url="true">
+			<uk-icon icon={ icon }></uk-icon>
+			<span class="nav-text">{ label }</span>
+		</a>
+	</li>
 }
 
 templ SearchMangas(mangas []models.Manga) {

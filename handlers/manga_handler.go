@@ -19,103 +19,46 @@ const (
 	searchPageSize  = 10
 )
 
+// HandleMangas lists mangas with filtering, sorting, and HTMX fragment support.
 func HandleMangas(c *fiber.Ctx) error {
-	page := getPageNumber(c.Query("page"))
-	// Parse sorting parameters with defaults. Prefer the last occurrence
-	// when duplicates exist (e.g., hx-include form + link query params).
-	var sortBy, sortOrder string
-	if raw := string(c.Request().URI().QueryString()); raw != "" {
-		if valsMap, err := url.ParseQuery(raw); err == nil {
-			// Prefer the first occurrence so explicit link query params take precedence
-			// over hx-included form fields which are typically appended later.
-			if vals, ok := valsMap["sort"]; ok && len(vals) > 0 {
-				sortBy = vals[0]
-			}
-			if vals, ok := valsMap["order"]; ok && len(vals) > 0 {
-				sortOrder = vals[0]
-			}
-		}
-	}
-	if sortBy == "" {
-		sortBy = c.Query("sort")
-	}
-	if sortOrder == "" {
-		sortOrder = c.Query("order")
-	}
-	if sortBy == "" {
-		sortBy = "name"
-	}
-	if sortOrder == "" {
-		sortOrder = "asc"
-	}
+	params := ParseQueryParams(c)
 
-	// parse selected tags: support repeated ?tags=tag1&tags=tag2 and comma-separated values
-	var selectedTags []string
-	// Parse raw query string into map[string][]string to handle repeated params reliably
-	if raw := string(c.Request().URI().QueryString()); raw != "" {
-		if valsMap, err := url.ParseQuery(raw); err == nil {
-			if vals, ok := valsMap["tags"]; ok {
-				for _, v := range vals {
-					for _, t := range strings.Split(v, ",") {
-						t = strings.TrimSpace(t)
-						if t != "" {
-							selectedTags = append(selectedTags, t)
-						}
-					}
-				}
-			}
-		}
-	}
-	// fallback: single comma-separated tags param
-	if len(selectedTags) == 0 {
-		if raw := c.Query("tags"); raw != "" {
-			for _, t := range strings.Split(raw, ",") {
-				t = strings.TrimSpace(t)
-				if t != "" {
-					selectedTags = append(selectedTags, t)
-				}
-			}
-		}
-	}
-
+	// Search mangas based on tag selection
 	var mangas []models.Manga
 	var count int64
 	var err error
-	if len(selectedTags) > 0 {
-		// Determine tag match mode: all (default) or any
-		tagMode := strings.ToLower(c.Query("tag_mode"))
-		if tagMode == "any" {
-			mangas, count, err = models.SearchMangasWithAnyTags("", page, defaultPageSize, sortBy, sortOrder, "", "", selectedTags)
+
+	if len(params.Tags) > 0 {
+		if params.TagMode == "any" {
+			mangas, count, err = models.SearchMangasWithAnyTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
 		} else {
-			mangas, count, err = models.SearchMangasWithTags("", page, defaultPageSize, sortBy, sortOrder, "", "", selectedTags)
+			mangas, count, err = models.SearchMangasWithTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
 		}
 	} else {
-		mangas, count, err = models.SearchMangas("", page, defaultPageSize, sortBy, sortOrder, "", "")
+		mangas, count, err = models.SearchMangas(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug)
 	}
+
 	if err != nil {
 		return handleError(c, err)
 	}
-	totalPages := int((count + defaultPageSize - 1) / defaultPageSize)
-	if totalPages == 0 {
-		totalPages = 1
+
+	totalPages := CalculateTotalPages(count, defaultPageSize)
+
+	// Fetch all known tags for the dropdown
+	allTags, err := models.GetAllTags()
+	if err != nil {
+		return handleError(c, err)
 	}
-	// Fetch all known tags to render the dropdown inline without an extra request
-	allTags, tagsErr := models.GetAllTags()
-	if tagsErr != nil {
-		return handleError(c, tagsErr)
+
+	// If HTMX request targeting the listing container, render just the generic listing
+	if IsHTMXRequest(c) && GetHTMXTarget(c) == "manga-listing" {
+		return HandleView(c, views.GenericMangaListing("/mangas", "manga-listing", true, mangas, params.Page, totalPages, params.Sort, params.Order, "No mangas have been indexed yet.", params.Tags, params.TagMode, allTags))
 	}
-	// Pass selected tags and tag mode to the view so dropdown can render state server-side
-	tagMode := strings.ToLower(c.Query("tag_mode"))
-	if tagMode != "any" {
-		tagMode = "all"
-	}
-	// If this is an HTMX request targeting the listing container, render listing (controls + results)
-	if c.Get("HX-Request") == "true" && c.Get("HX-Target") == "manga-listing" {
-		return HandleView(c, views.MangaListing(mangas, page, totalPages, sortBy, sortOrder, selectedTags, tagMode, allTags))
-	}
-	return HandleView(c, views.Mangas(mangas, page, totalPages, sortBy, sortOrder, selectedTags, tagMode, allTags))
+
+	return HandleView(c, views.Mangas(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
 }
 
+// HandleManga renders a manga detail page including chapters and per-user state.
 func HandleManga(c *fiber.Ctx) error {
 	slug := c.Params("manga")
 	manga, err := models.GetManga(slug)
@@ -126,19 +69,17 @@ func HandleManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	
 	// If a user is logged in, fetch their read chapters and annotate the list
-	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
+	if userName := GetUserContext(c); userName != "" {
 		readMap, err := models.GetReadChaptersForUser(userName, slug)
 		if err == nil {
 			for i := range chapters {
-				if _, found := readMap[chapters[i].Slug]; found {
-					chapters[i].Read = true
-				} else {
-					chapters[i].Read = false
-				}
+				chapters[i].Read = readMap[chapters[i].Slug]
 			}
 		}
 	}
+	
 	// Precompute first/last chapter slugs and count for the view
 	firstSlug, lastSlug := "", ""
 	if len(chapters) > 0 {
@@ -148,6 +89,7 @@ func HandleManga(c *fiber.Ctx) error {
 	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters)))
 }
 
+// HandleChapter shows a chapter reader with navigation and optional read tracking.
 func HandleChapter(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Params("chapter")
@@ -166,11 +108,8 @@ func HandleChapter(c *fiber.Ctx) error {
 	// As a safe fallback, if this request is a full page load (not an HTMX request)
 	// and the user is logged in, mark the chapter read server-side so the
 	// manga list can reflect the read state for non-HTMX navigation.
-	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
-		// HTMX includes the header HX-Request: true for requests it initiates.
-		if c.Get("HX-Request") != "true" {
-			_ = models.MarkChapterRead(userName, mangaSlug, chapterSlug)
-		}
+	if userName := GetUserContext(c); userName != "" && !IsHTMXRequest(c) {
+		_ = models.MarkChapterRead(userName, mangaSlug, chapterSlug)
 	}
 
 	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapter.Slug, mangaSlug)
@@ -195,7 +134,7 @@ func HandleChapter(c *fiber.Ctx) error {
 func HandleMarkRead(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Params("chapter")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -210,7 +149,7 @@ func HandleMarkRead(c *fiber.Ctx) error {
 func HandleMarkUnread(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Params("chapter")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -221,6 +160,7 @@ func HandleMarkUnread(c *fiber.Ctx) error {
 	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
 }
 
+// HandleUpdateMetadataManga displays Mangadex matches for updating a local manga's metadata.
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 	mangaSlug := c.Params("slug")
 	search := c.Query("search")
@@ -233,6 +173,7 @@ func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 	return HandleView(c, views.UpdateMetadata(*response, mangaSlug))
 }
 
+// HandleEditMetadataManga applies selected Mangadex metadata to an existing manga.
 func HandleEditMetadataManga(c *fiber.Ctx) error {
 	mangadexID := c.Query("id")
 	mangaSlug := c.Query("slug")
@@ -276,6 +217,7 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+// HandleMangaSearch returns search results for the quick-search panel.
 func HandleMangaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")
 
@@ -327,8 +269,8 @@ func HandleTagsFragment(c *fiber.Ctx) error {
 			}
 		}
 	}
-	// Render a templ fragment instead of building HTML in JS
-	return HandleView(c, views.TagsFragment(tags, selectedTags))
+	// Render fragment directly without layout wrapper
+	return renderComponent(c, views.TagsFragment(tags, selectedTags))
 }
 
 // templEscape provides a minimal HTML escape for values inserted into the fragment
@@ -342,14 +284,6 @@ func templEscape(s string) string {
 }
 
 // Helper functions
-
-func getPageNumber(pageStr string) int {
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		return defaultPage
-	}
-	return page
-}
 
 func getMangaAndChapters(mangaSlug string) (*models.Manga, []models.Chapter, error) {
 	manga, err := models.GetManga(mangaSlug)
@@ -452,7 +386,7 @@ func persistMangadexTags(mangaSlug string, mangaDetail *models.MangaDetail) erro
 // Expected form values: "value" = "1" or "-1". User must be authenticated.
 func HandleMangaVote(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -478,20 +412,20 @@ func HandleMangaVote(c *fiber.Ctx) error {
 		}
 	}
 
-			// Return updated fragment so HTMX can refresh the vote UI in-place.
-			score, up, down, err := models.GetMangaVotes(mangaSlug)
-			if err != nil {
-					return handleError(c, err)
-			}
-			userVote, _ := models.GetUserVoteForManga(userName, mangaSlug)
-			return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
+	// Return updated fragment so HTMX can refresh the vote UI in-place.
+	score, up, down, err := models.GetMangaVotes(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	userVote, _ := models.GetUserVoteForManga(userName, mangaSlug)
+	return HandleView(c, views.MangaVoteFragment(mangaSlug, score, up, down, userVote))
 }
 
 // HandleMangaVoteFragment returns the vote UI fragment for a manga. If user is logged in,
 // it will show their current selection highlighted.
 func HandleMangaVoteFragment(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	score, up, down, err := models.GetMangaVotes(mangaSlug)
 	if err != nil {
 		return handleError(c, err)
@@ -508,7 +442,7 @@ func HandleMangaVoteFragment(c *fiber.Ctx) error {
 // Expected form values: "value" = "1" to favorite or "0" to unfavorite.
 func HandleMangaFavorite(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -540,7 +474,7 @@ func HandleMangaFavorite(c *fiber.Ctx) error {
 // HandleMangaFavoriteFragment returns the favorite UI fragment for a manga.
 func HandleMangaFavoriteFragment(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	favCount, err := models.GetFavoritesCount(mangaSlug)
 	if err != nil {
 		return handleError(c, err)

@@ -1,25 +1,13 @@
 package views
 
 import (
-    "fmt"
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
-    @PageTitle(fmt.Sprintf("Your Reading - page #%d", currentPage))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-        { Label: "Currently Reading", Href: "/account/reading" },
-    })
+templ AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
+    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, nil, "")
+}
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Currently Reading</span></h2>
-    if len(mangas) > 0 {
-    @MangaGrid(mangas, 300, 450, true, true)
-        <div class="flex justify-center items-center py-8">
-            @Pagination(totalPages, currentPage, sort, order)
-        </div>
-	} else {
-		@EmptyState("You are not reading any mangas right now.")
-	}
+templ AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, selectedTags, tagMode)
 }

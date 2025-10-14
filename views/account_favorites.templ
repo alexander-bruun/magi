@@ -1,25 +1,13 @@
 package views
 
 import (
-    "fmt"
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountFavorites(mangas []models.Manga, currentPage int, totalPages int, sort string, order string) {
-    @PageTitle(fmt.Sprintf("Your Favorites - page #%d", currentPage))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-        { Label: "Favorites", Href: "/account/favorites" },
-    })
+templ AccountFavorites(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
+    @AccountPageLayout("Your Favorites", "Favorites", "/account/favorites", mangas, currentPage, totalPages, sort, order, "You have no favorites yet.", allTags, nil, "")
+}
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Your Favorites</span></h2>
-    if len(mangas) > 0 {
-    @MangaGrid(mangas, 300, 450, true, true)
-        <div class="flex justify-center items-center py-8">
-            @Pagination(totalPages, currentPage, sort, order)
-        </div>
-    } else {
-        @EmptyState("You have no favorites yet.")
-    }
+templ AccountFavoritesWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @AccountPageLayout("Your Favorites", "Favorites", "/account/favorites", mangas, currentPage, totalPages, sort, order, "You have no favorites yet.", allTags, selectedTags, tagMode)
 }

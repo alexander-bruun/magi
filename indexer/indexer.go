@@ -20,6 +20,7 @@ const (
 	localServerBaseURL = "http://localhost:3000/api/images"
 )
 
+// IndexManga inspects a manga directory, syncing metadata and chapters with the database.
 func IndexManga(absolutePath, librarySlug string) (string, error) {
 	defer utils.LogDuration("IndexManga", time.Now(), absolutePath)
 
@@ -263,6 +264,7 @@ func getAuthor(match *models.MangaDetail) string {
 	return ""
 }
 
+// IndexChapters reconciles chapter files on disk with the stored chapter records.
 func IndexChapters(slug, path string) (int, int, error) {
 	var addedCount int
 	var deletedCount int

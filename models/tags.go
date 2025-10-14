@@ -109,3 +109,115 @@ func GetAllMangaTagsMap() (map[string][]string, error) {
     }
     return m, nil
 }
+
+// GetTagsForUserFavorites returns all distinct tags for mangas favorited by the user
+func GetTagsForUserFavorites(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT mt.tag 
+        FROM manga_tags mt
+        INNER JOIN favorites f ON mt.manga_slug = f.manga_slug
+        WHERE f.user_username = ?
+        ORDER BY mt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}
+
+// GetTagsForUserReading returns all distinct tags for mangas the user is reading
+func GetTagsForUserReading(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT mt.tag 
+        FROM manga_tags mt
+        INNER JOIN reading_states rs ON mt.manga_slug = rs.manga_slug
+        WHERE rs.user_name = ?
+        ORDER BY mt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}
+
+// GetTagsForUserUpvoted returns all distinct tags for mangas the user has upvoted
+func GetTagsForUserUpvoted(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT mt.tag 
+        FROM manga_tags mt
+        INNER JOIN votes v ON mt.manga_slug = v.manga_slug
+        WHERE v.user_username = ? AND v.value = 1
+        ORDER BY mt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}
+
+// GetTagsForUserDownvoted returns all distinct tags for mangas the user has downvoted
+func GetTagsForUserDownvoted(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT mt.tag 
+        FROM manga_tags mt
+        INNER JOIN votes v ON mt.manga_slug = v.manga_slug
+        WHERE v.user_username = ? AND v.value = -1
+        ORDER BY mt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}

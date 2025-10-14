@@ -1,13 +1,12 @@
 package views
 
 import (
+    "fmt"
     "strings"
 )
 
-// TagsDropdown renders the Tags filter button and dropdown form.
-// It includes hidden inputs for sort/order/tag_mode and the currently selected tags
-// so that HTMX interactions persist filter state without client-side JS.
-templ TagsDropdown(currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
+// TagsDropdown renders the Tags filter button and dropdown form
+templ TagsDropdown(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
     <div class="uk-inline" style="display:inline-block;margin-left:8px;">
         <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-small" type="button">
             Tags
@@ -21,30 +20,9 @@ templ TagsDropdown(currentSort string, currentOrder string, selectedTags []strin
                     <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
                         <div class="uk-inline">
                             <div class="uk-btn-group uk-width-auto">
-                                // Toggle match mode with an overriding tag_mode value (no native form submit)
-                                if strings.ToLower(tagMode) == "any" {
-                                    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
-                                        hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form"
-                                        hx-vals='{"tag_mode":"all"}'
-                                        title="Choose whether results must match all tags or any tag">
-                                        Match all tags
-                                    </button>
-                                } else {
-                                    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
-                                        hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form"
-                                        hx-vals='{"tag_mode":"any"}'
-                                        title="Choose whether results must match all tags or any tag">
-                                        Match any tag
-                                    </button>
-                                }
-                                <button type="submit" class="uk-btn uk-btn-primary uk-btn-icon uk-btn-small" aria-label="Apply filters" title="Apply filters"
-                                    hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form">
-                                    <uk-icon icon="Check"></uk-icon>
-                                </button>
-                                <button type="button" class="uk-btn uk-btn-destructive uk-btn-icon uk-btn-small" aria-label="Clear filters" title="Clear filters"
-                                    hx-get="/mangas" hx-target="#manga-listing" hx-push-url="true" hx-replace-url="true" hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode]">
-                                    <uk-icon icon="x"></uk-icon>
-                                </button>
+                                @TagModeToggleButton(path, targetID, tagMode)
+                                @TagActionButton(path, targetID, "Apply filters", "Check", "uk-btn-primary", true)
+                                @TagActionButton(path, targetID, "Clear filters", "x", "uk-btn-destructive", false)
                             </div>
                         </div>
                     </div>
@@ -57,24 +35,69 @@ templ TagsDropdown(currentSort string, currentOrder string, selectedTags []strin
     </div>
 }
 
-// TagsFragment renders the grid of tag checkboxes for the dropdown content.
-// The handler will fetch all tags and pass the list along with the currently selected tags.
+// TagModeToggleButton renders the toggle button for "Match all/any" tags
+templ TagModeToggleButton(path string, targetID string, tagMode string) {
+    {{ isAny := strings.ToLower(tagMode) == "any" }}
+    {{ nextMode := "all" }}
+    if isAny {
+        {{ nextMode = "all" }}
+    } else {
+        {{ nextMode = "any" }}
+    }
+    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
+        hx-get={ path }
+        hx-target={ "#" + targetID }
+        hx-push-url="true"
+        hx-replace-url="true"
+        hx-include="#tag-filter-form"
+        hx-vals={ fmt.Sprintf("{\"tag_mode\":\"%s\"}", nextMode) }
+        title="Choose whether results must match all tags or any tag"
+        onclick="document.getElementById('tag-filter-drop')?.classList.remove('uk-open');">
+        if isAny {
+            Match all tags
+        } else {
+            Match any tag
+        }
+    </button>
+}
+
+// TagActionButton renders apply/clear buttons for the tag filter
+templ TagActionButton(path string, targetID string, label string, icon string, btnClass string, includeAllInputs bool) {
+    {{ includeSelector := "#tag-filter-form" }}
+    if !includeAllInputs {
+        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode]" }}
+    }
+    {{ buttonType := "submit" }}
+    if !includeAllInputs {
+        {{ buttonType = "button" }}
+    }
+    <button type={ buttonType } 
+        class={ "uk-btn uk-btn-icon uk-btn-small " + btnClass }
+        aria-label={ label }
+        title={ label }
+        hx-get={ path }
+        hx-target={ "#" + targetID }
+        hx-push-url="true"
+        hx-replace-url="true"
+        hx-include={ includeSelector }
+        onclick="document.getElementById('tag-filter-drop')?.classList.remove('uk-open');">
+        <uk-icon icon={ icon }></uk-icon>
+    </button>
+}
+
+// TagsFragment renders the grid of tag checkboxes
 templ TagsFragment(allTags []string, selected []string) {
-    {{ sel := map[string]bool{} }}
+    {{ selectedMap := make(map[string]bool) }}
     for _, v := range selected {
-        {{ sel[strings.ToLower(strings.TrimSpace(v))] = true }}
+        {{ selectedMap[strings.ToLower(strings.TrimSpace(v))] = true }}
     }
     <div class="grid grid-cols-2 gap-x-6 gap-y-3" style="padding-top: 5px;">
-        for _, t := range allTags {
-            {{ lower := strings.ToLower(t) }}
+        for _, tag := range allTags {
+            {{ isChecked := selectedMap[strings.ToLower(tag)] }}
             <div class="uk-margin-small flex items-center">
                 <label class="inline-flex items-center gap-3 min-w-0 w-full">
-                    if sel[lower] {
-                        <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ t } checked>
-                    } else {
-                        <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ t }>
-                    }
-                    <span class="leading-none flex-1 min-w-0" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ t }</span>
+                    <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ tag } checked?={ isChecked }>
+                    <span class="leading-none flex-1 min-w-0" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ tag }</span>
                 </label>
             </div>
         }

@@ -4,9 +4,10 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
+	"strings"
 )
 
+// HandleUsers renders the user administration view.
 func HandleUsers(c *fiber.Ctx) error {
 	users, err := models.GetUsers()
 	if err != nil {
@@ -15,6 +16,7 @@ func HandleUsers(c *fiber.Ctx) error {
 	return HandleView(c, views.Users(users))
 }
 
+// HandleUserBan demotes and bans the specified user before returning the updated table.
 func HandleUserBan(c *fiber.Ctx) error {
 	username := c.Params("username")
 
@@ -29,6 +31,7 @@ func HandleUserBan(c *fiber.Ctx) error {
 	return HandleView(c, views.UsersTable(users))
 }
 
+// HandleUserUnban lifts a user's ban and refreshes the table fragment.
 func HandleUserUnban(c *fiber.Ctx) error {
 	username := c.Params("username")
 
@@ -42,6 +45,7 @@ func HandleUserUnban(c *fiber.Ctx) error {
 	return HandleView(c, views.UsersTable(users))
 }
 
+// HandleUserPromote upgrades a user's role and returns the updated table.
 func HandleUserPromote(c *fiber.Ctx) error {
 	username := c.Params("username")
 
@@ -55,6 +59,7 @@ func HandleUserPromote(c *fiber.Ctx) error {
 	return HandleView(c, views.UsersTable(users))
 }
 
+// HandleUserDemote reduces a user's role and refreshes the table view.
 func HandleUserDemote(c *fiber.Ctx) error {
 	username := c.Params("username")
 
@@ -70,7 +75,7 @@ func HandleUserDemote(c *fiber.Ctx) error {
 
 // HandleAccount renders the current user's account page showing favorites, reading lists and liked mangas
 func HandleAccount(c *fiber.Ctx) error {
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -146,26 +151,53 @@ func HandleAccount(c *fiber.Ctx) error {
 	return HandleView(c, views.Account(*user, userName, favorites, reading, liked, downvoted))
 }
 
-// Helpers for paginated account lists
-func slicePage(slugs []string, page, pageSize int) (start, end int) {
-	total := len(slugs)
-	if page < 1 {
-		page = 1
+// filterMangasByTags filters a slice of mangas by selected tags
+// tagMode can be "all" (all tags must match) or "any" (at least one tag must match)
+func filterMangasByTags(mangas []models.Manga, selectedTags []string, tagMode string) []models.Manga {
+	if len(selectedTags) == 0 {
+		return mangas
 	}
-	start = (page - 1) * pageSize
-	if start > total {
-		start = total
+
+	var filtered []models.Manga
+	for _, manga := range mangas {
+		mangaTags, err := models.GetTagsForManga(manga.Slug)
+		if err != nil {
+			continue
+		}
+
+		if tagMode == "any" {
+			// At least one selected tag must be in manga's tags
+			for _, selTag := range selectedTags {
+				for _, mTag := range mangaTags {
+					if strings.EqualFold(selTag, mTag) {
+						filtered = append(filtered, manga)
+						goto nextManga
+					}
+				}
+			}
+		} else {
+			// All selected tags must be in manga's tags
+			matchCount := 0
+			for _, selTag := range selectedTags {
+				for _, mTag := range mangaTags {
+					if strings.EqualFold(selTag, mTag) {
+						matchCount++
+						break
+					}
+				}
+			}
+			if matchCount == len(selectedTags) {
+				filtered = append(filtered, manga)
+			}
+		}
+	nextManga:
 	}
-	end = start + pageSize
-	if end > total {
-		end = total
-	}
-	return
+	return filtered
 }
 
 // HandleAccountFavorites shows paginated favorites for the current user
 func HandleAccountFavorites(c *fiber.Ctx) error {
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -174,35 +206,51 @@ func HandleAccountFavorites(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	total := len(favSlugs)
 
-	page := 1
-	if p := c.Query("page", "1"); p != "" {
-		if v, err := strconv.Atoi(p); err == nil && v > 0 {
-			page = v
-		}
-	}
+	params := ParseQueryParams(c)
 	pageSize := 16
-	start, end := slicePage(favSlugs, page, pageSize)
-
-	var mangas []models.Manga
-	for _, slug := range favSlugs[start:end] {
+	
+	// Build full manga list first
+	var allMangas []models.Manga
+	for _, slug := range favSlugs {
 		if m, err := models.GetManga(slug); err == nil && m != nil {
-			mangas = append(mangas, *m)
+			allMangas = append(allMangas, *m)
 		}
 	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1
+	
+	// Filter by tags if specified
+	if len(params.Tags) > 0 {
+		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
-	sortBy := c.Query("sort", "name")
-	order := c.Query("order", "asc")
-	return HandleView(c, views.AccountFavorites(mangas, page, totalPages, sortBy, order))
+	
+	// Sort mangas
+	models.SortMangas(allMangas, params.Sort, params.Order)
+	
+	// Paginate
+	total := len(allMangas)
+	start := (params.Page-1)*pageSize
+	end := start + pageSize
+	if start > len(allMangas) { start = len(allMangas) }
+	if end > len(allMangas) { end = len(allMangas) }
+	mangas := allMangas[start:end]
+	totalPages := CalculateTotalPages(int64(total), pageSize)
+	
+	// Fetch all tags for user's favorites
+	allTags, tagsErr := models.GetTagsForUserFavorites(userName)
+	if tagsErr != nil {
+		return handleError(c, tagsErr)
+	}
+	
+	// HTMX fragment support
+	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/favorites", "You have no favorites yet.", params.Tags, params.TagMode, allTags))
+	}
+	return HandleView(c, views.AccountFavoritesWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
 }
 
 // HandleAccountUpvoted shows paginated upvoted mangas for the current user
 func HandleAccountUpvoted(c *fiber.Ctx) error {
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -211,34 +259,47 @@ func HandleAccountUpvoted(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	total := len(slugs)
-	page := 1
-	if p := c.Query("page", "1"); p != "" {
-		if v, err := strconv.Atoi(p); err == nil && v > 0 {
-			page = v
-		}
-	}
+	
+	params := ParseQueryParams(c)
 	pageSize := 16
-	start, end := slicePage(slugs, page, pageSize)
-
-	var mangas []models.Manga
-	for _, slug := range slugs[start:end] {
-		if m, err := models.GetManga(slug); err == nil && m != nil {
-			mangas = append(mangas, *m)
-		}
+	
+	var allMangas []models.Manga
+	for _, slug := range slugs { 
+		if m, err := models.GetManga(slug); err == nil && m != nil { 
+			allMangas = append(allMangas, *m) 
+		} 
 	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1
+	
+	// Filter by tags if specified
+	if len(params.Tags) > 0 {
+		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
-	sortBy := c.Query("sort", "name")
-	order := c.Query("order", "asc")
-	return HandleView(c, views.AccountUpvoted(mangas, page, totalPages, sortBy, order))
+	
+	models.SortMangas(allMangas, params.Sort, params.Order)
+	
+	total := len(allMangas)
+	start := (params.Page-1)*pageSize
+	end := start + pageSize
+	if start > len(allMangas) { start = len(allMangas) }
+	if end > len(allMangas) { end = len(allMangas) }
+	mangas := allMangas[start:end]
+	totalPages := CalculateTotalPages(int64(total), pageSize)
+	
+	// Fetch all tags for user's upvoted mangas
+	allTags, tagsErr := models.GetTagsForUserUpvoted(userName)
+	if tagsErr != nil {
+		return handleError(c, tagsErr)
+	}
+	
+	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/upvoted", "You have not upvoted any mangas yet.", params.Tags, params.TagMode, allTags))
+	}
+	return HandleView(c, views.AccountUpvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
 }
 
 // HandleAccountReading shows paginated reading list for the current user
 func HandleAccountReading(c *fiber.Ctx) error {
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -247,34 +308,47 @@ func HandleAccountReading(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	total := len(slugs)
-	page := 1
-	if p := c.Query("page", "1"); p != "" {
-		if v, err := strconv.Atoi(p); err == nil && v > 0 {
-			page = v
-		}
-	}
+	
+	params := ParseQueryParams(c)
 	pageSize := 16
-	start, end := slicePage(slugs, page, pageSize)
-
-	var mangas []models.Manga
-	for _, slug := range slugs[start:end] {
-		if m, err := models.GetManga(slug); err == nil && m != nil {
-			mangas = append(mangas, *m)
-		}
+	
+	var allMangas []models.Manga
+	for _, slug := range slugs { 
+		if m, err := models.GetManga(slug); err == nil && m != nil { 
+			allMangas = append(allMangas, *m) 
+		} 
 	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1
+	
+	// Filter by tags if specified
+	if len(params.Tags) > 0 {
+		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
-	sortBy := c.Query("sort", "name")
-	order := c.Query("order", "asc")
-	return HandleView(c, views.AccountReading(mangas, page, totalPages, sortBy, order))
+	
+	models.SortMangas(allMangas, params.Sort, params.Order)
+	
+	total := len(allMangas)
+	start := (params.Page-1)*pageSize
+	end := start + pageSize
+	if start > len(allMangas) { start = len(allMangas) }
+	if end > len(allMangas) { end = len(allMangas) }
+	mangas := allMangas[start:end]
+	totalPages := CalculateTotalPages(int64(total), pageSize)
+	
+	// Fetch all tags for user's reading mangas
+	allTags, tagsErr := models.GetTagsForUserReading(userName)
+	if tagsErr != nil {
+		return handleError(c, tagsErr)
+	}
+	
+	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/reading", "You are not reading any mangas right now.", params.Tags, params.TagMode, allTags))
+	}
+	return HandleView(c, views.AccountReadingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
 }
 
 // HandleAccountDownvoted shows paginated downvoted mangas for the current user
 func HandleAccountDownvoted(c *fiber.Ctx) error {
-	userName, _ := c.Locals("user_name").(string)
+	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
@@ -283,28 +357,40 @@ func HandleAccountDownvoted(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	total := len(slugs)
-	page := 1
-	if p := c.Query("page", "1"); p != "" {
-		if v, err := strconv.Atoi(p); err == nil && v > 0 {
-			page = v
-		}
-	}
+	
+	params := ParseQueryParams(c)
 	pageSize := 16
-	start, end := slicePage(slugs, page, pageSize)
-
-	var mangas []models.Manga
-	for _, slug := range slugs[start:end] {
-		if m, err := models.GetManga(slug); err == nil && m != nil {
-			mangas = append(mangas, *m)
-		}
+	
+	var allMangas []models.Manga
+	for _, slug := range slugs { 
+		if m, err := models.GetManga(slug); err == nil && m != nil { 
+			allMangas = append(allMangas, *m) 
+		} 
 	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1
+	
+	// Filter by tags if specified
+	if len(params.Tags) > 0 {
+		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
-	sortBy := c.Query("sort", "name")
-	order := c.Query("order", "asc")
-	// The downvoted template was generated with the name AccountDownvoted (contains "Your Downvoted"), so render that.
-	return HandleView(c, views.AccountDownvoted(mangas, page, totalPages, sortBy, order))
+	
+	models.SortMangas(allMangas, params.Sort, params.Order)
+	
+	total := len(allMangas)
+	start := (params.Page-1)*pageSize
+	end := start + pageSize
+	if start > len(allMangas) { start = len(allMangas) }
+	if end > len(allMangas) { end = len(allMangas) }
+	mangas := allMangas[start:end]
+	totalPages := CalculateTotalPages(int64(total), pageSize)
+	
+	// Fetch all tags for user's downvoted mangas
+	allTags, tagsErr := models.GetTagsForUserDownvoted(userName)
+	if tagsErr != nil {
+		return handleError(c, tagsErr)
+	}
+	
+	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/downvoted", "You have not downvoted any mangas yet.", params.Tags, params.TagMode, allTags))
+	}
+	return HandleView(c, views.AccountDownvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
 }
