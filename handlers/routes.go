@@ -87,6 +87,10 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	users.Get("/promote/:username", HandleUserPromote)
 	users.Get("/demote/:username", HandleUserDemote)
 
+	// Configuration page (admin only)
+	app.Get("/configuration", AuthMiddleware("admin"), HandleConfiguration)
+	app.Post("/configuration", AuthMiddleware("admin"), HandleConfigurationUpdate)
+
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
 	mangas.Get("", HandleMangas)

@@ -12,6 +12,9 @@ templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string
         { Label: "Mangas", Href: "/mangas" },
     })
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
+    <!-- New showcase: Latest Mangas (keeps the existing slider/listing below) -->
+    @LatestShowcase(mangas)
+
     <div id="manga-listing">
         @GenericMangaListing("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas have been indexed yet.", selectedTags, tagMode, allTags)
     </div>

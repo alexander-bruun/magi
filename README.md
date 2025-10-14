@@ -32,6 +32,17 @@ Alternatively, run Magi in a container solution such as Kubernetes, Docker Deskt
 
 The full documentation, can be found [here](https://alexander-bruun.github.io/magi/).
 
+## Configuration
+
+Magi exposes a simple administrative Configuration page (Navigation: Admin -> Configuration) which allows you to control basic instance-wide settings:
+
+- Allow new user registrations: When disabled, the register page returns a message stating that registration is disabled.
+- Max users: When set to a value greater than 0, registrations are blocked once the user count reaches this number. A value of 0 means unlimited users.
+
+Only administrators (role `admin`) can view or modify these settings. The first user to register on a fresh instance is automatically promoted to `admin`.
+
+Settings are persisted in the database (table `app_config`) and applied immediately after clicking Save.
+
 ## Technologies
 
 Magi is built with the following technologies:

@@ -154,3 +154,50 @@ templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, f
         <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
     </div>
 }
+
+// LatestShowcase renders a highlighted horizontal showcase of the newest mangas.
+// It shows a cover, title, chapter count and a simple rating based on votes.
+templ LatestShowcase(mangas []models.Manga) {
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Latest Mangas</span></h2>
+    if len(mangas) == 0 {
+        @EmptyState("No mangas have been indexed yet.")
+    } else {
+        <div class="px-1 mt-2" uk-slider>
+            <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
+                <ul class="uk-slider-items uk-child-width-auto">
+                    for i, manga := range mangas {
+                        if i >= 6 {
+                            break
+                        }
+                        {{ _, up, down, _ := models.GetMangaVotes(manga.Slug) }}
+                        {{ rating := 0.0 }}
+                        if up+down > 0 {
+                            {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
+                        }
+                        <li class="px-1">
+                            <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
+                                <div class="uk-card uk-card-default uk-card-body p-2 m-2" style="width:200px;">
+                                    <div class="uk-card-media-top relative">
+                                        @MangaCover(manga.CoverArtURL, manga.Name, 200, 300, true)
+                                        <div class="absolute left-2 top-2">
+                                            <span class="bg-red-600 text-white text-xs px-2 py-1 rounded">MANHWA</span>
+                                        </div>
+                                    </div>
+                                    <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ manga.Name }</h3>
+                                    <div class="text-sm text-gray-400">Chapter { manga.FileCount }</div>
+                                    <div class="flex items-center mt-1">
+                                        <uk-icon icon="Star"></uk-icon>
+                                        <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous"></a>
+                <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next"></a>
+            </div>
+            <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
+        </div>
+    }
+}

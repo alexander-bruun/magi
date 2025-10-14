@@ -10,16 +10,18 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, totalMa
 		{ Label: "Home", Href: "/" },
 	})
 
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
 	if len(recentlyAdded) == 0 {
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
 		@EmptyState("No mangas have been indexed yet.")
 	} else {
-		@MangaSlider(recentlyAdded, 200, 300, true, true)
+		<!-- New showcase on the homepage (keeps the original slider below) -->
+		@LatestShowcase(recentlyAdded)
 	}
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
 	if len(recentlyUpdated) == 0 {
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
 		@EmptyState("No mangas have been indexed yet.")
 	} else {
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
 		@MangaSlider(recentlyUpdated, 200, 300, true, true)
 	}
 
