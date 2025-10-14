@@ -9,6 +9,17 @@ import (
 
 // RegisterHandler renders the registration form page.
 func RegisterHandler(c *fiber.Ctx) error {
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return handleError(c, err)
+	}
+	count, err := models.CountUsers()
+	if err != nil {
+		return handleError(c, err)
+	}
+	if !cfg.AllowRegistration || (cfg.MaxUsers > 0 && count >= cfg.MaxUsers) {
+		return HandleView(c, views.Error("Registration is currently disabled."))
+	}
 	return HandleView(c, views.Register())
 }
 
@@ -19,6 +30,17 @@ func LoginHandler(c *fiber.Ctx) error {
 
 // CreateUserHandler processes a registration submission and redirects to login on success.
 func CreateUserHandler(c *fiber.Ctx) error {
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return handleError(c, err)
+	}
+	count, err := models.CountUsers()
+	if err != nil {
+		return handleError(c, err)
+	}
+	if !cfg.AllowRegistration || (cfg.MaxUsers > 0 && count >= cfg.MaxUsers) {
+		return HandleView(c, views.Error("Registration is currently disabled."))
+	}
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
