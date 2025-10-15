@@ -166,7 +166,7 @@ templ LatestShowcase(mangas []models.Manga) {
         <div class="px-1 mt-2" uk-slider>
             <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
                 <ul class="uk-slider-items uk-child-width-auto">
-                    for i, manga := range mangas {
+                    for _, manga := range mangas {
                         {{ _, up, down, _ := models.GetMangaVotes(manga.Slug) }}
                         {{ rating := 0.0 }}
                         if up+down > 0 {

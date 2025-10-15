@@ -784,7 +784,7 @@ func LatestShowcase(mangas []models.Manga) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			for i, manga := range mangas {
+			for _, manga := range mangas {
 				_, up, down, _ := models.GetMangaVotes(manga.Slug)
 				rating := 0.0
 				if up+down > 0 {
