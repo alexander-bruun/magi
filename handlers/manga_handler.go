@@ -23,20 +23,19 @@ const (
 func HandleMangas(c *fiber.Ctx) error {
 	params := ParseQueryParams(c)
 
-	// Search mangas based on tag selection
-	var mangas []models.Manga
-	var count int64
-	var err error
-
-	if len(params.Tags) > 0 {
-		if params.TagMode == "any" {
-			mangas, count, err = models.SearchMangasWithAnyTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
-		} else {
-			mangas, count, err = models.SearchMangasWithTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
-		}
-	} else {
-		mangas, count, err = models.SearchMangas(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug)
+	// Search mangas using options (supports tags, tagMode, and types)
+	opts := models.SearchOptions{
+		Filter:      params.SearchFilter,
+		Page:        params.Page,
+		PageSize:    defaultPageSize,
+		SortBy:      params.Sort,
+		SortOrder:   params.Order,
+		LibrarySlug: params.LibrarySlug,
+		Tags:        params.Tags,
+		TagMode:     params.TagMode,
+		Types:       params.Types,
 	}
+	mangas, count, err := models.SearchMangasWithOptions(opts)
 
 	if err != nil {
 		return handleError(c, err)
@@ -49,13 +48,18 @@ func HandleMangas(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	// Fetch all known types for the new types dropdown
+	allTypes, err := models.GetAllMangaTypes()
+	if err != nil {
+		return handleError(c, err)
+	}
 
 	// If HTMX request targeting the listing container, render just the generic listing
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "manga-listing" {
-		return HandleView(c, views.GenericMangaListing("/mangas", "manga-listing", true, mangas, params.Page, totalPages, params.Sort, params.Order, "No mangas have been indexed yet.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.GenericMangaListingWithTypes("/mangas", "manga-listing", true, mangas, params.Page, totalPages, params.Sort, params.Order, "No mangas have been indexed yet.", params.Tags, params.TagMode, allTags, params.Types, allTypes, params.SearchFilter))
 	}
 
-	return HandleView(c, views.Mangas(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.MangasWithTypes(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.Types, allTypes, params.SearchFilter))
 }
 
 // HandleManga renders a manga detail page including chapters and per-user state.
@@ -64,6 +68,9 @@ func HandleManga(c *fiber.Ctx) error {
 	manga, err := models.GetManga(slug)
 	if err != nil {
 		return handleError(c, err)
+	}
+	if manga == nil {
+		return HandleView(c, views.Error("Manga not found or access restricted based on content rating settings."))
 	}
 	chapters, err := models.GetChapters(slug)
 	if err != nil {
@@ -185,6 +192,9 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	if existingManga == nil {
+		return handleError(c, fmt.Errorf("manga not found or access restricted"))
+	}
 
 	mangaDetail, err := models.GetMangadexManga(mangadexID)
 	if err != nil {
@@ -290,6 +300,9 @@ func getMangaAndChapters(mangaSlug string) (*models.Manga, []models.Chapter, err
 	if err != nil {
 		return nil, nil, err
 	}
+	if manga == nil {
+		return nil, nil, fmt.Errorf("manga not found or access restricted")
+	}
 
 	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil {
@@ -345,7 +358,7 @@ func cacheAndGetImageURL(slug, coverArtURL string) (string, error) {
 		return "", fmt.Errorf("error downloading image: %w", err)
 	}
 
-	return fmt.Sprintf("http://localhost:3000/api/images/%s.%s", slug, fileExt), nil
+	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
 }
 
 func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, coverArtURL string) {

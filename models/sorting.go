@@ -41,6 +41,7 @@ func (c GenericSortConfig) NormalizeSort(sortBy, order string) (key string, ord 
 var MangaSortConfig = GenericSortConfig{
 	Allowed: []SortOption{
 		{Key: "name", Aliases: []string{"title"}},
+		{Key: "type"},
 		{Key: "year"},
 		{Key: "status"},
 		{Key: "content_rating", Aliases: []string{"contentrating"}},
@@ -49,6 +50,29 @@ var MangaSortConfig = GenericSortConfig{
 	},
 	DefaultKey: "name",
 	DefaultOrder: "asc",
+}
+
+// GetAllowedMangaSortOptions returns sort options, optionally excluding content_rating
+// when content rating filtering is active (limit < 3)
+func GetAllowedMangaSortOptions() []SortOption {
+	cfg, err := GetAppConfig()
+	if err != nil {
+		// On error, return all options
+		return MangaSortConfig.Allowed
+	}
+	
+	// If content rating limit is less than 3 (not showing all), exclude content_rating from sort
+	if cfg.ContentRatingLimit < 3 {
+		filtered := make([]SortOption, 0, len(MangaSortConfig.Allowed)-1)
+		for _, opt := range MangaSortConfig.Allowed {
+			if opt.Key != "content_rating" {
+				filtered = append(filtered, opt)
+			}
+		}
+		return filtered
+	}
+	
+	return MangaSortConfig.Allowed
 }
 
 // SortMangas applies the given normalized key & order (use MangaSortConfig.NormalizeSort)
@@ -62,6 +86,8 @@ func SortMangas(mangas []Manga, key, order string) {
 		} else {
 			sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name) })
 		}
+	case "type":
+		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) < strings.ToLower(mangas[j].Type) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) > strings.ToLower(mangas[j].Type) }) }
 	case "year":
 		if asc { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year < mangas[j].Year }) } else { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year > mangas[j].Year }) }
 	case "status":

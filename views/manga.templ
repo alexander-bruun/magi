@@ -126,6 +126,9 @@ templ Info(manga models.Manga) {
 		if manga.OriginalLanguage != "" {
 			<div class="flex items-center"><strong class="w-20 text-gray-800">Language</strong><span class="ml-2">{ manga.OriginalLanguage }</span></div>
 		}
+		if manga.OriginalLanguage != "" {
+			<div class="flex items-center"><strong class="w-20 text-gray-800">Type</strong><span class="ml-2">{ models.DetermineMangaTypeByLanguage(manga.OriginalLanguage) }</span></div>
+		}
 		if manga.ContentRating != "" {
 			<div class="flex items-center"><strong class="w-20 text-gray-800">Rating</strong><span class="ml-2">{ manga.ContentRating }</span></div>
 		}
@@ -359,7 +362,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 	@ChapterNavigation(manga, chapter, chapters, previousChapter, nextChapter)
 	
 	<div class="flex items-center justify-center min-h-screen">
-		<div class="flex flex-col items-center p-4 w-3/5">
+		<!-- On small screens, allow full width. Keep constrained width on large screens -->
+		<div class="flex flex-col items-center p-0 sm:p-4 w-full lg:w-3/5">
 			for _, image := range images {
 				<img data-src={ image } class="lazyload w-full h-auto max-w-full" alt="loading page..."/>
 			}

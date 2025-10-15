@@ -4,10 +4,10 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
-    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, nil, "")
+templ AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, nil, "", searchFilter)
 }
 
-templ AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
-    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, selectedTags, tagMode)
+templ AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, selectedTags, tagMode, searchFilter)
 }

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	localServerBaseURL = "http://localhost:3000/api/images"
+	localServerBaseURL = "/api/images"
 )
 
 // IndexManga inspects a manga directory, syncing metadata and chapters with the database.
@@ -33,12 +33,47 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	// If manga already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
-	existingManga, err := models.GetManga(slug)
+	// Use GetMangaUnfiltered to bypass content rating filter for indexing operations
+	existingManga, err := models.GetMangaUnfiltered(slug)
 	if err != nil {
 		log.Errorf("Failed to lookup manga '%s': %s", slug, err)
 	}
 
 	if existingManga != nil {
+		// Detect if this is a different folder being added to an existing manga
+		if existingManga.Path != "" && existingManga.Path != absolutePath {
+			// Ensure consistent ordering for the DB lookup
+			fp1, fp2 := existingManga.Path, absolutePath
+			if fp1 > fp2 {
+				fp1, fp2 = fp2, fp1
+			}
+
+			// Check if we've already recorded this duplicate; if so, skip logging/creating
+			existingDup, err := models.GetMangaDuplicateByFolders(slug, fp1, fp2)
+			if err != nil {
+				// On DB error, fall back to logging and attempt to create (best-effort)
+				log.Errorf("Failed to check existing manga duplicate for '%s': %v", slug, err)
+			}
+
+			if existingDup == nil {
+				// This is a new duplicate: log and record it
+				log.Warnf("Detected duplicate folder for manga '%s': existing='%s', new='%s'", 
+					slug, existingManga.Path, absolutePath)
+
+				duplicate := models.MangaDuplicate{
+					MangaSlug:   slug,
+					LibrarySlug: librarySlug,
+					FolderPath1: existingManga.Path,
+					FolderPath2: absolutePath,
+				}
+
+				if err := models.CreateMangaDuplicate(duplicate); err != nil {
+					log.Errorf("Failed to record manga duplicate for '%s': %v", slug, err)
+				}
+			}
+			// Still index the chapters from this new folder
+		}
+		
 		// Fast path 1: use stored file_count on the Manga. If the number of
 		// candidate files (files that look like chapters) matches the stored
 		// FileCount, assume no changes and skip.
@@ -146,12 +181,16 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 }
 
 func createMangaFromMatch(match *models.MangaDetail, name, slug, librarySlug, path, coverURL string) models.Manga {
+	// derive type from original language
+	derivedType := models.DetermineMangaType(match)
+
 	return models.Manga{
 		Name:             name,
 		Slug:             slug,
 		Description:      getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Description["en"] }),
 		Year:             getIntAttribute(match, func(m *models.MangaDetail) int { return m.Attributes.Year }),
 		OriginalLanguage: getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.OriginalLanguage }),
+		Type:             derivedType,
 		Status:           getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Status }),
 		ContentRating:    getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.ContentRating }),
 		CoverArtURL:      coverURL,
@@ -339,7 +378,7 @@ func IndexChapters(slug, path string) (int, int, error) {
 	}
 
 	// Update manga file count and timestamp
-	m, err := models.GetManga(slug)
+	m, err := models.GetMangaUnfiltered(slug)
 	if err == nil && m != nil {
 		m.FileCount = len(presentMap)
 		if err := models.UpdateManga(m); err != nil {

@@ -195,6 +195,82 @@ func filterMangasByTags(mangas []models.Manga, selectedTags []string, tagMode st
 	return filtered
 }
 
+// filterMangasBySearch filters a slice of mangas by search term using very lenient fuzzy matching
+func filterMangasBySearch(mangas []models.Manga, searchTerm string) []models.Manga {
+	if searchTerm == "" {
+		return mangas
+	}
+
+	// Aggressive normalization function
+	normalize := func(s string) string {
+		s = strings.ToLower(s)
+		// Remove all non-alphanumeric characters except spaces
+		var result strings.Builder
+		for _, r := range s {
+			if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == ' ' {
+				result.WriteRune(r)
+			} else if r >= 'A' && r <= 'Z' {
+				result.WriteRune(r + 32) // Convert to lowercase
+			} else {
+				// Replace any other character with space
+				result.WriteRune(' ')
+			}
+		}
+		return result.String()
+	}
+
+	// Normalize and split search term
+	normalizedSearch := normalize(searchTerm)
+	searchWords := strings.Fields(normalizedSearch)
+	if len(searchWords) == 0 {
+		return mangas
+	}
+
+	var filtered []models.Manga
+	for _, manga := range mangas {
+		// Normalize manga name
+		normalizedName := normalize(manga.Name)
+		
+		// Check if all search words match
+		matched := true
+		for _, searchWord := range searchWords {
+			if searchWord == "" {
+				continue
+			}
+			
+			// First check: simple substring match
+			if strings.Contains(normalizedName, searchWord) {
+				continue
+			}
+			
+			// Second check: word prefix match
+			nameWords := strings.Fields(normalizedName)
+			wordMatched := false
+			for _, nameWord := range nameWords {
+				if strings.HasPrefix(nameWord, searchWord) {
+					wordMatched = true
+					break
+				}
+				// Also check if the search word appears within the name word (substring)
+				if strings.Contains(nameWord, searchWord) {
+					wordMatched = true
+					break
+				}
+			}
+			
+			if !wordMatched {
+				matched = false
+				break
+			}
+		}
+		
+		if matched {
+			filtered = append(filtered, manga)
+		}
+	}
+	return filtered
+}
+
 // HandleAccountFavorites shows paginated favorites for the current user
 func HandleAccountFavorites(c *fiber.Ctx) error {
 	userName := GetUserContext(c)
@@ -223,6 +299,11 @@ func HandleAccountFavorites(c *fiber.Ctx) error {
 		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
 	
+	// Filter by search term if specified
+	if params.SearchFilter != "" {
+		allMangas = filterMangasBySearch(allMangas, params.SearchFilter)
+	}
+	
 	// Sort mangas
 	models.SortMangas(allMangas, params.Sort, params.Order)
 	
@@ -243,9 +324,9 @@ func HandleAccountFavorites(c *fiber.Ctx) error {
 	
 	// HTMX fragment support
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
-		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/favorites", "You have no favorites yet.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/favorites", "You have no favorites yet.", params.Tags, params.TagMode, allTags, params.SearchFilter))
 	}
-	return HandleView(c, views.AccountFavoritesWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.AccountFavoritesWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.SearchFilter))
 }
 
 // HandleAccountUpvoted shows paginated upvoted mangas for the current user
@@ -275,6 +356,11 @@ func HandleAccountUpvoted(c *fiber.Ctx) error {
 		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
 	
+	// Filter by search term if specified
+	if params.SearchFilter != "" {
+		allMangas = filterMangasBySearch(allMangas, params.SearchFilter)
+	}
+	
 	models.SortMangas(allMangas, params.Sort, params.Order)
 	
 	total := len(allMangas)
@@ -292,9 +378,9 @@ func HandleAccountUpvoted(c *fiber.Ctx) error {
 	}
 	
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
-		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/upvoted", "You have not upvoted any mangas yet.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/upvoted", "You have not upvoted any mangas yet.", params.Tags, params.TagMode, allTags, params.SearchFilter))
 	}
-	return HandleView(c, views.AccountUpvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.AccountUpvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.SearchFilter))
 }
 
 // HandleAccountReading shows paginated reading list for the current user
@@ -324,6 +410,11 @@ func HandleAccountReading(c *fiber.Ctx) error {
 		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
 	
+	// Filter by search term if specified
+	if params.SearchFilter != "" {
+		allMangas = filterMangasBySearch(allMangas, params.SearchFilter)
+	}
+	
 	models.SortMangas(allMangas, params.Sort, params.Order)
 	
 	total := len(allMangas)
@@ -341,9 +432,9 @@ func HandleAccountReading(c *fiber.Ctx) error {
 	}
 	
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
-		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/reading", "You are not reading any mangas right now.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/reading", "You are not reading any mangas right now.", params.Tags, params.TagMode, allTags, params.SearchFilter))
 	}
-	return HandleView(c, views.AccountReadingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.AccountReadingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.SearchFilter))
 }
 
 // HandleAccountDownvoted shows paginated downvoted mangas for the current user
@@ -373,6 +464,11 @@ func HandleAccountDownvoted(c *fiber.Ctx) error {
 		allMangas = filterMangasByTags(allMangas, params.Tags, params.TagMode)
 	}
 	
+	// Filter by search term if specified
+	if params.SearchFilter != "" {
+		allMangas = filterMangasBySearch(allMangas, params.SearchFilter)
+	}
+	
 	models.SortMangas(allMangas, params.Sort, params.Order)
 	
 	total := len(allMangas)
@@ -390,7 +486,7 @@ func HandleAccountDownvoted(c *fiber.Ctx) error {
 	}
 	
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "account-manga-list" {
-		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/downvoted", "You have not downvoted any mangas yet.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.AccountMangaListingWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, "/account/downvoted", "You have not downvoted any mangas yet.", params.Tags, params.TagMode, allTags, params.SearchFilter))
 	}
-	return HandleView(c, views.AccountDownvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.AccountDownvotedWithTags(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.SearchFilter))
 }

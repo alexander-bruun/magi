@@ -5,19 +5,19 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+templ MangasWithTypes(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
     @PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage))
     @Breadcrumb([]BreadcrumbItem{
         { Label: "Home", Href: "/" },
         { Label: "Mangas", Href: "/mangas" },
     })
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Mangas</span></h2>
-    <!-- New showcase: Latest Mangas (keeps the existing slider/listing below) -->
-    @LatestShowcase(mangas)
-
     <div id="manga-listing">
-        @GenericMangaListing("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas have been indexed yet.", selectedTags, tagMode, allTags)
+        @GenericMangaListingWithTypes("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas have been indexed yet.", selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter)
     </div>
 }
 
-// Removed page-specific Pagination & SortControls in favor of GenericMangaListing / Unified* components.
+// Backwards compatibility until all call sites updated
+templ Mangas(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
+    @MangasWithTypes(mangas, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags, nil, nil, "")
+}

@@ -64,6 +64,46 @@ type MangaAttributes struct {
 	LatestUploadedChapter          string              `json:"latestUploadedChapter"`
 }
 
+// DetermineMangaTypeByLanguage returns a suggested type (manga/manhwa/manhua/etc.)
+// based on the original language code.
+func DetermineMangaTypeByLanguage(lang string) string {
+	switch strings.ToLower(strings.TrimSpace(lang)) {
+	case "ja", "jp":
+		return "manga"
+	case "ko":
+		return "manhwa"
+	case "zh", "cn", "zh-cn", "zh-hk", "zh-tw":
+		return "manhua"
+	case "fr":
+		return "manfra"
+	case "en":
+		return "oel"
+	default:
+		return "manga"
+	}
+}
+
+// DetermineMangaType inspects a full Mangadex MangaDetail for hints about
+// the format (e.g., webtoon) and falls back to language-based mapping.
+func DetermineMangaType(detail *MangaDetail) string {
+	if detail == nil {
+		return "manga"
+	}
+
+	// Check tags for indications like "webtoon" (case-insensitive)
+	for _, t := range detail.Attributes.Tags {
+		for _, name := range t.Attributes.Name {
+			lname := strings.ToLower(strings.TrimSpace(name))
+			if strings.Contains(lname, "webtoon") || strings.Contains(lname, "web comic") || strings.Contains(lname, "webcomic") {
+				return "webtoon"
+			}
+		}
+	}
+
+	// fallback to language mapping
+	return DetermineMangaTypeByLanguage(detail.Attributes.OriginalLanguage)
+}
+
 // Tag represents a tag in MangaAttributes
 type Tag struct {
 	ID         string `json:"id"`

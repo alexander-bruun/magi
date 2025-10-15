@@ -15,6 +15,7 @@ type SearchOptions struct {
 	LibrarySlug string
 	Tags        []string
 	TagMode     string // "all" or "any"
+	Types       []string // filter by manga types (any match)
 }
 
 // SearchMangasWithOptions performs a flexible manga search using options
@@ -41,6 +42,18 @@ func SearchMangasWithOptions(opts SearchOptions) ([]Manga, int64, error) {
 		} else {
 			mangas = filterByAllTags(mangas, opts.Tags, tagMap)
 		}
+	}
+
+	// Filter by types if provided (any match)
+	if len(opts.Types) > 0 {
+		typeSet := normalizeStringSet(opts.Types)
+		filtered := make([]Manga, 0, len(mangas))
+		for _, m := range mangas {
+			if _, ok := typeSet[strings.ToLower(strings.TrimSpace(m.Type))]; ok {
+				filtered = append(filtered, m)
+			}
+		}
+		mangas = filtered
 	}
 
 	total := int64(len(mangas))
@@ -103,6 +116,18 @@ func normalizeTagSet(tags []string) map[string]struct{} {
 		t = strings.TrimSpace(strings.ToLower(t))
 		if t != "" {
 			set[t] = struct{}{}
+		}
+	}
+	return set
+}
+
+// normalizeStringSet lowercases and trims a slice of strings into a set map
+func normalizeStringSet(values []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(values))
+	for _, v := range values {
+		v = strings.TrimSpace(strings.ToLower(v))
+		if v != "" {
+			set[v] = struct{}{}
 		}
 	}
 	return set

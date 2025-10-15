@@ -10,7 +10,7 @@
   --avatar-border: rgba(0, 0, 0, 0.12);
 }
 
-/* Role color utilities (replaces tailwind color classes used previously) */
+/* Role color utilities */
 .role-admin {
   color: var(--role-admin);
 }
@@ -192,6 +192,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+/* Make main uk-container fill the viewport on small screens so reader images can be full-bleed */
+@media (max-width: 640px) {
+  /* target the content container used in layout.templ */
+  #content.uk-container {
+    max-width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* remove any inner padding around the reader area so images touch the edges */
+  #content.uk-container .site-main, main.site-main, .site-main > #content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* ensure the reader column itself uses full width and no extra padding */
+  .reader-fullwidth, .flex.items-center.justify-center.min-h-screen {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 }
 
 /* Scroll to top floating button */
@@ -548,4 +572,17 @@ header.site-header a:focus,
   :root {
     font-family: InterVariable, sans-serif;
   }
+}
+
+/*
+ * Fix: heading descenders clipped
+ * The framework sets overflow:hidden on .uk-heading-line which can clip glyph
+ * descenders when the inner <span> uses a tight line-height. Make the inner
+ * span an inline-block and give it a small, safe line-height so letters like
+ * "g", "y" and "j" won't be cut off.
+ */
+.uk-heading-line > span,
+.uk-heading-line span {
+  display: inline-block;
+  line-height: 1.2;
 }

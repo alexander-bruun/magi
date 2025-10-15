@@ -6,9 +6,12 @@ import (
 
 // BigramSearch finds items that are similar to the given keyword based on bigram similarity.
 func BigramSearch(keyword string, items []string) []string {
+	// Normalize keyword for case-insensitive search
+	keywordLower := strings.ToLower(keyword)
+	
 	var results []string
 	for _, item := range items {
-		if score := CompareStrings(keyword, item); score > 0.3 {
+		if score := CompareStrings(keywordLower, strings.ToLower(item)); score > 0.3 {
 			results = append(results, item)
 		}
 	}

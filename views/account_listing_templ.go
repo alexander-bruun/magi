@@ -15,7 +15,7 @@ import (
 
 // AccountMangaListing is a generic component for account manga lists (favorites, reading, upvoted, downvoted)
 // Use includeTags=true to enable tag filtering on account pages
-func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string) templ.Component {
+func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -36,7 +36,7 @@ func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int,
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericMangaListing(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +45,7 @@ func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int,
 }
 
 // AccountMangaListingWithTags includes selected tags and tag mode for filtered views
-func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) templ.Component {
+func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -66,7 +66,7 @@ func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPa
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericMangaListing(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -75,7 +75,7 @@ func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPa
 }
 
 // Generic account page layout - consolidates all account list pages
-func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string) templ.Component {
+func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -126,12 +126,12 @@ func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas
 			return templ_7745c5c3_Err
 		}
 		if len(selectedTags) > 0 || tagMode != "" {
-			templ_7745c5c3_Err = AccountMangaListingWithTags(mangas, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = AccountMangaListingWithTags(mangas, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = AccountMangaListing(mangas, currentPage, totalPages, sort, order, path, emptyMessage, allTags).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = AccountMangaListing(mangas, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

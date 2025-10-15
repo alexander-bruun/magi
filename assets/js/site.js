@@ -4,111 +4,137 @@
 (function () {
   'use strict';
 
+  // === Constants ===
+  const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
+  const MOBILE_BREAKPOINT = '(max-width: 768px)';
+
+  // === Utility Functions ===
+  const isMobile = () => window.matchMedia(MOBILE_BREAKPOINT).matches;
+
+  const safeExecute = (fn, errorContext) => {
+    try {
+      fn();
+    } catch (e) {
+      console.error(`${errorContext} error:`, e);
+    }
+  };
+
   // === Sidebar Management ===
-  function initSidebar() {
-    const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
-    const MOBILE_BREAKPOINT = '(max-width: 768px)';
-    
-    const elements = {
-      body: document.body,
-      toggle: document.getElementById('sidebar-toggle'),
-      sidebar: document.getElementById('sidebar'),
-      backdrop: document.getElementById('sidebar-backdrop')
-    };
-    
-    const mq = window.matchMedia ? window.matchMedia(MOBILE_BREAKPOINT) : null;
-    
-    function applyCollapsed(collapsed) {
-      elements.body.classList.toggle('sidebar-collapsed', collapsed);
-      elements.toggle?.setAttribute('aria-expanded', String(!collapsed));
-    }
+  const SidebarManager = {
+    elements: null,
+    mediaQuery: null,
 
-    function openMobileSidebar() {
-      if (!elements.sidebar) return;
-      elements.body.classList.add('sidebar-open');
-      elements.toggle?.setAttribute('aria-expanded', 'true');
-      elements.backdrop?.removeAttribute('hidden');
-    }
-
-    function closeMobileSidebar() {
-      elements.body.classList.remove('sidebar-open');
-      elements.toggle?.setAttribute('aria-expanded', 'false');
-      elements.backdrop?.setAttribute('hidden', '');
-    }
-
-    function handleToggleClick() {
-      const isMobile = mq?.matches;
+    init() {
+      this.elements = {
+        body: document.body,
+        toggle: document.getElementById('sidebar-toggle'),
+        sidebar: document.getElementById('sidebar'),
+        backdrop: document.getElementById('sidebar-backdrop')
+      };
       
-      if (isMobile) {
-        elements.body.classList.contains('sidebar-open') 
-          ? closeMobileSidebar() 
-          : openMobileSidebar();
+      this.mediaQuery = window.matchMedia(MOBILE_BREAKPOINT);
+      this.initializeState();
+      this.attachEventListeners();
+    },
+
+    initializeState() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const shouldCollapse = stored ? stored === '1' : this.mediaQuery.matches;
+      this.applyCollapsed(shouldCollapse);
+    },
+
+    applyCollapsed(collapsed) {
+      this.elements.body.classList.toggle('sidebar-collapsed', collapsed);
+      this.elements.toggle?.setAttribute('aria-expanded', String(!collapsed));
+    },
+
+    openMobile() {
+      if (!this.elements.sidebar) return;
+      this.elements.body.classList.add('sidebar-open');
+      this.elements.toggle?.setAttribute('aria-expanded', 'true');
+      this.elements.backdrop?.removeAttribute('hidden');
+    },
+
+    closeMobile() {
+      this.elements.body.classList.remove('sidebar-open');
+      this.elements.toggle?.setAttribute('aria-expanded', 'false');
+      this.elements.backdrop?.setAttribute('hidden', '');
+    },
+
+    handleToggle() {
+      if (this.mediaQuery.matches) {
+        this.elements.body.classList.contains('sidebar-open') 
+          ? this.closeMobile() 
+          : this.openMobile();
       } else {
-        const isCollapsed = elements.body.classList.toggle('sidebar-collapsed');
+        const isCollapsed = this.elements.body.classList.toggle('sidebar-collapsed');
         localStorage.setItem(STORAGE_KEY, isCollapsed ? '1' : '0');
-        elements.toggle?.setAttribute('aria-expanded', String(!isCollapsed));
+        this.elements.toggle?.setAttribute('aria-expanded', String(!isCollapsed));
       }
-    }
+    },
 
-    // Initialize collapsed state
-    const stored = localStorage.getItem(STORAGE_KEY);
-    applyCollapsed(stored ? stored === '1' : mq?.matches || false);
-
-    // Event listeners
-    elements.toggle?.addEventListener('click', handleToggleClick);
-    elements.backdrop?.addEventListener('click', closeMobileSidebar);
-    
-    document.addEventListener('click', (e) => {
-      if (mq?.matches && e.target.closest('.sidebar a[href]')) {
-        closeMobileSidebar();
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && mq?.matches && elements.body.classList.contains('sidebar-open')) {
-        closeMobileSidebar();
-      }
-    });
-
-    // Handle media query changes
-    const handleMqChange = (e) => {
+    handleMediaQueryChange(e) {
       if (!localStorage.getItem(STORAGE_KEY)) {
-        applyCollapsed(e.matches);
+        this.applyCollapsed(e.matches);
       }
-      if (!e.matches) closeMobileSidebar();
-    };
+      if (!e.matches) {
+        this.closeMobile();
+      }
+    },
 
-    mq?.addEventListener?.('change', handleMqChange) || mq?.addListener?.(handleMqChange);
-  }
+    attachEventListeners() {
+      this.elements.toggle?.addEventListener('click', () => this.handleToggle());
+      this.elements.backdrop?.addEventListener('click', () => this.closeMobile());
+      
+      document.addEventListener('click', (e) => {
+        if (this.mediaQuery.matches && e.target.closest('.sidebar a[href]')) {
+          this.closeMobile();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && 
+            this.mediaQuery.matches && 
+            this.elements.body.classList.contains('sidebar-open')) {
+          this.closeMobile();
+        }
+      });
+
+      const handleChange = (e) => this.handleMediaQueryChange(e);
+      this.mediaQuery.addEventListener?.('change', handleChange) || 
+        this.mediaQuery.addListener?.(handleChange);
+    }
+  };
 
   // === Navigation Active State ===
-  function initNavigationSync() {
-    function normalizePath(path) {
+  const NavigationManager = {
+    normalizePath(path) {
       try {
         return new URL(path, location.origin).pathname.replace(/\/+$/g, '/') || '/';
       } catch {
         return '/';
       }
-    }
+    },
 
-    function updateActiveNav() {
-      const currentPath = normalizePath(location.pathname);
-      const navLinks = Array.from(document.querySelectorAll('.uk-nav a[href]'))
+    getNavLinks() {
+      return Array.from(document.querySelectorAll('.uk-nav a[href]'))
         .filter(a => a.getAttribute('href'))
         .map(a => ({
           element: a,
-          path: normalizePath(a.getAttribute('href')),
+          path: this.normalizePath(a.getAttribute('href')),
           parent: a.closest('li'),
           group: a.closest('.uk-nav')
         }));
+    },
 
-      // Remove all active states
-      document.querySelectorAll('.uk-nav li.uk-active').forEach(li => 
-        li.classList.remove('uk-active')
-      );
+    clearActiveStates() {
+      document.querySelectorAll('.uk-nav li.uk-active')
+        .forEach(li => li.classList.remove('uk-active'));
+    },
 
-      // Find best match for each nav group
+    findBestMatches(currentPath, navLinks) {
       const bestMatches = new Map();
+      
       navLinks.forEach(({ path, parent, group }) => {
         if (!parent || !group) return;
         
@@ -125,68 +151,103 @@
         }
       });
 
+      return bestMatches;
+    },
+
+    updateActiveNav() {
+      const currentPath = this.normalizePath(location.pathname);
+      const navLinks = this.getNavLinks();
+      
+      this.clearActiveStates();
+      
+      const bestMatches = this.findBestMatches(currentPath, navLinks);
       bestMatches.forEach(({ parent }) => parent.classList.add('uk-active'));
-    }
+    },
 
-    // Initialize and setup event listeners
-    if (document.readyState !== 'loading') {
-      updateActiveNav();
-    } else {
-      document.addEventListener('DOMContentLoaded', updateActiveNav);
-    }
-
-    document.addEventListener('htmx:afterSwap', updateActiveNav);
-    document.addEventListener('htmx:afterSettle', updateActiveNav);
-    window.addEventListener('popstate', updateActiveNav);
-
-    document.addEventListener('click', (ev) => {
-      const link = ev.target.closest('a[href]');
-      if (!link || link.target === '_blank') return;
+    init() {
+      const update = () => this.updateActiveNav();
       
-      const href = link.getAttribute('href');
-      if (!href || (href.startsWith('http') && new URL(href).origin !== location.origin)) return;
-      
-      setTimeout(updateActiveNav, 10);
-    });
-  }
+      if (document.readyState !== 'loading') {
+        update();
+      } else {
+        document.addEventListener('DOMContentLoaded', update);
+      }
+
+      document.addEventListener('htmx:afterSwap', update);
+      document.addEventListener('htmx:afterSettle', update);
+      window.addEventListener('popstate', update);
+
+      document.addEventListener('click', (ev) => {
+        const link = ev.target.closest('a[href]');
+        if (!link || link.target === '_blank') return;
+        
+        const href = link.getAttribute('href');
+        if (!href || (href.startsWith('http') && new URL(href).origin !== location.origin)) return;
+        
+        setTimeout(update, 10);
+      });
+    }
+  };
 
   // === Tag Filtering ===
-  function initTagFiltering() {
-    function syncTagFormSortOrder() {
+  const TagFilterManager = {
+    getFormElements() {
       const form = document.getElementById('tag-filter-form');
-      if (!form) return;
-      
+      if (!form) return null;
+
+      return {
+        form,
+        sortInput: form.querySelector('input[name="sort"]'),
+        orderInput: form.querySelector('input[name="order"]'),
+        modeInput: form.querySelector('input[name="tag_mode"]'),
+        sortSelect: document.getElementById('manga-sort-select'),
+        modeToggle: document.getElementById('tag-mode-toggle'),
+        tagList: document.getElementById('tag-list'),
+        hiddenSummary: document.getElementById('tag-hidden-summary')
+      };
+    },
+
+    getUrlParams() {
       const params = new URLSearchParams(window.location.search);
-      const select = document.getElementById('manga-sort-select');
-      
-      const sort = select?.value || params.get('sort') || '';
-      const order = params.get('order') || '';
       let tagMode = (params.get('tag_mode') || 'all').toLowerCase();
       tagMode = (tagMode === 'any' || tagMode === 'all') ? tagMode : 'all';
 
-      // Update hidden inputs
-      const inputs = {
-        sort: form.querySelector('input[name="sort"]'),
-        order: form.querySelector('input[name="order"]'),
-        mode: form.querySelector('input[name="tag_mode"]')
+      return {
+        sort: params.get('sort') || '',
+        order: params.get('order') || '',
+        tagMode
       };
+    },
 
-      if (sort && inputs.sort) inputs.sort.value = sort;
-      if (order && inputs.order) inputs.order.value = order;
-      if (inputs.mode) inputs.mode.value = tagMode;
+    syncFormState() {
+      const elements = this.getFormElements();
+      if (!elements) return;
+
+      const params = this.getUrlParams();
+      const sort = elements.sortSelect?.value || params.sort;
+
+      // Update hidden inputs
+      if (sort && elements.sortInput) {
+        elements.sortInput.value = sort;
+      }
+      if (params.order && elements.orderInput) {
+        elements.orderInput.value = params.order;
+      }
+      if (elements.modeInput) {
+        elements.modeInput.value = params.tagMode;
+      }
 
       // Update toggle button
-      const toggle = document.getElementById('tag-mode-toggle');
-      if (toggle) {
-        toggle.setAttribute('data-mode', tagMode);
-        toggle.textContent = tagMode === 'any' ? 'Any' : 'All';
+      if (elements.modeToggle) {
+        elements.modeToggle.setAttribute('data-mode', params.tagMode);
+        elements.modeToggle.textContent = params.tagMode === 'any' ? 'Any' : 'All';
       }
-    }
+    },
 
-    function refreshTagFragment() {
+    refreshTagFragment() {
       const path = window.location.pathname || '';
       if (path.startsWith('/account/')) {
-        syncTagFormSortOrder();
+        this.syncFormState();
         return;
       }
 
@@ -195,81 +256,61 @@
         .then(resp => resp.ok ? resp.text() : Promise.reject())
         .then(html => {
           const tagList = document.getElementById('tag-list');
-          if (tagList) tagList.innerHTML = html;
-          syncTagFormSortOrder();
+          if (tagList) {
+            tagList.innerHTML = html;
+          }
+          this.syncFormState();
         })
-        .catch(() => syncTagFormSortOrder());
-    }
+        .catch(() => this.syncFormState());
+    },
 
-    // Initialize
-    if (document.readyState !== 'loading') {
-      syncTagFormSortOrder();
-    } else {
-      document.addEventListener('DOMContentLoaded', syncTagFormSortOrder);
-    }
+    updateHiddenSummary() {
+      const elements = this.getFormElements();
+      if (!elements?.hiddenSummary) return;
 
-    window.addEventListener('popstate', syncTagFormSortOrder);
+      const checked = Array.from(document.querySelectorAll('#tag-list input[name="tags"]:checked'));
+      elements.hiddenSummary.value = checked.map(cb => cb.value).filter(Boolean).join(',');
+    },
 
-    document.addEventListener('htmx:afterSwap', (e) => {
-      const targetId = e.detail?.target?.id;
-      if (targetId === 'content') {
-        setTimeout(refreshTagFragment, 10);
-      } else if (targetId === 'tag-list') {
-        syncTagFormSortOrder();
-      }
-    });
-
-    // Handle uk-select custom events
-    document.addEventListener('uk-select:input', (e) => {
-      // Update hidden summary from checked checkboxes
-      const hiddenSummary = document.getElementById('tag-hidden-summary');
-      if (hiddenSummary) {
-        const checked = Array.from(document.querySelectorAll('#tag-list input[name="tags"]:checked'));
-        hiddenSummary.value = checked.map(cb => cb.value).filter(Boolean).join(',');
-      }
-
-      // Extract value from event detail
-      const detail = e.detail;
-      let value = null;
+    extractValue(detail) {
       if (detail && typeof detail === 'object') {
-        value = detail.value ?? detail.text ?? detail;
-      } else if (typeof detail === 'string' || typeof detail === 'number') {
-        value = detail;
+        return detail.value ?? detail.text ?? detail;
       }
+      if (typeof detail === 'string' || typeof detail === 'number') {
+        return detail;
+      }
+      return null;
+    },
 
-      // Find and update hidden select
-      let select = e.target.tagName === 'UK-SELECT' 
-        ? e.target.querySelector('select[hidden]')
-        : e.target.closest('uk-select')?.querySelector('select[hidden]') 
+    updateHiddenSelect(target, value) {
+      if (value == null) return;
+
+      const select = target.tagName === 'UK-SELECT' 
+        ? target.querySelector('select[hidden]')
+        : target.closest('uk-select')?.querySelector('select[hidden]') 
           || document.querySelector('select[name="sort"][hidden]');
 
-      if (select && value != null) {
-        const options = Array.from(select.options);
-        const match = options.find(opt => opt.value === String(value) || opt.text === String(value));
-        select.value = match ? match.value : String(value);
-      }
-    }, true);
+      if (!select) return;
 
-    // Scroll to top after content swap
-    document.addEventListener('htmx:afterSwap', (e) => {
-      if (e.detail?.target?.id === 'content') {
-        window.scrollTo(0, 0);
-      }
-    });
+      const options = Array.from(select.options);
+      const match = options.find(opt => 
+        opt.value === String(value) || opt.text === String(value)
+      );
+      
+      select.value = match ? match.value : String(value);
+    },
 
-    // Tag mode toggle button
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#tag-mode-toggle');
-      if (!btn) return;
+    handleTagModeToggle(btn) {
+      const elements = this.getFormElements();
+      if (!elements) return;
 
-      const form = document.getElementById('tag-filter-form');
-      if (!form) return;
-
-      const modeInput = form.querySelector('input[name="tag_mode"]');
-      const currentMode = (modeInput?.value || 'all').toLowerCase();
+      const currentMode = (elements.modeInput?.value || 'all').toLowerCase();
       const nextMode = currentMode === 'any' ? 'all' : 'any';
 
-      if (modeInput) modeInput.value = nextMode;
+      if (elements.modeInput) {
+        elements.modeInput.value = nextMode;
+      }
+      
       btn.setAttribute('data-mode', nextMode);
       btn.textContent = nextMode === 'any' ? 'Any' : 'All';
 
@@ -278,53 +319,99 @@
         url.searchParams.set('tag_mode', nextMode);
         window.history.replaceState({}, '', url);
       } catch {}
-    });
-  }
+    },
+
+    init() {
+      const sync = () => this.syncFormState();
+      const refresh = () => this.refreshTagFragment();
+
+      if (document.readyState !== 'loading') {
+        sync();
+      } else {
+        document.addEventListener('DOMContentLoaded', sync);
+      }
+
+      window.addEventListener('popstate', sync);
+
+      document.addEventListener('htmx:afterSwap', (e) => {
+        const targetId = e.detail?.target?.id;
+        if (targetId === 'content') {
+          setTimeout(refresh, 10);
+          window.scrollTo(0, 0);
+        } else if (targetId === 'tag-list') {
+          sync();
+        }
+      });
+
+      document.addEventListener('uk-select:input', (e) => {
+        this.updateHiddenSummary();
+        const value = this.extractValue(e.detail);
+        this.updateHiddenSelect(e.target, value);
+      }, true);
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#tag-mode-toggle');
+        if (btn) {
+          this.handleTagModeToggle(btn);
+        }
+      });
+    }
+  };
 
   // === Chapter Eye Icon Hover ===
-  function initChapterHover() {
-    document.addEventListener('mouseover', (e) => {
-      const icon = e.target.closest('.chapter-read-icon');
-      if (!icon) return;
+  const ChapterHoverManager = {
+    toggleEyeIcons(icon, showOpen) {
+      const openEye = icon.querySelector('.eye-open');
+      const closedEye = icon.querySelector('.eye-closed');
+      if (!openEye || !closedEye) return;
 
+      openEye.style.display = showOpen ? 'inline-flex' : 'none';
+      closedEye.style.display = showOpen ? 'none' : 'inline-flex';
+    },
+
+    handleMouseOver(icon) {
       const openEye = icon.querySelector('.eye-open');
       const closedEye = icon.querySelector('.eye-closed');
       if (!openEye || !closedEye) return;
 
       const isOpen = window.getComputedStyle(openEye).display !== 'none';
-      openEye.style.display = isOpen ? 'none' : 'inline-flex';
-      closedEye.style.display = isOpen ? 'inline-flex' : 'none';
-    });
+      this.toggleEyeIcons(icon, !isOpen);
+    },
 
-    document.addEventListener('mouseout', (e) => {
-      const icon = e.target.closest('.chapter-read-icon');
-      if (!icon) return;
-
-      const openEye = icon.querySelector('.eye-open');
-      const closedEye = icon.querySelector('.eye-closed');
-      if (!openEye || !closedEye) return;
-
+    handleMouseOut(icon) {
       const form = icon.querySelector('form');
       const isUnread = form?.getAttribute('hx-post')?.includes('/unread');
+      this.toggleEyeIcons(icon, isUnread);
+    },
 
-      openEye.style.display = isUnread ? 'inline-flex' : 'none';
-      closedEye.style.display = isUnread ? 'none' : 'inline-flex';
-    });
-  }
+    init() {
+      document.addEventListener('mouseover', (e) => {
+        const icon = e.target.closest('.chapter-read-icon');
+        if (icon) this.handleMouseOver(icon);
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        const icon = e.target.closest('.chapter-read-icon');
+        if (icon) this.handleMouseOut(icon);
+      });
+    }
+  };
 
   // === Scroll Helpers ===
-  function initScrollHelpers() {
-    window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.scrollToTopInstant = () => window.scrollTo({ top: 0, behavior: 'auto' });
-  }
+  const ScrollHelpers = {
+    init() {
+      window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollToTopInstant = () => window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  };
 
   // === Main Initialization ===
   function init() {
-    try { initSidebar(); } catch (e) { console.error('Sidebar init error:', e); }
-    try { initNavigationSync(); } catch (e) { console.error('Navigation sync error:', e); }
-    try { initTagFiltering(); } catch (e) { console.error('Tag filtering error:', e); }
-    try { initChapterHover(); } catch (e) { console.error('Chapter hover error:', e); }
-    try { initScrollHelpers(); } catch (e) { console.error('Scroll helpers error:', e); }
+    safeExecute(() => SidebarManager.init(), 'Sidebar init');
+    safeExecute(() => NavigationManager.init(), 'Navigation sync');
+    safeExecute(() => TagFilterManager.init(), 'Tag filtering');
+    safeExecute(() => ChapterHoverManager.init(), 'Chapter hover');
+    safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
   }
 
   if (document.readyState === 'loading') {

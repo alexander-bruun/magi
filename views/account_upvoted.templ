@@ -4,10 +4,10 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
-    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, nil, "")
+templ AccountUpvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, nil, "", searchFilter)
 }
 
-templ AccountUpvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
-    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, selectedTags, tagMode)
+templ AccountUpvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Your Upvoted Mangas", "Upvoted", "/account/upvoted", mangas, currentPage, totalPages, sort, order, "You have not upvoted any mangas yet.", allTags, selectedTags, tagMode, searchFilter)
 }

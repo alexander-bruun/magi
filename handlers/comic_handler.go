@@ -28,6 +28,9 @@ func ComicHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
+	if manga == nil {
+		return HandleView(c, views.Error("Manga not found or access restricted based on content rating settings."))
+	}
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {

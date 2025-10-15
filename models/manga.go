@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"sort"
 	"reflect"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ type Manga struct {
 	Description      string    `json:"description"`
 	Year             int       `json:"year"`
 	OriginalLanguage string    `json:"original_language"`
+	Type             string    `json:"type"`
 	Status           string    `json:"status"`
 	ContentRating    string    `json:"content_rating"`
 	LibrarySlug      string    `json:"library_slug"`
@@ -46,24 +48,35 @@ func CreateManga(manga Manga) error {
 	manga.UpdatedAt = timestamps.UpdatedAt
 
 	query := `
-	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO mangas (slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	createdAt, updatedAt := timestamps.UnixTimestamps()
-	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, createdAt, updatedAt)
+	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Type, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, createdAt, updatedAt)
 	return err
 }
 
 // GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
+	return getManga(slug, true)
+}
+
+// GetMangaUnfiltered retrieves a single Manga by slug without content rating filtering.
+// This should only be used for internal operations like indexing, updates, etc.
+func GetMangaUnfiltered(slug string) (*Manga, error) {
+	return getManga(slug, false)
+}
+
+// getManga is the internal implementation that optionally applies content rating filtering
+func getManga(slug string, applyContentFilter bool) (*Manga, error) {
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
 
 	var manga Manga
 	var createdAt, updatedAt int64
-	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt)
+	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No manga found
@@ -73,6 +86,18 @@ func GetManga(slug string) (*Manga, error) {
 
 	manga.CreatedAt = time.Unix(createdAt, 0)
 	manga.UpdatedAt = time.Unix(updatedAt, 0)
+	
+	// Apply content rating filter only if requested (for user-facing operations)
+	if applyContentFilter {
+		cfg, err := GetAppConfig()
+		if err != nil {
+			log.Errorf("Failed to get app config for content rating check: %v", err)
+			// On error, default to showing content
+		} else if !IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			return nil, nil // Return nil to indicate manga not found/accessible
+		}
+	}
+	
 	// Load tags for this manga if any
 	if tags, err := GetTagsForManga(manga.Slug); err == nil {
 		manga.Tags = tags
@@ -86,11 +111,11 @@ func UpdateManga(manga *Manga) error {
 
 	query := `
 	UPDATE mangas
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, manga_type = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.UpdatedAt.Unix(), manga.Slug)
+	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Type, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.UpdatedAt.Unix(), manga.Slug)
 	if err != nil {
 		return err
 	}
@@ -216,7 +241,7 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 // GetMangasByLibrarySlug returns all mangas that belong to a specific library
 func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	var mangas []Manga
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE library_slug = ?`
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE library_slug = ?`
 
 	rows, err := db.Query(query, librarySlug)
 	if err != nil {
@@ -225,16 +250,27 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	}
 	defer rows.Close()
 
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config, defaulting to show all content: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
+	}
+
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
 			log.Errorf("Failed to scan manga row: %v", err)
 			return nil, err
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
 		manga.UpdatedAt = time.Unix(updatedAt, 0)
-		mangas = append(mangas, manga)
+		
+		// Filter based on content rating limit
+		if IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			mangas = append(mangas, manga)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -245,7 +281,7 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas`
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -254,17 +290,49 @@ func loadAllMangas(mangas *[]Manga) error {
 	}
 	defer rows.Close()
 
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config, defaulting to show all content: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
+	}
+
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
 			return err
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
 		manga.UpdatedAt = time.Unix(updatedAt, 0)
-		*mangas = append(*mangas, manga)
+		
+		// Filter based on content rating limit
+		if IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			*mangas = append(*mangas, manga)
+		}
 	}
 	return nil
+}
+
+// GetAllMangaTypes returns all distinct manga_type values (lowercased) sorted ascending
+func GetAllMangaTypes() ([]string, error) {
+	rows, err := db.Query(`SELECT DISTINCT LOWER(TRIM(manga_type)) FROM mangas WHERE manga_type IS NOT NULL AND TRIM(manga_type) <> ''`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var types []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, err
+		}
+		if t != "" {
+			types = append(types, t)
+		}
+	}
+	sort.Strings(types)
+	return types, nil
 }
 
 func applyBigramSearch(filter string, mangas []Manga) []Manga {
