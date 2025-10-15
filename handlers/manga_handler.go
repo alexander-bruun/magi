@@ -349,7 +349,7 @@ func cacheAndGetImageURL(slug, coverArtURL string) (string, error) {
 		return "", fmt.Errorf("error downloading image: %w", err)
 	}
 
-	return fmt.Sprintf("http://localhost:3000/api/images/%s.%s", slug, fileExt), nil
+	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
 }
 
 func updateMangaDetails(manga *models.Manga, mangaDetail *models.MangaDetail, coverArtURL string) {

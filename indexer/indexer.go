@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	localServerBaseURL = "http://localhost:3000/api/images"
+	localServerBaseURL = "/api/images"
 )
 
 // IndexManga inspects a manga directory, syncing metadata and chapters with the database.
