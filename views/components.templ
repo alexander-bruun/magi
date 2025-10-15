@@ -97,7 +97,7 @@ templ MangaCover(coverURL string, altText string, width int, height int, fixed b
 
 // StatCard shows a small statistic with label and numeric value
 templ StatCard(label string, value int) {
-    <div class="uk-card uk-card-default uk-card-body p-4 m-2 rounded-lg shadow-sm text-center">
+    <div class="uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm text-center">
         <div class="text-sm text-gray-500">{ label }</div>
         <div class="text-2xl font-bold mt-2">{ fmt.Sprint(value) }</div>
     </div>
@@ -140,11 +140,11 @@ templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool, fix
 
 // MangaSlider renders a reusable UIkit slider for mangas.
 templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
-    <div class="px-1 mt-2" uk-slider>
+    <div uk-slider>
         <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-            <ul class="uk-slider-items uk-child-width-auto">
+            <ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;">
                 for _, manga := range mangas {
-                    <li class="px-1">
+                    <li>
                         @MangaCard(manga, width, height, truncate, fixed)
                     </li>
                 }
@@ -163,18 +163,18 @@ templ LatestShowcase(mangas []models.Manga) {
     if len(mangas) == 0 {
         @EmptyState("No mangas have been indexed yet.")
     } else {
-        <div class="px-1 mt-2" uk-slider>
+        <div uk-slider>
             <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-                <ul class="uk-slider-items uk-child-width-auto">
+                <ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;">
                     for _, manga := range mangas {
                         {{ _, up, down, _ := models.GetMangaVotes(manga.Slug) }}
                         {{ rating := 0.0 }}
                         if up+down > 0 {
                             {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
                         }
-                        <li class="px-1">
+                        <li>
                             <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
-                                <div class="uk-card uk-card-default uk-card-body p-2 m-2" style="width:200px;">
+                                <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
                                         @MangaCover(manga.CoverArtURL, manga.Name, 200, 300, true)
                                         {{ derived := manga.Type }}

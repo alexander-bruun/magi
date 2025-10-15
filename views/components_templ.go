@@ -522,7 +522,7 @@ func StatCard(label string, value int) templ.Component {
 			templ_7745c5c3_Var27 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"uk-card uk-card-default uk-card-body p-4 m-2 rounded-lg shadow-sm text-center\"><div class=\"text-sm text-gray-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm text-center\"><div class=\"text-sm text-gray-500\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -721,12 +721,12 @@ func MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fi
 			templ_7745c5c3_Var35 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\" style=\"gap: 1rem;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, manga := range mangas {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<li class=\"px-1\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -780,7 +780,7 @@ func LatestShowcase(mangas []models.Manga) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<div class=\"px-1 mt-2\" uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\" style=\"gap: 1rem;\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -790,7 +790,7 @@ func LatestShowcase(mangas []models.Manga) templ.Component {
 				if up+down > 0 {
 					rating = (float64(up) / float64(up+down)) * 10.0
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, " <li class=\"px-1\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, " <li><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -803,7 +803,7 @@ func LatestShowcase(mangas []models.Manga) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\" class=\"block\"><div class=\"uk-card uk-card-default uk-card-body p-2 m-2\" style=\"width:200px;\"><div class=\"uk-card-media-top relative\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\" class=\"block\"><div class=\"uk-card uk-card-default uk-card-body p-2\" style=\"width:200px;\"><div class=\"uk-card-media-top relative\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
