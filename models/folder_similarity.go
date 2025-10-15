@@ -340,3 +340,65 @@ func GetMangaDuplicateByFolders(mangaSlug, folderPath1, folderPath2 string) (*Ma
 	d.Dismissed = dismissed == 1
 	return &d, nil
 }
+
+// DeleteMangaDuplicateByID deletes a manga duplicate entry by its ID
+func DeleteMangaDuplicateByID(id int64) error {
+	query := `DELETE FROM manga_duplicates WHERE id = ?`
+	_, err := db.Exec(query, id)
+	if err != nil {
+		log.Errorf("Failed to delete manga duplicate %d: %v", id, err)
+	}
+	return err
+}
+
+// GetAllMangaDuplicates returns all manga duplicates (including dismissed ones)
+func GetAllMangaDuplicates() ([]MangaDuplicate, error) {
+	query := `
+		SELECT 
+			md.id, 
+			md.manga_slug, 
+			m.name as manga_name,
+			md.library_slug, 
+			l.name as library_name,
+			md.folder_path_1, 
+			md.folder_path_2, 
+			md.dismissed, 
+			md.created_at
+		FROM manga_duplicates md
+		LEFT JOIN mangas m ON md.manga_slug = m.slug
+		LEFT JOIN libraries l ON md.library_slug = l.slug
+		ORDER BY md.created_at DESC
+	`
+	
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Errorf("Failed to get all manga duplicates: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var duplicates []MangaDuplicate
+	for rows.Next() {
+		var d MangaDuplicate
+		var dismissed int
+		var mangaName, libraryName sql.NullString
+		
+		if err := rows.Scan(&d.ID, &d.MangaSlug, &mangaName, &d.LibrarySlug, &libraryName,
+			&d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt); err != nil {
+			log.Errorf("Failed to scan manga duplicate: %v", err)
+			continue
+		}
+		
+		d.Dismissed = dismissed == 1
+		if mangaName.Valid {
+			d.MangaName = mangaName.String
+		}
+		if libraryName.Valid {
+			d.LibraryName = libraryName.String
+		}
+		
+		duplicates = append(duplicates, d)
+	}
+	
+	return duplicates, nil
+}

@@ -145,6 +145,11 @@ func (idx *Indexer) runIndexingJob() {
 				}
 			}
 		}
+
+		// Cleanup: remove duplicate entries where one or both folders no longer exist
+		if err := cleanupOrphanedDuplicates(); err != nil {
+			log.Errorf("Failed to cleanup orphaned duplicates for library '%s': %s", library.Name, err)
+		}
 	}(idx.Library)
 }
 
@@ -192,6 +197,52 @@ func (idx *Indexer) processFolder(folder string) error {
 			log.Debugf("File: %s", entry.Name())
 		}
 	}
+	return nil
+}
+
+// cleanupOrphanedDuplicates removes duplicate entries where one or both folders no longer exist on disk
+func cleanupOrphanedDuplicates() error {
+	duplicates, err := models.GetAllMangaDuplicates()
+	if err != nil {
+		return err
+	}
+
+	deletedCount := 0
+	for _, dup := range duplicates {
+		folder1Exists := true
+		folder2Exists := true
+
+		// Check if folder 1 exists
+		if dup.FolderPath1 != "" {
+			if _, err := os.Stat(dup.FolderPath1); os.IsNotExist(err) {
+				folder1Exists = false
+			}
+		}
+
+		// Check if folder 2 exists
+		if dup.FolderPath2 != "" {
+			if _, err := os.Stat(dup.FolderPath2); os.IsNotExist(err) {
+				folder2Exists = false
+			}
+		}
+
+		// If either folder no longer exists, delete the duplicate entry
+		if !folder1Exists || !folder2Exists {
+			log.Infof("Deleting orphaned duplicate entry for manga '%s' (ID=%d): folder1_exists=%v, folder2_exists=%v",
+				dup.MangaSlug, dup.ID, folder1Exists, folder2Exists)
+			
+			if err := models.DeleteMangaDuplicateByID(dup.ID); err != nil {
+				log.Errorf("Failed to delete orphaned duplicate %d: %v", dup.ID, err)
+			} else {
+				deletedCount++
+			}
+		}
+	}
+
+	if deletedCount > 0 {
+		log.Infof("Cleaned up %d orphaned duplicate entries", deletedCount)
+	}
+
 	return nil
 }
 
