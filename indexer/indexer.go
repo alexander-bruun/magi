@@ -42,22 +42,35 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	if existingManga != nil {
 		// Detect if this is a different folder being added to an existing manga
 		if existingManga.Path != "" && existingManga.Path != absolutePath {
-			// This is a duplicate: different folder adding chapters to the same manga
-			log.Warnf("Detected duplicate folder for manga '%s': existing='%s', new='%s'", 
-				slug, existingManga.Path, absolutePath)
-			
-			// Record this as a manga duplicate
-			duplicate := models.MangaDuplicate{
-				MangaSlug:   slug,
-				LibrarySlug: librarySlug,
-				FolderPath1: existingManga.Path,
-				FolderPath2: absolutePath,
+			// Ensure consistent ordering for the DB lookup
+			fp1, fp2 := existingManga.Path, absolutePath
+			if fp1 > fp2 {
+				fp1, fp2 = fp2, fp1
 			}
-			
-			if err := models.CreateMangaDuplicate(duplicate); err != nil {
-				log.Errorf("Failed to record manga duplicate for '%s': %v", slug, err)
+
+			// Check if we've already recorded this duplicate; if so, skip logging/creating
+			existingDup, err := models.GetMangaDuplicateByFolders(slug, fp1, fp2)
+			if err != nil {
+				// On DB error, fall back to logging and attempt to create (best-effort)
+				log.Errorf("Failed to check existing manga duplicate for '%s': %v", slug, err)
 			}
-			
+
+			if existingDup == nil {
+				// This is a new duplicate: log and record it
+				log.Warnf("Detected duplicate folder for manga '%s': existing='%s', new='%s'", 
+					slug, existingManga.Path, absolutePath)
+
+				duplicate := models.MangaDuplicate{
+					MangaSlug:   slug,
+					LibrarySlug: librarySlug,
+					FolderPath1: existingManga.Path,
+					FolderPath2: absolutePath,
+				}
+
+				if err := models.CreateMangaDuplicate(duplicate); err != nil {
+					log.Errorf("Failed to record manga duplicate for '%s': %v", slug, err)
+				}
+			}
 			// Still index the chapters from this new folder
 		}
 		
