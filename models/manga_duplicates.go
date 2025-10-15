@@ -2,6 +2,9 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -402,3 +405,144 @@ func GetAllMangaDuplicates() ([]MangaDuplicate, error) {
 	
 	return duplicates, nil
 }
+
+// FolderInfo contains detailed information about a duplicate folder
+type FolderInfo struct {
+	Path         string `json:"path"`
+	BaseName     string `json:"base_name"`
+	FileCount    int    `json:"file_count"`
+	LastModified int64  `json:"last_modified"`
+	Exists       bool   `json:"exists"`
+}
+
+// DuplicateFolderInfo contains information about both folders in a duplicate
+type DuplicateFolderInfo struct {
+	DuplicateID int64      `json:"duplicate_id"`
+	MangaSlug   string     `json:"manga_slug"`
+	MangaName   string     `json:"manga_name"`
+	Folder1     FolderInfo `json:"folder1"`
+	Folder2     FolderInfo `json:"folder2"`
+}
+
+// GetDuplicateFolderInfo retrieves detailed information about both folders in a duplicate
+func GetDuplicateFolderInfo(duplicateID int64) (*DuplicateFolderInfo, error) {
+	query := `
+		SELECT 
+			md.id, 
+			md.manga_slug, 
+			m.name as manga_name,
+			md.folder_path_1, 
+			md.folder_path_2
+		FROM manga_duplicates md
+		LEFT JOIN mangas m ON md.manga_slug = m.slug
+		WHERE md.id = ?
+	`
+	
+	var info DuplicateFolderInfo
+	var mangaName sql.NullString
+	var folderPath1, folderPath2 string
+	
+	err := db.QueryRow(query, duplicateID).Scan(
+		&info.DuplicateID, &info.MangaSlug, &mangaName, &folderPath1, &folderPath2,
+	)
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	if mangaName.Valid {
+		info.MangaName = mangaName.String
+	}
+	
+	// Get info for folder 1
+	info.Folder1 = getFolderInfo(folderPath1)
+	
+	// Get info for folder 2
+	info.Folder2 = getFolderInfo(folderPath2)
+	
+	return &info, nil
+}
+
+// getFolderInfo gets detailed information about a single folder
+func getFolderInfo(path string) FolderInfo {
+	info := FolderInfo{
+		Path:     path,
+		BaseName: filepath.Base(path),
+		Exists:   false,
+	}
+	
+	// Check if folder exists
+	fileInfo, err := os.Stat(path)
+	if err == nil {
+		info.Exists = true
+		info.LastModified = fileInfo.ModTime().Unix()
+		
+		// Count files in the folder
+		fileCount := 0
+		filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !f.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		info.FileCount = fileCount
+	}
+	
+	return info
+}
+
+// DeleteDuplicateFolder deletes a folder and removes/updates the duplicate entry
+func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
+	// Get the duplicate entry first
+	query := `
+		SELECT folder_path_1, folder_path_2, manga_slug
+		FROM manga_duplicates
+		WHERE id = ?
+	`
+	
+	var folder1, folder2, mangaSlug string
+	err := db.QueryRow(query, duplicateID).Scan(&folder1, &folder2, &mangaSlug)
+	if err != nil {
+		return err
+	}
+	
+	// Verify the folder path matches one of the duplicate folders
+	if folderPath != folder1 && folderPath != folder2 {
+		return fmt.Errorf("folder path does not match duplicate entry")
+	}
+	
+	// Delete the folder from disk
+	if err := os.RemoveAll(folderPath); err != nil {
+		return fmt.Errorf("failed to delete folder: %w", err)
+	}
+	
+	log.Infof("Deleted duplicate folder: %s", folderPath)
+	
+	// After deleting the folder, we should also update the manga's path if needed
+	// and delete the duplicate entry since one folder is now gone
+	if err := DeleteMangaDuplicateByID(duplicateID); err != nil {
+		log.Errorf("Failed to delete duplicate entry after folder deletion: %v", err)
+	}
+	
+	// If we deleted the primary manga path, update it to the remaining folder
+	manga, err := GetMangaUnfiltered(mangaSlug)
+	if err == nil && manga != nil {
+		if manga.Path == folderPath {
+			// Update to the other folder
+			remainingFolder := folder1
+			if folderPath == folder1 {
+				remainingFolder = folder2
+			}
+			manga.Path = remainingFolder
+			if err := UpdateManga(manga); err != nil {
+				log.Errorf("Failed to update manga path after folder deletion: %v", err)
+			}
+		}
+	}
+	
+	return nil
+}
+

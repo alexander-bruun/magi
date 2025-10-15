@@ -70,16 +70,25 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 										<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
 									</td>
 									<td class="uk-text-center">
-										<button 
-											class="uk-btn uk-btn-destructive uk-btn-small"
-											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
-											hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
-											hx-swap="outerHTML swap:0.5s"
-											hx-confirm="Are you sure you want to dismiss this duplicate?"
-										>
-											<uk-icon icon="X" class="mr-1"></uk-icon>
-											Dismiss
-										</button>
+										<div class="uk-flex uk-flex-center uk-flex-middle" style="gap: 8px;">
+											<button 
+												class="uk-btn uk-btn-secondary uk-btn-small"
+												hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
+												hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
+												hx-swap="outerHTML swap:0.5s"
+												hx-confirm="Are you sure you want to dismiss this duplicate?"
+											>
+												<uk-icon icon="X" class="mr-1"></uk-icon>
+												Dismiss
+											</button>
+											<button 
+												class="uk-btn uk-btn-destructive uk-btn-small"
+												onclick={ templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)} }
+											>
+												<uk-icon icon="Trash2" class="mr-1"></uk-icon>
+												Delete
+											</button>
+										</div>
 									</td>
 								</tr>
 							}
@@ -102,4 +111,152 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 			</div>
 		</div>
 	</div>
+
+	<!-- Delete Modal -->
+	<div id="delete-modal" uk-modal>
+		<div class="uk-modal-dialog">
+			<div class="uk-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+				<h2 class="uk-modal-title uk-margin-remove">Delete Duplicate Folder</h2>
+				<button class="uk-modal-close" type="button" uk-close></button>
+			</div>
+			<div class="uk-modal-body">
+				<p class="uk-text-warning" style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+					<uk-icon icon="TriangleAlert"></uk-icon>
+					<span>Select which folder to delete. This action cannot be undone!</span>
+				</p>
+			
+				<div id="modal-content" class="uk-margin-top">
+					<div class="uk-flex uk-flex-center">
+						<div uk-spinner></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let currentDuplicateId = null;
+
+		async function openDeleteModal(duplicateId) {
+			currentDuplicateId = duplicateId;
+			const modal = UIkit.modal('#delete-modal');
+			modal.show();
+			
+			// Load folder information
+			const modalContent = document.getElementById('modal-content');
+			modalContent.innerHTML = '<div class="uk-flex uk-flex-center"><div uk-spinner></div></div>';
+			
+			try {
+				const response = await fetch(`/api/duplicates/${duplicateId}/folder-info`);
+				const data = await response.json();
+				
+				modalContent.innerHTML = `
+					<div class="uk-grid uk-child-width-1-2@s" uk-grid>
+						${createFolderCard(data.folder1, duplicateId, 'Folder 1')}
+						<br/>
+						${createFolderCard(data.folder2, duplicateId, 'Folder 2')}
+					</div>
+				`;
+			} catch (error) {
+				modalContent.innerHTML = '<div class="uk-alert-danger" uk-alert><p>Failed to load folder information</p></div>';
+			}
+		}
+
+		function createFolderCard(folder, duplicateId, title) {
+			if (!folder.exists) {
+				return `
+					<div>
+						<div class="uk-card uk-card-default uk-card-body uk-card-small">
+							<h3 class="uk-card-title">${title}</h3>
+							<p class="uk-text-danger">
+								<uk-icon icon="AlertCircle"></uk-icon>
+								Folder not found
+							</p>
+							<code class="uk-text-small">${folder.path}</code>
+						</div>
+					</div>
+				`;
+			}
+
+			const lastModified = new Date(folder.last_modified * 1000).toLocaleString();
+			
+			return `
+				<div>
+					<div class="uk-card uk-card-default uk-card-body uk-card-small">
+						<h3 class="uk-card-title">${title}</h3>
+						<div class="uk-margin-small">
+							<p class="uk-text-bold uk-margin-remove">${folder.base_name}</p>
+							<code class="uk-text-small uk-text-muted">${folder.path}</code>
+						</div>
+						<div class="uk-margin-small">
+							<p class="uk-text-small uk-margin-remove" style="display: flex; align-items: center; gap: 4px;">
+								<uk-icon icon="File"></uk-icon>
+								<strong>Files:</strong> ${folder.file_count}
+							</p>
+							<p class="uk-text-small uk-margin-remove" style="display: flex; align-items: center; gap: 4px;">
+								<uk-icon icon="Clock"></uk-icon>
+								<strong>Modified:</strong> ${lastModified}
+							</p>
+						</div>
+						<button 
+							class="uk-btn uk-btn-destructive uk-btn-small uk-width-1-1 uk-margin-small-top"
+							onclick="confirmDeleteFolder('${folder.path}', ${duplicateId})"
+						>
+							<uk-icon icon="Trash2" class="mr-1"></uk-icon>
+							Delete This Folder
+						</button>
+					</div>
+				</div>
+			`;
+		}
+
+		function confirmDeleteFolder(folderPath, duplicateId) {
+			const folderName = folderPath.split('/').pop();
+			
+			if (confirm(`Are you absolutely sure you want to DELETE the folder:\n\n"${folderName}"\n\nThis will permanently delete all files in this folder and cannot be undone!`)) {
+				deleteFolder(folderPath, duplicateId);
+			}
+		}
+
+		async function deleteFolder(folderPath, duplicateId) {
+			try {
+				const response = await fetch(`/api/duplicates/${duplicateId}/folder`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ folder_path: folderPath }),
+				});
+
+				if (response.ok) {
+					// Close modal
+					UIkit.modal('#delete-modal').hide();
+					
+					// Remove the duplicate row from the table
+					const row = document.getElementById(`duplicate-${duplicateId}`);
+					if (row) {
+						row.remove();
+					}
+					
+					// Show success notification
+					UIkit.notification({
+						message: 'Folder deleted successfully',
+						status: 'success',
+						pos: 'top-right',
+						timeout: 3000
+					});
+				} else {
+					const error = await response.json();
+					throw new Error(error.error || 'Failed to delete folder');
+				}
+			} catch (error) {
+				UIkit.notification({
+					message: `Error: ${error.message}`,
+					status: 'danger',
+					pos: 'top-right',
+					timeout: 5000
+				});
+			}
+		}
+	</script>
 }

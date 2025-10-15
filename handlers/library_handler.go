@@ -226,6 +226,50 @@ func HandleDismissDuplicate(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+// HandleGetDuplicateFolderInfo returns folder information for a duplicate entry
+func HandleGetDuplicateFolderInfo(c *fiber.Ctx) error {
+	// Get duplicate ID from URL params
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
+	}
+	
+	// Get folder info
+	folderInfo, err := models.GetDuplicateFolderInfo(int64(id))
+	if err != nil {
+		log.Errorf("Failed to get folder info for duplicate %d: %v", id, err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to get folder info"})
+	}
+	
+	return c.JSON(folderInfo)
+}
+
+// HandleDeleteDuplicateFolder deletes a specific folder from a duplicate entry
+func HandleDeleteDuplicateFolder(c *fiber.Ctx) error {
+	// Get duplicate ID and folder path from request
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
+	}
+	
+	type DeleteRequest struct {
+		FolderPath string `json:"folder_path"`
+	}
+	
+	var req DeleteRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	
+	// Delete the folder
+	if err := models.DeleteDuplicateFolder(int64(id), req.FolderPath); err != nil {
+		log.Errorf("Failed to delete folder %s for duplicate %d: %v", req.FolderPath, id, err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete folder"})
+	}
+	
+	return c.JSON(fiber.Map{"success": true})
+}
+
 
 // findDuplicatesInLibrary finds similar folders within a library's directories
 func findDuplicatesInLibrary(library models.Library, threshold float64) [][]models.DuplicateFolder {

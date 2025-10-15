@@ -140,14 +140,14 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</code></td><td class=\"uk-text-center\"><button class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-post=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</code></td><td class=\"uk-text-center\"><div class=\"uk-flex uk-flex-center uk-flex-middle\" style=\"gap: 8px;\"><button class=\"uk-btn uk-btn-secondary uk-btn-small\" hx-post=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 75, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 76, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -160,23 +160,40 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("#duplicate-%d", dup.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 76, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 77, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-swap=\"outerHTML swap:0.5s\" hx-confirm=\"Are you sure you want to dismiss this duplicate?\"><uk-icon icon=\"X\" class=\"mr-1\"></uk-icon> Dismiss</button></td></tr>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-swap=\"outerHTML swap:0.5s\" hx-confirm=\"Are you sure you want to dismiss this duplicate?\"><uk-icon icon=\"X\" class=\"mr-1\"></uk-icon> Dismiss</button> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)})
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<button class=\"uk-btn uk-btn-destructive uk-btn-small\" onclick=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var10 templ.ComponentScript = templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10.Call)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"><uk-icon icon=\"Trash2\" class=\"mr-1\"></uk-icon> Delete</button></div></td></tr>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</tbody></table></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</tbody></table></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if totalPages > 1 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"flex justify-center items-center py-8\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"flex justify-center items-center py-8\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -184,13 +201,13 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"mt-6 text-center\"><a href=\"/libraries\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Libraries</a></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"mt-6 text-center\"><a href=\"/libraries\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Libraries</a></div></div></div><!-- Delete Modal --><div id=\"delete-modal\" uk-modal><div class=\"uk-modal-dialog\"><div class=\"uk-modal-header\" style=\"display: flex; justify-content: space-between; align-items: center;\"><h2 class=\"uk-modal-title uk-margin-remove\">Delete Duplicate Folder</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><div class=\"uk-modal-body\"><p class=\"uk-text-warning\" style=\"display: flex; align-items: center; gap: 8px; margin-bottom: 24px;\"><uk-icon icon=\"TriangleAlert\"></uk-icon> <span>Select which folder to delete. This action cannot be undone!</span></p><div id=\"modal-content\" class=\"uk-margin-top\"><div class=\"uk-flex uk-flex-center\"><div uk-spinner></div></div></div></div></div></div><script>\n\t\tlet currentDuplicateId = null;\n\n\t\tasync function openDeleteModal(duplicateId) {\n\t\t\tcurrentDuplicateId = duplicateId;\n\t\t\tconst modal = UIkit.modal('#delete-modal');\n\t\t\tmodal.show();\n\t\t\t\n\t\t\t// Load folder information\n\t\t\tconst modalContent = document.getElementById('modal-content');\n\t\t\tmodalContent.innerHTML = '<div class=\"uk-flex uk-flex-center\"><div uk-spinner></div></div>';\n\t\t\t\n\t\t\ttry {\n\t\t\t\tconst response = await fetch(`/api/duplicates/${duplicateId}/folder-info`);\n\t\t\t\tconst data = await response.json();\n\t\t\t\t\n\t\t\t\tmodalContent.innerHTML = `\n\t\t\t\t\t<div class=\"uk-grid uk-child-width-1-2@s\" uk-grid>\n\t\t\t\t\t\t${createFolderCard(data.folder1, duplicateId, 'Folder 1')}\n\t\t\t\t\t\t<br/>\n\t\t\t\t\t\t${createFolderCard(data.folder2, duplicateId, 'Folder 2')}\n\t\t\t\t\t</div>\n\t\t\t\t`;\n\t\t\t} catch (error) {\n\t\t\t\tmodalContent.innerHTML = '<div class=\"uk-alert-danger\" uk-alert><p>Failed to load folder information</p></div>';\n\t\t\t}\n\t\t}\n\n\t\tfunction createFolderCard(folder, duplicateId, title) {\n\t\t\tif (!folder.exists) {\n\t\t\t\treturn `\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<div class=\"uk-card uk-card-default uk-card-body uk-card-small\">\n\t\t\t\t\t\t\t<h3 class=\"uk-card-title\">${title}</h3>\n\t\t\t\t\t\t\t<p class=\"uk-text-danger\">\n\t\t\t\t\t\t\t\t<uk-icon icon=\"AlertCircle\"></uk-icon>\n\t\t\t\t\t\t\t\tFolder not found\n\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t<code class=\"uk-text-small\">${folder.path}</code>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t`;\n\t\t\t}\n\n\t\t\tconst lastModified = new Date(folder.last_modified * 1000).toLocaleString();\n\t\t\t\n\t\t\treturn `\n\t\t\t\t<div>\n\t\t\t\t\t<div class=\"uk-card uk-card-default uk-card-body uk-card-small\">\n\t\t\t\t\t\t<h3 class=\"uk-card-title\">${title}</h3>\n\t\t\t\t\t\t<div class=\"uk-margin-small\">\n\t\t\t\t\t\t\t<p class=\"uk-text-bold uk-margin-remove\">${folder.base_name}</p>\n\t\t\t\t\t\t\t<code class=\"uk-text-small uk-text-muted\">${folder.path}</code>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"uk-margin-small\">\n\t\t\t\t\t\t\t<p class=\"uk-text-small uk-margin-remove\" style=\"display: flex; align-items: center; gap: 4px;\">\n\t\t\t\t\t\t\t\t<uk-icon icon=\"File\"></uk-icon>\n\t\t\t\t\t\t\t\t<strong>Files:</strong> ${folder.file_count}\n\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t<p class=\"uk-text-small uk-margin-remove\" style=\"display: flex; align-items: center; gap: 4px;\">\n\t\t\t\t\t\t\t\t<uk-icon icon=\"Clock\"></uk-icon>\n\t\t\t\t\t\t\t\t<strong>Modified:</strong> ${lastModified}\n\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<button \n\t\t\t\t\t\t\tclass=\"uk-btn uk-btn-destructive uk-btn-small uk-width-1-1 uk-margin-small-top\"\n\t\t\t\t\t\t\tonclick=\"confirmDeleteFolder('${folder.path}', ${duplicateId})\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<uk-icon icon=\"Trash2\" class=\"mr-1\"></uk-icon>\n\t\t\t\t\t\t\tDelete This Folder\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t`;\n\t\t}\n\n\t\tfunction confirmDeleteFolder(folderPath, duplicateId) {\n\t\t\tconst folderName = folderPath.split('/').pop();\n\t\t\t\n\t\t\tif (confirm(`Are you absolutely sure you want to DELETE the folder:\\n\\n\"${folderName}\"\\n\\nThis will permanently delete all files in this folder and cannot be undone!`)) {\n\t\t\t\tdeleteFolder(folderPath, duplicateId);\n\t\t\t}\n\t\t}\n\n\t\tasync function deleteFolder(folderPath, duplicateId) {\n\t\t\ttry {\n\t\t\t\tconst response = await fetch(`/api/duplicates/${duplicateId}/folder`, {\n\t\t\t\t\tmethod: 'DELETE',\n\t\t\t\t\theaders: {\n\t\t\t\t\t\t'Content-Type': 'application/json',\n\t\t\t\t\t},\n\t\t\t\t\tbody: JSON.stringify({ folder_path: folderPath }),\n\t\t\t\t});\n\n\t\t\t\tif (response.ok) {\n\t\t\t\t\t// Close modal\n\t\t\t\t\tUIkit.modal('#delete-modal').hide();\n\t\t\t\t\t\n\t\t\t\t\t// Remove the duplicate row from the table\n\t\t\t\t\tconst row = document.getElementById(`duplicate-${duplicateId}`);\n\t\t\t\t\tif (row) {\n\t\t\t\t\t\trow.remove();\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Show success notification\n\t\t\t\t\tUIkit.notification({\n\t\t\t\t\t\tmessage: 'Folder deleted successfully',\n\t\t\t\t\t\tstatus: 'success',\n\t\t\t\t\t\tpos: 'top-right',\n\t\t\t\t\t\ttimeout: 3000\n\t\t\t\t\t});\n\t\t\t\t} else {\n\t\t\t\t\tconst error = await response.json();\n\t\t\t\t\tthrow new Error(error.error || 'Failed to delete folder');\n\t\t\t\t}\n\t\t\t} catch (error) {\n\t\t\t\tUIkit.notification({\n\t\t\t\t\tmessage: `Error: ${error.message}`,\n\t\t\t\t\tstatus: 'danger',\n\t\t\t\t\tpos: 'top-right',\n\t\t\t\t\ttimeout: 5000\n\t\t\t\t});\n\t\t\t}\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

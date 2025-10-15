@@ -100,6 +100,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// API endpoints
 	api := app.Group("/api", AuthMiddleware("admin"))
 	api.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
+	api.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
+	api.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
 
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
