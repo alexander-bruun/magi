@@ -59,6 +59,17 @@ func CreateManga(manga Manga) error {
 
 // GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
+	return getManga(slug, true)
+}
+
+// GetMangaUnfiltered retrieves a single Manga by slug without content rating filtering.
+// This should only be used for internal operations like indexing, updates, etc.
+func GetMangaUnfiltered(slug string) (*Manga, error) {
+	return getManga(slug, false)
+}
+
+// getManga is the internal implementation that optionally applies content rating filtering
+func getManga(slug string, applyContentFilter bool) (*Manga, error) {
 	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
@@ -75,6 +86,18 @@ func GetManga(slug string) (*Manga, error) {
 
 	manga.CreatedAt = time.Unix(createdAt, 0)
 	manga.UpdatedAt = time.Unix(updatedAt, 0)
+	
+	// Apply content rating filter only if requested (for user-facing operations)
+	if applyContentFilter {
+		cfg, err := GetAppConfig()
+		if err != nil {
+			log.Errorf("Failed to get app config for content rating check: %v", err)
+			// On error, default to showing content
+		} else if !IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			return nil, nil // Return nil to indicate manga not found/accessible
+		}
+	}
+	
 	// Load tags for this manga if any
 	if tags, err := GetTagsForManga(manga.Slug); err == nil {
 		manga.Tags = tags

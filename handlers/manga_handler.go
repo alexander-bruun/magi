@@ -69,6 +69,9 @@ func HandleManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	if manga == nil {
+		return HandleView(c, views.Error("Manga not found or access restricted based on content rating settings."))
+	}
 	chapters, err := models.GetChapters(slug)
 	if err != nil {
 		return handleError(c, err)
@@ -189,6 +192,9 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	if existingManga == nil {
+		return handleError(c, fmt.Errorf("manga not found or access restricted"))
+	}
 
 	mangaDetail, err := models.GetMangadexManga(mangadexID)
 	if err != nil {
@@ -293,6 +299,9 @@ func getMangaAndChapters(mangaSlug string) (*models.Manga, []models.Chapter, err
 	manga, err := models.GetManga(mangaSlug)
 	if err != nil {
 		return nil, nil, err
+	}
+	if manga == nil {
+		return nil, nil, fmt.Errorf("manga not found or access restricted")
 	}
 
 	chapters, err := models.GetChapters(mangaSlug)

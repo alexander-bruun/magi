@@ -33,7 +33,8 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	// If manga already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
-	existingManga, err := models.GetManga(slug)
+	// Use GetMangaUnfiltered to bypass content rating filter for indexing operations
+	existingManga, err := models.GetMangaUnfiltered(slug)
 	if err != nil {
 		log.Errorf("Failed to lookup manga '%s': %s", slug, err)
 	}
@@ -343,7 +344,7 @@ func IndexChapters(slug, path string) (int, int, error) {
 	}
 
 	// Update manga file count and timestamp
-	m, err := models.GetManga(slug)
+	m, err := models.GetMangaUnfiltered(slug)
 	if err == nil && m != nil {
 		m.FileCount = len(presentMap)
 		if err := models.UpdateManga(m); err != nil {
