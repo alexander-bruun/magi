@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -178,3 +180,107 @@ func HandleCancelEdit(c *fiber.Ctx) error {
 	c.Response().Header.Set("Content-Type", "text/html")
 	return c.SendString(buf.String())
 }
+
+// HandleBetter shows potential duplicate folders across all libraries
+func HandleBetter(c *fiber.Ctx) error {
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	// Threshold for considering folders as duplicates (0.0 to 1.0)
+	// 0.85 means 85% similar
+	const similarityThreshold = 0.80
+
+	var allLibraryDuplicates []models.LibraryDuplicates
+
+	for _, library := range libraries {
+		duplicates := findDuplicatesInLibrary(library, similarityThreshold)
+		if len(duplicates) > 0 {
+			allLibraryDuplicates = append(allLibraryDuplicates, models.LibraryDuplicates{
+				Library:    library,
+				Duplicates: duplicates,
+			})
+		}
+	}
+
+	return HandleView(c, views.Better(allLibraryDuplicates))
+}
+
+// findDuplicatesInLibrary finds similar folders within a library's directories
+func findDuplicatesInLibrary(library models.Library, threshold float64) [][]models.DuplicateFolder {
+	var allFolders []string
+	
+	// Collect all subdirectories from all library folders
+	for _, folder := range library.Folders {
+		subdirs, err := getSubdirectories(folder)
+		if err != nil {
+			log.Errorf("Error reading directory %s: %v", folder, err)
+			continue
+		}
+		allFolders = append(allFolders, subdirs...)
+	}
+
+	if len(allFolders) < 2 {
+		return nil
+	}
+
+	// Track which folders we've already grouped
+	grouped := make(map[int]bool)
+	var duplicateGroups [][]models.DuplicateFolder
+
+	// Compare each folder with all others
+	for i := 0; i < len(allFolders); i++ {
+		if grouped[i] {
+			continue
+		}
+
+		var group []models.DuplicateFolder
+		group = append(group, models.DuplicateFolder{
+			Name:       allFolders[i],
+			Similarity: 1.0,
+		})
+
+		for j := i + 1; j < len(allFolders); j++ {
+			if grouped[j] {
+				continue
+			}
+
+			similarity := utils.SimilarityRatio(allFolders[i], allFolders[j])
+			if similarity >= threshold {
+				group = append(group, models.DuplicateFolder{
+					Name:       allFolders[j],
+					Similarity: similarity,
+				})
+				grouped[j] = true
+			}
+		}
+
+		// Only add groups with more than one folder
+		if len(group) > 1 {
+			duplicateGroups = append(duplicateGroups, group)
+			grouped[i] = true
+		}
+	}
+
+	return duplicateGroups
+}
+
+// getSubdirectories returns the names of all subdirectories in a given path
+func getSubdirectories(path string) ([]string, error) {
+	var subdirs []string
+	
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			subdirs = append(subdirs, entry.Name())
+		}
+	}
+
+	return subdirs, nil
+}
+

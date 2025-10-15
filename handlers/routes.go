@@ -76,6 +76,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	libraries.Get("/add-folder", HandleAddFolder)
 	libraries.Get("/remove-folder", HandleRemoveFolder)
 	libraries.Get("/cancel-edit", HandleCancelEdit)
+	
+	// Better page - duplicate detection
+	libraries.Get("/better", HandleBetter)
 
 	// Users endpoint group
 	users := app.Group("/users", AuthMiddleware("moderator"))
@@ -90,6 +93,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Configuration page (admin only)
 	app.Get("/configuration", AuthMiddleware("admin"), HandleConfiguration)
 	app.Post("/configuration", AuthMiddleware("admin"), HandleConfigurationUpdate)
+
+	// Better page (admin only) - duplicate detection
+	app.Get("/better", AuthMiddleware("admin"), HandleBetter)
 
 	// Manga endpoint group
 	mangas := app.Group("/mangas")

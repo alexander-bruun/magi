@@ -185,3 +185,16 @@ func DeleteLibrary(slug string) error {
 func LibraryExists(slug string) (bool, error) {
 	return ExistsChecker(`SELECT 1 FROM libraries WHERE slug = ?`, slug)
 }
+
+// DuplicateFolder represents a folder with its similarity score
+type DuplicateFolder struct {
+	Name       string
+	Similarity float64
+}
+
+// LibraryDuplicates represents duplicates found in a library
+type LibraryDuplicates struct {
+	Library    Library
+	Duplicates [][]DuplicateFolder // Each slice represents a group of similar folders
+}
+

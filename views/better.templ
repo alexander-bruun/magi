@@ -1,0 +1,102 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Better(libraryDuplicates []models.LibraryDuplicates) {
+	@PageTitle("Better")
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Libraries", Href: "/libraries" },
+		{ Label: "Better", Href: "/libraries/better" },
+	})
+	<div class="uk-container mt-2">
+		<div class="uk-card p-4">
+			<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
+				<span>Potential Duplicate Folders</span>
+			</h2>
+			
+			if len(libraryDuplicates) == 0 {
+				<div class="uk-alert-success" uk-alert>
+					<p class="text-center text-lg">
+						<uk-icon icon="CheckCircle" class="mr-2"></uk-icon>
+						No potential duplicates found in any library!
+					</p>
+				</div>
+			} else {
+				<div class="uk-alert-warning mb-4" uk-alert>
+					<p>
+						<uk-icon icon="AlertTriangle" class="mr-2"></uk-icon>
+						The following folders appear similar and might be duplicates. Review them to determine if they should be merged or kept separate.
+					</p>
+				</div>
+
+				for _, libDup := range libraryDuplicates {
+					<div class="mb-8">
+						<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3">
+							<span>{ libDup.Library.Name }</span>
+						</h3>
+						
+						<div class="uk-card uk-card-default p-4">
+							<p class="text-sm text-gray-600 mb-4">
+								<strong>Library Folders:</strong> { libDup.Library.GetFolderNames() }
+							</p>
+
+							for groupIdx, group := range libDup.Duplicates {
+								<div class="mb-6">
+									<h4 class="text-lg font-medium mb-2">
+										Duplicate Group { fmt.Sprintf("%d", groupIdx + 1) }
+									</h4>
+									<table class="uk-table">
+										<thead>
+											<tr>
+												<th class="text-center">Folder Name</th>
+												<th class="text-center">Similarity</th>
+											</tr>
+										</thead>
+										<tbody>
+											for _, folder := range group {
+												<tr>
+													<td>
+														<div class="flex items-center">
+															<uk-icon icon="Folder" class="mr-2"></uk-icon>
+															<code class="text-sm">{ folder.Name }</code>
+														</div>
+													</td>
+													<td class="text-center">
+														if folder.Similarity >= 0.95 {
+															<span class="uk-badge bg-red-600 text-white">
+																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
+															</span>
+														} else if folder.Similarity >= 0.85 {
+															<span class="uk-badge bg-orange-600 text-white">
+																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
+															</span>
+														} else {
+															<span class="uk-badge bg-yellow-600 text-white">
+																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
+															</span>
+														}
+													</td>
+												</tr>
+											}
+										</tbody>
+									</table>
+								</div>
+							}
+						</div>
+					</div>
+				}
+			}
+
+			<div class="mt-6 text-center">
+				<a href="/libraries" class="uk-btn uk-btn-default">
+					<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
+					Back to Libraries
+				</a>
+			</div>
+		</div>
+	</div>
+}
