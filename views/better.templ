@@ -71,7 +71,7 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 									</td>
 									<td class="uk-text-center">
 										<button 
-											class="uk-btn uk-btn-danger uk-btn-small"
+											class="uk-btn uk-btn-destructive uk-btn-small"
 											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
 											hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
 											hx-swap="outerHTML swap:0.5s"

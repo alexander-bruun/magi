@@ -140,7 +140,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</code></td><td class=\"uk-text-center\"><button class=\"uk-btn uk-btn-danger uk-btn-small\" hx-post=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</code></td><td class=\"uk-text-center\"><button class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-post=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
