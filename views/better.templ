@@ -21,17 +21,21 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 			
 			if len(duplicates) == 0 {
 				<div class="uk-alert-success" uk-alert>
-					<p class="text-center text-lg">
-						<uk-icon icon="CheckCircle" class="mr-2"></uk-icon>
-						No duplicate mangas found in any library!
-					</p>
+					<div class="uk-flex uk-flex-middle uk-flex-center">
+						<uk-icon icon="BadgeCheck" size="32" class="mr-3"></uk-icon>
+						<p class="text-lg uk-margin-remove">
+							No duplicate mangas found in any library!
+						</p>
+					</div>
 				</div>
 			} else {
 				<div class="uk-alert-warning mb-4" uk-alert>
-					<p>
-						<uk-icon icon="AlertTriangle" class="mr-2"></uk-icon>
-						The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
-					</p>
+					<div class="uk-flex uk-flex-middle">
+						<uk-icon icon="TriangleAlert" size="32" class="mr-3"></uk-icon>
+						<p class="uk-margin-remove">
+							The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
+						</p>
+					</div>
 				</div>
 
 				<div class="uk-overflow-auto">

@@ -52,12 +52,12 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 			return templ_7745c5c3_Err
 		}
 		if len(duplicates) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"uk-alert-success\" uk-alert><p class=\"text-center text-lg\"><uk-icon icon=\"CheckCircle\" class=\"mr-2\"></uk-icon> No duplicate mangas found in any library!</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"uk-alert-success\" uk-alert><div class=\"uk-flex uk-flex-middle uk-flex-center\"><uk-icon icon=\"BadgeCheck\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"text-lg uk-margin-remove\">No duplicate mangas found in any library!</p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"uk-alert-warning mb-4\" uk-alert><p><uk-icon icon=\"AlertTriangle\" class=\"mr-2\"></uk-icon> The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.</p></div><div class=\"uk-overflow-auto\"><table class=\"uk-table uk-table-striped uk-table-hover\"><thead><tr><th>Manga</th><th>Library</th><th>Folder 1</th><th>Folder 2</th><th class=\"uk-text-center\">Actions</th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"uk-alert-warning mb-4\" uk-alert><div class=\"uk-flex uk-flex-middle\"><uk-icon icon=\"TriangleAlert\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"uk-margin-remove\">The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.</p></div></div><div class=\"uk-overflow-auto\"><table class=\"uk-table uk-table-striped uk-table-hover\"><thead><tr><th>Manga</th><th>Library</th><th>Folder 1</th><th>Folder 2</th><th class=\"uk-text-center\">Actions</th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -69,7 +69,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("duplicate-%d", dup.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 50, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 54, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
@@ -82,7 +82,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var3 templ.SafeURL
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/manga/%s", dup.MangaSlug)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 54, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 58, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -95,7 +95,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(dup.MangaName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 55, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 59, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -108,7 +108,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(dup.LibraryName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 60, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 64, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -121,7 +121,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(filepath.Base(dup.FolderPath1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 63, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 67, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -134,7 +134,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(filepath.Base(dup.FolderPath2))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 66, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 70, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -147,7 +147,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 71, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 75, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -160,7 +160,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("#duplicate-%d", dup.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 72, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 76, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -188,7 +188,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 					var templ_7745c5c3_Var10 templ.SafeURL
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage-1)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 92, Col: 77}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 96, Col: 77}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -201,7 +201,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/better?page=%d", currentPage-1))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 93, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 97, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -226,7 +226,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 						var templ_7745c5c3_Var12 string
 						templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 106, Col: 59}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 110, Col: 59}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 						if templ_7745c5c3_Err != nil {
@@ -244,7 +244,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 						var templ_7745c5c3_Var13 templ.SafeURL
 						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/better?page=%d", i)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 110, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 114, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {
@@ -257,7 +257,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 						var templ_7745c5c3_Var14 string
 						templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/better?page=%d", i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 111, Col: 53}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 115, Col: 53}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 						if templ_7745c5c3_Err != nil {
@@ -270,7 +270,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 						var templ_7745c5c3_Var15 string
 						templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 115, Col: 33}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 119, Col: 33}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 						if templ_7745c5c3_Err != nil {
@@ -295,7 +295,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 					var templ_7745c5c3_Var16 templ.SafeURL
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage+1)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 126, Col: 77}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 130, Col: 77}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -308,7 +308,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/better?page=%d", currentPage+1))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 127, Col: 64}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 131, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
@@ -331,7 +331,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", currentPage))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 140, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 144, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -344,7 +344,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", totalPages))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 140, Col: 81}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 144, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -357,7 +357,7 @@ func Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total i
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", total))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 141, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 145, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
