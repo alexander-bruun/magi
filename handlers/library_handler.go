@@ -183,29 +183,49 @@ func HandleCancelEdit(c *fiber.Ctx) error {
 
 // HandleBetter shows potential duplicate folders across all libraries
 func HandleBetter(c *fiber.Ctx) error {
-	libraries, err := models.GetLibraries()
+	// Get page parameter, default to 1
+	page := c.QueryInt("page", 1)
+	if page < 1 {
+		page = 1
+	}
+	
+	// Items per page
+	const limit = 20
+	
+	// Fetch manga duplicates with pagination
+	duplicates, total, err := models.GetActiveMangaDuplicates(page, limit)
 	if err != nil {
 		return handleError(c, err)
 	}
-
-	// Threshold for considering folders as duplicates (0.0 to 1.0)
-	// 0.85 means 85% similar
-	const similarityThreshold = 0.80
-
-	var allLibraryDuplicates []models.LibraryDuplicates
-
-	for _, library := range libraries {
-		duplicates := findDuplicatesInLibrary(library, similarityThreshold)
-		if len(duplicates) > 0 {
-			allLibraryDuplicates = append(allLibraryDuplicates, models.LibraryDuplicates{
-				Library:    library,
-				Duplicates: duplicates,
-			})
-		}
+	
+		
+	// Calculate total pages
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
 	}
-
-	return HandleView(c, views.Better(allLibraryDuplicates))
+	
+	return HandleView(c, views.Better(duplicates, page, totalPages, total))
 }
+
+// HandleDismissDuplicate dismisses a manga duplicate entry
+func HandleDismissDuplicate(c *fiber.Ctx) error {
+	// Get duplicate ID from URL params
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).SendString("Invalid duplicate ID")
+	}
+	
+	// Dismiss the duplicate
+	if err := models.DismissMangaDuplicate(int64(id)); err != nil {
+		log.Errorf("Failed to dismiss duplicate %d: %v", id, err)
+		return c.Status(500).SendString("Failed to dismiss duplicate")
+	}
+	
+	// Return empty response to remove the row
+	return c.SendString("")
+}
+
 
 // findDuplicatesInLibrary finds similar folders within a library's directories
 func findDuplicatesInLibrary(library models.Library, threshold float64) [][]models.DuplicateFolder {

@@ -2,10 +2,11 @@ package views
 
 import (
 	"fmt"
+	"path/filepath"
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Better(libraryDuplicates []models.LibraryDuplicates) {
+templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total int) {
 	@PageTitle("Better")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -15,78 +16,130 @@ templ Better(libraryDuplicates []models.LibraryDuplicates) {
 	<div class="uk-container mt-2">
 		<div class="uk-card p-4">
 			<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
-				<span>Potential Duplicate Folders</span>
+				<span>Manga Duplicates</span>
 			</h2>
 			
-			if len(libraryDuplicates) == 0 {
+			if len(duplicates) == 0 {
 				<div class="uk-alert-success" uk-alert>
 					<p class="text-center text-lg">
 						<uk-icon icon="CheckCircle" class="mr-2"></uk-icon>
-						No potential duplicates found in any library!
+						No duplicate mangas found in any library!
 					</p>
 				</div>
 			} else {
 				<div class="uk-alert-warning mb-4" uk-alert>
 					<p>
 						<uk-icon icon="AlertTriangle" class="mr-2"></uk-icon>
-						The following folders appear similar and might be duplicates. Review them to determine if they should be merged or kept separate.
+						The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
 					</p>
 				</div>
 
-				for _, libDup := range libraryDuplicates {
-					<div class="mb-8">
-						<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3">
-							<span>{ libDup.Library.Name }</span>
-						</h3>
-						
-						<div class="uk-card uk-card-default p-4">
-							<p class="text-sm text-gray-600 mb-4">
-								<strong>Library Folders:</strong> { libDup.Library.GetFolderNames() }
-							</p>
-
-							for groupIdx, group := range libDup.Duplicates {
-								<div class="mb-6">
-									<h4 class="text-lg font-medium mb-2">
-										Duplicate Group { fmt.Sprintf("%d", groupIdx + 1) }
-									</h4>
-									<table class="uk-table">
-										<thead>
-											<tr>
-												<th class="text-center">Folder Name</th>
-												<th class="text-center">Similarity</th>
-											</tr>
-										</thead>
-										<tbody>
-											for _, folder := range group {
-												<tr>
-													<td>
-														<div class="flex items-center">
-															<uk-icon icon="Folder" class="mr-2"></uk-icon>
-															<code class="text-sm">{ folder.Name }</code>
-														</div>
-													</td>
-													<td class="text-center">
-														if folder.Similarity >= 0.95 {
-															<span class="uk-badge bg-red-600 text-white">
-																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
-															</span>
-														} else if folder.Similarity >= 0.85 {
-															<span class="uk-badge bg-orange-600 text-white">
-																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
-															</span>
-														} else {
-															<span class="uk-badge bg-yellow-600 text-white">
-																{ fmt.Sprintf("%.1f%%", folder.Similarity * 100) }
-															</span>
-														}
-													</td>
-												</tr>
-											}
-										</tbody>
-									</table>
-								</div>
+				<div class="uk-overflow-auto">
+					<table class="uk-table uk-table-striped uk-table-hover">
+						<thead>
+							<tr>
+								<th>Manga</th>
+								<th>Library</th>
+								<th>Folder 1</th>
+								<th>Folder 2</th>
+								<th class="uk-text-center">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, dup := range duplicates {
+								<tr id={ fmt.Sprintf("duplicate-%d", dup.ID) }>
+									<td>
+										<div class="flex items-center">
+											<uk-icon icon="BookOpen" class="mr-2"></uk-icon>
+											<a href={ templ.SafeURL(fmt.Sprintf("/manga/%s", dup.MangaSlug)) } class="uk-link-text">
+												<strong>{ dup.MangaName }</strong>
+											</a>
+										</div>
+									</td>
+									<td>
+										<span class="uk-badge">{ dup.LibraryName }</span>
+									</td>
+									<td>
+										<code class="text-sm">{ filepath.Base(dup.FolderPath1) }</code>
+									</td>
+									<td>
+										<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
+									</td>
+									<td class="uk-text-center">
+										<button 
+											class="uk-btn uk-btn-danger uk-btn-small"
+											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
+											hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
+											hx-swap="outerHTML swap:0.5s"
+											hx-confirm="Are you sure you want to dismiss this duplicate?"
+										>
+											<uk-icon icon="X" class="mr-1"></uk-icon>
+											Dismiss
+										</button>
+									</td>
+								</tr>
 							}
-						</div>
+						</tbody>
+					</table>
+				</div>
+
+				if totalPages > 1 {
+					<div class="uk-margin-top uk-text-center">
+						<ul class="uk-pagination uk-flex-center">
+							if currentPage > 1 {
+								<li>
+									<a 
+										href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage-1)) }
+										hx-get={ fmt.Sprintf("/better?page=%d", currentPage-1) }
+										hx-target="#content"
+										hx-push-url="true"
+									>
+										<uk-icon icon="ChevronLeft"></uk-icon>
+									</a>
+								</li>
+							} else {
+								<li class="uk-disabled"><span><uk-icon icon="ChevronLeft"></uk-icon></span></li>
+							}
+							
+							for i := 1; i <= totalPages; i++ {
+								if i == currentPage {
+									<li class="uk-active"><span>{ fmt.Sprintf("%d", i) }</span></li>
+								} else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
+									<li>
+										<a 
+											href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", i)) }
+											hx-get={ fmt.Sprintf("/better?page=%d", i) }
+											hx-target="#content"
+											hx-push-url="true"
+										>
+											{ fmt.Sprintf("%d", i) }
+										</a>
+									</li>
+								} else if i == currentPage-3 || i == currentPage+3 {
+									<li class="uk-disabled"><span>...</span></li>
+								}
+							}
+							
+							if currentPage < totalPages {
+								<li>
+									<a 
+										href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage+1)) }
+										hx-get={ fmt.Sprintf("/better?page=%d", currentPage+1) }
+										hx-target="#content"
+										hx-push-url="true"
+									>
+										<uk-icon icon="ChevronRight"></uk-icon>
+									</a>
+								</li>
+							} else {
+								<li class="uk-disabled"><span><uk-icon icon="ChevronRight"></uk-icon></span></li>
+							}
+						</ul>
+						
+						<p class="uk-text-meta uk-margin-small-top">
+							Page { fmt.Sprintf("%d", currentPage) } of { fmt.Sprintf("%d", totalPages) } 
+							({ fmt.Sprintf("%d", total) } total duplicates)
+						</p>
 					</div>
 				}
 			}

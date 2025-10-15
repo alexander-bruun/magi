@@ -40,6 +40,27 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if existingManga != nil {
+		// Detect if this is a different folder being added to an existing manga
+		if existingManga.Path != "" && existingManga.Path != absolutePath {
+			// This is a duplicate: different folder adding chapters to the same manga
+			log.Warnf("Detected duplicate folder for manga '%s': existing='%s', new='%s'", 
+				slug, existingManga.Path, absolutePath)
+			
+			// Record this as a manga duplicate
+			duplicate := models.MangaDuplicate{
+				MangaSlug:   slug,
+				LibrarySlug: librarySlug,
+				FolderPath1: existingManga.Path,
+				FolderPath2: absolutePath,
+			}
+			
+			if err := models.CreateMangaDuplicate(duplicate); err != nil {
+				log.Errorf("Failed to record manga duplicate for '%s': %v", slug, err)
+			}
+			
+			// Still index the chapters from this new folder
+		}
+		
 		// Fast path 1: use stored file_count on the Manga. If the number of
 		// candidate files (files that look like chapters) matches the stored
 		// FileCount, assume no changes and skip.

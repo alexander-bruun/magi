@@ -96,6 +96,10 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 
 	// Better page (admin only) - duplicate detection
 	app.Get("/better", AuthMiddleware("admin"), HandleBetter)
+	
+	// API endpoints
+	api := app.Group("/api", AuthMiddleware("admin"))
+	api.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
 
 	// Manga endpoint group
 	mangas := app.Group("/mangas")
