@@ -146,12 +146,16 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 }
 
 func createMangaFromMatch(match *models.MangaDetail, name, slug, librarySlug, path, coverURL string) models.Manga {
+	// derive type from original language
+	derivedType := models.DetermineMangaType(match)
+
 	return models.Manga{
 		Name:             name,
 		Slug:             slug,
 		Description:      getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Description["en"] }),
 		Year:             getIntAttribute(match, func(m *models.MangaDetail) int { return m.Attributes.Year }),
 		OriginalLanguage: getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.OriginalLanguage }),
+		Type:             derivedType,
 		Status:           getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Status }),
 		ContentRating:    getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.ContentRating }),
 		CoverArtURL:      coverURL,

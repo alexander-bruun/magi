@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS mangas (
     description TEXT,
     year INTEGER,
     original_language TEXT,
+    manga_type TEXT DEFAULT 'manga',
     status TEXT,
     content_rating TEXT,
     library_slug TEXT,

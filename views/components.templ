@@ -2,6 +2,7 @@ package views
 
 import (
     "fmt"
+    "strings"
     "github.com/alexander-bruun/magi/models"
 )
 
@@ -179,15 +180,21 @@ templ LatestShowcase(mangas []models.Manga) {
                                 <div class="uk-card uk-card-default uk-card-body p-2 m-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
                                         @MangaCover(manga.CoverArtURL, manga.Name, 200, 300, true)
+                                        {{ derived := manga.Type }}
+                                        if derived == "" {
+                                            {{ derived = models.DetermineMangaTypeByLanguage(manga.OriginalLanguage) }}
+                                        }
                                         <div class="absolute left-2 top-2">
-                                            <span class="bg-red-600 text-white text-xs px-2 py-1 rounded">MANHWA</span>
+                                            <span class="uk-badge shadow-sm" style="background: hsl(var(--background)); box-shadow: 0 4px 10px rgba(0,0,0,0.12);">{ strings.ToUpper(derived) }</span>
                                         </div>
                                     </div>
                                     <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ manga.Name }</h3>
-                                    <div class="text-sm text-gray-400">Chapter { manga.FileCount }</div>
-                                    <div class="flex items-center mt-1">
-                                        <uk-icon icon="Star"></uk-icon>
-                                        <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>
+                                    <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
+                                        <a href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%d", manga.Slug, manga.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { manga.FileCount }</a>
+                                        <div class="flex items-center ml-2">
+                                            <uk-icon icon="Star"></uk-icon>
+                                            <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>
+                                        </div>
                                     </div>
                                 </div>
                             </a>

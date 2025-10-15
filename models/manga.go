@@ -19,6 +19,7 @@ type Manga struct {
 	Description      string    `json:"description"`
 	Year             int       `json:"year"`
 	OriginalLanguage string    `json:"original_language"`
+	Type             string    `json:"type"`
 	Status           string    `json:"status"`
 	ContentRating    string    `json:"content_rating"`
 	LibrarySlug      string    `json:"library_slug"`
@@ -46,24 +47,24 @@ func CreateManga(manga Manga) error {
 	manga.UpdatedAt = timestamps.UpdatedAt
 
 	query := `
-	INSERT INTO mangas (slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO mangas (slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	createdAt, updatedAt := timestamps.UnixTimestamps()
-	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, createdAt, updatedAt)
+	_, err = db.Exec(query, manga.Slug, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Type, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, createdAt, updatedAt)
 	return err
 }
 
 // GetManga retrieves a single Manga by slug
 func GetManga(slug string) (*Manga, error) {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
 
 	var manga Manga
 	var createdAt, updatedAt int64
-	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt)
+	err := row.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No manga found
@@ -86,11 +87,11 @@ func UpdateManga(manga *Manga) error {
 
 	query := `
 	UPDATE mangas
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, manga_type = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.UpdatedAt.Unix(), manga.Slug)
+	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Type, manga.Status, manga.ContentRating, manga.LibrarySlug, manga.CoverArtURL, manga.Path, manga.FileCount, manga.UpdatedAt.Unix(), manga.Slug)
 	if err != nil {
 		return err
 	}
@@ -216,7 +217,7 @@ func DeleteMangasByLibrarySlug(librarySlug string) error {
 // GetMangasByLibrarySlug returns all mangas that belong to a specific library
 func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	var mangas []Manga
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE library_slug = ?`
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas WHERE library_slug = ?`
 
 	rows, err := db.Query(query, librarySlug)
 	if err != nil {
@@ -228,7 +229,7 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
 			log.Errorf("Failed to scan manga row: %v", err)
 			return nil, err
 		}
@@ -245,7 +246,7 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {
-	query := `SELECT slug, name, author, description, year, original_language, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas`
+	query := `SELECT slug, name, author, description, year, original_language, manga_type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM mangas`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -257,7 +258,7 @@ func loadAllMangas(mangas *[]Manga) error {
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
 			return err
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
