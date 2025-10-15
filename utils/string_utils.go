@@ -84,6 +84,7 @@ func processComplexPatterns(path string) string {
 		{`v\d+\s*-\s*\d+`},                 // Removing patterns like 'v1 - 2' or 'v12 - 34'
 		{`c\d+\s*-\s*\d+`},                 // Removing patterns like 'c1 - 2' or 'c10 - 34'
 		{`\b\d{1,2}-\d{1,2}\b`},            // Removing patterns like '12-34' or '1-9'
+		{`\b\d{3,}-\d{3,}\b`},              // Removing patterns like '000-305' or '123-456'
 		{`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`}, // Removing patterns like 'Vol. 1 + Vol. 2'
 		{`\sS\d+\b`},                       // Removing patterns like ' S1' or ' S12'
 		{`\bVolumes?\d+-\d+\+\w+\b`},       // Removing patterns like 'Volume1-2+ABC'
