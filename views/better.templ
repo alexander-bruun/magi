@@ -88,62 +88,8 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 				</div>
 
 				if totalPages > 1 {
-					<div class="uk-margin-top uk-text-center">
-						<ul class="uk-pagination uk-flex-center">
-							if currentPage > 1 {
-								<li>
-									<a 
-										href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage-1)) }
-										hx-get={ fmt.Sprintf("/better?page=%d", currentPage-1) }
-										hx-target="#content"
-										hx-push-url="true"
-									>
-										<uk-icon icon="ChevronLeft"></uk-icon>
-									</a>
-								</li>
-							} else {
-								<li class="uk-disabled"><span><uk-icon icon="ChevronLeft"></uk-icon></span></li>
-							}
-							
-							for i := 1; i <= totalPages; i++ {
-								if i == currentPage {
-									<li class="uk-active"><span>{ fmt.Sprintf("%d", i) }</span></li>
-								} else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
-									<li>
-										<a 
-											href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", i)) }
-											hx-get={ fmt.Sprintf("/better?page=%d", i) }
-											hx-target="#content"
-											hx-push-url="true"
-										>
-											{ fmt.Sprintf("%d", i) }
-										</a>
-									</li>
-								} else if i == currentPage-3 || i == currentPage+3 {
-									<li class="uk-disabled"><span>...</span></li>
-								}
-							}
-							
-							if currentPage < totalPages {
-								<li>
-									<a 
-										href={ templ.SafeURL(fmt.Sprintf("/better?page=%d", currentPage+1)) }
-										hx-get={ fmt.Sprintf("/better?page=%d", currentPage+1) }
-										hx-target="#content"
-										hx-push-url="true"
-									>
-										<uk-icon icon="ChevronRight"></uk-icon>
-									</a>
-								</li>
-							} else {
-								<li class="uk-disabled"><span><uk-icon icon="ChevronRight"></uk-icon></span></li>
-							}
-						</ul>
-						
-						<p class="uk-text-meta uk-margin-small-top">
-							Page { fmt.Sprintf("%d", currentPage) } of { fmt.Sprintf("%d", totalPages) } 
-							({ fmt.Sprintf("%d", total) } total duplicates)
-						</p>
+					<div class="flex justify-center items-center py-8">
+						@UnifiedPagination("/better", "content", false, totalPages, currentPage, "", "")
 					</div>
 				}
 			}
