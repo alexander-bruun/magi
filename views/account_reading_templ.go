@@ -12,7 +12,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) templ.Component {
+func AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -33,7 +33,7 @@ func AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, nil, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, nil, "", searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -41,7 +41,7 @@ func AccountReading(mangas []models.Manga, currentPage int, totalPages int, sort
 	})
 }
 
-func AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) templ.Component {
+func AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -62,7 +62,7 @@ func AccountReadingWithTags(mangas []models.Manga, currentPage int, totalPages i
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, selectedTags, tagMode).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = AccountPageLayout("Currently Reading", "Currently Reading", "/account/reading", mangas, currentPage, totalPages, sort, order, "You are not reading any mangas right now.", allTags, selectedTags, tagMode, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

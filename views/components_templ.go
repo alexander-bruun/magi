@@ -276,7 +276,7 @@ func MangaCard(manga models.Manga, width int, height int, truncate bool, fixed b
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var13 = []any{"uk-card uk-card-default uk-card-body p-2 m-2", templ.KV("w-full", !fixed)}
+		var templ_7745c5c3_Var13 = []any{"uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

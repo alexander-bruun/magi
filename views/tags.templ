@@ -8,8 +8,8 @@ import (
 // TagsDropdown renders the Tags filter button and dropdown form
 templ TagsDropdown(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
     <div class="uk-inline" style="display:inline-block;margin-left:8px;">
-        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-small" type="button">
-            Tags
+        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+            <uk-icon icon="Tag"></uk-icon>
         </button>
         <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
@@ -35,6 +35,38 @@ templ TagsDropdown(path string, targetID string, currentSort string, currentOrde
     </div>
 }
 
+// Button-only to allow grouping with other controls
+templ TagsFilterButton(path string, targetID string) {
+    <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+        <uk-icon icon="Tag"></uk-icon>
+    </button>
+}
+
+// Drop-only to be placed outside button group
+templ TagsFilterDrop(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
+    <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+        <form id="tag-filter-form" class="uk-form">
+            <input type="hidden" name="sort" value={ currentSort }>
+            <input type="hidden" name="order" value={ currentOrder }>
+            <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
+            <div class="uk-width-1-1 uk-margin-small">
+                <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                    <div class="uk-inline">
+                        <div class="uk-btn-group uk-width-auto">
+                            @TagModeToggleButton(path, targetID, tagMode)
+                            @TagActionButton(path, targetID, "Apply filters", "Check", "uk-btn-primary", true)
+                            @TagActionButton(path, targetID, "Clear filters", "x", "uk-btn-destructive", false)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                @TagsFragment(allTags, selectedTags)
+            </div>
+        </form>
+    </div>
+}
+
 // TagModeToggleButton renders the toggle button for "Match all/any" tags
 templ TagModeToggleButton(path string, targetID string, tagMode string) {
     {{ isAny := strings.ToLower(tagMode) == "any" }}
@@ -44,19 +76,22 @@ templ TagModeToggleButton(path string, targetID string, tagMode string) {
     } else {
         {{ nextMode = "any" }}
     }
-    <button type="button" class="uk-btn uk-btn-default uk-btn-small"
+    <button type="button" class="uk-btn uk-btn-default uk-btn-small uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + targetID }
         hx-push-url="true"
         hx-replace-url="true"
-        hx-include="#tag-filter-form"
+        hx-include="#tag-filter-form, #search-filter-input, #account-manga-list-search-input"
         hx-vals={ fmt.Sprintf("{\"tag_mode\":\"%s\"}", nextMode) }
-        title="Choose whether results must match all tags or any tag"
+        title={ func() string { if isAny { return "Switch to match all tags" } else { return "Switch to match any tags" } }() }
+        aria-label={ func() string { if isAny { return "Match all tags" } else { return "Match any tags" } }() }
         onclick="document.getElementById('tag-filter-drop')?.classList.remove('uk-open');">
         if isAny {
-            Match all tags
+            // Current: any. Show icon for switching to ALL
+            <uk-icon icon="Equal"></uk-icon>
         } else {
-            Match any tag
+            // Current: all. Show icon for switching to ANY
+            <uk-icon icon="Asterisk"></uk-icon>
         }
     </button>
 }
@@ -65,7 +100,9 @@ templ TagModeToggleButton(path string, targetID string, tagMode string) {
 templ TagActionButton(path string, targetID string, label string, icon string, btnClass string, includeAllInputs bool) {
     {{ includeSelector := "#tag-filter-form" }}
     if !includeAllInputs {
-        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode]" }}
+        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input" }}
+    } else {
+        {{ includeSelector = "#tag-filter-form, #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input" }}
     }
     {{ buttonType := "submit" }}
     if !includeAllInputs {

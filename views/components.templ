@@ -64,7 +64,7 @@ templ BreadcrumbHome(current string) {
 templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed bool) {
     <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
         <div 
-            class={ "uk-card uk-card-default uk-card-body p-2 m-2", templ.KV("w-full", !fixed) } 
+            class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
             if fixed {
                 style={ fmt.Sprintf("width:%dpx;", width) }
             }

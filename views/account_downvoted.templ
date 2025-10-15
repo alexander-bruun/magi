@@ -4,10 +4,10 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ AccountDownvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string) {
-    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, nil, "")
+templ AccountDownvoted(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, nil, "", searchFilter)
 }
 
-templ AccountDownvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
-    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, selectedTags, tagMode)
+templ AccountDownvotedWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
+    @AccountPageLayout("Your Downvoted Mangas", "Downvoted", "/account/downvoted", mangas, currentPage, totalPages, sort, order, "You have not downvoted any mangas yet.", allTags, selectedTags, tagMode, searchFilter)
 }

@@ -41,6 +41,7 @@ func (c GenericSortConfig) NormalizeSort(sortBy, order string) (key string, ord 
 var MangaSortConfig = GenericSortConfig{
 	Allowed: []SortOption{
 		{Key: "name", Aliases: []string{"title"}},
+		{Key: "type"},
 		{Key: "year"},
 		{Key: "status"},
 		{Key: "content_rating", Aliases: []string{"contentrating"}},
@@ -62,6 +63,8 @@ func SortMangas(mangas []Manga, key, order string) {
 		} else {
 			sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name) })
 		}
+	case "type":
+		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) < strings.ToLower(mangas[j].Type) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) > strings.ToLower(mangas[j].Type) }) }
 	case "year":
 		if asc { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year < mangas[j].Year }) } else { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year > mangas[j].Year }) }
 	case "status":

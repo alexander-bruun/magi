@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"sort"
 	"reflect"
 	"strings"
 	"time"
@@ -266,6 +267,27 @@ func loadAllMangas(mangas *[]Manga) error {
 		*mangas = append(*mangas, manga)
 	}
 	return nil
+}
+
+// GetAllMangaTypes returns all distinct manga_type values (lowercased) sorted ascending
+func GetAllMangaTypes() ([]string, error) {
+	rows, err := db.Query(`SELECT DISTINCT LOWER(TRIM(manga_type)) FROM mangas WHERE manga_type IS NOT NULL AND TRIM(manga_type) <> ''`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var types []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, err
+		}
+		if t != "" {
+			types = append(types, t)
+		}
+	}
+	sort.Strings(types)
+	return types, nil
 }
 
 func applyBigramSearch(filter string, mangas []Manga) []Manga {

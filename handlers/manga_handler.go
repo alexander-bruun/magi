@@ -23,20 +23,19 @@ const (
 func HandleMangas(c *fiber.Ctx) error {
 	params := ParseQueryParams(c)
 
-	// Search mangas based on tag selection
-	var mangas []models.Manga
-	var count int64
-	var err error
-
-	if len(params.Tags) > 0 {
-		if params.TagMode == "any" {
-			mangas, count, err = models.SearchMangasWithAnyTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
-		} else {
-			mangas, count, err = models.SearchMangasWithTags(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug, params.Tags)
-		}
-	} else {
-		mangas, count, err = models.SearchMangas(params.SearchFilter, params.Page, defaultPageSize, params.Sort, params.Order, "", params.LibrarySlug)
+	// Search mangas using options (supports tags, tagMode, and types)
+	opts := models.SearchOptions{
+		Filter:      params.SearchFilter,
+		Page:        params.Page,
+		PageSize:    defaultPageSize,
+		SortBy:      params.Sort,
+		SortOrder:   params.Order,
+		LibrarySlug: params.LibrarySlug,
+		Tags:        params.Tags,
+		TagMode:     params.TagMode,
+		Types:       params.Types,
 	}
+	mangas, count, err := models.SearchMangasWithOptions(opts)
 
 	if err != nil {
 		return handleError(c, err)
@@ -49,13 +48,18 @@ func HandleMangas(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	// Fetch all known types for the new types dropdown
+	allTypes, err := models.GetAllMangaTypes()
+	if err != nil {
+		return handleError(c, err)
+	}
 
 	// If HTMX request targeting the listing container, render just the generic listing
 	if IsHTMXRequest(c) && GetHTMXTarget(c) == "manga-listing" {
-		return HandleView(c, views.GenericMangaListing("/mangas", "manga-listing", true, mangas, params.Page, totalPages, params.Sort, params.Order, "No mangas have been indexed yet.", params.Tags, params.TagMode, allTags))
+		return HandleView(c, views.GenericMangaListingWithTypes("/mangas", "manga-listing", true, mangas, params.Page, totalPages, params.Sort, params.Order, "No mangas have been indexed yet.", params.Tags, params.TagMode, allTags, params.Types, allTypes, params.SearchFilter))
 	}
 
-	return HandleView(c, views.Mangas(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags))
+	return HandleView(c, views.MangasWithTypes(mangas, params.Page, totalPages, params.Sort, params.Order, params.Tags, params.TagMode, allTags, params.Types, allTypes, params.SearchFilter))
 }
 
 // HandleManga renders a manga detail page including chapters and per-user state.

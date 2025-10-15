@@ -16,6 +16,7 @@ type QueryParams struct {
 	Order        string
 	Tags         []string
 	TagMode      string
+	Types        []string
 	LibrarySlug  string
 	SearchFilter string
 }
@@ -47,6 +48,17 @@ func ParseQueryParams(c *fiber.Ctx) QueryParams {
 					}
 				}
 			}
+			// Parse types from repeated params
+			if vals, ok := valsMap["types"]; ok {
+				for _, v := range vals {
+					for _, t := range strings.Split(v, ",") {
+						t = strings.TrimSpace(t)
+						if t != "" {
+							params.Types = append(params.Types, t)
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -65,6 +77,18 @@ func ParseQueryParams(c *fiber.Ctx) QueryParams {
 				t = strings.TrimSpace(t)
 				if t != "" {
 					params.Tags = append(params.Tags, t)
+				}
+			}
+		}
+	}
+
+	// Fallback for comma-separated types
+	if len(params.Types) == 0 {
+		if raw := c.Query("types"); raw != "" {
+			for _, t := range strings.Split(raw, ",") {
+				t = strings.TrimSpace(t)
+				if t != "" {
+					params.Types = append(params.Types, t)
 				}
 			}
 		}
