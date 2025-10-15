@@ -227,6 +227,13 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	}
 	defer rows.Close()
 
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config, defaulting to show all content: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
+	}
+
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
@@ -236,7 +243,11 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
 		manga.UpdatedAt = time.Unix(updatedAt, 0)
-		mangas = append(mangas, manga)
+		
+		// Filter based on content rating limit
+		if IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			mangas = append(mangas, manga)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -256,6 +267,13 @@ func loadAllMangas(mangas *[]Manga) error {
 	}
 	defer rows.Close()
 
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config, defaulting to show all content: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
+	}
+
 	for rows.Next() {
 		var manga Manga
 		var createdAt, updatedAt int64
@@ -264,7 +282,11 @@ func loadAllMangas(mangas *[]Manga) error {
 		}
 		manga.CreatedAt = time.Unix(createdAt, 0)
 		manga.UpdatedAt = time.Unix(updatedAt, 0)
-		*mangas = append(*mangas, manga)
+		
+		// Filter based on content rating limit
+		if IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			*mangas = append(*mangas, manga)
+		}
 	}
 	return nil
 }

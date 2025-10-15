@@ -43,15 +43,26 @@ templ GenericMangaListing(path string, targetID string, includeTags bool, mangas
 // When includeTags=true it renders tag dropdown and mimics original mangas page behaviour.
 templ UnifiedSortControlsWithTypes(path string, targetID string, includeTags bool, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
     <div class="flex justify-between items-center gap-2 my-4">
-        {{ sorts := []struct{ Key, Label string }{
-            {"name", "Title"},
-            {"type", "Type"},
-            {"year", "Year"},
-            {"status", "Status"},
-            {"content_rating", "Content rating"},
-            {"created_at", "Created"},
-            {"updated_at", "Updated"},
-        }}}
+        {{ allowedSorts := models.GetAllowedMangaSortOptions() }}
+        {{ sorts := []struct{ Key, Label string }{} }}
+        for _, opt := range allowedSorts {
+            switch opt.Key {
+                case "name":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"name", "Title"}) }}
+                case "type":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"type", "Type"}) }}
+                case "year":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"year", "Year"}) }}
+                case "status":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"status", "Status"}) }}
+                case "content_rating":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"content_rating", "Content rating"}) }}
+                case "created_at":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"created_at", "Created"}) }}
+                case "updated_at":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"updated_at", "Updated"}) }}
+            }
+        }
         if includeTags {
             // Original mangas page behavior (depends on #tag-filter-form produced by TagsDropdown)
             <div class="flex items-center gap-2">

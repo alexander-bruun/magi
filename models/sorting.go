@@ -52,6 +52,29 @@ var MangaSortConfig = GenericSortConfig{
 	DefaultOrder: "asc",
 }
 
+// GetAllowedMangaSortOptions returns sort options, optionally excluding content_rating
+// when content rating filtering is active (limit < 3)
+func GetAllowedMangaSortOptions() []SortOption {
+	cfg, err := GetAppConfig()
+	if err != nil {
+		// On error, return all options
+		return MangaSortConfig.Allowed
+	}
+	
+	// If content rating limit is less than 3 (not showing all), exclude content_rating from sort
+	if cfg.ContentRatingLimit < 3 {
+		filtered := make([]SortOption, 0, len(MangaSortConfig.Allowed)-1)
+		for _, opt := range MangaSortConfig.Allowed {
+			if opt.Key != "content_rating" {
+				filtered = append(filtered, opt)
+			}
+		}
+		return filtered
+	}
+	
+	return MangaSortConfig.Allowed
+}
+
 // SortMangas applies the given normalized key & order (use MangaSortConfig.NormalizeSort)
 // to the slice in-place.
 func SortMangas(mangas []Manga, key, order string) {
