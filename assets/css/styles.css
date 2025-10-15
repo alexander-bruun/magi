@@ -573,3 +573,16 @@ header.site-header a:focus,
     font-family: InterVariable, sans-serif;
   }
 }
+
+/*
+ * Fix: heading descenders clipped
+ * The framework sets overflow:hidden on .uk-heading-line which can clip glyph
+ * descenders when the inner <span> uses a tight line-height. Make the inner
+ * span an inline-block and give it a small, safe line-height so letters like
+ * "g", "y" and "j" won't be cut off.
+ */
+.uk-heading-line > span,
+.uk-heading-line span {
+  display: inline-block;
+  line-height: 1.2;
+}
