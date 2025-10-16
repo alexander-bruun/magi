@@ -34,30 +34,16 @@ templ LibraryTable(libraries []models.Library) {
 		<table class="uk-table">
 			<thead>
 				<tr>
-					<th class="text-center"></th>
 					<th class="text-center">ID</th>
 					<th class="text-center">Name</th>
 					<th class="text-center">Cron</th>
 					<th class="text-center">Folders</th>
-					<th class="text-center"></th>
-					<th class="text-center"></th>
+					<th class="text-center">Actions</th>
 				</tr>
 			</thead>
 			<tbody>
 				for _, library := range libraries {
 					<tr>
-						<td>
-							<div class="flex items-center justify-center">
-								<button
-									type="button"
-									class="uk-btn uk-btn-secondary h-10 w-10"
-									hx-get={ fmt.Sprintf("/libraries/scan/%s", library.Slug) }
-									hx-trigger="click"
-								>
-									<uk-icon icon="RefreshCw"></uk-icon>
-								</button>
-							</div>
-						</td>
 						<td>
 							<div class="mt-2 flex items-center justify-center">
 								{ library.Slug }
@@ -78,31 +64,37 @@ templ LibraryTable(libraries []models.Library) {
 								{ library.GetFolderNames() }
 							</div>
 						</td>
-						<td>
+						<td colspan="3">
 							<div class="flex items-center justify-center">
-								<button
-									type="button"
-									class="uk-btn uk-btn-default h-10 w-10"
-									hx-get={ fmt.Sprintf("/libraries/edit-library/%s", library.Slug) }
-									hx-trigger="click"
-									hx-target="#library-form"
-								>
-									<uk-icon icon="Pencil"></uk-icon>
-								</button>
-							</div>
-						</td>
-						<td>
-							<div class="flex items-center justify-center">
-								<button
-									type="button"
-									class="uk-btn uk-btn-destructive h-10 w-10"
-									hx-delete={ fmt.Sprintf("/libraries/%s", library.Slug) }
-									hx-trigger="click"
-									hx-target="#libraries-table"
-									hx-confirm="Are you sure you want to delete this library?"
-								>
-									<uk-icon icon="Trash"></uk-icon>
-								</button>
+								<div class="uk-btn-group uk-width-auto">
+									<button
+										type="button"
+										class="uk-btn uk-btn-secondary h-10 w-10"
+										hx-get={ fmt.Sprintf("/libraries/scan/%s", library.Slug) }
+										hx-trigger="click"
+									>
+										<uk-icon icon="RefreshCw"></uk-icon>
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-default h-10 w-10"
+										hx-get={ fmt.Sprintf("/libraries/edit-library/%s", library.Slug) }
+										hx-trigger="click"
+										hx-target="#library-form"
+									>
+										<uk-icon icon="Pencil"></uk-icon>
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-destructive h-10 w-10"
+										hx-delete={ fmt.Sprintf("/libraries/%s", library.Slug) }
+										hx-trigger="click"
+										hx-target="#libraries-table"
+										hx-confirm="Are you sure you want to delete this library?"
+									>
+										<uk-icon icon="Trash"></uk-icon>
+									</button>
+								</div>
 							</div>
 						</td>
 					</tr>

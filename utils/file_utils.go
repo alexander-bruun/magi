@@ -11,16 +11,43 @@ import (
 	"github.com/nwaples/rardecode"
 )
 
-// CountImageFiles counts the number of image files in an archive (zip, cbz, rar, or cbr).
+// CountImageFiles counts the number of image files in an archive (zip, cbz, rar, or cbr) or directory.
 func CountImageFiles(archiveFilePath string) (int, error) {
+	// Check if it's a directory first
+	fileInfo, err := os.Stat(archiveFilePath)
+	if err != nil {
+		return 0, err
+	}
+	
+	if fileInfo.IsDir() {
+		return countImageFilesInDirectory(archiveFilePath)
+	}
+	
+	// Handle archive files
 	lowerPath := strings.ToLower(archiveFilePath)
 	if strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".cbz") {
 		return countImageFilesInZip(archiveFilePath)
 	} else if strings.HasSuffix(lowerPath, ".rar") || strings.HasSuffix(lowerPath, ".cbr") {
 		return countImageFilesInRar(archiveFilePath)
 	} else {
-		return 0, fmt.Errorf("unsupported file type")
+		return 0, fmt.Errorf("unsupported file type: %s", archiveFilePath)
 	}
+}
+
+// countImageFilesInDirectory counts image files in a directory (for chapter folders).
+func countImageFilesInDirectory(dirPath string) (int, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return 0, err
+	}
+	
+	count := 0
+	for _, entry := range entries {
+		if !entry.IsDir() && isImageFile(entry.Name()) {
+			count++
+		}
+	}
+	return count, nil
 }
 
 // countImageFilesInZip counts the number of image files in a zip archive.

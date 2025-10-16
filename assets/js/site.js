@@ -39,8 +39,14 @@
 
     initializeState() {
       const stored = localStorage.getItem(STORAGE_KEY);
+      // On mobile, default to collapsed (slim). On desktop, default to expanded (wide).
       const shouldCollapse = stored ? stored === '1' : this.mediaQuery.matches;
       this.applyCollapsed(shouldCollapse);
+      
+      // On mobile, ensure sidebar starts closed (off-canvas)
+      if (this.mediaQuery.matches) {
+        this.closeMobile();
+      }
     },
 
     applyCollapsed(collapsed) {
@@ -405,6 +411,41 @@
     }
   };
 
+  // === Dropdown Auto-close ===
+  const DropdownManager = {
+    closeAllDropdowns() {
+      if (typeof UIkit !== 'undefined' && UIkit.dropdown) {
+        // Find all dropdown elements and close them
+        const dropdownElements = document.querySelectorAll('.uk-dropdown');
+        dropdownElements.forEach(el => {
+          const dropdown = UIkit.dropdown(el);
+          if (dropdown && dropdown.isActive()) {
+            dropdown.hide(false); // false = hide immediately without animation
+          }
+        });
+      }
+    },
+
+    init() {
+      // Close dropdowns immediately when clicking navigation links inside them
+      document.body.addEventListener('click', (e) => {
+        // Check if click is on a link inside a dropdown
+        const link = e.target.closest('a[href]');
+        const dropdown = e.target.closest('.uk-dropdown');
+        
+        if (link && dropdown && (link.hasAttribute('hx-get') || link.hasAttribute('hx-post'))) {
+          // Small delay to ensure click is registered
+          setTimeout(() => this.closeAllDropdowns(), 0);
+        }
+      });
+
+      // Also close all dropdowns after HTMX navigation completes
+      document.body.addEventListener('htmx:afterOnLoad', () => {
+        this.closeAllDropdowns();
+      });
+    }
+  };
+
   // === Main Initialization ===
   function init() {
     safeExecute(() => SidebarManager.init(), 'Sidebar init');
@@ -412,6 +453,7 @@
     safeExecute(() => TagFilterManager.init(), 'Tag filtering');
     safeExecute(() => ChapterHoverManager.init(), 'Chapter hover');
     safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
+    safeExecute(() => DropdownManager.init(), 'Dropdown manager');
   }
 
   if (document.readyState === 'loading') {

@@ -26,9 +26,9 @@ templ Navbar(userRole string, currentPath string) {
 					</button>
 				</div>
 				<div id="search-modal" uk-modal>
-					<div class="uk-modal-body uk-modal-dialog w-4/5 modal-body-transparent">
+					<div class="uk-modal-body uk-modal-dialog modal-body-transparent" style="max-width: 90%; width: 90%;">
 						<form hx-get="/mangas/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML">
-							<div class="mx-auto mt-8 mb-4 w-1/3">
+							<div class="mx-auto mt-8 mb-4" style="width: 100%; max-width: 800px;">
 								<input id="searchInput" class="uk-input w-full input-bg" type="text" name="search" placeholder="One-Punch Man etc..." autocomplete="off" />
 							</div>
 						</form>

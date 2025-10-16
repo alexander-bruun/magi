@@ -345,13 +345,20 @@ main.site-main {
 }
 
 body.sidebar-collapsed .sidebar {
-  width: var(--sidebar-slim-width);
+  width: var(--sidebar-slim-width) !important;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
 
 body.sidebar-collapsed main.site-main {
   margin-left: var(--sidebar-slim-width);
+}
+
+/* Ensure collapsed state always stays visible on desktop (not off-canvas) */
+@media (min-width: 769px) {
+  body.sidebar-collapsed .sidebar {
+    left: 0 !important;
+  }
 }
 
 .sidebar .nav-text {
@@ -453,11 +460,20 @@ body.sidebar-collapsed .sidebar-footer {
 }
 
 body.sidebar-collapsed .sidebar-footer .uk-btn {
+  width: 44px;
   justify-content: center;
+  align-items: center;
   gap: 0;
   padding: var(--nav-item-pad-collapsed);
   min-inline-size: 44px;
   min-block-size: 44px;
+}
+
+body.sidebar-collapsed .sidebar-footer .uk-btn uk-icon,
+body.sidebar-collapsed .sidebar-footer .uk-btn svg {
+  margin: 0 auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 header.site-header a,
@@ -497,6 +513,19 @@ header.site-header a:focus,
     left: 0;
   }
 
+  /* Ensure collapsed state doesn't interfere on mobile - keeps sidebar hidden */
+  body.sidebar-collapsed:not(.sidebar-open) .sidebar {
+    left: -100%;
+  }
+
+  /* When both open AND collapsed on mobile, show slim version */
+  body.sidebar-open.sidebar-collapsed .sidebar {
+    left: 0;
+    width: var(--sidebar-slim-width);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
   /* Prevent background scroll when sidebar is open */
   body.sidebar-open {
     overflow: hidden;
@@ -528,8 +557,8 @@ header.site-header a:focus,
     pointer-events: auto;
   }
 
-  /* Make tap targets comfortable and left-aligned (override collapsed layout) */
-  .sidebar .uk-nav>li>a {
+  /* Make tap targets comfortable and left-aligned when sidebar is open (not collapsed) */
+  body.sidebar-open:not(.sidebar-collapsed) .sidebar .uk-nav>li>a {
     justify-content: flex-start;
     gap: 0.625rem;
     padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
@@ -538,18 +567,9 @@ header.site-header a:focus,
     overflow: visible;
   }
 
-  /* Override collapsed-specific rules on mobile to keep full menu text */
-  body.sidebar-collapsed .sidebar .nav-text {
+  /* Only show full text when sidebar is open AND not collapsed */
+  body.sidebar-open:not(.sidebar-collapsed) .sidebar .nav-text {
     display: inline-block;
-  }
-
-  body.sidebar-collapsed .sidebar .uk-nav>li>a {
-    justify-content: flex-start;
-    gap: 0.625rem;
-    padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
-    min-inline-size: 44px;
-    min-block-size: 44px;
-    overflow: visible;
   }
 
   #sidebar-toggle {
@@ -559,6 +579,47 @@ header.site-header a:focus,
     width: 40px !important;
     height: 40px !important;
     padding: 0 !important;
+  }
+
+  /* Fix sidebar horizontal scrollbar on mobile */
+  .sidebar {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    max-width: 100%;
+  }
+
+  /* Ensure sidebar footer doesn't cause horizontal overflow */
+  .sidebar-footer {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .sidebar-footer .uk-btn {
+    width: calc(100% - 2rem) !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
+  }
+
+  /* Override collapsed state footer styles on mobile */
+  body.sidebar-collapsed .sidebar-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  body.sidebar-collapsed .sidebar-footer .uk-btn {
+    width: calc(100% - 2rem) !important;
+    justify-content: flex-start;
+    gap: 0.625rem;
+  }
+
+  /* Fix icon alignment in sidebar on mobile */
+  .sidebar .uk-nav>li>a uk-icon,
+  .sidebar .uk-nav>li>a svg {
+    flex-shrink: 0;
   }
 }
 
@@ -585,4 +646,267 @@ header.site-header a:focus,
 .uk-heading-line span {
   display: inline-block;
   line-height: 1.2;
+}
+
+/* ============================================
+   RESPONSIVE IMPROVEMENTS
+   ============================================ */
+
+/* Add padding to main content container on mobile */
+@media (max-width: 768px) {
+  #content.uk-container,
+  .uk-container.uk-container-xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Add spacing around headers on mobile */
+  .uk-heading-line,
+  .uk-h2,
+  .uk-h3,
+  h2,
+  h3 {
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .uk-card-title.uk-text-center {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Breadcrumbs spacing */
+  .uk-breadcrumb {
+    padding-left: 0 !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
+/* Make search box wider */
+#search-modal .uk-modal-dialog {
+  max-width: 90% !important;
+}
+
+#search-modal .uk-modal-body > form > div {
+  width: 100% !important;
+  max-width: 800px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Fix popout nav icons centering on mobile */
+@media (max-width: 768px) {
+  .uk-navbar-item .uk-btn-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+  }
+}
+
+/* Configuration card wider on mobile */
+@media (max-width: 768px) {
+  .uk-container > .uk-card {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Make configuration card container full width on mobile */
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 100% !important;
+  }
+}
+
+/* Library creator stack on mobile */
+@media (max-width: 768px) {
+  .uk-grid.uk-child-width-1-2\@m {
+    grid-template-columns: 1fr !important;
+  }
+  
+  form .uk-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  
+  /* Stack library form and table on mobile - form on top, table below */
+  .uk-container .grid.grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .uk-container .grid.grid-cols-4 #form-column {
+    order: 1;
+    grid-column: span 1 !important;
+  }
+  
+  .uk-container .grid.grid-cols-4 #table-column {
+    order: 2;
+    grid-column: span 1 !important;
+  }
+  
+  /* Stack folder input rows vertically on mobile */
+  .folder-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+  
+  .folder-row .folder-input {
+    width: 100% !important;
+  }
+  
+  .folder-row button {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* Users card wider on mobile and medium screens */
+@media (max-width: 768px) {
+  .uk-card {
+    max-width: 100% !important;
+  }
+  
+  .uk-table-responsive {
+    overflow-x: auto !important;
+  }
+  
+  /* Make users card container full width on mobile */
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 100% !important;
+  }
+}
+
+/* Users card wider on medium screens (tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 75% !important;
+  }
+}
+
+/* Footer wider on mobile */
+@media (max-width: 768px) {
+  .uk-container.uk-mx-auto.my-8 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .uk-container.uk-mx-auto.my-8 .uk-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Footer wider on medium screens (tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .uk-container.uk-mx-auto.my-8 .uk-card {
+    width: 90% !important;
+  }
+}
+
+/* Add top margin to sliders */
+.uk-slider,
+div[uk-slider] {
+  margin-top: 1.5rem !important;
+}
+
+/* Remove horizontal scrollbar in sidenav when revealed */
+.sidebar {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+body.sidebar-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* Fix dropdown navbar closing after selection */
+.uk-dropdown-nav a,
+.uk-drop .uk-nav a {
+  cursor: pointer;
+}
+
+/* Manga page card responsive */
+@media (max-width: 768px) {
+  .uk-card-body {
+    padding: 1rem !important;
+  }
+  
+  .uk-grid {
+    margin-left: 0 !important;
+  }
+  
+  /* Prevent cards from going off screen */
+  .uk-card,
+  .uk-card-default {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* Like/dislike buttons on mobile */
+@media (max-width: 768px) {
+  .vote-controls {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  
+  .vote-controls .uk-btn:first-child {
+    order: 1;
+  }
+  
+  .vote-controls .vote-count {
+    order: 2;
+    flex: 0 0 auto;
+  }
+  
+  .vote-controls .uk-btn:last-child {
+    order: 3;
+  }
+}
+
+/* Chapter reader dropdown alignment */
+.chapter-navigation {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.chapter-navigation .uk-dropdown,
+.chapter-navigation select,
+.chapter-navigation .uk-form-select {
+  margin-top: 0 !important;
+}
+
+/* Stats grid responsive */
+@media (max-width: 768px) {
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tag showcase improvements */
+.tag-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+  margin-top: 1rem !important;
+}
+
+.tag-container .uk-badge {
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.75rem !important;
+}
+
+@media (max-width: 768px) {
+  .tag-container {
+    justify-content: center !important;
+  }
 }

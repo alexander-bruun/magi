@@ -20,11 +20,24 @@ const (
 	localServerBaseURL = "/api/images"
 )
 
-// IndexManga inspects a manga directory, syncing metadata and chapters with the database.
+// IndexManga inspects a manga directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
 func IndexManga(absolutePath, librarySlug string) (string, error) {
 	defer utils.LogDuration("IndexManga", time.Now(), absolutePath)
 
-	cleanedName := utils.RemovePatterns(filepath.Base(absolutePath))
+	// Check if this is a file (single-chapter manga)
+	fileInfo, err := os.Stat(absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
+	}
+	isSingleFile := !fileInfo.IsDir()
+
+	// For single files, use the filename without extension as the manga name
+	baseName := filepath.Base(absolutePath)
+	if isSingleFile {
+		baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+	}
+	
+	cleanedName := utils.RemovePatterns(baseName)
 	if cleanedName == "" {
 		return "", nil
 	}
@@ -78,24 +91,31 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		// candidate files (files that look like chapters) matches the stored
 		// FileCount, assume no changes and skip.
 		if absolutePath != "" {
-			// Count files (fast): we only need to count entries that look
-			// like chapters (contain a number after cleaning). This is a
-			// fast directory read that avoids creating objects.
 			var candidateCount int
-			_ = filepath.WalkDir(absolutePath, func(p string, d fs.DirEntry, walkErr error) error {
-				if walkErr != nil {
+			
+			if isSingleFile {
+				// Single file manga always has exactly 1 chapter
+				candidateCount = 1
+			} else {
+				// Count files (fast): we only need to count entries that look
+				// like chapters (contain a number after cleaning). This is a
+				// fast directory read that avoids creating objects.
+				_ = filepath.WalkDir(absolutePath, func(p string, d fs.DirEntry, walkErr error) error {
+					if walkErr != nil {
+						return nil
+					}
+					if d.IsDir() {
+						return nil
+					}
+					name := d.Name()
+					cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
+					if containsNumber(cleanedName) {
+						candidateCount++
+					}
 					return nil
-				}
-				if d.IsDir() {
-					return nil
-				}
-				name := d.Name()
-				cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
-				if containsNumber(cleanedName) {
-					candidateCount++
-				}
-				return nil
-			})
+				})
+			}
+			
 			if candidateCount == existingManga.FileCount {
 				return slug, nil
 			}
@@ -127,9 +147,6 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	// Manga does not exist yet — fetch metadata, create it and index chapters
 	bestMatch, _ := models.GetBestMatchMangadexManga(cleanedName)
-	if bestMatch == nil {
-		log.Warnf("No search result found for: '%s', falling back to local metadata", slug)
-	}
 
 	cachedImageURL, err := handleCoverArt(bestMatch, slug, absolutePath)
 	if err != nil {
@@ -175,7 +192,11 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if added > 0 || deleted > 0 {
-		log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+		if bestMatch == nil {
+			log.Infof("Indexed manga: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
+		} else {
+			log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+		}
 	}
 	return slug, nil
 }
@@ -318,36 +339,51 @@ func IndexChapters(slug, path string) (int, int, error) {
 		existingMap[c.Slug] = c
 	}
 
-	// Build map of files currently present (slug -> relPath). This is a
-	// full scan but cheaper than many DB ops; we only do it when file_count
-	// mismatch was observed.
+	// Check if path is a single file (for .cbz/.cbr files)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to stat path '%s': %w", path, err)
+	}
+
 	type presentInfo struct {
 		Rel  string
 		Name string
 	}
 	presentMap := make(map[string]presentInfo)
-	err = filepath.WalkDir(path, func(p string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if d.IsDir() {
-			return nil
-		}
-		name := d.Name()
-		cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
-		if !containsNumber(cleanedName) {
-			return nil
-		}
+
+	if !fileInfo.IsDir() {
+		// Single file manga - treat the file itself as chapter 1
+		fileName := filepath.Base(path)
+		cleanedName := utils.RemovePatterns(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
 		chapterSlug := utils.Sluggify(cleanedName)
-		relPath, err := filepath.Rel(path, p)
+		presentMap[chapterSlug] = presentInfo{Rel: fileName, Name: cleanedName}
+	} else {
+		// Build map of files currently present (slug -> relPath). This is a
+		// full scan but cheaper than many DB ops; we only do it when file_count
+		// mismatch was observed.
+		err = filepath.WalkDir(path, func(p string, d fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if d.IsDir() {
+				return nil
+			}
+			name := d.Name()
+			cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
+			if !containsNumber(cleanedName) {
+				return nil
+			}
+			chapterSlug := utils.Sluggify(cleanedName)
+			relPath, err := filepath.Rel(path, p)
+			if err != nil {
+				relPath = name
+			}
+			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: cleanedName}
+			return nil
+		})
 		if err != nil {
-			relPath = name
+			return 0, 0, err
 		}
-		presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: cleanedName}
-		return nil
-	})
-	if err != nil {
-		return 0, 0, err
 	}
 
 	// Create missing chapters

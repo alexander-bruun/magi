@@ -17,7 +17,11 @@ const (
 
 // HandleView wraps a page component with the layout unless the request is an HTMX fragment.
 func HandleView(c *fiber.Ctx, content templ.Component) error {
-	if IsHTMXRequest(c) {
+	// Check if this is an HTMX request but NOT a history restore request
+	// History restore requests should get the full layout
+	isHistoryRestore := c.Get("HX-History-Restore-Request") == "true"
+	
+	if IsHTMXRequest(c) && !isHistoryRestore {
 		return renderComponent(c, content)
 	}
 
@@ -99,7 +103,7 @@ func getUserRole(c *fiber.Ctx) (string, error) {
 }
 
 func getRecentMangas(sortBy string) ([]models.Manga, error) {
-	mangas, _, err := models.SearchMangas("", 1, 10, sortBy, "desc", "", "")
+	mangas, _, err := models.SearchMangas("", 1, 20, sortBy, "desc", "", "")
 	return mangas, err
 }
 
