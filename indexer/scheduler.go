@@ -3,6 +3,7 @@ package indexer
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 var (
 	cacheDataDirectory = ""
 	activeIndexers     = make(map[string]*Indexer)
+	scannedPathCount   int
+	scanMutex          sync.Mutex
 )
 
 // Indexer represents the state of an indexer
@@ -76,10 +79,8 @@ func (idx *Indexer) Start() {
 
 // Stop stops the indexer and cleans up
 func (idx *Indexer) Stop() {
-	// Ensure Stop is only executed once to avoid closing the stop channel twice
 	idx.stopOnce.Do(func() {
 		if idx.CronRunning {
-			// Remove the cron job so it won't be scheduled again
 			if idx.Cron != nil {
 				idx.Cron.Remove(idx.CronJobID)
 			}
@@ -87,8 +88,6 @@ func (idx *Indexer) Stop() {
 			idx.CronRunning = false
 			log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
 		}
-
-		// close the stop channel to signal any goroutines waiting on it
 		close(idx.stop)
 		delete(activeIndexers, idx.Library.Slug)
 	})
@@ -102,6 +101,10 @@ func (idx *Indexer) runIndexingJob() {
 	}
 	defer func() {
 		idx.JobRunning = false
+		// Reset the scanned path count after indexing completes
+		scanMutex.Lock()
+		scannedPathCount = 0
+		scanMutex.Unlock()
 	}()
 
 	idx.JobRunning = true
@@ -113,7 +116,6 @@ func (idx *Indexer) runIndexingJob() {
 			log.Errorf("Error processing folder '%s': %s", folder, err)
 		}
 
-		// Check for stop signal after each folder
 		select {
 		case <-idx.stop:
 			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
@@ -123,9 +125,11 @@ func (idx *Indexer) runIndexingJob() {
 	}
 
 	duration := time.Since(start)
-	log.Infof("Indexing for library '%s' completed in %s", idx.Library.Name, duration)
+	scanMutex.Lock()
+	totalScanned := scannedPathCount
+	scanMutex.Unlock()
+	log.Infof("Indexing for library '%s' completed in %s (scanned %d manga paths)", idx.Library.Name, duration, totalScanned)
 
-	// Cleanup: remove any mangas from DB whose folders no longer exist on disk
 	go func(library models.Library) {
 		mangas, err := models.GetMangasByLibrarySlug(library.Slug)
 		if err != nil {
@@ -134,7 +138,6 @@ func (idx *Indexer) runIndexingJob() {
 		}
 
 		for _, m := range mangas {
-			// If the path for the manga no longer exists on disk, delete the manga
 			if m.Path == "" {
 				continue
 			}
@@ -146,29 +149,18 @@ func (idx *Indexer) runIndexingJob() {
 			}
 		}
 
-		// Cleanup: remove duplicate entries where one or both folders no longer exist
 		if err := cleanupOrphanedDuplicates(); err != nil {
 			log.Errorf("Failed to cleanup orphaned duplicates for library '%s': %s", library.Name, err)
 		}
 	}(idx.Library)
 }
 
-// ProcessFolder processes files and directories in a given folder. This is a
-// package-level function so it can be called from outside an Indexer. The
-// librarySlug parameter is used when indexing discovered manga directories.
-// If stop is non-nil it will be observed for cancellation and the function
-// will return early when a value is received.
-// RunIndexingJob triggers the indexer job immediately. It's exported so
-// callers outside the package can request a manual scan while preserving
-// the Indexer's logging and lifecycle behavior.
+// RunIndexingJob triggers the indexer job immediately
 func (idx *Indexer) RunIndexingJob() {
-	// reuse existing runIndexingJob implementation
 	idx.runIndexingJob()
 }
 
-// processFolder processes files and directories in a given folder and uses
-// the Indexer's internal state (like Library.Slug and stop channel). This
-// function is unexported to keep the implementation private to the package.
+// ✅ UPDATED: processFolder now sorts folders alphabetically
 func (idx *Indexer) processFolder(folder string) error {
 	dir, err := os.Open(folder)
 	if err != nil {
@@ -181,6 +173,11 @@ func (idx *Indexer) processFolder(folder string) error {
 		return err
 	}
 
+	// ✅ Sort entries alphabetically by name
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
+
 	for _, entry := range entries {
 		select {
 		case <-idx.stop:
@@ -190,6 +187,14 @@ func (idx *Indexer) processFolder(folder string) error {
 
 		path := filepath.Join(folder, entry.Name())
 		if entry.IsDir() {
+			// Increment the global scan counter
+			scanMutex.Lock()
+			scannedPathCount++
+			currentCount := scannedPathCount
+			scanMutex.Unlock()
+			
+			log.Debugf("Scanning manga path [%d]: %s", currentCount, path)
+			
 			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
 				log.Errorf("Error indexing manga at '%s': %s", path, err)
 			}
@@ -212,25 +217,22 @@ func cleanupOrphanedDuplicates() error {
 		folder1Exists := true
 		folder2Exists := true
 
-		// Check if folder 1 exists
 		if dup.FolderPath1 != "" {
 			if _, err := os.Stat(dup.FolderPath1); os.IsNotExist(err) {
 				folder1Exists = false
 			}
 		}
 
-		// Check if folder 2 exists
 		if dup.FolderPath2 != "" {
 			if _, err := os.Stat(dup.FolderPath2); os.IsNotExist(err) {
 				folder2Exists = false
 			}
 		}
 
-		// If either folder no longer exists, delete the duplicate entry
 		if !folder1Exists || !folder2Exists {
 			log.Infof("Deleting orphaned duplicate entry for manga '%s' (ID=%d): folder1_exists=%v, folder2_exists=%v",
 				dup.MangaSlug, dup.ID, folder1Exists, folder2Exists)
-			
+
 			if err := models.DeleteMangaDuplicateByID(dup.ID); err != nil {
 				log.Errorf("Failed to delete orphaned duplicate %d: %v", dup.ID, err)
 			} else {
