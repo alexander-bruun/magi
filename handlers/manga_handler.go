@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -313,7 +314,14 @@ func getMangaAndChapters(mangaSlug string) (*models.Manga, []models.Chapter, err
 }
 
 func getChapterImages(manga *models.Manga, chapter *models.Chapter) ([]string, error) {
-	chapterFilePath := filepath.Join(manga.Path, chapter.File)
+	// Determine the actual chapter file path
+	// For single-file manga (cbz/cbr), manga.Path is the file itself
+	// For directory-based manga, we need to join path and chapter file
+	chapterFilePath := manga.Path
+	if fileInfo, err := os.Stat(manga.Path); err == nil && fileInfo.IsDir() {
+		chapterFilePath = filepath.Join(manga.Path, chapter.File)
+	}
+	
 	pageCount, err := utils.CountImageFiles(chapterFilePath)
 	if err != nil {
 		return nil, err

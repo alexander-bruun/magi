@@ -6,6 +6,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/robfig/cron/v3"
@@ -199,7 +200,23 @@ func (idx *Indexer) processFolder(folder string) error {
 				log.Errorf("Error indexing manga at '%s': %s", path, err)
 			}
 		} else {
-			log.Debugf("File: %s", entry.Name())
+			// Check if file is an archive file (single-chapter manga)
+			ext := strings.ToLower(filepath.Ext(entry.Name()))
+			if ext == ".cbz" || ext == ".cbr" || ext == ".zip" || ext == ".rar" {
+				// Increment the global scan counter
+				scanMutex.Lock()
+				scannedPathCount++
+				currentCount := scannedPathCount
+				scanMutex.Unlock()
+				
+				log.Debugf("Scanning manga file [%d]: %s", currentCount, path)
+				
+				if _, err := IndexManga(path, idx.Library.Slug); err != nil {
+					log.Errorf("Error indexing manga at '%s': %s", path, err)
+				}
+			} else {
+				log.Debugf("Skipping non-manga file: %s", entry.Name())
+			}
 		}
 	}
 	return nil

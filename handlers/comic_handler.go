@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,11 +38,22 @@ func ComicHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	filePath := filepath.Join(manga.Path, chapter.File)
+	// Determine the actual chapter file path
+	// For single-file manga (cbz/cbr), manga.Path is the file itself
+	// For directory-based manga, we need to join path and chapter file
+	filePath := manga.Path
+	if fileInfo, err := os.Stat(manga.Path); err == nil && fileInfo.IsDir() {
+		filePath = filepath.Join(manga.Path, chapter.File)
+	}
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
+	}
+
+	// If the path is a directory, serve images from within it
+	if fileInfo.IsDir() {
+		return serveImageFromDirectory(c, filePath)
 	}
 
 	lowerFileName := strings.ToLower(fileInfo.Name())
@@ -57,6 +69,49 @@ func ComicHandler(c *fiber.Ctx) error {
 	default:
 		return HandleView(c, views.Error("Unsupported file type"))
 	}
+}
+
+// serveImageFromDirectory handles serving individual image files from a chapter directory.
+func serveImageFromDirectory(c *fiber.Ctx, dirPath string) error {
+	pageStr := c.Query("page")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
+	}
+
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return HandleView(c, views.Error(err.Error()))
+	}
+
+	// Filter for image files only
+	var imageFiles []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := entry.Name()
+			lowerName := strings.ToLower(name)
+			if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") ||
+				strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".gif") ||
+				strings.HasSuffix(lowerName, ".webp") {
+				imageFiles = append(imageFiles, name)
+			}
+		}
+	}
+
+	// Sort image files alphabetically for consistent ordering
+	sort.Strings(imageFiles)
+
+	if len(imageFiles) == 0 {
+		return HandleView(c, views.Error("No images found in chapter directory"))
+	}
+
+	// Page numbers are 1-indexed
+	if page > len(imageFiles) {
+		return c.Status(fiber.StatusNotFound).SendString("Page not found")
+	}
+
+	imagePath := filepath.Join(dirPath, imageFiles[page-1])
+	return c.SendFile(imagePath)
 }
 
 // serveComicBookArchiveFromRAR handles serving images from a RAR archive.
