@@ -713,6 +713,11 @@ header.site-header a:focus,
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
+  
+  /* Make configuration card container full width on mobile */
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 100% !important;
+  }
 }
 
 /* Library creator stack on mobile */
@@ -726,9 +731,40 @@ header.site-header a:focus,
     flex-direction: column !important;
     gap: 1rem !important;
   }
+  
+  /* Stack library form and table on mobile - form on top, table below */
+  .uk-container .grid.grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .uk-container .grid.grid-cols-4 #form-column {
+    order: 1;
+    grid-column: span 1 !important;
+  }
+  
+  .uk-container .grid.grid-cols-4 #table-column {
+    order: 2;
+    grid-column: span 1 !important;
+  }
+  
+  /* Stack folder input rows vertically on mobile */
+  .folder-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+  
+  .folder-row .folder-input {
+    width: 100% !important;
+  }
+  
+  .folder-row button {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
 }
 
-/* Users card wider on mobile */
+/* Users card wider on mobile and medium screens */
 @media (max-width: 768px) {
   .uk-card {
     max-width: 100% !important;
@@ -736,6 +772,38 @@ header.site-header a:focus,
   
   .uk-table-responsive {
     overflow-x: auto !important;
+  }
+  
+  /* Make users card container full width on mobile */
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 100% !important;
+  }
+}
+
+/* Users card wider on medium screens (tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .uk-container .flex.place-content-center > .w-2\/4 {
+    width: 75% !important;
+  }
+}
+
+/* Footer wider on mobile */
+@media (max-width: 768px) {
+  .uk-container.uk-mx-auto.my-8 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .uk-container.uk-mx-auto.my-8 .uk-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Footer wider on medium screens (tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .uk-container.uk-mx-auto.my-8 .uk-card {
+    width: 90% !important;
   }
 }
 
