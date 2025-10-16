@@ -345,13 +345,20 @@ main.site-main {
 }
 
 body.sidebar-collapsed .sidebar {
-  width: var(--sidebar-slim-width);
+  width: var(--sidebar-slim-width) !important;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
 
 body.sidebar-collapsed main.site-main {
   margin-left: var(--sidebar-slim-width);
+}
+
+/* Ensure collapsed state always stays visible on desktop (not off-canvas) */
+@media (min-width: 769px) {
+  body.sidebar-collapsed .sidebar {
+    left: 0 !important;
+  }
 }
 
 .sidebar .nav-text {
@@ -453,11 +460,20 @@ body.sidebar-collapsed .sidebar-footer {
 }
 
 body.sidebar-collapsed .sidebar-footer .uk-btn {
+  width: 44px;
   justify-content: center;
+  align-items: center;
   gap: 0;
   padding: var(--nav-item-pad-collapsed);
   min-inline-size: 44px;
   min-block-size: 44px;
+}
+
+body.sidebar-collapsed .sidebar-footer .uk-btn uk-icon,
+body.sidebar-collapsed .sidebar-footer .uk-btn svg {
+  margin: 0 auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 header.site-header a,
@@ -497,6 +513,19 @@ header.site-header a:focus,
     left: 0;
   }
 
+  /* Ensure collapsed state doesn't interfere on mobile - keeps sidebar hidden */
+  body.sidebar-collapsed:not(.sidebar-open) .sidebar {
+    left: -100%;
+  }
+
+  /* When both open AND collapsed on mobile, show slim version */
+  body.sidebar-open.sidebar-collapsed .sidebar {
+    left: 0;
+    width: var(--sidebar-slim-width);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
   /* Prevent background scroll when sidebar is open */
   body.sidebar-open {
     overflow: hidden;
@@ -528,8 +557,8 @@ header.site-header a:focus,
     pointer-events: auto;
   }
 
-  /* Make tap targets comfortable and left-aligned (override collapsed layout) */
-  .sidebar .uk-nav>li>a {
+  /* Make tap targets comfortable and left-aligned when sidebar is open (not collapsed) */
+  body.sidebar-open:not(.sidebar-collapsed) .sidebar .uk-nav>li>a {
     justify-content: flex-start;
     gap: 0.625rem;
     padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
@@ -538,18 +567,9 @@ header.site-header a:focus,
     overflow: visible;
   }
 
-  /* Override collapsed-specific rules on mobile to keep full menu text */
-  body.sidebar-collapsed .sidebar .nav-text {
+  /* Only show full text when sidebar is open AND not collapsed */
+  body.sidebar-open:not(.sidebar-collapsed) .sidebar .nav-text {
     display: inline-block;
-  }
-
-  body.sidebar-collapsed .sidebar .uk-nav>li>a {
-    justify-content: flex-start;
-    gap: 0.625rem;
-    padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
-    min-inline-size: 44px;
-    min-block-size: 44px;
-    overflow: visible;
   }
 
   #sidebar-toggle {
@@ -565,20 +585,35 @@ header.site-header a:focus,
   .sidebar {
     overflow-x: hidden !important;
     overflow-y: auto !important;
+    max-width: 100%;
   }
 
   /* Ensure sidebar footer doesn't cause horizontal overflow */
   .sidebar-footer {
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     padding-left: 1rem;
     padding-right: 1rem;
   }
 
   .sidebar-footer .uk-btn {
-    width: 100%;
+    width: calc(100% - 2rem) !important;
     max-width: 100%;
     box-sizing: border-box;
+    margin: 0 auto;
+  }
+
+  /* Override collapsed state footer styles on mobile */
+  body.sidebar-collapsed .sidebar-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  body.sidebar-collapsed .sidebar-footer .uk-btn {
+    width: calc(100% - 2rem) !important;
+    justify-content: flex-start;
+    gap: 0.625rem;
   }
 
   /* Fix icon alignment in sidebar on mobile */

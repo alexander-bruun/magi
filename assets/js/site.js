@@ -39,8 +39,14 @@
 
     initializeState() {
       const stored = localStorage.getItem(STORAGE_KEY);
+      // On mobile, default to collapsed (slim). On desktop, default to expanded (wide).
       const shouldCollapse = stored ? stored === '1' : this.mediaQuery.matches;
       this.applyCollapsed(shouldCollapse);
+      
+      // On mobile, ensure sidebar starts closed (off-canvas)
+      if (this.mediaQuery.matches) {
+        this.closeMobile();
+      }
     },
 
     applyCollapsed(collapsed) {
