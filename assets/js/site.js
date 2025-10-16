@@ -413,19 +413,35 @@
 
   // === Dropdown Auto-close ===
   const DropdownManager = {
-    init() {
-      // Close all dropdowns after HTMX navigation
-      document.body.addEventListener('htmx:afterOnLoad', () => {
-        if (typeof UIkit !== 'undefined' && UIkit.dropdown) {
-          const dropdowns = UIkit.dropdown('.uk-dropdown');
-          if (dropdowns) {
-            if (Array.isArray(dropdowns)) {
-              dropdowns.forEach(d => d.hide());
-            } else if (dropdowns.hide) {
-              dropdowns.hide();
-            }
+    closeAllDropdowns() {
+      if (typeof UIkit !== 'undefined' && UIkit.dropdown) {
+        // Find all dropdown elements and close them
+        const dropdownElements = document.querySelectorAll('.uk-dropdown');
+        dropdownElements.forEach(el => {
+          const dropdown = UIkit.dropdown(el);
+          if (dropdown && dropdown.isActive()) {
+            dropdown.hide(false); // false = hide immediately without animation
           }
+        });
+      }
+    },
+
+    init() {
+      // Close dropdowns immediately when clicking navigation links inside them
+      document.body.addEventListener('click', (e) => {
+        // Check if click is on a link inside a dropdown
+        const link = e.target.closest('a[href]');
+        const dropdown = e.target.closest('.uk-dropdown');
+        
+        if (link && dropdown && (link.hasAttribute('hx-get') || link.hasAttribute('hx-post'))) {
+          // Small delay to ensure click is registered
+          setTimeout(() => this.closeAllDropdowns(), 0);
         }
+      });
+
+      // Also close all dropdowns after HTMX navigation completes
+      document.body.addEventListener('htmx:afterOnLoad', () => {
+        this.closeAllDropdowns();
       });
     }
   };
