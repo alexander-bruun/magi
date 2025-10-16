@@ -405,6 +405,25 @@
     }
   };
 
+  // === Dropdown Auto-close ===
+  const DropdownManager = {
+    init() {
+      // Close all dropdowns after HTMX navigation
+      document.body.addEventListener('htmx:afterOnLoad', () => {
+        if (typeof UIkit !== 'undefined' && UIkit.dropdown) {
+          const dropdowns = UIkit.dropdown('.uk-dropdown');
+          if (dropdowns) {
+            if (Array.isArray(dropdowns)) {
+              dropdowns.forEach(d => d.hide());
+            } else if (dropdowns.hide) {
+              dropdowns.hide();
+            }
+          }
+        }
+      });
+    }
+  };
+
   // === Main Initialization ===
   function init() {
     safeExecute(() => SidebarManager.init(), 'Sidebar init');
@@ -412,6 +431,7 @@
     safeExecute(() => TagFilterManager.init(), 'Tag filtering');
     safeExecute(() => ChapterHoverManager.init(), 'Chapter hover');
     safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
+    safeExecute(() => DropdownManager.init(), 'Dropdown manager');
   }
 
   if (document.readyState === 'loading') {
