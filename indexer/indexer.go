@@ -147,9 +147,6 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	// Manga does not exist yet — fetch metadata, create it and index chapters
 	bestMatch, _ := models.GetBestMatchMangadexManga(cleanedName)
-	if bestMatch == nil {
-		log.Warnf("No search result found for: '%s', falling back to local metadata", slug)
-	}
 
 	cachedImageURL, err := handleCoverArt(bestMatch, slug, absolutePath)
 	if err != nil {
@@ -195,7 +192,11 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if added > 0 || deleted > 0 {
-		log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+		if bestMatch == nil {
+			log.Infof("Indexed manga: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
+		} else {
+			log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+		}
 	}
 	return slug, nil
 }
