@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
@@ -78,8 +79,15 @@ func HandleManga(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 	
-	// If a user is logged in, fetch their read chapters and annotate the list
-	if userName := GetUserContext(c); userName != "" {
+	// Get user role for conditional rendering
+	userRole := ""
+	userName := GetUserContext(c)
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			userRole = user.Role
+		}
+		// If a user is logged in, fetch their read chapters and annotate the list
 		readMap, err := models.GetReadChaptersForUser(userName, slug)
 		if err == nil {
 			for i := range chapters {
@@ -94,7 +102,7 @@ func HandleManga(c *fiber.Ctx) error {
 		firstSlug = chapters[0].Slug
 		lastSlug = chapters[len(chapters)-1].Slug
 	}
-	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters)))
+	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters), userRole))
 }
 
 // HandleChapter shows a chapter reader with navigation and optional read tracking.
@@ -506,4 +514,136 @@ func HandleMangaFavoriteFragment(c *fiber.Ctx) error {
 		isFav = f
 	}
 	return HandleView(c, views.MangaFavoriteFragment(mangaSlug, favCount, isFav))
+}
+
+// HandleManualEditMetadata handles manual metadata updates by moderators or admins
+func HandleManualEditMetadata(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	if mangaSlug == "" {
+		return handleError(c, fmt.Errorf("manga slug can't be empty"))
+	}
+
+	existingManga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if existingManga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Parse form values
+	name := c.FormValue("name")
+	author := c.FormValue("author")
+	description := c.FormValue("description")
+	year := c.FormValue("year")
+	originalLanguage := c.FormValue("original_language")
+	mangaType := c.FormValue("manga_type")
+	status := c.FormValue("status")
+	contentRating := c.FormValue("content_rating")
+	tagsInput := c.FormValue("tags")
+	coverURL := c.FormValue("cover_url")
+
+	// Update fields
+	if name != "" {
+		existingManga.Name = name
+	}
+	if author != "" {
+		existingManga.Author = author
+	}
+	if description != "" {
+		existingManga.Description = description
+	}
+	if year != "" {
+		if yearInt, err := strconv.Atoi(year); err == nil {
+			existingManga.Year = yearInt
+		}
+	}
+	if originalLanguage != "" {
+		existingManga.OriginalLanguage = originalLanguage
+	}
+	if mangaType != "" {
+		existingManga.Type = mangaType
+	}
+	if status != "" {
+		existingManga.Status = status
+	}
+	if contentRating != "" {
+		existingManga.ContentRating = contentRating
+	}
+
+	// Process tags (comma-separated list)
+	if tagsInput != "" {
+		var tags []string
+		for _, tag := range strings.Split(tagsInput, ",") {
+			trimmed := strings.TrimSpace(tag)
+			if trimmed != "" {
+				tags = append(tags, trimmed)
+			}
+		}
+		if len(tags) > 0 {
+			if err := models.SetTagsForManga(existingManga.Slug, tags); err != nil {
+				return handleError(c, fmt.Errorf("failed to update tags: %w", err))
+			}
+		}
+	}
+
+	// Process cover art URL (download and cache)
+	if coverURL != "" {
+		cachedImageURL, err := cacheAndGetImageURL(existingManga.Slug, coverURL)
+		if err != nil {
+			return handleError(c, fmt.Errorf("failed to download and cache cover art: %w", err))
+		}
+		existingManga.CoverArtURL = cachedImageURL
+	}
+
+	// Update manga in database
+	if err := models.UpdateManga(existingManga); err != nil {
+		return handleError(c, err)
+	}
+
+	// Return success response for HTMX
+	redirectURL := fmt.Sprintf("/mangas/%s", existingManga.Slug)
+	c.Set("HX-Redirect", redirectURL)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// HandleRefreshMetadata re-indexes a single manga by rescanning its folder
+func HandleRefreshMetadata(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	if mangaSlug == "" {
+		return handleError(c, fmt.Errorf("manga slug can't be empty"))
+	}
+
+	existingManga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if existingManga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Store the path and library slug before deletion
+	mangaPath := existingManga.Path
+	librarySlug := existingManga.LibrarySlug
+
+	// Delete the existing manga to force a fresh index
+	// This will also delete associated chapters, tags, etc.
+	if err := models.DeleteManga(mangaSlug); err != nil {
+		return handleError(c, fmt.Errorf("failed to delete existing manga: %w", err))
+	}
+
+	// Re-index the manga from scratch
+	newSlug, err := indexer.IndexManga(mangaPath, librarySlug)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to refresh metadata: %w", err))
+	}
+	
+	if newSlug == "" {
+		return handleError(c, fmt.Errorf("manga indexing returned empty slug"))
+	}
+
+	// Return success response for HTMX
+	redirectURL := fmt.Sprintf("/mangas/%s", newSlug)
+	c.Set("HX-Redirect", redirectURL)
+	return c.SendStatus(fiber.StatusOK)
 }

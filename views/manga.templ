@@ -2,10 +2,11 @@ package views
 
 import (
 	"fmt"
+	"strings"
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int) {
+templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string) {
 	@PageTitle(manga.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -16,7 +17,7 @@ templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug stri
 	<div class="flex flex-col lg:flex-row mt-2">
 		<div id="form-column" class="w-full lg:w-1/4 m-2">
 			<div class="uk-card p-2">
-				@Info(manga)
+				@Info(manga, userRole)
 			</div>
 		</div>
 		<div id="table-column" class="w-full lg:w-3/4 m-2">
@@ -104,7 +105,7 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 	}
 }
 
-templ Info(manga models.Manga) {
+templ Info(manga models.Manga, userRole string) {
 	<div class="flex justify-center items-center">
 		if manga.CoverArtURL == "" {
 			<img src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
@@ -252,6 +253,26 @@ templ Info(manga models.Manga) {
 				>
 					<uk-icon icon="Info"></uk-icon>
 				</button>
+				if userRole == "moderator" || userRole == "admin" {
+					<button
+						type="button"
+						class="uk-btn uk-btn-default ctrl-btn"
+						uk-toggle="target: #manual-edit-modal"
+						title="Edit metadata manually"
+						aria-label="Edit metadata manually"
+					>
+						<uk-icon icon="Pencil"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-default ctrl-btn"
+						uk-toggle="target: #refresh-metadata-modal"
+						title="Refresh metadata from MangaDex"
+						aria-label="Refresh metadata from MangaDex"
+					>
+						<uk-icon icon="FolderSync"></uk-icon>
+					</button>
+				}
 				<div class="controls-tight">
 					<div id="manga-favorite" hx-get={ fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 				</div>
@@ -279,6 +300,137 @@ templ Info(manga models.Manga) {
 				</form>
 			</div>
 			<div id="modal-content"></div>
+		</div>
+	</div>
+	<!-- Manual Edit Modal for Moderators/Admins -->
+	<div id="manual-edit-modal" uk-modal>
+		<div class="uk-modal-body uk-modal-dialog" style="max-height: 80vh; overflow-y: auto; padding: 2rem;">
+			<h2 class="uk-modal-title mb-3">Edit Manga Metadata</h2>
+			<p class="uk-text-muted mb-6">
+				Manually edit the metadata for this manga. Changes will overwrite existing data.
+			</p>
+			<form
+				hx-post={ fmt.Sprintf("/mangas/%s/manual-edit-metadata", manga.Slug) }
+				hx-target="#content"
+				class="space-y-6"
+			>
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="name">Name</label>
+					<input class="uk-input" type="text" id="name" name="name" value={ manga.Name } required/>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="author">Author</label>
+					<input class="uk-input" type="text" id="author" name="author" value={ manga.Author }/>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="description">Description</label>
+					<textarea class="uk-textarea" id="description" name="description" rows="5">{ manga.Description }</textarea>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="year">Year</label>
+					<input class="uk-input" type="number" id="year" name="year" value={ fmt.Sprint(manga.Year) }/>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="original_language">Original Language</label>
+					<input class="uk-input" type="text" id="original_language" name="original_language" value={ manga.OriginalLanguage }/>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="manga_type">Type</label>
+					<select class="uk-select" id="manga_type" name="manga_type">
+						<option value="manga" selected?={ manga.Type == "manga" }>Manga</option>
+						<option value="manhwa" selected?={ manga.Type == "manhwa" }>Manhwa</option>
+						<option value="manhua" selected?={ manga.Type == "manhua" }>Manhua</option>
+						<option value="comic" selected?={ manga.Type == "comic" }>Comic</option>
+						<option value="webtoon" selected?={ manga.Type == "webtoon" }>Webtoon</option>
+						<option value="other" selected?={ manga.Type == "other" }>Other</option>
+					</select>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="status">Status</label>
+					<select class="uk-select" id="status" name="status">
+						<option value="ongoing" selected?={ manga.Status == "ongoing" }>Ongoing</option>
+						<option value="completed" selected?={ manga.Status == "completed" }>Completed</option>
+						<option value="hiatus" selected?={ manga.Status == "hiatus" }>Hiatus</option>
+						<option value="cancelled" selected?={ manga.Status == "cancelled" }>Cancelled</option>
+					</select>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="content_rating">Content Rating</label>
+					<select class="uk-select" id="content_rating" name="content_rating">
+						<option value="safe" selected?={ manga.ContentRating == "safe" }>Safe</option>
+						<option value="suggestive" selected?={ manga.ContentRating == "suggestive" }>Suggestive</option>
+						<option value="erotica" selected?={ manga.ContentRating == "erotica" }>Erotica</option>
+						<option value="pornographic" selected?={ manga.ContentRating == "pornographic" }>Pornographic</option>
+					</select>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="tags">Tags (comma-separated)</label>
+					{{ tagsString := "" }}
+					{{ if len(manga.Tags) > 0 {
+						tagsString = strings.Join(manga.Tags, ", ")
+					} }}
+					<input class="uk-input" type="text" id="tags" name="tags" value={ tagsString } placeholder="e.g. Action, Adventure, Fantasy"/>
+					<small class="uk-text-muted block mt-2">Separate tags with commas</small>
+				</div>
+				
+				<div class="mb-5">
+					<label class="uk-form-label mb-2 block font-semibold" for="cover_url">Cover Art URL</label>
+					<input class="uk-input" type="url" id="cover_url" name="cover_url" placeholder="https://example.com/cover.jpg"/>
+					<small class="uk-text-muted block mt-2">Enter a URL to download and cache a new cover image</small>
+				</div>
+				
+				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4" style="border-top: 1px solid #e5e5e5;">
+					<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
+					<button type="submit" class="uk-btn uk-btn-primary px-6">Save Changes</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	<!-- Refresh Metadata Modal for Moderators/Admins -->
+	<div id="refresh-metadata-modal" uk-modal>
+		<div class="uk-modal-body uk-modal-dialog">
+			<h2 class="uk-modal-title mb-3">Refresh Metadata</h2>
+			<p class="uk-text-muted mb-4">
+				This will delete and re-index this manga by rescanning its folder and fetching fresh metadata from MangaDex.
+			</p>
+			<div class="mb-4">
+				<p class="text-sm"><strong>Manga Path:</strong></p>
+				<p class="text-sm uk-text-muted break-all">{ manga.Path }</p>
+			</div>
+			<div class="uk-alert uk-alert-warning text-sm mb-4" style="padding: 1rem;">
+				<div class="flex items-start gap-2">
+					<uk-icon icon="AlertTriangle" class="shrink-0 mt-0.5"></uk-icon>
+					<div>
+						<strong>Warning:</strong> This will:
+						<ul class="list-disc ml-5 mt-2 space-y-1">
+							<li>Delete all current metadata and manual edits</li>
+							<li>Re-scan the folder for chapters</li>
+							<li>Fetch fresh metadata from MangaDex</li>
+							<li>Reset reading progress for all users</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="uk-flex uk-flex-right gap-3 mt-6">
+				<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
+				<button 
+					type="button" 
+					class="uk-btn uk-btn-primary px-6"
+					hx-post={ fmt.Sprintf("/mangas/%s/refresh-metadata", manga.Slug) }
+					hx-target="#content"
+					uk-close
+				>
+					Refresh Metadata
+				</button>
+			</div>
 		</div>
 	</div>
 }
