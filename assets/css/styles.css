@@ -560,6 +560,32 @@ header.site-header a:focus,
     height: 40px !important;
     padding: 0 !important;
   }
+
+  /* Fix sidebar horizontal scrollbar on mobile */
+  .sidebar {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  /* Ensure sidebar footer doesn't cause horizontal overflow */
+  .sidebar-footer {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .sidebar-footer .uk-btn {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Fix icon alignment in sidebar on mobile */
+  .sidebar .uk-nav>li>a uk-icon,
+  .sidebar .uk-nav>li>a svg {
+    flex-shrink: 0;
+  }
 }
 
 /* Font / root feature settings */
@@ -591,21 +617,33 @@ header.site-header a:focus,
    RESPONSIVE IMPROVEMENTS
    ============================================ */
 
-/* Add spacing around headers on mobile */
+/* Add padding to main content container on mobile */
 @media (max-width: 768px) {
+  #content.uk-container,
+  .uk-container.uk-container-xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Add spacing around headers on mobile */
   .uk-heading-line,
   .uk-h2,
   .uk-h3,
   h2,
   h3 {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
     margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
   }
   
   .uk-card-title.uk-text-center {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Breadcrumbs spacing */
+  .uk-breadcrumb {
+    padding-left: 0 !important;
+    margin-bottom: 1rem !important;
   }
 }
 
