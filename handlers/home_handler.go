@@ -63,7 +63,13 @@ func HandleHome(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, totalMangas, totalChapters, totalChaptersRead))
+	// Fetch top 10 popular mangas
+	topMangas, err := models.GetTopMangas(10)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMangas, totalMangas, totalChapters, totalChaptersRead))
 }
 
 // HandleNotFound renders the generic not-found page for unrouted paths.
