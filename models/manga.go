@@ -278,6 +278,53 @@ func GetMangasByLibrarySlug(librarySlug string) ([]Manga, error) {
 	return mangas, nil
 }
 
+// GetTopMangas returns the top mangas ordered by vote score (descending).
+// It joins the mangas table with aggregated votes and respects content rating limits.
+func GetTopMangas(limit int) ([]Manga, error) {
+	query := `
+	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.manga_type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
+	FROM mangas m
+	LEFT JOIN (
+		SELECT manga_slug, COALESCE(SUM(value),0) as score
+		FROM votes
+		GROUP BY manga_slug
+	) v ON v.manga_slug = m.slug
+	ORDER BY v.score DESC
+	LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cfg, err := GetAppConfig()
+	if err != nil {
+		// If we can't get config, default to showing all content
+		cfg.ContentRatingLimit = 3
+	}
+
+	var mangas []Manga
+	for rows.Next() {
+		var manga Manga
+		var createdAt, updatedAt int64
+		if err := rows.Scan(&manga.Slug, &manga.Name, &manga.Author, &manga.Description, &manga.Year, &manga.OriginalLanguage, &manga.Type, &manga.Status, &manga.ContentRating, &manga.LibrarySlug, &manga.CoverArtURL, &manga.Path, &manga.FileCount, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		manga.CreatedAt = time.Unix(createdAt, 0)
+		manga.UpdatedAt = time.Unix(updatedAt, 0)
+
+		if IsContentRatingAllowed(manga.ContentRating, cfg.ContentRatingLimit) {
+			mangas = append(mangas, manga)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return mangas, nil
+}
+
 // Helper functions
 
 func loadAllMangas(mangas *[]Manga) error {
