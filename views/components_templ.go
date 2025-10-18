@@ -747,9 +747,9 @@ func MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fi
 	})
 }
 
-// LatestShowcase renders a highlighted horizontal showcase of the newest mangas.
+// Showcase renders a highlighted horizontal showcase of the newest mangas.
 // It shows a cover, title, chapter count and a simple rating based on votes.
-func LatestShowcase(mangas []models.Manga) templ.Component {
+func Showcase(mangas []models.Manga) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

@@ -27,3 +27,13 @@ func GetTotalChaptersRead() (int, error) {
     }
     return count, nil
 }
+
+// GetChaptersReadCount returns the number of reading_state records for a given manga
+func GetChaptersReadCount(mangaSlug string) (int, error) {
+    var count int
+    row := db.QueryRow(`SELECT COUNT(*) FROM reading_states WHERE manga_slug = ?`, mangaSlug)
+    if err := row.Scan(&count); err != nil {
+        return 0, err
+    }
+    return count, nil
+}
