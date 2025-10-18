@@ -159,7 +159,6 @@ templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, f
 // Showcase renders a highlighted horizontal showcase of the newest mangas.
 // It shows a cover, title, chapter count and a simple rating based on votes.
 templ Showcase(mangas []models.Manga) {
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Latest Mangas</span></h2>
     if len(mangas) == 0 {
         @EmptyState("No mangas have been indexed yet.")
     } else {
