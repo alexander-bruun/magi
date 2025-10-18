@@ -38,27 +38,31 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 			<div class="lg:col-span-1">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Top 10 Popular</span></h2>
 				<div class="uk-card uk-card-default uk-card-body mt-6">
-					<ul class="top-manga-list">
-						for i, m := range topMangas {
-							{{ _, up, down, _ := models.GetMangaVotes(m.Slug) }}
-							<li class="flex items-center gap-3 py-2">
-								<div class="w-10 h-14 overflow-hidden rounded-sm">
-									@MangaCover(m.CoverArtURL, m.Name, 80, 112, true)
-								</div>
-								<div class="flex-1">
-									<a href={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-get={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
-									<div class="text-xs uk-text-muted">{ m.Author }</div>
-								</div>
-								<div class="flex flex-col items-center">
-									<div class="text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
-									<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
-										<span class="flex items-center gap-1"><uk-icon icon="ThumbsUp" stroke-width="2"></uk-icon> { fmt.Sprint(up) }</span>
-										<span class="flex items-center gap-1"><uk-icon icon="ThumbsDown" stroke-width="2"></uk-icon> { fmt.Sprint(down) }</span>
+					if len(recentlyAdded) == 0 {
+						@EmptyState("No mangas have been indexed yet.")
+					} else {
+						<ul class="top-manga-list">
+							for i, m := range topMangas {
+								{{ _, up, down, _ := models.GetMangaVotes(m.Slug) }}
+								<li class="flex items-center gap-3 py-2">
+									<div class="w-10 h-14 overflow-hidden rounded-sm">
+										@MangaCover(m.CoverArtURL, m.Name, 80, 112, true)
 									</div>
-								</div>
-							</li>
-						}
-					</ul>
+									<div class="flex-1">
+										<a href={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-get={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
+										<div class="text-xs uk-text-muted">{ m.Author }</div>
+									</div>
+									<div class="flex flex-col items-center">
+										<div class="text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+										<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
+											<span class="flex items-center gap-1"><uk-icon icon="ThumbsUp" stroke-width="2"></uk-icon> { fmt.Sprint(up) }</span>
+											<span class="flex items-center gap-1"><uk-icon icon="ThumbsDown" stroke-width="2"></uk-icon> { fmt.Sprint(down) }</span>
+										</div>
+									</div>
+								</li>
+							}
+						</ul>
+					}
 				</div>
 
 			</div>
