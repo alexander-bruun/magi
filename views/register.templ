@@ -2,10 +2,10 @@ package views
 
 templ Register() {
 	@PageTitle("Register")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/register" }})
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/auth/register" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Register</span></h2>
 	<div class="grid place-content-center my-4">
-		<form hx-post="/register" hx-redirect="/login">
+		<form hx-post="/auth/register" hx-redirect="/auth/login">
 			<div class="mb-2">
 				<div class="uk-inline">
 					<a class="uk-form-icon">
@@ -24,7 +24,7 @@ templ Register() {
 			</div>
 			<div class="mt-4 flex place-content-center">
 				<button type="submit" class="uk-btn uk-btn-default mr-2">Register</button>
-				<a href="/login" hx-get="/login" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-default ml-2">Back to login</a>
+				<a href="/auth/login" hx-get="/auth/login" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-default ml-2">Back to login</a>
 			</div>
 		</form>
 	</div>

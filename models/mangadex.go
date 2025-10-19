@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"path/filepath"
 
 	"github.com/alexander-bruun/magi/utils"
 )
@@ -245,4 +246,74 @@ func extractTitle(attributes MangaAttributes) string {
 	}
 
 	return ""
+}
+
+// ExtractCoverArtURL extracts the cover art URL from Mangadex manga detail
+func ExtractCoverArtURL(mangaDetail *MangaDetail, mangadexID string) (string, error) {
+	for _, rel := range mangaDetail.Relationships {
+		if rel.Type == "cover_art" {
+			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
+				if fileName, exists := attributes["fileName"].(string); exists {
+					return fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s", mangadexID, fileName), nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("cover art URL not found")
+}
+
+// CacheAndGetImageURL downloads a cover image and returns the cached URL
+func CacheAndGetImageURL(cacheDir, slug, coverArtURL string) (string, error) {
+	u, err := url.Parse(coverArtURL)
+	if err != nil {
+		return "", fmt.Errorf("error parsing URL: %w", err)
+	}
+
+	filename := filepath.Base(u.Path)
+	fileExt := filepath.Ext(filename)[1:] // remove leading dot
+
+	err = utils.DownloadImage(cacheDir, slug, coverArtURL)
+	if err != nil {
+		return "", fmt.Errorf("error downloading image: %w", err)
+	}
+
+	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
+}
+
+// UpdateMangaFromMangadex updates manga fields from Mangadex metadata
+func UpdateMangaFromMangadex(manga *Manga, mangaDetail *MangaDetail, coverArtURL string) {
+	manga.Name = mangaDetail.Attributes.Title["en"]
+	manga.Description = mangaDetail.Attributes.Description["en"]
+	manga.Year = mangaDetail.Attributes.Year
+	manga.OriginalLanguage = mangaDetail.Attributes.OriginalLanguage
+	manga.Status = mangaDetail.Attributes.Status
+	manga.ContentRating = mangaDetail.Attributes.ContentRating
+	manga.CoverArtURL = coverArtURL
+}
+
+// PersistMangadexTags extracts and saves tags from Mangadex metadata for a manga
+func PersistMangadexTags(mangaSlug string, mangaDetail *MangaDetail) error {
+	if mangaDetail == nil || len(mangaDetail.Attributes.Tags) == 0 {
+		return nil
+	}
+	
+	var tags []string
+	for _, t := range mangaDetail.Attributes.Tags {
+		if name, ok := t.Attributes.Name["en"]; ok && name != "" {
+			tags = append(tags, name)
+		} else {
+			for _, v := range t.Attributes.Name {
+				if v != "" {
+					tags = append(tags, v)
+					break
+				}
+			}
+		}
+	}
+	
+	if len(tags) == 0 {
+		return nil
+	}
+	
+	return SetTagsForManga(mangaSlug, tags)
 }

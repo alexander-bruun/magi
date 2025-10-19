@@ -5,9 +5,11 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Users(users []models.User) {
+templ Users() {
+	{{ users, _ := models.GetUsers() }}
+	
 	@PageTitle("Users")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/users" }})
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 	<div class="uk-container mt-2">
 		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
 		<div class="flex place-content-center">
@@ -60,7 +62,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/promote", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 											disabled
@@ -71,7 +73,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-get={ fmt.Sprintf("/users/promote/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/promote", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -82,7 +84,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/demote", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 											disabled
@@ -93,7 +95,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-get={ fmt.Sprintf("/users/demote/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/demote", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -104,7 +106,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-get={ fmt.Sprintf("/users/unban/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/unban", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -114,7 +116,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-destructive"
-											hx-get={ fmt.Sprintf("/users/ban/%s", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/ban", user.Username) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>

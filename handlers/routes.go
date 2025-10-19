@@ -7,27 +7,33 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 )
 
-// Local export of the cache directory, so the image download function knows where to store the cached images.
+// savedCacheDirectory stores the cache directory path for image downloads
 var savedCacheDirectory string
 
-// Initialize wires up all HTTP routes, middleware, and static assets for the Fiber app.
+// Initialize configures all HTTP routes, middleware, and static assets for the application
 func Initialize(app *fiber.App, cacheDirectory string) {
-	log.Info("Initializing GoFiber view routes")
+	log.Info("Initializing application routes and middleware")
 
 	savedCacheDirectory = cacheDirectory
 
-	// CORS middleware configuration to allow all origins
+	// ========================================
+	// Middleware Configuration
+	// ========================================
+	
+	// CORS - Allow all origins
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders: "Content-Type,Authorization",
 	}))
 
-	// Optional auth: populate c.Locals("user_name") when cookies are set so pages
-	// can show personalized UI without forcing login.
+	// Optional authentication - populates user context when cookies are present
 	app.Use(OptionalAuthMiddleware())
 
-	// Handle preflight requests for CORS
+	// Health check endpoint
+	app.Use(healthcheck.New())
+
+	// Handle CORS preflight requests
 	app.Options("/*", func(c *fiber.Ctx) error {
 		c.Set("Access-Control-Allow-Origin", "*")
 		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
@@ -35,107 +41,143 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	app.Use(healthcheck.New())
-
-	// - .zip (implemented)
-	// - .cbz (implemented)
-	// - .rar (implemented)
-	// - .cbr (implemented)
-	// - .pdf
-	// - .jpg (implemented)
-	// - .png (implemented)
-	// - .mobi
-	// - .epub
-	// Any other file type is blocked.
-	app.Get("/api/comic", ComicHandler)
-
-	// Static assets and images
+	// ========================================
+	// Static Assets
+	// ========================================
+	
 	app.Static("/api/images", cacheDirectory)
 	app.Static("/assets/", "./assets/")
 
-	// Register views
+	// ========================================
+	// API Endpoints
+	// ========================================
+	
+	api := app.Group("/api")
+	
+	// Comic book file serving (supports: .cbz, .cbr, .zip, .rar, .jpg, .png)
+	api.Get("/comic", ConditionalAuthMiddleware(), ComicHandler)
+	
+	// Duplicate management (admin only)
+	apiAdmin := api.Group("/admin", AuthMiddleware("admin"))
+	apiAdmin.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
+	apiAdmin.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
+	apiAdmin.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
+
+	// ========================================
+	// Public Routes
+	// ========================================
+	
 	app.Get("/", HandleHome)
-	app.Get("/login", LoginHandler)
-	app.Get("/register", RegisterHandler)
-	app.Post("/register", CreateUserHandler)
-	app.Post("/login", LoginUserHandler)
-	app.Post("/logout", LogoutHandler)
 
-	// Libraries endpoint group
-	libraries := app.Group("/libraries", AuthMiddleware("admin"))
+	// ========================================
+	// Authentication Routes
+	// ========================================
+	
+	auth := app.Group("/auth")
+	auth.Get("/login", LoginHandler)
+	auth.Post("/login", LoginUserHandler)
+	auth.Get("/register", RegisterHandler)
+	auth.Post("/register", CreateUserHandler)
+	auth.Post("/logout", LogoutHandler)
 
-	// CRUD endpoints
+	// ========================================
+	// Manga Routes
+	// ========================================
+	
+	mangas := app.Group("/mangas", ConditionalAuthMiddleware())
+	
+	// Manga listing and search
+	mangas.Get("", HandleMangas)
+	mangas.Get("/search", HandleMangaSearch)
+	
+	// Tag browsing
+	mangas.Get("/tags", HandleTags)
+	mangas.Get("/tags/fragment", HandleTagsFragment)
+	
+	// Individual manga
+	mangas.Get("/:manga", HandleManga)
+	
+	// Manga interactions (authenticated)
+	mangas.Post("/:manga/vote", AuthMiddleware("reader"), HandleMangaVote)
+	mangas.Get("/:manga/vote/fragment", HandleMangaVoteFragment)
+	mangas.Post("/:manga/favorite", AuthMiddleware("reader"), HandleMangaFavorite)
+	mangas.Get("/:manga/favorite/fragment", HandleMangaFavoriteFragment)
+	
+	// Manga metadata management (moderator+)
+	mangas.Get("/:manga/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataManga)
+	mangas.Post("/:manga/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
+	mangas.Post("/:manga/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
+	mangas.Post("/:manga/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataManga)
+	
+	// Chapter routes
+	chapters := mangas.Group("/:manga/chapters")
+	chapters.Get("/:chapter", HandleChapter)
+	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
+	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
+
+	// ========================================
+	// User Account Routes (authenticated)
+	// ========================================
+	
+	account := app.Group("/account", AuthMiddleware("reader"))
+	account.Get("", HandleAccount)
+	account.Get("/favorites", HandleAccountFavorites)
+	account.Get("/upvoted", HandleAccountUpvoted)
+	account.Get("/downvoted", HandleAccountDownvoted)
+	account.Get("/reading", HandleAccountReading)
+
+	// ========================================
+	// User Management Routes (moderator+)
+	// ========================================
+	
+	users := app.Group("/admin/users", AuthMiddleware("moderator"))
+	users.Get("", HandleUsers)
+	users.Post("/:username/ban", HandleUserBan)
+	users.Post("/:username/unban", HandleUserUnban)
+	users.Post("/:username/promote", HandleUserPromote)
+	users.Post("/:username/demote", HandleUserDemote)
+
+	// ========================================
+	// Library Management Routes (admin)
+	// ========================================
+	
+	libraries := app.Group("/admin/libraries", AuthMiddleware("admin"))
 	libraries.Get("", HandleLibraries)
 	libraries.Post("", HandleCreateLibrary)
-	libraries.Delete("/:slug", HandleDeleteLibrary)
+	libraries.Get("/:slug", HandleEditLibrary)
 	libraries.Put("/:slug", HandleUpdateLibrary)
-
-	// Form endpoints
-	libraries.Get("/edit-library/:slug", HandleEditLibrary)
-	libraries.Get("/scan/:slug", HandleScanLibrary)
-	libraries.Get("/add-folder", HandleAddFolder)
-	libraries.Get("/remove-folder", HandleRemoveFolder)
-	libraries.Get("/cancel-edit", HandleCancelEdit)
+	libraries.Delete("/:slug", HandleDeleteLibrary)
+	libraries.Post("/:slug/scan", HandleScanLibrary)
 	
-	// Better page - duplicate detection
-	libraries.Get("/better", HandleBetter)
+	// Library form helpers (HTMX fragments)
+	libraries.Get("/helpers/add-folder", HandleAddFolder)
+	libraries.Get("/helpers/remove-folder", HandleRemoveFolder)
+	libraries.Get("/helpers/cancel-edit", HandleCancelEdit)
 
-	// Users endpoint group
-	users := app.Group("/users", AuthMiddleware("moderator"))
-
-	// CRUD endpoints
-	users.Get("", HandleUsers)
-	users.Get("/ban/:username", HandleUserBan)
-	users.Get("/unban/:username", HandleUserUnban)
-	users.Get("/promote/:username", HandleUserPromote)
-	users.Get("/demote/:username", HandleUserDemote)
-
-	// Configuration page (admin only)
-	app.Get("/configuration", AuthMiddleware("admin"), HandleConfiguration)
-	app.Post("/configuration", AuthMiddleware("admin"), HandleConfigurationUpdate)
-
-	// Better page (admin only) - duplicate detection
-	app.Get("/better", AuthMiddleware("admin"), HandleBetter)
+	// ========================================
+	// Duplicate Detection (admin)
+	// ========================================
 	
-	// API endpoints
-	api := app.Group("/api", AuthMiddleware("admin"))
-	api.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
-	api.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
-	api.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
+	app.Get("/admin/duplicates", AuthMiddleware("admin"), HandleBetter)
 
-	// Manga endpoint group
-	mangas := app.Group("/mangas")
-	mangas.Get("", HandleMangas)
-	mangas.Get("/tags", HandleTags)
-	mangas.Get("/tags-fragment", HandleTagsFragment)
-	mangas.Get("/metadata-form/:slug", HandleUpdateMetadataManga)
-	mangas.Post("/overwrite-metadata", HandleEditMetadataManga)
-	mangas.Post("/:manga/manual-edit-metadata", AuthMiddleware("moderator"), HandleManualEditMetadata)
-	mangas.Post("/:manga/refresh-metadata", AuthMiddleware("moderator"), HandleRefreshMetadata)
-	mangas.Get("/search", HandleMangaSearch)
-	mangas.Get("/:manga", HandleManga)
-	// Voting endpoints (HTMX) - register before the chapter wildcard so they match first
-	mangas.Post("/:manga/vote", AuthMiddleware("reader"), HandleMangaVote)
-	mangas.Get("/:manga/vote-fragment", HandleMangaVoteFragment)
-	// Favorite endpoints (HTMX)
-	mangas.Post("/:manga/favorite", AuthMiddleware("reader"), HandleMangaFavorite)
-	mangas.Get("/:manga/favorite-fragment", HandleMangaFavoriteFragment)
-	mangas.Get("/:manga/:chapter", HandleChapter)
-	// Reading state endpoints (HTMX)
-	mangas.Post("/:manga/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
-	mangas.Post("/:manga/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
+	// ========================================
+	// Configuration Routes (admin)
+	// ========================================
+	
+	config := app.Group("/admin/config", AuthMiddleware("admin"))
+	config.Get("", HandleConfiguration)
+	config.Post("", HandleConfigurationUpdate)
 
-	// Account page for authenticated users
-	app.Get("/account", AuthMiddleware("reader"), HandleAccount)
-
-	// Account paginated lists
-	app.Get("/account/favorites", AuthMiddleware("reader"), HandleAccountFavorites)
-	app.Get("/account/upvoted", AuthMiddleware("reader"), HandleAccountUpvoted)
-	app.Get("/account/downvoted", AuthMiddleware("reader"), HandleAccountDownvoted)
-	app.Get("/account/reading", AuthMiddleware("reader"), HandleAccountReading)
-
-	// Fallback
+	// ========================================
+	// Fallback Route
+	// ========================================
+	
 	app.Get("/*", HandleNotFound)
 
+	// ========================================
+	// Start Server
+	// ========================================
+	
+	log.Info("Starting server on port 3000")
 	log.Fatal(app.Listen(":3000"))
 }

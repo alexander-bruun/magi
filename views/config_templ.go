@@ -13,7 +13,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func Config(cfg models.AppConfig, userCount int64) templ.Component {
+func Config() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -38,87 +38,107 @@ func Config(cfg models.AppConfig, userCount int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Configuration", Href: "/configuration"}}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Configuration", Href: "/admin/config"}}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container mt-2\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Configuration</span></h3><div class=\"flex place-content-center\"><div class=\"w-2/4\"><div class=\"uk-card p-4\"><form hx-post=\"/configuration\" hx-target=\"#content\" hx-trigger=\"submit\" class=\"space-y-6\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container mt-2\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Configuration</span></h3><div class=\"flex place-content-center\"><div class=\"w-2/4\"><div class=\"uk-card p-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		cfg, _ := models.GetAppConfig()
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<form hx-post=\"/admin/config\" hx-target=\"#content\" hx-trigger=\"submit\" class=\"space-y-6\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if cfg.AllowRegistration {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"require_login_for_content\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.RequireLoginForContent {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " class=\"uk-checkbox\"> <span>Require login to view or read manga</span></label><p class=\"text-xs text-muted mt-1\">Enable to require users to be logged in to view manga listings and read chapters.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxUsers))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 26, Col: 130}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 34, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><p class=\"text-xs text-muted mt-1\">Current users: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		userCount, _ := models.CountUsers()
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"text-xs text-muted mt-1\">Current users: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", userCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 27, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 36, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div><label class=\"block mb-1\">Maximum Content Rating</label> <select name=\"content_rating_limit\" class=\"uk-select\"><option value=\"0\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</p></div><div><label class=\"block mb-1\">Maximum Content Rating</label> <select name=\"content_rating_limit\" class=\"uk-select\"><option value=\"0\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if cfg.ContentRatingLimit == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, ">Safe only</option> <option value=\"1\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.ContentRatingLimit == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, ">Suggestive (includes safe)</option> <option value=\"2\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.ContentRatingLimit == 2 {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, ">Erotica (includes safe, suggestive)</option> <option value=\"3\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, ">Safe only</option> <option value=\"1\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.ContentRatingLimit == 3 {
+		if cfg.ContentRatingLimit == 1 {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ">Suggestive (includes safe)</option> <option value=\"2\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 2 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, ">Erotica (includes safe, suggestive)</option> <option value=\"3\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 3 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

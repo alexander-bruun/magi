@@ -5,7 +5,44 @@ import (
     "fmt"
 )
 
-templ Account(user models.User, userName string, favorites []models.Manga, reading []models.Manga, liked []models.Manga, downvoted []models.Manga) {
+templ Account(userName string) {
+    {{ user, _ := models.FindUserByUsername(userName) }}
+    {{ favSlugs, _ := models.GetFavoritesForUser(userName) }}
+    {{ var favorites []models.Manga }}
+    {{ for i, slug := range favSlugs {
+        if i >= 10 { break }
+        if m, err := models.GetManga(slug); err == nil && m != nil {
+            favorites = append(favorites, *m)
+        }
+    } }}
+    
+    {{ readingSlugs, _ := models.GetReadingMangasForUser(userName) }}
+    {{ var reading []models.Manga }}
+    {{ for i, slug := range readingSlugs {
+        if i >= 10 { break }
+        if m, err := models.GetManga(slug); err == nil && m != nil {
+            reading = append(reading, *m)
+        }
+    } }}
+    
+    {{ likedSlugs, _ := models.GetUpvotedMangasForUser(userName) }}
+    {{ var liked []models.Manga }}
+    {{ for i, slug := range likedSlugs {
+        if i >= 10 { break }
+        if m, err := models.GetManga(slug); err == nil && m != nil {
+            liked = append(liked, *m)
+        }
+    } }}
+    
+    {{ downvotedSlugs, _ := models.GetDownvotedMangasForUser(userName) }}
+    {{ var downvoted []models.Manga }}
+    {{ for i, slug := range downvotedSlugs {
+        if i >= 10 { break }
+        if m, err := models.GetManga(slug); err == nil && m != nil {
+            downvoted = append(downvoted, *m)
+        }
+    } }}
+    
     @PageTitle(fmt.Sprintf("Account - %s", userName))
     @Breadcrumb([]BreadcrumbItem{
         { Label: "Home", Href: "/" },
@@ -16,7 +53,9 @@ templ Account(user models.User, userName string, favorites []models.Manga, readi
 
     <!-- Profile card -->
     <div class="uk-container mt-4">
-        @ProfileCard(user)
+        if user != nil {
+            @ProfileCard(*user)
+        }
     </div>
 
     <div class="flex items-center justify-between mt-6">

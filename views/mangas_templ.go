@@ -9,7 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"fmt"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -34,7 +33,7 @@ func MangasWithTypes(mangas []models.Manga, currentPage int, totalPages int, sor
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PageTitle("All Mangas").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

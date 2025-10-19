@@ -16,11 +16,7 @@ import (
 
 // HandleLibraries renders the libraries dashboard with the current library list.
 func HandleLibraries(c *fiber.Ctx) error {
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return handleError(c, err)
-	}
-	return HandleView(c, views.Libraries(libraries))
+	return HandleView(c, views.Libraries())
 }
 
 func renderLibraryTable(libraries []models.Library) (string, error) {
@@ -189,23 +185,7 @@ func HandleBetter(c *fiber.Ctx) error {
 		page = 1
 	}
 	
-	// Items per page
-	const limit = 20
-	
-	// Fetch manga duplicates with pagination
-	duplicates, total, err := models.GetActiveMangaDuplicates(page, limit)
-	if err != nil {
-		return handleError(c, err)
-	}
-	
-		
-	// Calculate total pages
-	totalPages := (total + limit - 1) / limit
-	if totalPages == 0 {
-		totalPages = 1
-	}
-	
-	return HandleView(c, views.Better(duplicates, page, totalPages, total))
+	return HandleView(c, views.Better(page))
 }
 
 // HandleDismissDuplicate dismisses a manga duplicate entry

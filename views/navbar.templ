@@ -42,7 +42,7 @@ templ Navbar(userRole string, currentPath string) {
 						<button class="uk-btn uk-btn-default uk-btn-icon" aria-label="Customize">
 							<uk-icon icon="palette"></uk-icon>
 						</button>
-						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; animation: uk-anmt-slide-top-sm">
+						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm">
 							<div class="uk-h3">Customize</div>
 							<uk-theme-switcher id="theme-switcher">
 								<select hidden>
@@ -94,19 +94,19 @@ templ Navbar(userRole string, currentPath string) {
 							}
 							if userRole == "moderator" || userRole == "admin" {
 								<li class="uk-nav-header">Moderator</li>
-								<li><a href="/users" hx-get="/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
-								<li><a href="/better" hx-get="/better" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
+								<li><a href="/admin/users" hx-get="/admin/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
+								<li><a href="/admin/duplicates" hx-get="/admin/duplicates" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
 							}
 							if userRole == "admin" {
 								<li class="uk-nav-header">Admin</li>
-								<li><a href="/libraries" hx-get="/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
-								<li><a href="/configuration" hx-get="/configuration" hx-target="#content" hx-push-url="true"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
+								<li><a href="/admin/libraries" hx-get="/admin/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
+								<li><a href="/admin/config" hx-get="/admin/config" hx-target="#content" hx-push-url="true"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							if userRole == "" {
-								<li><a href="/login" hx-get="/login" hx-target="#content" hx-push-url="true"><uk-icon icon="LogIn" class="icon-pad"></uk-icon>Login</a></li>
+								<li><a href="/auth/login" hx-get="/auth/login" hx-target="#content" hx-push-url="true"><uk-icon icon="LogIn" class="icon-pad"></uk-icon>Login</a></li>
 							} else {
-								<li><a href="/" hx-post="/logout"><uk-icon icon="LogOut" class="icon-pad"></uk-icon> Logout</a></li>
+								<li><a href="/" hx-post="/auth/logout"><uk-icon icon="LogOut" class="icon-pad"></uk-icon> Logout</a></li>
 							}
 						</ul>
 					</div>

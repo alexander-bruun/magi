@@ -6,39 +6,37 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMangas []models.Manga, totalMangas int, totalChapters int, totalChaptersRead int) {
+templ Home() {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
 	})
 
 	<div class="mt-4">
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-			<div class="lg:col-span-2">
-				<!-- Left column: recently added, recently updated, and stats -->
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+			<div class="lg:col-span-3">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
+				{{ recentlyAdded, _, _ := models.SearchMangas("", 1, 20, "created_at", "desc", "", "") }}
 				if len(recentlyAdded) == 0 {
 					@EmptyState("No mangas have been indexed yet.")
 				} else {
-					<!-- New showcase on the homepage (keeps the original slider below) -->
 					@Showcase(recentlyAdded)
 				}
 
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
+				{{ recentlyUpdated, _, _ := models.SearchMangas("", 1, 20, "updated_at", "desc", "", "") }}
 				if len(recentlyUpdated) == 0 {
 					@EmptyState("No mangas have been indexed yet.")
 				} else {
-					<!-- Reuse the Showcase used for recentlyAdded to keep styling consistent -->
 					@Showcase(recentlyUpdated)
 				}
-
-				<!-- stats removed from left column and moved below -->
 			</div>
 
 			<div class="lg:col-span-1">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Top 10 Popular</span></h2>
 				<div class="uk-card uk-card-default uk-card-body mt-6">
-					if len(recentlyAdded) == 0 {
+					{{ topMangas, _ := models.GetTopMangas(10) }}
+					if len(topMangas) == 0 {
 						@EmptyState("No mangas have been indexed yet.")
 					} else {
 						<ul class="top-manga-list">
@@ -53,7 +51,7 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 										<div class="text-xs uk-text-muted">{ m.Author }</div>
 									</div>
 									<div class="flex flex-col items-center">
-										<div class="text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+										<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
 										<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
 											<span class="flex items-center gap-1"><uk-icon icon="ThumbsUp" stroke-width="2"></uk-icon> { fmt.Sprint(up) }</span>
 											<span class="flex items-center gap-1"><uk-icon icon="ThumbsDown" stroke-width="2"></uk-icon> { fmt.Sprint(down) }</span>
@@ -68,11 +66,13 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 			</div>
 		</div>
 
-		<!-- Full-width statistics section below the main grid -->
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-6"><span>Statistics</span></h2>
 		<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+			{{ totalMangas, _ := models.GetTotalMangas() }}
 			@StatCard("Total mangas", totalMangas)
+			{{ totalChapters, _ := models.GetTotalChapters() }}
 			@StatCard("Total chapters", totalChapters)
+			{{ totalChaptersRead, _ := models.GetTotalChaptersRead() }}
 			@StatCard("Chapters read", totalChaptersRead)
 		</div>
 	</div>

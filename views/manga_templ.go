@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 	"strings"
 )
 
@@ -54,7 +55,7 @@ func Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug strin
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 16, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 17, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -83,7 +84,7 @@ func Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug strin
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(chapterCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 26, Col: 101}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 27, Col: 101}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -144,7 +145,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(href)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 46, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 47, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -157,7 +158,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(href)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 47, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 48, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -181,7 +182,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 55, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 56, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -199,7 +200,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 57, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 58, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -233,7 +234,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 66, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 67, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -251,7 +252,7 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 69, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 70, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -300,9 +301,9 @@ func InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) templ.Comp
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s/unread", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 82, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 83, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -318,9 +319,9 @@ func InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) templ.Comp
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug))
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s/read", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 95, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 96, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -368,7 +369,7 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 111, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 112, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -386,7 +387,7 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(manga.CoverArtURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 113, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 114, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -399,7 +400,7 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 113, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 114, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -410,20 +411,15 @@ func Info(manga models.Manga, userRole string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div><div class=\"mt-3\"><p class=\"uk-margin line-clamp-5 text-gray-700 leading-relaxed\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div><div class=\"mt-3\"><div class=\"uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 118, Col: 22}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		templ_7745c5c3_Err = templ.Raw(utils.MarkdownToHTML(manga.Description)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</p></div><!-- Improved metadata grid with modern styling --><div class=\"mt-3 space-y-1.5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</div></div><!-- Improved metadata grid with modern styling --><div class=\"mt-3 space-y-1.5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -432,12 +428,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var19 string
-			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.Year))
+			var templ_7745c5c3_Var18 string
+			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.Year))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 131, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 132, Col: 77}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -451,12 +447,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var20 string
-			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(manga.OriginalLanguage)
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(manga.OriginalLanguage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 142, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 143, Col: 77}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -470,12 +466,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var21 string
-			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(models.DetermineMangaTypeByLanguage(manga.OriginalLanguage))
+			var templ_7745c5c3_Var20 string
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(models.DetermineMangaTypeByLanguage(manga.OriginalLanguage))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 153, Col: 114}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 154, Col: 114}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -489,12 +485,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(manga.ContentRating)
+			var templ_7745c5c3_Var21 string
+			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(manga.ContentRating)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 164, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 165, Col: 74}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -508,12 +504,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.FileCount))
+			var templ_7745c5c3_Var22 string
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.FileCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 175, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 176, Col: 82}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -527,12 +523,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(manga.CreatedAt.Format("2006-01-02"))
+			var templ_7745c5c3_Var23 string
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(manga.CreatedAt.Format("2006-01-02"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 186, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 187, Col: 91}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -546,12 +542,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(manga.UpdatedAt.Format("2006-01-02"))
+			var templ_7745c5c3_Var24 string
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(manga.UpdatedAt.Format("2006-01-02"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 197, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 198, Col: 91}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -575,12 +571,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var26 string
-					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
+					var templ_7745c5c3_Var25 string
+					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 216, Col: 12}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 217, Col: 12}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -599,12 +595,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Status)
+		var templ_7745c5c3_Var26 string
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Status)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 226, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 227, Col: 39}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -617,12 +613,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var28 string
-			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Author)
+			var templ_7745c5c3_Var27 string
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Author)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 235, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 236, Col: 50}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -635,12 +631,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var29 string
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote-fragment", manga.Slug))
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote/fragment", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 242, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 243, Col: 85}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -658,12 +654,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var30 string
-		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/favorite-fragment", manga.Slug))
+		var templ_7745c5c3_Var29 string
+		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/favorite/fragment", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 277, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 278, Col: 94}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -671,25 +667,25 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var31 string
-		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/metadata-form/%s", manga.Slug))
+		var templ_7745c5c3_Var30 string
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/metadata/form", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 291, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 292, Col: 65}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" hx-target=\"#modal-content\"><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Manga name\"> <button type=\"submit\" class=\"uk-btn uk-btn-default ml-1\"><uk-icon icon=\"Search\"></uk-icon></button></div></form></div><div id=\"modal-content\"></div></div></div><!-- Manual Edit Modal for Moderators/Admins --><div id=\"manual-edit-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog hide-scrollbar\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 class=\"uk-modal-title mb-3\">Edit Manga Metadata</h2><p class=\"uk-text-muted mb-6\">Manually edit the metadata for this manga. Changes will overwrite existing data.</p><form hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var31 string
+		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/metadata/manual", manga.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 314, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" hx-target=\"#modal-content\"><div class=\"folder-row mb-4 flex items-center\"><input class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Manga name\"> <button type=\"submit\" class=\"uk-btn uk-btn-default ml-1\"><uk-icon icon=\"Search\"></uk-icon></button></div></form></div><div id=\"modal-content\"></div></div></div><!-- Manual Edit Modal for Moderators/Admins --><div id=\"manual-edit-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 class=\"uk-modal-title mb-3\">Edit Manga Metadata</h2><p class=\"uk-text-muted mb-6\">Manually edit the metadata for this manga. Changes will overwrite existing data.</p><form hx-post=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var32 string
-		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/manual-edit-metadata", manga.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 313, Col: 72}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -697,12 +693,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var33 string
-		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
+		var templ_7745c5c3_Var32 string
+		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 319, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 320, Col: 81}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -710,38 +706,38 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var34 string
-		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Author)
+		var templ_7745c5c3_Var33 string
+		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Author)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 324, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 325, Col: 87}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"description\">Description <span class=\"uk-text-meta uk-text-small ml-2\">(Markdown supported)</span></label> <textarea class=\"uk-textarea\" id=\"description\" name=\"description\" rows=\"5\" placeholder=\"Supports **bold**, *italic*, [links](url), lists, and more...\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var34 string
+		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 333, Col: 175}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"description\">Description</label> <textarea class=\"uk-textarea\" id=\"description\" name=\"description\" rows=\"5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</textarea><p class=\"uk-text-meta uk-text-small mt-1\">Tip: Use markdown formatting for rich descriptions.  <a href=\"https://www.markdownguide.org/basic-syntax/\" target=\"_blank\" class=\"uk-link-text\">Markdown Guide</a></p></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"year\">Year</label> <input class=\"uk-input\" type=\"number\" id=\"year\" name=\"year\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var35 string
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.Year))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 329, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 342, Col: 95}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</textarea></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"year\">Year</label> <input class=\"uk-input\" type=\"number\" id=\"year\" name=\"year\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var36 string
-		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(manga.Year))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 334, Col: 95}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -749,12 +745,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var37 string
-		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(manga.OriginalLanguage)
+		var templ_7745c5c3_Var36 string
+		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(manga.OriginalLanguage)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 339, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 347, Col: 119}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -910,12 +906,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var38 string
-		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(tagsString)
+		var templ_7745c5c3_Var37 string
+		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(tagsString)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 380, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 388, Col: 81}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -923,12 +919,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var39 string
-		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Path)
+		var templ_7745c5c3_Var38 string
+		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 406, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 414, Col: 59}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -936,12 +932,12 @@ func Info(manga models.Manga, userRole string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var40 string
-		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/refresh-metadata", manga.Slug))
+		var templ_7745c5c3_Var39 string
+		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/metadata/refresh", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 427, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 435, Col: 69}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -970,21 +966,21 @@ func MangaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) temp
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var41 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var41 == nil {
-			templ_7745c5c3_Var41 = templ.NopComponent
+		templ_7745c5c3_Var40 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var40 == nil {
+			templ_7745c5c3_Var40 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<div id=\"manga-favorite\" class=\"manga-favorite-fragment inline-flex items-center\"><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var42 string
-		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/favorite", mangaSlug))
+		var templ_7745c5c3_Var41 string
+		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/favorite", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 441, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 449, Col: 63}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1029,21 +1025,21 @@ func MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var43 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var43 == nil {
-			templ_7745c5c3_Var43 = templ.NopComponent
+		templ_7745c5c3_Var42 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var42 == nil {
+			templ_7745c5c3_Var42 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "<!-- Responsive vote fragment: buttons sit adjacent to stats (not at viewport edges) --><div id=\"manga-vote\" class=\"manga-vote-fragment w-full flex justify-center\"><!-- Constrained group keeps buttons next to stats and centered overall --><div class=\"flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto\"><!-- Upvote: to the left of the score --><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var44 string
-		templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote", mangaSlug))
+		var templ_7745c5c3_Var43 string
+		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 465, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 473, Col: 60}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1066,12 +1062,12 @@ func MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var45 string
-		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
+		var templ_7745c5c3_Var44 string
+		templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 480, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 488, Col: 47}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1079,12 +1075,12 @@ func MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var46 string
-		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(upvotes))
+		var templ_7745c5c3_Var45 string
+		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(upvotes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 481, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 489, Col: 49}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1092,12 +1088,12 @@ func MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var47 string
-		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(downvotes))
+		var templ_7745c5c3_Var46 string
+		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(downvotes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 481, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 489, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1105,12 +1101,12 @@ func MangaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var48 string
-		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote", mangaSlug))
+		var templ_7745c5c3_Var47 string
+		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/vote", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 485, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 493, Col: 60}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1153,9 +1149,9 @@ func Chapters(manga models.Manga, chapters []models.Chapter) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var49 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var49 == nil {
-			templ_7745c5c3_Var49 = templ.NopComponent
+		templ_7745c5c3_Var48 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var48 == nil {
+			templ_7745c5c3_Var48 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<ul class=\"uk-accordion\" uk-accordion>")
@@ -1167,12 +1163,12 @@ func Chapters(manga models.Manga, chapters []models.Chapter) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var50 templ.SafeURL
-			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug)))
+			var templ_7745c5c3_Var49 templ.SafeURL
+			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, chapter.Slug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 509, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 517, Col: 87}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1180,12 +1176,12 @@ func Chapters(manga models.Manga, chapters []models.Chapter) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var51 string
-			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, chapter.Slug))
+			var templ_7745c5c3_Var50 string
+			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 510, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 518, Col: 78}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1193,12 +1189,12 @@ func Chapters(manga models.Manga, chapters []models.Chapter) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var52 string
-			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+			var templ_7745c5c3_Var51 string
+			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 514, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 522, Col: 20}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1241,9 +1237,9 @@ func UpdateMetadata(response models.ListMangaResponse, mangaSlug string) templ.C
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var53 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var53 == nil {
-			templ_7745c5c3_Var53 = templ.NopComponent
+		templ_7745c5c3_Var52 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var52 == nil {
+			templ_7745c5c3_Var52 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<ul class=\"uk-accordion\" uk-accordion>")
@@ -1255,12 +1251,12 @@ func UpdateMetadata(response models.ListMangaResponse, mangaSlug string) templ.C
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var54 string
-			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(mangaDetail.Attributes.Title["en"])
+			var templ_7745c5c3_Var53 string
+			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(mangaDetail.Attributes.Title["en"])
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 534, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 542, Col: 41}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1268,12 +1264,12 @@ func UpdateMetadata(response models.ListMangaResponse, mangaSlug string) templ.C
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var55 string
-			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(mangaDetail.Attributes.Description["en"])
+			var templ_7745c5c3_Var54 string
+			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(mangaDetail.Attributes.Description["en"])
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 542, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 550, Col: 48}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1281,12 +1277,12 @@ func UpdateMetadata(response models.ListMangaResponse, mangaSlug string) templ.C
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var56 string
-			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/overwrite-metadata?id=%s&slug=%s", mangaDetail.ID, mangaSlug))
+			var templ_7745c5c3_Var55 string
+			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, mangaDetail.ID, mangaSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 549, Col: 98}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 557, Col: 112}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1319,21 +1315,21 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var57 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var57 == nil {
-			templ_7745c5c3_Var57 = templ.NopComponent
+		templ_7745c5c3_Var56 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var56 == nil {
+			templ_7745c5c3_Var56 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<script src=\"/assets/js/reader.js\"></script><style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var58 string
-		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
+		var templ_7745c5c3_Var57 string
+		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 581, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 590, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1341,12 +1337,12 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var59 string
-		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s/read", manga.Slug, chapter.Slug))
+		var templ_7745c5c3_Var58 string
+		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s/read", manga.Slug, chapter.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 583, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 592, Col: 80}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1358,30 +1354,59 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<div class=\"flex items-center justify-center min-h-screen\"><!-- On small screens, allow full width. Keep constrained width on large screens --><div class=\"flex flex-col items-center p-0 sm:p-4 w-full lg:w-3/5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<!-- Reading Mode Selector --><div class=\"reader-mode-selector\"><button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"webtoon\"><uk-icon icon=\"menu\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Webtoon</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"single\"><uk-icon icon=\"file-text\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Single Page</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"side-by-side\"><uk-icon icon=\"columns\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Side by Side</span></button></div><!-- Pagination Controls (hidden in webtoon mode) --><div id=\"reader-pagination\" style=\"display: none;\"><div class=\"pagination-controls\"><button id=\"first-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button id=\"prev-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span id=\"page-counter\" class=\"uk-text-bold\">1 / 1</span> <button id=\"next-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button id=\"last-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"0.8\"></uk-icon></button></div></div><div class=\"flex items-center justify-center min-h-screen\"><!-- Image container that will be controlled by the reader.js script -->")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		imagesJSON := ""
+		imagesArr := make([]string, len(images))
+		for i, img := range images {
+			imagesArr[i] = img
+		}
+		imagesJSON = fmt.Sprintf("[%s]", strings.Join(func() []string {
+			quoted := make([]string, len(imagesArr))
+			for i, s := range imagesArr {
+				quoted[i] = fmt.Sprintf("\"%s\"", s)
+			}
+			return quoted
+		}(), ","))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<div id=\"reader-images-container\" class=\"flex flex-col items-center p-0 sm:p-4 w-full lg:w-3/5\" data-images=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var59 string
+		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(imagesJSON)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 649, Col: 122}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, image := range images {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<img data-src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<img data-src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(image)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 595, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 651, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" class=\"lazyload w-full h-auto max-w-full\" alt=\"loading page...\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "\" class=\"w-full h-auto max-w-full\" alt=\"loading page...\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "</div></div><script src=\"/assets/js/lazysizes.min.js\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "</div></div><!-- Pagination Controls (bottom, hidden in webtoon mode) --><div id=\"reader-pagination-bottom\" style=\"display: none;\"><div class=\"pagination-controls\"><button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"document.getElementById('first-page-btn').click()\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"document.getElementById('prev-page-btn').click()\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span class=\"uk-text-bold\" id=\"page-counter-bottom\">1 / 1</span> <button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"document.getElementById('next-page-btn').click()\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"document.getElementById('last-page-btn').click()\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"0.8\"></uk-icon></button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1415,95 +1440,95 @@ func ChapterNavigation(manga models.Manga, chapter models.Chapter, chapters []mo
 			templ_7745c5c3_Var61 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<div class=\"flex items-center justify-between p-4\"><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "<div class=\"flex items-center justify-between p-4\"><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var62 string
-		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter))
+		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, previousChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 610, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 684, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var63 string
-		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, previousChapter))
+		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, previousChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 611, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 685, Col: 78}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "\" hx-target=\"#content\" hx-push-url=\"true\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "\" hx-target=\"#content\" hx-push-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if previousChapter == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveLeft\"></uk-icon></button><div class=\"uk-flex uk-flex-center uk-inline\"><button id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveLeft\"></uk-icon></button><div class=\"uk-flex uk-flex-center uk-inline\"><button id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 622, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 696, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 623, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 697, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 626, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 700, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "\" data-trigger-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "\" data-trigger-id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", manga.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 626, Col: 127}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 700, Col: 127}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1513,7 +1538,7 @@ func ChapterNavigation(manga models.Manga, chapter models.Chapter, chapters []mo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "<li class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "<li class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1526,97 +1551,97 @@ func ChapterNavigation(manga models.Manga, chapter models.Chapter, chapters []mo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var70 templ.SafeURL
-			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug)))
+			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 631, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 705, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var71 string
-			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, ch.Slug))
+			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 632, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 706, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "\" hx-target=\"#content\" hx-push-url=\"true\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var72 string
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 635, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 709, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if ch.Read {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "</li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "</li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "</ul></div></div><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "</ul></div></div><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var73 string
-		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter))
+		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, nextChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 649, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 723, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var74 string
-		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s", manga.Slug, nextChapter))
+		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, nextChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 650, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 724, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "\" hx-target=\"#content\" hx-push-url=\"true\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "\" hx-target=\"#content\" hx-push-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if nextChapter == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveRight\"></uk-icon></button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveRight\"></uk-icon></button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1647,38 +1672,38 @@ func ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) templ.Com
 		}
 		ctx = templ.ClearChildren(ctx)
 		if read {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge inline-flex items-center gap-1\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.9\"></uk-icon> Read</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge inline-flex items-center gap-1\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.9\"></uk-icon> Read</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var76 string
-			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s/unread", mangaSlug, chapterSlug))
+			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s/unread", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 674, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 748, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as unread</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as unread</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge uk-badge-warning inline-flex items-center gap-1\"><uk-icon icon=\"Circle\" ratio=\"0.9\"></uk-icon> Unread</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge uk-badge-warning inline-flex items-center gap-1\"><uk-icon icon=\"Circle\" ratio=\"0.9\"></uk-icon> Unread</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var77 string
-			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/%s/read", mangaSlug, chapterSlug))
+			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/chapters/%s/read", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 688, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 762, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as read</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as read</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

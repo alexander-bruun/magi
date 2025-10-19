@@ -142,8 +142,39 @@ func (idx *Indexer) runIndexingJob() {
 			if m.Path == "" {
 				continue
 			}
+			
+			// Check if the path no longer exists on disk
 			if _, err := os.Stat(m.Path); os.IsNotExist(err) {
 				log.Infof("Manga path missing on disk, deleting manga '%s' (slug=%s)", m.Name, m.Slug)
+				if err := models.DeleteManga(m.Slug); err != nil {
+					log.Errorf("Failed to delete manga '%s': %s", m.Slug, err)
+				}
+				continue
+			}
+			
+			// Check if the path is still within one of the library's configured folders
+			pathInLibrary := false
+			for _, folder := range library.Folders {
+				absFolder, err := filepath.Abs(folder)
+				if err != nil {
+					log.Warnf("Failed to get absolute path for folder '%s': %s", folder, err)
+					continue
+				}
+				absMangaPath, err := filepath.Abs(m.Path)
+				if err != nil {
+					log.Warnf("Failed to get absolute path for manga '%s': %s", m.Path, err)
+					continue
+				}
+				
+				relPath, err := filepath.Rel(absFolder, absMangaPath)
+				if err == nil && !strings.HasPrefix(relPath, "..") {
+					pathInLibrary = true
+					break
+				}
+			}
+			
+			if !pathInLibrary {
+				log.Infof("Manga path '%s' no longer in library folders, deleting manga '%s' (slug=%s)", m.Path, m.Name, m.Slug)
 				if err := models.DeleteManga(m.Slug); err != nil {
 					log.Errorf("Failed to delete manga '%s': %s", m.Slug, err)
 				}

@@ -48,7 +48,7 @@ func CreateUserHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	c.Set("HX-Redirect", "/login")
+	c.Set("HX-Redirect", "/auth/login")
 	return c.SendStatus(fiber.StatusCreated)
 }
 
@@ -59,7 +59,8 @@ func LoginUserHandler(c *fiber.Ctx) error {
 
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid username or password"})
+		// Return the WrongCredentials view for HTMX requests
+		return HandleView(c, views.WrongCredentials())
 	}
 
 	accessToken, err := models.CreateAccessToken(user.Username)

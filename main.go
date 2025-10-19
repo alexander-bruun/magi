@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"strings"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -128,11 +129,42 @@ func main() {
 		ViewsLayout:   "base",
 	})
 
-	app.Use("/assets", filesystem.New(filesystem.Config{
+	// Serve embedded assets but add cache headers based on file extension.
+	assetsFSHandler := filesystem.New(filesystem.Config{
 		Root:       http.FS(assetsfs),
 		PathPrefix: "assets",
 		Browse:     true,
-	}))
+	})
+
+	// Wrap the fileserver to set Cache-Control headers for static assets.
+	app.Use("/assets", func(c *fiber.Ctx) error {
+		// Only set caching for GET/HEAD requests
+		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
+			// Determine extension
+			p := c.Path() // e.g. /assets/js/site.js
+			ext := ""
+			if idx := strings.LastIndex(p, "."); idx != -1 {
+				ext = strings.ToLower(p[idx:])
+			}
+
+			// Default: no-cache for unknowns
+			cacheHeader := "public, max-age=0, must-revalidate"
+
+			switch ext {
+			case ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2", ".ttf", ".map":
+				// Long cache for static, fingerprinted assets
+				cacheHeader = "public, max-age=31536000, immutable"
+			case ".json" :
+				cacheHeader = "public, max-age=3600"
+			case ".html", "":
+				cacheHeader = "public, max-age=0, must-revalidate"
+			}
+
+			c.Set("Cache-Control", cacheHeader)
+		}
+
+		return assetsFSHandler(c)
+	})
 
 	// Start API in its own goroutine
 	go handlers.Initialize(app, joinedCacheDataDirectory)

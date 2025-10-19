@@ -3,8 +3,11 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"sort"
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -621,4 +624,265 @@ func GetDownvotedMangasForUser(username string) ([]string, error) {
 		return nil, err
 	}
 	return slugs, nil
+}
+
+// UserMangaListOptions defines parameters for user-specific manga list queries (favorites, reading, etc.)
+type UserMangaListOptions struct {
+	Username     string
+	Page         int
+	PageSize     int
+	SortBy       string
+	SortOrder    string
+	Tags         []string
+	TagMode      string // "all" or "any"
+	SearchFilter string
+}
+
+// GetUserFavoritesWithOptions fetches, filters, sorts, and paginates a user's favorite mangas
+func GetUserFavoritesWithOptions(opts UserMangaListOptions) ([]Manga, int, error) {
+	slugs, err := GetFavoritesForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserMangaList(slugs, opts)
+}
+
+// GetUserReadingWithOptions fetches, filters, sorts, and paginates a user's reading list
+func GetUserReadingWithOptions(opts UserMangaListOptions) ([]Manga, int, error) {
+	slugs, err := GetReadingMangasForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserMangaList(slugs, opts)
+}
+
+// GetUserUpvotedWithOptions fetches, filters, sorts, and paginates a user's upvoted mangas
+func GetUserUpvotedWithOptions(opts UserMangaListOptions) ([]Manga, int, error) {
+	slugs, err := GetUpvotedMangasForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserMangaList(slugs, opts)
+}
+
+// GetUserDownvotedWithOptions fetches, filters, sorts, and paginates a user's downvoted mangas
+func GetUserDownvotedWithOptions(opts UserMangaListOptions) ([]Manga, int, error) {
+	slugs, err := GetDownvotedMangasForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserMangaList(slugs, opts)
+}
+
+// processUserMangaList handles the common logic for filtering, sorting, and paginating user manga lists
+func processUserMangaList(slugs []string, opts UserMangaListOptions) ([]Manga, int, error) {
+	// Load all mangas from slugs
+	var allMangas []Manga
+	for _, slug := range slugs {
+		if m, err := GetManga(slug); err == nil && m != nil {
+			allMangas = append(allMangas, *m)
+		}
+	}
+
+	// Filter by tags if specified
+	if len(opts.Tags) > 0 {
+		allMangas = FilterMangasByTags(allMangas, opts.Tags, opts.TagMode)
+	}
+
+	// Filter by search term if specified
+	if opts.SearchFilter != "" {
+		allMangas = FilterMangasBySearch(allMangas, opts.SearchFilter)
+	}
+
+	// Sort mangas
+	SortMangas(allMangas, opts.SortBy, opts.SortOrder)
+
+	// Calculate total before pagination
+	total := len(allMangas)
+
+	// Paginate
+	start := (opts.Page - 1) * opts.PageSize
+	end := start + opts.PageSize
+	if start > len(allMangas) {
+		start = len(allMangas)
+	}
+	if end > len(allMangas) {
+		end = len(allMangas)
+	}
+
+	return allMangas[start:end], total, nil
+}
+
+// FilterMangasByTags filters a slice of mangas by selected tags
+// tagMode can be "all" (all tags must match) or "any" (at least one tag must match)
+func FilterMangasByTags(mangas []Manga, selectedTags []string, tagMode string) []Manga {
+	if len(selectedTags) == 0 {
+		return mangas
+	}
+
+	var filtered []Manga
+	for _, manga := range mangas {
+		mangaTags, err := GetTagsForManga(manga.Slug)
+		if err != nil {
+			continue
+		}
+
+		if tagMode == "any" {
+			// At least one selected tag must be in manga's tags
+			for _, selTag := range selectedTags {
+				for _, mTag := range mangaTags {
+					if strings.EqualFold(selTag, mTag) {
+						filtered = append(filtered, manga)
+						goto nextManga
+					}
+				}
+			}
+		} else {
+			// All selected tags must be in manga's tags
+			matchCount := 0
+			for _, selTag := range selectedTags {
+				for _, mTag := range mangaTags {
+					if strings.EqualFold(selTag, mTag) {
+						matchCount++
+						break
+					}
+				}
+			}
+			if matchCount == len(selectedTags) {
+				filtered = append(filtered, manga)
+			}
+		}
+	nextManga:
+	}
+	return filtered
+}
+
+// FilterMangasBySearch filters a slice of mangas by search term using very lenient fuzzy matching
+func FilterMangasBySearch(mangas []Manga, searchTerm string) []Manga {
+	if searchTerm == "" {
+		return mangas
+	}
+
+	// Aggressive normalization function
+	normalize := func(s string) string {
+		s = strings.ToLower(s)
+		// Remove all non-alphanumeric characters except spaces
+		var result strings.Builder
+		for _, r := range s {
+			if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == ' ' {
+				result.WriteRune(r)
+			} else if r >= 'A' && r <= 'Z' {
+				result.WriteRune(r + 32) // Convert to lowercase
+			} else {
+				// Replace any other character with space
+				result.WriteRune(' ')
+			}
+		}
+		return result.String()
+	}
+
+	// Normalize and split search term
+	normalizedSearch := normalize(searchTerm)
+	searchWords := strings.Fields(normalizedSearch)
+	if len(searchWords) == 0 {
+		return mangas
+	}
+
+	var filtered []Manga
+	for _, manga := range mangas {
+		// Normalize manga name
+		normalizedName := normalize(manga.Name)
+
+		// Check if all search words match
+		matched := true
+		for _, searchWord := range searchWords {
+			if searchWord == "" {
+				continue
+			}
+
+			// First check: simple substring match
+			if strings.Contains(normalizedName, searchWord) {
+				continue
+			}
+
+			// Second check: word prefix match
+			nameWords := strings.Fields(normalizedName)
+			wordMatched := false
+			for _, nameWord := range nameWords {
+				if strings.HasPrefix(nameWord, searchWord) {
+					wordMatched = true
+					break
+				}
+				// Also check if the search word appears within the name word (substring)
+				if strings.Contains(nameWord, searchWord) {
+					wordMatched = true
+					break
+				}
+			}
+
+			if !wordMatched {
+				matched = false
+				break
+			}
+		}
+
+		if matched {
+			filtered = append(filtered, manga)
+		}
+	}
+	return filtered
+}
+
+// GetMangaAndChapters retrieves a manga and its chapters in one call
+func GetMangaAndChapters(mangaSlug string) (*Manga, []Chapter, error) {
+	manga, err := GetManga(mangaSlug)
+	if err != nil {
+		return nil, nil, err
+	}
+	if manga == nil {
+		return nil, nil, fmt.Errorf("manga not found or access restricted")
+	}
+
+	chapters, err := GetChapters(mangaSlug)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return manga, chapters, nil
+}
+
+// GetChapterImages generates URLs for all images in a chapter
+func GetChapterImages(manga *Manga, chapter *Chapter) ([]string, error) {
+	// Determine the actual chapter file path
+	// For single-file manga (cbz/cbr), manga.Path is the file itself
+	// For directory-based manga, we need to join path and chapter file
+	chapterFilePath := manga.Path
+	if fileInfo, err := os.Stat(manga.Path); err == nil && fileInfo.IsDir() {
+		chapterFilePath = filepath.Join(manga.Path, chapter.File)
+	}
+
+	pageCount, err := utils.CountImageFiles(chapterFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if pageCount <= 0 {
+		return []string{}, nil
+	}
+
+	images := make([]string, pageCount)
+	for i := 0; i < pageCount; i++ {
+		images[i] = fmt.Sprintf("/api/comic?manga=%s&chapter=%s&page=%d", manga.Slug, chapter.Slug, i+1)
+	}
+
+	return images, nil
+}
+
+// GetFirstAndLastChapterSlugs returns the first and last chapter slugs for a manga
+func GetFirstAndLastChapterSlugs(chapters []Chapter) (firstSlug, lastSlug string) {
+	if len(chapters) > 0 {
+		firstSlug = chapters[0].Slug
+		lastSlug = chapters[len(chapters)-1].Slug
+	}
+	return firstSlug, lastSlug
 }

@@ -39,37 +39,7 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 
 // HandleHome renders the landing page with recent manga activity and aggregate stats.
 func HandleHome(c *fiber.Ctx) error {
-	recentlyAdded, err := getRecentMangas("created_at")
-	if err != nil {
-		return handleError(c, err)
-	}
-
-	recentlyUpdated, err := getRecentMangas("updated_at")
-	if err != nil {
-		return handleError(c, err)
-	}
-
-	// Fetch basic stats for the homepage
-	totalMangas, err := models.GetTotalMangas()
-	if err != nil {
-		return handleError(c, err)
-	}
-	totalChapters, err := models.GetTotalChapters()
-	if err != nil {
-		return handleError(c, err)
-	}
-	totalChaptersRead, err := models.GetTotalChaptersRead()
-	if err != nil {
-		return handleError(c, err)
-	}
-
-	// Fetch top 10 popular mangas
-	topMangas, err := models.GetTopMangas(10)
-	if err != nil {
-		return handleError(c, err)
-	}
-
-	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMangas, totalMangas, totalChapters, totalChaptersRead))
+	return HandleView(c, views.Home())
 }
 
 // HandleNotFound renders the generic not-found page for unrouted paths.
@@ -106,11 +76,6 @@ func getUserRole(c *fiber.Ctx) (string, error) {
 	}
 
 	return user.Role, nil
-}
-
-func getRecentMangas(sortBy string) ([]models.Manga, error) {
-	mangas, _, err := models.SearchMangas("", 1, 20, sortBy, "desc", "", "")
-	return mangas, err
 }
 
 func handleError(c *fiber.Ctx, err error) error {

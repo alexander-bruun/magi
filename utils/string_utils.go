@@ -1,13 +1,19 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // RemovePatterns applies custom parsing to clean up the path string.
@@ -238,4 +244,35 @@ func SimilarityRatio(s1, s2 string) float64 {
 	
 	distance := LevenshteinDistance(s1Lower, s2Lower)
 	return 1.0 - float64(distance)/float64(maxLen)
+}
+
+// MarkdownToHTML converts markdown text to safe HTML using goldmark
+func MarkdownToHTML(markdown string) template.HTML {
+	if markdown == "" {
+		return template.HTML("")
+	}
+
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,        // GitHub Flavored Markdown
+			extension.Linkify,    // Auto-link URLs
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(), // Add IDs to headings
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),   // Convert newlines to <br>
+			html.WithXHTML(),       // Use XHTML-style tags
+			html.WithUnsafe(),      // Allow raw HTML (be careful with user input!)
+		),
+	)
+
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(markdown), &buf); err != nil {
+		log.Errorf("Failed to convert markdown to HTML: %v", err)
+		// Return plain text wrapped in <p> tag as fallback
+		return template.HTML("<p>" + template.HTMLEscapeString(markdown) + "</p>")
+	}
+
+	return template.HTML(buf.String())
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func Account(user models.User, userName string, favorites []models.Manga, reading []models.Manga, liked []models.Manga, downvoted []models.Manga) templ.Component {
+func Account(userName string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -34,6 +34,47 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		user, _ := models.FindUserByUsername(userName)
+		favSlugs, _ := models.GetFavoritesForUser(userName)
+		var favorites []models.Manga
+		for i, slug := range favSlugs {
+			if i >= 10 {
+				break
+			}
+			if m, err := models.GetManga(slug); err == nil && m != nil {
+				favorites = append(favorites, *m)
+			}
+		}
+		readingSlugs, _ := models.GetReadingMangasForUser(userName)
+		var reading []models.Manga
+		for i, slug := range readingSlugs {
+			if i >= 10 {
+				break
+			}
+			if m, err := models.GetManga(slug); err == nil && m != nil {
+				reading = append(reading, *m)
+			}
+		}
+		likedSlugs, _ := models.GetUpvotedMangasForUser(userName)
+		var liked []models.Manga
+		for i, slug := range likedSlugs {
+			if i >= 10 {
+				break
+			}
+			if m, err := models.GetManga(slug); err == nil && m != nil {
+				liked = append(liked, *m)
+			}
+		}
+		downvotedSlugs, _ := models.GetDownvotedMangasForUser(userName)
+		var downvoted []models.Manga
+		for i, slug := range downvotedSlugs {
+			if i >= 10 {
+				break
+			}
+			if m, err := models.GetManga(slug); err == nil && m != nil {
+				downvoted = append(downvoted, *m)
+			}
+		}
 		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("Account - %s", userName)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -49,9 +90,11 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ProfileCard(user).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
+		if user != nil {
+			templ_7745c5c3_Err = ProfileCard(*user).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"flex items-center justify-between mt-6\"><h3 class=\"uk-h4 mb-2\">Upvoted</h3><a href=\"")
 		if templ_7745c5c3_Err != nil {
@@ -60,7 +103,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 24, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 63, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -73,7 +116,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 24, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 63, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -101,7 +144,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 35, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 74, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -114,7 +157,7 @@ func Account(user models.User, userName string, favorites []models.Manga, readin
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 35, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 74, Col: 92}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {

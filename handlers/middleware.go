@@ -36,7 +36,7 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			}
 		}
 
-		return c.Redirect("/login", fiber.StatusSeeOther)
+		return c.Redirect("/auth/login", fiber.StatusSeeOther)
 	}
 }
 
@@ -169,6 +169,57 @@ func OptionalAuthMiddleware() fiber.Handler {
 
 		if refreshToken != "" {
 			// Try to refresh tokens and set cookies/locals; ignore errors
+			_ = refreshAndValidateTokens(c, refreshToken, "reader")
+		}
+
+		return c.Next()
+	}
+}
+
+// ConditionalAuthMiddleware checks the global configuration to determine
+// if authentication is required for viewing manga content. If RequireLoginForContent
+// is enabled, it enforces authentication; otherwise, it acts like OptionalAuthMiddleware.
+func ConditionalAuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get the app configuration
+		cfg, err := models.GetAppConfig()
+		if err != nil {
+			// If we can't get config, allow access (fail open)
+			return c.Next()
+		}
+
+		// If login is required for content, enforce authentication
+		if cfg.RequireLoginForContent {
+			accessToken := c.Cookies("access_token")
+			refreshToken := c.Cookies("refresh_token")
+
+			if accessToken != "" {
+				if err := validateAccessToken(c, accessToken, "reader"); err == nil {
+					return c.Next()
+				}
+			}
+
+			if refreshToken != "" {
+				if err := refreshAndValidateTokens(c, refreshToken, "reader"); err == nil {
+					return c.Next()
+				}
+			}
+
+			// No valid authentication - redirect to login
+			return c.Redirect("/auth/login", fiber.StatusSeeOther)
+		}
+
+		// Login not required, but still try to authenticate if cookies present
+		accessToken := c.Cookies("access_token")
+		refreshToken := c.Cookies("refresh_token")
+
+		if accessToken != "" {
+			if err := validateAccessToken(c, accessToken, "reader"); err == nil {
+				return c.Next()
+			}
+		}
+
+		if refreshToken != "" {
 			_ = refreshAndValidateTokens(c, refreshToken, "reader")
 		}
 

@@ -2,10 +2,10 @@ package views
 
 templ Login() {
 	@PageTitle("Login")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/login" }})
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title text-center"><span>Login</span></h2>
 	<div class="grid place-content-center my-4">
-		<form hx-post="/login" hx-redirect="/">
+		<form hx-post="/auth/login" hx-target="#content" hx-swap="innerHTML">
 			<div class="mb-2">
 				<div class="uk-inline">
 					<a class="uk-form-icon">
@@ -24,29 +24,38 @@ templ Login() {
 			</div>
 			<div class="mt-4 flex place-content-center">
 				<button type="submit" class="uk-btn uk-btn-default mr-2">Login</button>
-				<a href="/register" hx-get="/register" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-default ml-2">Register</a>
+				<a href="/auth/register" hx-get="/auth/register" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-default ml-2">Register</a>
 			</div>
 		</form>
 	</div>
 }
 
 templ WrongCredentials() {
+	@PageTitle("Login Failed")
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
 	<section class="flex items-center justify-center">
 		<div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
 			<div class="mx-auto max-w-screen-sm text-center">
+				<h1 class="mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600">
+					Authentication Failed
+				</h1>
 				<p class="mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white">
 					Hmmm...
 				</p>
 				<p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">
 					Sorry, we were unable to authenticate you with the provided credentials.
 				</p>
+				<p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+					Please check your username and password and try again.
+				</p>
 				<a
-					href="/login"
-					hx-get="/login"
+					href="/auth/login"
+					hx-get="/auth/login"
 					hx-target="#content"
 					hx-push-url="true"
-					class="uk-btn uk-btn-default inline-flex text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-primary-900 my-4"
+					class="uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4"
 				>
+					<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
 					Back to Login
 				</a>
 			</div>

@@ -87,10 +87,10 @@ templ MangaCover(coverURL string, altText string, width int, height int, fixed b
     }
     
     if fixed {
-        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
+        <img data-src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
     } else {
         <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
+            <img data-src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
         </div>
     }
 }

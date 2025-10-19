@@ -174,7 +174,13 @@ func DeleteLibrary(slug string) error {
 		return err
 	}
 
+	// Notify listeners to stop the indexer
 	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
+	
+	// Give the indexer time to stop and finish any in-progress operations
+	time.Sleep(2 * time.Second)
+	
+	// Now delete all mangas associated with this library
 	if err := DeleteMangasByLibrarySlug(slug); err != nil {
 		return err
 	}

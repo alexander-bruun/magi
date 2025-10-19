@@ -6,12 +6,12 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total int) {
+templ Better(currentPage int) {
 	@PageTitle("Better")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
-		{ Label: "Libraries", Href: "/libraries" },
-		{ Label: "Better", Href: "/libraries/better" },
+		{ Label: "Libraries", Href: "/admin/libraries" },
+		{ Label: "Better", Href: "/admin/duplicates" },
 	})
 	<div class="uk-container mt-2">
 		<div class="uk-card p-4">
@@ -19,6 +19,8 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 				<span>Manga Duplicates</span>
 			</h2>
 			
+			{{ const limit = 20 }}
+			{{ duplicates, total, _ := models.GetActiveMangaDuplicates(currentPage, limit) }}
 			if len(duplicates) == 0 {
 				<div class="uk-alert-success" uk-alert>
 					<div class="uk-flex uk-flex-middle uk-flex-center">
@@ -55,7 +57,7 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 									<td>
 										<div class="flex items-center">
 											<uk-icon icon="BookOpen" class="mr-2"></uk-icon>
-											<a href={ templ.SafeURL(fmt.Sprintf("/manga/%s", dup.MangaSlug)) } class="uk-link-text">
+											<a href={ templ.SafeURL(fmt.Sprintf("/mangas/%s", dup.MangaSlug)) } class="uk-link-text">
 												<strong>{ dup.MangaName }</strong>
 											</a>
 										</div>
@@ -96,15 +98,17 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 					</table>
 				</div>
 
+				{{ totalPages := (total + limit - 1) / limit }}
+				{{ if totalPages == 0 { totalPages = 1 } }}
 				if totalPages > 1 {
 					<div class="flex justify-center items-center py-8">
-						@UnifiedPagination("/better", "content", false, totalPages, currentPage, "", "")
+						@UnifiedPagination("/admin/duplicates", "content", false, totalPages, currentPage, "", "")
 					</div>
 				}
 			}
 
 			<div class="mt-6 text-center">
-				<a href="/libraries" class="uk-btn uk-btn-default">
+				<a href="/admin/libraries" class="uk-btn uk-btn-default">
 					<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
 					Back to Libraries
 				</a>
@@ -147,7 +151,7 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 			modalContent.innerHTML = '<div class="uk-flex uk-flex-center"><div uk-spinner></div></div>';
 			
 			try {
-				const response = await fetch(`/api/duplicates/${duplicateId}/folder-info`);
+				const response = await fetch(`/api/admin/duplicates/${duplicateId}/folder-info`);
 				const data = await response.json();
 				
 				modalContent.innerHTML = `
@@ -220,7 +224,7 @@ templ Better(duplicates []models.MangaDuplicate, currentPage, totalPages, total 
 
 		async function deleteFolder(folderPath, duplicateId) {
 			try {
-				const response = await fetch(`/api/duplicates/${duplicateId}/folder`, {
+				const response = await fetch(`/api/admin/duplicates/${duplicateId}/folder`, {
 					method: 'DELETE',
 					headers: {
 						'Content-Type': 'application/json',

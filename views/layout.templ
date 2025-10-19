@@ -34,16 +34,30 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
-			<script>
-				// Ensure titleHandler exists before any inline PageTitle() calls run
-				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
-			</script>
-			<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/core.iife.js
-			<!--https://lucide.dev/icons/chevron-up?search=ban-->
-			<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/icon.iife.js
-			<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js
-		</head>
-		<body class="bg-background text-foreground">
+		<script>
+			// Ensure titleHandler exists before any inline PageTitle() calls run
+			window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+		</script>
+		<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/core.iife.js
+		<!--https://lucide.dev/icons/chevron-up?search=ban-->
+		<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/icon.iife.js
+		<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js
+		<script src="/assets/js/lazy.js"></script>
+	</head>
+	<body class="bg-background text-foreground">
+		<script>
+			// Apply sidebar collapsed state immediately when body is available
+			(function() {
+				const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
+				const stored = localStorage.getItem(STORAGE_KEY);
+				const isMobile = window.matchMedia('(max-width: 768px)').matches;
+				const shouldCollapse = stored ? stored === '1' : isMobile;
+				
+				if (shouldCollapse) {
+					document.body.classList.add('sidebar-collapsed');
+				}
+			})();
+		</script>
 			<div id="app">
 				@Navbar(userRole, currentPath)
 				<main class="site-main">

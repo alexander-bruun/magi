@@ -7,9 +7,10 @@ import (
 
 // AppConfig holds global application settings (single-row table app_config id=1)
 type AppConfig struct {
-    AllowRegistration  bool
-    MaxUsers           int64 // 0 means unlimited
-    ContentRatingLimit int   // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    AllowRegistration      bool
+    MaxUsers               int64 // 0 means unlimited
+    ContentRatingLimit     int   // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    RequireLoginForContent bool  // true = require login to view/read manga and chapters
 }
 
 var (
@@ -20,18 +21,19 @@ var (
 
 // loadConfigFromDB loads the config row (id=1) from the database.
 func loadConfigFromDB() (AppConfig, error) {
-    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit FROM app_config WHERE id = 1`)
+    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, require_login_for_content FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
     var contentRatingLimit int
-    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit); err != nil {
+    var requireLoginInt int
+    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &requireLoginInt); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
-            return AppConfig{AllowRegistration: true, MaxUsers: 0, ContentRatingLimit: 3}, nil
+            return AppConfig{AllowRegistration: true, MaxUsers: 0, ContentRatingLimit: 3, RequireLoginForContent: false}, nil
         }
         return AppConfig{}, err
     }
-    return AppConfig{AllowRegistration: allowInt == 1, MaxUsers: maxUsers, ContentRatingLimit: contentRatingLimit}, nil
+    return AppConfig{AllowRegistration: allowInt == 1, MaxUsers: maxUsers, ContentRatingLimit: contentRatingLimit, RequireLoginForContent: requireLoginInt == 1}, nil
 }
 
 // GetAppConfig returns the cached configuration, loading it from the DB once or when forced refresh.
@@ -66,10 +68,14 @@ func RefreshAppConfig() (AppConfig, error) {
 }
 
 // UpdateAppConfig updates the settings atomically and refreshes cache.
-func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit int) (AppConfig, error) {
+func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit int, requireLoginForContent bool) (AppConfig, error) {
     allow := 0
     if allowRegistration {
         allow = 1
+    }
+    requireLogin := 0
+    if requireLoginForContent {
+        requireLogin = 1
     }
     // Ensure content rating limit is within valid range (0-3)
     if contentRatingLimit < 0 {
@@ -78,7 +84,7 @@ func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit 
     if contentRatingLimit > 3 {
         contentRatingLimit = 3
     }
-    _, err := db.Exec(`UPDATE app_config SET allow_registration = ?, max_users = ?, content_rating_limit = ? WHERE id = 1`, allow, maxUsers, contentRatingLimit)
+    _, err := db.Exec(`UPDATE app_config SET allow_registration = ?, max_users = ?, content_rating_limit = ?, require_login_for_content = ? WHERE id = 1`, allow, maxUsers, contentRatingLimit, requireLogin)
     if err != nil {
         return AppConfig{}, err
     }

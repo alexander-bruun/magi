@@ -9,21 +9,14 @@ import (
 
 // HandleConfiguration renders the configuration page.
 func HandleConfiguration(c *fiber.Ctx) error {
-    cfg, err := models.GetAppConfig()
-    if err != nil {
-        return handleError(c, err)
-    }
-    count, err := models.CountUsers()
-    if err != nil {
-        return handleError(c, err)
-    }
-    return HandleView(c, views.Config(cfg, count))
+    return HandleView(c, views.Config())
 }
 
 // HandleConfigurationUpdate processes updates to the global configuration.
 func HandleConfigurationUpdate(c *fiber.Ctx) error {
     // Checkbox only present when enabled
     allow := c.FormValue("allow_registration") == "on"
+    requireLogin := c.FormValue("require_login_for_content") == "on"
     contentRatingLimitStr := c.FormValue("content_rating_limit")
     var contentRatingLimit int
     if contentRatingLimitStr != "" {
@@ -42,10 +35,8 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
             maxUsers = v
         }
     }
-    if _, err := models.UpdateAppConfig(allow, maxUsers, contentRatingLimit); err != nil {
+    if _, err := models.UpdateAppConfig(allow, maxUsers, contentRatingLimit, requireLogin); err != nil {
         return handleError(c, err)
     }
-    cfg, _ := models.GetAppConfig()
-    count, _ := models.CountUsers()
-    return HandleView(c, views.Config(cfg, count))
+    return HandleView(c, views.Config())
 }

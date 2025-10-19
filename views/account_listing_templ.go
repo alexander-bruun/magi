@@ -13,6 +13,32 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
+// AccountListType represents the type of account list being displayed
+type AccountListType string
+
+const (
+	AccountListFavorites AccountListType = "favorites"
+	AccountListUpvoted   AccountListType = "upvoted"
+	AccountListDownvoted AccountListType = "downvoted"
+	AccountListReading   AccountListType = "reading"
+)
+
+// GetAccountListConfig returns the display configuration for a given list type
+func GetAccountListConfig(listType AccountListType) (title, breadcrumbLabel, path, emptyMessage string) {
+	switch listType {
+	case AccountListFavorites:
+		return "Your Favorites", "Favorites", "/account/favorites", "You have no favorites yet."
+	case AccountListUpvoted:
+		return "Your Upvoted Mangas", "Upvoted", "/account/upvoted", "You have not upvoted any mangas yet."
+	case AccountListDownvoted:
+		return "Your Downvoted Mangas", "Downvoted", "/account/downvoted", "You have not downvoted any mangas yet."
+	case AccountListReading:
+		return "Currently Reading", "Currently Reading", "/account/reading", "You are not reading any mangas right now."
+	default:
+		return "Account", "Account", "/account", "No items found."
+	}
+}
+
 // AccountMangaListing is a generic component for account manga lists (favorites, reading, upvoted, downvoted)
 // Use includeTags=true to enable tag filtering on account pages
 func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) templ.Component {
@@ -115,7 +141,7 @@ func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account_listing.templ`, Line: 28, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account_listing.templ`, Line: 54, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -137,6 +163,38 @@ func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas
 			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// ConsolidatedAccountList is the unified view for all account list types
+// This is the ONLY view function that should be called for account lists
+func ConsolidatedAccountList(listType AccountListType, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		title, breadcrumbLabel, path, emptyMessage := GetAccountListConfig(listType)
+		templ_7745c5c3_Err = AccountPageLayout(title, breadcrumbLabel, path, mangas, currentPage, totalPages, sort, order, emptyMessage, allTags, selectedTags, tagMode, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

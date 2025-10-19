@@ -1,12 +1,11 @@
 package views
 
 import (
-    "fmt"
     "github.com/alexander-bruun/magi/models"
 )
 
 templ MangasWithTypes(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
-    @PageTitle(fmt.Sprintf("All Mangas (%d)", currentPage))
+    @PageTitle("All Mangas")
     @Breadcrumb([]BreadcrumbItem{
         { Label: "Home", Href: "/" },
         { Label: "Mangas", Href: "/mangas" },
