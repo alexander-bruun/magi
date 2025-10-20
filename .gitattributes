@@ -1,1 +1,2 @@
 docs/images/*.{png,jpg,jpeg,gif,svg,webp} filter=lfs diff=lfs merge=lfs -text
+docs/images/*.png filter=lfs diff=lfs merge=lfs -text
