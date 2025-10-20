@@ -110,9 +110,18 @@
     function renderWebtoonMode() {
         // Reset to original classes for webtoon mode
         containerElement.className = 'flex flex-col items-center p-0 sm:p-4 w-full lg:w-3/5';
-        containerElement.innerHTML = images.map(src => 
-            `<img data-src="${src}" class="w-full h-auto max-w-full" alt="loading page..."/>`
-        ).join('');
+        
+        // Clear container safely
+        containerElement.textContent = '';
+        
+        // Create and append images safely using DOM methods
+        images.forEach(src => {
+            const img = document.createElement('img');
+            img.dataset.src = src;
+            img.className = 'w-full h-auto max-w-full';
+            img.alt = 'loading page...';
+            containerElement.appendChild(img);
+        });
     }
 
     /**
@@ -123,16 +132,30 @@
         containerElement.className = 'reader-single-page-container';
         
         if (images.length === 0) {
-            containerElement.innerHTML = '<p class="uk-text-muted">No pages available</p>';
+            containerElement.textContent = 'No pages available';
             return;
         }
 
         const imgSrc = images[currentPage] || images[0];
-        containerElement.innerHTML = `
-            <div class="reader-single-page">
-                <img src="${imgSrc}" class="reader-page-image" alt="Page ${currentPage + 1}"/>
-            </div>
-        `;
+        
+        // Clear container safely
+        containerElement.textContent = '';
+        
+        // Create elements safely using DOM methods
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'reader-single-page';
+        
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.className = 'reader-page-image';
+        img.alt = `Page ${currentPage + 1}`;
+        img.style.cursor = 'pointer';
+        
+        // Add click handler for navigation
+        img.addEventListener('click', handleImageClick);
+        
+        pageDiv.appendChild(img);
+        containerElement.appendChild(pageDiv);
 
         updatePageCounter();
     }
@@ -145,7 +168,7 @@
         containerElement.className = 'reader-side-by-side-container';
         
         if (images.length === 0) {
-            containerElement.innerHTML = '<p class="uk-text-muted">No pages available</p>';
+            containerElement.textContent = 'No pages available';
             return;
         }
 
@@ -161,30 +184,79 @@
             allImages: images
         });
 
-        let html = '<div class="reader-side-by-side">';
+        // Clear container safely
+        containerElement.textContent = '';
+        
+        // Create wrapper div
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = 'reader-side-by-side';
         
         // Always render left page if it exists
         if (leftPage) {
-            html += `<div class="reader-page-left">
-                <img src="${leftPage}" class="reader-page-image" alt="Page ${currentPage + 1}"/>
-            </div>`;
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'reader-page-left';
+            
+            const leftImg = document.createElement('img');
+            leftImg.src = leftPage;
+            leftImg.className = 'reader-page-image';
+            leftImg.alt = `Page ${currentPage + 1}`;
+            leftImg.style.cursor = 'pointer';
+            
+            // Add click handler for navigation
+            leftImg.addEventListener('click', handleImageClick);
+            
+            leftDiv.appendChild(leftImg);
+            wrapperDiv.appendChild(leftDiv);
         } else {
             console.warn('Left page is undefined at index:', currentPage);
         }
         
         // Always render right page if it exists
         if (rightPage) {
-            html += `<div class="reader-page-right">
-                <img src="${rightPage}" class="reader-page-image" alt="Page ${currentPage + 2}"/>
-            </div>`;
+            const rightDiv = document.createElement('div');
+            rightDiv.className = 'reader-page-right';
+            
+            const rightImg = document.createElement('img');
+            rightImg.src = rightPage;
+            rightImg.className = 'reader-page-image';
+            rightImg.alt = `Page ${currentPage + 2}`;
+            rightImg.style.cursor = 'pointer';
+            
+            // Add click handler for navigation
+            rightImg.addEventListener('click', handleImageClick);
+            
+            rightDiv.appendChild(rightImg);
+            wrapperDiv.appendChild(rightDiv);
         } else {
             console.log('Right page is undefined at index:', currentPage + 1);
         }
         
-        html += '</div>';
-        containerElement.innerHTML = html;
+        containerElement.appendChild(wrapperDiv);
 
         updatePageCounter();
+    }
+
+    /**
+     * Handle click on image for navigation
+     * Left 50% goes to previous page, right 50% goes to next page
+     */
+    function handleImageClick(e) {
+        // Only handle in single or side-by-side mode
+        if (currentMode === MODES.WEBTOON) return;
+
+        const img = e.currentTarget;
+        const rect = img.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const imgWidth = rect.width;
+        
+        // Determine if click was on left or right half
+        if (clickX < imgWidth / 2) {
+            // Left half - go to previous page
+            prevPage();
+        } else {
+            // Right half - go to next page
+            nextPage();
+        }
     }
 
     /**
