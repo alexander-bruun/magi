@@ -78,6 +78,8 @@ This provides a smoother developer experience instead of having to refresh the p
 
 Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
 
+[![Star History Chart](https://api.star-history.com/svg?repos=alexander-bruun/magi&type=date&legend=top-left)](https://www.star-history.com/#alexander-bruun/magi&type=date&legend=top-left)
+
 ## License
 
 [MIT License](LICENSE)
