@@ -136,6 +136,135 @@ func ProcessImage(fromPath, toPath string) error {
 	return saveProcessedImage(toPath, processedImg)
 }
 
+// ProcessImageWithTopCrop processes an image by extracting the top portion and resizing it.
+// It takes the top square (or near-square) section of the image, useful for cover/poster areas.
+func ProcessImageWithTopCrop(fromPath, toPath string) error {
+	if err := checkFileExists(fromPath); err != nil {
+		return err
+	}
+
+	img, err := openImage(fromPath)
+	if err != nil {
+		return err
+	}
+
+	processedImg := cropFromTopAndResize(img, targetWidth, targetHeight)
+	return saveProcessedImage(toPath, processedImg)
+}
+
+// ProcessImageWithCrop processes an image by applying user-defined cropping and resizing
+func ProcessImageWithCrop(fromPath, toPath string, cropData map[string]interface{}) error {
+	if err := checkFileExists(fromPath); err != nil {
+		return err
+	}
+
+	img, err := openImage(fromPath)
+	if err != nil {
+		return err
+	}
+
+	processedImg := applyCropAndResize(img, cropData, targetWidth, targetHeight)
+	return saveProcessedImage(toPath, processedImg)
+}
+
+// applyCropAndResize applies user-defined crop coordinates and resizes the image
+func applyCropAndResize(img image.Image, cropData map[string]interface{}, targetWidth, targetHeight int) image.Image {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Extract crop coordinates from map
+	x := int(getFloat64(cropData, "x"))
+	y := int(getFloat64(cropData, "y"))
+	cropWidth := int(getFloat64(cropData, "width"))
+	cropHeight := int(getFloat64(cropData, "height"))
+
+	// Validate coordinates
+	if cropWidth <= 0 {
+		cropWidth = width
+	}
+	if cropHeight <= 0 {
+		cropHeight = height
+	}
+
+	// Clamp to image bounds
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+	if x+cropWidth > width {
+		cropWidth = width - x
+	}
+	if y+cropHeight > height {
+		cropHeight = height - y
+	}
+
+	// Apply crop
+	if cropWidth > 0 && cropHeight > 0 {
+		croppedRect := image.Rect(x, y, x+cropWidth, y+cropHeight)
+		img = img.(interface {
+			SubImage(r image.Rectangle) image.Image
+		}).SubImage(croppedRect)
+	}
+
+	// Resize to target dimensions
+	resizedImg := resize.Resize(uint(targetWidth), 0, img, resize.Lanczos3)
+	if resizedImg.Bounds().Dy() < targetHeight {
+		resizedImg = resize.Resize(0, uint(targetHeight), img, resize.Lanczos3)
+	}
+
+	cropX, cropY := calculateCropOffset(resizedImg, targetWidth, targetHeight)
+	return cropImage(resizedImg, cropX, cropY, targetWidth, targetHeight)
+}
+
+// getFloat64 safely retrieves a float64 value from a map
+func getFloat64(m map[string]interface{}, key string) float64 {
+	if v, ok := m[key]; ok {
+		if f, ok := v.(float64); ok {
+			return f
+		}
+	}
+	return 0
+}
+
+// cropFromTopAndResize crops a poster-sized region from the top of the image and then resizes it.
+// This is useful for extracting cover/title areas from tall webtoon pages.
+// Poster aspect ratio is 2:3 (width:height)
+func cropFromTopAndResize(img image.Image, targetWidth, targetHeight int) image.Image {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Calculate poster-sized crop from the top
+	// Poster aspect ratio is 2:3 (width:height)
+	posterAspectRatio := 2.0 / 3.0
+	cropWidth := width
+	cropHeight := int(float64(cropWidth) / posterAspectRatio)
+
+	// If the calculated crop height exceeds image height, adjust width to fit
+	if cropHeight > height {
+		cropHeight = height
+		cropWidth = int(float64(cropHeight) * posterAspectRatio)
+	}
+
+	// Crop from the top (y=0)
+	croppedRect := image.Rect(0, 0, cropWidth, cropHeight)
+	croppedImg := img.(interface {
+		SubImage(r image.Rectangle) image.Image
+	}).SubImage(croppedRect)
+
+	// Now resize and center crop to target dimensions
+	resizedImg := resize.Resize(uint(targetWidth), 0, croppedImg, resize.Lanczos3)
+	if resizedImg.Bounds().Dy() < targetHeight {
+		resizedImg = resize.Resize(0, uint(targetHeight), croppedImg, resize.Lanczos3)
+	}
+
+	cropX, cropY := calculateCropOffset(resizedImg, targetWidth, targetHeight)
+	return cropImage(resizedImg, cropX, cropY, targetWidth, targetHeight)
+}
+
 // checkFileExists checks if a file exists.
 func checkFileExists(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
