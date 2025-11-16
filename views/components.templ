@@ -87,10 +87,10 @@ templ MangaCover(coverURL string, altText string, width int, height int, fixed b
     }
     
     if fixed {
-        <img data-src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
+        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
     } else {
         <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-            <img data-src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
+            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
         </div>
     }
 }
@@ -204,3 +204,12 @@ templ Showcase(mangas []models.Manga) {
         </div>
     }
 }
+
+// SuccessAlert renders a success alert message
+templ SuccessAlert(message string) {
+	<div class="uk-alert uk-alert-success" uk-alert>
+		<a class="uk-alert-close" uk-close></a>
+		<p>{ message }</p>
+	</div>
+}
+
