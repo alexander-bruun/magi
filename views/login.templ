@@ -1,6 +1,6 @@
 package views
 
-templ Login() {
+templ Login(target string) {
 	@PageTitle("Login")
 	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title text-center"><span>Login</span></h2>
@@ -22,6 +22,9 @@ templ Login() {
 					<input class="uk-input" type="password" name="password" placeholder="Password" aria-label="Not clickable icon" required/>
 				</div>
 			</div>
+			if target != "" {
+				<input type="hidden" name="target" value={ target }/>
+			}
 			<div class="mt-4 flex place-content-center">
 				<button type="submit" class="uk-btn uk-btn-default mr-2">Login</button>
 				<a href="/auth/register" hx-get="/auth/register" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-default ml-2">Register</a>
