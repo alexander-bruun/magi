@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
@@ -9,7 +10,7 @@ import (
 
 const (
 	accessTokenDuration  = 15 * time.Minute
-	refreshTokenDuration = 7 * 24 * time.Hour
+	refreshTokenDuration = 30 * 24 * time.Hour
 )
 
 var roleHierarchy = map[string]int{
@@ -36,7 +37,8 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			}
 		}
 
-		return c.Redirect("/auth/login", fiber.StatusSeeOther)
+		originalURL := c.OriginalURL()
+		return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
 	}
 }
 
@@ -203,13 +205,12 @@ func ConditionalAuthMiddleware() fiber.Handler {
 				if err := refreshAndValidateTokens(c, refreshToken, "reader"); err == nil {
 					return c.Next()
 				}
-			}
-
-			// No valid authentication - redirect to login
-			return c.Redirect("/auth/login", fiber.StatusSeeOther)
 		}
 
-		// Login not required, but still try to authenticate if cookies present
+		// No valid authentication - redirect to login
+		originalURL := c.OriginalURL()
+		return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
+	}		// Login not required, but still try to authenticate if cookies present
 		accessToken := c.Cookies("access_token")
 		refreshToken := c.Cookies("refresh_token")
 
