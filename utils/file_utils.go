@@ -17,6 +17,24 @@ import (
 	"github.com/nwaples/rardecode"
 )
 
+// isSafeArchivePath checks whether the provided path is safe for extraction (no directory traversal, not absolute).
+func isSafeArchivePath(name string) bool {
+	// Reject absolute paths
+	if filepath.IsAbs(name) {
+		return false
+	}
+	// Clean the path and ensure it does not start with ".." or contain ".." in any segment
+	cleaned := filepath.Clean(name)
+	if strings.Contains(cleaned, ".."+string(os.PathSeparator)) || strings.HasPrefix(cleaned, "..") || strings.Contains(cleaned, "/..") || strings.Contains(cleaned, "\\..") {
+		return false
+	}
+	// Optionally, disallow names starting with path separator (defense-in-depth)
+	if strings.HasPrefix(name, "/") || strings.HasPrefix(name, "\\") {
+		return false
+	}
+	return true
+}
+
 // CountImageFiles counts the number of image files in an archive (zip, cbz, rar, or cbr) or directory.
 func CountImageFiles(archiveFilePath string) (int, error) {
 	// Check if it's a directory first
@@ -317,7 +335,7 @@ func listImagesInZip(zipPath string) ([]string, error) {
 
 	var images []string
 	for _, file := range reader.File {
-		if isImageFile(file.Name) {
+		if isImageFile(file.Name) && isSafeArchivePath(file.Name) {
 			images = append(images, file.Name)
 		}
 	}
