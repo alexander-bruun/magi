@@ -42,6 +42,8 @@ templ Account(userName string) {
             downvoted = append(downvoted, *m)
         }
     } }}
+
+    {{ activities, _ := models.GetRecentReadingActivity(userName, 10) }}
     
     @PageTitle(fmt.Sprintf("Account - %s", userName))
     @Breadcrumb([]BreadcrumbItem{
@@ -56,6 +58,11 @@ templ Account(userName string) {
         if user != nil {
             @ProfileCard(*user)
         }
+    </div>
+
+    <!-- Reading Timeline -->
+    <div class="uk-container mt-6">
+        @ReadingTimeline(activities)
     </div>
 
     <div class="flex items-center justify-between mt-6">
