@@ -51,9 +51,7 @@ Magi is built with the following technologies:
 - [Sqlite](https://github.com/ncruces/go-sqlite3) - Relational database
 - [GoFiber](https://docs.gofiber.io/) - HTTP Server
 - [Templ](https://templ.guide/) - HTML Templating
-- JavaScript libraries:
-  - [HTMX](https://htmx.org/) - Hypermedia
-  - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
+- [HTMX](https://htmx.org/) - Hypermedia
 - [Franken UI](https://franken-ui.dev/) - Predefined Components
 - [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
 
