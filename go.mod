@@ -12,7 +12,7 @@ require (
 	github.com/nwaples/rardecode v1.1.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/yuin/goldmark v1.7.13
-	golang.org/x/crypto v0.43.0
+	golang.org/x/crypto v0.44.0
 )
 
 require (
@@ -29,5 +29,5 @@ require (
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.59.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 )
