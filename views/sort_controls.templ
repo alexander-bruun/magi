@@ -122,7 +122,7 @@ templ UnifiedSortControlsWithTypes(path string, targetID string, includeTags boo
                     {{ toggled = "asc" }}
                 }
                 <a
-                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn"
+                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
                     href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
                     hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
                     hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types], #search-filter-input"
@@ -197,7 +197,7 @@ templ UnifiedSortControlsWithTypes(path string, targetID string, includeTags boo
                     {{ toggled = "asc" }}
                 }
                 <a
-                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn"
+                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
                     href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
                     hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
                     hx-include={ "#" + targetID + "-sort-form, #" + targetID + "-search-input" }

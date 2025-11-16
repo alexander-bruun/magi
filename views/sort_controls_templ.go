@@ -347,7 +347,7 @@ func UnifiedSortControlsWithTypes(path string, targetID string, includeTags bool
 			if currentOrder == "desc" {
 				toggled = "asc"
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -675,7 +675,7 @@ func UnifiedSortControlsWithTypes(path string, targetID string, includeTags bool
 			if currentOrder == "desc" {
 				toggled = "asc"
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<a class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon ctrl-btn\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<a class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
