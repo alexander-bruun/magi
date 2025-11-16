@@ -426,6 +426,21 @@
       }
     },
 
+    scrollActiveIntoView(dropdownEl) {
+      // Find the active item in the dropdown
+      const activeItem = dropdownEl.querySelector('li.uk-active');
+      if (activeItem) {
+        // Wait a tiny bit for dropdown to finish opening animation
+        setTimeout(() => {
+          // Scroll the active item into view
+          activeItem.scrollIntoView({
+            block: 'center',
+            behavior: 'instant'
+          });
+        }, 50);
+      }
+    },
+
     init() {
       // Close dropdowns immediately when clicking navigation links inside them
       document.body.addEventListener('click', (e) => {
@@ -442,6 +457,15 @@
       // Also close all dropdowns after HTMX navigation completes
       document.body.addEventListener('htmx:afterOnLoad', () => {
         this.closeAllDropdowns();
+      });
+
+      // Scroll to active chapter when chapter dropdown opens
+      document.body.addEventListener('shown', (e) => {
+        const dropdownEl = e.target;
+        // Check if this is a chapter list dropdown (has chapter-list-drop in ID)
+        if (dropdownEl && dropdownEl.id && dropdownEl.id.includes('chapter-list-drop')) {
+          this.scrollActiveIntoView(dropdownEl);
+        }
       });
     }
   };
