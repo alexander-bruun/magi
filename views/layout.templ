@@ -10,8 +10,8 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			<title>Magi</title>
 			<link rel="preconnect" href="https://rsms.me/"/>
 			<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
-			<link href="/assets/css/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/css/core.min.css
-			<link href="/assets/css/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/css/utilities.min.css
+			<link href="/assets/css/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/core.min.css
+			<link href="/assets/css/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/utilities.min.css
 			<link href="/assets/css/styles.css" rel="stylesheet"/>
 			<script>
 				const htmlElement = document.documentElement;
@@ -38,11 +38,10 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			// Ensure titleHandler exists before any inline PageTitle() calls run
 			window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
 		</script>
-		<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/core.iife.js
+		<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/core.iife.js
 		<!--https://lucide.dev/icons/chevron-up?search=ban-->
-		<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.0/dist/js/icon.iife.js
-		<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js
-		<script src="/assets/js/lazy.js"></script>
+		<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/icon.iife.js
+		<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js
 	</head>
 	<body class="bg-background text-foreground">
 		<script>
