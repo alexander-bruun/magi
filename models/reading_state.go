@@ -115,3 +115,55 @@ func DeleteReadingStatesByUser(userName string) error {
     _, err := db.Exec(`DELETE FROM reading_states WHERE user_name = ?`, userName)
     return err
 }
+
+// ReadingActivityItem represents a recent reading activity with manga details
+type ReadingActivityItem struct {
+    ReadingState ReadingState
+    Manga        *Manga
+}
+
+// GetRecentReadingActivity returns the most recent reading activities for a user with manga details
+func GetRecentReadingActivity(userName string, limit int) ([]ReadingActivityItem, error) {
+    query := `
+    SELECT id, user_name, manga_slug, chapter_slug, created_at
+    FROM reading_states
+    WHERE user_name = ? AND (manga_slug, created_at) IN (
+        SELECT manga_slug, MAX(created_at)
+        FROM reading_states
+        WHERE user_name = ?
+        GROUP BY manga_slug
+    )
+    ORDER BY created_at DESC
+    LIMIT ?
+    `
+
+    rows, err := db.Query(query, userName, userName, limit)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var activities []ReadingActivityItem
+    for rows.Next() {
+        var rs ReadingState
+        if err := rows.Scan(&rs.ID, &rs.UserName, &rs.MangaSlug, &rs.Chapter, &rs.CreatedAt); err != nil {
+            return nil, err
+        }
+
+        manga, err := GetManga(rs.MangaSlug)
+        if err != nil {
+            continue // Skip if manga not found
+        }
+
+        activities = append(activities, ReadingActivityItem{
+            ReadingState: rs,
+            Manga:        manga,
+        })
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return activities, nil
+}

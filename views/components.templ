@@ -213,3 +213,67 @@ templ SuccessAlert(message string) {
 	</div>
 }
 
+// ReadingTimeline renders a timeline of recent reading activity with circles on a horizontal line
+templ ReadingTimeline(activities []models.ReadingActivityItem) {
+    if len(activities) == 0 {
+        <p class="role-reader">No reading history yet.</p>
+    } else {
+        <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
+            <h3 class="uk-h4 mb-8">Reading Timeline</h3>
+            
+            <!-- Timeline Container -->
+            <div class="relative w-full" style="height: 280px;">
+                <!-- Horizontal Line (behind with low z-index) -->
+                <div class="absolute left-0 right-0 w-full bg-gray-300 z-0" style="top: 50%; height: 4px; transform: translateY(-50%);"></div>
+                
+                <!-- Timeline Points and Items -->
+                <div class="relative w-full h-full flex justify-between px-4 z-10" style="align-items: center;">
+                    for i, activity := range activities {
+                        if activity.Manga != nil {
+                            <div class="flex flex-col items-center flex-1 relative" style="height: 100%;">
+                                if i%2 == 0 {
+                                    <!-- Item going up -->
+                                    <div class="text-center mb-4 flex flex-col justify-end flex-1">
+                                        <div class="mb-2">
+                                            <a href={ templ.URL("/manga/" + activity.Manga.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                                { activity.Manga.Name }
+                                            </a>
+                                            <p class="text-xs text-gray-600">
+                                                { activity.ReadingState.CreatedAt.Format("Jan 2") }
+                                            </p>
+                                        </div>
+                                    </div>
+                                } else {
+                                    <!-- Empty space for down items -->
+                                    <div class="flex-1"></div>
+                                }
+                                
+                                <!-- Circle Point -->
+                                <div class="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-md z-20 flex-shrink-0"></div>
+                                
+                                if i%2 == 1 {
+                                    <!-- Item going down -->
+                                    <div class="text-center mt-4 flex flex-col justify-start flex-1">
+                                        <div class="mt-2">
+                                            <a href={ templ.URL("/manga/" + activity.Manga.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                                { activity.Manga.Name }
+                                            </a>
+                                            <p class="text-xs text-gray-600">
+                                                { activity.ReadingState.CreatedAt.Format("Jan 2") }
+                                            </p>
+                                        </div>
+                                    </div>
+                                } else {
+                                    <!-- Empty space for up items -->
+                                    <div class="flex-1"></div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
