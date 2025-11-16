@@ -8,7 +8,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Login() templ.Component {
+func Login(target string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -37,7 +37,30 @@ func Login() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"mb-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"User\"></uk-icon></a> <input class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" aria-label=\"Not clickable icon\" required></div></div><div class=\"mt-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"Lock\"></uk-icon></a> <input class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" aria-label=\"Not clickable icon\" required></div></div><div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" hx-get=\"/auth/register\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"mb-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"User\"></uk-icon></a> <input class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" aria-label=\"Not clickable icon\" required></div></div><div class=\"mt-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"Lock\"></uk-icon></a> <input class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" aria-label=\"Not clickable icon\" required></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if target != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<input type=\"hidden\" name=\"target\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 string
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(target)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 26, Col: 53}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" hx-get=\"/auth/register\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -61,9 +84,9 @@ func WrongCredentials() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var2 == nil {
-			templ_7745c5c3_Var2 = templ.NopComponent
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle("Login Failed").Render(ctx, templ_7745c5c3_Buffer)
@@ -74,7 +97,7 @@ func WrongCredentials() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<section class=\"flex items-center justify-center\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600\">Authentication Failed</h1><p class=\"mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white\">Hmmm...</p><p class=\"mb-4 text-lg font-light text-gray-500 dark:text-gray-400\">Sorry, we were unable to authenticate you with the provided credentials.</p><p class=\"mb-4 text-sm text-gray-500 dark:text-gray-400\">Please check your username and password and try again.</p><a href=\"/auth/login\" hx-get=\"/auth/login\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Login</a></div></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<section class=\"flex items-center justify-center\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600\">Authentication Failed</h1><p class=\"mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white\">Hmmm...</p><p class=\"mb-4 text-lg font-light text-gray-500 dark:text-gray-400\">Sorry, we were unable to authenticate you with the provided credentials.</p><p class=\"mb-4 text-sm text-gray-500 dark:text-gray-400\">Please check your username and password and try again.</p><a href=\"/auth/login\" hx-get=\"/auth/login\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Login</a></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
