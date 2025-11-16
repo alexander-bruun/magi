@@ -156,6 +156,14 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	newManga := createMangaFromMatch(bestMatch, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
 
+	// If no MangaDex match was found, try to detect webtoon by checking image dimensions
+	if bestMatch == nil {
+		detectedType := detectWebtoonFromImages(absolutePath, slug)
+		if detectedType != "" {
+			newManga.Type = detectedType
+		}
+	}
+
 	if err := models.CreateManga(newManga); err != nil {
 		log.Errorf("Failed to create manga: %s (%s)", slug, err.Error())
 		return "", err
@@ -222,14 +230,14 @@ func createMangaFromMatch(match *models.MangaDetail, name, slug, librarySlug, pa
 }
 
 func handleCoverArt(bestMatch *models.MangaDetail, slug, absolutePath string) (string, error) {
-	coverArtURL := getCoverArtURL(bestMatch)
+	coverArtURL := GetCoverArtURL(bestMatch)
 	if coverArtURL == "" {
-		return handleLocalImages(slug, absolutePath)
+		return HandleLocalImages(slug, absolutePath)
 	}
-	return downloadAndCacheImage(slug, coverArtURL)
+	return DownloadAndCacheImage(slug, coverArtURL)
 }
 
-func getCoverArtURL(match *models.MangaDetail) string {
+func GetCoverArtURL(match *models.MangaDetail) string {
 	if match == nil {
 		return ""
 	}
@@ -246,13 +254,45 @@ func getCoverArtURL(match *models.MangaDetail) string {
 	return ""
 }
 
-func handleLocalImages(slug, absolutePath string) (string, error) {
+// Deprecated: Use GetCoverArtURL instead
+func getCoverArtURL(match *models.MangaDetail) string {
+	return GetCoverArtURL(match)
+}
+
+func HandleLocalImages(slug, absolutePath string) (string, error) {
+	// First, check for standalone poster/thumbnail images
 	imageFiles := []string{"poster.jpg", "poster.jpeg", "poster.png", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png"}
 
 	for _, filename := range imageFiles {
 		imagePath := filepath.Join(absolutePath, filename)
 		if _, err := os.Stat(imagePath); err == nil {
 			return processLocalImage(slug, imagePath)
+		}
+	}
+
+	// If no standalone image found, try to extract from archive files
+	fileInfo, err := os.Stat(absolutePath)
+	if err == nil && !fileInfo.IsDir() {
+		// This is a file (likely an archive like .cbz, .cbr, .zip, .rar)
+		lowerPath := strings.ToLower(absolutePath)
+		if strings.HasSuffix(lowerPath, ".cbz") || strings.HasSuffix(lowerPath, ".cbr") ||
+			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") {
+			return utils.ExtractAndCacheFirstImage(absolutePath, slug, cacheDataDirectory)
+		}
+	} else if err == nil && fileInfo.IsDir() {
+		// For directories, try to extract from archive files within the directory
+		entries, err := os.ReadDir(absolutePath)
+		if err == nil {
+			for _, entry := range entries {
+				if !entry.IsDir() {
+					lowerName := strings.ToLower(entry.Name())
+					if strings.HasSuffix(lowerName, ".cbz") || strings.HasSuffix(lowerName, ".cbr") ||
+						strings.HasSuffix(lowerName, ".zip") || strings.HasSuffix(lowerName, ".rar") {
+						archivePath := filepath.Join(absolutePath, entry.Name())
+						return utils.ExtractAndCacheFirstImage(archivePath, slug, cacheDataDirectory)
+					}
+				}
+			}
 		}
 	}
 
@@ -275,7 +315,7 @@ func processLocalImage(slug, imagePath string) (string, error) {
 	return fmt.Sprintf("%s/%s.%s", localServerBaseURL, slug, fileExt), nil
 }
 
-func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
+func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	u, err := url.Parse(coverArtURL)
 	if err != nil {
 		log.Errorf("Error parsing URL: %s", err)
@@ -291,6 +331,11 @@ func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	}
 
 	return cachedImageURL, nil
+}
+
+// Deprecated: Use DownloadAndCacheImage instead
+func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
+	return DownloadAndCacheImage(slug, coverArtURL)
 }
 
 func getStringAttribute(match *models.MangaDetail, getter func(*models.MangaDetail) string) string {
@@ -433,3 +478,69 @@ func containsNumber(s string) bool {
 	}
 	return false
 }
+
+// detectWebtoonFromImages attempts to detect if a manga is a webtoon by checking
+// the aspect ratio of the middle image in the first chapter.
+// Returns "webtoon" if detected, or empty string if not detected or on error.
+func detectWebtoonFromImages(mangaPath, slug string) string {
+	// Check if path is a single file or directory
+	fileInfo, err := os.Stat(mangaPath)
+	if err != nil {
+		log.Debugf("Failed to stat manga path for webtoon detection: %v", err)
+		return ""
+	}
+
+	var chapterPath string
+
+	if fileInfo.IsDir() {
+		// For directories, find the first chapter file/folder
+		entries, err := os.ReadDir(mangaPath)
+		if err != nil {
+			log.Debugf("Failed to read directory for webtoon detection: %v", err)
+			return ""
+		}
+
+		// Look for the first entry that looks like a chapter
+		for _, entry := range entries {
+			name := entry.Name()
+			cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
+
+			// Check if it contains a number (chapter indicator)
+			if containsNumber(cleanedName) {
+				chapterPath = filepath.Join(mangaPath, name)
+				break
+			}
+		}
+
+		// If no chapter found, try the first directory/file with images
+		if chapterPath == "" && len(entries) > 0 {
+			chapterPath = filepath.Join(mangaPath, entries[0].Name())
+		}
+	} else {
+		// For single files, use the file directly as the chapter
+		chapterPath = mangaPath
+	}
+
+	if chapterPath == "" {
+		log.Debugf("No chapter path found for webtoon detection in: %s", mangaPath)
+		return ""
+	}
+
+	// Get the middle image dimensions
+	width, height, err := utils.GetMiddleImageDimensions(chapterPath)
+	if err != nil {
+		log.Debugf("Failed to get image dimensions for webtoon detection: %v", err)
+		return ""
+	}
+
+	log.Debugf("Webtoon detection for '%s': middle image dimensions = %dx%d", slug, width, height)
+
+	// Check if the image is a webtoon (height >= 3x width)
+	if utils.IsWebtoonByAspectRatio(width, height) {
+		log.Infof("Detected webtoon for '%s' based on image aspect ratio (%dx%d)", slug, width, height)
+		return "webtoon"
+	}
+
+	return ""
+}
+
