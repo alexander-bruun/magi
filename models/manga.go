@@ -126,6 +126,25 @@ func UpdateManga(manga *Manga) error {
 	return nil
 }
 
+// UpdateMangaMetadata updates manga metadata fields while preserving the original created_at timestamp.
+// This is useful for refresh operations where we want to preserve the original creation date.
+func UpdateMangaMetadata(manga *Manga) error {
+	manga.UpdatedAt = time.Now()
+
+	query := `
+	UPDATE mangas
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, manga_type = ?, status = ?, content_rating = ?, cover_art_url = ?, updated_at = ?
+	WHERE slug = ?
+	`
+
+	_, err := db.Exec(query, manga.Name, manga.Author, manga.Description, manga.Year, manga.OriginalLanguage, manga.Type, manga.Status, manga.ContentRating, manga.CoverArtURL, manga.UpdatedAt.Unix(), manga.Slug)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DeleteManga removes a Manga and its associated chapters
 func DeleteManga(slug string) error {
 	// Delete associated chapters first
