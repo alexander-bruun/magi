@@ -58,6 +58,10 @@
   font-feature-settings: "liga" 1, "calt" 1;
 }
 
+html {
+  scroll-padding-top: 80px;
+}
+
 @supports (font-variation-settings: normal) {
   :root {
     font-family: InterVariable, sans-serif;
@@ -68,44 +72,6 @@
   --ui-sep: rgba(255, 255, 255, 0.12);
   --ui-sep-edge: rgba(255, 255, 255, 0.10);
   --ui-shadow: rgba(0, 0, 0, 0.55);
-}
-
-
-/* ============================================
-   LAZY LOADING & IMAGE STATES
-   ============================================ */
-.lazy-spinner-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(2px);
-  border-radius: inherit;
-  z-index: 1;
-}
-
-.lazy-spinner-overlay [uk-spinner] {
-  color: #666;
-}
-
-img[data-src] {
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-
-img.lazy-loaded {
-  opacity: 1;
-}
-
-img.lazy-error {
-  opacity: 0;
-}
-
-.reader-page-image[data-src] {
-  min-height: 400px;
-  background: var(--ui-bg-subtle);
 }
 
 
@@ -146,6 +112,31 @@ img.lazy-error {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ============================================
+   SCROLLBAR STYLING - UNIFIED
+   ============================================ */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 200, 200, 0.5) transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background: rgba(200, 200, 200, 0.5);
+  border-radius: 4px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 160, 160, 0.7);
 }
 
 .uk-card-scroll {
@@ -196,14 +187,16 @@ img.lazy-error {
   background: var(--ui-bg-subtle);
 }
 
-.ctrl-btn {
-  border-radius: 9999px;
-  width: 36px;
-  height: 36px;
+/* Circular button style */
+.btn-circular {
+  border-radius: 50%;
+  width: var(--size-btn);
+  height: var(--size-btn);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .eye-open { display: inline-flex; }
@@ -279,6 +272,7 @@ img.lazy-error {
 #app {
   display: block;
   min-height: 100vh;
+  margin-top: 64px;
   transition: grid-template-columns 200ms ease;
 }
 
@@ -361,8 +355,10 @@ div[uk-slider] {
    ============================================ */
 header.site-header {
   grid-column: 1 / -1;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   min-height: 64px;
   height: auto;
@@ -640,6 +636,48 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   .nav-inner {
     height: 100%;
   }
+}
+
+/* Prevent body scrolling - scrollbar only in content area */
+body {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Site main takes remaining space after navbar */
+main.site-main {
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 200, 200, 0.5) transparent;
+}
+
+main.site-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+main.site-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main.site-main::-webkit-scrollbar-thumb {
+  background: rgba(200, 200, 200, 0.5);
+  border-radius: 4px;
+}
+
+main.site-main::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 160, 160, 0.7);
+}
+
+/* Content area retains original styling */
+#content.uk-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#content.uk-container::-webkit-scrollbar {
+  display: none;
 }
 
 /* Full-bleed reader on small screens */
@@ -1114,31 +1152,128 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
    MANGA READER MODES
    ============================================ */
 .reader-mode-selector {
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  gap: 0.25rem;
   align-items: center;
   justify-content: center;
   margin-bottom: 1rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 9999px;
+  padding: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .reader-mode-btn {
-  min-width: 120px;
+  min-width: auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.reader-mode-btn span {
+  display: none;
+  max-width: 0;
+  overflow: hidden;
+  transition: max-width 0.2s ease;
+}
+
+.reader-mode-btn.uk-active span {
+  display: inline;
+  max-width: 200px;
 }
 
 .reader-mode-btn.uk-active {
-  background-color: hsl(var(--primary));
+  width: auto;
+  height: 36px;
+  padding: 0 1rem;
+  border-radius: 9999px;
+}
+
+.reader-mode-btn:hover:not(.uk-active) {
+  background: hsl(var(--muted));
+}
+
+.reader-mode-btn.uk-active {
+  background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.reader-mode-btn uk-icon,
+.reader-mode-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Pagination controls */
 #reader-pagination,
 #reader-pagination-bottom {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-xl);
-  padding: var(--space-xl);
-  margin: var(--space-xl) 0;
+  padding: var(--space-sm) var(--space-xl);
+  margin: 0;
+  min-height: 64px;
+  background: transparent;
+  border: none;
+  z-index: 100;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, left 0.2s ease;
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Adjust for collapsed sidebar */
+body.sidebar-collapsed #reader-pagination,
+body.sidebar-collapsed #reader-pagination-bottom {
+  left: var(--sidebar-slim-width);
+}
+
+/* Mobile - no sidebar offset */
+@media (max-width: 768px) {
+  #reader-pagination,
+  #reader-pagination-bottom {
+    left: 0;
+  }
+}
+
+#reader-pagination > *,
+#reader-pagination-bottom > * {
+  pointer-events: auto;
+}
+
+#reader-pagination.hide-controls,
+#reader-pagination-bottom.hide-controls {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#reader-pagination-bottom {
+  top: auto;
+  bottom: 0;
+  transform: translateY(0);
+}
+
+#reader-pagination-bottom.hide-controls {
+  transform: translateY(100%);
 }
 
 #reader-pagination .pagination-controls,
@@ -1146,6 +1281,39 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: transparent;
+  border-radius: 9999px;
+  position: relative;
+}
+
+#reader-pagination .pagination-controls::before,
+#reader-pagination-bottom .pagination-controls::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 30%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.05) 70%, transparent 100%);
+  border-radius: 9999px;
+  z-index: -2;
+}
+
+#reader-pagination .pagination-controls::after,
+#reader-pagination-bottom .pagination-controls::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--background) / 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border) / 0.15);
+  z-index: -1;
+}
+
+#reader-pagination .pagination-controls > *,
+#reader-pagination-bottom .pagination-controls > * {
+  position: relative;
+  z-index: 1;
 }
 
 #page-counter,
@@ -1164,19 +1332,22 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   width: 100%;
   min-height: 50vh;
   transition: opacity 0.2s ease-in-out;
+  scroll-margin-top: 2rem;
 }
 
 .reader-single-page {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
+  height: calc(100vh - 200px); /* Account for header/footer space */
   max-width: 1800px;
   padding: var(--space-xl);
 }
 
 .reader-single-page .reader-page-image {
   max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -1193,15 +1364,17 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   max-width: 100%;
   min-height: 50vh;
   transition: opacity 0.2s ease-in-out;
+  scroll-margin-top: 2rem;
 }
 
 .reader-side-by-side {
   display: flex !important;
   flex-direction: row !important;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   gap: 0;
   width: 100%;
+  height: calc(100vh - 200px); /* Account for header/footer space */
   max-width: 1800px;
   padding: var(--space-xl);
 }
@@ -1210,14 +1383,20 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
 .reader-page-right {
   flex: 1 1 50%;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  justify-content: flex-end;
+  align-items: center;
   min-width: 0;
   width: 50%;
+  height: 100%;
+}
+
+.reader-page-right {
+  justify-content: flex-start;
 }
 
 .reader-side-by-side .reader-page-image {
   max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -1249,24 +1428,53 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   .reader-side-by-side {
     flex-direction: column;
     align-items: center;
+    height: auto;
+    min-height: calc(100vh - 200px);
   }
 
   .reader-page-left,
   .reader-page-right {
     width: 100%;
+    height: calc(50vh - 100px);
+  }
+  
+  .reader-single-page {
+    height: calc(100vh - 150px);
   }
 }
 
 @media (max-width: 640px) {
+  .reader-mode-selector {
+    padding: 0.2rem;
+    gap: 0.2rem;
+  }
+  
   .reader-mode-btn {
-    min-width: 90px;
-    font-size: 0.85rem;
-    padding: 0.4rem 0.8rem;
+    min-width: auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 0.8rem;
+    gap: 0.25rem;
+  }
+  
+  .reader-mode-btn.uk-active {
+    width: auto;
+    height: 32px;
+    padding: 0 0.75rem;
+    border-radius: 9999px;
+  }
+  
+  .reader-mode-btn uk-icon,
+  .reader-mode-btn svg {
+    width: 18px;
+    height: 18px;
   }
 
-  #reader-pagination {
+  #reader-pagination,
+  #reader-pagination-bottom {
     gap: var(--space-sm);
-    padding: var(--space-lg);
+    padding: var(--space-xs) var(--space-sm);
   }
 
   #reader-pagination .pagination-controls {
@@ -1276,5 +1484,256 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   .reader-single-page,
   .reader-side-by-side {
     padding: var(--space-sm);
+  }
+  
+  .reader-single-page {
+    height: calc(100vh - 120px);
+  }
+  
+  .reader-side-by-side {
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
+  
+  .reader-page-left,
+  .reader-page-right {
+    height: calc(45vh - 60px);
+  }
+}
+
+/* ============================================
+   WEBTOON FOCUS MODE (LIGHTBOX)
+   ============================================ */
+.webtoon-focus-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.05s;
+}
+
+.webtoon-focus-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.webtoon-focus-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.webtoon-focus-modal.closing .webtoon-focus-modal-overlay {
+  opacity: 0;
+}
+
+.webtoon-focus-modal-scroll {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem 1rem;
+  cursor: pointer;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+  scroll-behavior: smooth;
+}
+
+/* WebKit scrollbar for focus modal */
+.webtoon-focus-modal-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.webtoon-focus-modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.webtoon-focus-modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+}
+
+.webtoon-focus-modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+
+/* Images inside the focus modal */
+.webtoon-focus-modal-scroll img {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  max-width: 1200px;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+}
+
+.webtoon-focus-modal.active .webtoon-focus-modal-scroll img {
+  opacity: 1;
+}
+
+.webtoon-focus-modal.closing .webtoon-focus-modal-scroll img {
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.webtoon-focus-modal-zoom-controls {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.webtoon-focus-modal-zoom-controls .uk-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.webtoon-zoom-minus,
+.webtoon-zoom-plus {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.4) !important;
+  background: transparent !important;
+  color: white;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: background 0.2s ease;
+  margin: 0 !important;
+}
+
+.webtoon-zoom-plus {
+  border-right: none !important;
+}
+
+.webtoon-zoom-minus:hover,
+.webtoon-zoom-plus:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.webtoon-zoom-minus:active,
+.webtoon-zoom-plus:active {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.webtoon-zoom-input {
+  width: 80px;
+  height: 44px;
+  padding: 0.5rem !important;
+  border: none !important;
+  background: transparent !important;
+  color: white !important;
+  text-align: center;
+  font-weight: 500;
+  margin: 0 !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.4) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.4) !important;
+}
+
+.webtoon-zoom-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.webtoon-zoom-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.webtoon-focus-modal-close {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  z-index: 100000;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.webtoon-focus-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.webtoon-focus-modal-close:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Hide scrollbar when modal is open */
+body.webtoon-focus-open {
+  overflow: hidden;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .webtoon-focus-modal-scroll {
+    padding: 1rem 0.5rem;
+  }
+
+  .webtoon-focus-modal-close {
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
   }
 }

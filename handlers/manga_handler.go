@@ -1,15 +1,20 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 const (
@@ -17,6 +22,45 @@ const (
 	defaultPageSize = 16
 	searchPageSize  = 10
 )
+
+// getFirstChapterFilePath returns the path to the first chapter file (.cbz, .cbr, etc.)
+// from a manga directory. Returns error if no chapters or archive files are found.
+func getFirstChapterFilePath(manga *models.Manga) (string, error) {
+	chapters, err := models.GetChapters(manga.Slug)
+	if err != nil || len(chapters) == 0 {
+		return "", fmt.Errorf("no chapters found")
+	}
+
+	// Try to construct path from first chapter slug
+	chapterPath := filepath.Join(manga.Path, chapters[0].Slug+".cbz")
+	if _, err := os.Stat(chapterPath); err == nil {
+		return chapterPath, nil
+	}
+
+	// Fallback: search directory for first archive file
+	entries, err := os.ReadDir(manga.Path)
+	if err != nil {
+		return "", fmt.Errorf("cannot access manga directory: %w", err)
+	}
+	if len(entries) == 0 {
+		return "", fmt.Errorf("no files found in manga directory")
+	}
+
+	// Find first archive file
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			name := strings.ToLower(entry.Name())
+			if strings.HasSuffix(name, ".cbz") ||
+				strings.HasSuffix(name, ".cbr") ||
+				strings.HasSuffix(name, ".zip") ||
+				strings.HasSuffix(name, ".rar") {
+				return filepath.Join(manga.Path, entry.Name()), nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no archive files found in manga directory")
+}
 
 // HandleMangas lists mangas with filtering, sorting, and HTMX fragment support.
 func HandleMangas(c *fiber.Ctx) error {
@@ -79,6 +123,7 @@ func HandleManga(c *fiber.Ctx) error {
 	// Get user role for conditional rendering
 	userRole := ""
 	userName := GetUserContext(c)
+	lastReadChapterSlug := ""
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil {
@@ -91,12 +136,17 @@ func HandleManga(c *fiber.Ctx) error {
 				chapters[i].Read = readMap[chapters[i].Slug]
 			}
 		}
+		// Fetch the last read chapter for the resume button
+		lastReadChapter, err := models.GetLastReadChapter(userName, slug)
+		if err == nil {
+			lastReadChapterSlug = lastReadChapter
+		}
 	}
 	
 	// Precompute first/last chapter slugs and count for the view
 	firstSlug, lastSlug := models.GetFirstAndLastChapterSlugs(chapters)
 	
-	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters), userRole))
+	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug))
 }
 
 // HandleChapter shows a chapter reader with navigation and optional read tracking.
@@ -492,7 +542,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// HandleRefreshMetadata re-indexes a single manga by rescanning its folder
+// HandleRefreshMetadata refreshes manga metadata and chapters without resetting creation date
 func HandleRefreshMetadata(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	if mangaSlug == "" {
@@ -507,28 +557,229 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		return handleError(c, fmt.Errorf("manga not found"))
 	}
 
-	// Store the path and library slug before deletion
-	mangaPath := existingManga.Path
-	librarySlug := existingManga.LibrarySlug
-
-	// Delete the existing manga to force a fresh index
-	// This will also delete associated chapters, tags, etc.
-	if err := models.DeleteManga(mangaSlug); err != nil {
-		return handleError(c, fmt.Errorf("failed to delete existing manga: %w", err))
-	}
-
-	// Re-index the manga from scratch
-	newSlug, err := indexer.IndexManga(mangaPath, librarySlug)
+	// Fetch fresh metadata from MangaDex
+	mangaDetail, err := models.GetBestMatchMangadexManga(existingManga.Name)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to refresh metadata: %w", err))
+		return handleError(c, fmt.Errorf("failed to fetch metadata from MangaDex: %w", err))
 	}
-	
-	if newSlug == "" {
-		return handleError(c, fmt.Errorf("manga indexing returned empty slug"))
+
+	if mangaDetail != nil {
+		// Download and cache the new cover art if available
+		cachedImageURL, err := downloadAndCacheCoverArt(mangaDetail, mangaSlug, existingManga.Path)
+		if err != nil {
+			log.Warn("Failed to download cover art during metadata refresh: ", err)
+			// Don't fail the entire operation if cover art fails
+		} else if cachedImageURL != "" {
+			existingManga.CoverArtURL = cachedImageURL
+		}
+
+		// Update metadata from MangaDex while preserving creation date
+		models.UpdateMangaFromMangadex(existingManga, mangaDetail, existingManga.CoverArtURL)
+
+		// Persist tags from Mangadex
+		if err := models.PersistMangadexTags(existingManga.Slug, mangaDetail); err != nil {
+			log.Warnf("Failed to persist tags for manga '%s': %v", mangaSlug, err)
+		}
+	}
+
+	// Update manga metadata without changing created_at
+	if err := models.UpdateMangaMetadata(existingManga); err != nil {
+		return handleError(c, fmt.Errorf("failed to update manga metadata: %w", err))
+	}
+
+	// Re-index chapters (this will detect new/removed chapters without deleting the manga)
+	added, deleted, err := indexer.IndexChapters(existingManga.Slug, existingManga.Path)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
+	}
+
+	if added > 0 || deleted > 0 {
+		log.Infof("Refreshed metadata for manga '%s' (added: %d, deleted: %d)", mangaSlug, added, deleted)
 	}
 
 	// Return success response for HTMX
-	redirectURL := fmt.Sprintf("/mangas/%s", newSlug)
+	redirectURL := fmt.Sprintf("/mangas/%s", mangaSlug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)
+}
+
+// downloadAndCacheCoverArt is a helper function to download and cache cover art for a manga
+func downloadAndCacheCoverArt(mangaDetail *models.MangaDetail, slug, mangaPath string) (string, error) {
+	if mangaDetail == nil {
+		return "", nil
+	}
+
+	coverArtURL := indexer.GetCoverArtURL(mangaDetail)
+	if coverArtURL == "" {
+		return indexer.HandleLocalImages(slug, mangaPath)
+	}
+	return indexer.DownloadAndCacheImage(slug, coverArtURL)
+}
+
+// HandlePosterChapterSelect renders a list of chapters to select from
+func HandlePosterChapterSelect(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	
+	manga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil || manga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Get all chapters
+	chapters, err := models.GetChapters(mangaSlug)
+	if err != nil || len(chapters) == 0 {
+		return HandleView(c, views.EmptyState("No chapters found."))
+	}
+
+	return HandleView(c, views.PosterChapterSelector(mangaSlug, chapters))
+}
+
+// HandlePosterSelector renders the poster selector interface with available images from selected chapter
+func HandlePosterSelector(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Query("chapter", "")
+	
+	manga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil || manga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Get chapter file path
+	var chapterPath string
+	if chapterSlug != "" {
+		// Look up chapter by slug to get the actual file
+		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		if err != nil || chapter == nil {
+			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter not found")))
+		}
+		if chapter.File == "" {
+			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter file not found")))
+		}
+		chapterPath = filepath.Join(manga.Path, chapter.File)
+	} else {
+		// Fallback to first chapter if not specified
+		var err error
+		chapterPath, err = getFirstChapterFilePath(manga)
+		if err != nil {
+			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
+		}
+	}
+
+	// Get count of images in the chapter file
+	imageCount, err := utils.CountImageFiles(chapterPath)
+	if err != nil {
+		return HandleView(c, views.EmptyState(fmt.Sprintf("Error counting images: %v", err)))
+	}
+	if imageCount == 0 {
+		return HandleView(c, views.EmptyState("No images found in the chapter."))
+	}
+
+	return HandleView(c, views.PosterSelectorInterface(mangaSlug, chapterSlug, imageCount))
+}
+
+// HandlePosterPreview renders a preview of a selected image with crop selector
+func HandlePosterPreview(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.Query("chapter", "")
+	imageIndexStr := c.Query("index", "0")
+	
+	imageIndex := 0
+	if idx, err := strconv.Atoi(imageIndexStr); err == nil {
+		imageIndex = idx
+	}
+
+	manga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil || manga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Get chapter file path
+	var chapterPath string
+	if chapterSlug != "" {
+		// Look up chapter by slug to get the actual file
+		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		if err != nil || chapter == nil {
+			return handleError(c, fmt.Errorf("chapter not found"))
+		}
+		if chapter.File == "" {
+			return handleError(c, fmt.Errorf("chapter file not found"))
+		}
+		chapterPath = filepath.Join(manga.Path, chapter.File)
+	} else {
+		// Fallback to first chapter if not specified
+		var err error
+		chapterPath, err = getFirstChapterFilePath(manga)
+		if err != nil {
+			return handleError(c, fmt.Errorf("error: %v", err))
+		}
+	}
+
+	// Extract and get the image data URI
+	imageDataURI, err := utils.GetImageDataURIByIndex(chapterPath, imageIndex)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to load image: %w", err))
+	}
+
+	return HandleView(c, views.PosterPreviewAndCropper(mangaSlug, chapterSlug, imageIndex, imageDataURI))
+}
+
+// HandlePosterSet sets a custom poster image based on user selection
+func HandlePosterSet(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	chapterSlug := c.FormValue("chapter_slug")
+	cropDataStr := c.FormValue("crop_data")
+	imageIndexStr := c.FormValue("image_index")
+
+	imageIndex := 0
+	if idx, err := strconv.Atoi(imageIndexStr); err == nil {
+		imageIndex = idx
+	}
+
+	manga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil || manga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Get chapter file path
+	var chapterPath string
+	if chapterSlug != "" {
+		// Look up chapter by slug to get the actual file
+		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		if err != nil || chapter == nil {
+			return handleError(c, fmt.Errorf("chapter not found"))
+		}
+		if chapter.File == "" {
+			return handleError(c, fmt.Errorf("chapter file not found"))
+		}
+		chapterPath = filepath.Join(manga.Path, chapter.File)
+	} else {
+		// Fallback to first chapter if not specified
+		var err error
+		chapterPath, err = getFirstChapterFilePath(manga)
+		if err != nil {
+			return handleError(c, fmt.Errorf("error: %v", err))
+		}
+	}
+
+	// Parse crop data
+	var cropData map[string]interface{}
+	if err := json.Unmarshal([]byte(cropDataStr), &cropData); err != nil {
+		cropData = map[string]interface{}{"x": 0, "y": 0, "width": 0, "height": 0}
+	}
+
+	// Extract crop from image and cache it
+	cachedImageURL, err := utils.ExtractAndCacheImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to extract and cache image: %w", err))
+	}
+
+	// Update manga with new cover art URL
+	manga.CoverArtURL = cachedImageURL
+	if err := models.UpdateManga(manga); err != nil {
+		return handleError(c, fmt.Errorf("failed to update manga: %w", err))
+	}
+
+	// Return success message
+	successMsg := fmt.Sprintf("Poster updated successfully!")
+	return HandleView(c, views.SuccessAlert(successMsg))
 }
