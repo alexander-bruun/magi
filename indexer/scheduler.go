@@ -126,10 +126,17 @@ func (idx *Indexer) runIndexingJob() {
 	}
 
 	duration := time.Since(start)
+	seconds := duration.Seconds()
 	scanMutex.Lock()
 	totalScanned := scannedPathCount
 	scanMutex.Unlock()
-	log.Infof("Indexing for library '%s' completed in %s (scanned %d manga paths)", idx.Library.Name, duration, totalScanned)
+	
+	log.Infof(
+		"Indexing for library '%s' completed in %.1fs (scanned %d manga paths)",
+		idx.Library.Name,
+		seconds,
+		totalScanned,
+	)
 
 	go func(library models.Library) {
 		mangas, err := models.GetMangasByLibrarySlug(library.Slug)
