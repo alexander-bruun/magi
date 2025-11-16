@@ -6,11 +6,11 @@ import (
 
 // ReadingState represents a record that a user has read a chapter of a manga
 type ReadingState struct {
-    ID        int64     `json:"id"`
-    UserName  string    `json:"user_name"`
-    MangaSlug string    `json:"manga_slug"`
-    Chapter   string    `json:"chapter_slug"`
-    CreatedAt time.Time `json:"created_at"`
+    ID         int64     `json:"id"`
+    UserName   string    `json:"user_name"`
+    MangaSlug  string    `json:"manga_slug"`
+    Chapter    string    `json:"chapter_slug"`
+    CreatedAt  time.Time `json:"created_at"`
 }
 
 // MarkChapterRead inserts a reading state if not exists
@@ -64,6 +64,50 @@ func GetReadChaptersForUser(userName, mangaSlug string) (map[string]bool, error)
     }
 
     return m, nil
+}
+
+// GetLastReadChapter returns the most recently read chapter slug for a user on a specific manga
+func GetLastReadChapter(userName, mangaSlug string) (string, error) {
+    query := `
+    SELECT chapter_slug
+    FROM reading_states
+    WHERE user_name = ? AND manga_slug = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+    `
+
+    var chapterSlug string
+    err := db.QueryRow(query, userName, mangaSlug).Scan(&chapterSlug)
+    if err != nil {
+        // Return empty string if no record found
+        if err.Error() == "sql: no rows in result set" {
+            return "", nil
+        }
+        return "", err
+    }
+
+    return chapterSlug, nil
+}
+
+// GetChapterProgress returns the image index where the user left off in a chapter
+func GetChapterProgress(userName, mangaSlug, chapterSlug string) (int, error) {
+    query := `
+    SELECT image_index
+    FROM reading_states
+    WHERE user_name = ? AND manga_slug = ? AND chapter_slug = ?
+    `
+
+    var imageIndex int
+    err := db.QueryRow(query, userName, mangaSlug, chapterSlug).Scan(&imageIndex)
+    if err != nil {
+        // Return 0 if no record found
+        if err.Error() == "sql: no rows in result set" {
+            return 0, nil
+        }
+        return 0, err
+    }
+
+    return imageIndex, nil
 }
 
 // DeleteReadingStatesByUser optionally used for cleanup

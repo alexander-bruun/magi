@@ -109,6 +109,12 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Post("/:manga/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
 	mangas.Post("/:manga/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataManga)
 	
+	// Poster selector (moderator+)
+	mangas.Get("/:manga/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
+	mangas.Get("/:manga/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
+	mangas.Get("/:manga/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
+	mangas.Post("/:manga/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
+	
 	// Chapter routes
 	chapters := mangas.Group("/:manga/chapters")
 	chapters.Get("/:chapter", HandleChapter)
