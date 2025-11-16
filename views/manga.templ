@@ -489,7 +489,7 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 				<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
 				<button 
 					type="button" 
-					class="uk-btn uk-btn-primary px-6"
+					class="uk-btn uk-btn-destructive px-6"
 					hx-post={ fmt.Sprintf("/mangas/%s/metadata/refresh", manga.Slug) }
 					hx-target="#content"
 					uk-close
