@@ -25,7 +25,8 @@ func RegisterHandler(c *fiber.Ctx) error {
 
 // LoginHandler renders the login page.
 func LoginHandler(c *fiber.Ctx) error {
-	return HandleView(c, views.Login())
+	target := c.Query("target", "")
+	return HandleView(c, views.Login(target))
 }
 
 // CreateUserHandler processes a registration submission and redirects to login on success.
@@ -74,7 +75,13 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	}
 
 	setAuthCookies(c, accessToken, refreshToken)
-	c.Set("HX-Redirect", "/")
+	
+	// Redirect to target page if provided, otherwise home
+	target := c.FormValue("target")
+	if target == "" {
+		target = "/"
+	}
+	c.Set("HX-Redirect", target)
 	return c.SendStatus(fiber.StatusOK)
 }
 
