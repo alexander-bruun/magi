@@ -560,7 +560,8 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	// Fetch fresh metadata from MangaDex
 	mangaDetail, err := models.GetBestMatchMangadexManga(existingManga.Name)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to fetch metadata from MangaDex: %w", err))
+		// Log the warning but don't fail - fall back to local metadata
+		log.Warnf("Failed to fetch metadata from MangaDex for '%s': %v. Falling back to local metadata.", existingManga.Name, err)
 	}
 
 	if mangaDetail != nil {
@@ -580,11 +581,30 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		if err := models.PersistMangadexTags(existingManga.Slug, mangaDetail); err != nil {
 			log.Warnf("Failed to persist tags for manga '%s': %v", mangaSlug, err)
 		}
-	}
 
-	// Update manga metadata without changing created_at
-	if err := models.UpdateMangaMetadata(existingManga); err != nil {
-		return handleError(c, fmt.Errorf("failed to update manga metadata: %w", err))
+		// Update manga metadata without changing created_at
+		if err := models.UpdateMangaMetadata(existingManga); err != nil {
+			return handleError(c, fmt.Errorf("failed to update manga metadata: %w", err))
+		}
+	} else {
+		// No MangaDex match - delete and re-index with local metadata
+		log.Infof("No MangaDex match found for '%s'. Re-indexing with local metadata.", existingManga.Name)
+		
+		// Delete the manga (chapters and tags will be cascade deleted)
+		if err := models.DeleteManga(existingManga.Slug); err != nil {
+			log.Warnf("Failed to delete manga '%s' for re-indexing: %v", mangaSlug, err)
+			return handleError(c, err)
+		}
+		
+		// Re-index using the standard indexer to get local metadata
+		if _, err := indexer.IndexManga(existingManga.Path, existingManga.LibrarySlug); err != nil {
+			log.Warnf("Failed to re-index manga '%s' with local metadata: %v", mangaSlug, err)
+			return handleError(c, err)
+		}
+		
+		redirectURL := fmt.Sprintf("/mangas/%s", mangaSlug)
+		c.Set("HX-Redirect", redirectURL)
+		return c.SendStatus(fiber.StatusOK)
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the manga)
@@ -595,6 +615,8 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 
 	if added > 0 || deleted > 0 {
 		log.Infof("Refreshed metadata for manga '%s' (added: %d, deleted: %d)", mangaSlug, added, deleted)
+	} else {
+		log.Infof("Metadata refresh complete for manga '%s' (no chapter changes)", mangaSlug)
 	}
 
 	// Return success response for HTMX
