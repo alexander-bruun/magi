@@ -125,9 +125,9 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 	<div class="relative flex justify-center items-center group">
 		if manga.CoverArtURL == "" {
-			<img src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
+			<img loading="lazy" src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
 		} else {
-			<img src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+			<img loading="lazy" src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
 		}
 		
 		<!-- Poster Edit Button - Only visible for moderators/admins on hover -->
@@ -903,6 +903,7 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 		>
 			<img 
 				id="poster-crop-image"
+				loading="lazy"
 				src={ imageDataURI } 
 				alt="Poster preview"
 				style="display: block; width: 100%; height: auto;"
@@ -921,17 +922,16 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 				Back to Image List
 			</button>
 		<button 
-			type="button"
-			class="uk-btn uk-btn-primary"
-			hx-post={ fmt.Sprintf("/mangas/%s/poster/set", mangaSlug) }
-			hx-include="[data-crop-data], [name='image_index'], [name='chapter_slug']"
-			hx-target="#poster-selector-content"
-			hx-swap="outerHTML"
-		>
-			Save Poster
-		</button>
+				type="button"
+				class="uk-btn uk-btn-primary"
+				hx-post={ fmt.Sprintf("/mangas/%s/poster/set", mangaSlug) }
+				hx-include="[data-crop-data], [name='image_index'], [name='chapter_slug']"
+				hx-target="#poster-selector-content"
+				hx-swap="outerHTML"
+			>
+				Save Poster
+			</button>
 		</div>
-
 		<input type="hidden" name="image_index" value={ fmt.Sprint(imageIndex) } />
 		<input type="hidden" name="chapter_slug" value={ chapterSlug } />
 		<input type="hidden" name="crop_data" data-crop-data value="{}" />
@@ -953,9 +953,7 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
       // Cropper not loaded yet, retry
       setTimeout(initCropper, 100);
       return;
-    }
-    
-    // Initialize Cropper.js with 2:3 aspect ratio for poster
+    }    // Initialize Cropper.js with 2:3 aspect ratio for poster
     const cropper = new Cropper(img, {
       aspectRatio: 2 / 3,
       viewMode: 1,
