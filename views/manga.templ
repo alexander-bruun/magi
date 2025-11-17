@@ -884,41 +884,29 @@ templ PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount i
 	</div>
 }
 
-// PosterPreviewAndCropper shows a preview of the selected image with crop selection
+// PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js
 templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex int, imageDataURI string) {
+	<!-- Cropper.js CSS and JS - only loaded on this page -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.css"/>
+	<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.js"></script>
+	
 	<div class="poster-preview-cropper" style="display: flex; flex-direction: column; height: 100%;">
 		<div class="uk-margin-bottom">
 			<p><strong>Selected Image #{ fmt.Sprint(imageIndex + 1) }</strong></p>
-			<p class="uk-text-small uk-text-muted">Drag the crop box to select the area to use as the poster</p>
+			<p class="uk-text-small uk-text-muted">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p>
 		</div>
 		
-		<!-- Scrollable image container -->
+		<!-- Image container for Cropper.js -->
 		<div 
 			id="image-container"
-			style="max-height: 800px; overflow: auto; border: 1px solid #ddd; background: #f5f5f5; flex: 1;"
+			style="max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;"
 		>
-			<div id="image-wrapper" style="position: relative; display: inline-block; width: fit-content; margin: 0;">
-				<img 
-					id="poster-crop-image"
-					src={ imageDataURI } 
-					alt="Poster preview"
-					style="display: block; width: auto; height: auto; max-width: 100%;"
-				/>
-				<!-- Crop selection overlay -->
-				<div 
-					id="crop-selector"
-					style="position: absolute; border: 3px solid #FF6B6B; background: rgba(255, 107, 107, 0.15); cursor: move; touch-action: none; user-select: none; width: 200px; height: 300px; top: 10px; left: 10px; box-sizing: border-box; z-index: 100;"
-				>
-					<!-- Top-left resize handle -->
-					<div style="position: absolute; top: -8px; left: -8px; width: 16px; height: 16px; background: #FF6B6B; cursor: nwse-resize; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);" class="resize-handle" data-corner="top-left"></div>
-					<!-- Top-right resize handle -->
-					<div style="position: absolute; top: -8px; right: -8px; width: 16px; height: 16px; background: #FF6B6B; cursor: nesw-resize; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);" class="resize-handle" data-corner="top-right"></div>
-					<!-- Bottom-left resize handle -->
-					<div style="position: absolute; bottom: -8px; left: -8px; width: 16px; height: 16px; background: #FF6B6B; cursor: nesw-resize; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);" class="resize-handle" data-corner="bottom-left"></div>
-					<!-- Bottom-right resize handle -->
-					<div style="position: absolute; bottom: -8px; right: -8px; width: 16px; height: 16px; background: #FF6B6B; cursor: nwse-resize; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);" class="resize-handle" data-corner="bottom-right"></div>
-				</div>
-			</div>
+			<img 
+				id="poster-crop-image"
+				src={ imageDataURI } 
+				alt="Poster preview"
+				style="display: block; width: 100%; height: auto;"
+			/>
 		</div>
 
 		<!-- Buttons always visible at bottom -->
@@ -946,225 +934,93 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 
 		<input type="hidden" name="image_index" value={ fmt.Sprint(imageIndex) } />
 		<input type="hidden" name="chapter_slug" value={ chapterSlug } />
-		<input type="hidden" name="crop_data" data-crop-data value="{}" />		<script>
+		<input type="hidden" name="crop_data" data-crop-data value="{}" />
+		<script>
 (function() {
-  console.log('=== CROP SELECTOR INIT ===');
+  'use strict';
   
   const img = document.getElementById('poster-crop-image');
-  const selector = document.getElementById('crop-selector');
-  const wrapper = document.getElementById('image-wrapper');
-  const container = document.getElementById('image-container');
   const cropDataInput = document.querySelector('input[data-crop-data]');
   
-  console.log('Elements found:', {
-    img: !!img,
-    selector: !!selector,
-    wrapper: !!wrapper,
-    container: !!container,
-    cropDataInput: !!cropDataInput
-  });
-  
-  if (!img || !selector || !wrapper || !container || !cropDataInput) {
-    console.error('Missing required elements!');
+  if (!img || !cropDataInput) {
+    console.error('Missing required elements for Cropper.js');
     return;
   }
   
-  const posterAspectRatio = 2 / 3;
-  const minWidth = 80;
-  
-  let isDragging = false;
-  let isResizing = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragStartTop = 0;
-  let dragStartLeft = 0;
-  let resizeCorner = null;
-  
-  function getImageScale() {
-    const displayWidth = img.offsetWidth;
-    const displayHeight = img.offsetHeight;
-    const actualWidth = img.naturalWidth;
-    const actualHeight = img.naturalHeight;
-    return {
-      scaleX: actualWidth / displayWidth,
-      scaleY: actualHeight / displayHeight
-    };
-  }
-  
-  function updateCropData() {
-    const scale = getImageScale();
-    const selectorTop = selector.offsetTop;
-    const selectorLeft = selector.offsetLeft;
-    const selectorWidth = selector.offsetWidth;
-    const selectorHeight = selector.offsetHeight;
-    
-    const cropData = {
-      x: Math.round(selectorLeft * scale.scaleX),
-      y: Math.round(selectorTop * scale.scaleY),
-      width: Math.round(selectorWidth * scale.scaleX),
-      height: Math.round(selectorHeight * scale.scaleY)
-    };
-    
-    cropDataInput.value = JSON.stringify(cropData);
-  }
-  
-  // Log element dimensions
-  console.log('Initial dimensions:', {
-    wrapper: { w: wrapper.offsetWidth, h: wrapper.offsetHeight },
-    img: { w: img.offsetWidth, h: img.offsetHeight, natural: { w: img.naturalWidth, h: img.naturalHeight } },
-    selector: { w: selector.offsetWidth, h: selector.offsetHeight, top: selector.offsetTop, left: selector.offsetLeft }
-  });
-  
-  // Selector drag handler
-  selector.addEventListener('mousedown', (e) => {
-    console.log('Selector mousedown:', e.target, e.target.classList);
-    
-    if (e.target.classList.contains('resize-handle')) {
-      console.log('Ignored: target is resize handle');
+  // Wait for Cropper.js to be loaded
+  function initCropper() {
+    if (typeof Cropper === 'undefined') {
+      // Cropper not loaded yet, retry
+      setTimeout(initCropper, 100);
       return;
     }
     
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    dragStartTop = selector.offsetTop;
-    dragStartLeft = selector.offsetLeft;
-    
-    console.log('Starting DRAG:', { dragStartX, dragStartY, dragStartTop, dragStartLeft });
-    e.preventDefault();
-    e.stopPropagation();
-  });
-  
-  // Global mousemove handler
-  document.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      const deltaX = e.clientX - dragStartX;
-      const deltaY = e.clientY - dragStartY;
-      
-      let newTop = dragStartTop + deltaY;
-      let newLeft = dragStartLeft + deltaX;
-      
-      const maxTop = wrapper.offsetHeight - selector.offsetHeight;
-      const maxLeft = wrapper.offsetWidth - selector.offsetWidth;
-      
-      newTop = Math.max(0, Math.min(newTop, maxTop));
-      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-      
-      selector.style.top = newTop + 'px';
-      selector.style.left = newLeft + 'px';
-      updateCropData();
-    }
-    
-    if (isResizing && resizeCorner) {
-      const deltaX = (e.clientX - dragStartX) * 0.3;  // Reduce sensitivity to 30%
-      const deltaY = (e.clientY - dragStartY) * 0.3;
-      
-      let newTop = dragStartTop;
-      let newLeft = dragStartLeft;
-      let newWidth = selector.offsetWidth;
-      let newHeight = selector.offsetHeight;
-      
-      if (resizeCorner === 'top-left') {
-        newTop += deltaY;
-        newLeft += deltaX;
-        newWidth -= deltaX;
-        newHeight -= deltaY;
-      } else if (resizeCorner === 'top-right') {
-        newTop += deltaY;
-        newWidth += deltaX;
-        newHeight -= deltaY;
-      } else if (resizeCorner === 'bottom-left') {
-        newLeft += deltaX;
-        newWidth -= deltaX;
-        newHeight += deltaY;
-      } else if (resizeCorner === 'bottom-right') {
-        newWidth += deltaX;
-        newHeight += deltaY;
+    // Initialize Cropper.js with 2:3 aspect ratio for poster
+    const cropper = new Cropper(img, {
+      aspectRatio: 2 / 3,
+      viewMode: 1,
+      autoCropArea: 2,
+      responsive: true,
+      restore: true,
+      guides: true,
+      center: true,
+      highlight: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: true,
+      zoom: function(e) {
+        // Limit zoom range
+        if (e.detail.ratio > 4) {
+          e.preventDefault();
+        }
+      },
+      ready: function() {
+        // Calculate zoom to fit image width to container width
+        const container = document.getElementById('image-container');
+        const containerWidth = container.clientWidth;
+        const imageWidth = cropper.getImageData().naturalWidth;
+        
+        // Zoom to fit width exactly
+        const fitZoom = containerWidth / imageWidth;
+        cropper.zoomTo(fitZoom);
+        
+        // Position at top-left (0, 0)
+        cropper.setCanvasData({
+          left: 0,
+          top: 0
+        });
+      },
+      crop: function(e) {
+        // Update crop data whenever the crop area changes
+        const data = cropper.getData(true);
+        
+        // Convert from image coordinates to actual image pixel coordinates
+        const cropData = {
+          x: Math.round(data.x),
+          y: Math.round(data.y),
+          width: Math.round(data.width),
+          height: Math.round(data.height)
+        };
+        
+        cropDataInput.value = JSON.stringify(cropData);
       }
-      
-      // Maintain aspect ratio
-      newHeight = Math.round(newWidth / posterAspectRatio);
-      
-      // Enforce minimum size
-      if (newWidth < minWidth) {
-        newWidth = minWidth;
-        newHeight = Math.round(newWidth / posterAspectRatio);
-      }
-      
-      // Enforce maximum size (don't exceed wrapper)
-      const maxWidth = wrapper.offsetWidth;
-      const maxHeight = wrapper.offsetHeight;
-      if (newWidth > maxWidth) {
-        newWidth = maxWidth;
-        newHeight = Math.round(newWidth / posterAspectRatio);
-      }
-      if (newHeight > maxHeight) {
-        newHeight = maxHeight;
-        newWidth = Math.round(newHeight * posterAspectRatio);
-      }
-      
-      // Constrain position within wrapper
-      const maxTop = wrapper.offsetHeight - newHeight;
-      const maxLeft = wrapper.offsetWidth - newWidth;
-      
-      newTop = Math.max(0, Math.min(newTop, maxTop));
-      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-      
-      console.log('RESIZING (' + resizeCorner + '):', { deltaX, deltaY, newWidth, newHeight, newTop, newLeft });
-      
-      selector.style.top = newTop + 'px';
-      selector.style.left = newLeft + 'px';
-      selector.style.width = newWidth + 'px';
-      selector.style.height = newHeight + 'px';
-      
-      updateCropData();
-    }
-  });
-  
-  // Global mouseup handler
-  document.addEventListener('mouseup', (e) => {
-    if (isDragging) {
-      console.log('Drag ended');
-      isDragging = false;
-    }
-    if (isResizing) {
-      console.log('Resize ended');
-      isResizing = false;
-      resizeCorner = null;
-    }
-  });
-  
-  // Resize handles
-  document.querySelectorAll('.resize-handle').forEach(handle => {
-    console.log('Adding resize handle listener:', handle.dataset.corner);
-    
-    handle.addEventListener('mousedown', (e) => {
-      console.log('Resize handle mousedown:', handle.dataset.corner);
-      
-      isResizing = true;
-      resizeCorner = handle.dataset.corner;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      dragStartTop = selectorRelativeTop;
-      dragStartLeft = selectorRelativeLeft;
-      
-      console.log('Starting RESIZE:', { corner: resizeCorner, dragStartX, dragStartY });
-      
-      e.preventDefault();
-      e.stopPropagation();
     });
-  });
+    
+    // Initialize crop data when image loads
+    img.addEventListener('load', function() {
+      const data = cropper.getData(true);
+      const cropData = {
+        x: Math.round(data.x),
+        y: Math.round(data.y),
+        width: Math.round(data.width),
+        height: Math.round(data.height)
+      };
+      cropDataInput.value = JSON.stringify(cropData);
+    });
+  }
   
-  // Update selector position on image load and window resize
-  img.addEventListener('load', updateSelectorPosition);
-  window.addEventListener('resize', updateSelectorPosition);
-  
-  // Update on scroll to follow image
-  container.addEventListener('scroll', updateSelectorPosition);
-  
-  console.log('=== INIT COMPLETE ===');
-  updateSelectorPosition();
-  updateCropData();
+  // Start initialization
+  initCropper();
 })();
 		</script>
 	</div>
