@@ -398,14 +398,14 @@ func Info(manga models.Manga, userRole string, lastReadChapterSlug string) templ
 			return templ_7745c5c3_Err
 		}
 		if manga.CoverArtURL == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<img src=\"https://placehold.co/300x500?text=N/A\" width=\"300\" height=\"500\" alt=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<img loading=\"lazy\" src=\"https://placehold.co/300x500?text=N/A\" width=\"300\" height=\"500\" alt=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 128, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 128, Col: 108}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -416,14 +416,14 @@ func Info(manga models.Manga, userRole string, lastReadChapterSlug string) templ
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<img src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<img loading=\"lazy\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(manga.CoverArtURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 130, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 130, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -436,7 +436,7 @@ func Info(manga models.Manga, userRole string, lastReadChapterSlug string) templ
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 130, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 130, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -1984,14 +1984,14 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "</strong></p><p class=\"uk-text-small uk-text-muted\">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p></div><!-- Image container for Cropper.js --><div id=\"image-container\" style=\"max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;\"><img id=\"poster-crop-image\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "</strong></p><p class=\"uk-text-small uk-text-muted\">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p></div><!-- Image container for Cropper.js --><div id=\"image-container\" style=\"max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;\"><img id=\"poster-crop-image\" loading=\"lazy\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var91 string
 		templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(imageDataURI)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 906, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 907, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 		if templ_7745c5c3_Err != nil {
@@ -2004,7 +2004,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/poster/selector?chapter=%s", mangaSlug, chapterSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 917, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 918, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 		if templ_7745c5c3_Err != nil {
@@ -2017,7 +2017,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var93 string
 		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s/poster/set", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 926, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 927, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 		if templ_7745c5c3_Err != nil {
@@ -2049,7 +2049,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "\"> <input type=\"hidden\" name=\"crop_data\" data-crop-data value=\"{}\"><script>\n(function() {\n  'use strict';\n  \n  const img = document.getElementById('poster-crop-image');\n  const cropDataInput = document.querySelector('input[data-crop-data]');\n  \n  if (!img || !cropDataInput) {\n    console.error('Missing required elements for Cropper.js');\n    return;\n  }\n  \n  // Wait for Cropper.js to be loaded\n  function initCropper() {\n    if (typeof Cropper === 'undefined') {\n      // Cropper not loaded yet, retry\n      setTimeout(initCropper, 100);\n      return;\n    }\n    \n    // Initialize Cropper.js with 2:3 aspect ratio for poster\n    const cropper = new Cropper(img, {\n      aspectRatio: 2 / 3,\n      viewMode: 1,\n      autoCropArea: 2,\n      responsive: true,\n      restore: true,\n      guides: true,\n      center: true,\n      highlight: true,\n      cropBoxMovable: true,\n      cropBoxResizable: true,\n      toggleDragModeOnDblclick: true,\n      zoom: function(e) {\n        // Limit zoom range\n        if (e.detail.ratio > 4) {\n          e.preventDefault();\n        }\n      },\n      ready: function() {\n        // Calculate zoom to fit image width to container width\n        const container = document.getElementById('image-container');\n        const containerWidth = container.clientWidth;\n        const imageWidth = cropper.getImageData().naturalWidth;\n        \n        // Zoom to fit width exactly\n        const fitZoom = containerWidth / imageWidth;\n        cropper.zoomTo(fitZoom);\n        \n        // Position at top-left (0, 0)\n        cropper.setCanvasData({\n          left: 0,\n          top: 0\n        });\n      },\n      crop: function(e) {\n        // Update crop data whenever the crop area changes\n        const data = cropper.getData(true);\n        \n        // Convert from image coordinates to actual image pixel coordinates\n        const cropData = {\n          x: Math.round(data.x),\n          y: Math.round(data.y),\n          width: Math.round(data.width),\n          height: Math.round(data.height)\n        };\n        \n        cropDataInput.value = JSON.stringify(cropData);\n      }\n    });\n    \n    // Initialize crop data when image loads\n    img.addEventListener('load', function() {\n      const data = cropper.getData(true);\n      const cropData = {\n        x: Math.round(data.x),\n        y: Math.round(data.y),\n        width: Math.round(data.width),\n        height: Math.round(data.height)\n      };\n      cropDataInput.value = JSON.stringify(cropData);\n    });\n  }\n  \n  // Start initialization\n  initCropper();\n})();\n\t\t</script></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "\"> <input type=\"hidden\" name=\"crop_data\" data-crop-data value=\"{}\"><script>\n(function() {\n  'use strict';\n  \n  const img = document.getElementById('poster-crop-image');\n  const cropDataInput = document.querySelector('input[data-crop-data]');\n  \n  if (!img || !cropDataInput) {\n    console.error('Missing required elements for Cropper.js');\n    return;\n  }\n  \n  // Wait for Cropper.js to be loaded\n  function initCropper() {\n    if (typeof Cropper === 'undefined') {\n      // Cropper not loaded yet, retry\n      setTimeout(initCropper, 100);\n      return;\n    }    // Initialize Cropper.js with 2:3 aspect ratio for poster\n    const cropper = new Cropper(img, {\n      aspectRatio: 2 / 3,\n      viewMode: 1,\n      autoCropArea: 2,\n      responsive: true,\n      restore: true,\n      guides: true,\n      center: true,\n      highlight: true,\n      cropBoxMovable: true,\n      cropBoxResizable: true,\n      toggleDragModeOnDblclick: true,\n      zoom: function(e) {\n        // Limit zoom range\n        if (e.detail.ratio > 4) {\n          e.preventDefault();\n        }\n      },\n      ready: function() {\n        // Calculate zoom to fit image width to container width\n        const container = document.getElementById('image-container');\n        const containerWidth = container.clientWidth;\n        const imageWidth = cropper.getImageData().naturalWidth;\n        \n        // Zoom to fit width exactly\n        const fitZoom = containerWidth / imageWidth;\n        cropper.zoomTo(fitZoom);\n        \n        // Position at top-left (0, 0)\n        cropper.setCanvasData({\n          left: 0,\n          top: 0\n        });\n      },\n      crop: function(e) {\n        // Update crop data whenever the crop area changes\n        const data = cropper.getData(true);\n        \n        // Convert from image coordinates to actual image pixel coordinates\n        const cropData = {\n          x: Math.round(data.x),\n          y: Math.round(data.y),\n          width: Math.round(data.width),\n          height: Math.round(data.height)\n        };\n        \n        cropDataInput.value = JSON.stringify(cropData);\n      }\n    });\n    \n    // Initialize crop data when image loads\n    img.addEventListener('load', function() {\n      const data = cropper.getData(true);\n      const cropData = {\n        x: Math.round(data.x),\n        y: Math.round(data.y),\n        width: Math.round(data.width),\n        height: Math.round(data.height)\n      };\n      cropDataInput.value = JSON.stringify(cropData);\n    });\n  }\n  \n  // Start initialization\n  initCropper();\n})();\n\t\t</script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
