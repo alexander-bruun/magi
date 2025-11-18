@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +14,13 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/executor"
+)
+
+// Callback functions for job status notifications (set by handlers package)
+var (
+	NotifyIndexerStarted  func(librarySlug string, libraryName string)
+	NotifyIndexerProgress func(librarySlug string, currentManga string, progress string)
+	NotifyIndexerFinished func(librarySlug string)
 )
 
 var (
@@ -110,9 +118,20 @@ func (idx *Indexer) runIndexingJob() {
 		scanMutex.Lock()
 		scannedPathCount = 0
 		scanMutex.Unlock()
+
+		// Notify that indexer has finished
+		if NotifyIndexerFinished != nil {
+			NotifyIndexerFinished(idx.Library.Slug)
+		}
 	}()
 
 	idx.JobRunning = true
+
+	// Notify that indexer has started
+	if NotifyIndexerStarted != nil {
+		NotifyIndexerStarted(idx.Library.Slug, idx.Library.Name)
+	}
+
 	log.Infof("Starting scheduled indexing for library '%s'", idx.Library.Name)
 	start := time.Now()
 
@@ -238,6 +257,11 @@ func (idx *Indexer) processFolder(folder string) error {
 			
 			log.Debugf("Scanning manga path [%d]: %s", currentCount, path)
 			
+			// Notify progress
+			if NotifyIndexerProgress != nil {
+				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
+			}
+			
 			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
 				log.Errorf("Error indexing manga at '%s': %s", path, err)
 			}
@@ -252,6 +276,11 @@ func (idx *Indexer) processFolder(folder string) error {
 				scanMutex.Unlock()
 				
 				log.Debugf("Scanning manga file [%d]: %s", currentCount, path)
+				
+				// Notify progress
+				if NotifyIndexerProgress != nil {
+					NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
+				}
 				
 				if _, err := IndexManga(path, idx.Library.Slug); err != nil {
 					log.Errorf("Error indexing manga at '%s': %s", path, err)
