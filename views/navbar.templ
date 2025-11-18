@@ -92,11 +92,12 @@ templ Navbar(userRole string, currentPath string) {
 								<li><a href="/account/favorites" hx-get="/account/favorites" hx-target="#content" hx-push-url="true"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
 								<li><a href="/account/reading" hx-get="/account/reading" hx-target="#content" hx-push-url="true"><uk-icon icon="Bookmark" class="icon-pad"></uk-icon>Reading lists</a></li>
 							}
-							if userRole == "moderator" || userRole == "admin" {
-								<li class="uk-nav-header">Moderator</li>
-								<li><a href="/admin/users" hx-get="/admin/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
-								<li><a href="/admin/duplicates" hx-get="/admin/duplicates" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
-							}
+						if userRole == "moderator" || userRole == "admin" {
+							<li class="uk-nav-header">Moderator</li>
+							<li><a href="/admin/users" hx-get="/admin/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
+							<li><a href="/admin/duplicates" hx-get="/admin/duplicates" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
+							<li><a href="/admin/scraper" hx-get="/admin/scraper" hx-target="#content" hx-push-url="true"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
+						}
 							if userRole == "admin" {
 								<li class="uk-nav-header">Admin</li>
 								<li><a href="/admin/libraries" hx-get="/admin/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>

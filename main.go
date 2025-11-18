@@ -15,6 +15,7 @@ import (
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -88,6 +89,9 @@ func main() {
 	log.Debugf("Using '%s/magi.db' as the database location", dataDirectory)
 	log.Debugf("Using '%s' as the image caching location", joinedCacheDataDirectory)
 
+	// Initialize console log streaming for admin panel
+	utils.InitializeConsoleLogger()
+
 	// Initialize database connection
 	err := models.Initialize(dataDirectory)
 	if err != nil {
@@ -98,6 +102,11 @@ func main() {
 			log.Errorf("Failed to close database: %v", err)
 		}
 	}()
+
+	// Abort any orphaned "running" logs from previous application run
+	if err := models.AbortOrphanedRunningLogs(); err != nil {
+		log.Warnf("Failed to abort orphaned running logs: %v", err)
+	}
 
 	// Retrieve or generate JWT key
 	_, err = models.GetKey()

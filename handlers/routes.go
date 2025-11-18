@@ -161,6 +161,28 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	libraries.Get("/helpers/cancel-edit", HandleCancelEdit)
 
 	// ========================================
+	// Scraper Routes (moderator+)
+	// ========================================
+
+	scraper := app.Group("/admin/scraper", AuthMiddleware("moderator"))
+	scraper.Get("", HandleScraper)
+	scraper.Get("/new", HandleScraperNewForm)
+	scraper.Post("", HandleScraperScriptCreate)
+	scraper.Get("/:id", HandleScraperScriptDetail)
+	scraper.Get("/:id/logs/view", HandleScraperLogs)
+	scraper.Put("/:id", HandleScraperScriptUpdate)
+	scraper.Delete("/:id", HandleScraperScriptDelete)
+	scraper.Post("/:id/run", HandleScraperScriptRun)
+	scraper.Post("/:id/toggle", HandleScraperScriptToggle)
+	scraper.Post("/:id/cancel", HandleScraperScriptCancel)
+	scraper.Get("/:id/logs", HandleScraperLogsWebSocketUpgrade)
+
+	// Scraper Helper Routes
+	scraperHelpers := app.Group("/admin/scraper/helpers", AuthMiddleware("moderator"))
+	scraperHelpers.Get("/add-variable", HandleScraperVariableAdd)
+	scraperHelpers.Get("/remove-variable", HandleScraperVariableRemove)
+
+	// ========================================
 	// Duplicate Detection (admin)
 	// ========================================
 	
@@ -173,6 +195,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	config := app.Group("/admin/config", AuthMiddleware("admin"))
 	config.Get("", HandleConfiguration)
 	config.Post("", HandleConfigurationUpdate)
+	config.Get("/logs", HandleConsoleLogsWebSocketUpgrade)
 
 	// ========================================
 	// Fallback Route

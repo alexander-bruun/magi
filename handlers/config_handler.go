@@ -3,8 +3,10 @@ package handlers
 import (
     "strconv"
     "github.com/alexander-bruun/magi/models"
+    "github.com/alexander-bruun/magi/utils"
     "github.com/alexander-bruun/magi/views"
     "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/websocket/v2"
 )
 
 // HandleConfiguration renders the configuration page.
@@ -39,4 +41,31 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
         return handleError(c, err)
     }
     return HandleView(c, views.Config())
+}
+
+// HandleConsoleLogsWebSocketUpgrade upgrades the connection to WebSocket for console logs
+func HandleConsoleLogsWebSocketUpgrade(c *fiber.Ctx) error {
+    // Check if this is a WebSocket upgrade request
+    if websocket.IsWebSocketUpgrade(c) {
+        // Upgrade to WebSocket with authentication validation
+        return websocket.New(func(conn *websocket.Conn) {
+            // Verify user is authenticated as admin via Locals
+            userName := conn.Locals("user_name")
+            if userName == nil {
+                conn.Close()
+                return
+            }
+
+            // Additional role check - verify admin role
+            user, err := models.FindUserByUsername(userName.(string))
+            if err != nil || user.Role != "admin" {
+                conn.Close()
+                return
+            }
+
+            // Authentication passed, handle WebSocket connection
+            utils.HandleConsoleLogsWebSocket(conn)
+        })(c)
+    }
+    return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
 }

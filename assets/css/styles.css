@@ -86,6 +86,37 @@ html {
   text-decoration: line-through;
 }
 
+/* Success / status utility classes */
+.text-success { color: #16a34a !important; }
+.bg-success { background-color: #16a34a !important; }
+/* 20% variant used in templates like "bg-success/20" */
+.bg-success\/20 { background-color: rgba(22,163,74,0.2) !important; }
+
+/* More specific card/badge overrides to ensure visibility */
+.uk-card .text-success { color: #16a34a !important; }
+.badge.bg-success { background-color: #16a34a !important; color: #fff !important; }
+
+/* Destructive / error styling */
+.text-destructive { color: #dc2626 !important; }
+.bg-destructive { background-color: #dc2626 !important; }
+.bg-destructive\/20 { background-color: rgba(220,38,38,0.12) !important; }
+.uk-card .text-destructive { color: #dc2626 !important; }
+.badge.bg-destructive { background-color: #dc2626 !important; color: #fff !important; }
+
+/* Running / warning (yellow) styling */
+.text-yellow-500 { color: #f59e0b !important; }
+.bg-yellow-500 { background-color: #f59e0b !important; }
+.bg-yellow-500\/20 { background-color: rgba(245,158,11,0.12) !important; }
+.uk-card .text-yellow-500 { color: #f59e0b !important; }
+.badge.bg-yellow-500 { background-color: #f59e0b !important; color: #000 !important; }
+
+/* Aborted / gray styling */
+.text-gray-500 { color: #6b7280 !important; }
+.bg-gray-500 { background-color: #6b7280 !important; }
+.bg-gray-500\/20 { background-color: rgba(107,114,128,0.2) !important; }
+.uk-card .text-gray-500 { color: #6b7280 !important; }
+.badge.bg-gray-500 { background-color: #6b7280 !important; color: #fff !important; }
+
 .role-underline-wavy {
   text-decoration: underline wavy;
 }
