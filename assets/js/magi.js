@@ -682,7 +682,7 @@
         }
 
         const qs = window.location.search || '';
-        fetch('/mangas/tags-fragment' + qs, { credentials: 'same-origin' })
+        fetch('/mangas/tags/fragment' + qs, { credentials: 'same-origin' })
           .then(resp => resp.ok ? resp.text() : Promise.reject())
           .then(html => {
             const tagList = document.getElementById('tag-list');
