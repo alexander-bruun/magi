@@ -132,7 +132,17 @@ func (idx *Indexer) runIndexingJob() {
 		NotifyIndexerStarted(idx.Library.Slug, idx.Library.Name)
 	}
 
-	log.Infof("Starting scheduled indexing for library '%s'", idx.Library.Name)
+	// Get metadata provider name for logging
+	providerName := "unknown"
+	if config, err := models.GetAppConfig(); err == nil {
+		if config.MetadataProvider != "" {
+			providerName = config.MetadataProvider
+		} else {
+			providerName = "mangadex"
+		}
+	}
+
+	log.Infof("Starting scheduled indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName)
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {

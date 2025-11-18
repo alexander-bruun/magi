@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"strings"
+	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 )
@@ -597,30 +598,35 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 	</ul>
 }
 
-templ UpdateMetadata(response models.ListMangaResponse, mangaSlug string) {
+templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 	<ul class="uk-accordion" uk-accordion>
-		for _, mangaDetail := range response.Data {
+		for _, result := range results {
 			<li>
 				<a class="uk-accordion-title" href>
-					{ mangaDetail.Attributes.Title["en"] }
+					{ result.Title }
+					if result.Year > 0 {
+						<span class="text-muted">({ fmt.Sprintf("%d", result.Year) })</span>
+					}
 					<span
 						class="uk-accordion-icon"
 						uk-icon="icon: chevron-down; ratio: 0.8"
 					></span>
 				</a>
 				<div class="uk-accordion-content">
-					<p>
-						{ mangaDetail.Attributes.Description["en"] }
-					</p>
+					if result.Description != "" {
+						<p>
+							{ result.Description }
+						</p>
+					}
 					<button
 						type="button"
 						class="uk-btn uk-btn-default"
 						type="button"
 						uk-toggle="target: #metadata-modal"
-						hx-post={ fmt.Sprintf("/mangas/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, mangaDetail.ID, mangaSlug) }
+						hx-post={ fmt.Sprintf("/mangas/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, result.ID, mangaSlug) }
 						hx-target="#content"
 					>
-						Download new metadata
+						Apply this metadata
 					</button>
 				</div>
 			</li>

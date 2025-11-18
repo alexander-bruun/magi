@@ -6,12 +6,14 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/nfnt/resize"
+	_ "golang.org/x/image/webp" // Register WebP format
 )
 
 const (
@@ -62,15 +64,35 @@ func getFileNameWithExtension(fileName, fileUrl string) string {
 
 // fetchImage downloads and decodes an image from the URL.
 func fetchImage(url string) (image.Image, string, error) {
-	resp, err := http.Get(url)
+	// Create request with proper headers
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create request: %v", err)
+	}
+	
+	// Add user agent to avoid being blocked
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to fetch image: %v", err)
 	}
 	defer resp.Body.Close()
 
-	img, format, err := image.Decode(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("failed to fetch image: HTTP %d", resp.StatusCode)
+	}
+
+	// Read the response body into memory first to allow multiple decode attempts
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to decode image: %v", err)
+		return nil, "", fmt.Errorf("failed to read image data: %v", err)
+	}
+
+	img, format, err := image.Decode(strings.NewReader(string(data)))
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to decode image (format detection failed): %v", err)
 	}
 	return img, format, nil
 }
@@ -90,8 +112,12 @@ func saveImage(filePath string, img image.Image, format string) error {
 		return png.Encode(file, img)
 	case "gif":
 		return gif.Encode(file, img, nil)
+	case "webp":
+		// WebP can be decoded but we'll save as JPEG for compatibility
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
 	default:
-		return fmt.Errorf("unsupported image format: %s", format)
+		// Unknown format - save as JPEG
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
 	}
 }
 
