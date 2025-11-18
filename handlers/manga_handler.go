@@ -67,17 +67,24 @@ func getFirstChapterFilePath(manga *models.Manga) (string, error) {
 func HandleMangas(c *fiber.Ctx) error {
 	params := ParseQueryParams(c)
 
+	// Get accessible libraries for the current user
+	accessibleLibraries, err := GetUserAccessibleLibraries(c)
+	if err != nil {
+		return handleError(c, err)
+	}
+
 	// Search mangas using options (supports tags, tagMode, and types)
 	opts := models.SearchOptions{
-		Filter:      params.SearchFilter,
-		Page:        params.Page,
-		PageSize:    defaultPageSize,
-		SortBy:      params.Sort,
-		SortOrder:   params.Order,
-		LibrarySlug: params.LibrarySlug,
-		Tags:        params.Tags,
-		TagMode:     params.TagMode,
-		Types:       params.Types,
+		Filter:              params.SearchFilter,
+		Page:                params.Page,
+		PageSize:            defaultPageSize,
+		SortBy:              params.Sort,
+		SortOrder:           params.Order,
+		LibrarySlug:         params.LibrarySlug,
+		Tags:                params.Tags,
+		TagMode:             params.TagMode,
+		Types:               params.Types,
+		AccessibleLibraries: accessibleLibraries,
 	}
 	mangas, count, err := models.SearchMangasWithOptions(opts)
 
@@ -116,6 +123,16 @@ func HandleManga(c *fiber.Ctx) error {
 	if manga == nil {
 		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted based on content rating settings"), fiber.StatusNotFound)
 	}
+
+	// Check library access permission
+	hasAccess, err := UserHasLibraryAccess(c, manga.LibrarySlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if !hasAccess {
+		return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this manga"), fiber.StatusForbidden)
+	}
+
 	chapters, err := models.GetChapters(slug)
 	if err != nil {
 		return handleError(c, err)
@@ -322,7 +339,21 @@ func HandleMangaSearch(c *fiber.Ctx) error {
 		return HandleView(c, views.OneDoesNotSimplySearch())
 	}
 
-	mangas, _, err := models.SearchMangas(searchParam, defaultPage, searchPageSize, "name", "desc", "", "")
+	// Get accessible libraries for the current user
+	accessibleLibraries, err := GetUserAccessibleLibraries(c)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	opts := models.SearchOptions{
+		Filter:              searchParam,
+		Page:                defaultPage,
+		PageSize:            searchPageSize,
+		SortBy:              "name",
+		SortOrder:           "desc",
+		AccessibleLibraries: accessibleLibraries,
+	}
+	mangas, _, err := models.SearchMangasWithOptions(opts)
 	if err != nil {
 		return handleError(c, err)
 	}

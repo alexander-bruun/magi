@@ -18,7 +18,6 @@ func HandleConfiguration(c *fiber.Ctx) error {
 func HandleConfigurationUpdate(c *fiber.Ctx) error {
     // Checkbox only present when enabled
     allow := c.FormValue("allow_registration") == "on"
-    requireLogin := c.FormValue("require_login_for_content") == "on"
     contentRatingLimitStr := c.FormValue("content_rating_limit")
     var contentRatingLimit int
     if contentRatingLimitStr != "" {
@@ -37,7 +36,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
             maxUsers = v
         }
     }
-    if _, err := models.UpdateAppConfig(allow, maxUsers, contentRatingLimit, requireLogin); err != nil {
+    if _, err := models.UpdateAppConfig(allow, maxUsers, contentRatingLimit); err != nil {
         return handleError(c, err)
     }
     

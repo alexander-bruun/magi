@@ -120,39 +120,101 @@ func OptionalAuthMiddleware() fiber.Handler {
 	}
 }
 
-// ConditionalAuthMiddleware checks the global configuration to determine
-// if authentication is required for viewing manga content. If RequireLoginForContent
-// is enabled, it enforces authentication; otherwise, it acts like OptionalAuthMiddleware.
+// ConditionalAuthMiddleware attempts to authenticate a user if session cookie is present,
+// and falls back to anonymous role permissions for unauthenticated users.
+// If anonymous users have no permissions, it enforces authentication.
 func ConditionalAuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Get the app configuration
-		cfg, err := models.GetAppConfig()
+		// Try to authenticate if session cookie is present
+		sessionToken := c.Cookies("session_token")
+		if sessionToken != "" {
+			if err := validateSessionToken(c, sessionToken, "reader"); err == nil {
+				return c.Next()
+			}
+		}
+
+		// No authenticated user - check if anonymous users have any permissions
+		// If they do, allow access; otherwise redirect to login
+		libraries, err := models.GetAccessibleLibrariesForAnonymous()
 		if err != nil {
-			// If we can't get config, allow access (fail open)
+			// If we can't get anonymous permissions, fail open
 			return c.Next()
 		}
 
-		// If login is required for content, enforce authentication
-		if cfg.RequireLoginForContent {
-			sessionToken := c.Cookies("session_token")
-
-			if sessionToken != "" {
-				if err := validateSessionToken(c, sessionToken, "reader"); err == nil {
-					return c.Next()
-				}
-			}
-
-			// No valid authentication - redirect to login
+		// If anonymous has no permissions, require authentication
+		if len(libraries) == 0 {
 			originalURL := c.OriginalURL()
 			return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
 		}
 
-		// Login not required, but still try to authenticate if cookie present
-		sessionToken := c.Cookies("session_token")
-		if sessionToken != "" {
-			_ = validateSessionToken(c, sessionToken, "reader")
-		}
-
+		// Anonymous has permissions, allow access
 		return c.Next()
 	}
+}
+
+// GetCurrentUsername retrieves the username from the fiber context
+func GetCurrentUsername(c *fiber.Ctx) string {
+	username, ok := c.Locals("user_name").(string)
+	if !ok {
+		return ""
+	}
+	return username
+}
+
+// GetUserAccessibleLibraries returns the library slugs accessible to the current user
+// Returns libraries based on role permissions for authenticated users or anonymous permissions for unauthenticated users
+func GetUserAccessibleLibraries(c *fiber.Ctx) ([]string, error) {
+	username := GetCurrentUsername(c)
+	
+	// If no user is authenticated, return anonymous role permissions
+	if username == "" {
+		return models.GetAccessibleLibrariesForAnonymous()
+	}
+	
+	// Check user role
+	user, err := models.FindUserByUsername(username)
+	if err != nil || user == nil {
+		return []string{}, err
+	}
+	
+	// Admins and moderators have access to all libraries
+	if user.Role == "admin" || user.Role == "moderator" {
+		libraries, err := models.GetLibraries()
+		if err != nil {
+			return nil, err
+		}
+		
+		slugs := make([]string, len(libraries))
+		for i, lib := range libraries {
+			slugs[i] = lib.Slug
+		}
+		return slugs, nil
+	}
+	
+	// Regular users - get accessible libraries based on permissions
+	return models.GetAccessibleLibrariesForUser(username)
+}
+
+// UserHasLibraryAccess checks if the current user has access to a specific library
+func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
+	username := GetCurrentUsername(c)
+	
+	// If no user is authenticated, check anonymous role permissions
+	if username == "" {
+		return models.AnonymousHasLibraryAccess(librarySlug)
+	}
+	
+	// Check user role
+	user, err := models.FindUserByUsername(username)
+	if err != nil || user == nil {
+		return false, err
+	}
+	
+	// Admins and moderators have access to all libraries
+	if user.Role == "admin" || user.Role == "moderator" {
+		return true, nil
+	}
+	
+	// Regular users - check permissions
+	return models.UserHasLibraryAccess(username, librarySlug)
 }

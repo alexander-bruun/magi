@@ -193,6 +193,39 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	users.Post("/:username/demote", HandleUserDemote)
 
 	// ========================================
+	// Permission Management UI (moderator+)
+	// ========================================
+	
+	app.Get("/admin/permissions", AuthMiddleware("moderator"), HandlePermissionsManagement)
+
+	// ========================================
+	// Permission Management Routes (moderator+)
+	// ========================================
+	
+	permissions := app.Group("/api/permissions", AuthMiddleware("moderator"))
+	permissions.Get("/list", HandleGetPermissions) // HTMX fragment
+	permissions.Get("/:id/form", HandleGetPermissionForm) // Returns form for editing
+	permissions.Post("", HandleCreatePermission)
+	permissions.Put("/:id", HandleUpdatePermission)
+	permissions.Delete("/:id", HandleDeletePermission)
+	
+	// User permission assignment
+	userPerms := app.Group("/api/users", AuthMiddleware("moderator"))
+	userPerms.Get("/permissions", HandleGetUserPermissions) // HTMX fragment with ?username=
+	userPerms.Post("/permissions/assign", HandleAssignPermissionToUser)
+	userPerms.Delete("/:username/permissions/:permissionId", HandleRevokePermissionFromUser)
+	
+	// Role permission assignment
+	rolePerms := app.Group("/api/roles", AuthMiddleware("moderator"))
+	rolePerms.Get("/permissions", HandleGetRolePermissions) // HTMX fragment with ?role=
+	rolePerms.Post("/permissions/assign", HandleAssignPermissionToRole)
+	rolePerms.Delete("/:role/permissions/:permissionId", HandleRevokePermissionFromRole)
+	
+	// Bulk assignment
+	permissions.Get("/:id/bulk-assign", HandleGetBulkAssignForm)
+	permissions.Post("/:id/bulk-assign", HandleBulkAssignPermission)
+
+	// ========================================
 	// Library Management Routes (admin)
 	// ========================================
 	

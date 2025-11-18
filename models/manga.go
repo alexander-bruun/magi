@@ -657,14 +657,15 @@ func GetDownvotedMangasForUser(username string) ([]string, error) {
 
 // UserMangaListOptions defines parameters for user-specific manga list queries (favorites, reading, etc.)
 type UserMangaListOptions struct {
-	Username     string
-	Page         int
-	PageSize     int
-	SortBy       string
-	SortOrder    string
-	Tags         []string
-	TagMode      string // "all" or "any"
-	SearchFilter string
+	Username            string
+	Page                int
+	PageSize            int
+	SortBy              string
+	SortOrder           string
+	Tags                []string
+	TagMode             string // "all" or "any"
+	SearchFilter        string
+	AccessibleLibraries []string // filter by accessible libraries for permission system
 }
 
 // GetUserFavoritesWithOptions fetches, filters, sorts, and paginates a user's favorite mangas
@@ -711,6 +712,22 @@ func processUserMangaList(slugs []string, opts UserMangaListOptions) ([]Manga, i
 		if m, err := GetManga(slug); err == nil && m != nil {
 			allMangas = append(allMangas, *m)
 		}
+	}
+
+	// Filter by accessible libraries (permission system)
+	if len(opts.AccessibleLibraries) > 0 {
+		librarySet := make(map[string]struct{}, len(opts.AccessibleLibraries))
+		for _, lib := range opts.AccessibleLibraries {
+			librarySet[lib] = struct{}{}
+		}
+
+		filtered := make([]Manga, 0, len(allMangas))
+		for _, m := range allMangas {
+			if _, ok := librarySet[m.LibrarySlug]; ok {
+				filtered = append(filtered, m)
+			}
+		}
+		allMangas = filtered
 	}
 
 	// Filter by tags if specified

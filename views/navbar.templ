@@ -114,6 +114,7 @@ templ Navbar(userRole string, currentPath string) {
 						if userRole == "moderator" || userRole == "admin" {
 							<li class="uk-nav-header">Moderator</li>
 							<li><a href="/admin/users" hx-get="/admin/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
+							<li><a href="/admin/permissions" hx-get="/admin/permissions" hx-target="#content" hx-push-url="true"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
 							<li><a href="/admin/duplicates" hx-get="/admin/duplicates" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
 							<li><a href="/admin/scraper" hx-get="/admin/scraper" hx-target="#content" hx-push-url="true"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
 						}
