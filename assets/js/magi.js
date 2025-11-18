@@ -843,22 +843,34 @@
       },
 
       createEditor(ta) {
+        // Prevent double initialization
+        if (ta.dataset.codeEditorInit) return;
+        
+        // Mark as initializing immediately
+        ta.dataset.codeEditorInit = '1';
+        
         const mode = ta.dataset.codeEditor || ta.dataset.codeMode || 'shell';
         const height = ta.dataset.codeEditorHeight || '384px';
-        const editor = window.CodeMirror.fromTextArea(ta, {
-          mode,
-          lineNumbers: true,
-          lineWrapping: true,
-          theme: this.currentTheme()
-        });
-        editor.setSize('100%', height);
-        ta.classList.add('code-editor-hidden');
-        ta.dataset.codeEditorInit = '1';
-        const form = ta.closest('form');
-        if (form) {
-          form.addEventListener('submit', () => editor.save());
+        
+        try {
+          const editor = window.CodeMirror.fromTextArea(ta, {
+            mode,
+            lineNumbers: true,
+            lineWrapping: true,
+            theme: this.currentTheme()
+          });
+          editor.setSize('100%', height);
+          ta.classList.add('code-editor-hidden');
+          const form = ta.closest('form');
+          if (form) {
+            form.addEventListener('submit', () => editor.save());
+          }
+          this.editors.add(editor);
+        } catch (error) {
+          console.error('Failed to create CodeMirror editor:', error);
+          // Reset flag if creation failed
+          delete ta.dataset.codeEditorInit;
         }
-        this.editors.add(editor);
       },
 
       observeTheme() {
