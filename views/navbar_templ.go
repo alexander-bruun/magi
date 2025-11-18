@@ -34,7 +34,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"site-header uk-navbar uk-navbar-container p-3 bg-surface\" role=\"banner\"><div class=\"nav-inner\"><div class=\"uk-navbar-left\"><button id=\"sidebar-toggle\" class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Toggle sidebar\" aria-controls=\"sidebar\" aria-expanded=\"true\" type=\"button\"><uk-icon icon=\"menu\"></uk-icon></button> <a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\" class=\"flex items-center\"><img src=\"/assets/img/icon.png\" alt=\"Logo\" class=\"h-8 w-auto\"><h1 class=\"uk-hero-lg ml-2 font-semibold brand-title\"><span class=\"uk-text-background brand-gradient\">Magi</span></h1></a></div><div class=\"uk-navbar-right\"><div class=\"uk-navbar-item\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" uk-toggle=\"target: #search-modal\" aria-label=\"Search\"><uk-icon icon=\"Search\" ratio=\"0.9\"></uk-icon></button></div><div id=\"search-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog modal-body-transparent\" style=\"max-width: 90%; width: 90%;\"><form hx-get=\"/mangas/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\"><div class=\"mx-auto mt-8 mb-4\" style=\"width: 100%; max-width: 800px;\"><input id=\"searchInput\" class=\"uk-input w-full input-bg\" type=\"text\" name=\"search\" placeholder=\"One-Punch Man etc...\" autocomplete=\"off\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4 input-bg\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"site-header uk-navbar uk-navbar-container p-3 bg-surface\" role=\"banner\"><div class=\"nav-inner\"><div class=\"uk-navbar-left\"><button id=\"sidebar-toggle\" class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Toggle sidebar\" aria-controls=\"sidebar\" aria-expanded=\"true\" type=\"button\"><uk-icon icon=\"menu\"></uk-icon></button> <a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\" class=\"flex items-center\" aria-label=\"Magi home\"><img src=\"/assets/img/icon.png\" alt=\"Magi logo\" class=\"h-8 w-auto\"><h1 class=\"uk-hero-lg ml-2 font-semibold brand-title\"><span class=\"uk-text-background brand-gradient\">Magi</span></h1></a></div><div class=\"uk-navbar-right\"><div class=\"uk-navbar-item\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" uk-toggle=\"target: #search-modal\" aria-label=\"Search\"><uk-icon icon=\"Search\" ratio=\"0.9\"></uk-icon></button></div><div id=\"search-modal\" uk-modal role=\"dialog\" aria-labelledby=\"search-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog modal-body-transparent\" style=\"max-width: 90%; width: 90%;\"><h2 id=\"search-modal-title\" class=\"uk-visually-hidden\">Search Mangas</h2><form hx-get=\"/mangas/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\" role=\"search\"><div class=\"mx-auto mt-8 mb-4\" style=\"width: 100%; max-width: 800px;\"><label for=\"searchInput\" class=\"uk-visually-hidden\">Search for manga</label> <input id=\"searchInput\" class=\"uk-input w-full input-bg\" type=\"search\" name=\"search\" placeholder=\"One-Punch Man etc...\" autocomplete=\"off\" aria-label=\"Search for manga by title\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4 input-bg\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +42,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><div class=\"uk-navbar-item\"><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Customize\"><uk-icon icon=\"palette\"></uk-icon></button><div class=\"uk-card uk-card-body uk-drop w-96\" data-uk-dropdown=\"mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm\"><div class=\"uk-h3\">Customize</div><uk-theme-switcher id=\"theme-switcher\"><select hidden><optgroup data-key=\"theme\" label=\"Theme\"><option data-hex=\"#52525b\" value=\"uk-theme-zinc\" selected>Zinc</option> <option data-hex=\"#64748b\" value=\"uk-theme-slate\">Slate</option> <option data-hex=\"#78716c\" value=\"uk-theme-stone\">Stone</option> <option data-hex=\"#6b7280\" value=\"uk-theme-gray\">Gray</option> <option data-hex=\"#737373\" value=\"uk-theme-neutral\">Neutral</option> <option data-hex=\"#dc2626\" value=\"uk-theme-red\">Red</option> <option data-hex=\"#e11d48\" value=\"uk-theme-rose\">Rose</option> <option data-hex=\"#f97316\" value=\"uk-theme-orange\">Orange</option> <option data-hex=\"#16a34a\" value=\"uk-theme-green\">Green</option> <option data-hex=\"#2563eb\" value=\"uk-theme-blue\">Blue</option> <option data-hex=\"#facc15\" value=\"uk-theme-yellow\">Yellow</option> <option data-hex=\"#7c3aed\" value=\"uk-theme-violet\">Violet</option></optgroup> <optgroup data-key=\"radii\" label=\"Radii\"><option value=\"uk-radii-none\">None</option> <option value=\"uk-radii-sm\">Small</option> <option value=\"uk-radii-md\" selected>Medium</option> <option value=\"uk-radii-lg\">Large</option></optgroup> <optgroup data-key=\"shadows\" label=\"Shadows\"><option value=\"uk-shadows-none\">None</option> <option value=\"uk-shadows-sm\" selected>Small</option> <option value=\"uk-shadows-md\">Medium</option> <option value=\"uk-shadows-lg\">Large</option></optgroup> <optgroup data-key=\"mode\" label=\"Mode\"><option data-icon=\"sun\" value=\"light\">Light</option> <option data-icon=\"moon\" value=\"dark\">Dark</option></optgroup></select></uk-theme-switcher></div></div></div><div class=\"uk-navbar-item\"><button id=\"navbar-more-btn\" class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-trigger-id=\"navbar-more-btn\" data-uk-dropdown=\"mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm\"><ul class=\"uk-dropdown-nav uk-nav\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div></div><div class=\"uk-navbar-item\"><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Customize theme\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"palette\"></uk-icon></button><div class=\"uk-card uk-card-body uk-drop w-96\" data-uk-dropdown=\"mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm\" role=\"menu\"><h2 class=\"uk-h3\">Customize</h2><uk-theme-switcher id=\"theme-switcher\"><select hidden><optgroup data-key=\"theme\" label=\"Theme\"><option data-hex=\"#52525b\" value=\"uk-theme-zinc\" selected>Zinc</option> <option data-hex=\"#64748b\" value=\"uk-theme-slate\">Slate</option> <option data-hex=\"#78716c\" value=\"uk-theme-stone\">Stone</option> <option data-hex=\"#6b7280\" value=\"uk-theme-gray\">Gray</option> <option data-hex=\"#737373\" value=\"uk-theme-neutral\">Neutral</option> <option data-hex=\"#dc2626\" value=\"uk-theme-red\">Red</option> <option data-hex=\"#e11d48\" value=\"uk-theme-rose\">Rose</option> <option data-hex=\"#f97316\" value=\"uk-theme-orange\">Orange</option> <option data-hex=\"#16a34a\" value=\"uk-theme-green\">Green</option> <option data-hex=\"#2563eb\" value=\"uk-theme-blue\">Blue</option> <option data-hex=\"#facc15\" value=\"uk-theme-yellow\">Yellow</option> <option data-hex=\"#7c3aed\" value=\"uk-theme-violet\">Violet</option></optgroup> <optgroup data-key=\"radii\" label=\"Radii\"><option value=\"uk-radii-none\">None</option> <option value=\"uk-radii-sm\">Small</option> <option value=\"uk-radii-md\" selected>Medium</option> <option value=\"uk-radii-lg\">Large</option></optgroup> <optgroup data-key=\"shadows\" label=\"Shadows\"><option value=\"uk-shadows-none\">None</option> <option value=\"uk-shadows-sm\" selected>Small</option> <option value=\"uk-shadows-md\">Medium</option> <option value=\"uk-shadows-lg\">Large</option></optgroup> <optgroup data-key=\"mode\" label=\"Mode\"><option data-icon=\"sun\" value=\"light\">Light</option> <option data-icon=\"moon\" value=\"dark\">Dark</option></optgroup></select></uk-theme-switcher></div></div></div><div class=\"uk-navbar-item\"><button id=\"navbar-more-btn\" class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\" aria-label=\"User menu\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-trigger-id=\"navbar-more-btn\" data-uk-dropdown=\"mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm\" role=\"menu\"><ul class=\"uk-dropdown-nav uk-nav\" role=\"none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -79,7 +79,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</ul></div></div></div></div></header><!-- mobile backdrop for off-canvas sidebar --><div id=\"sidebar-backdrop\" hidden></div><aside class=\"sidebar bg-surface\" id=\"sidebar\" role=\"navigation\"><ul class=\"uk-nav uk-nav-default\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</ul></div></div></div></div></header><!-- mobile backdrop for off-canvas sidebar --><div id=\"sidebar-backdrop\" hidden></div><aside class=\"sidebar bg-surface\" id=\"sidebar\" role=\"navigation\" aria-label=\"Main navigation\"><nav><ul class=\"uk-nav uk-nav-default\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -91,7 +91,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</ul><div class=\"sidebar-footer\" aria-hidden=\"false\"><div id=\"job-status-indicator\" class=\"job-status-indicator\" style=\"display: none;\" data-uk-tooltip=\"\"><div data-uk-spinner></div></div><a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</ul></nav><div class=\"sidebar-footer\"><div id=\"job-status-indicator\" class=\"job-status-indicator\" style=\"display: none;\" data-uk-tooltip=\"\"><div data-uk-spinner></div></div><a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -147,7 +147,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(path))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 142, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 146, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -160,7 +160,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 142, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 146, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -173,7 +173,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(icon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 143, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 147, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -186,7 +186,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 144, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 148, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -229,7 +229,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 154, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 158, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -242,7 +242,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 162, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 166, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -255,7 +255,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 169, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 173, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -268,7 +268,7 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 170, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 174, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {

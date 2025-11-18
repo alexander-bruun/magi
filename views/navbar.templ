@@ -12,8 +12,8 @@ templ Navbar(userRole string, currentPath string) {
 				<button id="sidebar-toggle" class="uk-btn uk-btn-default uk-btn-icon" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true" type="button">
 					<uk-icon icon="menu"></uk-icon>
 				</button>
-				<a href="/" hx-get="/" hx-target="#content" hx-push-url="true" class="flex items-center">
-					<img src="/assets/img/icon.png" alt="Logo" class="h-8 w-auto"/>
+				<a href="/" hx-get="/" hx-target="#content" hx-push-url="true" class="flex items-center" aria-label="Magi home">
+					<img src="/assets/img/icon.png" alt="Magi logo" class="h-8 w-auto"/>
 					<h1 class="uk-hero-lg ml-2 font-semibold brand-title">
 						<span class="uk-text-background brand-gradient">Magi</span>
 					</h1>
@@ -25,11 +25,13 @@ templ Navbar(userRole string, currentPath string) {
 						<uk-icon icon="Search" ratio="0.9"></uk-icon>
 					</button>
 				</div>
-				<div id="search-modal" uk-modal>
+				<div id="search-modal" uk-modal role="dialog" aria-labelledby="search-modal-title" aria-modal="true">
 					<div class="uk-modal-body uk-modal-dialog modal-body-transparent" style="max-width: 90%; width: 90%;">
-						<form hx-get="/mangas/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML">
+						<h2 id="search-modal-title" class="uk-visually-hidden">Search Mangas</h2>
+						<form hx-get="/mangas/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML" role="search">
 							<div class="mx-auto mt-8 mb-4" style="width: 100%; max-width: 800px;">
-								<input id="searchInput" class="uk-input w-full input-bg" type="text" name="search" placeholder="One-Punch Man etc..." autocomplete="off" />
+								<label for="searchInput" class="uk-visually-hidden">Search for manga</label>
+								<input id="searchInput" class="uk-input w-full input-bg" type="search" name="search" placeholder="One-Punch Man etc..." autocomplete="off" aria-label="Search for manga by title" />
 							</div>
 						</form>
 						<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4 input-bg">
@@ -39,11 +41,11 @@ templ Navbar(userRole string, currentPath string) {
 				</div>
 				<div class="uk-navbar-item">
 					<div class="uk-inline">
-						<button class="uk-btn uk-btn-default uk-btn-icon" aria-label="Customize">
+						<button class="uk-btn uk-btn-default uk-btn-icon" aria-label="Customize theme" aria-haspopup="true" aria-expanded="false">
 							<uk-icon icon="palette"></uk-icon>
 						</button>
-						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm">
-							<div class="uk-h3">Customize</div>
+						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
+							<h2 class="uk-h3">Customize</h2>
 							<uk-theme-switcher id="theme-switcher">
 								<select hidden>
 									<optgroup data-key="theme" label="Theme">
@@ -82,11 +84,11 @@ templ Navbar(userRole string, currentPath string) {
 					</div>
 				</div>
 				<div class="uk-navbar-item">
-					<button id="navbar-more-btn" class="uk-btn uk-btn-default h-10 w-10" type="button">
+					<button id="navbar-more-btn" class="uk-btn uk-btn-default h-10 w-10" type="button" aria-label="User menu" aria-haspopup="true" aria-expanded="false">
 						<uk-icon icon="EllipsisVertical"></uk-icon>
 					</button>
-					<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm">
-						<ul class="uk-dropdown-nav uk-nav">
+					<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm" role="menu">
+						<ul class="uk-dropdown-nav uk-nav" role="none">
 							if userRole != "" {
 								<li><a href="/account" hx-get="/account" hx-target="#content" hx-push-url="true"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
 								<li><a href="/account/favorites" hx-get="/account/favorites" hx-target="#content" hx-push-url="true"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
@@ -119,12 +121,14 @@ templ Navbar(userRole string, currentPath string) {
 	<!-- mobile backdrop for off-canvas sidebar -->
 	<div id="sidebar-backdrop" hidden></div>
 
-	<aside class="sidebar bg-surface" id="sidebar" role="navigation">
-		<ul class="uk-nav uk-nav-default">
-			@NavItem("/", "home", "Home", currentPath)
-			@NavItem("/mangas", "book", "Mangas", currentPath)
-		</ul>
-		<div class="sidebar-footer" aria-hidden="false">
+	<aside class="sidebar bg-surface" id="sidebar" role="navigation" aria-label="Main navigation">
+		<nav>
+			<ul class="uk-nav uk-nav-default">
+				@NavItem("/", "home", "Home", currentPath)
+				@NavItem("/mangas", "book", "Mangas", currentPath)
+			</ul>
+		</nav>
+		<div class="sidebar-footer">
 			<div id="job-status-indicator" class="job-status-indicator" style="display: none;" data-uk-tooltip="">
 				<div data-uk-spinner></div>
 			</div>

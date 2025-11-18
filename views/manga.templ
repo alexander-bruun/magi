@@ -64,6 +64,7 @@ templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon
 			hx-get={ href }
 			hx-push-url="true"
 			onclick="scrollToTopInstant()"
+			aria-label={ label }
 		>
 			if icon == "MoveLeft" {
 				<uk-icon icon="MoveLeft"></uk-icon>
@@ -78,7 +79,7 @@ templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon
 			}
 		</button>
 	} else {
-		<button type="button" class="uk-btn uk-btn-default" disabled>
+		<button type="button" class="uk-btn uk-btn-default" disabled aria-label={ label + " (unavailable)" }>
 			if icon == "MoveLeft" {
 				<span class="hidden md:inline">{ label }</span>
 				<uk-icon icon="MoveLeft"></uk-icon>
@@ -310,9 +311,9 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 		</div>
 	</div>
 	<!-- This is the modal -->
-	<div id="metadata-modal" uk-modal>
+	<div id="metadata-modal" uk-modal role="dialog" aria-labelledby="metadata-modal-title" aria-modal="true">
 		<div class="uk-modal-body uk-modal-dialog">
-			<h2 class="uk-modal-title">Update metadata</h2>
+			<h2 id="metadata-modal-title" class="uk-modal-title">Update metadata</h2>
 			<p>
 				This form, is used in case you believe the metadata was scraped from the wrong manga. Use the search field below to get a list of other options to pick from.
 			</p>
@@ -320,22 +321,24 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 				<form
 					hx-get={ fmt.Sprintf("/mangas/%s/metadata/form", manga.Slug) }
 					hx-target="#modal-content"
+					aria-label="Search for manga metadata"
 				>
 					<div class="folder-row mb-4 flex items-center">
-						<input class="uk-input folder-input mr-1" type="text" name="search" placeholder="Manga name"/>
-						<button type="submit" class="uk-btn uk-btn-default ml-1">
+						<label for="metadata-search" class="uk-visually-hidden">Search for manga by name</label>
+						<input id="metadata-search" class="uk-input folder-input mr-1" type="text" name="search" placeholder="Manga name" aria-label="Manga name"/>
+						<button type="submit" class="uk-btn uk-btn-default ml-1" aria-label="Search">
 							<uk-icon icon="Search"></uk-icon>
 						</button>
 					</div>
 				</form>
 			</div>
-			<div id="modal-content"></div>
+			<div id="modal-content" role="region" aria-live="polite"></div>
 		</div>
 	</div>
 	<!-- Manual Edit Modal for Moderators/Admins -->
-	<div id="manual-edit-modal" uk-modal>
+	<div id="manual-edit-modal" uk-modal role="dialog" aria-labelledby="manual-edit-modal-title" aria-modal="true">
 		<div class="uk-modal-body uk-modal-dialog hide-scrollbar" style="max-height: 80vh; overflow-y: auto; padding: 2rem;">
-			<h2 class="uk-modal-title mb-3">Edit Manga Metadata</h2>
+			<h2 id="manual-edit-modal-title" class="uk-modal-title mb-3">Edit Manga Metadata</h2>
 			<p class="uk-text-muted mb-6">
 				Manually edit the metadata for this manga. Changes will overwrite existing data.
 			</p>
