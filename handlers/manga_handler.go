@@ -614,9 +614,16 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the manga)
-	added, deleted, err := indexer.IndexChapters(existingManga.Slug, existingManga.Path)
+	added, deleted, newChapterSlugs, err := indexer.IndexChapters(existingManga.Slug, existingManga.Path)
 	if err != nil {
 		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
+	}
+
+	// If new chapters were added, notify users
+	if added > 0 && len(newChapterSlugs) > 0 {
+		if err := models.NotifyUsersOfNewChapters(existingManga.Slug, newChapterSlugs); err != nil {
+			log.Errorf("Failed to create notifications for new chapters in manga '%s': %s", existingManga.Slug, err)
+		}
 	}
 
 	if added > 0 || deleted > 0 {

@@ -170,6 +170,18 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	account.Get("/reading", HandleAccountReading)
 
 	// ========================================
+	// Notification Routes (authenticated)
+	// ========================================
+	
+	notifications := app.Group("/api/notifications", AuthMiddleware("reader"))
+	notifications.Get("", HandleGetNotifications)
+	notifications.Get("/unread-count", HandleGetUnreadCount)
+	notifications.Post("/:id/read", HandleMarkNotificationRead)
+	notifications.Post("/mark-all-read", HandleMarkAllNotificationsRead)
+	notifications.Delete("/:id", HandleDeleteNotification)
+	notifications.Delete("/clear-read", HandleClearReadNotifications)
+
+	// ========================================
 	// User Management Routes (moderator+)
 	// ========================================
 	
