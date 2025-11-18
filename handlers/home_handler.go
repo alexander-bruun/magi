@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	accessTokenCookie = "access_token"
+	sessionTokenCookie = "session_token"
 )
 
 // HandleView wraps a page component with the layout unless the request is an HTMX fragment.
@@ -65,19 +65,14 @@ func renderComponent(c *fiber.Ctx, component templ.Component) error {
 }
 
 func getUserRole(c *fiber.Ctx) (string, error) {
-	accessToken := c.Cookies(accessTokenCookie)
-	if accessToken == "" {
+	sessionToken := c.Cookies(sessionTokenCookie)
+	if sessionToken == "" {
 		return "", nil
 	}
 
-	claims, err := models.ValidateToken(accessToken)
-	if err != nil || claims == nil {
-		return "", fmt.Errorf("invalid access token")
-	}
-
-	userName, ok := claims["user_name"].(string)
-	if !ok {
-		return "", fmt.Errorf("user_name not found in token claims")
+	userName, err := models.ValidateSessionToken(sessionToken)
+	if err != nil {
+		return "", fmt.Errorf("invalid session token")
 	}
 
 	user, err := models.FindUserByUsername(userName)

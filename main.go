@@ -145,8 +145,8 @@ func main() {
 		Browse:     true,
 	})
 
-	// Wrap the fileserver to set Cache-Control headers for static assets.
-	app.Use("/assets", func(c *fiber.Ctx) error {
+	// Helper function to set appropriate cache headers based on file extension
+	setCacheHeaders := func(c *fiber.Ctx) error {
 		// Only set caching for GET/HEAD requests
 		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
 			// Determine extension
@@ -161,9 +161,10 @@ func main() {
 
 			switch ext {
 			case ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2", ".ttf", ".map":
-				// Long cache for static, fingerprinted assets
+				// Long cache for static, fingerprinted assets (1 year)
+				// Use immutable flag since these assets are typically versioned or have content-based names
 				cacheHeader = "public, max-age=31536000, immutable"
-			case ".json" :
+			case ".json":
 				cacheHeader = "public, max-age=3600"
 			case ".html", "":
 				cacheHeader = "public, max-age=0, must-revalidate"
@@ -172,6 +173,14 @@ func main() {
 			c.Set("Cache-Control", cacheHeader)
 		}
 
+		return nil
+	}
+
+	// Wrap the fileserver to set Cache-Control headers for embedded static assets.
+	app.Use("/assets", func(c *fiber.Ctx) error {
+		if err := setCacheHeaders(c); err != nil {
+			return err
+		}
 		return assetsFSHandler(c)
 	})
 

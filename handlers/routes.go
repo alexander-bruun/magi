@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/gofiber/fiber/v2"
@@ -54,8 +56,31 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	})
 
 	// ========================================
-	// Static Assets
+	// Static Assets with Cache Headers
 	// ========================================
+	
+	// Cache middleware for downloaded/indexed images
+	app.Use("/api/images", func(c *fiber.Ctx) error {
+		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
+			// Determine file extension
+			p := c.Path() // e.g. /api/images/manga-title.jpg
+			ext := ""
+			if idx := strings.LastIndex(p, "."); idx != -1 {
+				ext = strings.ToLower(p[idx:])
+			}
+
+			// Set appropriate cache headers based on file type
+			switch ext {
+			case ".png", ".jpg", ".jpeg", ".gif", ".webp":
+				// Images: cache for 1 year since they're content-addressed
+				c.Set("Cache-Control", "public, max-age=31536000, immutable")
+			default:
+				// Default: no cache
+				c.Set("Cache-Control", "public, max-age=0, must-revalidate")
+			}
+		}
+		return c.Next()
+	})
 	
 	app.Static("/api/images", cacheDirectory)
 	app.Static("/assets/", "./assets/")
