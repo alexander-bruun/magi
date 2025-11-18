@@ -638,6 +638,9 @@ func extractImageFromZipToPath(zipPath, outputDir string, imageIndex int) (strin
 	imageCount := 0
 	for _, file := range reader.File {
 		if isImageFile(file.Name) {
+			if !isSafeArchivePath(file.Name) {
+				continue // Skip unsafe archive paths
+			}
 			if imageCount == imageIndex {
 				src, err := file.Open()
 				if err != nil {
