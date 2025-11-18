@@ -1015,6 +1015,16 @@
       }
     }
 
+    // Escape special HTML characters in any user-provided string
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function updateJobStatus(jobs) {
       activeJobs = jobs;
       
@@ -1027,18 +1037,18 @@
         // Build tooltip text
         const tooltipText = jobs.map(job => {
           if (job.type === 'scraper') {
-            return `Scraper: ${job.name}`;
+            return `Scraper: ${escapeHtml(job.name)}`;
           } else if (job.type === 'indexer') {
-            let text = `Indexer: ${job.name}`;
+            let text = `Indexer: ${escapeHtml(job.name)}`;
             if (job.current_manga) {
-              text += `<br><small>${job.current_manga}</small>`;
+              text += `<br><small>${escapeHtml(job.current_manga)}</small>`;
             }
             if (job.progress) {
-              text += ` <small>(${job.progress})</small>`;
+              text += ` <small>(${escapeHtml(job.progress)})</small>`;
             }
             return text;
           }
-          return job.name;
+          return escapeHtml(job.name);
         }).join('<br>');
 
         // Show the indicator
