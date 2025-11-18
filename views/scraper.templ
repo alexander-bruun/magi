@@ -49,7 +49,7 @@ func getSortedVariableNames(variables map[string]string) []string {
 // Scraper renders the main scraper page with tabs
 templ Scraper(scripts []models.ScraperScript) {
 	@PageTitle("Scraper")
-	<div class="uk-container mt-4">
+	<div class="mt-4">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
 		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Scraper Scripts</span></h3>
 		
@@ -209,23 +209,21 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				</div>
 			</div>
 
-			<!-- Code Editor -->
-			<div>
-				<label for="script-content" class="uk-form-label">Script Content</label>
-				<div class="uk-card uk-card-default uk-card-body p-0 border">
-					<textarea 
-						id="script-content"
-						name="script"
-						data-code-editor="shell"
-						data-code-editor-height="384px"
-						class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
-						placeholder="#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
-						required
-					>{ script.Script }</textarea>
-				</div>
+		<!-- Code Editor -->
+		<div>
+			<label for="script-content" class="uk-form-label">Script Content</label>
+			<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
+				<textarea 
+					id="script-content"
+					name="script"
+					data-code-editor="shell"
+					data-code-editor-height="384px"
+					class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+					placeholder="#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
+					required
+				>{ script.Script }</textarea>
 			</div>
-
-		<!-- Script Variables -->
+		</div>		<!-- Script Variables -->
 		<div>
 			<label class="uk-form-label">Script Variables (optional)</label>
 			<p class="text-xs text-muted-foreground mb-3">Define variables that will be passed to your script. For bash scripts, these become environment variables.</p>
@@ -400,7 +398,11 @@ templ ScraperScriptRow(script *models.ScraperScript) {
 // ScraperScriptForm renders just the form for a new script
 templ ScraperScriptForm(script *models.ScraperScript) {
 	<div id="scraper-script-editor-form">
-		@ScraperScriptEditor(&models.ScraperScript{Language: "bash", Schedule: "0 0 * * *"})
+		@ScraperScriptEditor(&models.ScraperScript{
+			Language: "bash", 
+			Schedule: "0 0 * * *",
+			Script: "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'",
+		})
 	</div>
 }
 
