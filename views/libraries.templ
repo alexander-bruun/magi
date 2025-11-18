@@ -14,14 +14,14 @@ templ Libraries() {
 		{ Label: "Libraries", Href: "/admin/libraries" },
 	})
 	<div class="uk-container mt-2">
-		<div class="grid grid-cols-4 gap-4">
-			<div id="form-column" class="col-span-1">
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+			<div id="form-column" class="lg:col-span-1">
 				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Creator</span></h3>
 				<div class="uk-card p-2">
 					@LibraryForm(models.Library{}, "post", false)
 				</div>
 			</div>
-			<div id="table-column" class="col-span-3">
+			<div id="table-column" class="lg:col-span-3">
 				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Libraries</span></h3>
 				<div class="uk-card p-2">
 					@LibraryTable(libraries)
@@ -32,7 +32,7 @@ templ Libraries() {
 }
 
 templ LibraryTable(libraries []models.Library) {
-	<div id="libraries-table">
+	<div id="libraries-table" class="uk-overflow-auto">
 		<table class="uk-table">
 			<thead>
 				<tr>
@@ -68,10 +68,10 @@ templ LibraryTable(libraries []models.Library) {
 						</td>
 						<td colspan="3">
 							<div class="flex items-center justify-center">
-								<div class="uk-btn-group uk-width-auto">
+								<div class="uk-btn-group uk-width-auto flex-nowrap">
 									<button
 										type="button"
-										class="uk-btn uk-btn-secondary h-10 w-10"
+										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
 										hx-post={ fmt.Sprintf("/admin/libraries/%s/scan", library.Slug) }
 										hx-trigger="click"
 									>
@@ -79,7 +79,7 @@ templ LibraryTable(libraries []models.Library) {
 									</button>
 									<button
 										type="button"
-										class="uk-btn uk-btn-default h-10 w-10"
+										class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
 										hx-get={ fmt.Sprintf("/admin/libraries/%s", library.Slug) }
 										hx-trigger="click"
 										hx-target="#library-form"
@@ -88,7 +88,7 @@ templ LibraryTable(libraries []models.Library) {
 									</button>
 									<button
 										type="button"
-										class="uk-btn uk-btn-destructive h-10 w-10"
+										class="uk-btn uk-btn-destructive h-10 w-10 flex-shrink-0"
 										hx-delete={ fmt.Sprintf("/admin/libraries/%s", library.Slug) }
 										hx-trigger="click"
 										hx-target="#libraries-table"
