@@ -113,7 +113,7 @@ func HandleManga(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 	if manga == nil {
-		return HandleView(c, views.Error("Manga not found or access restricted based on content rating settings."))
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted based on content rating settings"), fiber.StatusNotFound)
 	}
 	chapters, err := models.GetChapters(slug)
 	if err != nil {
@@ -158,10 +158,16 @@ func HandleChapter(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+	if manga == nil {
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted based on content rating settings"), fiber.StatusNotFound)
+	}
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
 		return handleError(c, err)
+	}
+	if chapter == nil {
+		return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 	}
 
 	// Note: chapter is normally marked read by an HTMX trigger in the view.
@@ -246,7 +252,7 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 	if existingManga == nil {
-		return handleError(c, fmt.Errorf("manga not found or access restricted"))
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted"), fiber.StatusNotFound)
 	}
 
 	mangaDetail, err := models.GetMangadexManga(mangadexID)
@@ -554,7 +560,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 	if existingManga == nil {
-		return handleError(c, fmt.Errorf("manga not found"))
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found"), fiber.StatusNotFound)
 	}
 
 	// Fetch fresh metadata from MangaDex
@@ -671,8 +677,11 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
-		if err != nil || chapter == nil {
-			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter not found")))
+		if err != nil {
+			return handleError(c, err)
+		}
+		if chapter == nil {
+			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 		}
 		if chapter.File == "" {
 			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter file not found")))
@@ -720,11 +729,14 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
-		if err != nil || chapter == nil {
-			return handleError(c, fmt.Errorf("chapter not found"))
+		if err != nil {
+			return handleError(c, err)
+		}
+		if chapter == nil {
+			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 		}
 		if chapter.File == "" {
-			return handleError(c, fmt.Errorf("chapter file not found"))
+			return handleErrorWithStatus(c, fmt.Errorf("chapter file not found"), fiber.StatusNotFound)
 		}
 		chapterPath = filepath.Join(manga.Path, chapter.File)
 	} else {
@@ -767,11 +779,14 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
-		if err != nil || chapter == nil {
-			return handleError(c, fmt.Errorf("chapter not found"))
+		if err != nil {
+			return handleError(c, err)
+		}
+		if chapter == nil {
+			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 		}
 		if chapter.File == "" {
-			return handleError(c, fmt.Errorf("chapter file not found"))
+			return handleErrorWithStatus(c, fmt.Errorf("chapter file not found"), fiber.StatusNotFound)
 		}
 		chapterPath = filepath.Join(manga.Path, chapter.File)
 	} else {

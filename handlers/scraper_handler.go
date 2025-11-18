@@ -51,12 +51,15 @@ func HandleScraper(c *fiber.Ctx) error {
 func HandleScraperScriptDetail(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
 		return handleError(c, err)
+	}
+	if script == nil {
+		return handleError(c, fmt.Errorf("script not found"))
 	}
 
 	return HandleView(c, views.ScraperScriptEditor(script))
@@ -98,7 +101,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	name := strings.TrimSpace(c.FormValue("name"))
@@ -134,7 +137,7 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 func HandleScraperScriptDelete(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	if err := models.DeleteScraperScript(id); err != nil {
@@ -150,7 +153,7 @@ func HandleScraperScriptDelete(c *fiber.Ctx) error {
 func HandleScraperScriptCancel(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 	if err := executor.CancelScriptExecution(id); err != nil {
 		return handleError(c, err)
@@ -162,12 +165,15 @@ func HandleScraperScriptCancel(c *fiber.Ctx) error {
 func HandleScraperScriptToggle(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
 		return handleError(c, err)
+	}
+	if script == nil {
+		return handleError(c, fmt.Errorf("script not found"))
 	}
 
 	if err := models.EnableScraperScript(id, !script.Enabled); err != nil {
@@ -187,12 +193,15 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 func HandleScraperScriptRun(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
 		return handleError(c, err)
+	}
+	if script == nil {
+		return handleError(c, fmt.Errorf("script not found"))
 	}
 
 	// Start with stored variables, then override with form values
@@ -243,7 +252,7 @@ func HandleScraperNewForm(c *fiber.Ctx) error {
 func HandleScraperLogs(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, fmt.Errorf("invalid script id"))
+		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
 	logs, err := models.ListScraperLogs(id, 50)
