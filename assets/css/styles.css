@@ -556,11 +556,13 @@ header.site-header a:focus {
 
 .sidebar-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   padding: var(--space-sm) var(--space-xl);
   margin-top: auto;
   background: linear-gradient(180deg, transparent, var(--ui-bg-subtle));
+  gap: var(--space-sm);
 }
 
 .sidebar-footer .uk-btn {
@@ -570,6 +572,16 @@ header.site-header a:focus {
   gap: var(--space-md);
   padding: var(--nav-item-pad-y) var(--nav-item-pad-x);
   border-radius: var(--nav-item-radius);
+}
+
+.job-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  opacity: 0.8;
+  cursor: help;
+  padding: var(--space-xs);
 }
 
 main.site-main {
@@ -1767,4 +1779,21 @@ body.webtoon-focus-open {
     height: 40px;
     font-size: 1.25rem;
   }
+}
+
+/* ============================================
+   CODE EDITOR HELPERS
+   ============================================ */
+textarea[data-code-editor][data-code-editor-init],
+textarea.code-editor-hidden {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }

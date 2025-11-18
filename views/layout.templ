@@ -7,12 +7,14 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
-			<title>Magi</title>
-			<link rel="preconnect" href="https://rsms.me/"/>
-			<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
-			<link href="/assets/css/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/core.min.css
-			<link href="/assets/css/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/utilities.min.css
-			<link href="/assets/css/styles.css" rel="stylesheet"/>
+		<title>Magi</title>
+		<link rel="preconnect" href="https://rsms.me/"/>
+		<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
+		<link href="/assets/css/vendor/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/core.min.css
+		<link href="/assets/css/vendor/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/utilities.min.css
+		<link href="/assets/css/styles.css" rel="stylesheet"/>
+		<link href="/assets/css/vendor/codemirror.min.css" rel="stylesheet"/>
+		<link href="/assets/css/vendor/dracula.min.css" rel="stylesheet"/>
 			<script>
 				const htmlElement = document.documentElement;
 
@@ -34,14 +36,17 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 			</script>
-		<script>
-			// Ensure titleHandler exists before any inline PageTitle() calls run
-			window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
-		</script>
-		<script src="/assets/js/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/core.iife.js
-		<!--https://lucide.dev/icons/chevron-up?search=ban-->
-		<script src="/assets/js/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/icon.iife.js
-		<script src="/assets/js/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js
+	<script>
+		// Ensure titleHandler exists before any inline PageTitle() calls run
+		window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+	</script>
+	<script src="/assets/js/vendor/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/core.iife.js
+	<!--https://lucide.dev/icons/chevron-up?search=ban-->
+	<script src="/assets/js/vendor/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/icon.iife.js
+	<script src="/assets/js/vendor/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js
+	<script src="/assets/js/magi.js"></script> // Magi core library (includes smooth scroll, WebSocket, LogViewer, and site UI)
+	<script src="/assets/js/vendor/codemirror.min.js" defer></script>
+	<script src="/assets/js/vendor/shell.min.js" defer></script>
 	</head>
 	<body class="bg-background text-foreground">
 		<script>
@@ -68,8 +73,6 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 					</div>
 				</main>
 			</div>
-
-			<script src="/assets/js/site.js" defer></script>
 		</body>
 	</html>
 }
