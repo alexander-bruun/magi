@@ -49,11 +49,18 @@ func CreateUserHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.Error(err.Error()))
 	}
 
-	c.Set("HX-Redirect", "/auth/login")
+	// Automatically log in the user after registration
+	sessionToken, err := models.CreateSessionToken(username)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create session token"})
+	}
+
+	setSessionCookie(c, sessionToken)
+	c.Set("HX-Redirect", "/")
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-// LoginUserHandler validates credentials and issues access/refresh tokens.
+// LoginUserHandler validates credentials and issues a session token.
 func LoginUserHandler(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -64,17 +71,12 @@ func LoginUserHandler(c *fiber.Ctx) error {
 		return HandleView(c, views.WrongCredentials())
 	}
 
-	accessToken, err := models.CreateAccessToken(user.Username)
+	sessionToken, err := models.CreateSessionToken(user.Username)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create access token"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create session token"})
 	}
 
-	refreshToken, err := models.GenerateNewRefreshToken(user.Username)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create refresh token"})
-	}
-
-	setAuthCookies(c, accessToken, refreshToken)
+	setSessionCookie(c, sessionToken)
 	
 	// Redirect to target page if provided, otherwise home
 	target := c.FormValue("target")
@@ -85,19 +87,15 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// LogoutHandler revokes refresh tokens and clears authentication cookies.
+// LogoutHandler revokes the session token and clears authentication cookie.
 func LogoutHandler(c *fiber.Ctx) error {
-	refreshToken := c.Cookies("refresh_token")
+	sessionToken := c.Cookies("session_token")
 
-	if claims, err := models.ValidateToken(refreshToken); err == nil && claims != nil {
-		if userName, ok := claims["user_name"].(string); ok {
-			if user, err := models.FindUserByUsername(userName); err == nil {
-				models.IncrementRefreshTokenVersion(user.Username)
-			}
-		}
+	if sessionToken != "" {
+		models.DeleteSessionToken(sessionToken)
 	}
 
-	clearAuthCookies(c)
+	clearSessionCookie(c)
 	c.Set("HX-Redirect", "/")
 	return c.SendStatus(fiber.StatusOK)
 }

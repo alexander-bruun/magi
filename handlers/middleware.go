@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	accessTokenDuration  = 15 * time.Minute
-	refreshTokenDuration = 30 * 24 * time.Hour
+	sessionTokenDuration = 30 * 24 * time.Hour // 1 month
 )
 
 var roleHierarchy = map[string]int{
@@ -19,20 +18,13 @@ var roleHierarchy = map[string]int{
 	"admin":     3,
 }
 
-// AuthMiddleware handles token validation and refreshing
+// AuthMiddleware handles session token validation
 func AuthMiddleware(requiredRole string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		accessToken := c.Cookies("access_token")
-		refreshToken := c.Cookies("refresh_token")
+		sessionToken := c.Cookies("session_token")
 
-		if accessToken != "" {
-			if err := validateAccessToken(c, accessToken, requiredRole); err == nil {
-				return c.Next()
-			}
-		}
-
-		if refreshToken != "" {
-			if err := refreshAndValidateTokens(c, refreshToken, requiredRole); err == nil {
+		if sessionToken != "" {
+			if err := validateSessionToken(c, sessionToken, requiredRole); err == nil {
 				return c.Next()
 			}
 		}
@@ -42,34 +34,13 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 	}
 }
 
-func validateAccessToken(c *fiber.Ctx, accessToken, requiredRole string) error {
-	claims, err := models.ValidateToken(accessToken)
-	if err != nil || claims == nil {
-		return fiber.ErrUnauthorized
-	}
-
-	userName, ok := claims["user_name"].(string)
-	if !ok {
-		return fiber.ErrUnauthorized
-	}
-
-	return validateUserRole(c, userName, requiredRole)
-}
-
-func refreshAndValidateTokens(c *fiber.Ctx, refreshToken, requiredRole string) error {
-	newAccessToken, userName, err := models.RefreshAccessToken(refreshToken)
-	if err != nil || newAccessToken == "" {
-		return fiber.ErrUnauthorized
-	}
-
-	newRefreshToken, err := models.GenerateNewRefreshToken(userName)
+func validateSessionToken(c *fiber.Ctx, sessionToken, requiredRole string) error {
+	username, err := models.ValidateSessionToken(sessionToken)
 	if err != nil {
-		return fiber.ErrInternalServerError
+		return fiber.ErrUnauthorized
 	}
 
-	setAuthCookies(c, newAccessToken, newRefreshToken)
-
-	return validateUserRole(c, userName, requiredRole)
+	return validateUserRole(c, username, requiredRole)
 }
 
 func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
@@ -90,22 +61,13 @@ func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 	return nil
 }
 
-func clearAuthCookies(c *fiber.Ctx) {
+func clearSessionCookie(c *fiber.Ctx) {
 	expiredTime := time.Now().Add(-time.Hour)
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
-		Name:    "access_token",
-		Value:   "",
-		Expires: expiredTime,
-		HTTPOnly: true,
-		Secure:   secure,
-		SameSite: fiber.CookieSameSiteLaxMode,
-		Path:     "/",
-	})
-	c.Cookie(&fiber.Cookie{
-		Name:    "refresh_token",
-		Value:   "",
-		Expires: expiredTime,
+		Name:     "session_token",
+		Value:    "",
+		Expires:  expiredTime,
 		HTTPOnly: true,
 		Secure:   secure,
 		SameSite: fiber.CookieSameSiteLaxMode,
@@ -113,25 +75,13 @@ func clearAuthCookies(c *fiber.Ctx) {
 	})
 }
 
-func setAuthCookies(c *fiber.Ctx, accessToken, refreshToken string) {
-	// Note: Secure requires HTTPS; we detect TLS or X-Forwarded-Proto to set it.
-	// Using Lax so top-level navigations send cookies.
+func setSessionCookie(c *fiber.Ctx, sessionToken string) {
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Expires:  time.Now().Add(accessTokenDuration),
-		MaxAge:   int(accessTokenDuration.Seconds()),
-		HTTPOnly: true,
-		Secure:   secure,
-		SameSite: fiber.CookieSameSiteLaxMode,
-		Path:     "/",
-	})
-	c.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Expires:  time.Now().Add(refreshTokenDuration),
-		MaxAge:   int(refreshTokenDuration.Seconds()),
+		Name:     "session_token",
+		Value:    sessionToken,
+		Expires:  time.Now().Add(sessionTokenDuration),
+		MaxAge:   int(sessionTokenDuration.Seconds()),
 		HTTPOnly: true,
 		Secure:   secure,
 		SameSite: fiber.CookieSameSiteLaxMode,
@@ -154,24 +104,16 @@ func isSecureRequest(c *fiber.Ctx) bool {
 	return false
 }
 
-// OptionalAuthMiddleware attempts to authenticate a user if auth cookies are present
+// OptionalAuthMiddleware attempts to authenticate a user if session cookie is present
 // but does not enforce authentication. It sets c.Locals("user_name") when a valid
 // token is found so handlers can optionally adapt views for logged-in users.
 func OptionalAuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		accessToken := c.Cookies("access_token")
-		refreshToken := c.Cookies("refresh_token")
+		sessionToken := c.Cookies("session_token")
 
-		// If access token exists, try validate; if invalid and refresh exists, try refresh.
-		if accessToken != "" {
-			if err := validateAccessToken(c, accessToken, "reader"); err == nil {
-				return c.Next()
-			}
-		}
-
-		if refreshToken != "" {
-			// Try to refresh tokens and set cookies/locals; ignore errors
-			_ = refreshAndValidateTokens(c, refreshToken, "reader")
+		if sessionToken != "" {
+			// Try to validate; ignore errors for optional auth
+			_ = validateSessionToken(c, sessionToken, "reader")
 		}
 
 		return c.Next()
@@ -192,36 +134,23 @@ func ConditionalAuthMiddleware() fiber.Handler {
 
 		// If login is required for content, enforce authentication
 		if cfg.RequireLoginForContent {
-			accessToken := c.Cookies("access_token")
-			refreshToken := c.Cookies("refresh_token")
+			sessionToken := c.Cookies("session_token")
 
-			if accessToken != "" {
-				if err := validateAccessToken(c, accessToken, "reader"); err == nil {
+			if sessionToken != "" {
+				if err := validateSessionToken(c, sessionToken, "reader"); err == nil {
 					return c.Next()
 				}
 			}
 
-			if refreshToken != "" {
-				if err := refreshAndValidateTokens(c, refreshToken, "reader"); err == nil {
-					return c.Next()
-				}
+			// No valid authentication - redirect to login
+			originalURL := c.OriginalURL()
+			return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
 		}
 
-		// No valid authentication - redirect to login
-		originalURL := c.OriginalURL()
-		return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
-	}		// Login not required, but still try to authenticate if cookies present
-		accessToken := c.Cookies("access_token")
-		refreshToken := c.Cookies("refresh_token")
-
-		if accessToken != "" {
-			if err := validateAccessToken(c, accessToken, "reader"); err == nil {
-				return c.Next()
-			}
-		}
-
-		if refreshToken != "" {
-			_ = refreshAndValidateTokens(c, refreshToken, "reader")
+		// Login not required, but still try to authenticate if cookie present
+		sessionToken := c.Cookies("session_token")
+		if sessionToken != "" {
+			_ = validateSessionToken(c, sessionToken, "reader")
 		}
 
 		return c.Next()

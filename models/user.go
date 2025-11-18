@@ -11,11 +11,10 @@ import (
 
 // User represents the user table schema
 type User struct {
-	Username            string `json:"username"`
-	Password            string `json:"password"`
-	RefreshTokenVersion int    `json:"refresh_token_version"`
-	Role                string `json:"role"`
-	Banned              bool   `json:"banned"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+	Banned   bool   `json:"banned"`
 }
 
 // roleHierarchy defines the order of roles from lowest to highest.
@@ -24,7 +23,7 @@ var roleHierarchy = []string{"reader", "moderator", "admin"}
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
 	query := `
-	SELECT username, password, refresh_token_version, role, banned
+	SELECT username, password, role, banned
 	FROM users
 	`
 
@@ -37,7 +36,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.Username, &user.Password, &user.RefreshTokenVersion, &user.Role, &user.Banned); err != nil {
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -58,10 +57,9 @@ func CreateUser(username, password string) error {
 	}
 
 	user := User{
-		Username:            username,
-		Password:            string(hashedPassword),
-		RefreshTokenVersion: 0,
-		Role:                "reader", // Default role
+		Username: username,
+		Password: string(hashedPassword),
+		Role:     "reader", // Default role
 	}
 
 	count, err := CountUsers()
@@ -75,11 +73,11 @@ func CreateUser(username, password string) error {
 	}
 
 	query := `
-	INSERT INTO users (username, password, refresh_token_version, role, banned)
-	VALUES (?, ?, ?, ?, ?)
+	INSERT INTO users (username, password, role, banned)
+	VALUES (?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, user.Username, user.Password, user.RefreshTokenVersion, user.Role, user.Banned)
+	_, err = db.Exec(query, user.Username, user.Password, user.Role, user.Banned)
 	if err != nil {
 		return err
 	}
@@ -90,7 +88,7 @@ func CreateUser(username, password string) error {
 // FindUserByUsername retrieves a user by their username.
 func FindUserByUsername(username string) (*User, error) {
 	query := `
-	SELECT username, password, refresh_token_version, role, banned
+	SELECT username, password, role, banned
 	FROM users
 	WHERE username = ?
 	`
@@ -98,7 +96,7 @@ func FindUserByUsername(username string) (*User, error) {
 	row := db.QueryRow(query, username)
 
 	var user User
-	err := row.Scan(&user.Username, &user.Password, &user.RefreshTokenVersion, &user.Role, &user.Banned)
+	err := row.Scan(&user.Username, &user.Password, &user.Role, &user.Banned)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No user found
@@ -128,28 +126,6 @@ func UpdateUserRole(username, newRole string) error {
 	`
 
 	_, err = db.Exec(query, user.Role, username)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// IncrementRefreshTokenVersion increments the refresh token version for a user.
-func IncrementRefreshTokenVersion(username string) error {
-	user, err := FindUserByUsername(username)
-	if err != nil {
-		return err
-	}
-
-	user.RefreshTokenVersion++
-	query := `
-	UPDATE users
-	SET refresh_token_version = ?
-	WHERE username = ?
-	`
-
-	_, err = db.Exec(query, user.RefreshTokenVersion, username)
 	if err != nil {
 		return err
 	}
