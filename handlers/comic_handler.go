@@ -60,7 +60,9 @@ func ComicHandler(c *fiber.Ctx) error {
 
 	// Serve the file based on its extension
 	switch {
-	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".png"):
+	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".jpeg"),
+		strings.HasSuffix(lowerFileName, ".png"), strings.HasSuffix(lowerFileName, ".webp"),
+		strings.HasSuffix(lowerFileName, ".gif"):
 		return c.SendFile(filePath)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
 		return serveComicBookArchiveFromRAR(c, filePath)
@@ -143,7 +145,7 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to read archive entry")
 		}
 
-		if !header.IsDir && (strings.HasSuffix(strings.ToLower(header.Name), ".jpg") || strings.HasSuffix(strings.ToLower(header.Name), ".png")) {
+		if !header.IsDir && isImageFile(header.Name) {
 			currentPage++
 			if currentPage == page {
 				contentType := getContentType(header.Name)
@@ -182,7 +184,7 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
 
 	var imageFiles []*zip.File
 	for _, file := range zipReader.File {
-		if !file.FileInfo().IsDir() && (strings.HasSuffix(strings.ToLower(file.Name), ".jpg") || strings.HasSuffix(strings.ToLower(file.Name), ".png")) {
+		if !file.FileInfo().IsDir() && isImageFile(file.Name) {
 			imageFiles = append(imageFiles, file)
 		}
 	}
@@ -208,10 +210,32 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
 	return nil
 }
 
+// isImageFile checks if a filename has an image extension.
+func isImageFile(fileName string) bool {
+	lowerName := strings.ToLower(fileName)
+	return strings.HasSuffix(lowerName, ".jpg") ||
+		strings.HasSuffix(lowerName, ".jpeg") ||
+		strings.HasSuffix(lowerName, ".png") ||
+		strings.HasSuffix(lowerName, ".webp") ||
+		strings.HasSuffix(lowerName, ".gif") ||
+		strings.HasSuffix(lowerName, ".bmp")
+}
+
 // getContentType determines the Content-Type header based on file extension.
 func getContentType(fileName string) string {
-	if strings.HasSuffix(strings.ToLower(fileName), ".png") {
+	lowerName := strings.ToLower(fileName)
+	switch {
+	case strings.HasSuffix(lowerName, ".png"):
 		return "image/png"
+	case strings.HasSuffix(lowerName, ".webp"):
+		return "image/webp"
+	case strings.HasSuffix(lowerName, ".gif"):
+		return "image/gif"
+	case strings.HasSuffix(lowerName, ".bmp"):
+		return "image/bmp"
+	case strings.HasSuffix(lowerName, ".jpg"), strings.HasSuffix(lowerName, ".jpeg"):
+		return "image/jpeg"
+	default:
+		return "image/jpeg"
 	}
-	return "image/jpeg"
 }

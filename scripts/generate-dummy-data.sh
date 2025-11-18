@@ -135,7 +135,7 @@ for manga in "${MANGA_LIST[@]}"; do
 
   # create chapter files
   for (( chap=1; chap<=CHAPTER_COUNT; chap++ )); do
-    chapter_file="$manga_dir/Chapter_${chap}.txt"
+    chapter_file="$manga_dir/Chapter_${chap}.cbz"
     echo "This is dummy content for $manga - Chapter $chap" > "$chapter_file"
   done
 done

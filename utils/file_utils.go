@@ -35,6 +35,28 @@ func isSafeArchivePath(name string) bool {
 	return true
 }
 
+// safeJoinPath safely joins a base directory with a file path from an archive.
+// It validates that the resulting path stays within the base directory to prevent directory traversal attacks.
+func safeJoinPath(baseDir, archivePath string) (string, error) {
+	if !isSafeArchivePath(archivePath) {
+		return "", fmt.Errorf("unsafe archive path: %s", archivePath)
+	}
+	
+	// Use filepath.Base to get just the filename, preventing any directory traversal
+	filename := filepath.Base(archivePath)
+	outputPath := filepath.Join(baseDir, filename)
+	
+	// Validate the final path is within the base directory
+	cleanBase := filepath.Clean(baseDir) + string(os.PathSeparator)
+	cleanOutput := filepath.Clean(outputPath)
+	
+	if !strings.HasPrefix(cleanOutput, cleanBase) && cleanOutput != filepath.Clean(baseDir) {
+		return "", fmt.Errorf("path traversal attempt detected: %s", archivePath)
+	}
+	
+	return outputPath, nil
+}
+
 // CountImageFiles counts the number of image files in an archive (zip, cbz, rar, or cbr) or directory.
 func CountImageFiles(archiveFilePath string) (int, error) {
 	// Check if it's a directory first
@@ -144,48 +166,72 @@ func ExtractFirstImage(archivePath, outputFolder string) error {
 func extractFirstImageFromZip(zipPath, outputFolder string) error {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid or corrupt zip file: %w", err)
 	}
 	defer reader.Close()
 
+	// Check if archive contains any images
+	hasImages := false
 	for _, file := range reader.File {
 		if !strings.Contains(file.Name, "..") {
 			if isImageFile(file.Name) {
-				return extractZipFile(file, outputFolder)
+				hasImages = true
+				if err := extractZipFile(file, outputFolder); err != nil {
+					return fmt.Errorf("failed to extract image: %w", err)
+				}
+				return nil
 			}
 		}
 	}
-	return fmt.Errorf("no image file found in the archive")
+	
+	if !hasImages {
+		return fmt.Errorf("no image files found in archive")
+	}
+	return nil
 }
 
 func extractFirstImageFromRar(rarPath, outputFolder string) error {
 	file, err := os.Open(rarPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open rar file: %w", err)
 	}
 	defer file.Close()
 
 	reader, err := rardecode.NewReader(file, "")
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid or corrupt rar file: %w", err)
 	}
 
+	hasImages := false
 	for {
 		header, err := reader.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("error reading rar archive: %w", err)
 		}
 		if isImageFile(header.Name) {
-			return extractRarFile(reader, header.Name, outputFolder)
+			hasImages = true
+			if err := extractRarFile(reader, header.Name, outputFolder); err != nil {
+				return fmt.Errorf("failed to extract image: %w", err)
+			}
+			return nil
 		}
 	}
-	return fmt.Errorf("no image file found in the archive")
+	
+	if !hasImages {
+		return fmt.Errorf("no image files found in archive")
+	}
+	return nil
 }
 
 func extractZipFile(file *zip.File, outputFolder string) error {
+	// Validate the archive path for safety
+	if !isSafeArchivePath(file.Name) {
+		return fmt.Errorf("unsafe archive path: %s", file.Name)
+	}
+	
 	src, err := file.Open()
 	if err != nil {
 		return err
@@ -207,7 +253,12 @@ func extractZipFile(file *zip.File, outputFolder string) error {
 }
 
 func extractRarFile(reader io.Reader, fileName, outputFolder string) error {
-	outputPath := filepath.Join(outputFolder, filepath.Base(fileName))
+	// Validate and sanitize the path
+	outputPath, err := safeJoinPath(outputFolder, fileName)
+	if err != nil {
+		return fmt.Errorf("invalid archive path: %w", err)
+	}
+	
 	dst, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -249,6 +300,12 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, erro
 
 	// Extract the first image
 	if err := ExtractFirstImage(archivePath, tempDir); err != nil {
+		// If archive is invalid or has no images, log and skip rather than failing
+		if strings.Contains(err.Error(), "invalid or corrupt") || 
+		   strings.Contains(err.Error(), "no image files found") {
+			log.Debugf("Skipping invalid or empty archive '%s': %v", archivePath, err)
+			return "", nil
+		}
 		return "", fmt.Errorf("failed to extract first image: %w", err)
 	}
 
@@ -638,17 +695,19 @@ func extractImageFromZipToPath(zipPath, outputDir string, imageIndex int) (strin
 	imageCount := 0
 	for _, file := range reader.File {
 		if isImageFile(file.Name) {
-			if !isSafeArchivePath(file.Name) {
-				continue // Skip unsafe archive paths
-			}
 			if imageCount == imageIndex {
+				// Validate and sanitize the path
+				outputPath, err := safeJoinPath(outputDir, file.Name)
+				if err != nil {
+					return "", fmt.Errorf("invalid archive path: %w", err)
+				}
+				
 				src, err := file.Open()
 				if err != nil {
 					return "", err
 				}
 				defer src.Close()
 
-				outputPath := filepath.Join(outputDir, filepath.Base(file.Name))
 				dst, err := os.Create(outputPath)
 				if err != nil {
 					return "", err
@@ -687,7 +746,12 @@ func extractImageFromRarToPath(rarPath, outputDir string, imageIndex int) (strin
 		}
 		if isImageFile(header.Name) {
 			if imageCount == imageIndex {
-				outputPath := filepath.Join(outputDir, filepath.Base(header.Name))
+				// Validate and sanitize the path
+				outputPath, err := safeJoinPath(outputDir, header.Name)
+				if err != nil {
+					return "", fmt.Errorf("invalid archive path: %w", err)
+				}
+				
 				dst, err := os.Create(outputPath)
 				if err != nil {
 					return "", err
@@ -704,16 +768,18 @@ func extractImageFromRarToPath(rarPath, outputDir string, imageIndex int) (strin
 
 // Helper function to extract zip file and return path
 func extractZipFileToPath(file *zip.File, outputFolder string) (string, error) {
+	// Validate and sanitize the path
+	outputPath, err := safeJoinPath(outputFolder, file.Name)
+	if err != nil {
+		return "", fmt.Errorf("invalid archive path: %w", err)
+	}
+	
 	src, err := file.Open()
 	if err != nil {
 		return "", err
 	}
 	defer src.Close()
 
-	outputPath := filepath.Join(outputFolder, filepath.Base(file.Name))
-	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder)+string(os.PathSeparator)) {
-		return "", fmt.Errorf("invalid file path: %s", outputPath)
-	}
 	dst, err := os.Create(outputPath)
 	if err != nil {
 		return "", err

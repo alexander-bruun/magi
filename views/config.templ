@@ -20,20 +20,20 @@ templ Config() {
                                 <input type="checkbox" name="allow_registration" checked?={ cfg.AllowRegistration } class="uk-checkbox" />
                                 <span>Allow new user registrations</span>
                             </label>
-                            <p class="text-xs text-muted mt-1">Disable to prevent any new users from signing up.</p>
+                            <p class="text-xs text-muted-foreground mt-1">Disable to prevent any new users from signing up.</p>
                         </div>
                         <div>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="require_login_for_content" checked?={ cfg.RequireLoginForContent } class="uk-checkbox" />
                                 <span>Require login to view or read manga</span>
                             </label>
-                            <p class="text-xs text-muted mt-1">Enable to require users to be logged in to view manga listings and read chapters.</p>
+                            <p class="text-xs text-muted-foreground mt-1">Enable to require users to be logged in to view manga listings and read chapters.</p>
                         </div>
                         <div>
                             <label class="block mb-1">Max users (0 = unlimited)</label>
                             <input type="number" min="0" class="uk-input" name="max_users" value={ fmt.Sprintf("%d", cfg.MaxUsers) } />
                             {{ userCount, _ := models.CountUsers() }}
-                            <p class="text-xs text-muted mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
+                            <p class="text-xs text-muted-foreground mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
                         </div>
                         <div>
                             <label class="block mb-1">Maximum Content Rating</label>
@@ -43,7 +43,7 @@ templ Config() {
                                 <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
                                 <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
                             </select>
-                            <p class="text-xs text-muted mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
+                            <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
                         </div>
                         <div class="flex justify-center">
                             <button type="submit" class="uk-btn uk-btn-default">Save</button>
@@ -52,5 +52,35 @@ templ Config() {
                 </div>
             </div>
         </div>
+        
+        <!-- Console Logs Section -->
+        <div class="mt-8">
+            <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Console Logs</span></h3>
+            <div class="flex place-content-center">
+                <div class="w-full px-4">
+                    <div class="uk-card p-4">
+                        <div id="console-logs-container" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
+                            <div id="console-logs-output"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <script src="/assets/js/log-viewer.js"></script>
+    <script>
+        (function() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
+            
+            new LogViewer({
+                wsUrl: wsUrl,
+                containerId: 'console-logs-container',
+                outputId: 'console-logs-output',
+                maxEntries: 1000,
+                reconnectInterval: 3000
+            });
+        })();
+    </script>
 }

@@ -57,7 +57,7 @@ func Config() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"require_login_for_content\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted-foreground mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"require_login_for_content\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -67,7 +67,7 @@ func Config() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " class=\"uk-checkbox\"> <span>Require login to view or read manga</span></label><p class=\"text-xs text-muted mt-1\">Enable to require users to be logged in to view manga listings and read chapters.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " class=\"uk-checkbox\"> <span>Require login to view or read manga</span></label><p class=\"text-xs text-muted-foreground mt-1\">Enable to require users to be logged in to view manga listings and read chapters.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -85,14 +85,14 @@ func Config() templ.Component {
 			return templ_7745c5c3_Err
 		}
 		userCount, _ := models.CountUsers()
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"text-xs text-muted mt-1\">Current users: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"text-xs text-muted-foreground mt-1\">Current users: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", userCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 36, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 36, Col: 119}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -138,7 +138,7 @@ func Config() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div><!-- Console Logs Section --><div class=\"mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div></div><script src=\"/assets/js/log-viewer.js\"></script><script>\n        (function() {\n            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';\n            \n            new LogViewer({\n                wsUrl: wsUrl,\n                containerId: 'console-logs-container',\n                outputId: 'console-logs-output',\n                maxEntries: 1000,\n                reconnectInterval: 3000\n            });\n        })();\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

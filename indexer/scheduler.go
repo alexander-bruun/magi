@@ -12,6 +12,7 @@ import (
 	"github.com/robfig/cron/v3"
 
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/executor"
 )
 
 var (
@@ -41,6 +42,9 @@ func Initialize(cacheDirectory string, libraries []models.Library) {
 		indexer := NewIndexer(library)
 		go indexer.Start()
 	}
+
+	// Initialize scraper scheduler
+	executor.InitializeScraperScheduler()
 
 	// Register NotificationListener
 	models.AddListener(&NotificationListener{
@@ -97,7 +101,7 @@ func (idx *Indexer) Stop() {
 // runIndexingJob performs the indexing job
 func (idx *Indexer) runIndexingJob() {
 	if idx.JobRunning {
-		log.Infof("Indexing job for library '%s' already running, skipping", idx.Library.Name)
+		log.Infof("Indexing job for library '%s' already running, skipping scheduled run", idx.Library.Name)
 		return
 	}
 	defer func() {
@@ -109,7 +113,7 @@ func (idx *Indexer) runIndexingJob() {
 	}()
 
 	idx.JobRunning = true
-	log.Infof("Starting indexing for library '%s'", idx.Library.Name)
+	log.Infof("Starting scheduled indexing for library '%s'", idx.Library.Name)
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
@@ -132,7 +136,7 @@ func (idx *Indexer) runIndexingJob() {
 	scanMutex.Unlock()
 	
 	log.Infof(
-		"Indexing for library '%s' completed in %.1fs (scanned %d manga paths)",
+		"Scheduled indexing for library '%s' completed in %.1fs (scanned %d manga paths)",
 		idx.Library.Name,
 		seconds,
 		totalScanned,
