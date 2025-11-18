@@ -142,7 +142,73 @@ func Config() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div><!-- Console Logs Section --><div class=\"mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div></div><script>\n        (function() {\n            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';\n            \n            new LogViewer({\n                wsUrl: wsUrl,\n                containerId: 'console-logs-container',\n                outputId: 'console-logs-output',\n                maxEntries: 1000,\n                reconnectInterval: 3000\n            });\n        })();\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><!-- Metadata Provider Section --><div class=\"uk-margin-medium-top uk-padding-small\"><h4 class=\"uk-heading-line\"><span>Metadata Provider</span></h4><div class=\"uk-margin\"><select name=\"metadata_provider\" id=\"metadata-provider-select\" class=\"uk-select\"><option value=\"mangadex\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">MangaDex (Free, No Auth Required)</option> <option value=\"mal\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "mal" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, ">MyAnimeList (Requires API Token)</option> <option value=\"anilist\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "anilist" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ">AniList (Optional Auth)</option> <option value=\"jikan\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "jikan" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">Jikan API (Free, No Auth Required)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Select which metadata provider to use for fetching manga information.</p></div><!-- MAL API Token --><div id=\"mal-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"text\" class=\"uk-input\" name=\"mal_api_token\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.MALApiToken)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 65, Col: 112}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" placeholder=\"dbe0d49546f15aa428f64323bbfcbd9a\"><p class=\"text-xs text-muted-foreground mt-1\">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\" class=\"uk-link\">MAL API Config</a></p></div><!-- AniList API Token --><div id=\"anilist-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">AniList Access Token (Optional)</label> <input type=\"text\" class=\"uk-input\" name=\"anilist_api_token\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var5 string
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.AniListApiToken)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 72, Col: 120}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" placeholder=\"Enter your AniList access token (optional)\"><p class=\"text-xs text-muted-foreground mt-1\">Optional: Increases rate limits. Get token from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\" class=\"uk-link\">AniList Developer Settings</a></p></div></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div><!-- Console Logs Section --><div class=\"mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div></div><script>\n        document.addEventListener('DOMContentLoaded', function() {\n            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';\n            \n            if (window.Magi && window.Magi.LogViewer) {\n                new window.Magi.LogViewer({\n                    wsUrl: wsUrl,\n                    containerId: 'console-logs-container',\n                    outputId: 'console-logs-output',\n                    maxEntries: 1000,\n                    reconnectInterval: 3000\n                });\n            }\n            \n            // Metadata provider selection handler\n            const providerSelect = document.getElementById('metadata-provider-select');\n            const malField = document.getElementById('mal-token-field');\n            const anilistField = document.getElementById('anilist-token-field');\n            \n            function updateTokenFields() {\n                const provider = providerSelect.value;\n                malField.style.display = provider === 'mal' ? 'block' : 'none';\n                anilistField.style.display = provider === 'anilist' ? 'block' : 'none';\n            }\n            \n            providerSelect.addEventListener('change', updateTokenFields);\n            updateTokenFields(); // Initialize on page load\n        });\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -108,6 +108,16 @@ func getManga(slug string, applyContentFilter bool) (*Manga, error) {
 	return &manga, nil
 }
 
+// Setter methods to implement metadata.MangaUpdater interface
+func (m *Manga) SetName(name string)                   { m.Name = name }
+func (m *Manga) SetDescription(desc string)            { m.Description = desc }
+func (m *Manga) SetYear(year int)                      { m.Year = year }
+func (m *Manga) SetOriginalLanguage(lang string)       { m.OriginalLanguage = lang }
+func (m *Manga) SetStatus(status string)               { m.Status = status }
+func (m *Manga) SetContentRating(rating string)        { m.ContentRating = rating }
+func (m *Manga) SetType(mangaType string)              { m.Type = mangaType }
+func (m *Manga) SetCoverArtURL(url string)             { m.CoverArtURL = url }
+
 // UpdateManga modifies an existing Manga
 func UpdateManga(manga *Manga) error {
 	manga.UpdatedAt = time.Now()

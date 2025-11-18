@@ -1,0 +1,41 @@
+package metadata
+
+import (
+	"fmt"
+)
+
+// ConfigProvider is an interface for accessing app configuration
+// This allows the metadata package to get provider config without importing models
+type ConfigProvider interface {
+	GetMetadataProvider() string
+	GetMALApiToken() string
+	GetAniListApiToken() string
+}
+
+// GetProviderFromConfig returns the configured metadata provider instance
+func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
+	providerName := config.GetMetadataProvider()
+	
+	var apiToken string
+	switch providerName {
+	case "mal":
+		apiToken = config.GetMALApiToken()
+	case "anilist":
+		apiToken = config.GetAniListApiToken()
+	case "jikan":
+		apiToken = "" // Jikan doesn't require auth
+	case "mangadex":
+		apiToken = "" // Mangadex doesn't require auth for public data
+	default:
+		// Default to Mangadex
+		providerName = "mangadex"
+		apiToken = ""
+	}
+
+	provider, err := GetProvider(providerName, apiToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize metadata provider '%s': %w", providerName, err)
+	}
+
+	return provider, nil
+}

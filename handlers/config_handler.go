@@ -40,6 +40,17 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
     if _, err := models.UpdateAppConfig(allow, maxUsers, contentRatingLimit, requireLogin); err != nil {
         return handleError(c, err)
     }
+    
+    // Update metadata provider configuration if provided
+    metadataProvider := c.FormValue("metadata_provider")
+    if metadataProvider != "" {
+        malToken := c.FormValue("mal_api_token")
+        anilistToken := c.FormValue("anilist_api_token")
+        if _, err := models.UpdateMetadataConfig(metadataProvider, malToken, anilistToken); err != nil {
+            return handleError(c, err)
+        }
+    }
+    
     return HandleView(c, views.Config())
 }
 

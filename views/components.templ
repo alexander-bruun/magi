@@ -3,6 +3,7 @@ package views
 import (
     "fmt"
     "strings"
+    "github.com/alexander-bruun/magi/metadata"
     "github.com/alexander-bruun/magi/models"
 )
 
@@ -174,7 +175,7 @@ templ Showcase(mangas []models.Manga) {
                                         @MangaCover(manga.CoverArtURL, manga.Name, 200, 300, true)
                                         {{ derived := manga.Type }}
                                         if derived == "" {
-                                            {{ derived = models.DetermineMangaTypeByLanguage(manga.OriginalLanguage) }}
+                                            {{ derived = metadata.DetermineMangaTypeByLanguage(manga.OriginalLanguage) }}
                                         }
                                         <div class="absolute left-2 top-2">
                                             <span class="uk-badge shadow-sm" style="background: hsl(var(--background)); box-shadow: 0 4px 10px rgba(0,0,0,0.12);">{ strings.ToUpper(derived) }</span>

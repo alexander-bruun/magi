@@ -8,9 +8,25 @@ import (
 // AppConfig holds global application settings (single-row table app_config id=1)
 type AppConfig struct {
     AllowRegistration      bool
-    MaxUsers               int64 // 0 means unlimited
-    ContentRatingLimit     int   // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-    RequireLoginForContent bool  // true = require login to view/read manga and chapters
+    MaxUsers               int64  // 0 means unlimited
+    ContentRatingLimit     int    // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    RequireLoginForContent bool   // true = require login to view/read manga and chapters
+    MetadataProvider       string // mangadex, mal, anilist, jikan
+    MALApiToken            string // MyAnimeList API token
+    AniListApiToken        string // AniList API token (optional)
+}
+
+// Implement metadata.ConfigProvider interface
+func (c *AppConfig) GetMetadataProvider() string {
+    return c.MetadataProvider
+}
+
+func (c *AppConfig) GetMALApiToken() string {
+    return c.MALApiToken
+}
+
+func (c *AppConfig) GetAniListApiToken() string {
+    return c.AniListApiToken
 }
 
 var (
@@ -21,19 +37,43 @@ var (
 
 // loadConfigFromDB loads the config row (id=1) from the database.
 func loadConfigFromDB() (AppConfig, error) {
-    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, require_login_for_content FROM app_config WHERE id = 1`)
+    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, require_login_for_content, 
+        COALESCE(metadata_provider, 'mangadex'), 
+        COALESCE(mal_api_token, ''), 
+        COALESCE(anilist_api_token, '') 
+        FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
     var contentRatingLimit int
     var requireLoginInt int
-    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &requireLoginInt); err != nil {
+    var metadataProvider string
+    var malApiToken string
+    var anilistApiToken string
+    
+    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &requireLoginInt, &metadataProvider, &malApiToken, &anilistApiToken); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
-            return AppConfig{AllowRegistration: true, MaxUsers: 0, ContentRatingLimit: 3, RequireLoginForContent: false}, nil
+            return AppConfig{
+                AllowRegistration:      true,
+                MaxUsers:               0,
+                ContentRatingLimit:     3,
+                RequireLoginForContent: false,
+                MetadataProvider:       "mangadex",
+                MALApiToken:            "",
+                AniListApiToken:        "",
+            }, nil
         }
         return AppConfig{}, err
     }
-    return AppConfig{AllowRegistration: allowInt == 1, MaxUsers: maxUsers, ContentRatingLimit: contentRatingLimit, RequireLoginForContent: requireLoginInt == 1}, nil
+    return AppConfig{
+        AllowRegistration:      allowInt == 1,
+        MaxUsers:               maxUsers,
+        ContentRatingLimit:     contentRatingLimit,
+        RequireLoginForContent: requireLoginInt == 1,
+        MetadataProvider:       metadataProvider,
+        MALApiToken:            malApiToken,
+        AniListApiToken:        anilistApiToken,
+    }, nil
 }
 
 // GetAppConfig returns the cached configuration, loading it from the DB once or when forced refresh.
@@ -85,6 +125,27 @@ func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit 
         contentRatingLimit = 3
     }
     _, err := db.Exec(`UPDATE app_config SET allow_registration = ?, max_users = ?, content_rating_limit = ?, require_login_for_content = ? WHERE id = 1`, allow, maxUsers, contentRatingLimit, requireLogin)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdateMetadataConfig updates the metadata provider and API tokens
+func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, error) {
+    // Validate provider
+    validProviders := map[string]bool{
+        "mangadex": true,
+        "mal":      true,
+        "anilist":  true,
+        "jikan":    true,
+    }
+    if !validProviders[provider] {
+        provider = "mangadex"
+    }
+    
+    _, err := db.Exec(`UPDATE app_config SET metadata_provider = ?, mal_api_token = ?, anilist_api_token = ? WHERE id = 1`, 
+        provider, malToken, anilistToken)
     if err != nil {
         return AppConfig{}, err
     }

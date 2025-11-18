@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 
+	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 )
@@ -154,18 +155,33 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	// Manga does not exist yet — fetch metadata, create it and index chapters
-	bestMatch, _ := models.GetBestMatchMangadexManga(cleanedName)
-
-	cachedImageURL, err := handleCoverArt(bestMatch, slug, absolutePath)
-	if err != nil {
-		log.Errorf("Failed to handle cover image for: '%s'", slug)
-		return "", err
+	config, err := models.GetAppConfig()
+	var meta *metadata.MangaMetadata
+	var provider metadata.Provider
+	if err == nil {
+		provider, err = metadata.GetProviderFromConfig(&config)
+		if err == nil {
+			meta, _ = provider.FindBestMatch(cleanedName)
+		}
 	}
 
-	newManga := createMangaFromMatch(bestMatch, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
+	var cachedImageURL string
+	if meta != nil {
+		coverURL := provider.GetCoverImageURL(meta)
+		if coverURL != "" {
+			cachedImageURL, _ = DownloadAndCacheImage(slug, coverURL)
+		}
+	}
+	
+	// If no cover was found, try local images
+	if cachedImageURL == "" {
+		cachedImageURL, _ = HandleLocalImages(slug, absolutePath)
+	}
 
-	// If no MangaDex match was found, try to detect webtoon by checking image dimensions
-	if bestMatch == nil {
+	newManga := createMangaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
+
+	// If no metadata match was found, try to detect webtoon by checking image dimensions
+	if meta == nil {
 		detectedType := detectWebtoonFromImages(absolutePath, slug)
 		if detectedType != "" {
 			newManga.Type = detectedType
@@ -177,27 +193,10 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		return "", err
 	}
 
-	// Persist tags from Mangadex response (if any)
-	if bestMatch != nil && len(bestMatch.Attributes.Tags) > 0 {
-		var tags []string
-		for _, t := range bestMatch.Attributes.Tags {
-			// prefer English name if available
-			if name, ok := t.Attributes.Name["en"]; ok && name != "" {
-				tags = append(tags, name)
-			} else {
-				// fallback: pick the first available name
-				for _, v := range t.Attributes.Name {
-					if v != "" {
-						tags = append(tags, v)
-						break
-					}
-				}
-			}
-		}
-		if len(tags) > 0 {
-			if err := models.SetTagsForManga(slug, tags); err != nil {
-				log.Errorf("Failed to set tags for manga '%s': %s", slug, err)
-			}
+	// Persist tags from metadata provider (if any)
+	if meta != nil && len(meta.Tags) > 0 {
+		if err := models.SetTagsForManga(slug, meta.Tags); err != nil {
+			log.Errorf("Failed to set tags for manga '%s': %s", slug, err)
 		}
 	}
 
@@ -215,7 +214,7 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if added > 0 || deleted > 0 {
-		if bestMatch == nil {
+		if meta == nil {
 			log.Infof("Indexed manga: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
 		} else {
 			log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
@@ -224,54 +223,26 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	return slug, nil
 }
 
-func createMangaFromMatch(match *models.MangaDetail, name, slug, librarySlug, path, coverURL string) models.Manga {
-	// derive type from original language
-	derivedType := models.DetermineMangaType(match)
-
-	return models.Manga{
-		Name:             name,
-		Slug:             slug,
-		Description:      getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Description["en"] }),
-		Year:             getIntAttribute(match, func(m *models.MangaDetail) int { return m.Attributes.Year }),
-		OriginalLanguage: getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.OriginalLanguage }),
-		Type:             derivedType,
-		Status:           getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.Status }),
-		ContentRating:    getStringAttribute(match, func(m *models.MangaDetail) string { return m.Attributes.ContentRating }),
-		CoverArtURL:      coverURL,
-		LibrarySlug:      librarySlug,
-		Path:             path,
-		Author:           getAuthor(match),
+func createMangaFromMetadata(meta *metadata.MangaMetadata, name, slug, librarySlug, path, coverURL string) models.Manga {
+	manga := models.Manga{
+		Name:        name,
+		Slug:        slug,
+		LibrarySlug: librarySlug,
+		Path:        path,
+		CoverArtURL: coverURL,
 	}
-}
-
-func handleCoverArt(bestMatch *models.MangaDetail, slug, absolutePath string) (string, error) {
-	coverArtURL := GetCoverArtURL(bestMatch)
-	if coverArtURL == "" {
-		return HandleLocalImages(slug, absolutePath)
+	
+	if meta != nil {
+		manga.Description = meta.Description
+		manga.Year = meta.Year
+		manga.OriginalLanguage = meta.OriginalLanguage
+		manga.Type = meta.Type
+		manga.Status = meta.Status
+		manga.ContentRating = meta.ContentRating
+		manga.Author = meta.Author
 	}
-	return DownloadAndCacheImage(slug, coverArtURL)
-}
-
-func GetCoverArtURL(match *models.MangaDetail) string {
-	if match == nil {
-		return ""
-	}
-	for _, rel := range match.Relationships {
-		if rel.Type == "cover_art" {
-			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
-				if fileName, exists := attributes["fileName"].(string); exists {
-					return fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s", match.ID, fileName)
-				}
-			}
-			break
-		}
-	}
-	return ""
-}
-
-// Deprecated: Use GetCoverArtURL instead
-func getCoverArtURL(match *models.MangaDetail) string {
-	return GetCoverArtURL(match)
+	
+	return manga
 }
 
 func HandleLocalImages(slug, absolutePath string) (string, error) {
@@ -331,6 +302,8 @@ func processLocalImage(slug, imagePath string) (string, error) {
 }
 
 func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
+	log.Infof("Attempting to download cover image for '%s' from URL: %s", slug, coverArtURL)
+	
 	u, err := url.Parse(coverArtURL)
 	if err != nil {
 		log.Errorf("Error parsing URL: %s", err)
@@ -341,47 +314,17 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	cachedImageURL := fmt.Sprintf("%s/%s.%s", localServerBaseURL, slug, fileExt)
 
 	if err := utils.DownloadImage(cacheDataDirectory, slug, coverArtURL); err != nil {
-		log.Errorf("Error downloading file: %s", err)
+		log.Errorf("Error downloading file from %s: %s", coverArtURL, err)
 		return coverArtURL, nil
 	}
 
+	log.Infof("Successfully downloaded and cached cover image for '%s'", slug)
 	return cachedImageURL, nil
 }
 
 // Deprecated: Use DownloadAndCacheImage instead
 func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	return DownloadAndCacheImage(slug, coverArtURL)
-}
-
-func getStringAttribute(match *models.MangaDetail, getter func(*models.MangaDetail) string) string {
-	if match != nil {
-		return getter(match)
-	}
-	return "n/a"
-}
-
-func getIntAttribute(match *models.MangaDetail, getter func(*models.MangaDetail) int) int {
-	if match != nil {
-		return getter(match)
-	}
-	return 0
-}
-
-func getAuthor(match *models.MangaDetail) string {
-	if match == nil {
-		return ""
-	}
-	for _, rel := range match.Relationships {
-		if rel.Type == "author" {
-			if attributes, ok := rel.Attributes.(map[string]interface{}); ok {
-				if name, exists := attributes["name"].(string); exists {
-					return name
-				}
-			}
-			break
-		}
-	}
-	return ""
 }
 
 // IndexChapters reconciles chapter files on disk with the stored chapter records.

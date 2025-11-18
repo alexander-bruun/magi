@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/indexer"
+	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
@@ -226,22 +227,33 @@ func HandleMarkUnread(c *fiber.Ctx) error {
 	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
 }
 
-// HandleUpdateMetadataManga displays Mangadex matches for updating a local manga's metadata.
+// HandleUpdateMetadataManga displays search results for updating a local manga's metadata.
 func HandleUpdateMetadataManga(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	search := c.Query("search")
 
-	response, err := models.GetMangadexMangas(search)
+	// Get the configured metadata provider
+	config, err := models.GetAppConfig()
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to get app config: %w", err))
+	}
+	provider, err := metadata.GetProviderFromConfig(&config)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to get metadata provider: %w", err))
+	}
+
+	// Search using the provider
+	results, err := provider.Search(search)
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.UpdateMetadata(*response, mangaSlug))
+	return HandleView(c, views.UpdateMetadataResults(results, mangaSlug))
 }
 
-// HandleEditMetadataManga applies selected Mangadex metadata to an existing manga.
+// HandleEditMetadataManga applies selected metadata to an existing manga.
 func HandleEditMetadataManga(c *fiber.Ctx) error {
-	mangadexID := c.Query("id")
+	metadataID := c.Query("id")
 	mangaSlug := c.Query("slug")
 	if mangaSlug == "" {
 		return handleError(c, fmt.Errorf("manga slug can't be empty"))
@@ -255,26 +267,42 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted"), fiber.StatusNotFound)
 	}
 
-	mangaDetail, err := models.GetMangadexManga(mangadexID)
+	// Get the configured metadata provider
+	config, err := models.GetAppConfig()
 	if err != nil {
-		return handleError(c, err)
+		return handleError(c, fmt.Errorf("failed to get app config: %w", err))
+	}
+	provider, err := metadata.GetProviderFromConfig(&config)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to get metadata provider: %w", err))
 	}
 
-	coverArtURL, err := models.ExtractCoverArtURL(mangaDetail, mangadexID)
+	// Fetch metadata using the provider
+	meta, err := provider.GetMetadata(metadataID)
 	if err != nil {
-		return handleError(c, err)
+		return handleError(c, fmt.Errorf("failed to fetch metadata: %w", err))
 	}
 
-	cachedImageURL, err := models.CacheAndGetImageURL(savedCacheDirectory, existingManga.Slug, coverArtURL)
-	if err != nil {
-		return handleError(c, err)
+	// Get cover URL and download/cache it
+	coverURL := provider.GetCoverImageURL(meta)
+	var cachedImageURL string
+	if coverURL != "" {
+		cachedImageURL, err = indexer.DownloadAndCacheImage(existingManga.Slug, coverURL)
+		if err != nil {
+			log.Warnf("Failed to download cover art: %v", err)
+			// Try local images as fallback
+			cachedImageURL, _ = indexer.HandleLocalImages(existingManga.Slug, existingManga.Path)
+		}
 	}
 
-	models.UpdateMangaFromMangadex(existingManga, mangaDetail, cachedImageURL)
+	// Update manga with metadata
+	metadata.UpdateManga(existingManga, meta, cachedImageURL)
 
-	// Persist tags from Mangadex
-	if err := models.PersistMangadexTags(existingManga.Slug, mangaDetail); err != nil {
-		return handleError(c, err)
+	// Persist tags
+	if len(meta.Tags) > 0 {
+		if err := models.SetTagsForManga(existingManga.Slug, meta.Tags); err != nil {
+			log.Warnf("Failed to persist tags: %v", err)
+		}
 	}
 
 	if err := models.UpdateManga(existingManga); err != nil {
@@ -530,7 +558,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 
 	// Process cover art URL (download and cache)
 	if coverURL != "" {
-		cachedImageURL, err := models.CacheAndGetImageURL(savedCacheDirectory, existingManga.Slug, coverURL)
+		cachedImageURL, err := indexer.DownloadAndCacheImage(existingManga.Slug, coverURL)
 		if err != nil {
 			return handleError(c, fmt.Errorf("failed to download and cache cover art: %w", err))
 		}
@@ -563,29 +591,55 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("manga not found"), fiber.StatusNotFound)
 	}
 
-	// Fetch fresh metadata from MangaDex
-	mangaDetail, err := models.GetBestMatchMangadexManga(existingManga.Name)
+	// Get the configured metadata provider
+	config, err := models.GetAppConfig()
 	if err != nil {
-		// Log the warning but don't fail - fall back to local metadata
-		log.Warnf("Failed to fetch metadata from MangaDex for '%s': %v. Falling back to local metadata.", existingManga.Name, err)
+		log.Warnf("Failed to get app config: %v", err)
+		return handleError(c, err)
+	}
+	provider, err := metadata.GetProviderFromConfig(&config)
+	if err != nil {
+		log.Warnf("Failed to get metadata provider: %v", err)
+		return handleError(c, err)
 	}
 
-	if mangaDetail != nil {
+	// Fetch fresh metadata from the configured provider
+	meta, err := provider.FindBestMatch(existingManga.Name)
+	if err != nil {
+		// Log the warning but don't fail - fall back to local metadata
+		log.Warnf("Failed to fetch metadata from %s for '%s': %v. Falling back to local metadata.", provider.Name(), existingManga.Name, err)
+	}
+
+	if meta != nil {
+		// Get the cover art URL from the provider
+		coverURL := provider.GetCoverImageURL(meta)
+		
 		// Download and cache the new cover art if available
-		cachedImageURL, err := downloadAndCacheCoverArt(mangaDetail, mangaSlug, existingManga.Path)
-		if err != nil {
-			log.Warn("Failed to download cover art during metadata refresh: ", err)
-			// Don't fail the entire operation if cover art fails
-		} else if cachedImageURL != "" {
+		var cachedImageURL string
+		if coverURL != "" {
+			cachedImageURL, err = indexer.DownloadAndCacheImage(mangaSlug, coverURL)
+			if err != nil {
+				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
+				// Try to fall back to local images
+				cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingManga.Path)
+			}
+		} else {
+			// No cover URL from provider, try local images
+			cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingManga.Path)
+		}
+
+		if cachedImageURL != "" {
 			existingManga.CoverArtURL = cachedImageURL
 		}
 
-		// Update metadata from MangaDex while preserving creation date
-		models.UpdateMangaFromMangadex(existingManga, mangaDetail, existingManga.CoverArtURL)
+		// Update metadata from provider while preserving creation date
+		metadata.UpdateManga(existingManga, meta, existingManga.CoverArtURL)
 
-		// Persist tags from Mangadex
-		if err := models.PersistMangadexTags(existingManga.Slug, mangaDetail); err != nil {
-			log.Warnf("Failed to persist tags for manga '%s': %v", mangaSlug, err)
+		// Persist tags
+		if len(meta.Tags) > 0 {
+			if err := models.SetTagsForManga(existingManga.Slug, meta.Tags); err != nil {
+				log.Warnf("Failed to persist tags for manga '%s': %v", mangaSlug, err)
+			}
 		}
 
 		// Update manga metadata without changing created_at
@@ -593,8 +647,8 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 			return handleError(c, fmt.Errorf("failed to update manga metadata: %w", err))
 		}
 	} else {
-		// No MangaDex match - delete and re-index with local metadata
-		log.Infof("No MangaDex match found for '%s'. Re-indexing with local metadata.", existingManga.Name)
+		// No metadata match - delete and re-index with local metadata
+		log.Infof("No metadata match found for '%s' from %s. Re-indexing with local metadata.", existingManga.Name, provider.Name())
 		
 		// Delete the manga (chapters and tags will be cascade deleted)
 		if err := models.DeleteManga(existingManga.Slug); err != nil {
@@ -636,19 +690,6 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	redirectURL := fmt.Sprintf("/mangas/%s", mangaSlug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)
-}
-
-// downloadAndCacheCoverArt is a helper function to download and cache cover art for a manga
-func downloadAndCacheCoverArt(mangaDetail *models.MangaDetail, slug, mangaPath string) (string, error) {
-	if mangaDetail == nil {
-		return "", nil
-	}
-
-	coverArtURL := indexer.GetCoverArtURL(mangaDetail)
-	if coverArtURL == "" {
-		return indexer.HandleLocalImages(slug, mangaPath)
-	}
-	return indexer.DownloadAndCacheImage(slug, coverArtURL)
 }
 
 // HandlePosterChapterSelect renders a list of chapters to select from

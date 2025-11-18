@@ -45,6 +45,35 @@ templ Config() {
                             </select>
                             <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
                         </div>
+                        
+                        <!-- Metadata Provider Section -->
+                        <div class="uk-margin-medium-top uk-padding-small">
+                            <h4 class="uk-heading-line"><span>Metadata Provider</span></h4>
+                            <div class="uk-margin">
+                                <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
+                                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
+                                    <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
+                                    <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
+                                    <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
+                                </select>
+                                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching manga information.</p>
+                            </div>
+                            
+                            <!-- MAL API Token -->
+                            <div id="mal-token-field" class="uk-margin" style="display: none;">
+                                <label class="block mb-1">MyAnimeList Client ID</label>
+                                <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
+                                <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
+                            </div>
+                            
+                            <!-- AniList API Token -->
+                            <div id="anilist-token-field" class="uk-margin" style="display: none;">
+                                <label class="block mb-1">AniList Access Token (Optional)</label>
+                                <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
+                                <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
+                            </div>
+                        </div>
+                        
                         <div class="flex justify-center">
                             <button type="submit" class="uk-btn uk-btn-default">Save</button>
                         </div>
@@ -69,17 +98,33 @@ templ Config() {
     </div>
     
     <script>
-        (function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
             
-            new LogViewer({
-                wsUrl: wsUrl,
-                containerId: 'console-logs-container',
-                outputId: 'console-logs-output',
-                maxEntries: 1000,
-                reconnectInterval: 3000
-            });
-        })();
+            if (window.Magi && window.Magi.LogViewer) {
+                new window.Magi.LogViewer({
+                    wsUrl: wsUrl,
+                    containerId: 'console-logs-container',
+                    outputId: 'console-logs-output',
+                    maxEntries: 1000,
+                    reconnectInterval: 3000
+                });
+            }
+            
+            // Metadata provider selection handler
+            const providerSelect = document.getElementById('metadata-provider-select');
+            const malField = document.getElementById('mal-token-field');
+            const anilistField = document.getElementById('anilist-token-field');
+            
+            function updateTokenFields() {
+                const provider = providerSelect.value;
+                malField.style.display = provider === 'mal' ? 'block' : 'none';
+                anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
+            }
+            
+            providerSelect.addEventListener('change', updateTokenFields);
+            updateTokenFields(); // Initialize on page load
+        });
     </script>
 }

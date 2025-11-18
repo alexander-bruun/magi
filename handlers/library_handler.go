@@ -163,7 +163,6 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Library not found")
 	}
 
-	log.Infof("Starting manual scan for library: %s", library.Name)
 	// Create a temporary Indexer for this library and run the job so we
 	// preserve the same logging and lifecycle as scheduled jobs.
 	idx := indexer.NewIndexer(*library)
