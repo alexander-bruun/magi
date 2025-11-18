@@ -82,7 +82,28 @@ func CreateUser(username, password string) error {
 		return err
 	}
 
+	// Assign default 'all' permission to new user
+	err = assignDefaultPermissionToUser(username)
+	if err != nil {
+		log.Warnf("Failed to assign default permission to user '%s': %v", username, err)
+		// Don't fail user creation if permission assignment fails
+	}
+
 	return nil
+}
+
+// assignDefaultPermissionToUser assigns the 'all' wildcard permission to a user
+func assignDefaultPermissionToUser(username string) error {
+	// Find the 'all' permission
+	query := `SELECT id FROM permissions WHERE name = 'all' AND is_wildcard = 1 LIMIT 1`
+	var permID int64
+	err := db.QueryRow(query).Scan(&permID)
+	if err != nil {
+		return fmt.Errorf("'all' permission not found: %w", err)
+	}
+
+	// Assign it to the user
+	return AssignPermissionToUser(username, permID)
 }
 
 // FindUserByUsername retrieves a user by their username.

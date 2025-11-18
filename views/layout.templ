@@ -43,8 +43,8 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
 			</script>
 			<!-- Core UI - async for non-blocking -->
-			<script src="/assets/js/vendor/core.iife.js" type="module" async></script>
-			<script src="/assets/js/vendor/icon.iife.js" type="module" async></script>
+			<script src="/assets/js/vendor/core.iife.js"></script>
+			<script src="/assets/js/vendor/icon.iife.js"></script>
 			<!-- Application scripts - defer for optimal loading -->
 			<script src="/assets/js/vendor/htmx.min.js" defer></script>
 			<script src="/assets/js/vendor/codemirror.min.js" defer></script>

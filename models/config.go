@@ -7,13 +7,12 @@ import (
 
 // AppConfig holds global application settings (single-row table app_config id=1)
 type AppConfig struct {
-    AllowRegistration      bool
-    MaxUsers               int64  // 0 means unlimited
-    ContentRatingLimit     int    // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-    RequireLoginForContent bool   // true = require login to view/read manga and chapters
-    MetadataProvider       string // mangadex, mal, anilist, jikan
-    MALApiToken            string // MyAnimeList API token
-    AniListApiToken        string // AniList API token (optional)
+    AllowRegistration  bool
+    MaxUsers           int64  // 0 means unlimited
+    ContentRatingLimit int    // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    MetadataProvider   string // mangadex, mal, anilist, jikan
+    MALApiToken        string // MyAnimeList API token
+    AniListApiToken    string // AniList API token (optional)
 }
 
 // Implement metadata.ConfigProvider interface
@@ -37,7 +36,7 @@ var (
 
 // loadConfigFromDB loads the config row (id=1) from the database.
 func loadConfigFromDB() (AppConfig, error) {
-    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, require_login_for_content, 
+    row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, 
         COALESCE(metadata_provider, 'mangadex'), 
         COALESCE(mal_api_token, ''), 
         COALESCE(anilist_api_token, '') 
@@ -45,34 +44,31 @@ func loadConfigFromDB() (AppConfig, error) {
     var allowInt int
     var maxUsers int64
     var contentRatingLimit int
-    var requireLoginInt int
     var metadataProvider string
     var malApiToken string
     var anilistApiToken string
     
-    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &requireLoginInt, &metadataProvider, &malApiToken, &anilistApiToken); err != nil {
+    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
-                AllowRegistration:      true,
-                MaxUsers:               0,
-                ContentRatingLimit:     3,
-                RequireLoginForContent: false,
-                MetadataProvider:       "mangadex",
-                MALApiToken:            "",
-                AniListApiToken:        "",
+                AllowRegistration:  true,
+                MaxUsers:           0,
+                ContentRatingLimit: 3,
+                MetadataProvider:   "mangadex",
+                MALApiToken:        "",
+                AniListApiToken:    "",
             }, nil
         }
         return AppConfig{}, err
     }
     return AppConfig{
-        AllowRegistration:      allowInt == 1,
-        MaxUsers:               maxUsers,
-        ContentRatingLimit:     contentRatingLimit,
-        RequireLoginForContent: requireLoginInt == 1,
-        MetadataProvider:       metadataProvider,
-        MALApiToken:            malApiToken,
-        AniListApiToken:        anilistApiToken,
+        AllowRegistration:  allowInt == 1,
+        MaxUsers:           maxUsers,
+        ContentRatingLimit: contentRatingLimit,
+        MetadataProvider:   metadataProvider,
+        MALApiToken:        malApiToken,
+        AniListApiToken:    anilistApiToken,
     }, nil
 }
 
@@ -108,14 +104,10 @@ func RefreshAppConfig() (AppConfig, error) {
 }
 
 // UpdateAppConfig updates the settings atomically and refreshes cache.
-func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit int, requireLoginForContent bool) (AppConfig, error) {
+func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit int) (AppConfig, error) {
     allow := 0
     if allowRegistration {
         allow = 1
-    }
-    requireLogin := 0
-    if requireLoginForContent {
-        requireLogin = 1
     }
     // Ensure content rating limit is within valid range (0-3)
     if contentRatingLimit < 0 {
@@ -124,7 +116,7 @@ func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit 
     if contentRatingLimit > 3 {
         contentRatingLimit = 3
     }
-    _, err := db.Exec(`UPDATE app_config SET allow_registration = ?, max_users = ?, content_rating_limit = ?, require_login_for_content = ? WHERE id = 1`, allow, maxUsers, contentRatingLimit, requireLogin)
+    _, err := db.Exec(`UPDATE app_config SET allow_registration = ?, max_users = ?, content_rating_limit = ? WHERE id = 1`, allow, maxUsers, contentRatingLimit)
     if err != nil {
         return AppConfig{}, err
     }

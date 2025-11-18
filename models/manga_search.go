@@ -6,16 +6,17 @@ import (
 
 // SearchOptions defines parameters for manga searches
 type SearchOptions struct {
-	Filter      string
-	Page        int
-	PageSize    int
-	SortBy      string
-	SortOrder   string
-	FilterBy    string
-	LibrarySlug string
-	Tags        []string
-	TagMode     string // "all" or "any"
-	Types       []string // filter by manga types (any match)
+	Filter             string
+	Page               int
+	PageSize           int
+	SortBy             string
+	SortOrder          string
+	FilterBy           string
+	LibrarySlug        string
+	Tags               []string
+	TagMode            string // "all" or "any"
+	Types              []string // filter by manga types (any match)
+	AccessibleLibraries []string // filter by accessible libraries for permission system
 }
 
 // SearchMangasWithOptions performs a flexible manga search using options
@@ -23,6 +24,11 @@ func SearchMangasWithOptions(opts SearchOptions) ([]Manga, int64, error) {
 	var mangas []Manga
 	if err := loadAllMangas(&mangas); err != nil {
 		return nil, 0, err
+	}
+
+	// Filter by accessible libraries (permission system)
+	if len(opts.AccessibleLibraries) > 0 {
+		mangas = filterByAccessibleLibraries(mangas, opts.AccessibleLibraries)
 	}
 
 	// Filter by library
@@ -70,6 +76,27 @@ func SearchMangasWithOptions(opts SearchOptions) ([]Manga, int64, error) {
 
 	// Paginate
 	return paginateMangas(mangas, opts.Page, opts.PageSize), total, nil
+}
+
+// filterByAccessibleLibraries filters mangas to only those in accessible libraries
+func filterByAccessibleLibraries(mangas []Manga, accessibleLibraries []string) []Manga {
+	if len(accessibleLibraries) == 0 {
+		return []Manga{} // No accessible libraries means no manga
+	}
+	
+	// Create a set for O(1) lookup
+	librarySet := make(map[string]struct{}, len(accessibleLibraries))
+	for _, slug := range accessibleLibraries {
+		librarySet[slug] = struct{}{}
+	}
+	
+	filtered := make([]Manga, 0, len(mangas))
+	for _, m := range mangas {
+		if _, ok := librarySet[m.LibrarySlug]; ok {
+			filtered = append(filtered, m)
+		}
+	}
+	return filtered
 }
 
 // filterByLibrarySlug filters mangas by library slug

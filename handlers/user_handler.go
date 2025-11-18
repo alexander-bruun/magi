@@ -62,15 +62,22 @@ func HandleAccountList(listType views.AccountListType) fiber.Handler {
 		params := ParseQueryParams(c)
 		pageSize := 16
 
+		// Get accessible libraries for the current user
+		accessibleLibraries, err := GetUserAccessibleLibraries(c)
+		if err != nil {
+			return handleError(c, err)
+		}
+
 		opts := models.UserMangaListOptions{
-			Username:     userName,
-			Page:         params.Page,
-			PageSize:     pageSize,
-			SortBy:       params.Sort,
-			SortOrder:    params.Order,
-			Tags:         params.Tags,
-			TagMode:      params.TagMode,
-			SearchFilter: params.SearchFilter,
+			Username:            userName,
+			Page:                params.Page,
+			PageSize:            pageSize,
+			SortBy:              params.Sort,
+			SortOrder:           params.Order,
+			Tags:                params.Tags,
+			TagMode:             params.TagMode,
+			SearchFilter:        params.SearchFilter,
+			AccessibleLibraries: accessibleLibraries,
 		}
 
 		mangas, total, err := config.getMangasFunc(opts)
@@ -122,6 +129,11 @@ func HandleAccountReading(c *fiber.Ctx) error {
 // HandleUsers renders the user administration view.
 func HandleUsers(c *fiber.Ctx) error {
 	return HandleView(c, views.Users())
+}
+
+// HandlePermissionsManagement renders the permissions management page
+func HandlePermissionsManagement(c *fiber.Ctx) error {
+	return HandleView(c, views.PermissionsManagement())
 }
 
 // HandleUserBan demotes and bans the specified user before returning the updated table.
