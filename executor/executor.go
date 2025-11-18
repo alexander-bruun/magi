@@ -17,6 +17,12 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
+// Callback functions for job status notifications (set by handlers package)
+var (
+    NotifyScraperStarted  func(scriptID int64, scriptName string)
+    NotifyScraperFinished func(scriptID int64)
+)
+
 // LogStreamManager manages WebSocket connections for log streaming
 type LogStreamManager struct {
     clients map[int64][]*websocket.Conn // scriptID -> list of connections
@@ -166,6 +172,11 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
     execContexts.funcs[script.ID] = cancel
     execContexts.mu.Unlock()
 
+    // Notify that scraper has started
+    if NotifyScraperStarted != nil {
+        NotifyScraperStarted(script.ID, script.Name)
+    }
+
     var execLog *models.ScraperExecutionLog
     if createLog {
         l, err := models.CreateScraperLog(script.ID, "running")
@@ -183,6 +194,11 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
             execContexts.mu.Lock()
             delete(execContexts.funcs, s.ID)
             execContexts.mu.Unlock()
+
+            // Notify that scraper has finished
+            if NotifyScraperFinished != nil {
+                NotifyScraperFinished(s.ID)
+            }
         }()
 
         start := time.Now()

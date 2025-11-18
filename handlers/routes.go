@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"github.com/alexander-bruun/magi/executor"
+	"github.com/alexander-bruun/magi/indexer"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -15,6 +17,16 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	log.Info("Initializing application routes and middleware")
 
 	savedCacheDirectory = cacheDirectory
+
+	// ========================================
+	// Set up job status notification callbacks
+	// ========================================
+	
+	executor.NotifyScraperStarted = NotifyScraperStarted
+	executor.NotifyScraperFinished = NotifyScraperFinished
+	indexer.NotifyIndexerStarted = NotifyIndexerStarted
+	indexer.NotifyIndexerProgress = NotifyIndexerProgress
+	indexer.NotifyIndexerFinished = NotifyIndexerFinished
 
 	// ========================================
 	// Middleware Configuration
@@ -196,6 +208,12 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	config.Get("", HandleConfiguration)
 	config.Post("", HandleConfigurationUpdate)
 	config.Get("/logs", HandleConsoleLogsWebSocketUpgrade)
+
+	// ========================================
+	// Job Status WebSocket (public)
+	// ========================================
+	
+	app.Get("/ws/job-status", HandleJobStatusWebSocketUpgrade)
 
 	// ========================================
 	// Fallback Route

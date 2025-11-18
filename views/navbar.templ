@@ -125,6 +125,9 @@ templ Navbar(userRole string, currentPath string) {
 			@NavItem("/mangas", "book", "Mangas", currentPath)
 		</ul>
 		<div class="sidebar-footer" aria-hidden="false">
+			<div id="job-status-indicator" class="job-status-indicator" style="display: none;" data-uk-tooltip="">
+				<div data-uk-spinner></div>
+			</div>
 			<a class="uk-btn uk-btn-default" href="https://github.com/sponsors/alexander-bruun">
 				<uk-icon icon="heart"></uk-icon>
 			</a>
