@@ -9,64 +9,144 @@
   <img alt="GitHub Sponsors" src="https://img.shields.io/github/sponsors/alexander-bruun">
 </div>
 
-# Magi
+# Welcome to Magi Documentation
 
-**Magi** is a minimalist and efficient manga indexer, organizer, and reader. It does **NOT** distribute copyrighted material, including posters, metadata, or any other content owned by original copyright holders. Magi is designed solely as a local application to manage your digital manga collection using common file formats like `.cbz`, `.cbr`, `.zip`, `.rar`, etc. Metadata and posters are fetched from publicly accessible APIs to enhance the user experience.
+**Magi** is a self-hosted, lightweight manga server and reader designed for simplicity, performance, and ease of use. Whether you're managing a small personal collection or a large library, Magi provides all the tools you need to organize, index, and enjoy your digital manga collection.
 
 ![Magi Frontpage](/docs/images/frontpage.png)
 
-Additional Magi screenshots, can be found under `/docs/images`, we add example page screenshots as new features are added.
+> [!IMPORTANT]
+> **Magi does NOT distribute copyrighted material.** It's designed exclusively as a local library manager for your legally obtained manga files. Metadata and cover art are fetched from public APIs like MangaDex to enrich your reading experience.
+
+## What is Magi?
+
+Magi is a complete manga management solution that runs as a single binary on your server, desktop, or NAS. It automatically indexes your manga collection, fetches metadata from MangaDex, and provides a beautiful web interface for reading and managing your library.
+
+### Key Features
+
+- **📚 Automatic Library Management**: Scan directories and auto-organize your collection
+- **📖 Modern Reader**: Multiple reading modes (webtoon, single page, side-by-side)
+- **👥 Multi-User Support**: Create accounts with role-based permissions
+- **🔍 Advanced Search**: Filter by tags, types, content rating, and more
+- **🎨 Rich Metadata**: Automatic cover art, descriptions, and tags from MangaDex
+- **⚡ High Performance**: Written in Go with SQLite for speed and efficiency
+- **🐳 Container Ready**: Docker images available for easy deployment
+- **📱 Responsive Design**: Works on desktop, tablet, and mobile devices
+
+## Quick Start
+
+Choose your installation method:
+
+=== "Docker"
+    ```bash
+    docker run -d \
+      --name magi \
+      -p 3000:3000 \
+      -v /path/to/manga:/data/manga \
+      -v /path/to/magi-data:/data/magi \
+      alexbruun/magi:latest
+    ```
+
+=== "Binary"
+    1. Download from [GitHub Releases](https://github.com/alexander-bruun/magi/releases)
+    2. Run: `./magi`
+    3. Open: `http://localhost:3000`
+
+=== "Docker Compose"
+    ```yaml
+    version: '3.8'
+    services:
+      magi:
+        image: alexbruun/magi:latest
+        ports:
+          - "3000:3000"
+        volumes:
+          - /path/to/manga:/data/manga:ro
+          - magi-data:/data/magi
+        restart: unless-stopped
+    volumes:
+      magi-data:
+    ```
+
+After starting Magi, navigate to `http://localhost:3000` and create your admin account (the first user automatically becomes admin).
+
+## Platform Support
+
+Magi builds to a single portable binary for:
+
+| Platform | Architectures |
+|----------|---------------|
+| Linux    | amd64, arm64  |
+| macOS    | amd64, arm64  |
+| Windows  | amd64, arm64  |
+
+Docker images are available for `linux/amd64` and `linux/arm64`.
+
+## File Format Support
+
+Magi natively supports common manga archive formats:
+
+- ✅ **CBZ** (Comic Book ZIP) - Recommended
+- ✅ **CBR** (Comic Book RAR)
+- ✅ **ZIP** archives
+- ✅ **RAR** archives
 
 > [!TIP]
-> Due to the heavy compression of rar files, you will incur performance issues. So it is recommended to use traditional zip files when possible, due to their performance benefits for random reads and writes.
+> **Performance Tip**: CBZ/ZIP files offer better random access performance than RAR. For the best experience, consider converting RAR files to ZIP format.
 
-Magi builds to a single binary targeting: `Linux`, `MacOS` and `Windows` on the following architectures: `amd64` and `arm64`. If additional platforms should be supported, then feel free to open a merge request to the pipelines so more people can enjoy Magi.
+## Architecture Overview
 
-Binary releases are uploaded to the corresponding [GitHub Release](https://github.com/alexander-bruun/magi/releases) bound to a Git Tag generated through the GitHub workflow pipelines triggered by a merge to main, because of this we primarily work in the `next` branch, and merge to `main` when significant changes has been made for a tag bump to be reasonable. Due to Magi being in its early stages we also push unsafe directly to `main` branch, this is due to the project being in a early development stage where we have not yet determined everything.
+Magi is built with cutting-edge web technologies:
 
-If you wish to run Magi as a Docker container, then fear not! We build Docker container images for `linux` on `amd64` and `arm64`, which can be found on [Docker Hub](https://hub.docker.com/r/alexbruun/magi) and GHCR (Coming soon).
+- **Backend**: Go + Fiber (Express-inspired web framework)
+- **Database**: SQLite with automatic migrations
+- **Templates**: Templ (type-safe HTML generation)
+- **Frontend**: HTMX + Franken UI (minimal JavaScript)
+- **Metadata**: MangaDex API (no authentication required)
 
-When running with native binaries it is heavily recommended to use something like [shawl](https://github.com/mtkennerly/shawl) on Windows to run Magi as a service in the backgounrd, and registering a Unit on Linux.
+Everything compiles into a single binary with embedded assets—no dependencies required.
 
-Alternatively, run Magi in a container solution such as Kubernetes, Docker Desktop or Podman... the sky is the limit! Just make sure the underlying data is made available to the native or container environment.
+## Documentation Structure
 
-The full documentation, can be found [here](https://alexander-bruun.github.io/magi/).
+This documentation is organized into the following sections:
 
-## Technologies
+### [Installation](installation/docker.md)
+Step-by-step guides for installing Magi on various platforms:
 
-Magi is built with the following technologies:
+- [Docker](installation/docker.md) - Containerized deployment
+- [Linux](installation/linux.md) - Native binary with systemd
+- [Windows](installation/windows.md) - Native binary with Windows Service
+- [Kubernetes](installation/kubernetes.md) - Kubernetes manifests
+- [Podman](installation/podman.md) - Podman containers
 
-- [GoLang](https://go.dev/) - Programming Language
-- [Sqlite](https://github.com/ncruces/go-sqlite3) - Relational database
-- [GoFiber](https://docs.gofiber.io/) - HTTP Server
-- [Templ](https://templ.guide/) - HTML Templating
-- JavaScript libraries:
-  - [HTMX](https://htmx.org/) - Hypermedia
-  - [Lazysizes](https://github.com/aFarkas/lazysizes) - Lazy image loading
-- [Franken UI](https://franken-ui.dev/) - Predefined Components
-- [Mangadex API](https://api.mangadex.org/docs/) - Metadata Scraping
+### [Usage](usage/getting_started.md)
+Learn how to use Magi effectively:
 
-Magi is compiled into a single binary file, making it highly portable and easy to run on any machine (meaning there is no "installer" it is by design portable). The build process integrates static views and assets into the final binary, allowing for fast builds and quick testing.
+- [Getting Started](usage/getting_started.md) - First steps after installation
+- [Configuration](usage/configuration.md) - Admin settings and environment variables
+- [Troubleshooting](usage/troubleshooting.md) - Common issues and solutions
 
-> [!NOTE]
-> Mangadex APi was chosen over other solutions due to it allowing anonymous requests and not forcing the end-user to provide API tokens or keys. Alternatives like MAL was explored, and worked just fine, but was a pain for people to indiviually create their own API tokens etc...
+## Community & Support
 
-## Getting Started
-
-To set up Magi for development, use the following command in the project directory:
-
-```sh
-air
-```
-
-This will start the application and provide you with logs indicating the status of the server and other components. You can then access the application at `http://localhost:3000`. Air also provides similar functionaly to something like `next run dev` where you get a proxy page that reloads for you, by opening the application on port `:3001` then you will get proxy refresh's when you change the source code.
-
-This provides a smoother developer experience instead of having to refresh the page every time you made a change.
+- **GitHub**: [alexander-bruun/magi](https://github.com/alexander-bruun/magi)
+- **Issues**: [Report bugs or request features](https://github.com/alexander-bruun/magi/issues)
+- **Discussions**: [Ask questions and share ideas](https://github.com/alexander-bruun/magi/discussions)
 
 ## Contributing
 
-Magi is in its early stages of development, and many features are still in progress or may break from release to release. Contributions are welcome! Please feel free to submit merge requests or feature requests. Your input is invaluable for shaping the direction of Magi.
+Magi is open-source and welcomes contributions! Whether you want to:
+
+- Fix bugs
+- Add features
+- Improve documentation
+- Report issues
+
+Check out the [Contributing Guide](https://github.com/alexander-bruun/magi/blob/main/README.md#-contributing) to get started.
 
 ## License
 
-[MIT License](LICENSE)
+Magi is licensed under the [MIT License](https://github.com/alexander-bruun/magi/blob/main/LICENSE), allowing you to use it freely for personal or commercial purposes.
+
+---
+
+**Ready to get started?** Head to the [Installation Guide](installation/docker.md) to set up Magi, or jump to [Getting Started](usage/getting_started.md) if you've already installed it.
