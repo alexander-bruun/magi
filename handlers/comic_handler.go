@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -22,20 +23,23 @@ func ComicHandler(c *fiber.Ctx) error {
 	chapterPage := c.Query("page")
 
 	if mangaSlug == "" || chapterSlug == "" || chapterPage == "" {
-		return HandleView(c, views.Error("When requesting a manga, all parameters must be provided"))
+		return handleErrorWithStatus(c, fmt.Errorf("all parameters (manga, chapter, page) must be provided"), fiber.StatusBadRequest)
 	}
 
 	manga, err := models.GetManga(mangaSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
 	}
 	if manga == nil {
-		return HandleView(c, views.Error("Manga not found or access restricted based on content rating settings."))
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found or access restricted based on content rating settings"), fiber.StatusNotFound)
 	}
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
-		return HandleView(c, views.Error(err.Error()))
+		return handleError(c, err)
+	}
+	if chapter == nil {
+		return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 	}
 
 	// Determine the actual chapter file path

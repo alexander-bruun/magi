@@ -65,16 +65,28 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
 	}
 
-	if err := models.DeleteLibrary(slug); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
+	// Delete the library asynchronously to avoid blocking the response
+	go func() {
+		if err := models.DeleteLibrary(slug); err != nil {
+			log.Errorf("Error deleting library %s: %v", slug, err)
+		}
+	}()
 
+	// Immediately return the updated table without the deleted library
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	tableContent, err := renderLibraryTable(libraries)
+	// Filter out the library being deleted from the response
+	filteredLibraries := make([]models.Library, 0, len(libraries))
+	for _, lib := range libraries {
+		if lib.Slug != slug {
+			filteredLibraries = append(filteredLibraries, lib)
+		}
+	}
+
+	tableContent, err := renderLibraryTable(filteredLibraries)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
@@ -122,6 +134,9 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
+	if library == nil {
+		return c.Status(fiber.StatusNotFound).SendString("Library not found")
+	}
 
 	var buf bytes.Buffer
 	err = views.LibraryForm(*library, "put", true).Render(context.Background(), &buf)
@@ -143,6 +158,9 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	library, err := models.GetLibrary(slug)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+	if library == nil {
+		return c.Status(fiber.StatusNotFound).SendString("Library not found")
 	}
 
 	log.Infof("Starting manual scan for library: %s", library.Name)

@@ -58,7 +58,7 @@ func HandleConsoleLogsWebSocketUpgrade(c *fiber.Ctx) error {
 
             // Additional role check - verify admin role
             user, err := models.FindUserByUsername(userName.(string))
-            if err != nil || user.Role != "admin" {
+            if err != nil || user == nil || user.Role != "admin" {
                 conn.Close()
                 return
             }

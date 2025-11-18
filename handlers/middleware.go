@@ -74,7 +74,7 @@ func refreshAndValidateTokens(c *fiber.Ctx, refreshToken, requiredRole string) e
 
 func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 	user, err := models.FindUserByUsername(userName)
-	if err != nil {
+	if err != nil || user == nil {
 		return fiber.ErrUnauthorized
 	}
 
