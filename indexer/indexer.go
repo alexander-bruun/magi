@@ -130,11 +130,19 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		}
 
 		// Index chapters recursively; returns added and deleted counts.
-		added, deleted, err := IndexChapters(slug, absolutePath)
+		added, deleted, newChapterSlugs, err := IndexChapters(slug, absolutePath)
 		if err != nil {
 			log.Errorf("Failed to index chapters for existing manga '%s': %s", slug, err)
 			return slug, err
 		}
+		
+		// If new chapters were added, notify users
+		if added > 0 && len(newChapterSlugs) > 0 {
+			if err := models.NotifyUsersOfNewChapters(slug, newChapterSlugs); err != nil {
+				log.Errorf("Failed to create notifications for new chapters in manga '%s': %s", slug, err)
+			}
+		}
+		
 		if added > 0 || deleted > 0 {
 			// Update manga updated_at to mark the index time
 			if err := models.UpdateManga(existingManga); err != nil {
@@ -193,10 +201,17 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		}
 	}
 
-	added, deleted, err := IndexChapters(slug, absolutePath)
+	added, deleted, newChapterSlugs, err := IndexChapters(slug, absolutePath)
 	if err != nil {
 		log.Errorf("Failed to index chapters: %s (%s)", slug, err.Error())
 		return "", err
+	}
+
+	// If new chapters were added, check for users reading this manga and notify them
+	if added > 0 && len(newChapterSlugs) > 0 {
+		if err := models.NotifyUsersOfNewChapters(slug, newChapterSlugs); err != nil {
+			log.Errorf("Failed to create notifications for new chapters in manga '%s': %s", slug, err)
+		}
 	}
 
 	if added > 0 || deleted > 0 {
@@ -370,14 +385,15 @@ func getAuthor(match *models.MangaDetail) string {
 }
 
 // IndexChapters reconciles chapter files on disk with the stored chapter records.
-func IndexChapters(slug, path string) (int, int, error) {
+func IndexChapters(slug, path string) (int, int, []string, error) {
 	var addedCount int
 	var deletedCount int
+	var newChapterSlugs []string
 
 	// Load existing chapters once to avoid querying the DB per file.
 	existing, err := models.GetChapters(slug)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to load existing chapters for manga '%s': %w", slug, err)
+		return 0, 0, nil, fmt.Errorf("failed to load existing chapters for manga '%s': %w", slug, err)
 	}
 	existingMap := make(map[string]models.Chapter, len(existing))
 	for _, c := range existing {
@@ -387,7 +403,7 @@ func IndexChapters(slug, path string) (int, int, error) {
 	// Check if path is a single file (for .cbz/.cbr files)
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to stat path '%s': %w", path, err)
+		return 0, 0, nil, fmt.Errorf("failed to stat path '%s': %w", path, err)
 	}
 
 	type presentInfo struct {
@@ -425,9 +441,9 @@ func IndexChapters(slug, path string) (int, int, error) {
 			}
 			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: cleanedName}
 			return nil
-		})
+		});
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, nil, err
 		}
 	}
 
@@ -442,9 +458,10 @@ func IndexChapters(slug, path string) (int, int, error) {
 				MangaSlug: slug,
 			}
 			if err := models.CreateChapter(chapter); err != nil {
-				return addedCount, deletedCount, fmt.Errorf("failed to create chapter '%s' for manga '%s': %w", info.Name, slug, err)
+				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to create chapter '%s' for manga '%s': %w", info.Name, slug, err)
 			}
 			addedCount++
+			newChapterSlugs = append(newChapterSlugs, slugKey)
 		}
 	}
 
@@ -452,7 +469,7 @@ func IndexChapters(slug, path string) (int, int, error) {
 	for slugKey := range existingMap {
 		if _, ok := presentMap[slugKey]; !ok {
 			if err := models.DeleteChapter(slug, slugKey); err != nil {
-				return addedCount, deletedCount, fmt.Errorf("failed to delete missing chapter '%s' for manga '%s': %w", slugKey, slug, err)
+				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to delete missing chapter '%s' for manga '%s': %w", slugKey, slug, err)
 			}
 			deletedCount++
 		}
@@ -467,7 +484,7 @@ func IndexChapters(slug, path string) (int, int, error) {
 		}
 	}
 
-	return addedCount, deletedCount, nil
+	return addedCount, deletedCount, newChapterSlugs, nil
 }
 
 func containsNumber(s string) bool {

@@ -1797,3 +1797,105 @@ textarea.code-editor-hidden {
   pointer-events: none !important;
   visibility: hidden !important;
 }
+
+/* ============================================
+   NOTIFICATION SYSTEM
+   ============================================ */
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notification-item {
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.notification-item.unread {
+  border-left-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+.notification-item.read {
+  opacity: 0.7;
+}
+
+.notification-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.notification-link:hover {
+  text-decoration: none;
+}
+
+.notification-item:hover {
+  background-color: hsl(var(--muted) / 0.5);
+  transform: translateX(2px);
+}
+
+/* Notification dropdown scrollbar styling */
+.notification-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* Notification bell animation on new notification */
+@keyframes bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-15deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-10deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(-5deg); }
+  70% { transform: rotate(0); }
+  100% { transform: rotate(0); }
+}
+
+.notification-bell-ring {
+  animation: bell-ring 0.8s ease-in-out;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .notification-badge {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    min-width: 16px;
+    height: 16px;
+  }
+}
