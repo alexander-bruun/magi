@@ -9,8 +9,8 @@ templ Users() {
 	{{ users, _ := models.GetUsers() }}
 	
 	@PageTitle("Users")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 	<div class="uk-container mt-2">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
 		<div class="flex place-content-center">
 			<div class="w-2/4">

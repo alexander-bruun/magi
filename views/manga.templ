@@ -844,7 +844,7 @@ templ PosterChapterSelector(mangaSlug string, chapters []models.Chapter) {
 			</div>
 		</div>
 		<hr class="uk-divider-icon"/>
-		<div id="poster-selector-area" class="uk-margin">
+		<div id="poster-selector-area" class="uk-margin" data-smooth-scroll>
 			<p class="uk-text-muted text-center">Select a chapter to view available images</p>
 		</div>
 	</div>
@@ -877,7 +877,7 @@ templ PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount i
 				</div>
 			</div>
 			<hr class="uk-divider-icon"/>
-			<div id="poster-preview-area" class="uk-margin">
+			<div id="poster-preview-area" class="uk-margin" data-smooth-scroll>
 				<p class="uk-text-muted text-center">Click an image to preview and select crop area</p>
 			</div>
 		}
@@ -887,8 +887,8 @@ templ PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount i
 // PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js
 templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex int, imageDataURI string) {
 	<!-- Cropper.js CSS and JS - only loaded on this page -->
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.css"/>
-	<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.js"></script>
+	<link rel="stylesheet" href="/assets/css/vendor/cropper.min.css"/>
+	<script src="/assets/js/vendor/cropper.min.js"></script>
 	
 	<div class="poster-preview-cropper" style="display: flex; flex-direction: column; height: 100%;">
 		<div class="uk-margin-bottom">

@@ -7,8 +7,8 @@ import (
 
 templ Config() {
     @PageTitle("Configuration")
-    @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
     <div class="uk-container mt-2">
+        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
         <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Configuration</span></h3>
         <div class="flex place-content-center">
             <div class="w-2/4">
@@ -68,7 +68,6 @@ templ Config() {
         </div>
     </div>
     
-    <script src="/assets/js/log-viewer.js"></script>
     <script>
         (function() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

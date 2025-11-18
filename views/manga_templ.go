@@ -1847,7 +1847,7 @@ func PosterChapterSelector(mangaSlug string, chapters []models.Chapter) templ.Co
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-selector-area\" class=\"uk-margin\"><p class=\"uk-text-muted text-center\">Select a chapter to view available images</p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-selector-area\" class=\"uk-margin\" data-smooth-scroll><p class=\"uk-text-muted text-center\">Select a chapter to view available images</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1936,7 +1936,7 @@ func PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount in
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-preview-area\" class=\"uk-margin\"><p class=\"uk-text-muted text-center\">Click an image to preview and select crop area</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-preview-area\" class=\"uk-margin\" data-smooth-scroll><p class=\"uk-text-muted text-center\">Click an image to preview and select crop area</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1971,7 +1971,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 			templ_7745c5c3_Var89 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "<!-- Cropper.js CSS and JS - only loaded on this page --><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.css\"><script src=\"https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.js\"></script><div class=\"poster-preview-cropper\" style=\"display: flex; flex-direction: column; height: 100%;\"><div class=\"uk-margin-bottom\"><p><strong>Selected Image #")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "<!-- Cropper.js CSS and JS - only loaded on this page --><link rel=\"stylesheet\" href=\"/assets/css/vendor/cropper.min.css\"><script src=\"/assets/js/vendor/cropper.min.js\"></script><div class=\"poster-preview-cropper\" style=\"display: flex; flex-direction: column; height: 100%;\"><div class=\"uk-margin-bottom\"><p><strong>Selected Image #")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
