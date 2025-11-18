@@ -6,15 +6,29 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<meta name="description" content="Magi - Your manga library management system"/>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
-		<title>Magi</title>
-		<link rel="preconnect" href="https://rsms.me/"/>
-		<link rel="stylesheet" href="https://rsms.me/inter/inter.css"/>
-		<link href="/assets/css/vendor/core.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/core.min.css
-		<link href="/assets/css/vendor/utilities.min.css" rel="stylesheet"/> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/css/utilities.min.css
-		<link href="/assets/css/styles.css" rel="stylesheet"/>
-		<link href="/assets/css/vendor/codemirror.min.css" rel="stylesheet"/>
-		<link href="/assets/css/vendor/dracula.min.css" rel="stylesheet"/>
+	<title>Magi</title>
+	<!-- Preconnect and DNS prefetch for external resources -->
+	<link rel="preconnect" href="https://rsms.me/"/>
+	<link rel="dns-prefetch" href="https://rsms.me/"/>
+	<!-- Async font loading with fallback -->
+	<link rel="preload" as="style" href="https://rsms.me/inter/inter.css" onload="this.onload=null;this.rel='stylesheet'"/>
+	<noscript><link rel="stylesheet" href="https://rsms.me/inter/inter.css"/></noscript>
+	<!-- Critical CSS - preload to prioritize -->
+	<link rel="preload" as="style" href="/assets/css/vendor/core.min.css"/>
+	<link rel="preload" as="style" href="/assets/css/vendor/utilities.min.css"/>
+	<!-- Apply critical CSS -->
+	<link href="/assets/css/vendor/core.min.css" rel="stylesheet"/>
+	<link href="/assets/css/vendor/utilities.min.css" rel="stylesheet"/>
+	<link href="/assets/css/styles.css" rel="stylesheet"/>
+	<!-- Non-critical CSS - defer loading with media query trick -->
+	<link rel="preload" as="style" href="/assets/css/vendor/codemirror.min.css" media="print" onload="this.media='all'"/>
+	<link rel="preload" as="style" href="/assets/css/vendor/dracula.min.css" media="print" onload="this.media='all'"/>
+	<noscript>
+		<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
+		<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
+	</noscript>
 			<script>
 				const htmlElement = document.documentElement;
 
@@ -40,15 +54,20 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 		// Ensure titleHandler exists before any inline PageTitle() calls run
 		window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
 	</script>
-	<script src="/assets/js/vendor/core.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/core.iife.js
-	<!--https://lucide.dev/icons/chevron-up?search=ban-->
-	<script src="/assets/js/vendor/icon.iife.js" type="module"></script> // https://cdn.jsdelivr.net/npm/franken-ui@2.1.1/dist/js/icon.iife.js
-	<script src="/assets/js/vendor/htmx.min.js"></script> // https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js
-	<script src="/assets/js/magi.js"></script> // Magi core library (includes smooth scroll, WebSocket, LogViewer, and site UI)
+	<!-- Core UI scripts - async for non-blocking load -->
+	<script src="/assets/js/vendor/core.iife.js" type="module" async></script>
+	<script src="/assets/js/vendor/icon.iife.js" type="module" async></script>
+	<!-- HTMX - defer since it enhances interactivity but not needed for initial render -->
+	<script src="/assets/js/vendor/htmx.min.js" defer></script>
+	<!-- Magi core library - defer to allow initial render -->
+	<script src="/assets/js/magi.js" defer></script>
+	<!-- Optional editor-related scripts - defer -->
 	<script src="/assets/js/vendor/codemirror.min.js" defer></script>
 	<script src="/assets/js/vendor/shell.min.js" defer></script>
 	</head>
 	<body class="bg-background text-foreground">
+		<!-- Skip to main content link for keyboard users -->
+		<a href="#content" class="skip-to-content">Skip to main content</a>
 		<script>
 			// Apply sidebar collapsed state immediately when body is available
 			(function() {
@@ -64,7 +83,7 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 		</script>
 			<div id="app">
 				@Navbar(userRole, currentPath)
-				<main class="site-main">
+				<main id="main-content" class="site-main" role="main">
 					<div id="content" class="uk-container uk-container-xl">
 						@content
 					</div>

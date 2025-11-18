@@ -37,7 +37,7 @@ func Login(target string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"mb-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"User\"></uk-icon></a> <input class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" aria-label=\"Not clickable icon\" required></div></div><div class=\"mt-2\"><div class=\"uk-inline\"><a class=\"uk-form-icon\"><uk-icon icon=\"Lock\"></uk-icon></a> <input class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" aria-label=\"Not clickable icon\" required></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\" aria-label=\"Login form\"><fieldset><div class=\"mb-2\"><label for=\"username\" class=\"uk-form-label block mb-1\">Username</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"User\"></uk-icon></span> <input id=\"username\" class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" autocomplete=\"username\" required></div></div><div class=\"mt-2\"><label for=\"password\" class=\"uk-form-label block mb-1\">Password</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"Lock\"></uk-icon></span> <input id=\"password\" class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" autocomplete=\"current-password\" required></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -49,7 +49,7 @@ func Login(target string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(target)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 26, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 29, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -60,7 +60,7 @@ func Login(target string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" hx-get=\"/auth/register\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" hx-get=\"/auth/register\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></fieldset></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

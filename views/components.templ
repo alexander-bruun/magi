@@ -62,24 +62,22 @@ templ BreadcrumbHome(current string) {
 // MangaCard renders a single manga card with a link and cover image.
 // When fixed=true, uses explicit pixel dimensions. When fixed=false, uses CSS aspect-ratio for fluid scaling.
 templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed bool) {
-    <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
-        <div 
-            class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
-            if fixed {
-                style={ fmt.Sprintf("width:%dpx;", width) }
-            }
-        >
-            <h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
-                { manga.Name }
-            </h3>
-            <div class="uk-card-media-top flex justify-center items-center">
-                @MangaCover(manga.CoverArtURL, manga.Name, width, height, fixed)
-            </div>
-        </div>
-    </a>
-}
-
-// MangaCover renders the manga cover image with proper sizing
+	<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block" aria-label={ fmt.Sprintf("View %s", manga.Name) }>
+		<div 
+			class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
+			if fixed {
+				style={ fmt.Sprintf("width:%dpx;", width) }
+			}
+		>
+			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
+				{ manga.Name }
+			</h3>
+			<div class="uk-card-media-top flex justify-center items-center">
+				@MangaCover(manga.CoverArtURL, manga.Name, width, height, fixed)
+			</div>
+		</div>
+	</a>
+}// MangaCover renders the manga cover image with proper sizing
 templ MangaCover(coverURL string, altText string, width int, height int, fixed bool) {
     {{ imageURL := coverURL }}
     if imageURL == "" {
@@ -140,23 +138,21 @@ templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool, fix
 
 // MangaSlider renders a reusable UIkit slider for mangas.
 templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
-    <div uk-slider>
-        <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-            <ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;">
-                for _, manga := range mangas {
-                    <li>
-                        @MangaCard(manga, width, height, truncate, fixed)
-                    </li>
-                }
-            </ul>
-            <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous"></a>
-            <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next"></a>
-        </div>
-        <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
-    </div>
-}
-
-// Showcase renders a highlighted horizontal showcase of the newest mangas.
+	<div uk-slider>
+		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
+			<ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;" role="list">
+				for _, manga := range mangas {
+					<li role="listitem">
+						@MangaCard(manga, width, height, truncate, fixed)
+					</li>
+				}
+			</ul>
+			<a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
+			<a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
+		</div>
+		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+	</div>
+}// Showcase renders a highlighted horizontal showcase of the newest mangas.
 // It shows a cover, title, chapter count and a simple rating based on votes.
 templ Showcase(mangas []models.Manga) {
     if len(mangas) == 0 {
