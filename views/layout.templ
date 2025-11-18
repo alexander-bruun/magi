@@ -8,81 +8,64 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<meta name="description" content="Magi - Your manga library management system"/>
 			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
-	<title>Magi</title>
-	<!-- Preconnect and DNS prefetch for external resources -->
-	<link rel="preconnect" href="https://rsms.me/"/>
-	<link rel="dns-prefetch" href="https://rsms.me/"/>
-	<!-- Async font loading with fallback -->
-	<link rel="preload" as="style" href="https://rsms.me/inter/inter.css" onload="this.onload=null;this.rel='stylesheet'"/>
-	<noscript><link rel="stylesheet" href="https://rsms.me/inter/inter.css"/></noscript>
-	<!-- Critical CSS - preload to prioritize -->
-	<link rel="preload" as="style" href="/assets/css/vendor/core.min.css"/>
-	<link rel="preload" as="style" href="/assets/css/vendor/utilities.min.css"/>
-	<!-- Apply critical CSS -->
-	<link href="/assets/css/vendor/core.min.css" rel="stylesheet"/>
-	<link href="/assets/css/vendor/utilities.min.css" rel="stylesheet"/>
-	<link href="/assets/css/styles.css" rel="stylesheet"/>
-	<!-- Non-critical CSS - defer loading with media query trick -->
-	<link rel="preload" as="style" href="/assets/css/vendor/codemirror.min.css" media="print" onload="this.media='all'"/>
-	<link rel="preload" as="style" href="/assets/css/vendor/dracula.min.css" media="print" onload="this.media='all'"/>
-	<noscript>
-		<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
-		<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
-	</noscript>
+			<title>Magi</title>
+			<!-- Async font loading -->
+			<link rel="preload" as="style" href="/assets/css/vendor/inter.css" onload="this.onload=null;this.rel='stylesheet'"/>
+			<noscript><link rel="stylesheet" href="/assets/css/vendor/inter.css"/></noscript>
+			<!-- Critical CSS -->
+			<link rel="stylesheet" href="/assets/css/vendor/core.min.css"/>
+			<link rel="stylesheet" href="/assets/css/vendor/utilities.min.css"/>
+			<link rel="stylesheet" href="/assets/css/styles.css"/>
+			<!-- Non-critical CSS - defer loading -->
+			<link rel="preload" as="style" href="/assets/css/vendor/codemirror.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
+			<link rel="preload" as="style" href="/assets/css/vendor/dracula.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
+			<noscript>
+				<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
+				<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
+			</noscript>
+			<!-- Theme initialization - must run before body renders -->
 			<script>
 				const htmlElement = document.documentElement;
-
 				const __FRANKEN__ = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
-
-				if (
-					__FRANKEN__.mode === "dark" ||
-					(!__FRANKEN__.mode &&
-					window.matchMedia("(prefers-color-scheme: dark)").matches)
-				) {
+				
+				if (__FRANKEN__.mode === "dark" || (!__FRANKEN__.mode && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
 					htmlElement.classList.add("dark");
 				} else {
 					htmlElement.classList.remove("dark");
 				}
-
+				
 				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-zinc");
 				htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
 				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
-			</script>
-	<script>
-		// Ensure titleHandler exists before any inline PageTitle() calls run
-		window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
-	</script>
-	<!-- Core UI scripts - async for non-blocking load -->
-	<script src="/assets/js/vendor/core.iife.js" type="module" async></script>
-	<script src="/assets/js/vendor/icon.iife.js" type="module" async></script>
-	<!-- HTMX - defer since it enhances interactivity but not needed for initial render -->
-	<script src="/assets/js/vendor/htmx.min.js" defer></script>
-	<!-- Magi core library - defer to allow initial render -->
-	<script src="/assets/js/magi.js" defer></script>
-	<!-- Notification system - defer to allow initial render -->
-	<script src="/assets/js/notifications.js" defer></script>
-	<!-- Optional editor-related scripts - defer -->
-	<script src="/assets/js/vendor/codemirror.min.js" defer></script>
-	<script src="/assets/js/vendor/shell.min.js" defer></script>
-	</head>
-	<body class="bg-background text-foreground">
-		<!-- Skip to main content link for keyboard users -->
-		<a href="#content" class="skip-to-content">Skip to main content</a>
-		<script>
-			// Apply sidebar collapsed state immediately when body is available
-			(function() {
-				const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
-				const stored = localStorage.getItem(STORAGE_KEY);
-				const isMobile = window.matchMedia('(max-width: 768px)').matches;
-				const shouldCollapse = stored ? stored === '1' : isMobile;
 				
-				if (shouldCollapse) {
-					document.body.classList.add('sidebar-collapsed');
-				}
-			})();
-		</script>
+				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+			</script>
+			<!-- Core UI - async for non-blocking -->
+			<script src="/assets/js/vendor/core.iife.js" type="module" async></script>
+			<script src="/assets/js/vendor/icon.iife.js" type="module" async></script>
+			<!-- Application scripts - defer for optimal loading -->
+			<script src="/assets/js/vendor/htmx.min.js" defer></script>
+			<script src="/assets/js/vendor/codemirror.min.js" defer></script>
+			<script src="/assets/js/vendor/shell.min.js" defer></script>
+			<script src="/assets/js/magi.js" defer></script>
+			<script src="/assets/js/notifications.js" defer></script>
+		</head>
+		<body class="bg-background text-foreground">
+			<script>
+				// Apply sidebar collapsed state immediately when body is available
+				(function() {
+					const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
+					const stored = localStorage.getItem(STORAGE_KEY);
+					const isMobile = window.matchMedia('(max-width: 768px)').matches;
+					const shouldCollapse = stored ? stored === '1' : isMobile;
+					
+					if (shouldCollapse) {
+						document.body.classList.add('sidebar-collapsed');
+					}
+				})();
+			</script>
 			<div id="app">
 				@Navbar(userRole, currentPath)
 				<main id="main-content" class="site-main" role="main">
