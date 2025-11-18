@@ -49,9 +49,9 @@ func getSortedVariableNames(variables map[string]string) []string {
 // Scraper renders the main scraper page with tabs
 templ Scraper(scripts []models.ScraperScript) {
 	@PageTitle("Scraper")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
 	<div class="uk-container mt-4">
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3"><span>Scraper Scripts</span></h3>
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
+		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Scraper Scripts</span></h3>
 		
 		<!-- Tabs Container -->
 		<div class="scraper-tabs-container border-b border-border mb-4">
@@ -216,6 +216,8 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 					<textarea 
 						id="script-content"
 						name="script"
+						data-code-editor="shell"
+						data-code-editor-height="384px"
 						class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
 						placeholder="#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
 						required
@@ -229,51 +231,6 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			<p class="text-xs text-muted-foreground mb-3">Define variables that will be passed to your script. For bash scripts, these become environment variables.</p>
 			@VariableInputs(script.Variables)
 		</div>
-
-		<!-- Last Run Info -->
-		if script.ID != 0 {
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 uk-margin">
-					<div class="uk-card uk-card-body p-3 bg-surface">
-						<div class="text-xs text-muted-foreground">Last Run</div>
-						<div class="font-semibold">{ script.FormatLastRun() }</div>
-					</div>
-					<div class="uk-card uk-card-body p-3 bg-surface">
-						<div class="text-xs text-muted-foreground">Status</div>
-						<div class={ "font-semibold", templ.KV("text-success", script.LastRunError == nil || *script.LastRunError == ""), templ.KV("text-destructive", script.LastRunError != nil && *script.LastRunError != "") }>
-							{ script.StatusBadge() }
-						</div>
-					</div>
-					<div class="uk-card uk-card-body p-3 bg-surface">
-						<div class="text-xs text-muted-foreground">Enabled</div>
-						if script.Enabled {
-							<div class="font-semibold text-success">Yes</div>
-						}
-						if !script.Enabled {
-							<div class="font-semibold text-destructive">No</div>
-						}
-					</div>
-				</div>
-
-				<!-- Output Section -->
-				if script.LastRunOutput != nil && *script.LastRunOutput != "" {
-					<div>
-						<label class="uk-form-label text-sm font-semibold">Last Output</label>
-						<div class="uk-card uk-card-body p-3 bg-surface font-mono text-xs max-h-40 overflow-y-auto">
-							{ *script.LastRunOutput }
-						</div>
-					</div>
-				}
-
-				<!-- Error Section -->
-				if script.LastRunError != nil && *script.LastRunError != "" {
-					<div>
-						<label class="uk-form-label text-sm font-semibold text-destructive">Last Error</label>
-						<div class="uk-card uk-card-body p-3 bg-destructive/10 text-destructive font-mono text-xs max-h-40 overflow-y-auto">
-							{ *script.LastRunError }
-						</div>
-					</div>
-				}
-			}
 
 			<!-- Actions -->
 			<div class="flex gap-2 justify-between flex-wrap">
@@ -372,7 +329,6 @@ templ ScraperLogsTabContent(script *models.ScraperScript) {
 			</div>
 	</div>
 
-	<script src="/assets/js/log-viewer.js"></script>
 	<script>
 		(function() {
 			// Get script ID from data attribute
@@ -396,10 +352,11 @@ templ ScraperLogsTabContent(script *models.ScraperScript) {
 					return '[' + data.type.toUpperCase() + '] ' + data.message;
 				},
 				colorMap: {
-					error: 'rgb(var(--destructive))',
+					error: '#ff6b6b',
+					stderr: '#ff6b6b',
 					success: 'rgb(var(--success))',
-					info: 'rgb(var(--muted-foreground))',
-					default: 'rgb(var(--foreground))'
+					info: 'white',
+					default: 'white'
 				}
 			});
 		})();
@@ -526,7 +483,6 @@ templ ScraperLogViewer(scriptID int64) {
 		<div id="log-output-container" class="space-y-1"></div>
 	</div>
 
-	<script src="/assets/js/log-viewer.js"></script>
 	<script>
 		(function() {
 			const scriptId = { fmt.Sprintf("%d", scriptID) };

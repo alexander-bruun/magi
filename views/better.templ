@@ -8,111 +8,109 @@ import (
 
 templ Better(currentPage int) {
 	@PageTitle("Better")
-	@Breadcrumb([]BreadcrumbItem{
-		{ Label: "Home", Href: "/" },
-		{ Label: "Libraries", Href: "/admin/libraries" },
-		{ Label: "Better", Href: "/admin/duplicates" },
-	})
 	<div class="uk-container mt-2">
-		<div class="uk-card p-4">
-			<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
-				<span>Manga Duplicates</span>
-			</h2>
-			
-			{{ const limit = 20 }}
-			{{ duplicates, total, _ := models.GetActiveMangaDuplicates(currentPage, limit) }}
-			if len(duplicates) == 0 {
-				<div class="uk-alert-success" uk-alert>
-					<div class="uk-flex uk-flex-middle uk-flex-center">
-						<uk-icon icon="BadgeCheck" size="32" class="mr-3"></uk-icon>
-						<p class="text-lg uk-margin-remove">
-							No duplicate mangas found in any library!
-						</p>
-					</div>
+		@Breadcrumb([]BreadcrumbItem{
+			{ Label: "Home", Href: "/" },
+			{ Label: "Libraries", Href: "/admin/libraries" },
+			{ Label: "Better", Href: "/admin/duplicates" },
+		})
+		<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
+			<span>Manga Duplicates</span>
+		</h2>
+		
+		{{ const limit = 20 }}
+		{{ duplicates, total, _ := models.GetActiveMangaDuplicates(currentPage, limit) }}
+		if len(duplicates) == 0 {
+			<div class="uk-alert-success" uk-alert>
+				<div class="uk-flex uk-flex-middle uk-flex-center">
+					<uk-icon icon="BadgeCheck" size="32" class="mr-3"></uk-icon>
+					<p class="text-lg uk-margin-remove">
+						No duplicate mangas found in any library!
+					</p>
 				</div>
-			} else {
-				<div class="uk-alert-warning mb-4" uk-alert>
-					<div class="uk-flex uk-flex-middle">
-						<uk-icon icon="TriangleAlert" size="32" class="mr-3"></uk-icon>
-						<p class="uk-margin-remove">
-							The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
-						</p>
-					</div>
-				</div>
-
-				<div class="uk-overflow-auto">
-					<table class="uk-table uk-table-striped uk-table-hover">
-						<thead>
-							<tr>
-								<th>Manga</th>
-								<th>Library</th>
-								<th>Folder 1</th>
-								<th>Folder 2</th>
-								<th class="uk-text-center">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							for _, dup := range duplicates {
-								<tr id={ fmt.Sprintf("duplicate-%d", dup.ID) }>
-									<td>
-										<div class="flex items-center">
-											<uk-icon icon="BookOpen" class="mr-2"></uk-icon>
-											<a href={ templ.SafeURL(fmt.Sprintf("/mangas/%s", dup.MangaSlug)) } class="uk-link-text">
-												<strong>{ dup.MangaName }</strong>
-											</a>
-										</div>
-									</td>
-									<td>
-										<span class="uk-badge">{ dup.LibraryName }</span>
-									</td>
-									<td>
-										<code class="text-sm">{ filepath.Base(dup.FolderPath1) }</code>
-									</td>
-									<td>
-										<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
-									</td>
-									<td class="uk-text-center">
-										<div class="uk-flex uk-flex-center uk-flex-middle" style="gap: 8px;">
-											<button 
-												class="uk-btn uk-btn-secondary uk-btn-small"
-												hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
-												hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
-												hx-swap="outerHTML swap:0.5s"
-												hx-confirm="Are you sure you want to dismiss this duplicate?"
-											>
-												<uk-icon icon="X" class="mr-1"></uk-icon>
-												Dismiss
-											</button>
-											<button 
-												class="uk-btn uk-btn-destructive uk-btn-small"
-												onclick={ templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)} }
-											>
-												<uk-icon icon="Trash2" class="mr-1"></uk-icon>
-												Delete
-											</button>
-										</div>
-									</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-				</div>
-
-				{{ totalPages := (total + limit - 1) / limit }}
-				{{ if totalPages == 0 { totalPages = 1 } }}
-				if totalPages > 1 {
-					<div class="flex justify-center items-center py-8">
-						@UnifiedPagination("/admin/duplicates", "content", false, totalPages, currentPage, "", "")
-					</div>
-				}
-			}
-
-			<div class="mt-6 text-center">
-				<a href="/admin/libraries" class="uk-btn uk-btn-default">
-					<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
-					Back to Libraries
-				</a>
 			</div>
+		} else {
+			<div class="uk-alert-warning mb-4" uk-alert>
+				<div class="uk-flex uk-flex-middle">
+					<uk-icon icon="TriangleAlert" size="32" class="mr-3"></uk-icon>
+					<p class="uk-margin-remove">
+						The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
+					</p>
+				</div>
+			</div>
+
+			<div class="uk-overflow-auto">
+				<table class="uk-table uk-table-striped uk-table-hover">
+					<thead>
+						<tr>
+							<th>Manga</th>
+							<th>Library</th>
+							<th>Folder 1</th>
+							<th>Folder 2</th>
+							<th class="uk-text-center">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, dup := range duplicates {
+							<tr id={ fmt.Sprintf("duplicate-%d", dup.ID) }>
+								<td>
+									<div class="flex items-center">
+										<uk-icon icon="BookOpen" class="mr-2"></uk-icon>
+										<a href={ templ.SafeURL(fmt.Sprintf("/mangas/%s", dup.MangaSlug)) } class="uk-link-text">
+											<strong>{ dup.MangaName }</strong>
+										</a>
+									</div>
+								</td>
+								<td>
+									<span class="uk-badge">{ dup.LibraryName }</span>
+								</td>
+								<td>
+									<code class="text-sm">{ filepath.Base(dup.FolderPath1) }</code>
+								</td>
+								<td>
+									<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
+								</td>
+								<td class="uk-text-center">
+									<div class="uk-flex uk-flex-center uk-flex-middle" style="gap: 8px;">
+										<button 
+											class="uk-btn uk-btn-secondary uk-btn-small"
+											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
+											hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
+											hx-swap="outerHTML swap:0.5s"
+											hx-confirm="Are you sure you want to dismiss this duplicate?"
+										>
+											<uk-icon icon="X" class="mr-1"></uk-icon>
+											Dismiss
+										</button>
+										<button 
+											class="uk-btn uk-btn-destructive uk-btn-small"
+											onclick={ templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)} }
+										>
+											<uk-icon icon="Trash2" class="mr-1"></uk-icon>
+											Delete
+										</button>
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+
+			{{ totalPages := (total + limit - 1) / limit }}
+			{{ if totalPages == 0 { totalPages = 1 } }}
+			if totalPages > 1 {
+				<div class="flex justify-center items-center py-8">
+					@UnifiedPagination("/admin/duplicates", "content", false, totalPages, currentPage, "", "")
+				</div>
+			}
+		}
+
+		<div class="mt-6 text-center">
+			<a href="/admin/libraries" class="uk-btn uk-btn-default">
+				<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
+				Back to Libraries
+			</a>
 		</div>
 	</div>
 
