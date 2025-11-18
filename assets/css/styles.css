@@ -303,7 +303,7 @@ html {
 #app {
   display: block;
   min-height: 100vh;
-  margin-top: 64px;
+  padding-top: 64px;
   transition: grid-template-columns 200ms ease;
 }
 
@@ -1796,6 +1796,12 @@ textarea.code-editor-hidden {
   opacity: 0 !important;
   pointer-events: none !important;
   visibility: hidden !important;
+}
+
+/* CodeMirror wrapper styling to match container */
+.CodeMirror {
+  border-radius: inherit;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
 /* ============================================
