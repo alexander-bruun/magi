@@ -1,6 +1,7 @@
 node_modules/
 .tmp/
 builds/
+scripts/scrapers/**
 cache/
 magi.db
 magi.db-journal
