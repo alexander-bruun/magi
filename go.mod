@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	github.com/a-h/templ v0.3.960
-	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/ncruces/go-sqlite3 v0.30.1
@@ -13,6 +13,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/crypto v0.44.0
+	golang.org/x/image v0.33.0
 )
 
 require (
@@ -31,6 +32,5 @@ require (
 	github.com/tetratelabs/wazero v1.10.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.59.0 // indirect
-	golang.org/x/image v0.33.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 )
