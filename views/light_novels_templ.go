@@ -1409,9 +1409,9 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var59 string
-		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 658, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 658, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1507,112 +1507,169 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<span class=\"text-gray-400\">Previous Volume</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<button disabled class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Volume</span></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><select class=\"uk-select uk-form-small\" data-slug=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><div class=\"uk-inline\"><button id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var63 string
-		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Slug)
+		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 944, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 948, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\" onchange=\"window.location.href = '/light-novels/' + this.dataset.slug + '/chapters/' + this.value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, ch := range chapters {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<option value=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var64 string
-			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Slug)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 946, Col: 29}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if ch.Slug == chapter.Slug {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " selected")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, ">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var65 string
-			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 946, Col: 79}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "</option>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		var templ_7745c5c3_Var64 string
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 949, Col: 51}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "</select> <a href=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var66 templ.SafeURL
-		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 950, Col: 62}
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var65 string
+		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", lightNovel.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 952, Col: 67}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\" data-trigger-id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var66 string
+		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 952, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, ch := range chapters {
+			var templ_7745c5c3_Var67 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var67...)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "<li class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var68 string
+			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var67).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\"><a href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var69 templ.SafeURL
+			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, ch.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 956, Col: 88}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var70 string
+			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 956, Col: 100}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</a> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if ch.Read {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</li>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</ul></div></div><a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var71 templ.SafeURL
+		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 968, Col: 62}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if nextChapter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var67 templ.SafeURL
-			templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter))
+			var templ_7745c5c3_Var72 templ.SafeURL
+			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 957, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 975, Col: 88}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Volume</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Volume</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<span class=\"text-gray-400\">Next Volume</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<span class=\"text-gray-400\">Next Volume</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

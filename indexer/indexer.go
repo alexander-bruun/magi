@@ -1098,10 +1098,10 @@ func extractEPUBMetadata(epubPath string) (*EPUBMetadata, error) {
 func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string) (string, error) {
 	// Find the image file in the ZIP
 	var imageFile *zip.File
+	for _, file := range reader.File {
 		if !isSafeZipPath(file.Name) {
 			continue
 		}
-	for _, file := range reader.File {
 		if file.Name == imagePath {
 			imageFile = file
 			break

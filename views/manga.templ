@@ -726,6 +726,13 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 }
 
 templ Chapter(previousChapter string, currentChapter string, nextChapter string, manga models.Manga, images []string, chapter models.Chapter, chapters []models.Chapter) {
+	@PageTitle(chapter.Name)
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Mangas", Href: "/mangas" },
+		{ Label: manga.Name, Href: fmt.Sprintf("/mangas/%s", manga.Slug) },
+		{ Label: chapter.Name, Href: fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, chapter.Slug) },
+	})
 	<script src="/assets/js/reader.js"></script>
 	<style>
 		.scroll-to-top {
@@ -833,33 +840,41 @@ templ ChapterNavigation(manga models.Manga, chapter models.Chapter, chapters []m
 			<uk-icon icon="MoveLeft"></uk-icon>
 		</button>
 		if chapters != nil && len(chapters) > 0 {
-			<div class="uk-flex uk-flex-center uk-inline">
-				<button id={ fmt.Sprintf("chapter-list-btn-%s", manga.Slug) } class="uk-btn uk-btn-default" type="button" aria-expanded="false">
-					<span class="hidden sm:inline">{ chapter.Name }</span>
-					<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
-				</button>
-				<div id={ fmt.Sprintf("chapter-list-drop-%s", manga.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", manga.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-					<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
-						for _, ch := range chapters {
-							<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
-								<a
-									href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug)) }
-									hx-get={ fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug) }
-									hx-target="#content"
-									hx-push-url="true"
-								>{ ch.Name }</a>
-								if ch.Read {
-									<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
-										<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
-									</span>
-								}
-							</li>
-						}
-					</ul>
+			<div class="flex items-center gap-2">
+				<div class="uk-inline">
+					<button id={ fmt.Sprintf("chapter-list-btn-%s", manga.Slug) } class="uk-btn uk-btn-default" type="button" aria-expanded="false">
+						<span class="hidden sm:inline">{ chapter.Name }</span>
+						<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
+					</button>
+					<div id={ fmt.Sprintf("chapter-list-drop-%s", manga.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", manga.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+						<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
+							for _, ch := range chapters {
+								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
+									<a
+										href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug)) }
+										hx-get={ fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, ch.Slug) }
+										hx-target="#content"
+										hx-push-url="true"
+									>{ ch.Name }</a>
+									if ch.Read {
+										<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+											<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+										</span>
+									}
+								</li>
+							}
+						</ul>
+					</div>
 				</div>
+				<a href={ fmt.Sprintf("/mangas/%s", manga.Slug) } class="uk-btn uk-btn-secondary">
+					<uk-icon icon="library" ratio="0.8"></uk-icon>
+				</a>
 			</div>
 		} else {
 			<div class="reader-mode-selector">
+				<a href={ fmt.Sprintf("/mangas/%s", manga.Slug) } class="uk-btn uk-btn-secondary mr-2">
+					<uk-icon icon="library" ratio="0.8"></uk-icon>
+				</a>
 				<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="webtoon">
 					<uk-icon icon="menu" ratio="0.8"></uk-icon>
 					<span class="ml-1">Webtoon</span>

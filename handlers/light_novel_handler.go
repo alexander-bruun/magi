@@ -97,6 +97,9 @@ func HandleLightNovel(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// Precompute first/last chapter slugs before reversing
+	firstSlug, lastSlug := models.GetFirstAndLastChapterSlugs(chapters)
+
 	reverse := c.Query("reverse") == "true"
 	if reverse {
 		slices.Reverse(chapters)
@@ -124,9 +127,6 @@ func HandleLightNovel(c *fiber.Ctx) error {
 			lastReadChapterSlug = lastReadChapter
 		}
 	}
-
-	// Precompute first/last chapter slugs and count for the view
-	firstSlug, lastSlug := models.GetFirstAndLastChapterSlugs(chapters)
 
 	if IsHTMXRequest(c) && c.Query("reverse") != "" {
 		return HandleView(c, views.LightNovelChaptersSection(*lightNovel, chapters, reverse, lastReadChapterSlug))
