@@ -1340,7 +1340,7 @@ func LightNovelReaderFragment(lightNovel models.LightNovel, chapter models.Chapt
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</div></div></div><!-- Reader Content --><div class=\"epub-reader p-6 max-h-screen overflow-y-auto prose prose-lg dark:prose-invert max-w-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</div></div></div><!-- Reader Content --><div id=\"reader-text-container\" class=\"epub-reader p-6 max-h-screen overflow-y-auto prose prose-lg dark:prose-invert max-w-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1438,7 +1438,7 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div id=\"reader-text-container\" class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1446,7 +1446,7 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></div></div></div><script>\n\t\tfunction scrollToTop() {\n\t\t\tconst mainContent = document.getElementById('main-content');\n\t\t\tif (mainContent) {\n\t\t\t\tmainContent.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t} else {\n\t\t\t\twindow.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t}\n\t\t}\n\n\t\t// Reader customization variables\n\t\tlet currentFontSize = 18;\n\t\tconst minFontSize = 12;\n\t\tconst maxFontSize = 28;\n\t\tconst fontSizeStep = 2;\n\n\t\tconst minMargin = 0;\n\t\tconst maxMargin = 100;\n\t\tconst marginStep = 5;\n\n\t\tlet currentTextColor = null; // null means use default\n\t\tlet currentBgColor = null; // null means transparent\n\t\tlet currentTextAlign = 'justify';\n\t\tlet currentMargin = 20; // default margin in pixels\n\n\t\tfunction loadReaderSettings() {\n\t\t\t// Check for new settings format first\n\t\t\tconst saved = localStorage.getItem('lightNovelReaderSettings');\n\t\t\tif (saved) {\n\t\t\t\tconst settings = JSON.parse(saved);\n\t\t\t\tcurrentFontSize = settings.fontSize || 18;\n\t\t\t\tcurrentTextColor = settings.textColor || null;\n\t\t\t\tcurrentBgColor = settings.bgColor || null;\n\t\t\t\tcurrentTextAlign = settings.textAlign || 'justify';\n\t\t\t\tcurrentMargin = settings.margin || 20;\n\t\t\t} else {\n\t\t\t\t// Backward compatibility: check for old font size setting\n\t\t\t\tconst oldFontSize = localStorage.getItem('lightNovelFontSize');\n\t\t\t\tif (oldFontSize) {\n\t\t\t\t\tcurrentFontSize = parseInt(oldFontSize);\n\t\t\t\t\t// Remove old setting and save new format\n\t\t\t\t\tlocalStorage.removeItem('lightNovelFontSize');\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t}\n\t\t\t}\n\t\t\tapplyReaderSettings();\n\t\t}\n\n\t\tfunction saveReaderSettings() {\n\t\t\tconst settings = {\n\t\t\t\tfontSize: currentFontSize,\n\t\t\t\ttextColor: currentTextColor,\n\t\t\t\tbgColor: currentBgColor,\n\t\t\t\ttextAlign: currentTextAlign,\n\t\t\t\tmargin: currentMargin\n\t\t\t};\n\t\t\tlocalStorage.setItem('lightNovelReaderSettings', JSON.stringify(settings));\n\t\t}\n\n\t\tfunction applyReaderSettings() {\n\t\t\tconst reader = document.querySelector('.epub-reader');\n\t\t\tconst card = reader.closest('.uk-card');\n\n\t\t\t// Apply font size\n\t\t\treader.style.fontSize = currentFontSize + 'px';\n\t\t\tdocument.getElementById('current-font-size').textContent = currentFontSize + 'px';\n\n\t\t\t// Apply text color if set\n\t\t\tif (currentTextColor) {\n\t\t\t\treader.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\t});\n\t\t\t} else {\n\t\t\t\t// Reset to default\n\t\t\t\treader.style.color = '';\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.color = '';\n\t\t\t\t});\n\t\t\t}\n\n\t\t\t// Apply background to the card\n\t\t\tif (currentBgColor) {\n\t\t\t\tcard.style.backgroundColor = currentBgColor;\n\t\t\t\treader.setAttribute('data-bg-color', currentBgColor);\n\t\t\t} else {\n\t\t\t\tcard.style.backgroundColor = '';\n\t\t\t\treader.removeAttribute('data-bg-color');\n\t\t\t}\n\n\t\t\t// Apply text alignment directly\n\t\t\treader.style.textAlign = currentTextAlign;\n\n\t\t\t// Apply margin\n\t\t\tdocument.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');\n\n\t\t\t// Update UI controls\n\t\t\tdocument.getElementById('font-color-picker').value = currentTextColor || '#000000';\n\t\t\tdocument.getElementById('bg-color-picker').value = currentBgColor || '#ffffff';\n\n\t\t\t// Update alignment buttons\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);\n\t\t\t\tbtn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);\n\t\t\t});\n\n\t\t\t// Update margin display\n\t\t\tdocument.getElementById('current-margin').textContent = currentMargin + 'px';\n\t\t}\n\n\t\tfunction increaseFontSize() {\n\t\t\tif (currentFontSize < maxFontSize) {\n\t\t\t\tcurrentFontSize += fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseFontSize() {\n\t\t\tif (currentFontSize > minFontSize) {\n\t\t\t\tcurrentFontSize -= fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction increaseMargin() {\n\t\t\tif (currentMargin < maxMargin) {\n\t\t\t\tcurrentMargin += marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseMargin() {\n\t\t\tif (currentMargin > minMargin) {\n\t\t\t\tcurrentMargin -= marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\t// Smooth scrolling for TOC links\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tloadReaderSettings();\n\n\t\t\t// Font size button handlers\n\t\t\tdocument.querySelectorAll('.font-size-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseFontSize();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseFontSize();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Color picker handlers\n\t\t\tdocument.getElementById('font-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentTextColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\tdocument.getElementById('bg-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentBgColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\t// Reset button handler\n\t\t\tdocument.getElementById('reset-btn').addEventListener('click', function() {\n\t\t\t\tif (confirm('Are you sure you want to reset all reading customizations?')) {\n\t\t\t\t\tlocalStorage.removeItem('lightNovelReaderSettings');\n\t\t\t\t\t// Reset variables to defaults\n\t\t\t\t\tcurrentFontSize = 18;\n\t\t\t\t\tcurrentTextColor = null;\n\t\t\t\t\tcurrentBgColor = null;\n\t\t\t\t\tcurrentTextAlign = 'justify';\n\t\t\t\t\tcurrentMargin = 20;\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t}\n\t\t\t});\n\n\t\t\t// Text alignment handlers\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tcurrentTextAlign = this.getAttribute('data-align');\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Margin button handlers\n\t\t\tdocument.querySelectorAll('.margin-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseMargin();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseMargin();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\tconst tocLinks = document.querySelectorAll('.toc-content a');\n\t\t\ttocLinks.forEach(link => {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst targetId = this.getAttribute('href').substring(1);\n\t\t\t\t\tconst target = document.getElementById(targetId);\n\t\t\t\t\tif (target) {\n\t\t\t\t\t\ttarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\n\t\t\t\t\t}\n\t\t\t\t\t// Close the modal after clicking a TOC link\n\t\t\t\t\tUIkit.modal('#toc-modal').hide();\n\t\t\t\t});\n\t\t\t});\n\t\t});\n\t</script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></div></div></div><script src=\"/assets/js/reader.js\"></script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1496,7 +1496,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 			var templ_7745c5c3_Var62 templ.SafeURL
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, previousChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 928, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 706, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 			if templ_7745c5c3_Err != nil {
@@ -1519,7 +1519,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 948, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 726, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
@@ -1532,7 +1532,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 949, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 727, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1545,7 +1545,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 952, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 730, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {
@@ -1558,7 +1558,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 952, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 730, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
@@ -1594,7 +1594,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 			var templ_7745c5c3_Var69 templ.SafeURL
 			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, ch.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 956, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 734, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 			if templ_7745c5c3_Err != nil {
@@ -1607,7 +1607,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 			var templ_7745c5c3_Var70 string
 			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 956, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 734, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 			if templ_7745c5c3_Err != nil {
@@ -1635,7 +1635,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 		var templ_7745c5c3_Var71 templ.SafeURL
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 968, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 746, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 		if templ_7745c5c3_Err != nil {
@@ -1653,7 +1653,7 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 			var templ_7745c5c3_Var72 templ.SafeURL
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 975, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 753, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {

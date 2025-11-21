@@ -1,17 +1,32 @@
 /**
- * Reader Module - Handles different reading modes for manga chapters
- * Supports: webtoon (vertical scroll), single-page, and side-by-side modes
+ * Reader Module - Handles different reading modes for manga chapters and light novels
+ * Supports: webtoon (vertical scroll), single-page, side-by-side modes for manga
+ * Supports: text customization (font size, colors, alignment, margins) for light novels
  */
 (function() {
     'use strict';
 
     const STORAGE_KEY = 'magi-reading-mode';
     const FOCUS_STATE_STORAGE_KEY = 'magi-focus-state';
+    const LIGHT_NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
     const MODES = {
         WEBTOON: 'webtoon',
         SINGLE: 'single',
         SIDE_BY_SIDE: 'side-by-side'
     };
+
+    // Light novel settings
+    let currentFontSize = 18;
+    let currentTextColor = null; // null means use default
+    let currentBgColor = null; // null means transparent
+    let currentTextAlign = 'justify';
+    let currentMargin = 20; // default margin in pixels
+    const minFontSize = 12;
+    const maxFontSize = 32;
+    const fontSizeStep = 2;
+    const minMargin = 0;
+    const maxMargin = 50;
+    const marginStep = 5;
 
     let currentMode = MODES.WEBTOON;
     let currentPage = 0;
@@ -30,6 +45,7 @@
         naturalAspectRatio: 0,
         focusImageHeight: 0
     };
+    let isLightNovel = false;
 
     /**
      * Save focus state (scroll position within modal and main page) to localStorage
@@ -74,6 +90,169 @@
             localStorage.removeItem(FOCUS_STATE_STORAGE_KEY);
         } catch (e) {
             console.warn('Could not clear focus state from localStorage:', e);
+        }
+    }
+
+    /**
+     * Load light novel reader settings from localStorage
+     */
+    function loadLightNovelSettings() {
+        try {
+            const saved = localStorage.getItem(LIGHT_NOVEL_SETTINGS_KEY);
+            if (saved) {
+                const settings = JSON.parse(saved);
+                currentFontSize = settings.fontSize || 18;
+                currentTextColor = settings.textColor || null;
+                currentBgColor = settings.bgColor || null;
+                currentTextAlign = settings.textAlign || 'justify';
+                currentMargin = settings.margin || 20;
+            }
+        } catch (e) {
+            console.warn('Could not load light novel settings from localStorage:', e);
+        }
+    }
+
+    /**
+     * Save light novel reader settings to localStorage
+     */
+    function saveLightNovelSettings() {
+        try {
+            const settings = {
+                fontSize: currentFontSize,
+                textColor: currentTextColor,
+                bgColor: currentBgColor,
+                textAlign: currentTextAlign,
+                margin: currentMargin
+            };
+            localStorage.setItem(LIGHT_NOVEL_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+            console.warn('Could not save light novel settings to localStorage:', e);
+        }
+    }
+
+    /**
+     * Apply light novel reader settings to the DOM
+     */
+    function applyLightNovelSettings() {
+        const reader = document.querySelector('.epub-reader');
+        if (!reader) return;
+
+        const card = reader.closest('.uk-card');
+
+        // Apply font size
+        reader.style.fontSize = currentFontSize + 'px';
+        const fontSizeDisplay = document.getElementById('current-font-size');
+        if (fontSizeDisplay) fontSizeDisplay.textContent = currentFontSize + 'px';
+
+        // Apply text color if set
+        if (currentTextColor) {
+            reader.style.cssText += `color: ${currentTextColor} !important;`;
+            const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+            elements.forEach(el => {
+                el.style.cssText += `color: ${currentTextColor} !important;`;
+            });
+        } else {
+            // Reset to default
+            reader.style.color = '';
+            const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+            elements.forEach(el => {
+                el.style.color = '';
+            });
+        }
+
+        // Apply background to the card
+        if (card) {
+            if (currentBgColor) {
+                card.style.backgroundColor = currentBgColor;
+                reader.setAttribute('data-bg-color', currentBgColor);
+            } else {
+                card.style.backgroundColor = '';
+                reader.removeAttribute('data-bg-color');
+            }
+        }
+
+        // Apply text alignment directly
+        reader.style.textAlign = currentTextAlign;
+
+        // Apply margin
+        document.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');
+
+        // Update UI controls
+        const colorPicker = document.getElementById('font-color-picker');
+        if (colorPicker) colorPicker.value = currentTextColor || '#000000';
+
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        if (bgColorPicker) bgColorPicker.value = currentBgColor || '#ffffff';
+
+        // Update alignment buttons
+        document.querySelectorAll('.text-align-btn').forEach(btn => {
+            btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);
+            btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);
+        });
+
+        // Update margin display
+        const marginDisplay = document.getElementById('current-margin');
+        if (marginDisplay) marginDisplay.textContent = currentMargin + 'px';
+    }
+
+    /**
+     * Increase font size
+     */
+    function increaseFontSize() {
+        if (currentFontSize < maxFontSize) {
+            currentFontSize += fontSizeStep;
+            applyLightNovelSettings();
+            saveLightNovelSettings();
+        }
+    }
+
+    /**
+     * Decrease font size
+     */
+    function decreaseFontSize() {
+        if (currentFontSize > minFontSize) {
+            currentFontSize -= fontSizeStep;
+            applyLightNovelSettings();
+            saveLightNovelSettings();
+        }
+    }
+
+    /**
+     * Increase margin
+     */
+    function increaseMargin() {
+        if (currentMargin < maxMargin) {
+            currentMargin += marginStep;
+            applyLightNovelSettings();
+            saveLightNovelSettings();
+        }
+    }
+
+    /**
+     * Decrease margin
+     */
+    function decreaseMargin() {
+        if (currentMargin > minMargin) {
+            currentMargin -= marginStep;
+            applyLightNovelSettings();
+            saveLightNovelSettings();
+        }
+    }
+
+    /**
+     * Reset light novel settings
+     */
+    function resetLightNovelSettings() {
+        currentFontSize = 18;
+        currentTextColor = null;
+        currentBgColor = null;
+        currentTextAlign = 'justify';
+        currentMargin = 20;
+        applyLightNovelSettings();
+        try {
+            localStorage.removeItem(LIGHT_NOVEL_SETTINGS_KEY);
+        } catch (e) {
+            console.warn('Could not clear light novel settings from localStorage:', e);
         }
     }
 
@@ -1013,14 +1192,31 @@
     function init() {
         // Clear any previous focus state when loading a new chapter
         clearFocusState();
-        
-        // Get the container element
-        containerElement = document.getElementById('reader-images-container');
-        if (!containerElement) {
-            console.warn('Reader container not found');
+
+        // Check if this is a light novel reader
+        const lightNovelContainer = document.getElementById('reader-text-container');
+        const mangaContainer = document.getElementById('reader-images-container');
+
+        if (lightNovelContainer) {
+            // Initialize light novel reader
+            isLightNovel = true;
+            containerElement = lightNovelContainer;
+            initLightNovelReader();
+        } else if (mangaContainer) {
+            // Initialize manga reader
+            isLightNovel = false;
+            containerElement = mangaContainer;
+            initMangaReader();
+        } else {
+            console.warn('No reader container found');
             return;
         }
+    }
 
+    /**
+     * Initialize manga reader
+     */
+    function initMangaReader() {
         // Extract images from data attribute or existing img tags
         const imagesData = containerElement.dataset.images;
         if (imagesData) {
@@ -1090,6 +1286,96 @@
         renderCurrentMode();
     }
 
+    /**
+     * Initialize light novel reader
+     */
+    function initLightNovelReader() {
+        // Load saved settings
+        loadLightNovelSettings();
+
+        // Apply settings to DOM
+        applyLightNovelSettings();
+
+        // Set up font size button handlers
+        document.querySelectorAll('.font-size-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                if (action === 'increase') {
+                    increaseFontSize();
+                } else if (action === 'decrease') {
+                    decreaseFontSize();
+                }
+            });
+        });
+
+        // Set up color picker handlers
+        const fontColorPicker = document.getElementById('font-color-picker');
+        if (fontColorPicker) {
+            fontColorPicker.addEventListener('input', function(e) {
+                currentTextColor = e.target.value;
+                applyLightNovelSettings();
+                saveLightNovelSettings();
+            });
+        }
+
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        if (bgColorPicker) {
+            bgColorPicker.addEventListener('input', function(e) {
+                currentBgColor = e.target.value;
+                applyLightNovelSettings();
+                saveLightNovelSettings();
+            });
+        }
+
+        // Set up reset button handler
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset all reading customizations?')) {
+                    resetLightNovelSettings();
+                }
+            });
+        }
+
+        // Set up text alignment handlers
+        document.querySelectorAll('.text-align-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentTextAlign = this.getAttribute('data-align');
+                applyLightNovelSettings();
+                saveLightNovelSettings();
+            });
+        });
+
+        // Set up margin button handlers
+        document.querySelectorAll('.margin-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                if (action === 'increase') {
+                    increaseMargin();
+                } else if (action === 'decrease') {
+                    decreaseMargin();
+                }
+            });
+        });
+
+        // Set up TOC link handlers
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.toc-content a')) {
+                e.preventDefault();
+                const targetId = e.target.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                // Close the modal if it exists
+                const tocModal = document.getElementById('toc-modal');
+                if (tocModal && window.UIkit) {
+                    window.UIkit.modal(tocModal).hide();
+                }
+            }
+        });
+    }
+
     // Expose public API
     window.MangaReader = {
         init,
@@ -1100,7 +1386,13 @@
         lastPage,
         restoreFocusState,
         clearFocusState,
-        MODES
+        MODES,
+        // Light novel functions
+        increaseFontSize,
+        decreaseFontSize,
+        increaseMargin,
+        decreaseMargin,
+        resetLightNovelSettings
     };
 
     // Auto-initialize when DOM is ready
@@ -1108,14 +1400,15 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         // DOM already loaded, check if we need to initialize
-        if (document.getElementById('reader-images-container')) {
+        if (document.getElementById('reader-images-container') || document.getElementById('reader-text-container')) {
             init();
         }
     }
 
     // Re-initialize on HTMX content swap
     document.addEventListener('htmx:afterSwap', (event) => {
-        if (event.detail.target && event.detail.target.id === 'content' && document.getElementById('reader-images-container')) {
+        if (event.detail.target && event.detail.target.id === 'content' &&
+            (document.getElementById('reader-images-container') || document.getElementById('reader-text-container'))) {
             setTimeout(init, 50); // Small delay to ensure DOM is ready
         }
     });
