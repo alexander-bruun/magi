@@ -21,6 +21,22 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 )
 
+// isSafeZipPath returns true if the given zip entry path does not contain traversal elements or an absolute path.
+func isSafeZipPath(path string) bool {
+	if strings.Contains(path, "..") {
+		return false
+	}
+	if filepath.IsAbs(path) {
+		return false
+	}
+	clean := filepath.Clean(path)
+	// Also ensure cleaned path does not start with "../" or "/" (in case)
+	if strings.HasPrefix(clean, "../") || strings.HasPrefix(clean, "/") {
+		return false
+	}
+	return true
+}
+
 const (
 	localServerBaseURL = "/api/images"
 )
@@ -990,6 +1006,9 @@ func extractEPUBMetadata(epubPath string) (*EPUBMetadata, error) {
 	// Find the OPF file
 	var opfPath string
 	for _, file := range reader.File {
+		if !isSafeZipPath(file.Name) {
+			continue
+		}
 		if strings.HasSuffix(file.Name, ".opf") {
 			opfPath = file.Name
 			break
@@ -1059,11 +1078,16 @@ func extractEPUBMetadata(epubPath string) (*EPUBMetadata, error) {
 		coverPath := filepath.Join(filepath.Dir(opfPath), coverHref)
 		coverPath = filepath.Clean(coverPath)
 
-		// Extract and cache the cover image
-		if cachedURL, err := extractAndCacheEPUBImage(reader, coverPath, epubPath); err == nil {
-			metadata.CoverArtURL = cachedURL
+		// Validate coverPath before extraction
+		if isSafeZipPath(coverPath) {
+			// Extract and cache the cover image
+			if cachedURL, err := extractAndCacheEPUBImage(reader, coverPath, epubPath); err == nil {
+				metadata.CoverArtURL = cachedURL
+			} else {
+				log.Warnf("Failed to extract cover from EPUB %s: %v", epubPath, err)
+			}
 		} else {
-			log.Warnf("Failed to extract cover from EPUB %s: %v", epubPath, err)
+			log.Warnf("Unsafe cover image path in EPUB %s: %s", epubPath, coverPath)
 		}
 	}
 
@@ -1074,6 +1098,9 @@ func extractEPUBMetadata(epubPath string) (*EPUBMetadata, error) {
 func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string) (string, error) {
 	// Find the image file in the ZIP
 	var imageFile *zip.File
+		if !isSafeZipPath(file.Name) {
+			continue
+		}
 	for _, file := range reader.File {
 		if file.Name == imagePath {
 			imageFile = file
