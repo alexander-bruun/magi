@@ -63,40 +63,54 @@ templ Navbar(userRole string, currentPath string) {
 						</button>
 						<div class="uk-card uk-card-body uk-drop w-96" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
 							<h2 class="uk-h3">Customize</h2>
-							<uk-theme-switcher id="theme-switcher">
-								<select hidden>
-									<optgroup data-key="theme" label="Theme">
-										<option data-hex="#52525b" value="uk-theme-zinc" selected>Zinc</option>
-										<option data-hex="#64748b" value="uk-theme-slate">Slate</option>
-										<option data-hex="#78716c" value="uk-theme-stone">Stone</option>
-										<option data-hex="#6b7280" value="uk-theme-gray">Gray</option>
-										<option data-hex="#737373" value="uk-theme-neutral">Neutral</option>
-										<option data-hex="#dc2626" value="uk-theme-red">Red</option>
-										<option data-hex="#e11d48" value="uk-theme-rose">Rose</option>
-										<option data-hex="#f97316" value="uk-theme-orange">Orange</option>
-										<option data-hex="#16a34a" value="uk-theme-green">Green</option>
-										<option data-hex="#2563eb" value="uk-theme-blue">Blue</option>
-										<option data-hex="#facc15" value="uk-theme-yellow">Yellow</option>
-										<option data-hex="#7c3aed" value="uk-theme-violet">Violet</option>
-									</optgroup>
-									<optgroup data-key="radii" label="Radii">
-										<option value="uk-radii-none">None</option>
-										<option value="uk-radii-sm">Small</option>
-										<option value="uk-radii-md" selected>Medium</option>
-										<option value="uk-radii-lg">Large</option>
-									</optgroup>
-									<optgroup data-key="shadows" label="Shadows">
-										<option value="uk-shadows-none">None</option>
-										<option value="uk-shadows-sm" selected>Small</option>
-										<option value="uk-shadows-md">Medium</option>
-										<option value="uk-shadows-lg">Large</option>
-									</optgroup>
-									<optgroup data-key="mode" label="Mode">
-										<option data-icon="sun" value="light">Light</option>
-										<option data-icon="moon" value="dark">Dark</option>
-									</optgroup>
-								</select>
-							</uk-theme-switcher>
+							<div id="theme-customizer">
+								<!-- Theme Section -->
+								<div class="mb-4">
+									<h3 class="uk-h4 mb-2">Theme</h3>
+									<div class="grid grid-cols-3 gap-2">
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small uk-active" data-key="theme" data-value="uk-theme-zinc" data-hex="#52525b"><span class="color-circle" style="background-color: #52525b;"></span>Zinc</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-slate" data-hex="#64748b"><span class="color-circle" style="background-color: #64748b;"></span>Slate</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-stone" data-hex="#78716c"><span class="color-circle" style="background-color: #78716c;"></span>Stone</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-gray" data-hex="#6b7280"><span class="color-circle" style="background-color: #6b7280;"></span>Gray</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-neutral" data-hex="#737373"><span class="color-circle" style="background-color: #737373;"></span>Neutral</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-red" data-hex="#dc2626"><span class="color-circle" style="background-color: #dc2626;"></span>Red</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-rose" data-hex="#e11d48"><span class="color-circle" style="background-color: #e11d48;"></span>Rose</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-orange" data-hex="#f97316"><span class="color-circle" style="background-color: #f97316;"></span>Orange</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-green" data-hex="#16a34a"><span class="color-circle" style="background-color: #16a34a;"></span>Green</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-blue" data-hex="#2563eb"><span class="color-circle" style="background-color: #2563eb;"></span>Blue</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-yellow" data-hex="#facc15"><span class="color-circle" style="background-color: #facc15;"></span>Yellow</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-violet" data-hex="#7c3aed"><span class="color-circle" style="background-color: #7c3aed;"></span>Violet</button>
+									</div>
+								</div>
+								<!-- Radii Section -->
+								<div class="mb-4">
+									<h3 class="uk-h4 mb-2">Radii</h3>
+									<div class="grid grid-cols-2 gap-2">
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="radii" data-value="uk-radii-none">None</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="radii" data-value="uk-radii-sm">Small</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small uk-active" data-key="radii" data-value="uk-radii-md">Medium</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="radii" data-value="uk-radii-lg">Large</button>
+									</div>
+								</div>
+								<!-- Shadows Section -->
+								<div class="mb-4">
+									<h3 class="uk-h4 mb-2">Shadows</h3>
+									<div class="grid grid-cols-2 gap-2">
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="shadows" data-value="uk-shadows-none">None</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small uk-active" data-key="shadows" data-value="uk-shadows-sm">Small</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="shadows" data-value="uk-shadows-md">Medium</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="shadows" data-value="uk-shadows-lg">Large</button>
+									</div>
+								</div>
+								<!-- Mode Section -->
+								<div class="mb-4">
+									<h3 class="uk-h4 mb-2">Mode</h3>
+									<div class="grid grid-cols-2 gap-2">
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="mode" data-value="light" data-icon="sun">Light</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="mode" data-value="dark" data-icon="moon">Dark</button>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

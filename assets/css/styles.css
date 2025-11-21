@@ -1905,3 +1905,14 @@ textarea.code-editor-hidden {
     height: 16px;
   }
 }
+
+/* Theme switcher color circles */
+.color-circle {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
