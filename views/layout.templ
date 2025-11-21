@@ -36,13 +36,61 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 					htmlElement.classList.remove("dark");
 				}
 
-				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-neutral");
+				htmlElement.classList.add(__FRANKEN__.theme || "uk-theme-zinc");
 				htmlElement.classList.add(__FRANKEN__.radii || "uk-radii-md");
 				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
 
 				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+
+				// Theme switcher handler
+				window.initThemeSwitcher = function() {
+					document.addEventListener('click', function(e) {
+						if (e.target.classList.contains('theme-option')) {
+							e.preventDefault();
+							const key = e.target.dataset.key;
+							const value = e.target.dataset.value;
+							
+							// Update localStorage
+							const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+							config[key] = value;
+							localStorage.setItem("__FRANKEN__", JSON.stringify(config));
+							
+							// Update classes
+							const htmlElement = document.documentElement;
+							if (key === 'mode') {
+								if (value === 'dark') {
+									htmlElement.classList.add('dark');
+								} else {
+									htmlElement.classList.remove('dark');
+								}
+							} else {
+								// Remove existing class for this key
+								const existingClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith(`uk-${key}-`));
+								existingClasses.forEach(cls => htmlElement.classList.remove(cls));
+								// Add new class
+								htmlElement.classList.add(value);
+							}
+							
+							// Update active states
+							document.querySelectorAll(`.theme-option[data-key="${key}"]`).forEach(btn => {
+								btn.classList.remove('uk-active');
+							});
+							e.target.classList.add('uk-active');
+						}
+					});
+					
+					// Set initial active states
+					const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+					Object.keys(config).forEach(key => {
+						const value = config[key];
+						const btn = document.querySelector(`.theme-option[data-key="${key}"][data-value="${value}"]`);
+						if (btn) {
+							btn.classList.add('uk-active');
+						}
+					});
+				};
 			</script>
 			<!-- Core UI - async for non-blocking -->
 			<script src="/assets/js/vendor/core.iife.js"></script>
@@ -68,6 +116,11 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 						document.body.classList.add('sidebar-collapsed');
 					}
 				})();
+				
+				// Initialize theme switcher
+				if (window.initThemeSwitcher) {
+					window.initThemeSwitcher();
+				}
 			</script>
 			<div id="app">
 				@Navbar(userRole, currentPath)
