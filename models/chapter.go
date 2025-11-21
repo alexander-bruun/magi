@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"sort"
+	"time"
 
 	"github.com/alexander-bruun/magi/utils"
 )
@@ -17,6 +18,7 @@ type Chapter struct {
 	ChapterCoverURL string `json:"chapter_cover_url"`
 	MangaSlug       string `json:"manga_slug"`
 	Read            bool   `json:"read"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // CreateChapter adds a new chapter if it does not already exist
@@ -31,11 +33,15 @@ func CreateChapter(chapter Chapter) error {
 	}
 
 	query := `
-	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, manga_slug)
-	VALUES (?, ?, ?, ?, ?, ?)
+	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, manga_slug, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug)
+	timestamps := NewTimestamps()
+	chapter.CreatedAt = timestamps.CreatedAt
+	createdAt := timestamps.CreatedAt.Unix()
+
+	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug, createdAt)
 	if err != nil {
 		return err
 	}
@@ -46,7 +52,7 @@ func CreateChapter(chapter Chapter) error {
 // GetChapters retrieves all chapters for a specific manga, sorted by name
 func GetChapters(mangaSlug string) ([]Chapter, error) {
 	query := `
-	SELECT slug, name, type, file, chapter_cover_url, manga_slug
+	SELECT slug, name, type, file, chapter_cover_url, manga_slug, created_at
 	FROM chapters
 	WHERE manga_slug = ?
 	`
@@ -60,9 +66,11 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 	var chapters []Chapter
 	for rows.Next() {
 		var chapter Chapter
-		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug); err != nil {
+		var createdAt int64
+		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug, &createdAt); err != nil {
 			return nil, err
 		}
+		chapter.CreatedAt = time.Unix(createdAt, 0)
 		chapters = append(chapters, chapter)
 	}
 
@@ -77,7 +85,7 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 // GetChapter retrieves a specific chapter by its slug
 func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 	query := `
-	SELECT slug, name, type, file, chapter_cover_url, manga_slug
+	SELECT slug, name, type, file, chapter_cover_url, manga_slug, created_at
 	FROM chapters
 	WHERE manga_slug = ? AND slug = ?
 	`
@@ -85,7 +93,8 @@ func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 	row := db.QueryRow(query, mangaSlug, chapterSlug)
 
 	var chapter Chapter
-	err := row.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug)
+	var createdAt int64
+	err := row.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug, &createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No chapter found
@@ -93,6 +102,7 @@ func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 		return nil, err
 	}
 
+	chapter.CreatedAt = time.Unix(createdAt, 0)
 	return &chapter, nil
 }
 

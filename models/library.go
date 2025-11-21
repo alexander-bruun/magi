@@ -184,6 +184,12 @@ func DeleteLibrary(slug string) error {
 	if err := DeleteMangasByLibrarySlug(slug); err != nil {
 		return err
 	}
+
+	// Delete all light novels associated with this library
+	if err := DeleteLightNovelsByLibrarySlug(slug); err != nil {
+		return err
+	}
+
 	return nil
 }
 

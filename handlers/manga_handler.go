@@ -6,8 +6,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/metadata"
@@ -137,6 +139,11 @@ func HandleManga(c *fiber.Ctx) error {
 	if err != nil {
 		return handleError(c, err)
 	}
+
+	reverse := c.Query("reverse") == "true"
+	if reverse {
+		slices.Reverse(chapters)
+	}
 	
 	// Get user role for conditional rendering
 	userRole := ""
@@ -160,11 +167,15 @@ func HandleManga(c *fiber.Ctx) error {
 			lastReadChapterSlug = lastReadChapter
 		}
 	}
-	
+		
 	// Precompute first/last chapter slugs and count for the view
 	firstSlug, lastSlug := models.GetFirstAndLastChapterSlugs(chapters)
 	
-	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug))
+	if IsHTMXRequest(c) && c.Query("reverse") != "" {
+		return HandleView(c, views.MangaChaptersSection(*manga, chapters, reverse, lastReadChapterSlug))
+	}
+	
+	return HandleView(c, views.Manga(*manga, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse))
 }
 
 // HandleChapter shows a chapter reader with navigation and optional read tracking.
@@ -313,7 +324,17 @@ func HandleEditMetadataManga(c *fiber.Ctx) error {
 	}
 
 	// Update manga with metadata
+	originalType := existingManga.Type
 	metadata.UpdateManga(existingManga, meta, cachedImageURL)
+
+	// Check if the manga is a webtoon by checking image dimensions, and overwrite type if detected
+	detectedType := indexer.DetectWebtoonFromImages(existingManga.Path, existingManga.Slug)
+	if detectedType != "" {
+		if originalType == "manga" && detectedType == "webtoon" {
+			log.Infof("Overriding manga type from 'manga' to 'webtoon' for '%s' based on image aspect ratio", existingManga.Slug)
+		}
+		existingManga.SetType(detectedType)
+	}
 
 	// Persist tags
 	if len(meta.Tags) > 0 {
@@ -544,23 +565,17 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	coverURL := c.FormValue("cover_url")
 
 	// Update fields
-	if name != "" {
-		existingManga.Name = name
-	}
-	if author != "" {
-		existingManga.Author = author
-	}
-	if description != "" {
-		existingManga.Description = description
-	}
+	existingManga.Name = name
+	existingManga.Author = author
+	existingManga.Description = description
 	if year != "" {
 		if yearInt, err := strconv.Atoi(year); err == nil {
 			existingManga.Year = yearInt
 		}
+	} else {
+		existingManga.Year = 0
 	}
-	if originalLanguage != "" {
-		existingManga.OriginalLanguage = originalLanguage
-	}
+	existingManga.OriginalLanguage = originalLanguage
 	if mangaType != "" {
 		existingManga.Type = mangaType
 	}
@@ -572,19 +587,15 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	}
 
 	// Process tags (comma-separated list)
-	if tagsInput != "" {
-		var tags []string
-		for _, tag := range strings.Split(tagsInput, ",") {
-			trimmed := strings.TrimSpace(tag)
-			if trimmed != "" {
-				tags = append(tags, trimmed)
-			}
+	var tags []string
+	for _, tag := range strings.Split(tagsInput, ",") {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			tags = append(tags, trimmed)
 		}
-		if len(tags) > 0 {
-			if err := models.SetTagsForManga(existingManga.Slug, tags); err != nil {
-				return handleError(c, fmt.Errorf("failed to update tags: %w", err))
-			}
-		}
+	}
+	if err := models.SetTagsForManga(existingManga.Slug, tags); err != nil {
+		return handleError(c, fmt.Errorf("failed to update tags: %w", err))
 	}
 
 	// Process cover art URL (download and cache)
@@ -648,23 +659,39 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		// Download and cache the new cover art if available
 		var cachedImageURL string
 		if coverURL != "" {
+			log.Debugf("Attempting to download cover art from provider for manga '%s': %s", mangaSlug, coverURL)
 			cachedImageURL, err = indexer.DownloadAndCacheImage(mangaSlug, coverURL)
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
+				log.Debugf("Falling back to local images for poster generation for manga '%s'", mangaSlug)
 				cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingManga.Path)
 			}
 		} else {
 			// No cover URL from provider, try local images
+			log.Debugf("No cover URL from provider for manga '%s', trying local images", mangaSlug)
 			cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingManga.Path)
 		}
 
 		if cachedImageURL != "" {
+			log.Debugf("Successfully set poster URL for manga '%s': %s", mangaSlug, cachedImageURL)
 			existingManga.CoverArtURL = cachedImageURL
+		} else {
+			log.Warnf("No poster URL could be generated for manga '%s' during metadata refresh", mangaSlug)
 		}
 
 		// Update metadata from provider while preserving creation date
+		originalType := existingManga.Type
 		metadata.UpdateManga(existingManga, meta, existingManga.CoverArtURL)
+
+		// Check if the manga is a webtoon by checking image dimensions, and overwrite type if detected
+		detectedType := indexer.DetectWebtoonFromImages(existingManga.Path, existingManga.Slug)
+		if detectedType != "" {
+			if originalType == "manga" && detectedType == "webtoon" {
+				log.Infof("Overriding manga type from 'manga' to 'webtoon' for '%s' based on image aspect ratio", existingManga.Slug)
+			}
+			existingManga.SetType(detectedType)
+		}
 
 		// Persist tags
 		if len(meta.Tags) > 0 {
@@ -679,7 +706,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 	} else {
 		// No metadata match - delete and re-index with local metadata
-		log.Infof("No metadata match found for '%s' from %s. Re-indexing with local metadata.", existingManga.Name, provider.Name())
+		log.Debugf("No metadata match found for '%s' from %s. Re-indexing with local metadata and poster generation.", existingManga.Name, provider.Name())
 		
 		// Delete the manga (chapters and tags will be cascade deleted)
 		if err := models.DeleteManga(existingManga.Slug); err != nil {
@@ -738,10 +765,10 @@ func HandlePosterChapterSelect(c *fiber.Ctx) error {
 		return HandleView(c, views.EmptyState("No chapters found."))
 	}
 
-	return HandleView(c, views.PosterChapterSelector(mangaSlug, chapters))
+	return HandleView(c, views.PosterEditor(mangaSlug, chapters, "", 0, -1, "", 1))
 }
 
-// HandlePosterSelector renders the poster selector interface with available images from selected chapter
+// HandlePosterSelector renders the image selector for a chapter
 func HandlePosterSelector(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
 	chapterSlug := c.Query("chapter", "")
@@ -749,6 +776,27 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 	manga, err := models.GetMangaUnfiltered(mangaSlug)
 	if err != nil || manga == nil {
 		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	chapters, err := models.GetChapters(mangaSlug)
+	if err != nil {
+		return HandleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
+	}
+
+	var chapterPage int
+	chapterPageStr := c.Query("page", "1")
+	if p, err := strconv.Atoi(chapterPageStr); err == nil {
+		chapterPage = p
+	} else {
+		chapterPage = 1
+	}
+	if chapterSlug != "" {
+		for i, ch := range chapters {
+			if ch.Slug == chapterSlug {
+				chapterPage = (i / 10) + 1
+				break
+			}
+		}
 	}
 
 	// Get chapter file path
@@ -784,7 +832,7 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 		return HandleView(c, views.EmptyState("No images found in the chapter."))
 	}
 
-	return HandleView(c, views.PosterSelectorInterface(mangaSlug, chapterSlug, imageCount))
+	return HandleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, -1, "", chapterPage))
 }
 
 // HandlePosterPreview renders a preview of a selected image with crop selector
@@ -801,6 +849,25 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 	manga, err := models.GetMangaUnfiltered(mangaSlug)
 	if err != nil || manga == nil {
 		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	chapters, err := models.GetChapters(mangaSlug)
+	if err != nil {
+		return handleError(c, fmt.Errorf("error getting chapters: %v", err))
+	}
+
+	var chapterPage int
+	chapterPageStr := c.Query("page", "1")
+	if p, err := strconv.Atoi(chapterPageStr); err == nil {
+		chapterPage = p
+	} else {
+		chapterPage = 1
+	}
+	for i, ch := range chapters {
+		if ch.Slug == chapterSlug {
+			chapterPage = (i / 10) + 1
+			break
+		}
 	}
 
 	// Get chapter file path
@@ -833,12 +900,46 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		return handleError(c, fmt.Errorf("failed to load image: %w", err))
 	}
 
-	return HandleView(c, views.PosterPreviewAndCropper(mangaSlug, chapterSlug, imageIndex, imageDataURI))
+	imageCount, err := utils.CountImageFiles(chapterPath)
+	if err != nil {
+		return handleError(c, fmt.Errorf("error counting images: %v", err))
+	}
+
+	return HandleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, imageIndex, imageDataURI, chapterPage))
 }
 
-// HandlePosterSet sets a custom poster image based on user selection
+// HandlePosterSet sets a custom poster image based on user selection or upload
 func HandlePosterSet(c *fiber.Ctx) error {
 	mangaSlug := c.Params("manga")
+
+	manga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil || manga == nil {
+		return handleError(c, fmt.Errorf("manga not found"))
+	}
+
+	// Check for file upload
+	if file, err := c.FormFile("poster"); err == nil {
+		// Handle upload
+		ext := filepath.Ext(file.Filename)
+		cacheDir := utils.GetCacheDirectory()
+		cachedPath := filepath.Join(cacheDir, fmt.Sprintf("%s%s", mangaSlug, ext))
+		if err := c.SaveFile(file, cachedPath); err != nil {
+			return handleError(c, fmt.Errorf("failed to save uploaded file: %w", err))
+		}
+		cachedImageURL := fmt.Sprintf("/api/images/%s%s?t=%d", mangaSlug, ext, time.Now().Unix())
+
+		// Update manga with new cover art URL
+		manga.CoverArtURL = cachedImageURL
+		if err := models.UpdateManga(manga); err != nil {
+			return handleError(c, fmt.Errorf("failed to update manga: %w", err))
+		}
+
+		// Return success message
+		successMsg := "Poster updated successfully!"
+		return HandleView(c, views.SuccessAlert(successMsg))
+	}
+
+	// Existing logic for cropping from existing images
 	chapterSlug := c.FormValue("chapter_slug")
 	cropDataStr := c.FormValue("crop_data")
 	imageIndexStr := c.FormValue("image_index")
@@ -846,11 +947,6 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	imageIndex := 0
 	if idx, err := strconv.Atoi(imageIndexStr); err == nil {
 		imageIndex = idx
-	}
-
-	manga, err := models.GetMangaUnfiltered(mangaSlug)
-	if err != nil || manga == nil {
-		return handleError(c, fmt.Errorf("manga not found"))
 	}
 
 	// Get chapter file path
@@ -898,4 +994,32 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Return success message
 	successMsg := fmt.Sprintf("Poster updated successfully!")
 	return HandleView(c, views.SuccessAlert(successMsg))
+}
+
+// HandleDeleteManga deletes a manga and all associated data
+func HandleDeleteManga(c *fiber.Ctx) error {
+	mangaSlug := c.Params("manga")
+	if mangaSlug == "" {
+		return handleError(c, fmt.Errorf("manga slug can't be empty"))
+	}
+
+	existingManga, err := models.GetMangaUnfiltered(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if existingManga == nil {
+		return handleErrorWithStatus(c, fmt.Errorf("manga not found"), fiber.StatusNotFound)
+	}
+
+	// Delete the manga (chapters and tags will be cascade deleted)
+	if err := models.DeleteManga(existingManga.Slug); err != nil {
+		log.Errorf("Failed to delete manga '%s': %v", mangaSlug, err)
+		return handleError(c, fmt.Errorf("failed to delete manga: %w", err))
+	}
+
+	log.Infof("Successfully deleted manga '%s'", mangaSlug)
+
+	// Redirect to mangas list
+	c.Set("HX-Redirect", "/mangas")
+	return c.SendStatus(fiber.StatusOK)
 }

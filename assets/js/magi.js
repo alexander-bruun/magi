@@ -672,6 +672,73 @@
           elements.modeToggle.setAttribute('data-mode', params.tagMode);
           elements.modeToggle.textContent = params.tagMode === 'any' ? 'Any' : 'All';
         }
+
+        // Ensure uk-select reflects the selected value
+        if (elements.sortSelect && sort) {
+          elements.sortSelect.value = sort;
+          
+          // Force uk-select to update its display
+          const ukSelect = elements.sortSelect.closest('uk-select') || document.querySelector('uk-select');
+          if (ukSelect) {
+            // Manually update the button text
+            const button = ukSelect.querySelector('button');
+            const selectedOption = elements.sortSelect.querySelector('option:checked');
+            if (button && selectedOption) {
+              button.textContent = selectedOption.textContent.trim();
+            }
+            
+            // Close the dropdown if it's open
+            const dropdown = ukSelect.querySelector('.uk-dropdown');
+            if (dropdown) {
+              if (dropdown.classList.contains('uk-open')) {
+                dropdown.classList.remove('uk-open');
+                if (button) {
+                  button.setAttribute('aria-expanded', 'false');
+                }
+              }
+              
+              // Populate the dropdown options and set up event handlers
+              const ul = dropdown.querySelector('ul');
+              if (ul && button) {
+                ul.innerHTML = '';
+                Array.from(elements.sortSelect.options).forEach(option => {
+                  const li = document.createElement('li');
+                  li.innerHTML = `<a href="#">${option.text}</a>`;
+                  li.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    elements.sortSelect.value = option.value;
+                    button.textContent = option.text.trim();
+                    dropdown.classList.remove('uk-open');
+                    button.setAttribute('aria-expanded', 'false');
+                    ukSelect.dispatchEvent(new CustomEvent('uk-select:input', { detail: { value: option.value }, bubbles: true }));
+                  });
+                  ul.appendChild(li);
+                });
+                
+                // Handle button click to toggle dropdown
+                button.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  const isOpen = dropdown.classList.contains('uk-open');
+                  if (isOpen) {
+                    dropdown.classList.remove('uk-open');
+                    button.setAttribute('aria-expanded', 'false');
+                  } else {
+                    dropdown.classList.add('uk-open');
+                    button.setAttribute('aria-expanded', 'true');
+                  }
+                });
+                
+                // Close dropdown on outside click
+                document.addEventListener('click', (e) => {
+                  if (!ukSelect.contains(e.target)) {
+                    dropdown.classList.remove('uk-open');
+                    button.setAttribute('aria-expanded', 'false');
+                  }
+                });
+              }
+            }
+          }
+        }
       },
 
       refreshTagFragment() {
@@ -728,6 +795,7 @@
         );
         
         select.value = match ? match.value : String(value);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
       },
 
       handleTagModeToggle(btn) {
@@ -865,11 +933,19 @@
           if (form) {
             form.addEventListener('submit', () => editor.save());
           }
+          // Store reference to editor on textarea for easy access
+          ta._codeMirrorEditor = editor;
           this.editors.add(editor);
         } catch (error) {
           console.error('Failed to create CodeMirror editor:', error);
           // Reset flag if creation failed
           delete ta.dataset.codeEditorInit;
+        }
+      },
+
+      updateEditorMode(ta, newMode) {
+        if (ta._codeMirrorEditor) {
+          ta._codeMirrorEditor.setOption('mode', newMode);
         }
       },
 
@@ -897,11 +973,28 @@
       }
     };
 
+    // Expose CodeEditorManager globally
+    window.CodeEditorManager = CodeEditorManager;
+
     // Scroll Helpers
     const ScrollHelpers = {
       init() {
-        window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-        window.scrollToTopInstant = () => window.scrollTo({ top: 0, behavior: 'auto' });
+        window.scrollToTop = () => {
+          const mainContent = document.getElementById('main-content');
+          if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        };
+        window.scrollToTopInstant = () => {
+          const mainContent = document.getElementById('main-content');
+          if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'auto' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'auto' });
+          }
+        };
       }
     };
 

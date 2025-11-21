@@ -131,7 +131,7 @@ func HandleConsoleLogsWebSocket(c *websocket.Conn) {
 		_, _, err := c.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Errorf("WebSocket error: %v", err)
+				log.Debugf("WebSocket closed unexpectedly: %v", err)
 			}
 			break
 		}

@@ -16,6 +16,16 @@ import (
 	"github.com/alexander-bruun/magi/executor"
 )
 
+type ContentType int
+
+const (
+	MangaDirectory ContentType = iota
+	LightnovelDirectory
+	SingleMangaFile
+	SingleLightNovelFile
+	Skip
+)
+
 // Callback functions for job status notifications (set by handlers package)
 var (
 	NotifyIndexerStarted  func(librarySlug string, libraryName string)
@@ -26,6 +36,7 @@ var (
 var (
 	cacheDataDirectory = ""
 	activeIndexers     = make(map[string]*Indexer)
+	activeIndexersMutex sync.Mutex
 	scannedPathCount   int
 	scanMutex          sync.Mutex
 )
@@ -80,7 +91,9 @@ func (idx *Indexer) Start() {
 	idx.Cron.Start()
 	idx.CronRunning = true
 
+	activeIndexersMutex.Lock()
 	activeIndexers[idx.Library.Slug] = idx
+	activeIndexersMutex.Unlock()
 
 	log.Infof("Library indexer '%s' registered with cron schedule '%s'",
 		idx.Library.Name, idx.Library.Cron)
@@ -101,8 +114,10 @@ func (idx *Indexer) Stop() {
 			idx.CronRunning = false
 			log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
 		}
-		close(idx.stop)
+		activeIndexersMutex.Lock()
 		delete(activeIndexers, idx.Library.Slug)
+		activeIndexersMutex.Unlock()
+		close(idx.stop)
 	})
 }
 
@@ -165,7 +180,7 @@ func (idx *Indexer) runIndexingJob() {
 	scanMutex.Unlock()
 	
 	log.Infof(
-		"Scheduled indexing for library '%s' completed in %.1fs (scanned %d manga paths)",
+		"Scheduled indexing for library '%s' completed in %.1fs (scanned %d content paths)",
 		idx.Library.Name,
 		seconds,
 		totalScanned,
@@ -258,14 +273,34 @@ func (idx *Indexer) processFolder(folder string) error {
 		}
 
 		path := filepath.Join(folder, entry.Name())
-		if entry.IsDir() {
+		contentType := determineContentType(path, entry.IsDir())
+
+		switch contentType {
+		case LightnovelDirectory:
 			// Increment the global scan counter
 			scanMutex.Lock()
 			scannedPathCount++
 			currentCount := scannedPathCount
 			scanMutex.Unlock()
 			
-			log.Debugf("Scanning manga path [%d]: %s", currentCount, path)
+			log.Debugf("Scanning light novel directory [%d]: %s", currentCount, path)
+			
+			// Notify progress
+			if NotifyIndexerProgress != nil {
+				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
+			}
+			
+			if _, err := IndexLightNovelSeries(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing light novel series at '%s': %s", path, err)
+			}
+		case MangaDirectory:
+			// Increment the global scan counter
+			scanMutex.Lock()
+			scannedPathCount++
+			currentCount := scannedPathCount
+			scanMutex.Unlock()
+			
+			log.Debugf("Scanning manga directory [%d]: %s", currentCount, path)
 			
 			// Notify progress
 			if NotifyIndexerProgress != nil {
@@ -275,29 +310,42 @@ func (idx *Indexer) processFolder(folder string) error {
 			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
 				log.Errorf("Error indexing manga at '%s': %s", path, err)
 			}
-		} else {
-			// Check if file is an archive file (single-chapter manga)
-			ext := strings.ToLower(filepath.Ext(entry.Name()))
-			if ext == ".cbz" || ext == ".cbr" || ext == ".zip" || ext == ".rar" {
-				// Increment the global scan counter
-				scanMutex.Lock()
-				scannedPathCount++
-				currentCount := scannedPathCount
-				scanMutex.Unlock()
-				
-				log.Debugf("Scanning manga file [%d]: %s", currentCount, path)
-				
-				// Notify progress
-				if NotifyIndexerProgress != nil {
-					NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
-				}
-				
-				if _, err := IndexManga(path, idx.Library.Slug); err != nil {
-					log.Errorf("Error indexing manga at '%s': %s", path, err)
-				}
-			} else {
-				log.Debugf("Skipping non-manga file: %s", entry.Name())
+		case SingleLightNovelFile:
+			// Increment the global scan counter
+			scanMutex.Lock()
+			scannedPathCount++
+			currentCount := scannedPathCount
+			scanMutex.Unlock()
+			
+			log.Debugf("Scanning light novel file [%d]: %s", currentCount, path)
+			
+			// Notify progress
+			if NotifyIndexerProgress != nil {
+				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
 			}
+			
+			if _, err := IndexLightNovel(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing light novel at '%s': %s", path, err)
+			}
+		case SingleMangaFile:
+			// Increment the global scan counter
+			scanMutex.Lock()
+			scannedPathCount++
+			currentCount := scannedPathCount
+			scanMutex.Unlock()
+			
+			log.Debugf("Scanning manga file [%d]: %s", currentCount, path)
+			
+			// Notify progress
+			if NotifyIndexerProgress != nil {
+				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
+			}
+			
+			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing manga at '%s': %s", path, err)
+			}
+		default:
+			log.Debugf("Skipping: %s", entry.Name())
 		}
 	}
 	return nil
@@ -369,24 +417,69 @@ func (nl *NotificationListener) Notify(notification models.Notification) {
 
 func (nl *NotificationListener) handleLibraryCreated(newLibrary models.Library) {
 	indexer := NewIndexer(newLibrary)
+	activeIndexersMutex.Lock()
 	activeIndexers[newLibrary.Slug] = indexer
+	activeIndexersMutex.Unlock()
 	go indexer.Start()
 }
 
 func (nl *NotificationListener) handleLibraryUpdated(updatedLibrary models.Library) {
+	activeIndexersMutex.Lock()
 	if existingIndexer, exists := activeIndexers[updatedLibrary.Slug]; exists {
+		activeIndexersMutex.Unlock()
 		existingIndexer.Stop()
+		activeIndexersMutex.Lock()
 		delete(activeIndexers, updatedLibrary.Slug)
 	}
+	activeIndexers[updatedLibrary.Slug] = nil // Placeholder while creating new indexer
+	activeIndexersMutex.Unlock()
 
 	newIndexer := NewIndexer(updatedLibrary)
+	activeIndexersMutex.Lock()
 	activeIndexers[updatedLibrary.Slug] = newIndexer
+	activeIndexersMutex.Unlock()
 	go newIndexer.Start()
 }
 
 func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Library) {
+	activeIndexersMutex.Lock()
 	if existingIndexer, exists := activeIndexers[deletedLibrary.Slug]; exists {
+		activeIndexersMutex.Unlock()
 		existingIndexer.Stop()
-		delete(activeIndexers, deletedLibrary.Slug)
+		// Stop already removes from the map, so no need to delete again
+		return
 	}
+	activeIndexersMutex.Unlock()
+}
+
+// determineContentType determines if a path should be indexed as manga or light novel
+func determineContentType(path string, isDir bool) ContentType {
+	if isDir {
+		if containsEPUBFiles(path) {
+			return LightnovelDirectory
+		}
+		return MangaDirectory
+	} else {
+		ext := strings.ToLower(filepath.Ext(path))
+		if ext == ".epub" {
+			return SingleLightNovelFile
+		} else if ext == ".cbz" || ext == ".cbr" || ext == ".zip" || ext == ".rar" {
+			return SingleMangaFile
+		}
+	}
+	return Skip
+}
+
+// containsEPUBFiles checks if a directory contains any .epub files
+func containsEPUBFiles(dirPath string) bool {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.ToLower(filepath.Ext(entry.Name())) == ".epub" {
+			return true
+		}
+	}
+	return false
 }

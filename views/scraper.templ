@@ -19,6 +19,19 @@ templ VariableInputs(variables map[string]string) {
 	</div>
 }
 
+// PackageInputs renders the package management section
+templ PackageInputs(packages []string) {
+	<div id="packages-container">
+		if len(packages) == 0 {
+			@Package("", true)
+		} else {
+			for index, pkg := range packages {
+				@Package(pkg, index == 0)
+			}
+		}
+	</div>
+}
+
 // Variable renders a single variable input row with add/remove button  
 templ Variable(varName string, varValue string, isFirst bool) {
 	<div class="variable-row mb-2 flex items-center gap-2">
@@ -36,6 +49,22 @@ templ Variable(varName string, varValue string, isFirst bool) {
 	</div>
 }
 
+// Package renders a single package input row with add/remove button
+templ Package(pkgName string, isFirst bool) {
+	<div class="package-row mb-2 flex items-center gap-2">
+		<input class="uk-input flex-1" type="text" name="package" placeholder="Package name (e.g., requests, beautifulsoup4)" value={ pkgName }/>
+		if isFirst {
+			<button type="button" class="uk-btn uk-btn-default h-10 w-10" hx-get="/admin/scraper/helpers/add-package" hx-target="#packages-container" hx-swap="beforeend">
+				<uk-icon icon="Plus"></uk-icon>
+			</button>
+		} else {
+			<button type="button" class="uk-btn uk-btn-destructive h-10 w-10" hx-get="/admin/scraper/helpers/remove-package" hx-target="closest .package-row" hx-swap="outerHTML">
+				<uk-icon icon="X"></uk-icon>
+			</button>
+		}
+	</div>
+}
+
 // Helper function to get sorted variable names
 func getSortedVariableNames(variables map[string]string) []string {
 	names := make([]string, 0, len(variables))
@@ -44,6 +73,22 @@ func getSortedVariableNames(variables map[string]string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// Helper function to get code editor language
+func getCodeEditorLanguage(language string) string {
+	if language == "python" {
+		return "python"
+	}
+	return "shell"
+}
+
+// Helper function to get script placeholder
+func getScriptPlaceholder(language string) string {
+	if language == "python" {
+		return "# Python script\n# Enter your python script here\nprint('Hello from scraper')"
+	}
+	return "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
 }
 
 // Scraper renders the main scraper page with tabs
@@ -191,6 +236,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 					<label for="script-language" class="uk-form-label">Language</label>
 					<select id="script-language" name="language" class="uk-select" required>
 						<option value="bash" selected?={ script.Language == "bash" }>Bash</option>
+						<option value="python" selected?={ script.Language == "python" }>Python</option>
 					</select>
 				</div>
 
@@ -216,10 +262,10 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				<textarea 
 					id="script-content"
 					name="script"
-					data-code-editor="shell"
+					data-code-editor={ getCodeEditorLanguage(script.Language) }
 					data-code-editor-height="384px"
 					class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
-					placeholder="#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
+					placeholder={ getScriptPlaceholder(script.Language) }
 					required
 				>{ script.Script }</textarea>
 			</div>
@@ -228,6 +274,13 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			<label class="uk-form-label">Script Variables (optional)</label>
 			<p class="text-xs text-muted-foreground mb-3">Define variables that will be passed to your script. For bash scripts, these become environment variables.</p>
 			@VariableInputs(script.Variables)
+		</div>
+
+		<!-- Python Packages -->
+		<div id="packages-section" style="display: none">
+			<label class="uk-form-label">Python Packages (optional)</label>
+			<p class="text-xs text-muted-foreground mb-3">Specify Python packages to install in the virtual environment before running the script.</p>
+			@PackageInputs(script.Packages)
 		</div>
 
 			<!-- Actions -->
@@ -292,6 +345,47 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			(function() {
 				const runBtn = document.getElementById('run-btn');
 				const cancelBtn = document.getElementById('cancel-btn');
+				const languageSelect = document.getElementById('script-language');
+				const packagesSection = document.getElementById('packages-section');
+				
+				// Function to toggle packages section
+				function togglePackagesSection() {
+					if (languageSelect && packagesSection) {
+						if (languageSelect.value === 'python') {
+							packagesSection.style.display = 'block';
+						} else {
+							packagesSection.style.display = 'none';
+						}
+					}
+					
+					// Update code editor language
+					const codeEditor = document.getElementById('script-content');
+					if (codeEditor) {
+						let newMode;
+						if (languageSelect.value === 'python') {
+							codeEditor.setAttribute('data-code-editor', 'python');
+							codeEditor.placeholder = "# Python script\n# Enter your python script here\nprint('Hello from scraper')";
+							newMode = 'python';
+						} else {
+							codeEditor.setAttribute('data-code-editor', 'shell');
+							codeEditor.placeholder = "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'";
+							newMode = 'shell';
+						}
+						
+						// Update CodeMirror editor mode if it exists
+						if (window.CodeEditorManager) {
+							window.CodeEditorManager.updateEditorMode(codeEditor, newMode);
+						}
+					}
+				}
+				
+				// Initial toggle
+				togglePackagesSection();
+				
+				// Listen for language change
+				if (languageSelect) {
+					languageSelect.addEventListener('change', togglePackagesSection);
+				}
 				
 				if (!runBtn || !cancelBtn) return;
 

@@ -11,100 +11,135 @@ templ Config() {
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
         <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Configuration</span></h3>
         <div class="flex place-content-center">
-            <div class="w-2/4">
-                <div class="uk-card p-4">
-                    {{ cfg, _ := models.GetAppConfig() }}
-                    <form hx-post="/admin/config" hx-target="#content" hx-trigger="submit" class="space-y-6">
-                        <div>
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="allow_registration" checked?={ cfg.AllowRegistration } class="uk-checkbox" />
-                                <span>Allow new user registrations</span>
-                            </label>
-                            <p class="text-xs text-muted-foreground mt-1">Disable to prevent any new users from signing up.</p>
-                        </div>
-                        <div>
-                            <label class="block mb-1">Max users (0 = unlimited)</label>
-                            <input type="number" min="0" class="uk-input" name="max_users" value={ fmt.Sprintf("%d", cfg.MaxUsers) } />
-                            {{ userCount, _ := models.CountUsers() }}
-                            <p class="text-xs text-muted-foreground mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
-                        </div>
-                        <div>
-                            <label class="block mb-1">Maximum Content Rating</label>
-                            <select name="content_rating_limit" class="uk-select">
-                                <option value="0" selected?={ cfg.ContentRatingLimit == 0 }>Safe only</option>
-                                <option value="1" selected?={ cfg.ContentRatingLimit == 1 }>Suggestive (includes safe)</option>
-                                <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
-                                <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
-                            </select>
-                            <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
-                        </div>
-                        
-                        <!-- Metadata Provider Section -->
-                        <div class="uk-margin-medium-top uk-padding-small">
-                            <h4 class="uk-heading-line"><span>Metadata Provider</span></h4>
-                            <div class="uk-margin">
-                                <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
-                                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
-                                    <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
-                                    <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
-                                    <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
-                                </select>
-                                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching manga information.</p>
-                            </div>
-                            
-                            <!-- MAL API Token -->
-                            <div id="mal-token-field" class="uk-margin" style="display: none;">
-                                <label class="block mb-1">MyAnimeList Client ID</label>
-                                <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
-                                <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
-                            </div>
-                            
-                            <!-- AniList API Token -->
-                            <div id="anilist-token-field" class="uk-margin" style="display: none;">
-                                <label class="block mb-1">AniList Access Token (Optional)</label>
-                                <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
-                                <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-center">
-                            <button type="submit" class="uk-btn uk-btn-default">Save</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Console Logs Section -->
-        <div class="mt-8">
-            <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Console Logs</span></h3>
-            <div class="flex place-content-center">
-                <div class="w-full px-4">
-                    <div class="uk-card p-4">
-                        <div id="console-logs-container" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
-                            <div id="console-logs-output"></div>
-                        </div>
-                    </div>
-                </div>
+            <div class="w-3/4 space-y-6">
+                @ConfigForm()
             </div>
         </div>
     </div>
     
+    <!-- Console Logs Section -->
+    <div class="mt-8">
+        @ConsoleLogs()
+    </div>
+}
+
+templ ConfigForm() {
+    {{ cfg, _ := models.GetAppConfig() }}
+    <form hx-post="/admin/config" hx-target="this" hx-trigger="submit" hx-swap="outerHTML" class="space-y-6">
+        <!-- General Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>General Settings</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="allow_registration" checked?={ cfg.AllowRegistration } class="uk-checkbox" />
+                    <span>Allow new user registrations</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">Disable to prevent any new users from signing up.</p>
+            </div>
+            <div>
+                <label class="block mb-1">Max users (0 = unlimited)</label>
+                <input type="number" min="0" class="uk-input" name="max_users" value={ fmt.Sprintf("%d", cfg.MaxUsers) } />
+                {{ userCount, _ := models.CountUsers() }}
+                <p class="text-xs text-muted-foreground mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
+            </div>
+            <div>
+                <label class="block mb-1">Maximum Content Rating</label>
+                <select name="content_rating_limit" class="uk-select">
+                    <option value="0" selected?={ cfg.ContentRatingLimit == 0 }>Safe only</option>
+                    <option value="1" selected?={ cfg.ContentRatingLimit == 1 }>Suggestive (includes safe)</option>
+                    <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
+                    <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
+                </select>
+                <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
+            </div>
+        </div>
+        
+        <!-- Metadata Provider Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Metadata Provider</span></h4>
+            <div class="uk-margin">
+                <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
+                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
+                    <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
+                    <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
+                    <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
+                </select>
+                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching manga information.</p>
+            </div>
+            
+            <!-- MAL API Token -->
+            <div id="mal-token-field" class="uk-margin" style="display: none;">
+                <label class="block mb-1">MyAnimeList Client ID</label>
+                <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
+                <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
+            </div>
+            
+            <!-- AniList API Token -->
+            <div id="anilist-token-field" class="uk-margin" style="display: none;">
+                <label class="block mb-1">AniList Access Token (Optional)</label>
+                <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
+                <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
+            </div>
+        </div>
+        
+        <!-- Rate Limiting Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Rate Limiting</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="rate_limit_enabled" checked?={ cfg.RateLimitEnabled } class="uk-checkbox" />
+                    <span>Enable rate limiting</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">Limit the number of requests per IP address to prevent abuse.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Requests per window</label>
+                <input type="number" min="1" class="uk-input" name="rate_limit_requests" value={ fmt.Sprintf("%d", cfg.RateLimitRequests) } />
+                <p class="text-xs text-muted-foreground mt-1">Maximum number of requests allowed per time window.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Time window (seconds)</label>
+                <input type="number" min="1" class="uk-input" name="rate_limit_window" value={ fmt.Sprintf("%d", cfg.RateLimitWindow) } />
+                <p class="text-xs text-muted-foreground mt-1">Time window in seconds for rate limiting.</p>
+            </div>
+        </div>
+        
+        <!-- Bot Detection Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Bot Detection</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="bot_detection_enabled" checked?={ cfg.BotDetectionEnabled } class="uk-checkbox" />
+                    <span>Enable bot detection</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">Automatically detect and ban IPs that access too many series/chapters in sequence.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Series access threshold</label>
+                <input type="number" min="1" class="uk-input" name="bot_series_threshold" value={ fmt.Sprintf("%d", cfg.BotSeriesThreshold) } />
+                <p class="text-xs text-muted-foreground mt-1">Maximum series page accesses allowed per time window before banning.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Chapter access threshold</label>
+                <input type="number" min="1" class="uk-input" name="bot_chapter_threshold" value={ fmt.Sprintf("%d", cfg.BotChapterThreshold) } />
+                <p class="text-xs text-muted-foreground mt-1">Maximum chapter page accesses allowed per time window before banning.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Detection window (seconds)</label>
+                <input type="number" min="1" class="uk-input" name="bot_detection_window" value={ fmt.Sprintf("%d", cfg.BotDetectionWindow) } />
+                <p class="text-xs text-muted-foreground mt-1">Time window in seconds for bot detection monitoring.</p>
+            </div>
+        </div>
+        
+        <!-- Save Button Card -->
+        <div class="p-4">
+            <div class="flex justify-center">
+                <button type="submit" class="uk-btn uk-btn-default">Save Configuration</button>
+            </div>
+        </div>
+    </form>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
-            
-            if (window.Magi && window.Magi.LogViewer) {
-                new window.Magi.LogViewer({
-                    wsUrl: wsUrl,
-                    containerId: 'console-logs-container',
-                    outputId: 'console-logs-output',
-                    maxEntries: 1000,
-                    reconnectInterval: 3000
-                });
-            }
-            
             // Metadata provider selection handler
             const providerSelect = document.getElementById('metadata-provider-select');
             const malField = document.getElementById('mal-token-field');
@@ -116,8 +151,77 @@ templ Config() {
                 anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
             }
             
-            providerSelect.addEventListener('change', updateTokenFields);
-            updateTokenFields(); // Initialize on page load
+            if (providerSelect) {
+                providerSelect.addEventListener('change', updateTokenFields);
+                updateTokenFields(); // Initialize on page load
+            }
         });
+        
+        // Reinitialize on HTMX swap
+        document.addEventListener('htmx:afterSettle', function(event) {
+            if (event.detail.xhr && event.detail.xhr.status === 200) {
+                // Metadata provider selection handler
+                const providerSelect = document.getElementById('metadata-provider-select');
+                const malField = document.getElementById('mal-token-field');
+                const anilistField = document.getElementById('anilist-token-field');
+                
+                function updateTokenFields() {
+                    const provider = providerSelect.value;
+                    malField.style.display = provider === 'mal' ? 'block' : 'none';
+                    anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
+                }
+                
+                if (providerSelect) {
+                    providerSelect.removeEventListener('change', updateTokenFields);
+                    providerSelect.addEventListener('change', updateTokenFields);
+                    updateTokenFields();
+                }
+            }
+        });
+    </script>
+}
+
+templ ConsoleLogs() {
+    <div class="uk-container mt-8">
+        <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Console Logs</span></h3>
+        <div class="flex place-content-center">
+            <div class="w-full px-4">
+                <div class="uk-card p-4">
+                    <div id="console-logs-container" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
+                        <div id="console-logs-output"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            function initConsoleLogs() {
+                const container = document.getElementById('console-logs-container');
+                const output = document.getElementById('console-logs-output');
+                if (!container || !output) return;
+
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
+                
+                if (window.Magi && window.Magi.LogViewer) {
+                    new window.Magi.LogViewer({
+                        wsUrl: wsUrl,
+                        containerId: 'console-logs-container',
+                        outputId: 'console-logs-output',
+                        maxEntries: 1000,
+                        reconnectInterval: 3000
+                    });
+                }
+            }
+
+            // Try to initialize immediately (for HTMX swaps)
+            initConsoleLogs();
+
+            // Also listen for DOMContentLoaded (for direct page loads)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initConsoleLogs);
+            }
+        })();
     </script>
 }

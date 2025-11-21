@@ -2,7 +2,11 @@ node_modules/
 .tmp/
 builds/
 scripts/scrapers/**
+!scripts/scrapers/*.sh
 cache/
 magi.db
+magi.db-shm
+magi.db-wal
 magi.db-journal
 magi
+TODO

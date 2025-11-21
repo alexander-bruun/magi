@@ -283,7 +283,7 @@
 
     // Re-initialize after HTMX swaps (in case navbar gets swapped)
     document.addEventListener('htmx:afterSwap', function(event) {
-        if (event.detail.target.id === 'content' || event.detail.target.tagName === 'BODY') {
+        if (event.detail.target && (event.detail.target.id === 'content' || event.detail.target.tagName === 'BODY')) {
             // Give the DOM a moment to settle
             setTimeout(init, 100);
         }

@@ -60,7 +60,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// ========================================
 	
 	// Cache middleware for downloaded/indexed images
-	app.Use("/api/images", func(c *fiber.Ctx) error {
+	app.Use("/api/images", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
 		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
 			// Determine file extension
 			p := c.Path() // e.g. /api/images/manga-title.jpg
@@ -92,7 +92,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	api := app.Group("/api")
 	
 	// Comic book file serving (supports: .cbz, .cbr, .zip, .rar, .jpg, .png)
-	api.Get("/comic", ConditionalAuthMiddleware(), ComicHandler)
+	api.Get("/comic", BotDetectionMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
 	
 	// Duplicate management (admin only)
 	apiAdmin := api.Group("/admin", AuthMiddleware("admin"))
@@ -145,6 +145,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Post("/:manga/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
 	mangas.Post("/:manga/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
 	mangas.Post("/:manga/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataManga)
+	mangas.Post("/:manga/delete", AuthMiddleware("moderator"), HandleDeleteManga)
 	
 	// Poster selector (moderator+)
 	mangas.Get("/:manga/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
@@ -154,9 +155,38 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	
 	// Chapter routes
 	chapters := mangas.Group("/:manga/chapters")
-	chapters.Get("/:chapter", HandleChapter)
+	chapters.Get("/:chapter", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapter)
 	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
 	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
+
+	// ========================================
+	// Light Novel Routes
+	// ========================================
+
+	lightNovels := app.Group("/light-novels", ConditionalAuthMiddleware())
+
+	// Light novel listing and search
+	lightNovels.Get("", HandleLightNovels)
+	lightNovels.Get("/search", HandleLightNovelSearch)
+
+	// Individual light novel
+	lightNovels.Get("/:light_novel", HandleLightNovel)
+
+	// Light novel chapters
+	lightNovelChapters := lightNovels.Group("/:light_novel/chapters")
+	lightNovelChapters.Get("/:chapter", HandleLightNovelChapter)
+	lightNovelChapters.Get("/:chapter/toc", HandleLightNovelTOC)
+	lightNovelChapters.Get("/:chapter/content", HandleLightNovelBookContent)
+	lightNovelChapters.Get("/:chapter/toc/fragment", HandleLightNovelChapterTOCFragment)
+	lightNovelChapters.Get("/:chapter/reader/fragment", HandleLightNovelChapterReaderFragment)
+	lightNovelChapters.Get("/:chapter/*", HandleLightNovelAsset)
+	lightNovelChapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleLightNovelMarkRead)
+
+	// Light novel interactions (authenticated)
+	lightNovels.Post("/:light_novel/vote", AuthMiddleware("reader"), HandleLightNovelVote)
+	lightNovels.Get("/:light_novel/vote/fragment", HandleLightNovelVoteFragment)
+	lightNovels.Post("/:light_novel/favorite", AuthMiddleware("reader"), HandleLightNovelFavorite)
+	lightNovels.Get("/:light_novel/favorite/fragment", HandleLightNovelFavoriteFragment)
 
 	// ========================================
 	// User Account Routes (authenticated)
@@ -191,6 +221,14 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	users.Post("/:username/unban", HandleUserUnban)
 	users.Post("/:username/promote", HandleUserPromote)
 	users.Post("/:username/demote", HandleUserDemote)
+
+	// ========================================
+	// Banned IPs Management Routes (admin)
+	// ========================================
+	
+	bannedIPs := app.Group("/admin/banned-ips", AuthMiddleware("admin"))
+	bannedIPs.Get("", HandleBannedIPs)
+	bannedIPs.Post("/:ip/unban", HandleUnbanIP)
 
 	// ========================================
 	// Permission Management UI (moderator+)
@@ -263,6 +301,8 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	scraperHelpers := app.Group("/admin/scraper/helpers", AuthMiddleware("moderator"))
 	scraperHelpers.Get("/add-variable", HandleScraperVariableAdd)
 	scraperHelpers.Get("/remove-variable", HandleScraperVariableRemove)
+	scraperHelpers.Get("/add-package", HandleScraperPackageAdd)
+	scraperHelpers.Get("/remove-package", HandleScraperPackageRemove)
 
 	// ========================================
 	// Duplicate Detection (admin)

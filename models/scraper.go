@@ -15,9 +15,10 @@ type ScraperScript struct {
 	ID              int64
 	Name            string
 	Script          string
-	Language        string // "bash"
+	Language        string // "bash", "python"
 	Schedule        string // Cron format (e.g., "0 0 * * *")
 	Variables       map[string]string // Key-value pairs for script variables
+	Packages        []string // Python packages to install for python scripts
 	LastRun         *int64 // Unix timestamp
 	LastRunOutput   *string
 	LastRunError    *string
@@ -27,7 +28,7 @@ type ScraperScript struct {
 }
 
 // CreateScraperScript creates a new scraper script in the database
-func CreateScraperScript(name, script, language, schedule string, variables map[string]string) (*ScraperScript, error) {
+func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 	
 	// Serialize variables to JSON
@@ -40,11 +41,21 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 		variablesJSON = string(data)
 	}
 	
+	// Serialize packages to JSON
+	packagesJSON := "[]"
+	if len(packages) > 0 {
+		data, err := json.Marshal(packages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize packages: %w", err)
+		}
+		packagesJSON = string(data)
+	}
+	
 	query := `
-		INSERT INTO scraper_scripts (name, script, language, schedule, variables, created_at, updated_at, enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, created_at, updated_at, enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
 	`
-	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, now, now)
+	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scraper script: %w", err)
 	}
@@ -61,6 +72,7 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 		Language:  language,
 		Schedule:  schedule,
 		Variables: variables,
+		Packages:  packages,
 		CreatedAt: now,
 		UpdatedAt: now,
 		Enabled:   true,
@@ -70,7 +82,7 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 // GetScraperScript retrieves a script by ID
 func GetScraperScript(id int64) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, variables, last_run, last_run_output, last_run_error, created_at, updated_at, enabled
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
 		FROM scraper_scripts
 		WHERE id = ?
 	`
@@ -81,7 +93,7 @@ func GetScraperScript(id int64) (*ScraperScript, error) {
 // GetScraperScriptByName retrieves a script by name
 func GetScraperScriptByName(name string) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, variables, last_run, last_run_output, last_run_error, created_at, updated_at, enabled
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
 		FROM scraper_scripts
 		WHERE name = ?
 	`
@@ -92,7 +104,7 @@ func GetScraperScriptByName(name string) (*ScraperScript, error) {
 // ListScraperScripts retrieves all scraper scripts, optionally filtered by enabled status
 func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, variables, last_run, last_run_output, last_run_error, created_at, updated_at, enabled
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
 		FROM scraper_scripts
 	`
 	args := []interface{}{}
@@ -122,7 +134,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 }
 
 // UpdateScraperScript updates a scraper script
-func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string) (*ScraperScript, error) {
+func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 	
 	// Serialize variables to JSON
@@ -135,12 +147,22 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 		variablesJSON = string(data)
 	}
 	
+	// Serialize packages to JSON
+	packagesJSON := "[]"
+	if len(packages) > 0 {
+		data, err := json.Marshal(packages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize packages: %w", err)
+		}
+		packagesJSON = string(data)
+	}
+	
 	query := `
 		UPDATE scraper_scripts
-		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, updated_at = ?
+		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, updated_at = ?
 		WHERE id = ?
 	`
-	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, now, id)
+	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, now, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update scraper script: %w", err)
 	}
@@ -196,16 +218,17 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 		script        string
 		language      string
 		schedule      string
-		variablesJSON sql.NullString
 		lastRun       sql.NullInt64
 		lastRunOutput sql.NullString
 		lastRunError  sql.NullString
 		createdAt     int64
 		updatedAt     int64
 		enabled       bool
+		variablesJSON sql.NullString
+		packagesJSON  sql.NullString
 	)
 
-	err := row.Scan(&id, &name, &script, &language, &schedule, &variablesJSON, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled)
+	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("scraper script not found")
@@ -223,6 +246,16 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 		}
 	}
 
+	// Parse packages JSON
+	packages := []string{}
+	if packagesJSON.Valid && packagesJSON.String != "" {
+		err := json.Unmarshal([]byte(packagesJSON.String), &packages)
+		if err != nil {
+			// If parsing fails, just use empty slice
+			packages = []string{}
+		}
+	}
+
 	ss := &ScraperScript{
 		ID:        id,
 		Name:      name,
@@ -230,6 +263,7 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 		Language:  language,
 		Schedule:  schedule,
 		Variables: variables,
+		Packages:  packages,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 		Enabled:   enabled,
@@ -277,8 +311,8 @@ func ValidateScript(script, language string) error {
 		return fmt.Errorf("script cannot be empty")
 	}
 
-	if language != "bash" {
-		return fmt.Errorf("invalid language: %s, must be 'bash'", language)
+	if language != "bash" && language != "python" {
+		return fmt.Errorf("invalid language: %s, must be 'bash' or 'python'", language)
 	}
 
 	return nil

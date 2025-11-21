@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS chapters (
     type TEXT,
     file TEXT,
     chapter_cover_url TEXT,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
     PRIMARY KEY (manga_slug, slug)
 );

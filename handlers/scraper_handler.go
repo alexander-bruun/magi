@@ -38,6 +38,24 @@ func extractVariablesFromForm(c *fiber.Ctx) map[string]string {
 	return variables
 }
 
+// extractPackagesFromForm extracts package list from form data
+// Packages should be submitted as: package=<package_name> (multiple)
+func extractPackagesFromForm(c *fiber.Ctx) []string {
+	var packages []string
+	
+	// Get all package names
+	pkgNames := c.Request().PostArgs().PeekMulti("package")
+	
+	for _, pkg := range pkgNames {
+		pkgName := strings.TrimSpace(string(pkg))
+		if pkgName != "" {
+			packages = append(packages, pkgName)
+		}
+	}
+	
+	return packages
+}
+
 // HandleScraper renders the scraper page with all scripts
 func HandleScraper(c *fiber.Ctx) error {
 	scripts, err := models.ListScraperScripts(false)
@@ -88,7 +106,10 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	// Extract variables from form
 	variables := extractVariablesFromForm(c)
 
-	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables)
+	// Extract packages from form
+	packages := extractPackagesFromForm(c)
+
+	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, packages)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -125,7 +146,10 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	// Extract variables from form
 	variables := extractVariablesFromForm(c)
 
-	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables)
+	// Extract packages from form
+	packages := extractPackagesFromForm(c)
+
+	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, packages)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -270,5 +294,15 @@ func HandleScraperVariableAdd(c *fiber.Ctx) error {
 
 // HandleScraperVariableRemove acknowledges variable removal requests without returning content
 func HandleScraperVariableRemove(c *fiber.Ctx) error {
+	return c.SendString("")
+}
+
+// HandleScraperPackageAdd returns an empty package input row for HTMX inserts
+func HandleScraperPackageAdd(c *fiber.Ctx) error {
+	return HandleView(c, views.Package("", false))
+}
+
+// HandleScraperPackageRemove acknowledges package removal requests without returning content
+func HandleScraperPackageRemove(c *fiber.Ctx) error {
 	return c.SendString("")
 }

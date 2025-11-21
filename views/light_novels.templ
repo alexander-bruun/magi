@@ -1,0 +1,1033 @@
+package views
+
+import (
+	"fmt"
+	"strings"
+	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
+)
+
+// EPUBContent represents the extracted content from an EPUB file
+type EPUBContent struct {
+	Title       string
+	Chapters    []EPUBChapter
+	CSS         []string
+	Assets      map[string][]byte
+	Metadata    map[string]string
+}
+
+// EPUBChapter represents a single chapter/page in the EPUB
+type EPUBChapter struct {
+	ID      string
+	Title   string
+	Content string
+	Href    string
+}
+
+templ LightNovels(lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, searchFilter string) {
+    @PageTitle("All Light Novels")
+    @Breadcrumb([]BreadcrumbItem{
+        { Label: "Home", Href: "/" },
+        { Label: "Light Novels", Href: "/light-novels" },
+    })
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Light Novels</span></h2>
+    <div id="light-novel-listing">
+        @GenericLightNovelListing("/light-novels", "light-novel-listing", lightNovels, currentPage, totalPages, sort, order, "No light novels have been indexed yet.", searchFilter)
+    </div>
+}
+
+templ LightNovel(lightNovel models.LightNovel, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool) {
+	@PageTitle(lightNovel.Name)
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Light Novels", Href: "/light-novels" },
+		{ Label: lightNovel.Name, Href: fmt.Sprintf("/light-novels/%s", lightNovel.Slug) },
+	})
+	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ lightNovel.Name }</h1>
+	<div class="flex flex-col xl:flex-row mt-2 gap-4">
+		<!-- Info Column -->
+		<div id="form-column" class="w-full xl:w-1/4">
+			<div class="uk-card p-2">
+				@LightNovelInfo(lightNovel, userRole, lastReadChapterSlug)
+			</div>
+		</div>
+		
+		<!-- Chapters Column -->
+		<div id="content-column" class="w-full xl:w-3/4 flex flex-col gap-4">
+			<!-- Chapters Section -->
+			<div id="chapters-column" class="w-full">
+				<div class="flex justify-between px-4">
+					@LightNovelChapterJumpButton(lightNovel.Slug, firstChapterSlug, "Go to first volume", "MoveLeft", true)
+					<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Volumes ({ fmt.Sprint(chapterCount) })</span></h2>
+					@LightNovelChapterJumpButton(lightNovel.Slug, lastChapterSlug, "Go to last volume", "MoveRight", false)
+				</div>
+				<hr class="uk-divider-icon mb-4"/>
+				<div id="chapters-section">
+					@LightNovelChaptersSection(lightNovel, chapters, reverse, lastReadChapterSlug)
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+// LightNovelInfo renders the info panel for a light novel
+templ LightNovelInfo(lightNovel models.LightNovel, userRole string, lastReadChapterSlug string) {
+	<div class="relative flex justify-center items-center group">
+		<img loading="lazy" src={ lightNovel.CoverArtURL } width="300" height="500" alt={ lightNovel.Name }/>
+	</div>
+	
+	<!-- Status and voting under poster -->
+	<div class="mt-2 flex justify-center">
+		<div id="light-novel-favorite" hx-get={ fmt.Sprintf("/light-novels/%s/favorite/fragment", lightNovel.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	</div>
+	<div class="mt-2 flex justify-center">
+		<div id="light-novel-vote" hx-get={ fmt.Sprintf("/light-novels/%s/vote/fragment", lightNovel.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	</div>
+	<div class="mt-2 flex justify-center">
+		if lightNovel.Status != "" {
+			<span class="uk-badge">{ lightNovel.Status }</span>
+		}
+	</div>
+	
+	<div class="mt-3">
+		<div class="uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content">
+			@templ.Raw(utils.MarkdownToHTML(lightNovel.Description))
+		</div>
+	</div>
+
+	<!-- Improved metadata grid with modern styling -->
+	<div class="mt-3 space-y-1.5">
+		if lightNovel.Author != "" {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="user"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Author</strong>
+					<span class="text-sm text-gray-800 break-words">{ lightNovel.Author }</span>
+				</div>
+			</div>
+		}
+		if lightNovel.Year != 0 {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="calendar"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Year</strong>
+					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(lightNovel.Year) }</span>
+				</div>
+			</div>
+		}
+		if lightNovel.OriginalLanguage != "" {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="globe"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Language</strong>
+					<span class="text-sm text-gray-800 break-words">{ lightNovel.OriginalLanguage }</span>
+				</div>
+			</div>
+		}
+		if lightNovel.Type != "" {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="book"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Type</strong>
+					<span class="text-sm text-gray-800 break-words">{ lightNovel.Type }</span>
+				</div>
+			</div>
+		}
+		if lightNovel.ContentRating != "" {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="star"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Rating</strong>
+					<span class="text-sm text-gray-800 break-words">{ lightNovel.ContentRating }</span>
+				</div>
+			</div>
+		}
+		if len(lightNovel.Tags) > 0 {
+			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="tag"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Tags</strong>
+					<span class="text-sm text-gray-800 break-words">{ strings.Join(lightNovel.Tags, ", ") }</span>
+				</div>
+			</div>
+		}
+		if userRole == "moderator" || userRole == "admin" {
+			if !lightNovel.CreatedAt.IsZero() {
+				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+					<div class="shrink-0 mt-0.5">
+						<uk-icon icon="plus-circle"></uk-icon>
+					</div>
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Added</strong>
+						<span class="text-sm text-gray-800 break-words">{ lightNovel.CreatedAt.Format("2006-01-02") }</span>
+					</div>
+				</div>
+			}
+			if !lightNovel.UpdatedAt.IsZero() {
+				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+					<div class="shrink-0 mt-0.5">
+						<uk-icon icon="calendar-clock"></uk-icon>
+					</div>
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Updated</strong>
+						<span class="text-sm text-gray-800 break-words">{ lightNovel.UpdatedAt.Format("2006-01-02") }</span>
+					</div>
+				</div>
+			}
+		}
+	</div>
+}
+
+// LightNovelChapterJumpButton renders a button to jump to first/last volume
+templ LightNovelChapterJumpButton(lightNovelSlug string, chapterSlug string, label string, icon string, hideOnMobile bool) {
+	<a
+		href={ fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovelSlug, chapterSlug) }
+		class="uk-btn uk-btn-default jump-btn"
+		title={ label }
+	>
+		if icon == "MoveLeft" {
+			<uk-icon icon="MoveLeft"></uk-icon>
+		}
+		if icon == "MoveRight" {
+			<uk-icon icon="MoveRight"></uk-icon>
+		}
+		if hideOnMobile {
+			<span class="hidden md:inline">{ label }</span>
+		} else {
+			<span>{ label }</span>
+		}
+	</a>
+}
+
+// LightNovelChaptersSection renders the chapters section for a light novel
+templ LightNovelChaptersSection(lightNovel models.LightNovel, chapters []models.Chapter, reverse bool, lastReadChapterSlug string) {
+	{{ toggleURL := fmt.Sprintf("/light-novels/%s", lightNovel.Slug) }}
+	{{ buttonText := "" }}
+	{{ buttonIcon := "" }}
+	{{ buttonTitle := "" }}
+	if reverse {
+		{{ toggleURL += "?reverse=false" }}
+		{{ buttonText = "Ascending" }}
+		{{ buttonIcon = "arrow-up" }}
+		{{ buttonTitle = "Sort volumes in ascending order" }}
+	} else {
+		{{ toggleURL += "?reverse=true" }}
+		{{ buttonText = "Descending" }}
+		{{ buttonIcon = "arrow-down" }}
+		{{ buttonTitle = "Sort volumes in descending order" }}
+	}
+	<div class="flex justify-between items-center mb-4">
+		<button
+			id="reverse-btn"
+			type="button"
+			class="uk-btn uk-btn-default"
+			hx-get={ toggleURL }
+			hx-target="#chapters-section"
+			title={ buttonTitle }
+		>
+			<uk-icon icon={ buttonIcon }></uk-icon>
+			<span class="ml-1">{ buttonText }</span>
+		</button>
+		if lastReadChapterSlug != "" {
+			<a
+				href={ fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, lastReadChapterSlug) }
+				class="uk-btn uk-btn-primary resume-btn"
+				title="Continue reading last volume"
+			>
+				<uk-icon icon="Play"></uk-icon>
+				<span class="ml-1">Resume</span>
+			</a>
+		}
+	</div>
+	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
+		<div id="chapters-container" class="p-2">
+			@LightNovelChaptersContainer(lightNovel, chapters, reverse)
+		</div>
+	</div>
+}
+
+// LightNovelChaptersContainer renders the chapters container for a light novel
+templ LightNovelChaptersContainer(lightNovel models.LightNovel, chapters []models.Chapter, reverse bool) {
+	@LightNovelChapters(lightNovel, chapters)
+}
+
+// LightNovelChapters renders the list of chapters for a light novel
+templ LightNovelChapters(lightNovel models.LightNovel, chapters []models.Chapter) {
+	<ul class="uk-accordion" uk-accordion>
+		for _, chapter := range chapters {
+			<li class="uk-closed">
+				<!-- Row layout: left = link/title, right = optional icon -->
+				<div class="flex items-center justify-between w-full">
+					<a class="uk-accordion-title flex-1 min-w-0 pr-2 truncate chapter-link"
+						href={ fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, chapter.Slug) }
+						data-light-novel-slug={ lightNovel.Slug }
+						data-chapter-slug={ chapter.Slug }
+					>
+						{ chapter.Name }
+						<span
+							class="uk-accordion-icon"
+							uk-icon="icon: chevron-down; ratio: 0.8"
+						></span>
+					</a>
+					<div class="flex items-center">
+						if chapter.Read {
+							<div class="mr-3" title="Read">
+								@InlineEyeToggle(chapter.Read, lightNovel.Slug, chapter.Slug)
+							</div>
+						}
+						if !chapter.CreatedAt.IsZero() {
+							<span class="text-xs text-gray-500 mr-3">{ chapter.CreatedAt.Format("2006-01-02") }</span>
+						}
+					</div>
+				</div>
+			</li>
+		}
+	</ul>
+}
+
+// LightNovelFavoriteFragment renders the favorite UI fragment for a light novel
+templ LightNovelFavoriteFragment(lightNovelSlug string, favCount int, isFavorite bool) {
+	<div id="light-novel-favorite" class="light-novel-favorite-fragment inline-flex items-center">
+		<form hx-post={ fmt.Sprintf("/light-novels/%s/favorite", lightNovelSlug) } hx-target="#light-novel-favorite" hx-swap="outerHTML" class="inline-flex items-center">
+			if isFavorite {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn active btn-circular" title="Remove favorite" aria-label="Remove favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default favorite-btn btn-circular" title="Add favorite" aria-label="Add favorite">
+					<uk-icon icon="Star"></uk-icon>
+				</button>
+			}
+		</form>
+	</div>
+}
+
+// LightNovelVoteFragment renders the vote UI fragment for a light novel
+templ LightNovelVoteFragment(lightNovelSlug string, score int, upvotes int, downvotes int, userVote int) {
+	<div id="light-novel-vote" class="light-novel-vote-fragment w-full flex justify-center">
+		<div class="flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto">
+			<form hx-post={ fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug) } hx-target="#light-novel-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
+			if userVote == 1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn upvote active btn-circular" title="Remove upvote" aria-label="Remove upvote">
+					<uk-icon icon="ChevronUp"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn upvote btn-circular" title="Upvote" aria-label="Upvote">
+					<uk-icon icon="ChevronUp"></uk-icon>
+				</button>
+			}
+			</form>
+			<!-- Score display -->
+			<div class="flex flex-col items-center flex-shrink-0 min-w-0">
+				<span class="text-sm font-semibold text-gray-800 dark:text-gray-200">{ fmt.Sprint(score) }</span>
+				<span class="text-xs text-gray-500">{ fmt.Sprintf("%d/%d", upvotes, downvotes) }</span>
+			</div>
+			<!-- Downvote: to the right of the score -->
+			<form hx-post={ fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug) } hx-target="#light-novel-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
+			if userVote == -1 {
+				<input type="hidden" name="value" value="0" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn downvote active btn-circular" title="Remove downvote" aria-label="Remove downvote">
+					<uk-icon icon="ChevronDown"></uk-icon>
+				</button>
+			} else {
+				<input type="hidden" name="value" value="-1" />
+				<button type="submit" class="uk-btn uk-btn-default vote-btn downvote btn-circular" title="Downvote" aria-label="Downvote">
+					<uk-icon icon="ChevronDown"></uk-icon>
+				</button>
+			}
+			</form>
+		</div>
+	</div>
+}
+
+// LightNovelChapterReader renders the inline reader for a light novel chapter
+templ LightNovelChapterReader(lightNovel models.LightNovel, chapter models.Chapter, epubContent EPUBContent) {
+	@PageTitle(fmt.Sprintf("%s - %s", lightNovel.Name, chapter.Name))
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Light Novels", Href: "/light-novels" },
+		{ Label: lightNovel.Name, Href: fmt.Sprintf("/light-novels/%s", lightNovel.Slug) },
+		{ Label: chapter.Name, Href: fmt.Sprintf("/light-novels/%s/chapters/%s/read", lightNovel.Slug, chapter.Slug) },
+	})
+	<div class="max-w-6xl mx-auto p-4">
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold">{ lightNovel.Name }</h1>
+			<div class="flex gap-2">
+				<a
+					href={ fmt.Sprintf("/light-novels/%s", lightNovel.Slug) }
+					class="uk-btn uk-btn-primary"
+					title="Back to chapters"
+				>
+					<uk-icon icon="ArrowLeft"></uk-icon>
+					<span class="ml-1">Back</span>
+				</a>
+			</div>
+		</div>
+
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+			<!-- Reader Header -->
+			<div class="border-b border-gray-200 dark:border-gray-700 p-4">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl font-semibold">{ chapter.Name }</h2>
+					if len(epubContent.Chapters) > 1 {
+						<div class="text-sm text-gray-600 dark:text-gray-400">
+							{ fmt.Sprintf("%d chapters in this volume", len(epubContent.Chapters)) }
+						</div>
+					}
+				</div>
+			</div>
+
+			<!-- EPUB CSS Styles -->
+			if len(epubContent.CSS) > 0 {
+				<style>
+					for _, css := range epubContent.CSS {
+						@templ.Raw(css)
+					}
+				</style>
+			}
+
+			<!-- Reader Content -->
+			<div class="epub-reader p-6 max-h-screen overflow-y-auto">
+				if len(epubContent.Chapters) == 1 {
+					<!-- Single chapter view -->
+					<div class="epub-content prose prose-lg dark:prose-invert max-w-none">
+						@templ.Raw(epubContent.Chapters[0].Content)
+					</div>
+				} else {
+					<!-- Multi-chapter view with navigation -->
+					<div class="space-y-8">
+						for i, chapter := range epubContent.Chapters {
+							<div class="epub-chapter" id={ fmt.Sprintf("chapter-%d", i) }>
+								if chapter.Title != fmt.Sprintf("Chapter %d", i+1) {
+									<h3 class="text-lg font-semibold mb-4 text-center border-b border-gray-200 dark:border-gray-700 pb-2">
+										{ chapter.Title }
+									</h3>
+								}
+								<div class="epub-content prose prose-lg dark:prose-invert max-w-none">
+									@templ.Raw(chapter.Content)
+								</div>
+							</div>
+							if i < len(epubContent.Chapters)-1 {
+								<hr class="my-8 border-gray-300 dark:border-gray-600"/>
+							}
+						}
+					</div>
+				}
+			</div>
+
+			<!-- Reader Footer -->
+			<div class="border-t border-gray-200 dark:border-gray-700 p-4">
+				<div class="flex justify-between items-center">
+					<div class="text-sm text-gray-600 dark:text-gray-400">
+						if epubContent.Metadata["author"] != "" {
+							<span>Author: { epubContent.Metadata["author"] }</span>
+						}
+					</div>
+					<a
+						href={ fmt.Sprintf("/light-novels/%s", lightNovel.Slug) }
+						class="uk-btn uk-btn-secondary"
+					>
+						<uk-icon icon="List"></uk-icon>
+						<span class="ml-1">All Chapters</span>
+					</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- Reader Controls (could be enhanced with JS for better UX) -->
+		<script>
+			// Basic scroll-based chapter highlighting (optional enhancement)
+			document.addEventListener('DOMContentLoaded', function() {
+				const chapters = document.querySelectorAll('.epub-chapter');
+				if (chapters.length > 1) {
+					const observer = new IntersectionObserver((entries) => {
+						entries.forEach(entry => {
+							if (entry.isIntersecting) {
+								// Could highlight current chapter in a table of contents
+								console.log('Viewing chapter:', entry.target.id);
+							}
+						});
+					}, { threshold: 0.1 });
+
+					chapters.forEach(chapter => observer.observe(chapter));
+				}
+			});
+		</script>
+	</div>
+}
+
+// LightNovelTOCFragment renders the table of contents fragment for a light novel chapter
+templ LightNovelTOCFragment(toc string) {
+	<div id="light-novel-toc" class="bg-gradient-to-br from-blue-600 to-purple-700 p-4 rounded-lg shadow-lg">
+		<h3 class="text-white font-semibold mb-4 text-center">Table of Contents</h3>
+		<div class="toc-content max-h-96 overflow-y-auto">
+			@templ.Raw(toc)
+		</div>
+	</div>
+	
+	<script>
+		// Add smooth scrolling to TOC links
+		document.addEventListener('DOMContentLoaded', function() {
+			document.querySelectorAll('#light-novel-toc a[href^="#"]').forEach(link => {
+				link.addEventListener('click', function(e) {
+					e.preventDefault();
+					const targetId = this.getAttribute('href').substring(1);
+					const target = document.getElementById(targetId);
+					if (target) {
+						target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					}
+				});
+			});
+		});
+	</script>
+}
+
+// LightNovelReaderFragment renders the reader content fragment for a light novel chapter
+templ LightNovelReaderFragment(lightNovel models.LightNovel, chapter models.Chapter, content string) {
+	<div id="light-novel-reader" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+		<!-- Reader Header -->
+		<div class="border-b border-gray-200 dark:border-gray-700 p-4">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl font-semibold">{ chapter.Name }</h2>
+				<div class="text-sm text-gray-600 dark:text-gray-400">
+					{ lightNovel.Name }
+				</div>
+			</div>
+		</div>
+
+		<!-- Reader Content -->
+		<div class="epub-reader p-6 max-h-screen overflow-y-auto prose prose-lg dark:prose-invert max-w-none">
+			@templ.Raw(content)
+		</div>
+
+		<!-- Reader Footer -->
+		<div class="border-t border-gray-200 dark:border-gray-700 p-4">
+			<div class="flex justify-center">
+				<a
+					href={ fmt.Sprintf("/light-novels/%s", lightNovel.Slug) }
+					class="uk-btn uk-btn-secondary"
+				>
+					<uk-icon icon="List"></uk-icon>
+					<span class="ml-1">Back to Chapters</span>
+				</a>
+			</div>
+		</div>
+	</div>
+}
+
+// LightNovelChapter renders a full page for reading a light novel chapter
+templ LightNovelChapter(previousChapter string, currentChapter string, nextChapter string, lightNovel models.LightNovel, chapter models.Chapter, chapters []models.Chapter, toc string, content string) {
+	@PageTitle(chapter.Name)
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Light Novels", Href: "/light-novels" },
+		{ Label: lightNovel.Name, Href: fmt.Sprintf("/light-novels/%s", lightNovel.Slug) },
+		{ Label: chapter.Name, Href: fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, chapter.Slug) },
+	})
+
+	<style>
+		.scroll-to-top {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			z-index: 1000;
+		}
+		.epub-reader p {
+			text-align: var(--reader-text-align, justify);
+		}
+		.epub-reader {
+			padding: 0 var(--reader-margin, 20px) !important;
+		}
+		.epub-reader.custom-text-color {
+			color: var(--custom-text-color) !important;
+		}
+		.epub-reader.custom-text-color * {
+			color: var(--custom-text-color) !important;
+		}
+		.epub-reader img {
+			max-width: 100%;
+			height: auto;
+			display: block;
+			margin: 20px auto;
+			border-radius: 8px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+		.epub-reader h1, .epub-reader h2, .epub-reader h3 {
+			margin-top: 2em;
+			margin-bottom: 1em;
+			line-height: 1.3;
+			font-weight: 600;
+		}
+		.epub-reader h1 {
+			font-size: 2em;
+		}
+		.epub-reader h2 {
+			font-size: 1.5em;
+		}
+		.epub-reader h3 {
+			font-size: 1.25em;
+		}
+		.epub-reader p {
+			margin-bottom: 1.5em;
+			text-align: justify;
+			hyphens: auto;
+			word-spacing: 0.1em;
+		}
+		.epub-reader .centerp, .epub-reader .section-marking {
+			text-align: center;
+			margin: 2em 0;
+		}
+		.epub-reader blockquote {
+			margin: 2em 0;
+			padding: 1em 2em;
+			border-left: 4px solid #4299e1;
+			background-color: rgba(66, 153, 225, 0.1);
+			font-style: italic;
+		}
+		.dark .epub-reader blockquote {
+			background-color: rgba(66, 153, 225, 0.2);
+			border-left-color: #63b3ed;
+		}
+		.toc-content ul {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+		.toc-content li {
+			margin: 0;
+			padding: 0;
+		}
+		.toc-content a {
+			display: block;
+			padding: 8px 12px;
+			color: #4a5568;
+			text-decoration: none;
+			border-radius: 6px;
+			transition: all 0.2s ease;
+			font-size: 14px;
+			line-height: 1.4;
+		}
+		.dark .toc-content a {
+			color: #cbd5e0;
+		}
+		.toc-content a:hover {
+			background-color: #e2e8f0;
+			color: #2d3748;
+		}
+		.dark .toc-content a:hover {
+			background-color: #4a5568;
+			color: #e2e8f0;
+		}
+		.toc-content a:active {
+			background-color: #cbd5e0;
+		}
+		.dark .toc-content a:active {
+			background-color: #2d3748;
+		}
+	</style>
+
+	<button
+		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
+		type="button"
+		onclick="scrollToTop()"
+	>
+		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
+	</button>
+
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ chapter.Name }</span></h2>
+
+	<div id="read-state"
+		hx-post={ fmt.Sprintf("/light-novels/%s/chapters/%s/read", lightNovel.Slug, chapter.Slug) }
+		hx-trigger="load"
+		hx-swap="none"
+		class="hidden"
+	></div>
+
+	@LightNovelChapterNavigation(lightNovel, chapter, chapters, previousChapter, nextChapter)
+
+	<div class="flex flex-col gap-4 mt-4">
+		<!-- Reader Content -->
+		<div class="w-full">
+			<div class="uk-card uk-card-default p-6 max-h-screen overflow-y-auto">
+				<div class="epub-reader custom-text-color">
+					@templ.Raw(content)
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function scrollToTop() {
+			const mainContent = document.getElementById('main-content');
+			if (mainContent) {
+				mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+			} else {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			}
+		}
+
+		// Reader customization variables
+		let currentFontSize = 18;
+		const minFontSize = 12;
+		const maxFontSize = 28;
+		const fontSizeStep = 2;
+
+		const minMargin = 0;
+		const maxMargin = 100;
+		const marginStep = 5;
+
+		let currentTextColor = null; // null means use default
+		let currentBgColor = null; // null means transparent
+		let currentTextAlign = 'justify';
+		let currentMargin = 20; // default margin in pixels
+
+		function loadReaderSettings() {
+			// Check for new settings format first
+			const saved = localStorage.getItem('lightNovelReaderSettings');
+			if (saved) {
+				const settings = JSON.parse(saved);
+				currentFontSize = settings.fontSize || 18;
+				currentTextColor = settings.textColor || null;
+				currentBgColor = settings.bgColor || null;
+				currentTextAlign = settings.textAlign || 'justify';
+				currentMargin = settings.margin || 20;
+			} else {
+				// Backward compatibility: check for old font size setting
+				const oldFontSize = localStorage.getItem('lightNovelFontSize');
+				if (oldFontSize) {
+					currentFontSize = parseInt(oldFontSize);
+					// Remove old setting and save new format
+					localStorage.removeItem('lightNovelFontSize');
+					saveReaderSettings();
+				}
+			}
+			applyReaderSettings();
+		}
+
+		function saveReaderSettings() {
+			const settings = {
+				fontSize: currentFontSize,
+				textColor: currentTextColor,
+				bgColor: currentBgColor,
+				textAlign: currentTextAlign,
+				margin: currentMargin
+			};
+			localStorage.setItem('lightNovelReaderSettings', JSON.stringify(settings));
+		}
+
+		function applyReaderSettings() {
+			const reader = document.querySelector('.epub-reader');
+			const card = reader.closest('.uk-card');
+
+			// Apply font size
+			reader.style.fontSize = currentFontSize + 'px';
+			document.getElementById('current-font-size').textContent = currentFontSize + 'px';
+
+			// Apply text color if set
+			if (currentTextColor) {
+				reader.style.cssText += `color: ${currentTextColor} !important;`;
+				const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+				elements.forEach(el => {
+					el.style.cssText += `color: ${currentTextColor} !important;`;
+				});
+			} else {
+				// Reset to default
+				reader.style.color = '';
+				const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+				elements.forEach(el => {
+					el.style.color = '';
+				});
+			}
+
+			// Apply background to the card
+			if (currentBgColor) {
+				card.style.backgroundColor = currentBgColor;
+				reader.setAttribute('data-bg-color', currentBgColor);
+			} else {
+				card.style.backgroundColor = '';
+				reader.removeAttribute('data-bg-color');
+			}
+
+			// Apply text alignment directly
+			reader.style.textAlign = currentTextAlign;
+
+			// Apply margin
+			document.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');
+
+			// Update UI controls
+			document.getElementById('font-color-picker').value = currentTextColor || '#000000';
+			document.getElementById('bg-color-picker').value = currentBgColor || '#ffffff';
+
+			// Update alignment buttons
+			document.querySelectorAll('.text-align-btn').forEach(btn => {
+				btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);
+				btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);
+			});
+
+			// Update margin display
+			document.getElementById('current-margin').textContent = currentMargin + 'px';
+		}
+
+		function increaseFontSize() {
+			if (currentFontSize < maxFontSize) {
+				currentFontSize += fontSizeStep;
+				applyReaderSettings();
+				saveReaderSettings();
+			}
+		}
+
+		function decreaseFontSize() {
+			if (currentFontSize > minFontSize) {
+				currentFontSize -= fontSizeStep;
+				applyReaderSettings();
+				saveReaderSettings();
+			}
+		}
+
+		function increaseMargin() {
+			if (currentMargin < maxMargin) {
+				currentMargin += marginStep;
+				applyReaderSettings();
+				saveReaderSettings();
+			}
+		}
+
+		function decreaseMargin() {
+			if (currentMargin > minMargin) {
+				currentMargin -= marginStep;
+				applyReaderSettings();
+				saveReaderSettings();
+			}
+		}
+
+		// Smooth scrolling for TOC links
+		document.addEventListener('DOMContentLoaded', function() {
+			loadReaderSettings();
+
+			// Font size button handlers
+			document.querySelectorAll('.font-size-btn').forEach(btn => {
+				btn.addEventListener('click', function() {
+					const action = this.getAttribute('data-action');
+					if (action === 'increase') {
+						increaseFontSize();
+					} else if (action === 'decrease') {
+						decreaseFontSize();
+					}
+				});
+			});
+
+			// Color picker handlers
+			document.getElementById('font-color-picker').addEventListener('input', function(e) {
+				currentTextColor = e.target.value;
+				applyReaderSettings();
+				saveReaderSettings();
+			});
+
+			document.getElementById('bg-color-picker').addEventListener('input', function(e) {
+				currentBgColor = e.target.value;
+				applyReaderSettings();
+				saveReaderSettings();
+			});
+
+			// Reset button handler
+			document.getElementById('reset-btn').addEventListener('click', function() {
+				if (confirm('Are you sure you want to reset all reading customizations?')) {
+					localStorage.removeItem('lightNovelReaderSettings');
+					// Reset variables to defaults
+					currentFontSize = 18;
+					currentTextColor = null;
+					currentBgColor = null;
+					currentTextAlign = 'justify';
+					currentMargin = 20;
+					applyReaderSettings();
+				}
+			});
+
+			// Text alignment handlers
+			document.querySelectorAll('.text-align-btn').forEach(btn => {
+				btn.addEventListener('click', function() {
+					currentTextAlign = this.getAttribute('data-align');
+					applyReaderSettings();
+					saveReaderSettings();
+				});
+			});
+
+			// Margin button handlers
+			document.querySelectorAll('.margin-btn').forEach(btn => {
+				btn.addEventListener('click', function() {
+					const action = this.getAttribute('data-action');
+					if (action === 'increase') {
+						increaseMargin();
+					} else if (action === 'decrease') {
+						decreaseMargin();
+					}
+				});
+			});
+
+			const tocLinks = document.querySelectorAll('.toc-content a');
+			tocLinks.forEach(link => {
+				link.addEventListener('click', function(e) {
+					e.preventDefault();
+					const targetId = this.getAttribute('href').substring(1);
+					const target = document.getElementById(targetId);
+					if (target) {
+						target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					}
+					// Close the modal after clicking a TOC link
+					UIkit.modal('#toc-modal').hide();
+				});
+			});
+		});
+	</script>
+
+	<!-- TOC Modal -->
+	<div id="toc-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<h2 class="uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
+				<uk-icon icon="list" ratio="0.9" class="mr-2"></uk-icon>
+				Table of Contents
+			</h2>
+			<div class="toc-content max-h-96 overflow-y-auto">
+				@templ.Raw(toc)
+			</div>
+			<p class="uk-text-right mt-4">
+				<button class="uk-btn uk-btn-default uk-modal-close" type="button">Close</button>
+			</p>
+		</div>
+	</div>
+}
+
+// LightNovelChapterNavigation renders navigation controls for light novel chapters
+templ LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
+	<div class="flex flex-col gap-2 mt-4">
+		<!-- Main Navigation Row -->
+		<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+			<div class="flex items-center gap-2">
+				if previousChapter != "" {
+					<a href={ fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, previousChapter) } class="uk-btn uk-btn-default">
+						<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
+						<span class="ml-1">Previous Volume</span>
+					</a>
+				} else {
+					<span class="text-gray-400">Previous Volume</span>
+				}
+			</div>
+
+			<div class="flex items-center gap-2">
+				<!-- TOC Button -->
+				<button class="uk-btn uk-btn-default" uk-toggle="target: #toc-modal">
+					<uk-icon icon="list" ratio="0.8"></uk-icon>
+				</button>
+
+				<!-- Chapter Dropdown -->
+				<select class="uk-select uk-form-small" data-slug={ lightNovel.Slug } onchange="window.location.href = '/light-novels/' + this.dataset.slug + '/chapters/' + this.value">
+					for _, ch := range chapters {
+						<option value={ ch.Slug } selected?={ ch.Slug == chapter.Slug }>{ ch.Name }</option>
+					}
+				</select>
+
+				<a href={ fmt.Sprintf("/light-novels/%s", lightNovel.Slug) } class="uk-btn uk-btn-secondary">
+					<uk-icon icon="library" ratio="0.8"></uk-icon>
+				</a>
+			</div>
+
+			<div class="flex items-center gap-2">
+				if nextChapter != "" {
+					<a href={ fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter) } class="uk-btn uk-btn-default">
+						<span class="mr-1">Next Volume</span>
+						<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
+					</a>
+				} else {
+					<span class="text-gray-400">Next Volume</span>
+				}
+			</div>
+		</div>
+
+		<!-- Reader Controls Row -->
+		<div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+			<div class="flex flex-wrap justify-center items-center gap-4">
+				<!-- Font Size Controls -->
+				<div class="flex items-center gap-1">
+					<span class="text-sm text-gray-600 dark:text-gray-400">Font Size:</span>
+					<button class="uk-btn uk-btn-small uk-btn-default font-size-btn" data-action="decrease" title="Decrease font size">
+						<uk-icon icon="minus" ratio="0.7"></uk-icon>
+					</button>
+					<span class="text-sm px-3 font-medium min-w-12 text-center" id="current-font-size">18px</span>
+					<button class="uk-btn uk-btn-small uk-btn-default font-size-btn" data-action="increase" title="Increase font size">
+						<uk-icon icon="plus" ratio="0.7"></uk-icon>
+					</button>
+				</div>
+
+				<!-- Font Color and Background Controls -->
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-gray-600 dark:text-gray-400">Text:</span>
+					<input type="color" id="font-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Font color">
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-gray-600 dark:text-gray-400">Background:</span>
+					<input type="color" id="bg-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Background color">
+				</div>
+
+				<!-- Text Alignment Controls -->
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-gray-600 dark:text-gray-400">Alignment:</span>
+					<div class="flex gap-1">
+						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="left" title="Align left">
+							<uk-icon icon="align-left" ratio="0.7"></uk-icon>
+						</button>
+						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="center" title="Align center">
+							<uk-icon icon="align-center" ratio="0.7"></uk-icon>
+						</button>
+						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="right" title="Align right">
+							<uk-icon icon="align-right" ratio="0.7"></uk-icon>
+						</button>
+						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="justify" title="Justify">
+							<uk-icon icon="align-justify" ratio="0.7"></uk-icon>
+						</button>
+					</div>
+				</div>
+
+				<!-- Margin Controls -->
+				<div class="flex items-center gap-1">
+					<span class="text-sm text-gray-600 dark:text-gray-400">Margins:</span>
+					<button class="uk-btn uk-btn-small uk-btn-default margin-btn" data-action="decrease" title="Decrease margins">
+						<uk-icon icon="minus" ratio="0.7"></uk-icon>
+					</button>
+					<span class="text-sm px-3 font-medium min-w-12 text-center" id="current-margin">20px</span>
+					<button class="uk-btn uk-btn-small uk-btn-default margin-btn" data-action="increase" title="Increase margins">
+						<uk-icon icon="plus" ratio="0.7"></uk-icon>
+					</button>
+				</div>
+
+				<!-- Reset Button -->
+				<div class="flex items-center">
+					<button class="uk-btn uk-btn-small uk-btn-destructive" id="reset-btn" title="Reset all customizations">
+						<uk-icon icon="refresh-cw" ratio="0.7"></uk-icon>
+						<span class="ml-1">Reset</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}

@@ -298,8 +298,6 @@ func convertJikanType(mangaType string) string {
 		return "manhwa"
 	case "manhua":
 		return "manhua"
-	case "novel", "light novel":
-		return "novel"
 	case "one-shot":
 		return "oneshot"
 	case "doujinshi":

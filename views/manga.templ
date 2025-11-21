@@ -8,7 +8,7 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 )
 
-templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string) {
+templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool) {
 	@PageTitle(manga.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -29,25 +29,49 @@ templ Manga(manga models.Manga, chapters []models.Chapter, firstChapterSlug stri
 				@ChapterJumpButton(manga.Slug, lastChapterSlug, "Go to last chapter", "MoveRight", false)
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
-			<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
-				<div class="p-2">
-					@Chapters(manga, chapters)
-				</div>
+			<div id="chapters-section">
+				@MangaChaptersSection(manga, chapters, reverse, lastReadChapterSlug)
 			</div>
-			<!-- Resume button: show if user has read chapters -->
-			if lastReadChapterSlug != "" {
-				<div class="flex justify-center mt-4">
-					<a
-						href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, lastReadChapterSlug)) }
-						hx-get={ fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, lastReadChapterSlug) }
-						hx-target="#content"
-						hx-push-url="true"
-						class="uk-btn uk-btn-primary"
-						title="Resume reading from where you left off"
-					>
-						<uk-icon icon="Play"></uk-icon>
-						<span class="ml-1">Resume</span>
-					</a>
+			if userRole == "moderator" || userRole == "admin" {
+				<div class="uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center">
+					<div class="flex justify-around gap-2">
+						<button
+							type="button"
+							class="uk-btn uk-btn-secondary"
+							uk-toggle="target: #metadata-modal"
+							title="Search for metadata"
+							aria-label="Search for metadata"
+						>
+							<uk-icon icon="Search"></uk-icon>SEARCH
+						</button>
+						<button
+							type="button"
+							class="uk-btn uk-btn-primary"
+							uk-toggle="target: #manual-edit-modal"
+							title="Edit metadata manually"
+							aria-label="Edit metadata manually"
+						>
+							<uk-icon icon="Pencil"></uk-icon>EDIT
+						</button>
+						<button
+							type="button"
+							class="uk-btn uk-btn-primary"
+							uk-toggle="target: #refresh-metadata-modal"
+							title="Refresh metadata from MangaDex"
+							aria-label="Refresh metadata from MangaDex"
+						>
+							<uk-icon icon="FolderSync"></uk-icon>REFRESH
+						</button>
+						<button
+							type="button"
+							class="uk-btn uk-btn-destructive"
+							uk-toggle="target: #delete-manga-modal"
+							title="Delete manga"
+							aria-label="Delete manga"
+						>
+							<uk-icon icon="Trash"></uk-icon>DELETE
+						</button>
+					</div>
 				</div>
 			}
 		</div>
@@ -96,7 +120,7 @@ templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon
 // can swap when toggling unread/read.
 templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 	if read {
-		<div class="chapter-read-icon ml-3 text-green-600 inline-flex items-center" title="Read">
+		<div class="chapter-read-icon text-green-600 inline-flex items-center" title="Read">
 			<form
 				hx-post={ fmt.Sprintf("/mangas/%s/chapters/%s/unread", mangaSlug, chapterSlug) }
 				hx-target="this"
@@ -109,7 +133,7 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 			</form>
 		</div>
 	} else {
-		<div class="chapter-read-icon ml-3 text-gray-500 inline-flex items-center" title="Unread">
+		<div class="chapter-read-icon text-gray-500 inline-flex items-center" title="Unread">
 			<form
 				hx-post={ fmt.Sprintf("/mangas/%s/chapters/%s/read", mangaSlug, chapterSlug) }
 				hx-target="this"
@@ -126,25 +150,22 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 
 templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 	<div class="relative flex justify-center items-center group">
-		if manga.CoverArtURL == "" {
-			<img loading="lazy" src="https://placehold.co/300x500?text=N/A" width="300" height="500" alt={ manga.Name }/>
-		} else {
-			<img loading="lazy" src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
-		}
-		
-		<!-- Poster Edit Button - Only visible for moderators/admins on hover -->
-		if userRole == "moderator" || userRole == "admin" {
-			<button
-				type="button"
-				class="absolute -left-12 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 uk-btn uk-btn-default btn-circular"
-				uk-toggle="target: #manual-edit-modal"
-				title="Edit poster image"
-				aria-label="Edit poster image"
-			>
-				<uk-icon icon="Pencil"></uk-icon>
-			</button>
+		<img loading="lazy" src={ manga.CoverArtURL } width="300" height="500" alt={ manga.Name }/>
+	</div>
+	
+	<!-- Status and voting under poster -->
+	<div class="mt-2 flex justify-center">
+		<div id="manga-favorite" hx-get={ fmt.Sprintf("/mangas/%s/favorite/fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	</div>
+	<div class="mt-2 flex justify-center">
+		<div id="manga-vote" hx-get={ fmt.Sprintf("/mangas/%s/vote/fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	</div>
+	<div class="mt-2 flex justify-center">
+		if manga.Status != "" {
+			<span class="uk-badge">{ manga.Status }</span>
 		}
 	</div>
+	
 	<div class="mt-3">
 		<div class="uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content">
 			@templ.Raw(utils.MarkdownToHTML(manga.Description))
@@ -208,27 +229,29 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 				</div>
 			</div>
 		}
-		if !manga.CreatedAt.IsZero() {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
-				<div class="shrink-0 mt-0.5">
-					<uk-icon icon="plus-circle"></uk-icon>
+		if userRole == "moderator" || userRole == "admin" {
+			if !manga.CreatedAt.IsZero() {
+				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+					<div class="shrink-0 mt-0.5">
+						<uk-icon icon="plus-circle"></uk-icon>
+					</div>
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Added</strong>
+						<span class="text-sm text-gray-800 break-words">{ manga.CreatedAt.Format("2006-01-02") }</span>
+					</div>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
-					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Added</strong>
-					<span class="text-sm text-gray-800 break-words">{ manga.CreatedAt.Format("2006-01-02") }</span>
+			}
+			if !manga.UpdatedAt.IsZero() {
+				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+					<div class="shrink-0 mt-0.5">
+						<uk-icon icon="calendar-clock"></uk-icon>
+					</div>
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Updated</strong>
+						<span class="text-sm text-gray-800 break-words">{ manga.UpdatedAt.Format("2006-01-02") }</span>
+					</div>
 				</div>
-			</div>
-		}
-		if !manga.UpdatedAt.IsZero() {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
-				<div class="shrink-0 mt-0.5">
-					<uk-icon icon="calendar-clock"></uk-icon>
-				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
-					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Updated</strong>
-					<span class="text-sm text-gray-800 break-words">{ manga.UpdatedAt.Format("2006-01-02") }</span>
-				</div>
-			</div>
+			}
 		}
 	</div>
 
@@ -253,11 +276,6 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 		</div>
 	}
 
-	<!-- Mobile: show status under metadata grid; Desktop: center column will show it -->
-	<div class="mt-2 flex justify-center">
-		<span class="uk-badge">{ manga.Status }</span>
-	</div>
-
 	<!-- stack on small/medium screens, switch to row on large screens -->
 	<div class="mt-3 flex flex-col lg:flex-row justify-center items-center gap-2">
 		<!-- Left: author/metadata compact -->
@@ -269,45 +287,8 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 			</div>
 		</div>
 		<div class="w-full">
-			<!-- First row: voting centered -->
-			<div class="controls-row mb-1">
-				<div id="manga-vote" hx-get={ fmt.Sprintf("/mangas/%s/vote/fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
-			</div>
-
 			<!-- Second row: metadata + favorite centered and tighter -->
 			<div class="controls-row">
-				<button
-					type="button"
-					class="uk-btn uk-btn-default btn-circular"
-					uk-toggle="target: #metadata-modal"
-					title="Edit metadata"
-					aria-label="Edit metadata"
-				>
-					<uk-icon icon="Info"></uk-icon>
-				</button>
-				if userRole == "moderator" || userRole == "admin" {
-					<button
-						type="button"
-						class="uk-btn uk-btn-default btn-circular"
-						uk-toggle="target: #manual-edit-modal"
-						title="Edit metadata manually"
-						aria-label="Edit metadata manually"
-					>
-						<uk-icon icon="Pencil"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-default btn-circular"
-						uk-toggle="target: #refresh-metadata-modal"
-						title="Refresh metadata from MangaDex"
-						aria-label="Refresh metadata from MangaDex"
-					>
-						<uk-icon icon="FolderSync"></uk-icon>
-					</button>
-				}
-				<div class="controls-tight">
-					<div id="manga-favorite" hx-get={ fmt.Sprintf("/mangas/%s/favorite/fragment", manga.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
-				</div>
 			</div>
 		</div>
 	</div>
@@ -325,9 +306,8 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 					aria-label="Search for manga metadata"
 				>
 					<div class="folder-row mb-4 flex items-center">
-						<label for="metadata-search" class="uk-visually-hidden">Search for manga by name</label>
 						<input id="metadata-search" class="uk-input folder-input mr-1" type="text" name="search" placeholder="Manga name" aria-label="Manga name"/>
-						<button type="submit" class="uk-btn uk-btn-default ml-1" aria-label="Search">
+						<button type="submit" class="uk-btn uk-btn-default ml-1 h-10 w-10" aria-label="Search">
 							<uk-icon icon="Search"></uk-icon>
 						</button>
 					</div>
@@ -355,12 +335,11 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 				<li>
 					<form
 						hx-post={ fmt.Sprintf("/mangas/%s/metadata/manual", manga.Slug) }
-						hx-target="#content"
 						class="space-y-6"
 					>
 						<div class="mb-5">
 							<label class="uk-form-label mb-2 block font-semibold" for="name">Name</label>
-							<input class="uk-input" type="text" id="name" name="name" value={ manga.Name } required/>
+							<input class="uk-input" type="text" id="name" name="name" value={ manga.Name }/>
 						</div>
 						
 						<div class="mb-5">
@@ -448,7 +427,25 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 				<!-- Poster Tab -->
 				<li>
 					<div class="uk-margin">
-						<p class="uk-text-muted">Select a poster image from your manga files:</p>
+						<p class="uk-text-muted">Upload a new poster image:</p>
+						<form 
+							method="post"
+							enctype="multipart/form-data" 
+							hx-post={ fmt.Sprintf("/mangas/%s/poster/set", manga.Slug) }
+							hx-target="#poster-selector-content"
+							hx-swap="outerHTML"
+							hx-encoding="multipart/form-data"
+							class="uk-margin-bottom"
+						>
+							<div class="uk-margin">
+								<input type="file" name="poster" accept="image/*" required class="uk-input"/>
+							</div>
+							<div class="uk-margin">
+								<button type="submit" class="uk-btn uk-btn-primary">Upload Poster</button>
+							</div>
+						</form>
+						<hr class="uk-divider-icon"/>
+						<p class="uk-text-muted">Or select a poster image from your manga files:</p>
 						<div 
 							id="poster-selector-content"
 							hx-get={ fmt.Sprintf("/mangas/%s/poster/chapters", manga.Slug) }
@@ -499,6 +496,40 @@ templ Info(manga models.Manga, userRole string, lastReadChapterSlug string) {
 					uk-close
 				>
 					Refresh Metadata
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Delete Manga Modal for Moderators/Admins -->
+	<div id="delete-manga-modal" uk-modal>
+		<div class="uk-modal-body uk-modal-dialog">
+			<h2 class="uk-modal-title mb-3">Delete Manga</h2>
+			<p class="uk-text-muted mb-4">
+				Are you sure you want to delete this manga? This action cannot be undone.
+			</p>
+			<div class="mb-4">
+				<p class="text-sm"><strong>Manga:</strong> { manga.Name }</p>
+				<p class="text-sm"><strong>Path:</strong> { manga.Path }</p>
+			</div>
+			<div class="uk-alert uk-alert-destructive text-sm mb-4" style="padding: 1rem;">
+				<div class="flex items-start gap-2">
+					<uk-icon icon="AlertTriangle" class="shrink-0 mt-0.5"></uk-icon>
+					<div>
+						<strong>Warning:</strong> This will permanently delete the manga and all associated data.
+					</div>
+				</div>
+			</div>
+			<div class="uk-flex uk-flex-right gap-3 mt-6">
+				<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
+				<button 
+					type="button" 
+					class="uk-btn uk-btn-destructive px-6"
+					hx-post={ fmt.Sprintf("/mangas/%s/delete", manga.Slug) }
+					hx-target="#content"
+					uk-close
+				>
+					Delete Manga
 				</button>
 			</div>
 		</div>
@@ -589,13 +620,73 @@ templ Chapters(manga models.Manga, chapters []models.Chapter) {
 							uk-icon="icon: chevron-down; ratio: 0.8"
 						></span>
 					</a>
-					if chapter.Read {
-						@InlineEyeToggle(chapter.Read, manga.Slug, chapter.Slug)
-					}
+					<div class="flex items-center">
+						if chapter.Read {
+							<div class="mr-3" title="Read">
+								@InlineEyeToggle(chapter.Read, manga.Slug, chapter.Slug)
+							</div>
+						}
+						if !chapter.CreatedAt.IsZero() {
+							<span class="text-xs text-gray-500 mr-3">{ chapter.CreatedAt.Format("2006-01-02") }</span>
+						}
+					</div>
 				</div>
 			</li>
 		}
 	</ul>
+}
+
+templ ChaptersContainer(manga models.Manga, chapters []models.Chapter, reverse bool) {
+	@Chapters(manga, chapters)
+}
+
+templ MangaChaptersSection(manga models.Manga, chapters []models.Chapter, reverse bool, lastReadChapterSlug string) {
+	{{ toggleURL := fmt.Sprintf("/mangas/%s", manga.Slug) }}
+	{{ buttonText := "" }}
+	{{ buttonIcon := "" }}
+	{{ buttonTitle := "" }}
+	if reverse {
+		{{ toggleURL += "?reverse=false" }}
+		{{ buttonText = "Ascending" }}
+		{{ buttonIcon = "arrow-up" }}
+		{{ buttonTitle = "Sort chapters in ascending order" }}
+	} else {
+		{{ toggleURL += "?reverse=true" }}
+		{{ buttonText = "Descending" }}
+		{{ buttonIcon = "arrow-down" }}
+		{{ buttonTitle = "Sort chapters in descending order" }}
+	}
+	<div class="flex justify-between items-center mb-4">
+		<button
+			id="reverse-btn"
+			type="button"
+			class="uk-btn uk-btn-default"
+			hx-get={ toggleURL }
+			hx-target="#chapters-section"
+			title={ buttonTitle }
+		>
+			<uk-icon icon={ buttonIcon }></uk-icon>
+			<span class="ml-1">{ buttonText }</span>
+		</button>
+		if lastReadChapterSlug != "" {
+			<a
+				href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, lastReadChapterSlug)) }
+				hx-get={ fmt.Sprintf("/mangas/%s/chapters/%s", manga.Slug, lastReadChapterSlug) }
+				hx-target="#content"
+				hx-push-url="true"
+				class="uk-btn uk-btn-primary"
+				title="Resume reading from where you left off"
+			>
+				<uk-icon icon="Play"></uk-icon>
+				<span class="ml-1">Resume</span>
+			</a>
+		}
+	</div>
+	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
+		<div id="chapters-container" class="p-2">
+			@ChaptersContainer(manga, chapters, reverse)
+		</div>
+	</div>
 }
 
 templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
@@ -833,50 +924,70 @@ templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
 	}
 }
 
-// PosterChapterSelector shows a list of chapters to select from
-templ PosterChapterSelector(mangaSlug string, chapters []models.Chapter) {
-	<div class="poster-chapter-selector uk-margin">
+// PosterEditor shows the poster editor with chapters and images
+templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlug string, imageCount int, currentImageIndex int, imageDataURI string, chapterPage int) {
+	<div id="poster-selector-content" class="poster-editor uk-margin">
 		<div class="uk-margin-bottom">
 			<label class="uk-form-label"><strong>Select a Chapter ({fmt.Sprint(len(chapters))} found):</strong></label>
-			<div class="uk-margin">
-				for _, chapter := range chapters {
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin-top uk-margin-bottom">
+				{{ chaptersPerPage := 10 }}
+				{{ totalPages := (len(chapters) + chaptersPerPage - 1) / chaptersPerPage }}
+				{{ start := (chapterPage - 1) * chaptersPerPage }}
+				{{ end := start + chaptersPerPage }}
+				{{ if end > len(chapters) { end = len(chapters) } }}
+				for i := start; i < end; i++ {
+					{{ chapter := chapters[i] }}
+					{{ opacity := "" }}
+					{{ if chapter.Slug == currentChapterSlug { opacity = "opacity: 0.5" } }}
 					<button
 						type="button"
-						class="uk-button uk-button-default uk-width-1-1 uk-text-left uk-margin-small-bottom"
+						id={ fmt.Sprintf("chapter-selector-btn-%s", chapter.Slug) }
+						class="uk-btn uk-btn-default"
+						style={ opacity }
 						hx-get={ fmt.Sprintf("/mangas/%s/poster/selector?chapter=%s", mangaSlug, chapter.Slug) }
-						hx-target="#poster-selector-area"
-						hx-swap="innerHTML"
+						hx-target="#poster-selector-content"
+						hx-swap="outerHTML"
 					>
-						<strong>{ chapter.Name }</strong>
+						<div class="uk-text-center text-sm">
+							Chapter { fmt.Sprint(i + 1) }
+						</div>
 					</button>
 				}
 			</div>
+			if totalPages > 1 {
+				<div class="grid grid-cols-3 gap-2 uk-margin-top">
+					<div class="text-left">
+						if chapterPage > 1 {
+							<button class="uk-btn uk-btn-default" hx-get={ fmt.Sprintf("/mangas/%s/poster/selector?page=%d", mangaSlug, chapterPage-1) } hx-target="#poster-selector-content" hx-swap="outerHTML">Prev</button>
+						}
+					</div>
+					<div class="text-center">
+						<span>Page { chapterPage } of { totalPages }</span>
+					</div>
+					<div class="text-right">
+						if chapterPage < totalPages {
+							<button class="uk-btn uk-btn-default" hx-get={ fmt.Sprintf("/mangas/%s/poster/selector?page=%d", mangaSlug, chapterPage+1) } hx-target="#poster-selector-content" hx-swap="outerHTML">Next</button>
+						}
+					</div>
+				</div>
+			}
 		</div>
-		<hr class="uk-divider-icon"/>
-		<div id="poster-selector-area" class="uk-margin" data-smooth-scroll>
-			<p class="uk-text-muted text-center">Select a chapter to view available images</p>
-		</div>
-	</div>
-}
-
-// PosterSelectorInterface shows a list of available images from the selected chapter
-templ PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount int) {
-	<div class="poster-selector-interface uk-margin">
-		if imageCount == 0 {
-			<div class="uk-alert uk-alert-warning">
-				<p>No images found in this chapter.</p>
-			</div>
-		} else {
+		if currentChapterSlug != "" {
+			<hr class="uk-divider-icon"/>
 			<div class="uk-margin-bottom">
 				<label class="uk-form-label"><strong>Select an Image ({fmt.Sprint(imageCount)} found):</strong></label>
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin">
 					for i := 0; i < imageCount; i++ {
+						{{ imgOpacity := "" }}
+						{{ if i == currentImageIndex { imgOpacity = "opacity: 0.5" } }}
 						<button
 							type="button"
-							class="uk-button image-selector-btn"
-							hx-get={ fmt.Sprintf("/mangas/%s/poster/preview?chapter=%s&index=%d", mangaSlug, chapterSlug, i) }
-							hx-target="#poster-preview-area"
-							hx-swap="innerHTML"
+							id={ fmt.Sprintf("image-selector-btn-%d", i) }
+							class="uk-btn uk-btn-default"
+							style={ imgOpacity }
+							hx-get={ fmt.Sprintf("/mangas/%s/poster/preview?chapter=%s&index=%d", mangaSlug, currentChapterSlug, i) }
+							hx-target="#poster-selector-content"
+							hx-swap="outerHTML"
 						>
 							<div class="uk-text-center text-sm">
 								Image { fmt.Sprint(i + 1) }
@@ -887,7 +998,11 @@ templ PosterSelectorInterface(mangaSlug string, chapterSlug string, imageCount i
 			</div>
 			<hr class="uk-divider-icon"/>
 			<div id="poster-preview-area" class="uk-margin" data-smooth-scroll>
-				<p class="uk-text-muted text-center">Click an image to preview and select crop area</p>
+				if currentImageIndex >= 0 {
+					@PosterPreviewAndCropper(mangaSlug, currentChapterSlug, currentImageIndex, imageDataURI)
+				} else {
+					<p class="uk-text-muted text-center">Click an image to preview and select crop area</p>
+				}
 			</div>
 		}
 	</div>
@@ -925,8 +1040,8 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 				type="button"
 				class="uk-btn uk-btn-default"
 				hx-get={ fmt.Sprintf("/mangas/%s/poster/selector?chapter=%s", mangaSlug, chapterSlug) }
-				hx-target="#poster-preview-area"
-				hx-swap="innerHTML"
+				hx-target="#poster-selector-content"
+				hx-swap="outerHTML"
 			>
 				Back to Image List
 			</button>
@@ -956,13 +1071,16 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
     return;
   }
   
-  // Wait for Cropper.js to be loaded
   function initCropper() {
     if (typeof Cropper === 'undefined') {
-      // Cropper not loaded yet, retry
       setTimeout(initCropper, 100);
       return;
-    }    // Initialize Cropper.js with 2:3 aspect ratio for poster
+    }
+    // Destroy any existing cropper
+    if (img.cropper) {
+      img.cropper.destroy();
+    }
+    // Initialize Cropper.js with 2:3 aspect ratio for poster
     const cropper = new Cropper(img, {
       aspectRatio: 2 / 3,
       viewMode: 1,
@@ -996,6 +1114,16 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
           left: 0,
           top: 0
         });
+        
+        // Set initial crop data
+        const data = cropper.getData(true);
+        const cropData = {
+          x: Math.round(data.x),
+          y: Math.round(data.y),
+          width: Math.round(data.width),
+          height: Math.round(data.height)
+        };
+        cropDataInput.value = JSON.stringify(cropData);
       },
       crop: function(e) {
         // Update crop data whenever the crop area changes
@@ -1012,22 +1140,13 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
         cropDataInput.value = JSON.stringify(cropData);
       }
     });
-    
-    // Initialize crop data when image loads
-    img.addEventListener('load', function() {
-      const data = cropper.getData(true);
-      const cropData = {
-        x: Math.round(data.x),
-        y: Math.round(data.y),
-        width: Math.round(data.width),
-        height: Math.round(data.height)
-      };
-      cropDataInput.value = JSON.stringify(cropData);
-    });
   }
   
-  // Start initialization
-  initCropper();
+  if (img.complete) {
+    initCropper();
+  } else {
+    img.addEventListener('load', initCropper);
+  }
 })();
 		</script>
 	</div>

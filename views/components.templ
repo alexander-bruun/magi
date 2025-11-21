@@ -81,9 +81,6 @@ templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed 
 }// MangaCover renders the manga cover image with proper sizing
 templ MangaCover(coverURL string, altText string, width int, height int, fixed bool) {
     {{ imageURL := coverURL }}
-    if imageURL == "" {
-        {{ imageURL = fmt.Sprintf("https://placehold.co/%dx%d?text=N/A", width, height) }}
-    }
     
     if fixed {
         <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
@@ -122,6 +119,50 @@ templ ProfileCard(user models.User) {
                 }
             </div>
         </div>
+    </div>
+}
+
+// LightNovelCard renders a card for a light novel
+templ LightNovelCard(lightNovel models.LightNovel, width int, height int, truncate bool, fixed bool) {
+	<a href={ templ.URL(fmt.Sprintf("/light-novels/%s", lightNovel.Slug)) } class="block" aria-label={ fmt.Sprintf("View %s", lightNovel.Name) }>
+		<div 
+			class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
+			if fixed {
+				style={ fmt.Sprintf("width:%dpx;", width) }
+			}
+		>
+			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
+				{ lightNovel.Name }
+			</h3>
+			<div class="uk-card-media-top flex justify-center items-center">
+				@LightNovelCover(lightNovel.CoverArtURL, lightNovel.Name, width, height, fixed)
+			</div>
+		</div>
+	</a>
+}
+
+// LightNovelCover renders the light novel cover image with proper sizing
+templ LightNovelCover(coverURL string, altText string, width int, height int, fixed bool) {
+    {{ imageURL := coverURL }}
+    
+    if fixed {
+        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
+    } else {
+        <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
+            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
+        </div>
+    }
+}
+
+// LightNovelGrid renders a grid of light novel cards.
+templ LightNovelGrid(lightNovels []models.LightNovel, width int, height int, truncate bool, fixed bool) {
+    <!-- Responsive grid: 1 column (xs), 2 (sm), 3 (md), 4 (lg) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        for _, lightNovel := range lightNovels {
+            <div>
+                @LightNovelCard(lightNovel, width, height, truncate, fixed)
+            </div>
+        }
     </div>
 }
 

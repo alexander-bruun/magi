@@ -1115,7 +1115,7 @@
 
     // Re-initialize on HTMX content swap
     document.addEventListener('htmx:afterSwap', (event) => {
-        if (event.detail.target.id === 'content' && document.getElementById('reader-images-container')) {
+        if (event.detail.target && event.detail.target.id === 'content' && document.getElementById('reader-images-container')) {
             setTimeout(init, 50); // Small delay to ensure DOM is ready
         }
     });

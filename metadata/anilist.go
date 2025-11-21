@@ -404,8 +404,6 @@ func convertAniListFormat(format string) string {
 	switch strings.ToUpper(format) {
 	case "MANGA":
 		return "manga"
-	case "NOVEL":
-		return "novel"
 	case "ONE_SHOT":
 		return "oneshot"
 	default:

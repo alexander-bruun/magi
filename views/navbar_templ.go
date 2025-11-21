@@ -69,7 +69,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			}
 		}
 		if userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\" hx-get=\"/admin/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\" hx-get=\"/admin/config\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\" hx-get=\"/admin/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\" hx-get=\"/admin/config\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/banned-ips\" hx-get=\"/admin/banned-ips\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -101,7 +101,21 @@ func Navbar(userRole string, currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</ul></nav><div class=\"sidebar-footer\"><div id=\"job-status-indicator\" class=\"job-status-indicator\" style=\"display: none;\" data-uk-tooltip=\"\"><div data-uk-spinner></div></div><a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
+		templ_7745c5c3_Err = NavItem("/light-novels", "file-text", "Light Novels", currentPath).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</ul></nav><div class=\"sidebar-footer\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if userRole == "moderator" || userRole == "admin" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div id=\"job-status-indicator\" class=\"job-status-indicator\" style=\"display: none;\" data-uk-tooltip=\"\"><div data-uk-spinner></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -137,7 +151,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<li class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<li class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -150,59 +164,59 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(path))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 164, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 168, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 164, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 168, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(icon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 165, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 169, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"></uk-icon> <span class=\"nav-text\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"></uk-icon> <span class=\"nav-text\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 166, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 170, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span></a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -232,59 +246,59 @@ func SearchMangas(mangas []models.Manga) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		for _, manga := range mangas {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<ul class=\"uk-accordion\" uk-accordion><li><a class=\"uk-accordion-title\" href>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<ul class=\"uk-accordion\" uk-accordion><li><a class=\"uk-accordion-title\" href>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 176, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 180, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, " <span class=\"uk-accordion-icon\" uk-icon=\"icon: chevron-down; ratio: 0.8\"></span></a><div class=\"uk-accordion-content\"><p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, " <span class=\"uk-accordion-icon\" uk-icon=\"icon: chevron-down; ratio: 0.8\"></span></a><div class=\"uk-accordion-content\"><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(manga.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 184, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 188, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</p><div class=\"uk-flex uk-flex-center\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close mt-4\" type=\"button\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</p><div class=\"uk-flex uk-flex-center\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close mt-4\" type=\"button\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 191, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 195, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/mangas/%s", manga.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 192, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 196, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" hx-target=\"#content\" hx-push-url=\"true\">Go to manga <uk-icon icon=\"MoveRight\"></uk-icon></button></div></div></li></ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" hx-target=\"#content\" hx-push-url=\"true\">Go to manga <uk-icon icon=\"MoveRight\"></uk-icon></button></div></div></li></ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -314,7 +328,7 @@ func OneDoesNotSimplySearch() templ.Component {
 			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"italic uk-text-center\">One does not simply search...</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<p class=\"italic uk-text-center\">One does not simply search...</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -343,7 +357,7 @@ func NoResultsSearch() templ.Component {
 			templ_7745c5c3_Var15 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<p class=\"text-3xl font-bold text-center\">Not results found</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<p class=\"text-3xl font-bold text-center\">Not results found</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
