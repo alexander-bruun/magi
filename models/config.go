@@ -13,6 +13,17 @@ type AppConfig struct {
     MetadataProvider   string // mangadex, mal, anilist, jikan
     MALApiToken        string // MyAnimeList API token
     AniListApiToken    string // AniList API token (optional)
+    
+    // Rate limiting settings
+    RateLimitEnabled     bool
+    RateLimitRequests    int  // requests per window
+    RateLimitWindow      int  // window in seconds
+    
+    // Bot detection settings
+    BotDetectionEnabled      bool
+    BotSeriesThreshold       int  // max series accesses per time window
+    BotChapterThreshold      int  // max chapter accesses per time window
+    BotDetectionWindow       int  // time window in seconds for bot detection
 }
 
 // Implement metadata.ConfigProvider interface
@@ -39,7 +50,14 @@ func loadConfigFromDB() (AppConfig, error) {
     row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, 
         COALESCE(metadata_provider, 'mangadex'), 
         COALESCE(mal_api_token, ''), 
-        COALESCE(anilist_api_token, '') 
+        COALESCE(anilist_api_token, ''),
+        COALESCE(rate_limit_enabled, 1),
+        COALESCE(rate_limit_requests, 100),
+        COALESCE(rate_limit_window, 60),
+        COALESCE(bot_detection_enabled, 1),
+        COALESCE(bot_series_threshold, 5),
+        COALESCE(bot_chapter_threshold, 10),
+        COALESCE(bot_detection_window, 60)
         FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
@@ -47,8 +65,16 @@ func loadConfigFromDB() (AppConfig, error) {
     var metadataProvider string
     var malApiToken string
     var anilistApiToken string
+    var rateLimitEnabled int
+    var rateLimitRequests int
+    var rateLimitWindow int
+    var botDetectionEnabled int
+    var botSeriesThreshold int
+    var botChapterThreshold int
+    var botDetectionWindow int
     
-    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken); err != nil {
+    if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, 
+        &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
@@ -58,6 +84,13 @@ func loadConfigFromDB() (AppConfig, error) {
                 MetadataProvider:   "mangadex",
                 MALApiToken:        "",
                 AniListApiToken:    "",
+                RateLimitEnabled:   true,
+                RateLimitRequests:  100,
+                RateLimitWindow:    60,
+                BotDetectionEnabled: true,
+                BotSeriesThreshold:  5,
+                BotChapterThreshold: 10,
+                BotDetectionWindow:  60,
             }, nil
         }
         return AppConfig{}, err
@@ -69,6 +102,13 @@ func loadConfigFromDB() (AppConfig, error) {
         MetadataProvider:   metadataProvider,
         MALApiToken:        malApiToken,
         AniListApiToken:    anilistApiToken,
+        RateLimitEnabled:   rateLimitEnabled == 1,
+        RateLimitRequests:  rateLimitRequests,
+        RateLimitWindow:    rateLimitWindow,
+        BotDetectionEnabled: botDetectionEnabled == 1,
+        BotSeriesThreshold:  botSeriesThreshold,
+        BotChapterThreshold: botChapterThreshold,
+        BotDetectionWindow:  botDetectionWindow,
     }, nil
 }
 
@@ -123,6 +163,20 @@ func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit 
     return RefreshAppConfig()
 }
 
+// UpdateRateLimitConfig updates the rate limiting configuration
+func UpdateRateLimitConfig(enabled bool, requests, window int) (AppConfig, error) {
+    enabledInt := 0
+    if enabled {
+        enabledInt = 1
+    }
+    _, err := db.Exec(`UPDATE app_config SET rate_limit_enabled = ?, rate_limit_requests = ?, rate_limit_window = ? WHERE id = 1`, 
+        enabledInt, requests, window)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
 // UpdateMetadataConfig updates the metadata provider and API tokens
 func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, error) {
     // Validate provider
@@ -138,6 +192,20 @@ func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, e
     
     _, err := db.Exec(`UPDATE app_config SET metadata_provider = ?, mal_api_token = ?, anilist_api_token = ? WHERE id = 1`, 
         provider, malToken, anilistToken)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdateBotDetectionConfig updates the bot detection configuration
+func UpdateBotDetectionConfig(enabled bool, seriesThreshold, chapterThreshold, detectionWindow int) (AppConfig, error) {
+    enabledInt := 0
+    if enabled {
+        enabledInt = 1
+    }
+    _, err := db.Exec(`UPDATE app_config SET bot_detection_enabled = ?, bot_series_threshold = ?, bot_chapter_threshold = ?, bot_detection_window = ? WHERE id = 1`, 
+        enabledInt, seriesThreshold, chapterThreshold, detectionWindow)
     if err != nil {
         return AppConfig{}, err
     }

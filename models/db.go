@@ -32,6 +32,17 @@ func Initialize(cacheDirectory string) error {
 		return err
 	}
 
+	// Enable WAL mode for better concurrency
+	if _, err = db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		return fmt.Errorf("failed to enable WAL mode: %w", err)
+	}
+	if _, err = db.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		return fmt.Errorf("failed to set synchronous mode: %w", err)
+	}
+	if _, err = db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		return fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
 	// Initialize schema_migrations table if it doesn't exist
 	err = initializeSchemaMigrationsTable()
 	if err != nil {

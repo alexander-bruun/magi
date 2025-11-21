@@ -115,6 +115,7 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 				hx-post="/admin/libraries"
 				hx-target="#libraries-table"
 				hx-trigger="submit"
+				hx-on:htmx:after-request="this.reset()"
 			>
 				@FormContent(library, editing)
 			</form>

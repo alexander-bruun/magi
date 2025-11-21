@@ -9,6 +9,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -242,6 +243,13 @@ func extractZipFile(file *zip.File, outputFolder string) error {
 	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder)+string(os.PathSeparator)) {
 		return fmt.Errorf("invalid file path: %s", outputPath)
 	}
+	
+	// Create the directory if it doesn't exist
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+	
 	dst, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -291,6 +299,8 @@ func CopyFile(src, dst string) error {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Returns the cached image URL path.
 func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, error) {
+	log.Debugf("Extracting first image from archive '%s' for manga '%s'", archivePath, slug)
+	
 	// Create a temporary directory for extraction
 	tempDir, err := os.MkdirTemp("", "magi-extract-")
 	if err != nil {
@@ -303,27 +313,34 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, erro
 		// If archive is invalid or has no images, log and skip rather than failing
 		if strings.Contains(err.Error(), "invalid or corrupt") || 
 		   strings.Contains(err.Error(), "no image files found") {
-			log.Debugf("Skipping invalid or empty archive '%s': %v", archivePath, err)
+			log.Debugf("Skipping invalid or empty archive '%s' for manga '%s': %v", archivePath, slug, err)
 			return "", nil
 		}
+		log.Errorf("Failed to extract first image from '%s' for manga '%s': %v", archivePath, slug, err)
 		return "", fmt.Errorf("failed to extract first image: %w", err)
 	}
 
-	// Find the extracted image file
-	entries, err := os.ReadDir(tempDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read temp directory: %w", err)
-	}
+	log.Debugf("Successfully extracted image from archive '%s' for manga '%s'", archivePath, slug)
 
+	// Find the extracted image file (search recursively)
 	var extractedImagePath string
-	for _, entry := range entries {
-		if !entry.IsDir() && isImageFile(entry.Name()) {
-			extractedImagePath = filepath.Join(tempDir, entry.Name())
-			break
+	err = filepath.WalkDir(tempDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+		if !d.IsDir() && isImageFile(d.Name()) {
+			extractedImagePath = path
+			log.Debugf("Found extracted image '%s' for manga '%s'", d.Name(), slug)
+			return fs.SkipAll // Stop after finding the first image
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to walk temp directory: %w", err)
 	}
 
 	if extractedImagePath == "" {
+		log.Debugf("No image file found after extraction from '%s' for manga '%s'", archivePath, slug)
 		return "", fmt.Errorf("no image file found after extraction")
 	}
 
@@ -340,6 +357,7 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, erro
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
+	log.Debugf("Successfully processed and cached poster for manga '%s': %s", slug, croppedFile)
 	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
 }
 

@@ -1,0 +1,58 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ BannedIPs() {
+	{{ bannedIPs, _ := models.GetBannedIPs() }}
+
+	@PageTitle("Banned IPs")
+	<div class="uk-container mt-2">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Banned IPs", Href: "/admin/banned-ips" }})
+		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Banned IPs</span></h3>
+		<div class="flex place-content-center">
+			<div class="w-2/4">
+				<div class="uk-card p-2">
+					@BannedIPsTable(bannedIPs)
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ BannedIPsTable(bannedIPs []models.BannedIP) {
+	<div id="banned-ips-table">
+		<table class="uk-table">
+			<thead>
+				<tr>
+					<th class="text-center">IP Address</th>
+					<th class="text-center">Banned At</th>
+					<th class="text-center">Reason</th>
+					<th class="text-center">Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, bip := range bannedIPs {
+					<tr>
+						<td class="text-center">{ bip.IPAddress }</td>
+						<td class="text-center">{ bip.BannedAt.Format("2006-01-02 15:04:05") }</td>
+						<td class="text-center">{ bip.Reason }</td>
+						<td class="text-center">
+							<button
+								type="button"
+								class="uk-btn uk-btn-default"
+								hx-post={ fmt.Sprintf("/admin/banned-ips/%s/unban", bip.IPAddress) }
+								hx-trigger="click"
+								hx-target="#banned-ips-table"
+							>
+								<uk-icon icon="Check"></uk-icon> Unban
+							</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

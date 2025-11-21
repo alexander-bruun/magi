@@ -287,8 +287,117 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                     }
                 }
             }
+        } else if s.Language == "python" {
+            // Create temporary directory for virtual environment
+            tmpDir, err := os.MkdirTemp("", "scraper_venv_")
+            if err != nil {
+                errMsg = fmt.Sprintf("Failed to create temporary directory: %v", err)
+            } else {
+                defer os.RemoveAll(tmpDir) // Clean up the entire directory
+                
+                venvPath := fmt.Sprintf("%s/venv", tmpDir)
+                
+                // Create virtual environment
+                BroadcastLog(s.ID, "info", "Creating Python virtual environment...")
+                if err := exec.CommandContext(ctx, "python3", "-m", "venv", venvPath).Run(); err != nil {
+                    errMsg = fmt.Sprintf("Failed to create virtual environment: %v", err)
+                } else {
+                    // Install packages if any
+                    if len(s.Packages) > 0 {
+                        BroadcastLog(s.ID, "info", fmt.Sprintf("Installing packages: %s", strings.Join(s.Packages, ", ")))
+                        pipCmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/pip", venvPath), "install")
+                        pipCmd.Args = append(pipCmd.Args, s.Packages...)
+                        pipCmd.Env = os.Environ()
+                        for k, v := range vars {
+                            pipCmd.Env = append(pipCmd.Env, fmt.Sprintf("%s=%s", k, v))
+                        }
+                        
+                        if output, err := pipCmd.CombinedOutput(); err != nil {
+                            errMsg = fmt.Sprintf("Failed to install packages: %v\nOutput: %s", err, string(output))
+                        } else {
+                            BroadcastLog(s.ID, "info", "Packages installed successfully")
+                        }
+                    }
+                    
+                    if errMsg == "" {
+                        // Create temporary Python script file
+                        scriptFile := fmt.Sprintf("%s/script.py", tmpDir)
+                        if err := os.WriteFile(scriptFile, []byte(s.Script), 0644); err != nil {
+                            errMsg = fmt.Sprintf("Failed to write script content: %v", err)
+                        } else {
+                            // Run the Python script in the virtual environment
+                            cmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/python", venvPath), scriptFile)
+                            cmd.Env = os.Environ()
+                            for k, v := range vars {
+                                cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+                            }
+                            cmd.Dir = tmpDir // Set working directory to temp dir
+
+                            stdoutPipe, err := cmd.StdoutPipe()
+                            if err != nil {
+                                errMsg = fmt.Sprintf("Failed to create stdout pipe: %v", err)
+                            } else {
+                                stderrPipe, err := cmd.StderrPipe()
+                                if err != nil {
+                                    errMsg = fmt.Sprintf("Failed to create stderr pipe: %v", err)
+                                } else if err := cmd.Start(); err != nil {
+                                    errMsg = fmt.Sprintf("Failed to start script: %v", err)
+                                } else {
+                                    log.Debugf("Started python script execution for script ID %d", s.ID)
+                                    var wg sync.WaitGroup
+                                    wg.Add(1)
+                                    go func() {
+                                        defer wg.Done()
+                                        scanner := bufio.NewScanner(stdoutPipe)
+                                        log.Debugf("[STDOUT] Starting to read stdout for script ID %d", s.ID)
+                                        for scanner.Scan() {
+                                            line := scanner.Text()
+                                            log.Debugf("[STDOUT] Script %d: %s", s.ID, line)
+                                            outputBuf.WriteString(line + "\n")
+                                            BroadcastLog(s.ID, "info", line)
+                                        }
+                                        if err := scanner.Err(); err != nil {
+                                            log.Errorf("[STDOUT] Scanner error for script %d: %v", s.ID, err)
+                                        }
+                                        log.Debugf("[STDOUT] Finished reading stdout for script ID %d", s.ID)
+                                    }()
+
+                                    wg.Add(1)
+                                    go func() {
+                                        defer wg.Done()
+                                        scanner := bufio.NewScanner(stderrPipe)
+                                        log.Debugf("[STDERR] Starting to read stderr for script ID %d", s.ID)
+                                        for scanner.Scan() {
+                                            line := scanner.Text()
+                                            log.Debugf("[STDERR] Script %d: %s", s.ID, line)
+                                            outputBuf.WriteString(line + "\n")
+                                            BroadcastLog(s.ID, "error", line)
+                                        }
+                                        if err := scanner.Err(); err != nil {
+                                            log.Errorf("[STDERR] Scanner error for script %d: %v", s.ID, err)
+                                        }
+                                        log.Debugf("[STDERR] Finished reading stderr for script ID %d", s.ID)
+                                    }()
+
+                                    // Wait for command to complete
+                                    if err := cmd.Wait(); err != nil {
+                                        if outputBuf.Len() == 0 {
+                                            errMsg = err.Error()
+                                        } else {
+                                            errMsg = strings.TrimSpace(outputBuf.String())
+                                        }
+                                    }
+                                    
+                                    // Wait for all output to be read from pipes
+                                    wg.Wait()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } else {
-            errMsg = fmt.Sprintf("Unsupported language: %s (only 'bash' is supported)", s.Language)
+            errMsg = fmt.Sprintf("Unsupported language: %s (only 'bash' and 'python' are supported)", s.Language)
         }
 
         duration := time.Since(start)

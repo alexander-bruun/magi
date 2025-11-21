@@ -46,159 +46,314 @@ func Config() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Configuration</span></h3><div class=\"flex place-content-center\"><div class=\"w-2/4\"><div class=\"uk-card p-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Configuration</span></h3><div class=\"flex place-content-center\"><div class=\"w-3/4 space-y-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = ConfigForm().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div></div><!-- Console Logs Section --><div class=\"mt-8\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = ConsoleLogs().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func ConfigForm() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
 		cfg, _ := models.GetAppConfig()
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form hx-post=\"/admin/config\" hx-target=\"#content\" hx-trigger=\"submit\" class=\"space-y-6\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form hx-post=\"/admin/config\" hx-target=\"this\" hx-trigger=\"submit\" hx-swap=\"outerHTML\" class=\"space-y-6\"><!-- General Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>General Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if cfg.AllowRegistration {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted-foreground mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxUsers))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 27, Col: 130}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		userCount, _ := models.CountUsers()
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-xs text-muted-foreground mt-1\">Current users: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " class=\"uk-checkbox\"> <span>Allow new user registrations</span></label><p class=\"text-xs text-muted-foreground mt-1\">Disable to prevent any new users from signing up.</p></div><div><label class=\"block mb-1\">Max users (0 = unlimited)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_users\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", userCount))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxUsers))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 29, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 41, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</p></div><div><label class=\"block mb-1\">Maximum Content Rating</label> <select name=\"content_rating_limit\" class=\"uk-select\"><option value=\"0\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.ContentRatingLimit == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, ">Safe only</option> <option value=\"1\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.ContentRatingLimit == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Suggestive (includes safe)</option> <option value=\"2\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.ContentRatingLimit == 2 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ">Erotica (includes safe, suggestive)</option> <option value=\"3\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.ContentRatingLimit == 3 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><!-- Metadata Provider Section --><div class=\"uk-margin-medium-top uk-padding-small\"><h4 class=\"uk-heading-line\"><span>Metadata Provider</span></h4><div class=\"uk-margin\"><select name=\"metadata_provider\" id=\"metadata-provider-select\" class=\"uk-select\"><option value=\"mangadex\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">MangaDex (Free, No Auth Required)</option> <option value=\"mal\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.MetadataProvider == "mal" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">MyAnimeList (Requires API Token)</option> <option value=\"anilist\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.MetadataProvider == "anilist" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, ">AniList (Optional Auth)</option> <option value=\"jikan\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.MetadataProvider == "jikan" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ">Jikan API (Free, No Auth Required)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Select which metadata provider to use for fetching manga information.</p></div><!-- MAL API Token --><div id=\"mal-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"text\" class=\"uk-input\" name=\"mal_api_token\" value=\"")
+		userCount, _ := models.CountUsers()
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<p class=\"text-xs text-muted-foreground mt-1\">Current users: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.MALApiToken)
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", userCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 58, Col: 112}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 43, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" placeholder=\"dbe0d49546f15aa428f64323bbfcbd9a\"><p class=\"text-xs text-muted-foreground mt-1\">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\" class=\"uk-link\">MAL API Config</a></p></div><!-- AniList API Token --><div id=\"anilist-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">AniList Access Token (Optional)</label> <input type=\"text\" class=\"uk-input\" name=\"anilist_api_token\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</p></div><div><label class=\"block mb-1\">Maximum Content Rating</label> <select name=\"content_rating_limit\" class=\"uk-select\"><option value=\"0\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Safe only</option> <option value=\"1\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 1 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ">Suggestive (includes safe)</option> <option value=\"2\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 2 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">Erotica (includes safe, suggestive)</option> <option value=\"3\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.ContentRatingLimit == 3 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div></div><!-- Metadata Provider Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Metadata Provider</span></h4><div class=\"uk-margin\"><select name=\"metadata_provider\" id=\"metadata-provider-select\" class=\"uk-select\"><option value=\"mangadex\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">MangaDex (Free, No Auth Required)</option> <option value=\"mal\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "mal" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, ">MyAnimeList (Requires API Token)</option> <option value=\"anilist\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "anilist" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ">AniList (Optional Auth)</option> <option value=\"jikan\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.MetadataProvider == "jikan" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">Jikan API (Free, No Auth Required)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Select which metadata provider to use for fetching manga information.</p></div><!-- MAL API Token --><div id=\"mal-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"text\" class=\"uk-input\" name=\"mal_api_token\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.AniListApiToken)
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.MALApiToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 65, Col: 120}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 73, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" placeholder=\"Enter your AniList access token (optional)\"><p class=\"text-xs text-muted-foreground mt-1\">Optional: Increases rate limits. Get token from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\" class=\"uk-link\">AniList Developer Settings</a></p></div></div><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save</button></div></form></div></div></div><!-- Console Logs Section --><div class=\"mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div></div><script>\n        document.addEventListener('DOMContentLoaded', function() {\n            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n            const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';\n            \n            if (window.Magi && window.Magi.LogViewer) {\n                new window.Magi.LogViewer({\n                    wsUrl: wsUrl,\n                    containerId: 'console-logs-container',\n                    outputId: 'console-logs-output',\n                    maxEntries: 1000,\n                    reconnectInterval: 3000\n                });\n            }\n            \n            // Metadata provider selection handler\n            const providerSelect = document.getElementById('metadata-provider-select');\n            const malField = document.getElementById('mal-token-field');\n            const anilistField = document.getElementById('anilist-token-field');\n            \n            function updateTokenFields() {\n                const provider = providerSelect.value;\n                malField.style.display = provider === 'mal' ? 'block' : 'none';\n                anilistField.style.display = provider === 'anilist' ? 'block' : 'none';\n            }\n            \n            providerSelect.addEventListener('change', updateTokenFields);\n            updateTokenFields(); // Initialize on page load\n        });\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" placeholder=\"dbe0d49546f15aa428f64323bbfcbd9a\"><p class=\"text-xs text-muted-foreground mt-1\">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\" class=\"uk-link\">MAL API Config</a></p></div><!-- AniList API Token --><div id=\"anilist-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">AniList Access Token (Optional)</label> <input type=\"text\" class=\"uk-input\" name=\"anilist_api_token\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.AniListApiToken)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 80, Col: 104}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" placeholder=\"Enter your AniList access token (optional)\"><p class=\"text-xs text-muted-foreground mt-1\">Optional: Increases rate limits. Get token from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\" class=\"uk-link\">AniList Developer Settings</a></p></div></div><!-- Rate Limiting Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Rate Limiting</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"rate_limit_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.RateLimitEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, " class=\"uk-checkbox\"> <span>Enable rate limiting</span></label><p class=\"text-xs text-muted-foreground mt-1\">Limit the number of requests per IP address to prevent abuse.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Requests per window</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_requests\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitRequests))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 97, Col: 137}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of requests allowed per time window.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Time window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_window\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitWindow))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 102, Col: 133}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for rate limiting.</p></div></div><!-- Bot Detection Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Bot Detection</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"bot_detection_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.BotDetectionEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, " class=\"uk-checkbox\"> <span>Enable bot detection</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically detect and ban IPs that access too many series/chapters in sequence.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Series access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_series_threshold\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotSeriesThreshold))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 119, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum series page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Chapter access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_chapter_threshold\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotChapterThreshold))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 124, Col: 141}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum chapter page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Detection window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_detection_window\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var11 string
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotDetectionWindow))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 129, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><script>\n        document.addEventListener('DOMContentLoaded', function() {\n            // Metadata provider selection handler\n            const providerSelect = document.getElementById('metadata-provider-select');\n            const malField = document.getElementById('mal-token-field');\n            const anilistField = document.getElementById('anilist-token-field');\n            \n            function updateTokenFields() {\n                const provider = providerSelect.value;\n                malField.style.display = provider === 'mal' ? 'block' : 'none';\n                anilistField.style.display = provider === 'anilist' ? 'block' : 'none';\n            }\n            \n            if (providerSelect) {\n                providerSelect.addEventListener('change', updateTokenFields);\n                updateTokenFields(); // Initialize on page load\n            }\n        });\n        \n        // Reinitialize on HTMX swap\n        document.addEventListener('htmx:afterSettle', function(event) {\n            if (event.detail.xhr && event.detail.xhr.status === 200) {\n                // Metadata provider selection handler\n                const providerSelect = document.getElementById('metadata-provider-select');\n                const malField = document.getElementById('mal-token-field');\n                const anilistField = document.getElementById('anilist-token-field');\n                \n                function updateTokenFields() {\n                    const provider = providerSelect.value;\n                    malField.style.display = provider === 'mal' ? 'block' : 'none';\n                    anilistField.style.display = provider === 'anilist' ? 'block' : 'none';\n                }\n                \n                if (providerSelect) {\n                    providerSelect.removeEventListener('change', updateTokenFields);\n                    providerSelect.addEventListener('change', updateTokenFields);\n                    updateTokenFields();\n                }\n            }\n        });\n    </script>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func ConsoleLogs() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var12 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var12 == nil {
+			templ_7745c5c3_Var12 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"uk-container mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div><script>\n        (function() {\n            function initConsoleLogs() {\n                const container = document.getElementById('console-logs-container');\n                const output = document.getElementById('console-logs-output');\n                if (!container || !output) return;\n\n                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n                const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';\n                \n                if (window.Magi && window.Magi.LogViewer) {\n                    new window.Magi.LogViewer({\n                        wsUrl: wsUrl,\n                        containerId: 'console-logs-container',\n                        outputId: 'console-logs-output',\n                        maxEntries: 1000,\n                        reconnectInterval: 3000\n                    });\n                }\n            }\n\n            // Try to initialize immediately (for HTMX swaps)\n            initConsoleLogs();\n\n            // Also listen for DOMContentLoaded (for direct page loads)\n            if (document.readyState === 'loading') {\n                document.addEventListener('DOMContentLoaded', initConsoleLogs);\n            }\n        })();\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

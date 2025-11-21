@@ -157,7 +157,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		return nil
 	}
 
-	log.Infof("NotifyUsersOfNewChapters: manga=%s, newChapters=%v", mangaSlug, newChapterSlugs)
+	log.Debugf("NotifyUsersOfNewChapters: manga=%s, newChapters=%v", mangaSlug, newChapterSlugs)
 
 	// Get chapter details for the new chapters
 	placeholders := make([]string, len(newChapterSlugs))
@@ -195,7 +195,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		newChapters = append(newChapters, ch)
 	}
 
-	log.Infof("Found %d chapter details for manga '%s'", len(newChapters), mangaSlug)
+	log.Debugf("Found %d chapters for manga '%s'", len(newChapters), mangaSlug)
 
 	if len(newChapters) == 0 {
 		return nil
@@ -224,10 +224,10 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		users = append(users, userName)
 	}
 
-	log.Infof("Found %d users reading manga '%s'", len(users), mangaSlug)
+	log.Debugf("Found %d users reading manga '%s'", len(users), mangaSlug)
 
 	if len(users) == 0 {
-		log.Infof("No users reading manga '%s', skipping notifications", mangaSlug)
+		log.Debugf("No users reading manga '%s', skipping notifications", mangaSlug)
 		return nil
 	}
 
@@ -238,37 +238,161 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		return err
 	}
 
-	// Create notifications for each user for each new chapter
+	// Create notifications for each user with all new chapters bundled
 	notificationCount := 0
-	for _, user := range users {
-		for _, chapter := range newChapters {
-			// Check if notification already exists to avoid duplicates
-			existsQuery := `
-			SELECT COUNT(*) FROM user_notifications 
-			WHERE user_name = ? AND manga_slug = ? AND chapter_slug = ?
-			`
-			var count int
-			if err := db.QueryRow(existsQuery, user, mangaSlug, chapter.slug).Scan(&count); err == nil && count > 0 {
-				log.Debugf("Notification already exists for user %s, manga %s, chapter %s", user, mangaSlug, chapter.slug)
-				continue // Skip if notification already exists
-			}
+	chapterNames := make([]string, len(newChapters))
+	for i, ch := range newChapters {
+		chapterNames[i] = ch.name
+	}
+	var message string
+	if len(chapterNames) == 1 {
+		message = "New chapter available: " + chapterNames[0]
+	} else if len(chapterNames) <= 5 {
+		message = "New chapters available: " + strings.Join(chapterNames, ", ")
+	} else {
+		message = fmt.Sprintf("New chapters available: %s to %s (%d total)", chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
+	}
+	firstChapterSlug := newChapters[0].slug
 
-			message := "New chapter available: " + chapter.name
-			if err := CreateUserNotification(user, mangaSlug, chapter.slug, message); err != nil {
-				log.Errorf("Failed to create notification: %v", err)
-				continue
-			}
-			notificationCount++
+	for _, user := range users {
+		// Check if a bundled notification already exists for this manga recently (within last hour)
+		existsQuery := `
+		SELECT COUNT(*) FROM user_notifications 
+		WHERE user_name = ? AND manga_slug = ? AND chapter_slug = ? AND created_at > ?
+		`
+		var count int
+		oneHourAgo := time.Now().Add(-time.Hour).Unix()
+		if err := db.QueryRow(existsQuery, user, mangaSlug, firstChapterSlug, oneHourAgo).Scan(&count); err == nil && count > 0 {
+			log.Debugf("Recent bundled notification already exists for user %s, manga %s", user, mangaSlug)
+			continue // Skip if recent notification exists
+		}
+
+		if err := CreateUserNotification(user, mangaSlug, firstChapterSlug, message); err != nil {
+			log.Errorf("Failed to create notification: %v", err)
+			continue
+		}
+		notificationCount++
+	}
+
+	log.Debugf("Created %d notifications for manga '%s'", notificationCount, mangaSlug)
+
+	// Bundle any existing separate notifications for the same manga
+	for _, user := range users {
+		if err := BundleNotificationsForUser(user); err != nil {
+			log.Errorf("Failed to bundle notifications for user %s: %v", user, err)
 		}
 	}
 
-	log.Infof("Created %d notifications for manga '%s'", notificationCount, mangaSlug)
 	return nil
 }
 
-// GetRecentlyAddedChapters returns chapters added after the specified time for a manga
-func GetRecentlyAddedChapters(mangaSlug string, afterTime time.Time) ([]Chapter, error) {
-	// Note: chapters table doesn't have created_at, so we'll need to check all chapters
-	// and compare against existing notifications to determine which are "new"
-	return GetChapters(mangaSlug)
+// BundleNotificationsForUser bundles multiple unread notifications for the same manga into one
+func BundleNotificationsForUser(userName string) error {
+	// Find mangas with multiple unread notifications
+	query := `
+	SELECT manga_slug, COUNT(*) as count
+	FROM user_notifications
+	WHERE user_name = ? AND is_read = 0
+	GROUP BY manga_slug
+	HAVING COUNT(*) > 1
+	`
+
+	rows, err := db.Query(query, userName)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var mangaSlug string
+		var count int
+		if err := rows.Scan(&mangaSlug, &count); err != nil {
+			continue
+		}
+
+		// Get all unread notifications for this manga
+		notifsQuery := `
+		SELECT id, chapter_slug, message
+		FROM user_notifications
+		WHERE user_name = ? AND manga_slug = ? AND is_read = 0
+		ORDER BY created_at ASC
+		`
+		notifRows, err := db.Query(notifsQuery, userName, mangaSlug)
+		if err != nil {
+			continue
+		}
+
+		var ids []int64
+		var chapterSlugs []string
+		var messages []string
+		for notifRows.Next() {
+			var id int64
+			var chapterSlug, message string
+			if err := notifRows.Scan(&id, &chapterSlug, &message); err != nil {
+				continue
+			}
+			ids = append(ids, id)
+			chapterSlugs = append(chapterSlugs, chapterSlug)
+			messages = append(messages, message)
+		}
+		notifRows.Close()
+
+		if len(ids) <= 1 {
+			continue
+		}
+
+		// Get chapter names
+		placeholders := make([]string, len(chapterSlugs))
+		args := make([]interface{}, len(chapterSlugs)+1)
+		args[0] = mangaSlug
+		for i, slug := range chapterSlugs {
+			placeholders[i] = "?"
+			args[i+1] = slug
+		}
+		chapQuery := fmt.Sprintf(`
+		SELECT name FROM chapters WHERE manga_slug = ? AND slug IN (%s)
+		`, strings.Join(placeholders, ","))
+		chapRows, err := db.Query(chapQuery, args...)
+		if err != nil {
+			continue
+		}
+		var chapterNames []string
+		for chapRows.Next() {
+			var name string
+			if err := chapRows.Scan(&name); err != nil {
+				continue
+			}
+			chapterNames = append(chapterNames, name)
+		}
+		chapRows.Close()
+
+		// Create bundled message
+		var message string
+		if len(chapterNames) == 1 {
+			message = "New chapter available: " + chapterNames[0]
+		} else if len(chapterNames) <= 5 {
+			message = "New chapters available: " + strings.Join(chapterNames, ", ")
+		} else {
+			message = fmt.Sprintf("New chapters available: %s to %s (%d total)", chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
+		}
+
+		// Delete old notifications
+		deleteQuery := `DELETE FROM user_notifications WHERE id IN (` + strings.Repeat("?,", len(ids)-1) + "?)"
+		deleteArgs := make([]interface{}, len(ids))
+		for i, id := range ids {
+			deleteArgs[i] = id
+		}
+		_, err = db.Exec(deleteQuery, deleteArgs...)
+		if err != nil {
+			log.Errorf("Failed to delete old notifications: %v", err)
+			continue
+		}
+
+		// Create new bundled notification
+		if err := CreateUserNotification(userName, mangaSlug, chapterSlugs[0], message); err != nil {
+			log.Errorf("Failed to create bundled notification: %v", err)
+		}
+	}
+
+	return nil
 }

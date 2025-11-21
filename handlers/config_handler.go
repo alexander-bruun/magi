@@ -50,7 +50,71 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
         }
     }
     
-    return HandleView(c, views.Config())
+    // Update rate limiting configuration
+    rateLimitEnabled := c.FormValue("rate_limit_enabled") == "on"
+    rateLimitRequestsStr := c.FormValue("rate_limit_requests")
+    rateLimitWindowStr := c.FormValue("rate_limit_window")
+    var rateLimitRequests, rateLimitWindow int
+    if rateLimitRequestsStr != "" {
+        if v, err := strconv.Atoi(rateLimitRequestsStr); err == nil && v > 0 {
+            rateLimitRequests = v
+        } else {
+            rateLimitRequests = 100
+        }
+    } else {
+        rateLimitRequests = 100
+    }
+    if rateLimitWindowStr != "" {
+        if v, err := strconv.Atoi(rateLimitWindowStr); err == nil && v > 0 {
+            rateLimitWindow = v
+        } else {
+            rateLimitWindow = 60
+        }
+    } else {
+        rateLimitWindow = 60
+    }
+    if _, err := models.UpdateRateLimitConfig(rateLimitEnabled, rateLimitRequests, rateLimitWindow); err != nil {
+        return handleError(c, err)
+    }
+    
+    // Update bot detection configuration
+    botDetectionEnabled := c.FormValue("bot_detection_enabled") == "on"
+    botSeriesThresholdStr := c.FormValue("bot_series_threshold")
+    botChapterThresholdStr := c.FormValue("bot_chapter_threshold")
+    botDetectionWindowStr := c.FormValue("bot_detection_window")
+    var botSeriesThreshold, botChapterThreshold, botDetectionWindow int
+    if botSeriesThresholdStr != "" {
+        if v, err := strconv.Atoi(botSeriesThresholdStr); err == nil && v > 0 {
+            botSeriesThreshold = v
+        } else {
+            botSeriesThreshold = 5
+        }
+    } else {
+        botSeriesThreshold = 5
+    }
+    if botChapterThresholdStr != "" {
+        if v, err := strconv.Atoi(botChapterThresholdStr); err == nil && v > 0 {
+            botChapterThreshold = v
+        } else {
+            botChapterThreshold = 10
+        }
+    } else {
+        botChapterThreshold = 10
+    }
+    if botDetectionWindowStr != "" {
+        if v, err := strconv.Atoi(botDetectionWindowStr); err == nil && v > 0 {
+            botDetectionWindow = v
+        } else {
+            botDetectionWindow = 60
+        }
+    } else {
+        botDetectionWindow = 60
+    }
+    if _, err := models.UpdateBotDetectionConfig(botDetectionEnabled, botSeriesThreshold, botChapterThreshold, botDetectionWindow); err != nil {
+        return handleError(c, err)
+    }
+    
+    return HandleView(c, views.ConfigForm())
 }
 
 // HandleConsoleLogsWebSocketUpgrade upgrades the connection to WebSocket for console logs

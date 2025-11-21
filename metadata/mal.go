@@ -299,8 +299,6 @@ func convertMALMediaType(mediaType string) string {
 		return "manhwa"
 	case "manhua":
 		return "manhua"
-	case "novel", "light_novel":
-		return "novel"
 	case "one_shot":
 		return "oneshot"
 	case "doujinshi":
