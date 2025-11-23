@@ -17,8 +17,8 @@ const (
 
 // HandleView wraps a page component with the layout unless the request is an HTMX fragment.
 func HandleView(c *fiber.Ctx, content templ.Component) error {
-	// Return partial content if HTMX target is specified
-	if GetHTMXTarget(c) != "" {
+	// Return partial content if HTMX request
+	if IsHTMXRequest(c) {
 		return renderComponent(c, content)
 	}
 
