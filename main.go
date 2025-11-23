@@ -95,8 +95,8 @@ func main() {
 		return
 	}
 
-	log.Infof("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
-	log.Infof("Using '%s/...' as the image caching location", cacheDirectory)
+	log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
+	log.Debugf("Using '%s/...' as the image caching location", cacheDirectory)
 
 	// Initialize console log streaming for admin panel
 	utils.InitializeConsoleLogger()
