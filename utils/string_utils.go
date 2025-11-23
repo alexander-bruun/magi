@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -17,21 +18,65 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
+// Pre-compiled regexes for performance
+var complexPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`v\d+\s*-\s*v\d+`),                // Removing patterns like 'v1 - v2' or 'v12 - v34'
+	regexp.MustCompile(`c\d+\s*-\s*c\d+`),                // Removing patterns like 'c1 - c2' or 'c10 - c20'
+	regexp.MustCompile(`v\d+\s*-\s*\d+`),                 // Removing patterns like 'v1 - 2' or 'v12 - 34'
+	regexp.MustCompile(`c\d+\s*-\s*\d+`),                 // Removing patterns like 'c1 - 2' or 'c10 - 34'
+	regexp.MustCompile(`\b\d{1,2}-\d{1,2}\b`),            // Removing patterns like '12-34' or '1-9'
+	regexp.MustCompile(`\b\d{3,}-\d{3,}\b`),              // Removing patterns like '000-305' or '123-456'
+	regexp.MustCompile(`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`), // Removing patterns like 'Vol. 1 + Vol. 2'
+	regexp.MustCompile(`\sS\d+\b`),                       // Removing patterns like ' S1' or ' S12'
+	regexp.MustCompile(`\bVolumes?\d+-\d+\+\w+\b`),       // Removing patterns like 'Volume1-2+ABC'
+}
+
+// Simple cache for RemovePatterns results
+var removePatternsCache = make(map[string]string)
+var cacheMutex sync.RWMutex
+const maxCacheSize = 10000
+
 // RemovePatterns applies custom parsing to clean up the path string.
 func RemovePatterns(path string) string {
-	path = removeParenthesesContent(path)
-	path = removeBracketsContent(path)
-	path = removeBracesContent(path)
-	path = handleSpecialCases(path)
-	path = processComplexPatterns(path)
-	path = removeTrailingSuffixes(path)
-	path = strings.Join(strings.Fields(path), " ")
-	path = strings.TrimSpace(path)
-	path = removeNonASCII(path)
-	if strings.HasSuffix(path, ", The") {
-		path = "The " + strings.TrimSuffix(path, ", The")
+	// Check cache first (read lock)
+	cacheMutex.RLock()
+	if cached, exists := removePatternsCache[path]; exists {
+		cacheMutex.RUnlock()
+		return cached
 	}
-	return path
+	cacheMutex.RUnlock()
+
+	// Process the path
+	processed := path
+	processed = removeParenthesesContent(processed)
+	processed = removeBracketsContent(processed)
+	processed = removeBracesContent(processed)
+	processed = handleSpecialCases(processed)
+	processed = processComplexPatterns(processed)
+	processed = removeTrailingSuffixes(processed)
+	processed = strings.Join(strings.Fields(processed), " ")
+	processed = strings.TrimSpace(processed)
+	processed = removeNonASCII(processed)
+	if strings.HasSuffix(processed, ", The") {
+		processed = "The " + strings.TrimSuffix(processed, ", The")
+	}
+
+	// Cache the result (write lock)
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	
+	// Double-check the cache in case another goroutine added it
+	if cached, exists := removePatternsCache[path]; exists {
+		return cached
+	}
+	
+	// Cache the result (simple eviction by clearing when full)
+	if len(removePatternsCache) >= maxCacheSize {
+		removePatternsCache = make(map[string]string)
+	}
+	removePatternsCache[path] = processed
+
+	return processed
 }
 
 func removeNonASCII(s string) string {
@@ -83,26 +128,7 @@ func handleSpecialCases(path string) string {
 }
 
 func processComplexPatterns(path string) string {
-	patterns := []struct {
-		pattern string
-	}{
-		{`v\d+\s*-\s*v\d+`},                // Removing patterns like 'v1 - v2' or 'v12 - v34'
-		{`c\d+\s*-\s*c\d+`},                // Removing patterns like 'c1 - c2' or 'c10 - c20'
-		{`v\d+\s*-\s*\d+`},                 // Removing patterns like 'v1 - 2' or 'v12 - 34'
-		{`c\d+\s*-\s*\d+`},                 // Removing patterns like 'c1 - 2' or 'c10 - 34'
-		{`\b\d{1,2}-\d{1,2}\b`},            // Removing patterns like '12-34' or '1-9'
-		{`\b\d{3,}-\d{3,}\b`},              // Removing patterns like '000-305' or '123-456'
-		{`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`}, // Removing patterns like 'Vol. 1 + Vol. 2'
-		{`\sS\d+\b`},                       // Removing patterns like ' S1' or ' S12'
-		{`\bVolumes?\d+-\d+\+\w+\b`},       // Removing patterns like 'Volume1-2+ABC'
-	}
-
-	for _, pat := range patterns {
-		re, err := regexp.Compile(pat.pattern)
-		if err != nil {
-			log.Errorf("Failed to compile pattern %s: %v", pat.pattern, err)
-			continue
-		}
+	for _, re := range complexPatterns {
 		path = re.ReplaceAllString(path, "")
 	}
 	return strings.TrimSpace(path)

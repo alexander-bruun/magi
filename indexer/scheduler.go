@@ -36,6 +36,7 @@ var (
 
 var (
 	cacheDataDirectory = ""
+	cacheDirMutex      sync.RWMutex
 	activeIndexers     = make(map[string]*Indexer)
 	activeIndexersMutex sync.Mutex
 	scannedPathCount   int
@@ -74,8 +75,15 @@ func Initialize(cacheDirectory string, libraries []models.Library) {
 
 // NewIndexer creates a new Indexer instance
 func NewIndexer(library models.Library) *Indexer {
+	// Deep copy the Folders slice to prevent sharing underlying arrays
+	foldersCopy := make([]string, len(library.Folders))
+	copy(foldersCopy, library.Folders)
+	
+	libraryCopy := library
+	libraryCopy.Folders = foldersCopy
+	
 	return &Indexer{
-		Library: library,
+		Library: libraryCopy,
 		stop:    make(chan struct{}),
 	}
 }
@@ -162,13 +170,21 @@ func (idx *Indexer) runIndexingJob() {
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
-		absFolder, err := filepath.Abs(folder)
-		if err != nil {
-			log.Errorf("Failed to resolve folder path '%s': %s", folder, err)
+		// Validate that the folder path looks reasonable
+		if !filepath.IsAbs(folder) {
+			log.Warnf("Library '%s' has relative folder path '%s', skipping", idx.Library.Name, folder)
 			continue
 		}
+		
+		absFolder, err := filepath.Abs(folder)
+		if err != nil {
+			log.Errorf("Failed to resolve folder path '%s' for library '%s': %s", folder, idx.Library.Name, err)
+			continue
+		}
+		
+		log.Debugf("Processing folder '%s' for library '%s'", absFolder, idx.Library.Name)
 		if err := idx.processFolder(absFolder); err != nil {
-			log.Errorf("Error processing folder '%s': %s", absFolder, err)
+			log.Errorf("Error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
 		}
 
 		select {
@@ -253,8 +269,28 @@ func (idx *Indexer) RunIndexingJob() {
 	idx.runIndexingJob()
 }
 
-// ✅ UPDATED: processFolder now sorts folders alphabetically
+// ✅ UPDATED: processFolder now sorts folders alphabetically and processes media concurrently
 func (idx *Indexer) processFolder(folder string) error {
+	// Validate that the folder path is reasonable for this library
+	if !filepath.IsAbs(folder) {
+		return fmt.Errorf("folder path must be absolute: %s", folder)
+	}
+	
+	// Check if this folder is actually configured for this library
+	folderConfigured := false
+	for _, configuredFolder := range idx.Library.Folders {
+		if absConfigured, err := filepath.Abs(configuredFolder); err == nil && absConfigured == folder {
+			folderConfigured = true
+			break
+		}
+	}
+	
+	if !folderConfigured {
+		log.Warnf("Library '%s' trying to process folder '%s' which is not in its configured folders: %v", 
+			idx.Library.Name, folder, idx.Library.Folders)
+		return fmt.Errorf("folder not configured for this library: %s", folder)
+	}
+	
 	dir, err := os.Open(folder)
 	if err != nil {
 		return err
@@ -271,6 +307,8 @@ func (idx *Indexer) processFolder(folder string) error {
 		return entries[i].Name() < entries[j].Name()
 	})
 
+	// Collect media paths for concurrent processing
+	var mediaPaths []string
 	for _, entry := range entries {
 		select {
 		case <-idx.stop:
@@ -282,44 +320,63 @@ func (idx *Indexer) processFolder(folder string) error {
 		contentType := determineContentType(path, entry.IsDir())
 
 		switch contentType {
-		case MediaDirectory:
-			// Increment the global scan counter
-			scanMutex.Lock()
-			scannedPathCount++
-			currentCount := scannedPathCount
-			scanMutex.Unlock()
-			
-			log.Debugf("Scanning media directory [%d]: %s", currentCount, path)
-			
-			// Notify progress
-			if NotifyIndexerProgress != nil {
-				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
-			}
-			
-			if _, err := IndexMedia(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing media at '%s': %s", path, err)
-			}
-		case SingleMediaFile:
-			// Increment the global scan counter
-			scanMutex.Lock()
-			scannedPathCount++
-			currentCount := scannedPathCount
-			scanMutex.Unlock()
-			
-			log.Debugf("Scanning media file [%d]: %s", currentCount, path)
-			
-			// Notify progress
-			if NotifyIndexerProgress != nil {
-				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
-			}
-			
-			if _, err := IndexMedia(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing media at '%s': %s", path, err)
-			}
+		case MediaDirectory, SingleMediaFile:
+			mediaPaths = append(mediaPaths, path)
 		default:
 			log.Debugf("Skipping: %s", entry.Name())
 		}
 	}
+
+	// Process media concurrently with worker pool
+	const numWorkers = 4
+	jobs := make(chan string, len(mediaPaths))
+	results := make(chan error, len(mediaPaths))
+
+	// Start workers
+	for w := 0; w < numWorkers; w++ {
+		go func() {
+			for path := range jobs {
+				select {
+				case <-idx.stop:
+					results <- nil
+					return
+				default:
+				}
+
+				// Increment the global scan counter
+				scanMutex.Lock()
+				scannedPathCount++
+				currentCount := scannedPathCount
+				scanMutex.Unlock()
+
+				entryName := filepath.Base(path)
+				log.Debugf("Scanning media [%d]: %s", currentCount, path)
+
+				// Notify progress
+				if NotifyIndexerProgress != nil {
+					NotifyIndexerProgress(idx.Library.Slug, entryName, fmt.Sprintf("%d scanned", currentCount))
+				}
+
+				_, err := IndexMedia(path, idx.Library.Slug)
+				results <- err
+			}
+		}()
+	}
+
+	// Send jobs
+	for _, path := range mediaPaths {
+		jobs <- path
+	}
+	close(jobs)
+
+	// Collect results
+	for i := 0; i < len(mediaPaths); i++ {
+		if err := <-results; err != nil {
+			path := mediaPaths[i]
+			log.Errorf("Error indexing media at '%s': %s", path, err)
+		}
+	}
+
 	return nil
 }
 

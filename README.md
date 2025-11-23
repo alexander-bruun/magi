@@ -217,7 +217,6 @@ Contributions are welcome! Magi is in active development, and we'd love your hel
 ## ⚠️ Known Limitations
 
 - **RAR Performance**: RAR archives have slower random access than ZIP. Consider converting to CBZ for better performance.
-- **Large Collections**: Very large libraries (10,000+ manga) may experience slower initial indexing (looking into index parallelization)
 
 ## 📄 License
 

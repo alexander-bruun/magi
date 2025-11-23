@@ -96,8 +96,8 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 
 	// If media already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
-	// Use GetMedia to check globally, then verify it's from the same library
-	existingMedia, err := models.GetMedia(slug)
+	// Use GetMediaUnfiltered to check globally, then verify it's from the same library
+	existingMedia, err := models.GetMediaUnfiltered(slug)
 	if err != nil {
 		log.Errorf("Failed to lookup media '%s': %s", slug, err)
 	}
@@ -185,23 +185,12 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 				// Single file media always has exactly 1 chapter
 				candidateCount = 1
 			} else {
-				// Count files (fast): we only need to count entries that look
-				// like chapters (contain a number after cleaning). This is a
-				// fast directory read that avoids creating objects.
-				_ = filepath.WalkDir(absolutePath, func(p string, d fs.DirEntry, walkErr error) error {
-					if walkErr != nil {
-						return nil
-					}
-					if d.IsDir() {
-						return nil
-					}
-					name := d.Name()
-					cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
-					if containsNumber(cleanedName) {
-						candidateCount++
-					}
-					return nil
-				})
+				// Use dry run to get the actual count without database operations
+				_, _, _, candidateCount, err = IndexChapters(slug, absolutePath, true)
+				if err != nil {
+					log.Errorf("Failed to count chapters for '%s': %s", slug, err)
+					// Fall back to full indexing
+				}
 			}
 			
 			if candidateCount == existingMedia.FileCount {
@@ -228,7 +217,7 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 		}
 
 		// Index chapters recursively; returns added and deleted counts.
-		added, deleted, newChapterSlugs, err := IndexChapters(slug, absolutePath)
+		added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, false)
 		if err != nil {
 			log.Errorf("Failed to index chapters for existing media '%s': %s", slug, err)
 			return slug, err
@@ -266,23 +255,39 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	}
 
 	var cachedImageURL string
-	if meta != nil {
-		coverURL := provider.GetCoverImageURL(meta)
-		if coverURL != "" {
-			cachedImageURL, _ = DownloadAndCacheImage(slug, coverURL)
+	// Start async image processing
+	go func() {
+		var finalImageURL string
+		if meta != nil {
+			coverURL := provider.GetCoverImageURL(meta)
+			if coverURL != "" {
+				if url, err := DownloadAndCacheImage(slug, coverURL); err == nil {
+					finalImageURL = url
+				}
+			}
 		}
-	}
-	
-	// If no cover was found, try local images
-	if cachedImageURL == "" {
-		log.Debugf("No metadata cover found for new media '%s', attempting local poster generation", slug)
-		cachedImageURL, _ = HandleLocalImages(slug, absolutePath)
-		if cachedImageURL != "" {
-			log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, cachedImageURL)
-		} else {
-			log.Debugf("Failed to generate poster from local images for new media '%s'", slug)
+		
+		// If no cover was found, try local images
+		if finalImageURL == "" {
+			log.Debugf("No metadata cover found for new media '%s', attempting local poster generation", slug)
+			if url, err := HandleLocalImages(slug, absolutePath); err == nil && url != "" {
+				finalImageURL = url
+				log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, finalImageURL)
+			} else {
+				log.Debugf("Failed to generate poster from local images for new media '%s'", slug)
+			}
 		}
-	}
+
+		// Update media with cover URL if we got one
+		if finalImageURL != "" {
+			if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
+				media.CoverArtURL = finalImageURL
+				if err := models.UpdateMedia(media); err != nil {
+					log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
+				}
+			}
+		}
+	}()
 
 	newMedia := createMediaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
 
@@ -317,7 +322,7 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 		}
 	}
 
-	added, deleted, newChapterSlugs, err := IndexChapters(slug, absolutePath)
+	added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, false)
 	if err != nil {
 		log.Errorf("Failed to index chapters: %s (%s)", slug, err.Error())
 		return "", err
@@ -486,25 +491,31 @@ func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
 }
 
 // IndexChapters reconciles chapter files on disk with the stored chapter records.
-func IndexChapters(slug, path string) (int, int, []string, error) {
+// Returns added count, deleted count, new chapter slugs, and total file count.
+// If dryRun is true, only counts files without performing database operations.
+func IndexChapters(slug, path string, dryRun bool) (int, int, []string, int, error) {
 	var addedCount int
 	var deletedCount int
 	var newChapterSlugs []string
 
 	// Load existing chapters once to avoid querying the DB per file.
-	existing, err := models.GetChapters(slug)
-	if err != nil {
-		return 0, 0, nil, fmt.Errorf("failed to load existing chapters for media '%s': %w", slug, err)
-	}
-	existingMap := make(map[string]models.Chapter, len(existing))
-	for _, c := range existing {
-		existingMap[c.Slug] = c
+	// Skip in dry run mode
+	var existingMap map[string]models.Chapter
+	if !dryRun {
+		existing, err := models.GetChapters(slug)
+		if err != nil {
+			return 0, 0, nil, 0, fmt.Errorf("failed to load existing chapters for media '%s': %w", slug, err)
+		}
+		existingMap = make(map[string]models.Chapter, len(existing))
+		for _, c := range existing {
+			existingMap[c.Slug] = c
+		}
 	}
 
 	// Check if path is a single file (for .cbz/.cbr files)
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return 0, 0, nil, fmt.Errorf("failed to stat path '%s': %w", path, err)
+		return 0, 0, nil, 0, fmt.Errorf("failed to stat path '%s': %w", path, err)
 	}
 
 	type presentInfo struct {
@@ -545,48 +556,68 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 			return nil
 		});
 		if err != nil {
-			return 0, 0, nil, err
+			return 0, 0, nil, 0, err
 		}
 	}
 
 	// Create missing chapters
-	for slugKey, info := range presentMap {
-		if _, ok := existingMap[slugKey]; !ok {
-			// not present in DB -> create with pretty name
-			chapter := models.Chapter{
-				Name:      info.Name,
-				Slug:      slugKey,
-				File:      info.Rel,
-				MediaSlug: slug,
+	if !dryRun {
+		for slugKey, info := range presentMap {
+			if _, ok := existingMap[slugKey]; !ok {
+				// not present in DB -> create with pretty name
+				chapter := models.Chapter{
+					Name:      info.Name,
+					Slug:      slugKey,
+					File:      info.Rel,
+					MediaSlug: slug,
+				}
+				if err := models.CreateChapter(chapter); err != nil {
+					return addedCount, deletedCount, newChapterSlugs, 0, fmt.Errorf("failed to create chapter '%s' for media '%s': %w", info.Name, slug, err)
+				}
+				addedCount++
+				newChapterSlugs = append(newChapterSlugs, slugKey)
 			}
-			if err := models.CreateChapter(chapter); err != nil {
-				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to create chapter '%s' for media '%s': %w", info.Name, slug, err)
+		}
+	} else {
+		// In dry run, just count what would be added
+		for slugKey := range presentMap {
+			if _, ok := existingMap[slugKey]; !ok {
+				addedCount++
 			}
-			addedCount++
-			newChapterSlugs = append(newChapterSlugs, slugKey)
 		}
 	}
 
 	// Delete chapters that are no longer present on disk
-	for slugKey := range existingMap {
-		if _, ok := presentMap[slugKey]; !ok {
-			if err := models.DeleteChapter(slug, slugKey); err != nil {
-				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to delete missing chapter '%s' for media '%s': %w", slugKey, slug, err)
+	if !dryRun {
+		for slugKey := range existingMap {
+			if _, ok := presentMap[slugKey]; !ok {
+				if err := models.DeleteChapter(slug, slugKey); err != nil {
+					return addedCount, deletedCount, newChapterSlugs, 0, fmt.Errorf("failed to delete missing chapter '%s' for media '%s': %w", slugKey, slug, err)
+				}
+				deletedCount++
 			}
-			deletedCount++
+		}
+	} else {
+		// In dry run, just count what would be deleted
+		for slugKey := range existingMap {
+			if _, ok := presentMap[slugKey]; !ok {
+				deletedCount++
+			}
 		}
 	}
 
 	// Update media file count and timestamp
-	m, err := models.GetMediaUnfiltered(slug)
-	if err == nil && m != nil {
-		m.FileCount = len(presentMap)
-		if err := models.UpdateMedia(m); err != nil {
-			log.Errorf("Failed to update media file_count for '%s': %s", slug, err)
+	if !dryRun {
+		m, err := models.GetMediaUnfiltered(slug)
+		if err == nil && m != nil {
+			m.FileCount = len(presentMap)
+			if err := models.UpdateMedia(m); err != nil {
+				log.Errorf("Failed to update media file_count for '%s': %s", slug, err)
+			}
 		}
 	}
 
-	return addedCount, deletedCount, newChapterSlugs, nil
+	return addedCount, deletedCount, newChapterSlugs, len(presentMap), nil
 }
 
 func containsNumber(s string) bool {

@@ -1047,7 +1047,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
-	added, deleted, newChapterSlugs, err := indexer.IndexChapters(existingMedia.Slug, existingMedia.Path)
+	added, deleted, newChapterSlugs, _, err := indexer.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
 	if err != nil {
 		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
 	}
