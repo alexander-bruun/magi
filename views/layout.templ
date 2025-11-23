@@ -16,9 +16,11 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			<!-- Non-critical CSS - defer loading -->
 			<link rel="preload" as="style" href="/assets/css/vendor/codemirror.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
 			<link rel="preload" as="style" href="/assets/css/vendor/dracula.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
+			<link rel="preload" as="style" href="/assets/css/vendor/cropper.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
 			<noscript>
 				<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
 				<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
+				<link rel="stylesheet" href="/assets/css/vendor/cropper.min.css"/>
 			</noscript>
 			<!-- Theme initialization - must run before body renders -->
 			<script>
@@ -41,87 +43,24 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 				htmlElement.classList.add(__FRANKEN__.shadows || "uk-shadows-sm");
 				htmlElement.classList.add(__FRANKEN__.font || "uk-font-sm");
 				htmlElement.classList.add(__FRANKEN__.chart || "uk-chart-default");
-
-				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
-
-				// Theme switcher handler
-				window.initThemeSwitcher = function() {
-					document.addEventListener('click', function(e) {
-						if (e.target.classList.contains('theme-option')) {
-							e.preventDefault();
-							const key = e.target.dataset.key;
-							const value = e.target.dataset.value;
-							
-							// Update localStorage
-							const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
-							config[key] = value;
-							localStorage.setItem("__FRANKEN__", JSON.stringify(config));
-							
-							// Update classes
-							const htmlElement = document.documentElement;
-							if (key === 'mode') {
-								if (value === 'dark') {
-									htmlElement.classList.add('dark');
-								} else {
-									htmlElement.classList.remove('dark');
-								}
-							} else {
-								// Remove existing class for this key
-								const existingClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith(`uk-${key}-`));
-								existingClasses.forEach(cls => htmlElement.classList.remove(cls));
-								// Add new class
-								htmlElement.classList.add(value);
-							}
-							
-							// Update active states
-							document.querySelectorAll(`.theme-option[data-key="${key}"]`).forEach(btn => {
-								btn.classList.remove('uk-active');
-							});
-							e.target.classList.add('uk-active');
-						}
-					});
-					
-					// Set initial active states
-					const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
-					Object.keys(config).forEach(key => {
-						const value = config[key];
-						const btn = document.querySelector(`.theme-option[data-key="${key}"][data-value="${value}"]`);
-						if (btn) {
-							btn.classList.add('uk-active');
-						}
-					});
-				};
 			</script>
 			<!-- Core UI - async for non-blocking -->
 			<script src="/assets/js/vendor/core.iife.js"></script>
 			<script src="/assets/js/vendor/icon.iife.js"></script>
+			<!-- Global utilities - load immediately -->
+			<script>
+				window.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };
+			</script>
 			<!-- Application scripts - defer for optimal loading -->
 			<script src="/assets/js/vendor/htmx.min.js" defer></script>
 			<script src="/assets/js/vendor/codemirror.min.js" defer></script>
 			<script src="/assets/js/vendor/shell.min.js" defer></script>
 			<script src="/assets/js/vendor/python.min.js" defer></script>
+			<script src="/assets/js/vendor/cropper.min.js" defer></script>
 			<script src="/assets/js/magi.js" defer></script>
 			<script src="/assets/js/notifications.js" defer></script>
 		</head>
 		<body class="bg-background text-foreground">
-			<script>
-				// Apply sidebar collapsed state immediately when body is available
-				(function() {
-					const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
-					const stored = localStorage.getItem(STORAGE_KEY);
-					const isMobile = window.matchMedia('(max-width: 768px)').matches;
-					const shouldCollapse = stored ? stored === '1' : isMobile;
-					
-					if (shouldCollapse) {
-						document.body.classList.add('sidebar-collapsed');
-					}
-				})();
-				
-				// Initialize theme switcher
-				if (window.initThemeSwitcher) {
-					window.initThemeSwitcher();
-				}
-			</script>
 			<div id="app">
 				@Navbar(userRole, currentPath)
 				<main id="main-content" class="site-main" role="main">

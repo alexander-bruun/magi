@@ -430,8 +430,333 @@
   }
 
   // ============================================================================
-  // SITE-WIDE UI INTERACTIONS
+  // CONFIG MANAGER MODULE
   // ============================================================================
+
+  /**
+   * Manages configuration page interactions
+   */
+  const ConfigManager = (function() {
+    function updateTokenFields() {
+      const providerSelect = document.getElementById('metadata-provider-select');
+      const malField = document.getElementById('mal-token-field');
+      const anilistField = document.getElementById('anilist-token-field');
+      
+      if (providerSelect && malField && anilistField) {
+        const provider = providerSelect.value;
+        malField.style.display = provider === 'mal' ? 'block' : 'none';
+        anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
+      }
+    }
+
+    function init() {
+      document.addEventListener('DOMContentLoaded', function() {
+        const providerSelect = document.getElementById('metadata-provider-select');
+        if (providerSelect) {
+          providerSelect.addEventListener('change', updateTokenFields);
+          updateTokenFields(); // Initialize on page load
+        }
+
+        // Auto-initialize console logs
+        initConsoleLogs();
+      });
+
+      // Reinitialize on HTMX swap
+      document.addEventListener('htmx:afterSettle', function(event) {
+        if (event.detail.xhr && event.detail.xhr.status === 200) {
+          const providerSelect = document.getElementById('metadata-provider-select');
+          if (providerSelect) {
+            providerSelect.removeEventListener('change', updateTokenFields);
+            providerSelect.addEventListener('change', updateTokenFields);
+            updateTokenFields();
+          }
+        }
+
+        // Reinitialize console logs after HTMX swaps
+        initConsoleLogs();
+      });
+    }
+
+    function initConsoleLogs() {
+      const container = document.getElementById('console-logs-container');
+      const output = document.getElementById('console-logs-output');
+      if (!container || !output || container.dataset.initialized) return;
+
+      container.dataset.initialized = 'true';
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
+      
+      new LogViewer({
+        wsUrl: wsUrl,
+        containerId: 'console-logs-container',
+        outputId: 'console-logs-output',
+        maxEntries: 1000,
+        reconnectInterval: 3000
+      });
+    }
+
+    return {
+      init: init,
+      updateTokenFields: updateTokenFields
+    };
+  })();
+
+  /**
+   * Manages scraper script UI interactions
+   */
+  const ScraperManager = (function() {
+    function togglePackagesSection(languageSelect, packagesSection) {
+      if (languageSelect && packagesSection) {
+        if (languageSelect.value === 'python') {
+          packagesSection.style.display = 'block';
+        } else {
+          packagesSection.style.display = 'none';
+        }
+      }
+      
+      // Update code editor language
+      const codeEditor = document.getElementById('script-content');
+      if (codeEditor) {
+        let newMode;
+        if (languageSelect.value === 'python') {
+          codeEditor.setAttribute('data-code-editor', 'python');
+          codeEditor.placeholder = "# Python script\n# Enter your python script here\nprint('Hello from scraper')";
+          newMode = 'python';
+        } else {
+          codeEditor.setAttribute('data-code-editor', 'shell');
+          codeEditor.placeholder = "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'";
+          newMode = 'shell';
+        }
+        
+        // Update CodeMirror editor mode if it exists
+        if (window.CodeEditorManager) {
+          window.CodeEditorManager.updateEditorMode(codeEditor, newMode);
+        }
+      }
+    }
+
+    function init() {
+      // Handle language change for packages section
+      document.addEventListener('change', function(e) {
+        if (e.target.id === 'script-language') {
+          const languageSelect = e.target;
+          const packagesSection = document.getElementById('packages-section');
+          togglePackagesSection(languageSelect, packagesSection);
+        }
+      });
+
+      // Initial toggle
+      const languageSelect = document.getElementById('script-language');
+      const packagesSection = document.getElementById('packages-section');
+      if (languageSelect && packagesSection) {
+        togglePackagesSection(languageSelect, packagesSection);
+      }
+
+      // Handle run/cancel button visibility
+      const runBtn = document.getElementById('run-btn');
+      const cancelBtn = document.getElementById('cancel-btn');
+
+      if (runBtn && cancelBtn) {
+        document.addEventListener('htmx:beforeRequest', function(evt) {
+          if (evt.detail.verb === 'POST' && evt.detail.path.includes('/run')) {
+            runBtn.style.display = 'none';
+            cancelBtn.style.display = 'inline-block';
+          }
+        });
+
+        document.addEventListener('htmx:afterRequest', function(evt) {
+          if (evt.detail.verb === 'POST' && (evt.detail.path.includes('/run') || evt.detail.path.includes('/cancel'))) {
+            runBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'none';
+          }
+        });
+      }
+
+      // Initialize first tab as active
+      document.addEventListener('DOMContentLoaded', function() {
+        const firstTab = document.querySelector('[data-script-id]');
+        if (firstTab) {
+          firstTab.classList.add('uk-active');
+        }
+
+        // Auto-initialize scraper log viewers
+        initScraperLogViewers();
+      });
+
+      // Reinitialize after HTMX swaps
+      document.addEventListener('htmx:afterSwap', function() {
+        initScraperLogViewers();
+      });
+    }
+
+    function initScraperLogViewers() {
+      document.querySelectorAll('[data-script-id]').forEach(function(viewer) {
+        if (viewer.dataset.logViewerInitialized) return;
+        viewer.dataset.logViewerInitialized = 'true';
+
+        const scriptId = viewer.getAttribute('data-script-id');
+        const container = viewer;
+        const output = viewer.querySelector('#log-output-container');
+        if (!output) return;
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + window.location.host + '/admin/scraper/' + scriptId + '/logs';
+        
+        new LogViewer({
+          wsUrl: wsUrl,
+          containerId: viewer.id,
+          outputId: output.id,
+          maxEntries: 500,
+          reconnectInterval: 1000,
+          maxReconnectAttempts: 5,
+          formatMessage: function(data) {
+            return '[' + data.type.toUpperCase() + '] ' + data.message;
+          },
+          colorMap: {
+            error: '#ff6b6b',
+            stderr: '#ff6b6b',
+            success: 'rgb(var(--success))',
+            info: 'white',
+            default: 'white'
+          }
+        });
+      });
+    }
+
+    return {
+      init: init,
+      togglePackagesSection: togglePackagesSection
+    };
+  })();
+
+  /**
+   * Manages Cropper.js initialization for image cropping functionality
+   */
+  const CropperManager = (function() {
+    function initCropper(img, cropDataInput) {
+      if (!img || !cropDataInput) {
+        console.error('Missing required elements for Cropper.js');
+        return;
+      }
+      
+      if (typeof Cropper === 'undefined') {
+        setTimeout(() => initCropper(img, cropDataInput), 100);
+        return;
+      }
+      
+      // Find and disable the save button initially
+      const container = cropDataInput.closest('.cropper-container') || cropDataInput.parentElement;
+      const saveButton = container.querySelector('button[hx-post*="poster/set"]');
+      if (saveButton) {
+        saveButton.disabled = true;
+      }
+      
+      // Destroy any existing cropper
+      if (img.cropper) {
+        img.cropper.destroy();
+      }
+      
+      // Initialize Cropper.js with 2:3 aspect ratio for poster
+      const cropper = new Cropper(img, {
+        aspectRatio: 2 / 3,
+        viewMode: 1,
+        autoCropArea: 2,
+        responsive: true,
+        restore: true,
+        guides: true,
+        center: true,
+        highlight: true,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: true,
+        zoom: function(e) {
+          // Limit zoom range
+          if (e.detail.ratio > 4) {
+            e.preventDefault();
+          }
+        },
+        ready: function() {
+          // Enable the save button when cropper is ready
+          if (saveButton) {
+            saveButton.disabled = false;
+          }
+          
+          // Calculate zoom to fit image width to container width
+          const container = document.getElementById('image-container');
+          const containerWidth = container ? container.clientWidth : img.parentElement.clientWidth;
+          const imageWidth = cropper.getImageData().naturalWidth;
+          
+          // Zoom to fit width exactly
+          const fitZoom = containerWidth / imageWidth;
+          cropper.zoomTo(fitZoom);
+          
+          // Position at top-left (0, 0)
+          cropper.setCanvasData({
+            left: 0,
+            top: 0
+          });
+          
+          // Set initial crop data
+          const data = cropper.getData(true);
+          const cropData = {
+            x: Math.round(data.x),
+            y: Math.round(data.y),
+            width: Math.round(data.width),
+            height: Math.round(data.height)
+          };
+          cropDataInput.value = JSON.stringify(cropData);
+        },
+        crop: function(e) {
+          // Update crop data whenever the crop area changes
+          const data = cropper.getData(true);
+          
+          // Convert from image coordinates to actual image pixel coordinates
+          const cropData = {
+            x: Math.round(data.x),
+            y: Math.round(data.y),
+            width: Math.round(data.width),
+            height: Math.round(data.height)
+          };
+          
+          cropDataInput.value = JSON.stringify(cropData);
+        }
+      });
+    }
+
+    function initializeCroppers() {
+      document.querySelectorAll('input[data-crop-data]').forEach(function(cropDataInput) {
+        const container = cropDataInput.closest('.cropper-container') || cropDataInput.parentElement;
+        const img = container.querySelector('img');
+        
+        if (img) {
+          if (img.complete) {
+            initCropper(img, cropDataInput);
+          } else {
+            img.addEventListener('load', function() {
+              initCropper(img, cropDataInput);
+            });
+          }
+        }
+      });
+    }
+
+    function init() {
+      // Auto-initialize cropper for inputs with data-crop-data attribute
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeCroppers();
+      });
+      // Also initialize after HTMX swaps
+      document.addEventListener('htmx:afterSwap', function() {
+        initializeCroppers();
+      });
+    }
+
+    return {
+      init: init,
+      initCropper: initCropper
+    };
+  })();
 
   const SiteUI = (function() {
     const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
@@ -1046,6 +1371,85 @@
         });
       }
     };
+    const ThemeManager = {
+      applyTheme() {
+        const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+        const htmlElement = document.documentElement;
+        
+        // Apply mode
+        if (config.mode === 'dark') {
+          htmlElement.classList.add('dark');
+        } else {
+          htmlElement.classList.remove('dark');
+        }
+        
+        // Apply other theme options
+        Object.keys(config).forEach(key => {
+          if (key !== 'mode') {
+            const value = config[key];
+            // Remove existing class for this key
+            const existingClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith(`uk-${key}-`));
+            existingClasses.forEach(cls => htmlElement.classList.remove(cls));
+            // Add new class
+            htmlElement.classList.add(value);
+          }
+        });
+      },
+      init() {
+        // Apply theme on load
+        this.applyTheme();
+        
+        document.addEventListener('click', (e) => {
+          if (e.target.classList.contains('theme-option')) {
+            e.preventDefault();
+            const key = e.target.dataset.key;
+            const value = e.target.dataset.value;
+            
+            // Update localStorage
+            const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+            config[key] = value;
+            localStorage.setItem("__FRANKEN__", JSON.stringify(config));
+            
+            // Update classes
+            const htmlElement = document.documentElement;
+            if (key === 'mode') {
+              if (value === 'dark') {
+                htmlElement.classList.add('dark');
+              } else {
+                htmlElement.classList.remove('dark');
+              }
+            } else {
+              // Remove existing class for this key
+              const existingClasses = Array.from(htmlElement.classList).filter(cls => cls.startsWith(`uk-${key}-`));
+              existingClasses.forEach(cls => htmlElement.classList.remove(cls));
+              // Add new class
+              htmlElement.classList.add(value);
+            }
+            
+            // Update active states
+            document.querySelectorAll(`.theme-option[data-key="${key}"]`).forEach(btn => {
+              btn.classList.remove('uk-active');
+            });
+            e.target.classList.add('uk-active');
+          }
+        });
+        
+        // Reapply theme on HTMX swaps (for history navigation)
+        document.addEventListener('htmx:afterSwap', () => {
+          this.applyTheme();
+        });
+        
+        // Set initial active states
+        const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
+        Object.keys(config).forEach(key => {
+          const value = config[key];
+          const btn = document.querySelector(`.theme-option[data-key="${key}"][data-value="${value}"]`);
+          if (btn) {
+            btn.classList.add('uk-active');
+          }
+        });
+      }
+    };
 
     // Main initialization
     function init() {
@@ -1056,6 +1460,10 @@
       safeExecute(() => CodeEditorManager.init(), 'Code editor');
       safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
       safeExecute(() => DropdownManager.init(), 'Dropdown manager');
+      safeExecute(() => ThemeManager.init(), 'Theme manager');
+      safeExecute(() => CropperManager.init(), 'Cropper manager');
+      safeExecute(() => ScraperManager.init(), 'Scraper manager');
+      safeExecute(() => ConfigManager.init(), 'Config manager');
       safeExecute(() => JobStatusManager.init(), 'Job status manager');
     }
 
@@ -1251,6 +1659,9 @@
     WebSocketHandler: WebSocketHandler,
     LogViewer: LogViewer,
     JobStatusManager: JobStatusManager,
+    CropperManager: CropperManager,
+    ScraperManager: ScraperManager,
+    ConfigManager: ConfigManager,
     version: '1.0.0'
   };
 

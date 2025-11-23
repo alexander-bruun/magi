@@ -133,16 +133,6 @@ templ Scraper(scripts []models.ScraperScript) {
 			}
 		</div>
 	</div>
-
-	<script>
-		// Initialize first tab as active
-		document.addEventListener('DOMContentLoaded', function() {
-			const firstTab = document.querySelector('[data-script-id]');
-			if (firstTab) {
-				firstTab.classList.add('uk-active');
-			}
-		});
-	</script>
 }
 
 // ScraperTab renders a single script tab
@@ -338,73 +328,6 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				</div>
 			</div>
 		</form>
-
-
-		<!-- Script Control Script -->
-		<script>
-			(function() {
-				const runBtn = document.getElementById('run-btn');
-				const cancelBtn = document.getElementById('cancel-btn');
-				const languageSelect = document.getElementById('script-language');
-				const packagesSection = document.getElementById('packages-section');
-				
-				// Function to toggle packages section
-				function togglePackagesSection() {
-					if (languageSelect && packagesSection) {
-						if (languageSelect.value === 'python') {
-							packagesSection.style.display = 'block';
-						} else {
-							packagesSection.style.display = 'none';
-						}
-					}
-					
-					// Update code editor language
-					const codeEditor = document.getElementById('script-content');
-					if (codeEditor) {
-						let newMode;
-						if (languageSelect.value === 'python') {
-							codeEditor.setAttribute('data-code-editor', 'python');
-							codeEditor.placeholder = "# Python script\n# Enter your python script here\nprint('Hello from scraper')";
-							newMode = 'python';
-						} else {
-							codeEditor.setAttribute('data-code-editor', 'shell');
-							codeEditor.placeholder = "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'";
-							newMode = 'shell';
-						}
-						
-						// Update CodeMirror editor mode if it exists
-						if (window.CodeEditorManager) {
-							window.CodeEditorManager.updateEditorMode(codeEditor, newMode);
-						}
-					}
-				}
-				
-				// Initial toggle
-				togglePackagesSection();
-				
-				// Listen for language change
-				if (languageSelect) {
-					languageSelect.addEventListener('change', togglePackagesSection);
-				}
-				
-				if (!runBtn || !cancelBtn) return;
-
-				// Listen for htmx events to toggle button visibility
-				document.addEventListener('htmx:beforeRequest', function(evt) {
-					if (evt.detail.verb === 'POST' && evt.detail.path.includes('/run')) {
-						runBtn.style.display = 'none';
-						cancelBtn.style.display = 'inline-block';
-					}
-				});
-
-				document.addEventListener('htmx:afterRequest', function(evt) {
-					if (evt.detail.verb === 'POST' && (evt.detail.path.includes('/run') || evt.detail.path.includes('/cancel'))) {
-						runBtn.style.display = 'inline-block';
-						cancelBtn.style.display = 'none';
-					}
-				});
-			})();
-		</script>
 }
 
 // ScraperLogsTabContent renders the logs tab content
@@ -420,39 +343,6 @@ templ ScraperLogsTabContent(script *models.ScraperScript) {
 				<p class="text-muted-foreground">Loading logs...</p>
 			</div>
 	</div>
-
-	<script>
-		(function() {
-			// Get script ID from data attribute
-			const viewer = document.getElementById('scraper-log-viewer');
-			if (!viewer) return;
-			const scriptId = viewer.getAttribute('data-script-id');
-			const container = document.getElementById('log-output-container');
-			if (!container) return;
-
-			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			const wsUrl = protocol + '//' + window.location.host + '/admin/scraper/' + scriptId + '/logs';
-			
-			new LogViewer({
-				wsUrl: wsUrl,
-				containerId: 'scraper-log-viewer',
-				outputId: 'log-output-container',
-				maxEntries: 500,
-				reconnectInterval: 1000,
-				maxReconnectAttempts: 5,
-				formatMessage: function(data) {
-					return '[' + data.type.toUpperCase() + '] ' + data.message;
-				},
-				colorMap: {
-					error: '#ff6b6b',
-					stderr: '#ff6b6b',
-					success: 'rgb(var(--success))',
-					info: 'white',
-					default: 'white'
-				}
-			});
-		})();
-	</script>
 }
 
 // ScraperScriptsList renders a list of scripts (for HTMX fragment updates)
@@ -578,24 +468,4 @@ templ ScraperLogViewer(scriptID int64) {
 		<div class="text-muted-foreground mb-2">Live Output</div>
 		<div id="log-output-container" class="space-y-1"></div>
 	</div>
-
-	<script>
-		(function() {
-			const scriptId = { fmt.Sprintf("%d", scriptID) };
-			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			const wsUrl = protocol + '//' + window.location.host + '/admin/scraper/' + scriptId + '/logs';
-			
-			new LogViewer({
-				wsUrl: wsUrl,
-				containerId: 'scraper-log-viewer',
-				outputId: 'log-output-container',
-				maxEntries: 500,
-				reconnectInterval: 1000,
-				maxReconnectAttempts: 5,
-				formatMessage: function(data) {
-					return '[' + data.type.toUpperCase() + '] ' + data.message;
-				}
-			});
-		})();
-	</script>
 }
