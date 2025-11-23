@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/indexer"
+	"github.com/alexander-bruun/magi/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -83,7 +85,10 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 		return c.Next()
 	})
 	
-	app.Static("/api/images", cacheDirectory)
+	// Dynamic image serving with WebP conversion support
+	app.Get("/api/images/*", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
+		return handleImageRequest(c, savedCacheDirectory)
+	})
 	app.Static("/assets/", "./assets/")
 
 	// ========================================
@@ -319,4 +324,53 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	
 	log.Debug("Starting server on port %s", port)
 	log.Fatal(app.Listen(":" + port))
+}
+
+// handleImageRequest serves images with WebP conversion for better compression
+func handleImageRequest(c *fiber.Ctx, cacheDir string) error {
+	// Get the requested path (remove /api/images/ prefix)
+	imagePath := strings.TrimPrefix(c.Path(), "/api/images/")
+	if imagePath == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
+	}
+
+	// Construct full file path
+	fullPath := filepath.Join(cacheDir, imagePath)
+
+	// Check if the original file exists
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+	}
+
+	// Always try WebP conversion first for better compression
+	if !strings.HasSuffix(strings.ToLower(imagePath), ".webp") {
+		// Convert to WebP in memory
+		webpData, err := utils.ConvertToWebP(fullPath)
+		if err != nil {
+			log.Warnf("Failed to convert image to WebP: %v", err)
+			// Fall back to original format
+		} else {
+			// Set WebP content type and serve the converted data
+			c.Set("Content-Type", "image/webp")
+			c.Set("Cache-Control", "public, max-age=1800") // 30 minutes cache for in-memory conversions
+			return c.Send(webpData)
+		}
+	}
+
+	// Fall back to original format with appropriate content type and cache headers
+	switch strings.ToLower(filepath.Ext(imagePath)) {
+	case ".jpg", ".jpeg":
+		c.Set("Content-Type", "image/jpeg")
+	case ".png":
+		c.Set("Content-Type", "image/png")
+	case ".gif":
+		c.Set("Content-Type", "image/gif")
+	case ".webp":
+		c.Set("Content-Type", "image/webp")
+	default:
+		c.Set("Content-Type", "application/octet-stream")
+	}
+
+	c.Set("Cache-Control", "public, max-age=31536000, immutable")
+	return c.SendFile(fullPath)
 }
