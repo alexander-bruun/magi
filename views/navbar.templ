@@ -26,13 +26,13 @@ templ Navbar(userRole string, currentPath string) {
 					</button>
 				</div>
 				<div id="search-modal" uk-modal role="dialog" aria-labelledby="search-modal-title" aria-modal="true">
-					<div class="uk-modal-body uk-modal-dialog modal-body-transparent" style="max-width: 90%; width: 90%;">
-						<form hx-get="/mangas/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML" role="search">
+					<div class="uk-modal-body uk-modal-dialog modal-body-transparent" style="max-width: 100%; width: 100%; max-height: 100vh;">
+						<form hx-get="/series/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML" role="search">
 							<div class="mx-auto mt-8 mb-4" style="width: 100%; max-width: 800px;">
-								<input id="searchInput" class="uk-input w-full input-bg" type="search" name="search" placeholder="One-Punch Man etc..." autocomplete="off" aria-label="Search for manga by title" />
+								<input id="searchInput" class="uk-input w-full input-bg" type="search" name="search" placeholder="Search for media by title..." autocomplete="off" aria-label="Search for media by title" />
 							</div>
 						</form>
-						<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4 input-bg">
+						<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4 input-bg overflow-y-auto" style="max-height: calc(100vh - 200px);">
 							@OneDoesNotSimplySearch()
 						</div>
 					</div>
@@ -158,8 +158,7 @@ templ Navbar(userRole string, currentPath string) {
 		<nav>
 			<ul class="uk-nav uk-nav-default">
 				@NavItem("/", "home", "Home", currentPath)
-				@NavItem("/mangas", "book", "Mangas", currentPath)
-				@NavItem("/light-novels", "file-text", "Light Novels", currentPath)
+				@NavItem("/series", "book", "Series", currentPath)
 			</ul>
 		</nav>
 		<div class="sidebar-footer">
@@ -186,49 +185,34 @@ templ NavItem(path string, icon string, label string, currentPath string) {
 	</li>
 }
 
-templ SearchMangas(mangas []models.Manga) {
-	for _, manga := range mangas {
-		<ul class="uk-accordion" uk-accordion>
-			<li>
-				<a class="uk-accordion-title" href>
-					{ manga.Name }
-					<span
-						class="uk-accordion-icon"
-						uk-icon="icon: chevron-down; ratio: 0.8"
-					></span>
-				</a>
-				<div class="uk-accordion-content">
-					<p>
-						{ manga.Description }
-					</p>
-					<div class="uk-flex uk-flex-center">
-						<button
-							type="button"
-							class="uk-btn uk-btn-default uk-modal-close mt-4"
-							type="button"
-							href={ fmt.Sprintf("/mangas/%s", manga.Slug) }
-							hx-get={ fmt.Sprintf("/mangas/%s", manga.Slug) }
-							hx-target="#content"
-							hx-push-url="true"
-						>
-							Go to manga
-							<uk-icon icon="MoveRight"></uk-icon>
-						</button>
+templ SearchMedias(media []models.Media) {
+	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+		for _, m := range media {
+			<a href={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } class="block uk-modal-close" hx-get={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } hx-target="#content" hx-push-url="true" aria-label={ fmt.Sprintf("View %s", m.Name) }>
+				<div class="uk-card uk-card-default uk-card-body p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+					<div class="uk-card-media-top flex justify-center items-center mb-3">
+						@MediaCover(m.CoverArtURL, m.Name, 150, 200, true)
+					</div>
+					<h3 class="uk-card-title uk-h4 mb-2 text-center truncate-header" title={ m.Name }>{ m.Name }</h3>
+					<div class="text-center text-sm text-gray-500">
+						{ fmt.Sprintf("%d chapters", m.FileCount) }
 					</div>
 				</div>
-			</li>
-		</ul>
-	}
+			</a>
+		}
+	</div>
 }
 
 templ OneDoesNotSimplySearch() {
-	<p class="italic uk-text-center">
-		One does not simply search...
-	</p>
+	<div class="text-center py-8">
+		<p class="text-lg font-medium text-gray-600 mb-2">Search for media</p>
+		<p class="text-sm text-gray-500">Start typing to find your favorite series</p>
+	</div>
 }
 
 templ NoResultsSearch() {
-	<p class="text-3xl font-bold text-center">
-		Not results found
-	</p>
+	<div class="text-center py-8">
+		<p class="text-lg font-medium text-gray-600 mb-2">No results found</p>
+		<p class="text-sm text-gray-500">Try adjusting your search terms</p>
+	</div>
 }

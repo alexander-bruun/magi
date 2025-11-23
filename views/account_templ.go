@@ -36,73 +36,43 @@ func Account(userName string) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 		user, _ := models.FindUserByUsername(userName)
 		favSlugs, _ := models.GetFavoritesForUser(userName)
-		var favorites []models.Manga
+		var favorites []models.Media
 		for i, slug := range favSlugs {
 			if i >= 10 {
 				break
 			}
-			if m, err := models.GetManga(slug); err == nil && m != nil {
+			if m, err := models.GetMedia(slug); err == nil && m != nil {
 				favorites = append(favorites, *m)
 			}
 		}
-		readingSlugs, _ := models.GetReadingMangasForUser(userName)
-		var reading []models.Manga
+		readingSlugs, _ := models.GetReadingMediasForUser(userName)
+		var reading []models.Media
 		for i, slug := range readingSlugs {
 			if i >= 10 {
 				break
 			}
-			if m, err := models.GetManga(slug); err == nil && m != nil {
+			if m, err := models.GetMedia(slug); err == nil && m != nil {
 				reading = append(reading, *m)
 			}
 		}
-		likedSlugs, _ := models.GetUpvotedMangasForUser(userName)
-		var liked []models.Manga
+		likedSlugs, _ := models.GetUpvotedMediasForUser(userName)
+		var liked []models.Media
 		for i, slug := range likedSlugs {
 			if i >= 10 {
 				break
 			}
-			if m, err := models.GetManga(slug); err == nil && m != nil {
+			if m, err := models.GetMedia(slug); err == nil && m != nil {
 				liked = append(liked, *m)
 			}
 		}
-		downvotedSlugs, _ := models.GetDownvotedMangasForUser(userName)
-		var downvoted []models.Manga
+		downvotedSlugs, _ := models.GetDownvotedMediasForUser(userName)
+		var downvoted []models.Media
 		for i, slug := range downvotedSlugs {
 			if i >= 10 {
 				break
 			}
-			if m, err := models.GetManga(slug); err == nil && m != nil {
+			if m, err := models.GetMedia(slug); err == nil && m != nil {
 				downvoted = append(downvoted, *m)
-			}
-		}
-		lightNovelFavoritesSlugs, _ := models.GetLightNovelFavoritesForUser(userName)
-		var lightNovelFavorites []models.LightNovel
-		for i, slug := range lightNovelFavoritesSlugs {
-			if i >= 10 {
-				break
-			}
-			if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-				lightNovelFavorites = append(lightNovelFavorites, *ln)
-			}
-		}
-		lightNovelLikedSlugs, _ := models.GetLightNovelUpvotedForUser(userName)
-		var lightNovelLiked []models.LightNovel
-		for i, slug := range lightNovelLikedSlugs {
-			if i >= 10 {
-				break
-			}
-			if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-				lightNovelLiked = append(lightNovelLiked, *ln)
-			}
-		}
-		lightNovelDownvotedSlugs, _ := models.GetLightNovelDownvotedForUser(userName)
-		var lightNovelDownvoted []models.LightNovel
-		for i, slug := range lightNovelDownvotedSlugs {
-			if i >= 10 {
-				break
-			}
-			if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-				lightNovelDownvoted = append(lightNovelDownvoted, *ln)
 			}
 		}
 		activities, _ := models.GetRecentReadingActivity(userName, 10)
@@ -135,14 +105,14 @@ func Account(userName string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><!-- Content Tabs --><div class=\"uk-container mt-6\"><ul class=\"uk-tab\" uk-tab><li class=\"uk-active\"><a href=\"#mangas-tab\">Mangas</a></li><li><a href=\"#light-novels-tab\">Light Novels</a></li></ul><ul class=\"uk-switcher uk-margin\"><!-- Mangas Tab --><li id=\"mangas-tab\" class=\"uk-active\"><div class=\"flex items-center justify-between mt-4\"><h3 class=\"uk-h4 mb-2\">Upvoted</h3><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><!-- Content Tabs --><div class=\"uk-container mt-6\"><div class=\"flex items-center justify-between mt-4\"><h3 class=\"uk-h4 mb-2\">Upvoted</h3><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 107, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 72, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -155,7 +125,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 107, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 72, Col: 92}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -166,12 +136,12 @@ func Account(userName string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(liked) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p class=\"role-reader\">You have not upvoted any mangas yet.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p class=\"role-reader\">You have not upvoted any media yet.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = MangaSlider(liked, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MediaSlider(liked, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -183,7 +153,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 118, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 83, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -196,7 +166,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 118, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 83, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -207,140 +177,17 @@ func Account(userName string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(downvoted) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"role-reader\">You have not downvoted any mangas yet.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"role-reader\">You have not downvoted any media yet.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = MangaSlider(downvoted, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MediaSlider(downvoted, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</li><!-- Light Novels Tab --><li id=\"light-novels-tab\"><div class=\"flex items-center justify-between mt-4\"><h3 class=\"uk-h4 mb-2\">Favorite Light Novels</h3><a href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var6 templ.SafeURL
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/light-novel-favorites"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 131, Col: 73}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-get=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/light-novel-favorites"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 131, Col: 128}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-button uk-button-text\">View all</a></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(lightNovelFavorites) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"role-reader\">You have no favorite light novels yet.</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = LightNovelSlider(lightNovelFavorites, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"flex items-center justify-between mt-6\"><h3 class=\"uk-h4 mb-2\">Upvoted Light Novels</h3><a href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var8 templ.SafeURL
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/light-novel-upvoted"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 142, Col: 71}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-get=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/light-novel-upvoted"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 142, Col: 124}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-button uk-button-text\">View all</a></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(lightNovelLiked) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<p class=\"role-reader\">You have not upvoted any light novels yet.</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = LightNovelSlider(lightNovelLiked, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"flex items-center justify-between mt-6\"><h3 class=\"uk-h4 mb-2\">Downvoted Light Novels</h3><a href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var10 templ.SafeURL
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/light-novel-downvoted"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 153, Col: 73}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" hx-get=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/light-novel-downvoted"))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 153, Col: 128}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-button uk-button-text\">View all</a></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(lightNovelDownvoted) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<p class=\"role-reader\">You have not downvoted any light novels yet.</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = LightNovelSlider(lightNovelDownvoted, 200, 300, true, true).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</li></ul></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

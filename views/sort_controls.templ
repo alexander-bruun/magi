@@ -2,48 +2,43 @@ package views
 
 import (
     "fmt"
+    "strings"
     "github.com/alexander-bruun/magi/models"
 )
 
-// Usage examples:
-//  Global mangas page:
-//    @GenericMangaListing("/mangas", "manga-listing", true, mangas, currentPage, totalPages, sort, order, "No mangas...", selectedTags, tagMode, allTags)
-//  Account favorites page:
-//    @GenericMangaListing("/account/favorites", "account-manga-list", false, mangas, currentPage, totalPages, sort, order, "You have no favorites yet.", nil, "", nil)
-// The targetID must match the container div id so HTMX swaps update the correct region.
+// MediaListingFragment renders just the media grid and pagination (for HTMX swaps)
+templ MediaListingFragment(media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, path string, targetID string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
+    <div id={ targetID }>
+        if len(media) > 0 {
+            @MediaGrid(media, 300, 450, false, false)
+            <div class="flex justify-center items-center py-8">
+                @Pagination(path, targetID, totalPages, currentPage, sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
+            </div>
+        } else {
+            @EmptyState(emptyMessage)
+        }
+    </div>
+}
 
-// GenericMangaListing consolidates sort controls + optional tag filters + results grid + pagination.
-// Parameters:
-//  - path: base path for the listing (e.g. /mangas or /account/favorites)
-//  - targetID: DOM id that HTMX swaps (e.g. "manga-listing" or "account-manga-list")
-//  - includeTags: when true, render tag dropdown & include tag filter htmx includes
-//  - mangas: slice of mangas to render
-//  - currentPage / totalPages / sort / order: listing state
-//  - emptyMessage: message when no results
-//  - selectedTags/tagMode/allTags: only used when includeTags is true
-// For account pages, pass includeTags=false. For the global mangas page, pass includeTags=true.
-templ GenericMangaListingWithTypes(path string, targetID string, includeTags bool, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
-    @UnifiedSortControlsWithTypes(path, targetID, includeTags, sort, order, selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter)
-    if len(mangas) > 0 {
-        @MangaGrid(mangas, 300, 450, false, false)
-        <div class="flex justify-center items-center py-8">
-            @UnifiedPagination(path, targetID, includeTags, totalPages, currentPage, sort, order)
-        </div>
-    } else {
-        @EmptyState(emptyMessage)
-    }
+// GenericMediaListingWithTypes consolidates sort controls + results grid + pagination.
+templ GenericMediaListingWithTypes(path string, targetID string, includeTags bool, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
+    @SortControls(path, targetID + "-results", targetID, sort, order, selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter)
+    <div id={ targetID + "-results" }>
+        @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, targetID + "-results", selectedTags, tagMode, selectedTypes, searchFilter)
+    </div>
 }
 
 // Backward-compatible wrapper without types (used by account pages initially)
-templ GenericMangaListing(path string, targetID string, includeTags bool, mangas []models.Manga, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) {
-    @GenericMangaListingWithTypes(path, targetID, includeTags, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, "")
+templ GenericMediaListing(path string, targetID string, includeTags bool, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) {
+    @GenericMediaListingWithTypes(path, targetID, includeTags, media, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, "")
 }
 
-// UnifiedSortControls merges previous SortControls + SharedSortControls logic. Now supports optional Types filter.
-// When includeTags=true it renders tag dropdown and mimics original mangas page behaviour.
-templ UnifiedSortControlsWithTypes(path string, targetID string, includeTags bool, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
+
+// SortControls renders the sort, filter, search, and tag/type filter controls
+// Uses HTMX to swap the media listing fragment on any change
+templ SortControls(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
     <div class="flex justify-between items-center gap-2 my-4">
-        {{ allowedSorts := models.GetAllowedMangaSortOptions() }}
+        {{ allowedSorts := models.GetAllowedMediaSortOptions() }}
         {{ sorts := []struct{ Key, Label string }{} }}
         for _, opt := range allowedSorts {
             switch opt.Key {
@@ -63,292 +58,65 @@ templ UnifiedSortControlsWithTypes(path string, targetID string, includeTags boo
                     {{ sorts = append(sorts, struct{ Key, Label string }{"updated_at", "Updated"}) }}
             }
         }
-        if includeTags {
-            // Original mangas page behavior (depends on #tag-filter-form produced by TagsDropdown)
-            <div class="flex items-center gap-2">
-                <div class="uk-inline">
-                    <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include="#manga-sort-select, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types], #search-filter-input" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input, change">
-                        <select id="manga-sort-select" hidden name="sort">
-                            for _, s := range sorts {
-                                if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-                                    <option value={ s.Key } selected>{ s.Label }</option>
-                                } else {
-                                    <option value={ s.Key }>{ s.Label }</option>
-                                }
-                            }
-                        </select>
-                    </uk-select>
-                </div>
-                <div class="uk-inline" style="position: relative;">
-                    <input
-                        id="search-filter-input"
-                        class="uk-input uk-form-small"
-                        type="text"
-                        name="search"
-                        placeholder="Search by title..."
-                        value={ searchFilter }
-                        style="padding-right: 32px;"
-                        hx-get={ path }
-                        hx-target={ "#" + targetID }
-                        hx-include="#manga-sort-select, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types]"
-                        hx-push-url="true"
-                        hx-replace-url="true"
-                        hx-trigger="input changed delay:300ms, search"
-                    />
-                    if searchFilter != "" {
-                        <button
-                            type="button"
-                            class="uk-btn uk-btn-icon uk-btn-small"
-                            style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;"
-                            hx-get={ path }
-                            hx-target={ "#" + targetID }
-                            hx-include="#manga-sort-select, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types]"
-                            hx-vals='{"search":""}'
-                            hx-push-url="true"
-                            hx-replace-url="true"
-                            aria-label="Clear search"
-                            onclick="document.getElementById('search-filter-input').value = '';"
-                        >
-                            <uk-icon icon="X" ratio="0.8"></uk-icon>
-                        </button>
-                    }
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                @TagsDropdown(path, targetID, currentSort, currentOrder, selectedTags, tagMode, allTags)
-                @TypesDropdown(path, targetID, currentSort, currentOrder, selectedTypes, allTypes)
-                {{ toggled := "desc" }}
-                if currentOrder == "desc" {
-                    {{ toggled = "asc" }}
-                }
-                <a
-                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
-                    href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
-                    hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
-                    hx-include="#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types], #search-filter-input"
-                    hx-replace-url="true"
-                    hx-target={ "#" + targetID }
-                    hx-push-url="true"
-                    aria-label="Toggle sort order"
-                >
-                    if currentOrder == "asc" {
-                        <uk-icon icon="ArrowUpDown"></uk-icon>
-                    } else {
-                        <uk-icon icon="ArrowDownUp"></uk-icon>
-                    }
-                </a>
-            </div>
-        } else {
-            // Account pages variant using form-based include
-            <div class="flex items-center gap-2">
-                <div class="uk-inline">
-                    <form id={ targetID + "-sort-form" }>
-                        <input type="hidden" name="order" value={ currentOrder }>
-                        <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include={ "#" + targetID + "-sort-form, #" + targetID + "-search-input" } hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input">
-                            <select hidden name="sort" id={ targetID + "-sort-select" }>
-                                for _, s := range sorts {
-                                    if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-                                        <option value={ s.Key } selected>{ s.Label }</option>
-                                    } else {
-                                        <option value={ s.Key }>{ s.Label }</option>
-                                    }
-                                }
-                            </select>
-                        </uk-select>
-                    </form>
-                </div>
-                <div class="uk-inline" style="position: relative;">
-                    <input
-                        id={ targetID + "-search-input" }
-                        class="uk-input uk-form-small"
-                        type="text"
-                        name="search"
-                        placeholder="Search by title..."
-                        value={ searchFilter }
-                        style="padding-right: 32px;"
-                        hx-get={ path }
-                        hx-target={ "#" + targetID }
-                        hx-include={ "#" + targetID + "-sort-form" }
-                        hx-push-url="true"
-                        hx-replace-url="true"
-                        hx-trigger="input changed delay:300ms, search"
-                    />
-                    if searchFilter != "" {
-                        <button
-                            type="button"
-                            class="uk-btn uk-btn-icon uk-btn-small"
-                            style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;"
-                            hx-get={ path }
-                            hx-target={ "#" + targetID }
-                            hx-include={ "#" + targetID + "-sort-form" }
-                            hx-vals='{"search":""}'
-                            hx-push-url="true"
-                            hx-replace-url="true"
-                            aria-label="Clear search"
-                        >
-                            <uk-icon icon="X" ratio="0.8"></uk-icon>
-                        </button>
-                    }
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                {{ toggled := "desc" }}
-                if currentOrder == "desc" {
-                    {{ toggled = "asc" }}
-                }
-                <a
-                    class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
-                    href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
-                    hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
-                    hx-include={ "#" + targetID + "-sort-form, #" + targetID + "-search-input" }
-                    hx-replace-url="true"
-                    hx-target={ "#" + targetID }
-                    hx-push-url="true"
-                    aria-label="Toggle sort order"
-                >
-                    if currentOrder == "asc" {
-                        <uk-icon icon="ArrowUpDown"></uk-icon>
-                    } else {
-                        <uk-icon icon="ArrowDownUp"></uk-icon>
-                    }
-                </a>
-            </div>
-        }
-    </div>
-}
-
-// UnifiedPagination consolidates Pagination + AccountPagination.
-templ UnifiedPagination(path string, targetID string, includeTags bool, totalPages int, currentPage int, sort string, order string) {
-    <nav class="mt-4" aria-label="Pagination">
-        <ul class="uk-pgn uk-pgn-default">
-            @UnifiedPaginationItem(path, targetID, includeTags, currentPage > 1, currentPage-1, "Previous", "previous", sort, order)
-            @UnifiedPaginationNumbers(path, targetID, includeTags, totalPages, currentPage, sort, order)
-            @UnifiedPaginationItem(path, targetID, includeTags, currentPage < totalPages, currentPage+1, "Next", "next", sort, order)
-        </ul>
-    </nav>
-}
-
-templ UnifiedPaginationItem(path string, targetID string, includeTags bool, enabled bool, page int, text string, icon string, sort string, order string) {
-    {{ href := fmt.Sprintf("%s?page=%d&sort=%s&order=%s", path, page, sort, order) }}
-    {{ includeSelector := "#" + targetID + "-sort-form" }}
-    if includeTags {
-        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #type-filter-form input[name=types]" }}
-    }
-    if enabled {
-        <li>
-            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
-                if icon != "" {
-                    if icon == "next" {
-                        <uk-icon icon="ChevronRight"></uk-icon>
-                    } else {
-                        <uk-icon icon="ChevronLeft"></uk-icon>
-                    }
-                } else {
-                    { text }
-                }
-            </a>
-        </li>
-    } else {
-        <li class="uk-disabled">
-            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
-                if icon != "" {
-                    if icon == "next" {
-                        <uk-icon icon="ChevronRight"></uk-icon>
-                    } else {
-                        <uk-icon icon="ChevronLeft"></uk-icon>
-                    }
-                } else {
-                    { text }
-                }
-            </a>
-        </li>
-    }
-}
-
-templ UnifiedPaginationNumbers(path string, targetID string, includeTags bool, totalPages int, currentPage int, sort string, order string) {
-    for i := 1; i <= totalPages; i++ {
-        if i == currentPage {
-            <li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
-        } else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
-            @UnifiedPaginationItem(path, targetID, includeTags, true, i, fmt.Sprint(i), "", sort, order)
-        } else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
-            <li class="uk-disabled"><span>…</span></li>
-        }
-    }
-}
-
-// GenericLightNovelListing consolidates sort controls + results grid + pagination for light novels.
-// Similar to GenericMangaListing but without tags/types since light novels don't have them.
-// Parameters:
-//  - path: base path for the listing (e.g. /light-novels)
-//  - targetID: DOM id that HTMX swaps (e.g. "light-novel-listing")
-//  - lightNovels: slice of light novels to render
-//  - currentPage / totalPages / sort / order: listing state
-//  - emptyMessage: message when no results
-//  - searchFilter: current search filter
-templ GenericLightNovelListing(path string, targetID string, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, emptyMessage string, searchFilter string) {
-    @UnifiedLightNovelSortControls(path, targetID, sort, order, searchFilter)
-    if len(lightNovels) > 0 {
-        @LightNovelGrid(lightNovels, 300, 450, false, false)
-        <div class="flex justify-center items-center py-8">
-            @UnifiedLightNovelPagination(path, targetID, totalPages, currentPage, sort, order)
-        </div>
-    } else {
-        @EmptyState(emptyMessage)
-    }
-}
-
-// GenericLightNovelListingWithTypes includes tag filtering for light novels
-templ GenericLightNovelListingWithTypes(path string, targetID string, includeTags bool, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
-    @UnifiedLightNovelSortControlsWithTags(path, targetID, includeTags, sort, order, selectedTags, tagMode, allTags, searchFilter)
-    if len(lightNovels) > 0 {
-        @LightNovelGrid(lightNovels, 300, 450, false, false)
-        <div class="flex justify-center items-center py-8">
-            @UnifiedLightNovelPagination(path, targetID, totalPages, currentPage, sort, order)
-        </div>
-    } else {
-        @EmptyState(emptyMessage)
-    }
-}
-
-// UnifiedLightNovelSortControls simplified sort controls for light novels (no tags/types).
-templ UnifiedLightNovelSortControls(path string, targetID string, currentSort string, currentOrder string, searchFilter string) {
-    <div class="flex justify-between items-center gap-2 my-4">
-        {{ allowedSorts := models.GetAllowedLightNovelSortOptions() }}
-        {{ sorts := []struct{ Key, Label string }{} }}
-        for _, opt := range allowedSorts {
-            switch opt.Key {
-                case "name":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"name", "Title"}) }}
-                case "year":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"year", "Year"}) }}
-                case "status":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"status", "Status"}) }}
-                case "content_rating":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"content_rating", "Content rating"}) }}
-                case "created_at":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"created_at", "Created"}) }}
-                case "updated_at":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"updated_at", "Updated"}) }}
-            }
-        }
+        
+        <!-- Left side: Sort select + Search input -->
         <div class="flex items-center gap-2">
+            <!-- Sort Select -->
+            <form id="sort-controls-form">
+                <input type="hidden" name="order" value={ currentOrder }/>
+                <input type="hidden" name="page" value="1"/>
+                if len(selectedTags) > 0 {
+                    for _, tag := range selectedTags {
+                        <input type="hidden" name="tags" value={ tag }/>
+                    }
+                }
+                <input type="hidden" name="tag_mode" value={ tagMode }/>
+                if len(selectedTypes) > 0 {
+                    for _, typ := range selectedTypes {
+                        <input type="hidden" name="types" value={ typ }/>
+                    }
+                }
+                </form>
+            
             <div class="uk-inline">
-                <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include="#light-novel-sort-select, #light-novel-order-input, #light-novel-search-input" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input, change">
-                    <select id="light-novel-sort-select" hidden name="sort">
+                <button class="uk-btn uk-btn-default uk-btn-small" type="button" uk-toggle="target: #sort-dropdown">
+                    if currentSort == "" {
+                        Sort by
+                    } else if currentSort == "name" || currentSort == "title" {
+                        Title
+                    } else if currentSort == "type" {
+                        Type
+                    } else if currentSort == "year" {
+                        Year
+                    } else if currentSort == "status" {
+                        Status
+                    } else if currentSort == "content_rating" {
+                        Content rating
+                    } else if currentSort == "created_at" {
+                        Created
+                    } else if currentSort == "updated_at" {
+                        Updated
+                    } else {
+                        Sort by
+                    }
+                </button>
+                <div id="sort-dropdown" class="uk-drop uk-dropdown" data-uk-dropdown="mode: click; pos: bottom-left; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+                    <ul class="uk-nav uk-dropdown-nav">
                         for _, s := range sorts {
-                            if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-                                <option value={ s.Key } selected>{ s.Label }</option>
-                            } else {
-                                <option value={ s.Key }>{ s.Label }</option>
-                            }
+                            <li>
+                                <a href="#" hx-get={ path } hx-vals={ fmt.Sprintf(`{"sort":"%s"}`, s.Key) } hx-target={ "#" + parentID } hx-include="#sort-controls-form, #search-input" hx-push-url="true" hx-swap="outerHTML">
+                                    { s.Label }
+                                </a>
+                            </li>
                         }
-                    </select>
-                </uk-select>
+                    </ul>
+                </div>
             </div>
+            
+            <!-- Search Input -->
             <div class="uk-inline" style="position: relative;">
                 <input
-                    id="light-novel-search-input"
+                    id="search-input"
                     class="uk-input uk-form-small"
                     type="text"
                     name="search"
@@ -357,9 +125,9 @@ templ UnifiedLightNovelSortControls(path string, targetID string, currentSort st
                     style="padding-right: 32px;"
                     hx-get={ path }
                     hx-target={ "#" + targetID }
-                    hx-include="#light-novel-sort-select, #light-novel-order-input"
+                    hx-include="#sort-controls-form"
                     hx-push-url="true"
-                    hx-replace-url="true"
+                    hx-swap="outerHTML"
                     hx-trigger="input changed delay:300ms, search"
                 />
                 if searchFilter != "" {
@@ -369,33 +137,42 @@ templ UnifiedLightNovelSortControls(path string, targetID string, currentSort st
                         style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;"
                         hx-get={ path }
                         hx-target={ "#" + targetID }
-                        hx-include="#light-novel-sort-select, #light-novel-order-input"
-                        hx-vals='{"search":""}'
+                        hx-include="#sort-controls-form"
+                        hx-vals='{"search":"", "page":"1"}'
                         hx-push-url="true"
-                        hx-replace-url="true"
+                        hx-swap="outerHTML"
                         aria-label="Clear search"
-                        onclick="document.getElementById('light-novel-search-input').value = '';"
+                        onclick="document.getElementById('search-input').value = '';"
                     >
                         <uk-icon icon="X" ratio="0.8"></uk-icon>
                     </button>
                 }
             </div>
         </div>
+        
+        <!-- Right side: Tag filter, Type filter, Sort order toggle -->
         <div class="flex items-center gap-2">
-            <input type="hidden" id="light-novel-order-input" name="order" value={ currentOrder }>
+            if len(allTags) > 0 {
+                @TagsDropdownButton(path, targetID, parentID, currentSort, currentOrder, selectedTags, tagMode, allTags)
+            }
+            
+            if len(allTypes) > 0 {
+                @TypesDropdownButton(path, targetID, parentID, currentSort, currentOrder, selectedTypes, allTypes)
+            }
+            
+            <!-- Sort Order Toggle -->
             {{ toggled := "desc" }}
             if currentOrder == "desc" {
                 {{ toggled = "asc" }}
             }
-            <a
+            <button
                 class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
-                href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
-                hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
-                hx-include="#light-novel-sort-select, #light-novel-search-input"
-                hx-vals={ fmt.Sprintf("{\"order\":\"%s\"}", toggled) }
-                hx-replace-url="true"
-                hx-target={ "#" + targetID }
+                hx-get={ path }
+                hx-target={ "#" + parentID }
+                hx-include="#sort-controls-form, #search-input"
+                hx-vals={ fmt.Sprintf(`{"order":"%s", "page":"1"}`, toggled) }
                 hx-push-url="true"
+                hx-swap="outerHTML"
                 aria-label="Toggle sort order"
             >
                 if currentOrder == "asc" {
@@ -403,145 +180,185 @@ templ UnifiedLightNovelSortControls(path string, targetID string, currentSort st
                 } else {
                     <uk-icon icon="ArrowDownUp"></uk-icon>
                 }
-            </a>
+            </button>
         </div>
     </div>
 }
 
-// UnifiedLightNovelSortControlsWithTags includes tag filtering for light novels
-templ UnifiedLightNovelSortControlsWithTags(path string, targetID string, includeTags bool, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
-    <div class="flex justify-between items-center gap-2 my-4">
-        {{ allowedSorts := models.GetAllowedLightNovelSortOptions() }}
-        {{ sorts := []struct{ Key, Label string }{} }}
-        for _, opt := range allowedSorts {
-            switch opt.Key {
-                case "name":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"name", "Title"}) }}
-                case "year":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"year", "Year"}) }}
-                case "status":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"status", "Status"}) }}
-                case "content_rating":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"content_rating", "Content rating"}) }}
-                case "created_at":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"created_at", "Created"}) }}
-                case "updated_at":
-                    {{ sorts = append(sorts, struct{ Key, Label string }{"updated_at", "Updated"}) }}
-            }
-        }
-        if includeTags {
-            // Tag filtering for light novels
-            <div class="flex items-center gap-2">
-                <div class="uk-inline">
-                    <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include="#light-novel-sort-select, #light-novel-order-input, #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #tag-filter-form input[name=tags], #light-novel-search-input" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input, change">
-                        <select id="light-novel-sort-select" hidden name="sort">
-                            for _, s := range sorts {
-                                if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-                                    <option value={ s.Key } selected>{ s.Label }</option>
-                                } else {
-                                    <option value={ s.Key }>{ s.Label }</option>
-                                }
-                            }
-                        </select>
-                    </uk-select>
+// TagsDropdownButton renders inline tag filter button with dropdown
+templ TagsDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
+    <div class="uk-inline" style="display:inline-block;">
+        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+            <uk-icon icon="Tag"></uk-icon>
+        </button>
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+            <form id="tag-filter-form" class="uk-form">
+                <div class="uk-width-1-1 uk-margin-small">
+                    <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                        <div class="uk-inline">
+                            <div class="uk-btn-group uk-width-auto">
+                                @TagModeToggleButtonInline(path, targetID, parentID, tagMode)
+                                @TagApplyButton(path, targetID, parentID)
+                                @TagClearButton(path, targetID, parentID)
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                @TagsDropdown(path, targetID, currentSort, currentOrder, selectedTags, tagMode, allTags)
-            </div>
+                <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                    @TagsFragment(allTags, selectedTags)
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+templ TagModeToggleButtonInline(path string, targetID string, parentID string, tagMode string) {
+    {{ isAny := strings.ToLower(tagMode) == "any" }}
+    {{ nextMode := "all" }}
+    if isAny {
+        {{ nextMode = "all" }}
+    } else {
+        {{ nextMode = "any" }}
+    }
+    <button type="button" class="uk-btn uk-btn-default uk-btn-small uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form, #tag-filter-form input[name=tags], #search-input"
+        hx-vals={ fmt.Sprintf(`{"tag_mode":"%s", "page":"1"}`, nextMode) }
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label={ fmt.Sprintf("Switch to match %s tags", nextMode) }
+        title={ fmt.Sprintf("Currently: match %s • Click for %s", tagMode, nextMode) }
+    >
+        if isAny {
+            <uk-icon icon="Asterisk" ratio="0.9"></uk-icon>
         } else {
-            <div class="flex items-center gap-2">
-                <div class="uk-inline">
-                    <uk-select placeholder="Sort by" cls-custom="button: uk-btn uk-btn-default uk-btn-small" hx-get={ path } hx-target={ "#" + targetID } hx-include="#light-novel-sort-select, #light-novel-order-input, #light-novel-search-input" hx-push-url="true" hx-replace-url="true" hx-trigger="uk-select:input, change">
-                        <select id="light-novel-sort-select" hidden name="sort">
-                            for _, s := range sorts {
-                                if s.Key == currentSort || (currentSort == "title" && s.Key == "name") {
-                                    <option value={ s.Key } selected>{ s.Label }</option>
-                                } else {
-                                    <option value={ s.Key }>{ s.Label }</option>
-                                }
-                            }
-                        </select>
-                    </uk-select>
-                </div>
-            </div>
+            <uk-icon icon="SquareAsterisk" ratio="0.9"></uk-icon>
         }
-        <div class="flex items-center gap-2">
-            <div class="uk-inline" style="position: relative;">
-                <input
-                    id="light-novel-search-input"
-                    class="uk-input uk-form-small"
-                    type="text"
-                    name="search"
-                    placeholder="Search by title..."
-                    value={ searchFilter }
-                    style="padding-right: 32px;"
-                    hx-get={ path }
-                    hx-target={ "#" + targetID }
-                    hx-include="#light-novel-sort-select, #light-novel-order-input"
-                    hx-push-url="true"
-                    hx-replace-url="true"
-                    hx-trigger="input changed delay:300ms, search"
-                />
-                if searchFilter != "" {
-                    <button
-                        type="button"
-                        class="uk-btn uk-btn-icon uk-btn-small"
-                        style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;"
-                        hx-get={ path }
-                        hx-target={ "#" + targetID }
-                        hx-include="#light-novel-sort-select, #light-novel-order-input"
-                        hx-vals='{"search":""}'
-                        hx-push-url="true"
-                        hx-replace-url="true"
-                        aria-label="Clear search"
-                        onclick="document.getElementById('light-novel-search-input').value = '';"
-                    >
-                        <uk-icon icon="X" ratio="0.8"></uk-icon>
-                    </button>
-                }
-            </div>
-            <input type="hidden" id="light-novel-order-input" name="order" value={ currentOrder }>
-            {{ toggled := "desc" }}
-            if currentOrder == "desc" {
-                {{ toggled = "asc" }}
-            }
-            <a
-                class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
-                href={ templ.URL(fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled)) }
-                hx-get={ fmt.Sprintf("%s?sort=%s&order=%s", path, currentSort, toggled) }
-                hx-include="#light-novel-sort-select, #light-novel-search-input"
-                hx-vals={ fmt.Sprintf("{\"order\":\"%s\"}", toggled) }
-                hx-replace-url="true"
-                hx-target={ "#" + targetID }
-                hx-push-url="true"
-                aria-label="Toggle sort order"
-            >
-                if currentOrder == "asc" {
-                    <uk-icon icon="ArrowUpDown"></uk-icon>
-                } else {
-                    <uk-icon icon="ArrowDownUp"></uk-icon>
-                }
-            </a>
+    </button>
+}
+
+templ TagApplyButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-primary uk-btn-small uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form, #tag-filter-form"
+        hx-vals='{"page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Apply filters"
+        title="Apply filters"
+        onclick="document.getElementById('tag-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="Check" ratio="0.9"></uk-icon>
+    </button>
+}
+
+templ TagClearButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-destructive uk-btn-small uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form"
+        hx-vals='{"tags":"", "tag_mode":"all", "page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Clear filters"
+        title="Clear filters"
+        onclick="document.getElementById('tag-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="X" ratio="0.9"></uk-icon>
+    </button>
+}
+
+// TypesDropdownButton renders inline type filter button with dropdown
+templ TypesDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTypes []string, allTypes []string) {
+    <div class="uk-inline" style="display:inline-block;">
+        <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by types">
+            <uk-icon icon="Filter"></uk-icon>
+        </button>
+        <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+            <form id="type-filter-form" class="uk-form">
+                <div class="uk-width-1-1 uk-margin-small">
+                    <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                        <div class="uk-inline">
+                            <div class="uk-btn-group uk-width-auto">
+                                @TypeApplyButton(path, targetID, parentID)
+                                @TypeClearButton(path, targetID, parentID)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="type-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                    @TypesFragment(allTypes, selectedTypes)
+                </div>
+            </form>
         </div>
     </div>
 }
 
-// UnifiedLightNovelPagination simplified pagination for light novels.
-templ UnifiedLightNovelPagination(path string, targetID string, totalPages int, currentPage int, sort string, order string) {
+templ TypeApplyButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-primary uk-btn-small uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form, #type-filter-form"
+        hx-vals='{"page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Apply filters"
+        title="Apply filters"
+        onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="Check" ratio="0.9"></uk-icon>
+    </button>
+}
+
+templ TypeClearButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-destructive uk-btn-small uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form"
+        hx-vals='{"types":"", "page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Clear filters"
+        title="Clear filters"
+        onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="X" ratio="0.9"></uk-icon>
+    </button>
+}
+
+// Pagination renders page navigation with proper HTMX attributes
+templ Pagination(path string, targetID string, totalPages int, currentPage int, sort string, order string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
     <nav class="mt-4" aria-label="Pagination">
         <ul class="uk-pgn uk-pgn-default">
-            @UnifiedLightNovelPaginationItem(path, targetID, currentPage > 1, currentPage-1, "Previous", "previous", sort, order)
-            @UnifiedLightNovelPaginationNumbers(path, targetID, totalPages, currentPage, sort, order)
-            @UnifiedLightNovelPaginationItem(path, targetID, currentPage < totalPages, currentPage+1, "Next", "next", sort, order)
+            @PaginationItem(path, targetID, currentPage > 1, currentPage-1, "Previous", "previous", sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
+            @PaginationNumbers(path, targetID, totalPages, currentPage, sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
+            @PaginationItem(path, targetID, currentPage < totalPages, currentPage+1, "Next", "next", sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
         </ul>
     </nav>
 }
 
-templ UnifiedLightNovelPaginationItem(path string, targetID string, enabled bool, page int, text string, icon string, sort string, order string) {
+templ PaginationItem(path string, targetID string, enabled bool, page int, text string, icon string, sort string, order string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
     {{ href := fmt.Sprintf("%s?page=%d&sort=%s&order=%s", path, page, sort, order) }}
-    {{ includeSelector := "#light-novel-sort-select, #light-novel-order-input, #light-novel-search-input" }}
+    {{ tagsParam := strings.Join(selectedTags, ",") }}
+    {{ typesParam := strings.Join(selectedTypes, ",") }}
+    if tagsParam != "" {
+        {{ href = href + "&tags=" + tagsParam + "&tag_mode=" + tagMode }}
+    }
+    if typesParam != "" {
+        {{ href = href + "&types=" + typesParam }}
+    }
+    if searchFilter != "" {
+        {{ href = href + "&search=" + searchFilter }}
+    }
+    
     if enabled {
         <li>
-            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
+            <a href={ templ.URL(href) } 
+               hx-get={ href } 
+               hx-target={ "#" + targetID } 
+               hx-push-url="true">
                 if icon != "" {
                     if icon == "next" {
                         <uk-icon icon="ChevronRight"></uk-icon>
@@ -555,7 +372,7 @@ templ UnifiedLightNovelPaginationItem(path string, targetID string, enabled bool
         </li>
     } else {
         <li class="uk-disabled">
-            <a href={ templ.URL(href) } hx-get={ href } hx-include={ includeSelector } hx-replace-url="true" hx-target={ "#" + targetID } hx-push-url="true">
+            <span>
                 if icon != "" {
                     if icon == "next" {
                         <uk-icon icon="ChevronRight"></uk-icon>
@@ -565,19 +382,20 @@ templ UnifiedLightNovelPaginationItem(path string, targetID string, enabled bool
                 } else {
                     { text }
                 }
-            </a>
+            </span>
         </li>
     }
 }
 
-templ UnifiedLightNovelPaginationNumbers(path string, targetID string, totalPages int, currentPage int, sort string, order string) {
+templ PaginationNumbers(path string, targetID string, totalPages int, currentPage int, sort string, order string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
     for i := 1; i <= totalPages; i++ {
         if i == currentPage {
             <li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
         } else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
-            @UnifiedLightNovelPaginationItem(path, targetID, true, i, fmt.Sprint(i), "", sort, order)
+            @PaginationItem(path, targetID, true, i, fmt.Sprint(i), "", sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
         } else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
             <li class="uk-disabled"><span>…</span></li>
         }
     }
 }
+

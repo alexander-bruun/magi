@@ -81,7 +81,7 @@ templ TagModeToggleButton(path string, targetID string, tagMode string) {
         hx-target={ "#" + targetID }
         hx-push-url="true"
         hx-replace-url="true"
-        hx-include="#tag-filter-form, #search-filter-input, #account-manga-list-search-input"
+        hx-include="#tag-filter-form, #search-filter-input, #account-media-list-search-input"
         hx-vals={ fmt.Sprintf("{\"tag_mode\":\"%s\"}", nextMode) }
         title={ func() string { if isAny { return "Switch to match all tags" } else { return "Switch to match any tags" } }() }
         aria-label={ func() string { if isAny { return "Match all tags" } else { return "Match any tags" } }() }
@@ -100,9 +100,9 @@ templ TagModeToggleButton(path string, targetID string, tagMode string) {
 templ TagActionButton(path string, targetID string, label string, icon string, btnClass string, includeAllInputs bool) {
     {{ includeSelector := "#tag-filter-form" }}
     if !includeAllInputs {
-        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input" }}
+        {{ includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #type-filter-form input[name=types], #search-filter-input, #account-media-list-search-input" }}
     } else {
-        {{ includeSelector = "#tag-filter-form, #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input" }}
+        {{ includeSelector = "#tag-filter-form, #type-filter-form input[name=types], #search-filter-input, #account-media-list-search-input" }}
     }
     {{ buttonType := "submit" }}
     if !includeAllInputs {

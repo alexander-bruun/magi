@@ -6,19 +6,21 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ TopReadList(mangas []models.Manga, emptyMessage string, title string) {
-	<h3 class="text-lg font-semibold mb-2">{ title }</h3>
-	if len(mangas) == 0 {
+templ TopReadList(media []models.Media, emptyMessage string, title string) {
+	if title != "" {
+		<h3 class="text-lg font-semibold mb-2">{ title }</h3>
+	}
+	if len(media) == 0 {
 		@EmptyState(emptyMessage)
 	} else {
-		<ul class="top-manga-list">
-			for i, m := range mangas {
+		<ul class="top-media-list">
+			for i, m := range media {
 				<li class="flex items-center gap-3 py-2">
 					<div class="w-10 h-14 overflow-hidden rounded-sm">
-						@MangaCover(m.CoverArtURL, m.Name, 80, 112, true)
+						@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
 					</div>
 					<div class="flex-1">
-						<a href={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-get={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
+						<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
 						<div class="text-xs uk-text-muted">{ m.Author }</div>
 					</div>
 					<div class="flex flex-col items-center">
@@ -33,11 +35,11 @@ templ TopReadList(mangas []models.Manga, emptyMessage string, title string) {
 	}
 }
 
-templ TopReadFragment(mangas []models.Manga, emptyMessage string, title string) {
-	@TopReadList(mangas, emptyMessage, title)
+templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
+	@TopReadList(media, emptyMessage, title)
 }
 
-templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMangas []models.Manga, topReadToday []models.Manga, topReadWeek []models.Manga, topReadMonth []models.Manga, topReadYear []models.Manga, topReadAll []models.Manga, totalMangas int, totalChapters int, totalChaptersRead int, totalLightNovels int, totalLightNovelChapters int, totalLightNovelChaptersRead int, mangasChange int, chaptersChange int, chaptersReadChange int, lightNovelsChange int, lightNovelChaptersChange int, lightNovelChaptersReadChange int) {
+templ Home(recentlyAdded []models.Media, recentlyUpdated []models.Media, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, totalMedias int, totalChapters int, totalChaptersRead int,  mangasChange int, chaptersChange int, chaptersReadChange int, totalNovels int, totalNovelChapters int, totalNovelChaptersRead int, novelsChange int, novelChaptersChange int, novelChaptersReadChange int) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -48,14 +50,14 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 			<div class="md:col-span-1 lg:col-span-2">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
 				if len(recentlyAdded) == 0 {
-					@EmptyState("No mangas have been indexed yet.")
+					@EmptyState("No media have been indexed yet.")
 				} else {
 					@Showcase(recentlyAdded)
 				}
 
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
 				if len(recentlyUpdated) == 0 {
-					@EmptyState("No mangas have been indexed yet.")
+					@EmptyState("No media have been indexed yet.")
 				} else {
 					@Showcase(recentlyUpdated)
 				}
@@ -70,18 +72,18 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 					</ul>
 					<ul class="uk-switcher uk-margin">
 						<li id="popular-tab" class="uk-active">
-							if len(topMangas) == 0 {
-								@EmptyState("No mangas have been indexed yet.")
+							if len(topMedias) == 0 {
+								@EmptyState("No media have been indexed yet.")
 							} else {
-								<ul class="top-manga-list">
-									for i, m := range topMangas {
-										{{ _, up, down, _ := models.GetMangaVotes(m.Slug) }}
+								<ul class="top-media-list">
+									for i, m := range topMedias {
+										{{ _, up, down, _ := models.GetMediaVotes(m.Slug) }}
 										<li class="flex items-center gap-3 py-2">
 											<div class="w-10 h-14 overflow-hidden rounded-sm">
-												@MangaCover(m.CoverArtURL, m.Name, 80, 112, true)
+												@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
 											</div>
 											<div class="flex-1">
-												<a href={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-get={ fmt.Sprintf("/mangas/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
+												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
 												<div class="text-xs uk-text-muted">{ m.Author }</div>
 											</div>
 											<div class="flex flex-col items-center">
@@ -97,13 +99,15 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 							}
 						</li>
 						<li id="most-read-tab">
-							<ul class="uk-subnav uk-subnav-pill" uk-margin id="most-read-subnav">
-								<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content">Today</a></li>
-								<li><a hx-get="/top-read?period=week" hx-target="#top-read-content">Week</a></li>
-								<li><a hx-get="/top-read?period=month" hx-target="#top-read-content">Month</a></li>
-								<li><a hx-get="/top-read?period=year" hx-target="#top-read-content">Year</a></li>
-								<li><a hx-get="/top-read?period=all" hx-target="#top-read-content">All Time</a></li>
-							</ul>
+							<div style="overflow-x: auto;">
+								<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap;">
+									<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" style="cursor: pointer;">Today</a></li>
+									<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" style="cursor: pointer;">Week</a></li>
+									<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" style="cursor: pointer;">Month</a></li>
+									<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" style="cursor: pointer;">Year</a></li>
+									<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" style="cursor: pointer;">All Time</a></li>
+								</ul>
+							</div>
 							<div id="top-read-content" hx-get="/top-read?period=today" hx-trigger="intersect"></div>
 						</li>
 					</ul>
@@ -113,12 +117,12 @@ templ Home(recentlyAdded []models.Manga, recentlyUpdated []models.Manga, topMang
 
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-6"><span>Statistics</span></h2>
 		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-			@StatCard("Mangas", totalMangas, mangasChange)
+			@StatCard("Mangas", totalMedias, mangasChange)
 			@StatCard("Manga Chapters", totalChapters, chaptersChange)
 			@StatCard("Manga Chapters Read", totalChaptersRead, chaptersReadChange)
-			@StatCard("Novels", totalLightNovels, lightNovelsChange)
-			@StatCard("Novel Chapters", totalLightNovelChapters, lightNovelChaptersChange)
-			@StatCard("Novel Chapters Read", totalLightNovelChaptersRead, lightNovelChaptersReadChange)
+			@StatCard("Novels", totalNovels, novelsChange)
+			@StatCard("Novel Chapters", totalNovelChapters, novelChaptersChange)
+			@StatCard("Novel Chapters Read", totalNovelChaptersRead, novelChaptersReadChange)
 		</div>
 		<div class="text-center mt-2">
 			<small class="text-gray-500">Green badges show daily increases since yesterday</small>

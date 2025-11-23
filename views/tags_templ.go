@@ -284,7 +284,7 @@ func TagModeToggleButton(path string, targetID string, tagMode string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#tag-filter-form, #search-filter-input, #account-manga-list-search-input\" hx-vals=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#tag-filter-form, #search-filter-input, #account-media-list-search-input\" hx-vals=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -382,9 +382,9 @@ func TagActionButton(path string, targetID string, label string, icon string, bt
 		ctx = templ.ClearChildren(ctx)
 		includeSelector := "#tag-filter-form"
 		if !includeAllInputs {
-			includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input"
+			includeSelector = "#tag-filter-form input[name=sort], #tag-filter-form input[name=order], #tag-filter-form input[name=tag_mode], #type-filter-form input[name=types], #search-filter-input, #account-media-list-search-input"
 		} else {
-			includeSelector = "#tag-filter-form, #type-filter-form input[name=types], #search-filter-input, #account-manga-list-search-input"
+			includeSelector = "#tag-filter-form, #type-filter-form input[name=types], #search-filter-input, #account-media-list-search-input"
 		}
 		buttonType := "submit"
 		if !includeAllInputs {

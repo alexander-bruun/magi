@@ -8,65 +8,38 @@ import (
 templ Account(userName string) {
     {{ user, _ := models.FindUserByUsername(userName) }}
     {{ favSlugs, _ := models.GetFavoritesForUser(userName) }}
-    {{ var favorites []models.Manga }}
+    {{ var favorites []models.Media }}
     {{ for i, slug := range favSlugs {
         if i >= 10 { break }
-        if m, err := models.GetManga(slug); err == nil && m != nil {
+        if m, err := models.GetMedia(slug); err == nil && m != nil {
             favorites = append(favorites, *m)
         }
     } }}
     
-    {{ readingSlugs, _ := models.GetReadingMangasForUser(userName) }}
-    {{ var reading []models.Manga }}
+    {{ readingSlugs, _ := models.GetReadingMediasForUser(userName) }}
+    {{ var reading []models.Media }}
     {{ for i, slug := range readingSlugs {
         if i >= 10 { break }
-        if m, err := models.GetManga(slug); err == nil && m != nil {
+        if m, err := models.GetMedia(slug); err == nil && m != nil {
             reading = append(reading, *m)
         }
     } }}
     
-    {{ likedSlugs, _ := models.GetUpvotedMangasForUser(userName) }}
-    {{ var liked []models.Manga }}
+    {{ likedSlugs, _ := models.GetUpvotedMediasForUser(userName) }}
+    {{ var liked []models.Media }}
     {{ for i, slug := range likedSlugs {
         if i >= 10 { break }
-        if m, err := models.GetManga(slug); err == nil && m != nil {
+        if m, err := models.GetMedia(slug); err == nil && m != nil {
             liked = append(liked, *m)
         }
     } }}
     
-    {{ downvotedSlugs, _ := models.GetDownvotedMangasForUser(userName) }}
-    {{ var downvoted []models.Manga }}
+    {{ downvotedSlugs, _ := models.GetDownvotedMediasForUser(userName) }}
+    {{ var downvoted []models.Media }}
     {{ for i, slug := range downvotedSlugs {
         if i >= 10 { break }
-        if m, err := models.GetManga(slug); err == nil && m != nil {
+        if m, err := models.GetMedia(slug); err == nil && m != nil {
             downvoted = append(downvoted, *m)
-        }
-    } }}
-
-    {{ lightNovelFavoritesSlugs, _ := models.GetLightNovelFavoritesForUser(userName) }}
-    {{ var lightNovelFavorites []models.LightNovel }}
-    {{ for i, slug := range lightNovelFavoritesSlugs {
-        if i >= 10 { break }
-        if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-            lightNovelFavorites = append(lightNovelFavorites, *ln)
-        }
-    } }}
-
-    {{ lightNovelLikedSlugs, _ := models.GetLightNovelUpvotedForUser(userName) }}
-    {{ var lightNovelLiked []models.LightNovel }}
-    {{ for i, slug := range lightNovelLikedSlugs {
-        if i >= 10 { break }
-        if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-            lightNovelLiked = append(lightNovelLiked, *ln)
-        }
-    } }}
-
-    {{ lightNovelDownvotedSlugs, _ := models.GetLightNovelDownvotedForUser(userName) }}
-    {{ var lightNovelDownvoted []models.LightNovel }}
-    {{ for i, slug := range lightNovelDownvotedSlugs {
-        if i >= 10 { break }
-        if ln, err := models.GetLightNovel(slug); err == nil && ln != nil {
-            lightNovelDownvoted = append(lightNovelDownvoted, *ln)
         }
     } }}
 
@@ -94,70 +67,25 @@ templ Account(userName string) {
 
     <!-- Content Tabs -->
     <div class="uk-container mt-6">
-        <ul class="uk-tab" uk-tab>
-            <li class="uk-active"><a href="#mangas-tab">Mangas</a></li>
-            <li><a href="#light-novels-tab">Light Novels</a></li>
-        </ul>
-        
-        <ul class="uk-switcher uk-margin">
-            <!-- Mangas Tab -->
-            <li id="mangas-tab" class="uk-active">
-                <div class="flex items-center justify-between mt-4">
-                    <h3 class="uk-h4 mb-2">Upvoted</h3>
-                    <a href={ templ.URL("/account/upvoted") } hx-get={ templ.URL("/account/upvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
-                </div>
+        <div class="flex items-center justify-between mt-4">
+            <h3 class="uk-h4 mb-2">Upvoted</h3>
+            <a href={ templ.URL("/account/upvoted") } hx-get={ templ.URL("/account/upvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
+        </div>
 
-                if len(liked) == 0 {
-                    <p class="role-reader">You have not upvoted any mangas yet.</p>
-                } else {
-                    @MangaSlider(liked, 200, 300, true, true)
-                }
+        if len(liked) == 0 {
+            <p class="role-reader">You have not upvoted any media yet.</p>
+        } else {
+            @MediaSlider(liked, 200, 300, true, true)
+        }
 
-                <div class="flex items-center justify-between mt-6">
-                    <h3 class="uk-h4 mb-2">Downvoted</h3>
-                    <a href={ templ.URL("/account/downvoted") } hx-get={ templ.URL("/account/downvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
-                </div>
-                if len(downvoted) == 0 {
-                    <p class="role-reader">You have not downvoted any mangas yet.</p>
-                } else {
-                    @MangaSlider(downvoted, 200, 300, true, true)
-                }
-            </li>
-            
-            <!-- Light Novels Tab -->
-            <li id="light-novels-tab">
-                <div class="flex items-center justify-between mt-4">
-                    <h3 class="uk-h4 mb-2">Favorite Light Novels</h3>
-                    <a href={ templ.URL("/account/light-novel-favorites") } hx-get={ templ.URL("/account/light-novel-favorites") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
-                </div>
-
-                if len(lightNovelFavorites) == 0 {
-                    <p class="role-reader">You have no favorite light novels yet.</p>
-                } else {
-                    @LightNovelSlider(lightNovelFavorites, 200, 300, true, true)
-                }
-
-                <div class="flex items-center justify-between mt-6">
-                    <h3 class="uk-h4 mb-2">Upvoted Light Novels</h3>
-                    <a href={ templ.URL("/account/light-novel-upvoted") } hx-get={ templ.URL("/account/light-novel-upvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
-                </div>
-
-                if len(lightNovelLiked) == 0 {
-                    <p class="role-reader">You have not upvoted any light novels yet.</p>
-                } else {
-                    @LightNovelSlider(lightNovelLiked, 200, 300, true, true)
-                }
-
-                <div class="flex items-center justify-between mt-6">
-                    <h3 class="uk-h4 mb-2">Downvoted Light Novels</h3>
-                    <a href={ templ.URL("/account/light-novel-downvoted") } hx-get={ templ.URL("/account/light-novel-downvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
-                </div>
-                if len(lightNovelDownvoted) == 0 {
-                    <p class="role-reader">You have not downvoted any light novels yet.</p>
-                } else {
-                    @LightNovelSlider(lightNovelDownvoted, 200, 300, true, true)
-                }
-            </li>
-        </ul>
+        <div class="flex items-center justify-between mt-6">
+            <h3 class="uk-h4 mb-2">Downvoted</h3>
+            <a href={ templ.URL("/account/downvoted") } hx-get={ templ.URL("/account/downvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
+        </div>
+        if len(downvoted) == 0 {
+            <p class="role-reader">You have not downvoted any media yet.</p>
+        } else {
+            @MediaSlider(downvoted, 200, 300, true, true)
+        }
     </div>
 }
