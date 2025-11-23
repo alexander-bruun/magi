@@ -957,7 +957,7 @@
           sortInput: form.querySelector('input[name="sort"]'),
           orderInput: form.querySelector('input[name="order"]'),
           modeInput: form.querySelector('input[name="tag_mode"]'),
-          sortSelect: document.getElementById('manga-sort-select'),
+          sortSelect: document.getElementById('sort-select'),
           modeToggle: document.getElementById('tag-mode-toggle'),
           tagList: document.getElementById('tag-list'),
           hiddenSummary: document.getElementById('tag-hidden-summary')
@@ -999,8 +999,10 @@
         }
 
         // Ensure uk-select reflects the selected value
-        if (elements.sortSelect && sort) {
-          elements.sortSelect.value = sort;
+        if (elements.sortSelect) {
+          if (sort) {
+            elements.sortSelect.value = sort;
+          }
           
           // Force uk-select to update its display
           const ukSelect = elements.sortSelect.closest('uk-select') || document.querySelector('uk-select');
@@ -1008,58 +1010,11 @@
             // Manually update the button text
             const button = ukSelect.querySelector('button');
             const selectedOption = elements.sortSelect.querySelector('option:checked');
-            if (button && selectedOption) {
-              button.textContent = selectedOption.textContent.trim();
-            }
-            
-            // Close the dropdown if it's open
-            const dropdown = ukSelect.querySelector('.uk-dropdown');
-            if (dropdown) {
-              if (dropdown.classList.contains('uk-open')) {
-                dropdown.classList.remove('uk-open');
-                if (button) {
-                  button.setAttribute('aria-expanded', 'false');
-                }
-              }
-              
-              // Populate the dropdown options and set up event handlers
-              const ul = dropdown.querySelector('ul');
-              if (ul && button) {
-                ul.innerHTML = '';
-                Array.from(elements.sortSelect.options).forEach(option => {
-                  const li = document.createElement('li');
-                  li.innerHTML = `<a href="#">${option.text}</a>`;
-                  li.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    elements.sortSelect.value = option.value;
-                    button.textContent = option.text.trim();
-                    dropdown.classList.remove('uk-open');
-                    button.setAttribute('aria-expanded', 'false');
-                    ukSelect.dispatchEvent(new CustomEvent('uk-select:input', { detail: { value: option.value }, bubbles: true }));
-                  });
-                  ul.appendChild(li);
-                });
-                
-                // Handle button click to toggle dropdown
-                button.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  const isOpen = dropdown.classList.contains('uk-open');
-                  if (isOpen) {
-                    dropdown.classList.remove('uk-open');
-                    button.setAttribute('aria-expanded', 'false');
-                  } else {
-                    dropdown.classList.add('uk-open');
-                    button.setAttribute('aria-expanded', 'true');
-                  }
-                });
-                
-                // Close dropdown on outside click
-                document.addEventListener('click', (e) => {
-                  if (!ukSelect.contains(e.target)) {
-                    dropdown.classList.remove('uk-open');
-                    button.setAttribute('aria-expanded', 'false');
-                  }
-                });
+            if (button) {
+              if (selectedOption) {
+                button.textContent = selectedOption.textContent.trim();
+              } else {
+                button.textContent = 'Sort by';
               }
             }
           }
@@ -1074,7 +1029,7 @@
         }
 
         const qs = window.location.search || '';
-        fetch('/mangas/tags/fragment' + qs, { credentials: 'same-origin' })
+        fetch('/series/tags/fragment' + qs, { credentials: 'same-origin' })
           .then(resp => resp.ok ? resp.text() : Promise.reject())
           .then(html => {
             const tagList = document.getElementById('tag-list');
