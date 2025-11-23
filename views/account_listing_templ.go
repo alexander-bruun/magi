@@ -13,44 +13,9 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-// AccountListType represents the type of account list being displayed
-type AccountListType string
-
-const (
-	AccountListFavorites           AccountListType = "favorites"
-	AccountListUpvoted             AccountListType = "upvoted"
-	AccountListDownvoted           AccountListType = "downvoted"
-	AccountListReading             AccountListType = "reading"
-	AccountListLightNovelFavorites AccountListType = "light_novel_favorites"
-	AccountListLightNovelUpvoted   AccountListType = "light_novel_upvoted"
-	AccountListLightNovelDownvoted AccountListType = "light_novel_downvoted"
-)
-
-// GetAccountListConfig returns the display configuration for a given list type
-func GetAccountListConfig(listType AccountListType) (title, breadcrumbLabel, path, emptyMessage string) {
-	switch listType {
-	case AccountListFavorites:
-		return "Your Favorites", "Favorites", "/account/favorites", "You have no favorites yet."
-	case AccountListUpvoted:
-		return "Your Upvoted Mangas", "Upvoted", "/account/upvoted", "You have not upvoted any mangas yet."
-	case AccountListDownvoted:
-		return "Your Downvoted Mangas", "Downvoted", "/account/downvoted", "You have not downvoted any mangas yet."
-	case AccountListReading:
-		return "Currently Reading", "Currently Reading", "/account/reading", "You are not reading any mangas right now."
-	case AccountListLightNovelFavorites:
-		return "Your Favorite Light Novels", "Favorite Light Novels", "/account/light-novel-favorites", "You have no favorite light novels yet."
-	case AccountListLightNovelUpvoted:
-		return "Your Upvoted Light Novels", "Upvoted Light Novels", "/account/light-novel-upvoted", "You have not upvoted any light novels yet."
-	case AccountListLightNovelDownvoted:
-		return "Your Downvoted Light Novels", "Downvoted Light Novels", "/account/light-novel-downvoted", "You have not downvoted any light novels yet."
-	default:
-		return "Account", "Account", "/account", "No items found."
-	}
-}
-
-// AccountMangaListing is a generic component for account manga lists (favorites, reading, upvoted, downvoted)
+// AccountMediaListing is a generic component for account media lists (favorites, reading, upvoted, downvoted)
 // Use includeTags=true to enable tag filtering on account pages
-func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) templ.Component {
+func AccountMediaListing(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -71,7 +36,23 @@ func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int,
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div id=\"account-listing\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"account-media-list-results\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", nil, "", nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -79,8 +60,8 @@ func AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int,
 	})
 }
 
-// AccountMangaListingWithTags includes selected tags and tag mode for filtered views
-func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
+// AccountMediaListingWithTags includes selected tags and tag mode for filtered views
+func AccountMediaListingWithTags(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -101,7 +82,23 @@ func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPa
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"account-listing\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div id=\"account-media-list-results\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", selectedTags, tagMode, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -109,8 +106,8 @@ func AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPa
 	})
 }
 
-// AccountLightNovelListing is a generic component for account light novel lists
-func AccountLightNovelListing(lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) templ.Component {
+// Generic account page layout - consolidates all account list pages
+func AccountPageLayout(title string, breadcrumbLabel string, path string, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -131,66 +128,6 @@ func AccountLightNovelListing(lightNovels []models.LightNovel, currentPage int, 
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericLightNovelListingWithTypes(path, "account-light-novel-list", true, lightNovels, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-// AccountLightNovelListingWithTags includes selected tags and tag mode for filtered views
-func AccountLightNovelListingWithTags(lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = GenericLightNovelListingWithTypes(path, "account-light-novel-list", true, lightNovels, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-// Generic account page layout - consolidates all account list pages
-func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas []models.Manga, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("%s - page #%d", title, currentPage)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -203,81 +140,35 @@ func AccountPageLayout(title string, breadcrumbLabel string, path string, mangas
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account_listing.templ`, Line: 73, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account_listing.templ`, Line: 38, Col: 80}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span></h2><div id=\"account-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</span></h2><div id=\"account-media-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(selectedTags) > 0 || tagMode != "" {
-			if len(lightNovels) > 0 {
-				templ_7745c5c3_Err = AccountLightNovelListingWithTags(lightNovels, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			} else {
-				templ_7745c5c3_Err = AccountMangaListingWithTags(mangas, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
+			templ_7745c5c3_Err = AccountMediaListingWithTags(media, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
 			}
 		} else {
-			if len(lightNovels) > 0 {
-				templ_7745c5c3_Err = AccountLightNovelListing(lightNovels, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			} else {
-				templ_7745c5c3_Err = AccountMangaListing(mangas, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
+			templ_7745c5c3_Err = AccountMediaListing(media, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-// ConsolidatedAccountList is the unified view for all account list types
-// This is the ONLY view function that should be called for account lists
-func ConsolidatedAccountList(listType AccountListType, mangas []models.Manga, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var7 == nil {
-			templ_7745c5c3_Var7 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		title, breadcrumbLabel, path, emptyMessage := GetAccountListConfig(listType)
-		templ_7745c5c3_Err = AccountPageLayout(title, breadcrumbLabel, path, mangas, lightNovels, currentPage, totalPages, sort, order, emptyMessage, allTags, selectedTags, tagMode, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

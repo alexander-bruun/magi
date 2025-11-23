@@ -59,12 +59,12 @@ templ ConfigForm() {
             <h4 class="uk-heading-line mb-4"><span>Metadata Provider</span></h4>
             <div class="uk-margin">
                 <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
-                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
+                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MediaDex (Free, No Auth Required)</option>
                     <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
                     <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
                     <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
                 </select>
-                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching manga information.</p>
+                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching media information.</p>
             </div>
             
             <!-- MAL API Token -->

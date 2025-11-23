@@ -15,17 +15,17 @@ templ Better(currentPage int) {
 			{ Label: "Better", Href: "/admin/duplicates" },
 		})
 		<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
-			<span>Manga Duplicates</span>
+			<span>Media Duplicates</span>
 		</h2>
 		
 		{{ const limit = 20 }}
-		{{ duplicates, total, _ := models.GetActiveMangaDuplicates(currentPage, limit) }}
+		{{ duplicates, total, _ := models.GetActiveMediaDuplicates(currentPage, limit) }}
 		if len(duplicates) == 0 {
 			<div class="uk-alert-success" uk-alert>
 				<div class="uk-flex uk-flex-middle uk-flex-center">
 					<uk-icon icon="BadgeCheck" size="32" class="mr-3"></uk-icon>
 					<p class="text-lg uk-margin-remove">
-						No duplicate mangas found in any library!
+						No duplicate media found in any library!
 					</p>
 				</div>
 			</div>
@@ -34,7 +34,7 @@ templ Better(currentPage int) {
 				<div class="uk-flex uk-flex-middle">
 					<uk-icon icon="TriangleAlert" size="32" class="mr-3"></uk-icon>
 					<p class="uk-margin-remove">
-						The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.
+						The following media have chapters from multiple different folders. This typically indicates duplicate folder structures.
 					</p>
 				</div>
 			</div>
@@ -43,7 +43,7 @@ templ Better(currentPage int) {
 				<table class="uk-table uk-table-striped uk-table-hover">
 					<thead>
 						<tr>
-							<th>Manga</th>
+							<th>Media</th>
 							<th>Library</th>
 							<th>Folder 1</th>
 							<th>Folder 2</th>
@@ -56,8 +56,8 @@ templ Better(currentPage int) {
 								<td>
 									<div class="flex items-center">
 										<uk-icon icon="BookOpen" class="mr-2"></uk-icon>
-										<a href={ templ.SafeURL(fmt.Sprintf("/mangas/%s", dup.MangaSlug)) } class="uk-link-text">
-											<strong>{ dup.MangaName }</strong>
+										<a href={ templ.SafeURL(fmt.Sprintf("/series/%s", dup.MediaSlug)) } class="uk-link-text">
+											<strong>{ dup.MediaName }</strong>
 										</a>
 									</div>
 								</td>
@@ -101,7 +101,7 @@ templ Better(currentPage int) {
 			{{ if totalPages == 0 { totalPages = 1 } }}
 			if totalPages > 1 {
 				<div class="flex justify-center items-center py-8">
-					@UnifiedPagination("/admin/duplicates", "content", false, totalPages, currentPage, "", "")
+					@Pagination("/admin/duplicates", "content", totalPages, currentPage, "", "", nil, "", nil, "")
 				</div>
 			}
 		}

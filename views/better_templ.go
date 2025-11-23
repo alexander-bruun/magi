@@ -51,19 +51,19 @@ func Better(currentPage int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center\"><span>Manga Duplicates</span></h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center\"><span>Media Duplicates</span></h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		const limit = 20
-		duplicates, total, _ := models.GetActiveMangaDuplicates(currentPage, limit)
+		duplicates, total, _ := models.GetActiveMediaDuplicates(currentPage, limit)
 		if len(duplicates) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"uk-alert-success\" uk-alert><div class=\"uk-flex uk-flex-middle uk-flex-center\"><uk-icon icon=\"BadgeCheck\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"text-lg uk-margin-remove\">No duplicate mangas found in any library!</p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"uk-alert-success\" uk-alert><div class=\"uk-flex uk-flex-middle uk-flex-center\"><uk-icon icon=\"BadgeCheck\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"text-lg uk-margin-remove\">No duplicate media found in any library!</p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"uk-alert-warning mb-4\" uk-alert><div class=\"uk-flex uk-flex-middle\"><uk-icon icon=\"TriangleAlert\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"uk-margin-remove\">The following mangas have chapters from multiple different folders. This typically indicates duplicate folder structures.</p></div></div><div class=\"uk-overflow-auto\"><table class=\"uk-table uk-table-striped uk-table-hover\"><thead><tr><th>Manga</th><th>Library</th><th>Folder 1</th><th>Folder 2</th><th class=\"uk-text-center\">Actions</th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"uk-alert-warning mb-4\" uk-alert><div class=\"uk-flex uk-flex-middle\"><uk-icon icon=\"TriangleAlert\" size=\"32\" class=\"mr-3\"></uk-icon><p class=\"uk-margin-remove\">The following media have chapters from multiple different folders. This typically indicates duplicate folder structures.</p></div></div><div class=\"uk-overflow-auto\"><table class=\"uk-table uk-table-striped uk-table-hover\"><thead><tr><th>Media</th><th>Library</th><th>Folder 1</th><th>Folder 2</th><th class=\"uk-text-center\">Actions</th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,7 +86,7 @@ func Better(currentPage int) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 templ.SafeURL
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/mangas/%s", dup.MangaSlug)))
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/series/%s", dup.MediaSlug)))
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 59, Col: 75}
 				}
@@ -99,7 +99,7 @@ func Better(currentPage int) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
-				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(dup.MangaName)
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(dup.MediaName)
 				if templ_7745c5c3_Err != nil {
 					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/better.templ`, Line: 60, Col: 34}
 				}
@@ -207,7 +207,7 @@ func Better(currentPage int) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = UnifiedPagination("/admin/duplicates", "content", false, totalPages, currentPage, "", "").Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = Pagination("/admin/duplicates", "content", totalPages, currentPage, "", "", nil, "", nil, "").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

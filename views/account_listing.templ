@@ -5,64 +5,29 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-// AccountListType represents the type of account list being displayed
-type AccountListType string
-
-const (
-    AccountListFavorites  AccountListType = "favorites"
-    AccountListUpvoted    AccountListType = "upvoted"
-    AccountListDownvoted  AccountListType = "downvoted"
-    AccountListReading    AccountListType = "reading"
-    AccountListLightNovelFavorites AccountListType = "light_novel_favorites"
-    AccountListLightNovelUpvoted   AccountListType = "light_novel_upvoted"
-    AccountListLightNovelDownvoted AccountListType = "light_novel_downvoted"
-)
-
-// GetAccountListConfig returns the display configuration for a given list type
-func GetAccountListConfig(listType AccountListType) (title, breadcrumbLabel, path, emptyMessage string) {
-    switch listType {
-    case AccountListFavorites:
-        return "Your Favorites", "Favorites", "/account/favorites", "You have no favorites yet."
-    case AccountListUpvoted:
-        return "Your Upvoted Mangas", "Upvoted", "/account/upvoted", "You have not upvoted any mangas yet."
-    case AccountListDownvoted:
-        return "Your Downvoted Mangas", "Downvoted", "/account/downvoted", "You have not downvoted any mangas yet."
-    case AccountListReading:
-        return "Currently Reading", "Currently Reading", "/account/reading", "You are not reading any mangas right now."
-    case AccountListLightNovelFavorites:
-        return "Your Favorite Light Novels", "Favorite Light Novels", "/account/light-novel-favorites", "You have no favorite light novels yet."
-    case AccountListLightNovelUpvoted:
-        return "Your Upvoted Light Novels", "Upvoted Light Novels", "/account/light-novel-upvoted", "You have not upvoted any light novels yet."
-    case AccountListLightNovelDownvoted:
-        return "Your Downvoted Light Novels", "Downvoted Light Novels", "/account/light-novel-downvoted", "You have not downvoted any light novels yet."
-    default:
-        return "Account", "Account", "/account", "No items found."
-    }
-}
-
-// AccountMangaListing is a generic component for account manga lists (favorites, reading, upvoted, downvoted)
+// AccountMediaListing is a generic component for account media lists (favorites, reading, upvoted, downvoted)
 // Use includeTags=true to enable tag filtering on account pages
-templ AccountMangaListing(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) {
-    @GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags, nil, nil, searchFilter)
+templ AccountMediaListing(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) {
+    <div id="account-listing">
+        @SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter)
+        <div id="account-media-list-results">
+            @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", nil, "", nil, searchFilter)
+        </div>
+    </div>
 }
 
-// AccountMangaListingWithTags includes selected tags and tag mode for filtered views
-templ AccountMangaListingWithTags(mangas []models.Manga, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
-    @GenericMangaListingWithTypes(path, "account-manga-list", true, mangas, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, searchFilter)
-}
-
-// AccountLightNovelListing is a generic component for account light novel lists
-templ AccountLightNovelListing(lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) {
-    @GenericLightNovelListingWithTypes(path, "account-light-novel-list", true, lightNovels, currentPage, totalPages, sort, order, emptyMessage, nil, "", allTags, nil, nil, searchFilter)
-}
-
-// AccountLightNovelListingWithTags includes selected tags and tag mode for filtered views
-templ AccountLightNovelListingWithTags(lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
-    @GenericLightNovelListingWithTypes(path, "account-light-novel-list", true, lightNovels, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, searchFilter)
+// AccountMediaListingWithTags includes selected tags and tag mode for filtered views
+templ AccountMediaListingWithTags(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
+    <div id="account-listing">
+        @SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter)
+        <div id="account-media-list-results">
+            @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", selectedTags, tagMode, nil, searchFilter)
+        </div>
+    </div>
 }
 
 // Generic account page layout - consolidates all account list pages
-templ AccountPageLayout(title string, breadcrumbLabel string, path string, mangas []models.Manga, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) {
+templ AccountPageLayout(title string, breadcrumbLabel string, path string, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) {
     @PageTitle(fmt.Sprintf("%s - page #%d", title, currentPage))
     @Breadcrumb([]BreadcrumbItem{
         { Label: "Home", Href: "/" },
@@ -71,26 +36,15 @@ templ AccountPageLayout(title string, breadcrumbLabel string, path string, manga
     })
 
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ title }</span></h2>
-    <div id="account-list">
+    <div id="account-media-list">
         if len(selectedTags) > 0 || tagMode != "" {
-            if len(lightNovels) > 0 {
-                @AccountLightNovelListingWithTags(lightNovels, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter)
-            } else {
-                @AccountMangaListingWithTags(mangas, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter)
-            }
+            @AccountMediaListingWithTags(media, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter)
         } else {
-            if len(lightNovels) > 0 {
-                @AccountLightNovelListing(lightNovels, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter)
-            } else {
-                @AccountMangaListing(mangas, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter)
-            }
+            @AccountMediaListing(media, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter)
         }
     </div>
 }
 
-// ConsolidatedAccountList is the unified view for all account list types
-// This is the ONLY view function that should be called for account lists
-templ ConsolidatedAccountList(listType AccountListType, mangas []models.Manga, lightNovels []models.LightNovel, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
-    {{ title, breadcrumbLabel, path, emptyMessage := GetAccountListConfig(listType) }}
-    @AccountPageLayout(title, breadcrumbLabel, path, mangas, lightNovels, currentPage, totalPages, sort, order, emptyMessage, allTags, selectedTags, tagMode, searchFilter)
-}
+
+
+

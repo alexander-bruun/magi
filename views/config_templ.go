@@ -183,7 +183,7 @@ func ConfigForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">MangaDex (Free, No Auth Required)</option> <option value=\"mal\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">MediaDex (Free, No Auth Required)</option> <option value=\"mal\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -213,7 +213,7 @@ func ConfigForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">Jikan API (Free, No Auth Required)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Select which metadata provider to use for fetching manga information.</p></div><!-- MAL API Token --><div id=\"mal-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"text\" class=\"uk-input\" name=\"mal_api_token\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">Jikan API (Free, No Auth Required)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Select which metadata provider to use for fetching media information.</p></div><!-- MAL API Token --><div id=\"mal-token-field\" class=\"uk-margin\" style=\"display: none;\"><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"text\" class=\"uk-input\" name=\"mal_api_token\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

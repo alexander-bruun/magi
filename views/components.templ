@@ -60,10 +60,10 @@ templ BreadcrumbHome(current string) {
     </nav>
 }
 
-// MangaCard renders a single manga card with a link and cover image.
+// MediaCard renders a single media card with a link and cover image.
 // When fixed=true, uses explicit pixel dimensions. When fixed=false, uses CSS aspect-ratio for fluid scaling.
-templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed bool) {
-	<a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block" aria-label={ fmt.Sprintf("View %s", manga.Name) }>
+templ MediaCard(media models.Media, width int, height int, truncate bool, fixed bool) {
+	<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block" aria-label={ fmt.Sprintf("View %s", media.Name) }>
 		<div 
 			class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
 			if fixed {
@@ -71,15 +71,17 @@ templ MangaCard(manga models.Manga, width int, height int, truncate bool, fixed 
 			}
 		>
 			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
-				{ manga.Name }
+				{ media.Name }
 			</h3>
 			<div class="uk-card-media-top flex justify-center items-center">
-				@MangaCover(manga.CoverArtURL, manga.Name, width, height, fixed)
+				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed)
 			</div>
 		</div>
 	</a>
-}// MangaCover renders the manga cover image with proper sizing
-templ MangaCover(coverURL string, altText string, width int, height int, fixed bool) {
+}
+
+// MediaCover renders the media cover image with proper sizing
+templ MediaCover(coverURL string, altText string, width int, height int, fixed bool) {
     {{ imageURL := coverURL }}
     
     if fixed {
@@ -133,70 +135,26 @@ templ ProfileCard(user models.User) {
     </div>
 }
 
-// LightNovelCard renders a card for a light novel
-templ LightNovelCard(lightNovel models.LightNovel, width int, height int, truncate bool, fixed bool) {
-	<a href={ templ.URL(fmt.Sprintf("/light-novels/%s", lightNovel.Slug)) } class="block" aria-label={ fmt.Sprintf("View %s", lightNovel.Name) }>
-		<div 
-			class={ "uk-card uk-card-default uk-card-body p-2", templ.KV("w-full", !fixed) } 
-			if fixed {
-				style={ fmt.Sprintf("width:%dpx;", width) }
-			}
-		>
-			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
-				{ lightNovel.Name }
-			</h3>
-			<div class="uk-card-media-top flex justify-center items-center">
-				@LightNovelCover(lightNovel.CoverArtURL, lightNovel.Name, width, height, fixed)
-			</div>
-		</div>
-	</a>
-}
-
-// LightNovelCover renders the light novel cover image with proper sizing
-templ LightNovelCover(coverURL string, altText string, width int, height int, fixed bool) {
-    {{ imageURL := coverURL }}
-    
-    if fixed {
-        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
-    } else {
-        <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
-        </div>
-    }
-}
-
-// LightNovelGrid renders a grid of light novel cards.
-templ LightNovelGrid(lightNovels []models.LightNovel, width int, height int, truncate bool, fixed bool) {
+// MediaGrid renders a grid of media cards.
+templ MediaGrid(media []models.Media, width int, height int, truncate bool, fixed bool) {
     <!-- Responsive grid: 1 column (xs), 2 (sm), 3 (md), 4 (lg) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        for _, lightNovel := range lightNovels {
+        for _, media := range media {
             <div>
-                @LightNovelCard(lightNovel, width, height, truncate, fixed)
+                @MediaCard(media, width, height, truncate, fixed)
             </div>
         }
     </div>
 }
 
-// MangaGrid renders a grid of manga cards.
-templ MangaGrid(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
-    <!-- Responsive grid: 1 column (xs), 2 (sm), 3 (md), 4 (lg) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        for _, manga := range mangas {
-            <div>
-                @MangaCard(manga, width, height, truncate, fixed)
-            </div>
-        }
-    </div>
-}
-
-// MangaSlider renders a reusable UIkit slider for mangas.
-templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, fixed bool) {
+// MediaSlider renders a reusable UIkit slider for media.
+templ MediaSlider(media []models.Media, width int, height int, truncate bool, fixed bool) {
 	<div uk-slider>
 		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
 			<ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;" role="list">
-				for _, manga := range mangas {
+				for _, media := range media {
 					<li role="listitem">
-						@MangaCard(manga, width, height, truncate, fixed)
+						@MediaCard(media, width, height, truncate, fixed)
 					</li>
 				}
 			</ul>
@@ -207,53 +165,37 @@ templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, f
 	</div>
 }
 
-// LightNovelSlider renders a reusable UIkit slider for light novels.
-templ LightNovelSlider(lightNovels []models.LightNovel, width int, height int, truncate bool, fixed bool) {
-	<div uk-slider>
-		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-			<ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;" role="list">
-				for _, lightNovel := range lightNovels {
-					<li role="listitem">
-						@LightNovelCard(lightNovel, width, height, truncate, fixed)
-					</li>
-				}
-			</ul>
-			<a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
-			<a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
-		</div>
-		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
-	</div>
-}// Showcase renders a highlighted horizontal showcase of the newest mangas.
+// Showcase renders a highlighted horizontal showcase of the newest media.
 // It shows a cover, title, chapter count and a simple rating based on votes.
-templ Showcase(mangas []models.Manga) {
-    if len(mangas) == 0 {
-        @EmptyState("No mangas have been indexed yet.")
+templ Showcase(media []models.Media) {
+    if len(media) == 0 {
+        @EmptyState("No media have been indexed yet.")
     } else {
         <div uk-slider>
             <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
                 <ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;">
-                    for _, manga := range mangas {
-                        {{ _, up, down, _ := models.GetMangaVotes(manga.Slug) }}
+                    for _, media := range media {
+                        {{ _, up, down, _ := models.GetMediaVotes(media.Slug) }}
                         {{ rating := 0.0 }}
                         if up+down > 0 {
                             {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
                         }
                         <li>
-                            <a href={ templ.URL(fmt.Sprintf("/mangas/%s", manga.Slug)) } class="block">
+                            <a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block">
                                 <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
-                                        @MangaCover(manga.CoverArtURL, manga.Name, 200, 300, true)
-                                        {{ derived := manga.Type }}
+                                        @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
+                                        {{ derived := media.Type }}
                                         if derived == "" {
-                                            {{ derived = metadata.DetermineMangaTypeByLanguage(manga.OriginalLanguage) }}
+                                            {{ derived = metadata.DetermineMediaTypeByLanguage(media.OriginalLanguage) }}
                                         }
                                         <div class="absolute left-2 top-2">
                                             <span class="uk-badge shadow-sm" style="background: hsl(var(--background)); box-shadow: 0 4px 10px rgba(0,0,0,0.12);">{ strings.ToUpper(derived) }</span>
                                         </div>
                                     </div>
-                                    <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ manga.Name }</h3>
+                                    <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ media.Name }</h3>
                                     <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
-                                        <a href={ templ.URL(fmt.Sprintf("/mangas/%s/%d", manga.Slug, manga.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { manga.FileCount }</a>
+                                        <a href={ templ.URL(fmt.Sprintf("/series/%s/%d", media.Slug, media.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { media.FileCount }</a>
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
                                             <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>
@@ -296,14 +238,14 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                 <!-- Timeline Points and Items -->
                 <div class="relative w-full h-full flex justify-between px-4 z-10" style="align-items: center;">
                     for i, activity := range activities {
-                        if activity.Manga != nil {
+                        if activity.Media != nil {
                             <div class="flex flex-col items-center flex-1 relative" style="height: 100%;">
                                 if i%2 == 0 {
                                     <!-- Item going up -->
                                     <div class="text-center mb-4 flex flex-col justify-end flex-1">
                                         <div class="mb-2">
-                                            <a href={ templ.URL("/manga/" + activity.Manga.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
-                                                { activity.Manga.Name }
+                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                                { activity.Media.Name }
                                             </a>
                                             <p class="text-xs text-gray-600">
                                                 { activity.ReadingState.CreatedAt.Format("Jan 2") }
@@ -322,8 +264,8 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                                     <!-- Item going down -->
                                     <div class="text-center mt-4 flex flex-col justify-start flex-1">
                                         <div class="mt-2">
-                                            <a href={ templ.URL("/manga/" + activity.Manga.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
-                                                { activity.Manga.Name }
+                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                                { activity.Media.Name }
                                             </a>
                                             <p class="text-xs text-gray-600">
                                                 { activity.ReadingState.CreatedAt.Format("Jan 2") }
