@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"net/url"
 	"os"
@@ -1750,13 +1752,36 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 		if !header.IsDir && isImageFile(header.Name) {
 			currentPage++
 			if currentPage == page {
-				contentType := getContentType(header.Name)
-				c.Set("Content-Type", contentType)
-
-				if _, err := io.Copy(c.Response().BodyWriter(), rarReader); err != nil {
-					return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
+				// Read image data into memory for conversion
+				imageData, err := io.ReadAll(rarReader)
+				if err != nil {
+					return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image data")
 				}
-				return nil
+
+				// Create a reader for the image data to decode it
+				imageReader := bytes.NewReader(imageData)
+
+				// Decode the image
+				img, _, err := image.Decode(imageReader)
+				if err != nil {
+					// If decoding fails, serve original data
+					contentType := getContentType(header.Name)
+					c.Set("Content-Type", contentType)
+					return c.Send(imageData)
+				}
+
+				// Convert to WebP in memory
+				webpData, err := utils.ConvertImageToWebP(img)
+				if err != nil {
+					// If WebP conversion fails, serve original data
+					contentType := getContentType(header.Name)
+					c.Set("Content-Type", contentType)
+					return c.Send(imageData)
+				}
+
+				// Serve WebP data
+				c.Set("Content-Type", "image/webp")
+				return c.Send(webpData)
 			}
 		}
 	}
@@ -1796,20 +1821,44 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
 	}
 
 	imageFile := imageFiles[page-1]
-	contentType := getContentType(imageFile.Name)
-	c.Set("Content-Type", contentType)
 
+	// Try WebP conversion for better compression
 	rc, err := imageFile.Open()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image from archive")
 	}
 	defer rc.Close()
 
-	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to write image to response")
+	// Read image data into memory for conversion
+	imageData, err := io.ReadAll(rc)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image data")
 	}
 
-	return nil
+	// Create a reader for the image data to decode it
+	imageReader := bytes.NewReader(imageData)
+
+	// Decode the image
+	img, _, err := image.Decode(imageReader)
+	if err != nil {
+		// If decoding fails, serve original data
+		contentType := getContentType(imageFile.Name)
+		c.Set("Content-Type", contentType)
+		return c.Send(imageData)
+	}
+
+	// Convert to WebP in memory
+	webpData, err := utils.ConvertImageToWebP(img)
+	if err != nil {
+		// If WebP conversion fails, serve original data
+		contentType := getContentType(imageFile.Name)
+		c.Set("Content-Type", contentType)
+		return c.Send(imageData)
+	}
+
+	// Serve WebP data
+	c.Set("Content-Type", "image/webp")
+	return c.Send(webpData)
 }
 
 // isImageFile checks if a filename has an image extension.

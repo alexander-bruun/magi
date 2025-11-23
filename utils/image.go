@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/gif"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chai2010/webp"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/webp" // Register WebP format
 )
@@ -19,30 +21,54 @@ import (
 const (
 	targetWidth  = 400
 	targetHeight = 600
+	jpegQuality  = 85 // Increased from default ~75 to 85 for better quality/size balance
+
+	// Thumbnail sizes for different use cases
+	thumbWidth  = 200
+	thumbHeight = 300
+	smallWidth  = 100
+	smallHeight = 150
 )
 
-// DownloadImage downloads an image from the specified URL, saves it in the original and resized formats.
-func DownloadImage(downloadDir, fileName, fileUrl string) error {
+// DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
+func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string) error {
 	if err := ensureDirExists(downloadDir); err != nil {
 		return err
 	}
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
-	originalFilePath := filepath.Join(downloadDir, strings.TrimSuffix(fileNameWithExtension, filepath.Ext(fileNameWithExtension))+"_original"+filepath.Ext(fileNameWithExtension))
-
+	baseName := strings.TrimSuffix(fileNameWithExtension, filepath.Ext(fileNameWithExtension))
+	
 	img, format, err := fetchImage(fileUrl)
 	if err != nil {
 		return err
 	}
 
+	// Save original (unprocessed) for potential future use
+	originalFilePath := filepath.Join(downloadDir, baseName+"_original"+filepath.Ext(fileNameWithExtension))
 	if err := saveImage(originalFilePath, img, format); err != nil {
 		return err
 	}
 
-	resizedImg := resizeAndCrop(img, targetWidth, targetHeight)
-	resizedFilePath := filepath.Join(downloadDir, fileNameWithExtension)
-	return saveImage(resizedFilePath, resizedImg, "jpeg")
+	// Generate full-size version (400x600)
+	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
+	fullFilePath := filepath.Join(downloadDir, fileNameWithExtension)
+	if err := saveImage(fullFilePath, fullImg, "jpeg"); err != nil {
+		return err
+	}
+
+	// Generate thumbnail version (200x300) for listings
+	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
+	thumbFilePath := filepath.Join(downloadDir, baseName+"_thumb.jpg")
+	if err := saveImage(thumbFilePath, thumbImg, "jpeg"); err != nil {
+		return err
+	}
+
+	// Generate small version (100x150) for compact views
+	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
+	smallFilePath := filepath.Join(downloadDir, baseName+"_small.jpg")
+	return saveImage(smallFilePath, smallImg, "jpeg")
 }
 
 // ensureDirExists checks if the directory exists; if not, returns an error.
@@ -107,17 +133,16 @@ func saveImage(filePath string, img image.Image, format string) error {
 
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
-		return jpeg.Encode(file, img, nil)
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
 	case "png":
 		return png.Encode(file, img)
 	case "gif":
 		return gif.Encode(file, img, nil)
 	case "webp":
-		// WebP can be decoded but we'll save as JPEG for compatibility
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
+		return webp.Encode(file, img, &webp.Options{Quality: float32(jpegQuality)})
 	default:
-		// Unknown format - save as JPEG
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: 90})
+		// Unknown format - save as progressive JPEG
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
 	}
 }
 
@@ -324,7 +349,7 @@ func saveProcessedImage(filePath string, img image.Image) error {
 
 	switch {
 	case strings.HasSuffix(filePath, ".jpg"), strings.HasSuffix(filePath, ".jpeg"):
-		return jpeg.Encode(file, img, nil)
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
 	case strings.HasSuffix(filePath, ".png"):
 		return png.Encode(file, img)
 	case strings.HasSuffix(filePath, ".gif"):
@@ -332,4 +357,34 @@ func saveProcessedImage(filePath string, img image.Image) error {
 	default:
 		return fmt.Errorf("unsupported file format: %s", filePath)
 	}
+}
+
+// ConvertToWebP converts an image file to WebP format in memory
+func ConvertToWebP(sourcePath string) ([]byte, error) {
+	// Load the source image
+	img, err := openImage(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load image for WebP conversion: %w", err)
+	}
+
+	// Encode to WebP in memory
+	var buf bytes.Buffer
+	err = webp.Encode(&buf, img, &webp.Options{Quality: 75})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode image to WebP: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// ConvertImageToWebP converts an image.Image to WebP format in memory
+func ConvertImageToWebP(img image.Image) ([]byte, error) {
+	// Encode to WebP in memory
+	var buf bytes.Buffer
+	err := webp.Encode(&buf, img, &webp.Options{Quality: 75})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode image to WebP: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }

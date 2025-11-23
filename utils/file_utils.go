@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"image"
@@ -10,6 +11,7 @@ import (
 	_ "image/png"
 	"io"
 	"io/fs"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -358,7 +360,7 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, erro
 	}
 
 	log.Debugf("Successfully processed and cached poster for manga '%s': %s", slug, croppedFile)
-	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
+	return fmt.Sprintf("/api/images/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
 }
 
 // ListImagesInManga returns a list of image paths/URIs from a manga file or directory.
@@ -486,7 +488,7 @@ func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]i
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/images/%s.%s", slug, fileExt), nil
+	return fmt.Sprintf("/api/images/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
 }
 
 // GetCacheDirectory returns the cache directory path
@@ -925,5 +927,16 @@ func isImageFile(fileName string) bool {
 	default:
 		return false
 	}
+}
+
+// GenerateRandomString generates a random alphanumeric string of the specified length
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	result := make([]byte, length)
+	for i := range result {
+		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		result[i] = charset[num.Int64()]
+	}
+	return string(result)
 }
 

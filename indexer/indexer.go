@@ -476,7 +476,7 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	fileExt := filepath.Ext(u.Path)[1:]
 	cachedImageURL := fmt.Sprintf("%s/%s.%s", localServerBaseURL, slug, fileExt)
 
-	if err := utils.DownloadImage(cacheDataDirectory, slug, coverArtURL); err != nil {
+	if err := utils.DownloadImageWithThumbnails(cacheDataDirectory, slug, coverArtURL); err != nil {
 		log.Errorf("Error downloading file from %s: %s", coverArtURL, err)
 		return coverArtURL, nil
 	}
@@ -855,5 +855,5 @@ func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string
 		return "", fmt.Errorf("failed to cache image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/images/%s%s", slug, ext), nil
+	return fmt.Sprintf("/api/images/%s%s?v=%s", slug, ext, utils.GenerateRandomString(8)), nil
 }
