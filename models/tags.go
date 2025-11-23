@@ -5,9 +5,9 @@ import (
     "sort"
 )
 
-// GetTagsForManga returns a slice of tag names associated with the manga slug
-func GetTagsForManga(mangaSlug string) ([]string, error) {
-    query := `SELECT tag FROM manga_tags WHERE manga_slug = ? ORDER BY tag`
+// GetTagsForMedia returns a slice of tag names associated with the media slug
+func GetTagsForMedia(mangaSlug string) ([]string, error) {
+    query := `SELECT tag FROM media_tags WHERE media_slug = ? ORDER BY tag`
     rows, err := db.Query(query, mangaSlug)
     if err != nil {
         return nil, err
@@ -25,8 +25,8 @@ func GetTagsForManga(mangaSlug string) ([]string, error) {
     return tags, nil
 }
 
-// SetTagsForManga replaces tags for given manga slug (delete existing then insert)
-func SetTagsForManga(mangaSlug string, tags []string) error {
+// SetTagsForMedia replaces tags for given media slug (delete existing then insert)
+func SetTagsForMedia(mangaSlug string, tags []string) error {
     tx, err := db.Begin()
     if err != nil {
         return err
@@ -39,11 +39,11 @@ func SetTagsForManga(mangaSlug string, tags []string) error {
         }
     }()
 
-    if _, err = tx.Exec(`DELETE FROM manga_tags WHERE manga_slug = ?`, mangaSlug); err != nil {
+    if _, err = tx.Exec(`DELETE FROM media_tags WHERE media_slug = ?`, mangaSlug); err != nil {
         return err
     }
 
-    stmt, err := tx.Prepare(`INSERT INTO manga_tags (manga_slug, tag) VALUES (?, ?)`)
+    stmt, err := tx.Prepare(`INSERT INTO media_tags (media_slug, tag) VALUES (?, ?)`)
     if err != nil {
         return err
     }
@@ -57,18 +57,18 @@ func SetTagsForManga(mangaSlug string, tags []string) error {
     return nil
 }
 
-// DeleteTagsByMangaSlug removes tags associated with a manga
-func DeleteTagsByMangaSlug(mangaSlug string) error {
-    query := `DELETE FROM manga_tags WHERE manga_slug = ?`
+// DeleteTagsByMediaSlug removes tags associated with a media
+func DeleteTagsByMediaSlug(mangaSlug string) error {
+    query := `DELETE FROM media_tags WHERE media_slug = ?`
     if _, err := db.Exec(query, mangaSlug); err != nil {
-        return fmt.Errorf("failed to delete tags for manga '%s': %w", mangaSlug, err)
+        return fmt.Errorf("failed to delete tags for media '%s': %w", mangaSlug, err)
     }
     return nil
 }
 
 // GetAllTags returns all distinct tags across mangas, sorted ascending
 func GetAllTags() ([]string, error) {
-    rows, err := db.Query(`SELECT DISTINCT tag FROM manga_tags`)
+    rows, err := db.Query(`SELECT DISTINCT tag FROM media_tags`)
     if err != nil {
         return nil, err
     }
@@ -88,9 +88,9 @@ func GetAllTags() ([]string, error) {
     return tags, nil
 }
 
-// GetAllMangaTagsMap returns a mapping from manga_slug to its tags
-func GetAllMangaTagsMap() (map[string][]string, error) {
-    rows, err := db.Query(`SELECT manga_slug, tag FROM manga_tags`)
+// GetAllMediaTagsMap returns a mapping from media_slug to its tags
+func GetAllMediaTagsMap() (map[string][]string, error) {
+    rows, err := db.Query(`SELECT media_slug, tag FROM media_tags`)
     if err != nil {
         return nil, err
     }
@@ -114,8 +114,8 @@ func GetAllMangaTagsMap() (map[string][]string, error) {
 func GetTagsForUserFavorites(username string) ([]string, error) {
     query := `
         SELECT DISTINCT mt.tag 
-        FROM manga_tags mt
-        INNER JOIN favorites f ON mt.manga_slug = f.manga_slug
+        FROM media_tags mt
+        INNER JOIN favorites f ON mt.media_slug = f.media_slug
         WHERE f.user_username = ?
         ORDER BY mt.tag
     `
@@ -142,8 +142,8 @@ func GetTagsForUserFavorites(username string) ([]string, error) {
 func GetTagsForUserReading(username string) ([]string, error) {
     query := `
         SELECT DISTINCT mt.tag 
-        FROM manga_tags mt
-        INNER JOIN reading_states rs ON mt.manga_slug = rs.manga_slug
+        FROM media_tags mt
+        INNER JOIN reading_states rs ON mt.media_slug = rs.media_slug
         WHERE rs.user_name = ?
         ORDER BY mt.tag
     `
@@ -170,8 +170,8 @@ func GetTagsForUserReading(username string) ([]string, error) {
 func GetTagsForUserUpvoted(username string) ([]string, error) {
     query := `
         SELECT DISTINCT mt.tag 
-        FROM manga_tags mt
-        INNER JOIN votes v ON mt.manga_slug = v.manga_slug
+        FROM media_tags mt
+        INNER JOIN votes v ON mt.media_slug = v.media_slug
         WHERE v.user_username = ? AND v.value = 1
         ORDER BY mt.tag
     `
@@ -198,94 +198,10 @@ func GetTagsForUserUpvoted(username string) ([]string, error) {
 func GetTagsForUserDownvoted(username string) ([]string, error) {
     query := `
         SELECT DISTINCT mt.tag 
-        FROM manga_tags mt
-        INNER JOIN votes v ON mt.manga_slug = v.manga_slug
+        FROM media_tags mt
+        INNER JOIN votes v ON mt.media_slug = v.media_slug
         WHERE v.user_username = ? AND v.value = -1
         ORDER BY mt.tag
-    `
-    rows, err := db.Query(query, username)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var tags []string
-    for rows.Next() {
-        var tag string
-        if err := rows.Scan(&tag); err != nil {
-            return nil, err
-        }
-        if tag != "" {
-            tags = append(tags, tag)
-        }
-    }
-    return tags, nil
-}
-
-// GetTagsForUserLightNovelFavorites returns all distinct tags for light novels favorited by the user
-func GetTagsForUserLightNovelFavorites(username string) ([]string, error) {
-    query := `
-        SELECT DISTINCT lnt.tag 
-        FROM light_novel_tags lnt
-        INNER JOIN light_novel_favorites lnf ON lnt.light_novel_slug = lnf.light_novel_slug
-        WHERE lnf.user_username = ?
-        ORDER BY lnt.tag
-    `
-    rows, err := db.Query(query, username)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var tags []string
-    for rows.Next() {
-        var tag string
-        if err := rows.Scan(&tag); err != nil {
-            return nil, err
-        }
-        if tag != "" {
-            tags = append(tags, tag)
-        }
-    }
-    return tags, nil
-}
-
-// GetTagsForUserLightNovelUpvoted returns all distinct tags for light novels the user has upvoted
-func GetTagsForUserLightNovelUpvoted(username string) ([]string, error) {
-    query := `
-        SELECT DISTINCT lnt.tag 
-        FROM light_novel_tags lnt
-        INNER JOIN light_novel_votes lnv ON lnt.light_novel_slug = lnv.light_novel_slug
-        WHERE lnv.user_username = ? AND lnv.value = 1
-        ORDER BY lnt.tag
-    `
-    rows, err := db.Query(query, username)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var tags []string
-    for rows.Next() {
-        var tag string
-        if err := rows.Scan(&tag); err != nil {
-            return nil, err
-        }
-        if tag != "" {
-            tags = append(tags, tag)
-        }
-    }
-    return tags, nil
-}
-
-// GetTagsForUserLightNovelDownvoted returns all distinct tags for light novels the user has downvoted
-func GetTagsForUserLightNovelDownvoted(username string) ([]string, error) {
-    query := `
-        SELECT DISTINCT lnt.tag 
-        FROM light_novel_tags lnt
-        INNER JOIN light_novel_votes lnv ON lnt.light_novel_slug = lnv.light_novel_slug
-        WHERE lnv.user_username = ? AND lnv.value = -1
-        ORDER BY lnt.tag
     `
     rows, err := db.Query(query, username)
     if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// QueryParams holds parsed query parameters for manga listings
+// QueryParams holds parsed query parameters for media listings
 type QueryParams struct {
 	Page         int
 	Sort         string
@@ -96,9 +96,9 @@ func ParseQueryParams(c *fiber.Ctx) QueryParams {
 
 	// Normalize defaults
 	if params.Sort == "" && params.Order == "" {
-		params.Sort, params.Order = models.MangaSortConfig.DefaultKey, models.MangaSortConfig.DefaultOrder
+		params.Sort, params.Order = models.MediaSortConfig.DefaultKey, models.MediaSortConfig.DefaultOrder
 	} else {
-		params.Sort, params.Order = models.MangaSortConfig.NormalizeSort(params.Sort, params.Order)
+		params.Sort, params.Order = models.MediaSortConfig.NormalizeSort(params.Sort, params.Order)
 	}
 
 	if params.TagMode != "any" {

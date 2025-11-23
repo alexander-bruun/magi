@@ -4,12 +4,12 @@ import (
 	"strings"
 )
 
-// DetermineMangaTypeByLanguage returns a suggested type (manga/manhwa/manhua/etc.)
+// DetermineMediaTypeByLanguage returns a suggested type (media/manhwa/manhua/etc.)
 // based on the original language code.
-func DetermineMangaTypeByLanguage(lang string) string {
+func DetermineMediaTypeByLanguage(lang string) string {
 	switch strings.ToLower(strings.TrimSpace(lang)) {
 	case "ja", "jp":
-		return "manga"
+		return "media"
 	case "ko":
 		return "manhwa"
 	case "zh", "cn", "zh-cn", "zh-hk", "zh-tw":
@@ -19,13 +19,13 @@ func DetermineMangaTypeByLanguage(lang string) string {
 	case "en":
 		return "oel"
 	default:
-		return "manga"
+		return "media"
 	}
 }
 
-// ApplyMetadataToManga is a helper interface for updating manga models
+// ApplyMetadataToMedia is a helper interface for updating media models
 // This allows the metadata package to provide update functionality without importing models
-type MangaUpdater interface {
+type MediaUpdater interface {
 	SetName(string)
 	SetDescription(string)
 	SetYear(int)
@@ -36,18 +36,18 @@ type MangaUpdater interface {
 	SetCoverArtURL(string)
 }
 
-// UpdateManga updates manga fields from metadata
-func UpdateManga(manga MangaUpdater, meta *MangaMetadata, coverArtURL string) {
+// UpdateMedia updates media fields from metadata
+func UpdateMedia(media MediaUpdater, meta *MediaMetadata, coverArtURL string) {
 	if meta == nil {
 		return
 	}
 
-	manga.SetName(meta.Title)
-	manga.SetDescription(meta.Description)
-	manga.SetYear(meta.Year)
-	manga.SetOriginalLanguage(meta.OriginalLanguage)
-	manga.SetStatus(meta.Status)
-	manga.SetContentRating(meta.ContentRating)
-	manga.SetType(meta.Type)
-	manga.SetCoverArtURL(coverArtURL)
+	media.SetName(meta.Title)
+	media.SetDescription(meta.Description)
+	media.SetYear(meta.Year)
+	media.SetOriginalLanguage(meta.OriginalLanguage)
+	media.SetStatus(meta.Status)
+	media.SetContentRating(meta.ContentRating)
+	media.SetType(meta.Type)
+	media.SetCoverArtURL(coverArtURL)
 }

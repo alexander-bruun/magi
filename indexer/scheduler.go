@@ -2,12 +2,13 @@ package indexer
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/robfig/cron/v3"
@@ -19,9 +20,9 @@ import (
 type ContentType int
 
 const (
-	MangaDirectory ContentType = iota
+	MediaDirectory ContentType = iota
 	LightnovelDirectory
-	SingleMangaFile
+	SingleMediaFile
 	SingleLightNovelFile
 	Skip
 )
@@ -29,7 +30,7 @@ const (
 // Callback functions for job status notifications (set by handlers package)
 var (
 	NotifyIndexerStarted  func(librarySlug string, libraryName string)
-	NotifyIndexerProgress func(librarySlug string, currentManga string, progress string)
+	NotifyIndexerProgress func(librarySlug string, currentMedia string, progress string)
 	NotifyIndexerFinished func(librarySlug string)
 )
 
@@ -161,8 +162,13 @@ func (idx *Indexer) runIndexingJob() {
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
-		if err := idx.processFolder(folder); err != nil {
-			log.Errorf("Error processing folder '%s': %s", folder, err)
+		absFolder, err := filepath.Abs(folder)
+		if err != nil {
+			log.Errorf("Failed to resolve folder path '%s': %s", folder, err)
+			continue
+		}
+		if err := idx.processFolder(absFolder); err != nil {
+			log.Errorf("Error processing folder '%s': %s", absFolder, err)
 		}
 
 		select {
@@ -187,7 +193,7 @@ func (idx *Indexer) runIndexingJob() {
 	)
 
 	go func(library models.Library) {
-		mangas, err := models.GetMangasByLibrarySlug(library.Slug)
+		mangas, err := models.GetMediasByLibrarySlug(library.Slug)
 		if err != nil {
 			log.Errorf("Failed to list mangas for cleanup for library '%s': %s", library.Name, err)
 			return
@@ -200,9 +206,9 @@ func (idx *Indexer) runIndexingJob() {
 			
 			// Check if the path no longer exists on disk
 			if _, err := os.Stat(m.Path); os.IsNotExist(err) {
-				log.Infof("Manga path missing on disk, deleting manga '%s' (slug=%s)", m.Name, m.Slug)
-				if err := models.DeleteManga(m.Slug); err != nil {
-					log.Errorf("Failed to delete manga '%s': %s", m.Slug, err)
+				log.Infof("Media path missing on disk, deleting media '%s' (slug=%s)", m.Name, m.Slug)
+				if err := models.DeleteMedia(m.Slug); err != nil {
+					log.Errorf("Failed to delete media '%s': %s", m.Slug, err)
 				}
 				continue
 			}
@@ -215,13 +221,13 @@ func (idx *Indexer) runIndexingJob() {
 					log.Warnf("Failed to get absolute path for folder '%s': %s", folder, err)
 					continue
 				}
-				absMangaPath, err := filepath.Abs(m.Path)
+				absMediaPath, err := filepath.Abs(m.Path)
 				if err != nil {
-					log.Warnf("Failed to get absolute path for manga '%s': %s", m.Path, err)
+					log.Warnf("Failed to get absolute path for media '%s': %s", m.Path, err)
 					continue
 				}
 				
-				relPath, err := filepath.Rel(absFolder, absMangaPath)
+				relPath, err := filepath.Rel(absFolder, absMediaPath)
 				if err == nil && !strings.HasPrefix(relPath, "..") {
 					pathInLibrary = true
 					break
@@ -229,9 +235,9 @@ func (idx *Indexer) runIndexingJob() {
 			}
 			
 			if !pathInLibrary {
-				log.Infof("Manga path '%s' no longer in library folders, deleting manga '%s' (slug=%s)", m.Path, m.Name, m.Slug)
-				if err := models.DeleteManga(m.Slug); err != nil {
-					log.Errorf("Failed to delete manga '%s': %s", m.Slug, err)
+				log.Infof("Media path '%s' no longer in library folders, deleting media '%s' (slug=%s)", m.Path, m.Name, m.Slug)
+				if err := models.DeleteMedia(m.Slug); err != nil {
+					log.Errorf("Failed to delete media '%s': %s", m.Slug, err)
 				}
 			}
 		}
@@ -276,73 +282,39 @@ func (idx *Indexer) processFolder(folder string) error {
 		contentType := determineContentType(path, entry.IsDir())
 
 		switch contentType {
-		case LightnovelDirectory:
+		case MediaDirectory:
 			// Increment the global scan counter
 			scanMutex.Lock()
 			scannedPathCount++
 			currentCount := scannedPathCount
 			scanMutex.Unlock()
 			
-			log.Debugf("Scanning light novel directory [%d]: %s", currentCount, path)
+			log.Debugf("Scanning media directory [%d]: %s", currentCount, path)
 			
 			// Notify progress
 			if NotifyIndexerProgress != nil {
 				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
 			}
 			
-			if _, err := IndexLightNovelSeries(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing light novel series at '%s': %s", path, err)
+			if _, err := IndexMedia(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing media at '%s': %s", path, err)
 			}
-		case MangaDirectory:
+		case SingleMediaFile:
 			// Increment the global scan counter
 			scanMutex.Lock()
 			scannedPathCount++
 			currentCount := scannedPathCount
 			scanMutex.Unlock()
 			
-			log.Debugf("Scanning manga directory [%d]: %s", currentCount, path)
+			log.Debugf("Scanning media file [%d]: %s", currentCount, path)
 			
 			// Notify progress
 			if NotifyIndexerProgress != nil {
 				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
 			}
 			
-			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing manga at '%s': %s", path, err)
-			}
-		case SingleLightNovelFile:
-			// Increment the global scan counter
-			scanMutex.Lock()
-			scannedPathCount++
-			currentCount := scannedPathCount
-			scanMutex.Unlock()
-			
-			log.Debugf("Scanning light novel file [%d]: %s", currentCount, path)
-			
-			// Notify progress
-			if NotifyIndexerProgress != nil {
-				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
-			}
-			
-			if _, err := IndexLightNovel(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing light novel at '%s': %s", path, err)
-			}
-		case SingleMangaFile:
-			// Increment the global scan counter
-			scanMutex.Lock()
-			scannedPathCount++
-			currentCount := scannedPathCount
-			scanMutex.Unlock()
-			
-			log.Debugf("Scanning manga file [%d]: %s", currentCount, path)
-			
-			// Notify progress
-			if NotifyIndexerProgress != nil {
-				NotifyIndexerProgress(idx.Library.Slug, entry.Name(), fmt.Sprintf("%d scanned", currentCount))
-			}
-			
-			if _, err := IndexManga(path, idx.Library.Slug); err != nil {
-				log.Errorf("Error indexing manga at '%s': %s", path, err)
+			if _, err := IndexMedia(path, idx.Library.Slug); err != nil {
+				log.Errorf("Error indexing media at '%s': %s", path, err)
 			}
 		default:
 			log.Debugf("Skipping: %s", entry.Name())
@@ -353,7 +325,7 @@ func (idx *Indexer) processFolder(folder string) error {
 
 // cleanupOrphanedDuplicates removes duplicate entries where one or both folders no longer exist on disk
 func cleanupOrphanedDuplicates() error {
-	duplicates, err := models.GetAllMangaDuplicates()
+	duplicates, err := models.GetAllMediaDuplicates()
 	if err != nil {
 		return err
 	}
@@ -376,10 +348,10 @@ func cleanupOrphanedDuplicates() error {
 		}
 
 		if !folder1Exists || !folder2Exists {
-			log.Infof("Deleting orphaned duplicate entry for manga '%s' (ID=%d): folder1_exists=%v, folder2_exists=%v",
-				dup.MangaSlug, dup.ID, folder1Exists, folder2Exists)
+			log.Infof("Deleting orphaned duplicate entry for media '%s' (ID=%d): folder1_exists=%v, folder2_exists=%v",
+				dup.MediaSlug, dup.ID, folder1Exists, folder2Exists)
 
-			if err := models.DeleteMangaDuplicateByID(dup.ID); err != nil {
+			if err := models.DeleteMediaDuplicateByID(dup.ID); err != nil {
 				log.Errorf("Failed to delete orphaned duplicate %d: %v", dup.ID, err)
 			} else {
 				deletedCount++
@@ -452,19 +424,14 @@ func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Libra
 	activeIndexersMutex.Unlock()
 }
 
-// determineContentType determines if a path should be indexed as manga or light novel
+// determineContentType determines if a path should be indexed as media
 func determineContentType(path string, isDir bool) ContentType {
 	if isDir {
-		if containsEPUBFiles(path) {
-			return LightnovelDirectory
-		}
-		return MangaDirectory
+		return MediaDirectory
 	} else {
 		ext := strings.ToLower(filepath.Ext(path))
-		if ext == ".epub" {
-			return SingleLightNovelFile
-		} else if ext == ".cbz" || ext == ".cbr" || ext == ".zip" || ext == ".rar" {
-			return SingleMangaFile
+		if ext == ".cbz" || ext == ".cbr" || ext == ".zip" || ext == ".rar" {
+			return SingleMediaFile
 		}
 	}
 	return Skip
@@ -472,14 +439,28 @@ func determineContentType(path string, isDir bool) ContentType {
 
 // containsEPUBFiles checks if a directory contains any .epub files
 func containsEPUBFiles(dirPath string) bool {
-	entries, err := os.ReadDir(dirPath)
+	fileInfo, err := os.Stat(dirPath)
 	if err != nil {
 		return false
 	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.ToLower(filepath.Ext(entry.Name())) == ".epub" {
-			return true
-		}
+
+	if !fileInfo.IsDir() {
+		// For single files, check if it's an epub
+		return strings.ToLower(filepath.Ext(dirPath)) == ".epub"
 	}
-	return false
+
+	// For directories, walk and check for epub files
+	var hasEPUB bool
+	filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() && strings.ToLower(filepath.Ext(d.Name())) == ".epub" {
+			hasEPUB = true
+			return fs.SkipAll // Stop walking once we find one
+		}
+		return nil
+	})
+
+	return hasEPUB
 }

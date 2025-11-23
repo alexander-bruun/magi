@@ -1,12 +1,12 @@
--- Create the mangas table
-CREATE TABLE IF NOT EXISTS mangas (
+-- Create the media table
+CREATE TABLE IF NOT EXISTS media (
     slug TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     author TEXT,
     description TEXT,
     year INTEGER,
     original_language TEXT,
-    manga_type TEXT DEFAULT 'manga',
+    type TEXT DEFAULT 'manga',
     status TEXT,
     content_rating TEXT,
     library_slug TEXT,

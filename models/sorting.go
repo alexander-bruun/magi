@@ -38,7 +38,7 @@ func (c GenericSortConfig) NormalizeSort(sortBy, order string) (key string, ord 
 	return key, ob
 }
 
-var MangaSortConfig = GenericSortConfig{
+var MediaSortConfig = GenericSortConfig{
 	Allowed: []SortOption{
 		{Key: "name", Aliases: []string{"title"}},
 		{Key: "type"},
@@ -52,32 +52,19 @@ var MangaSortConfig = GenericSortConfig{
 	DefaultOrder: "asc",
 }
 
-var LightNovelSortConfig = GenericSortConfig{
-	Allowed: []SortOption{
-		{Key: "name", Aliases: []string{"title"}},
-		{Key: "year"},
-		{Key: "status"},
-		{Key: "content_rating", Aliases: []string{"contentrating"}},
-		{Key: "created_at", Aliases: []string{"createdat"}},
-		{Key: "updated_at", Aliases: []string{"updatedat"}},
-	},
-	DefaultKey: "name",
-	DefaultOrder: "asc",
-}
-
-// GetAllowedMangaSortOptions returns sort options, optionally excluding content_rating
+// GetAllowedMediaSortOptions returns sort options, optionally excluding content_rating
 // when content rating filtering is active (limit < 3)
-func GetAllowedMangaSortOptions() []SortOption {
+func GetAllowedMediaSortOptions() []SortOption {
 	cfg, err := GetAppConfig()
 	if err != nil {
 		// On error, return all options
-		return MangaSortConfig.Allowed
+		return MediaSortConfig.Allowed
 	}
 	
 	// If content rating limit is less than 3 (not showing all), exclude content_rating from sort
 	if cfg.ContentRatingLimit < 3 {
-		filtered := make([]SortOption, 0, len(MangaSortConfig.Allowed)-1)
-		for _, opt := range MangaSortConfig.Allowed {
+		filtered := make([]SortOption, 0, len(MediaSortConfig.Allowed)-1)
+		for _, opt := range MediaSortConfig.Allowed {
 			if opt.Key != "content_rating" {
 				filtered = append(filtered, opt)
 			}
@@ -85,84 +72,34 @@ func GetAllowedMangaSortOptions() []SortOption {
 		return filtered
 	}
 	
-	return MangaSortConfig.Allowed
+	return MediaSortConfig.Allowed
 }
 
-// GetAllowedLightNovelSortOptions returns sort options for light novels, optionally excluding content_rating
-// when content rating filtering is active (limit < 3)
-func GetAllowedLightNovelSortOptions() []SortOption {
-	cfg, err := GetAppConfig()
-	if err != nil {
-		// On error, return all options
-		return LightNovelSortConfig.Allowed
-	}
-	
-	// If content rating limit is less than 3 (not showing all), exclude content_rating from sort
-	if cfg.ContentRatingLimit < 3 {
-		filtered := make([]SortOption, 0, len(LightNovelSortConfig.Allowed)-1)
-		for _, opt := range LightNovelSortConfig.Allowed {
-			if opt.Key != "content_rating" {
-				filtered = append(filtered, opt)
-			}
-		}
-		return filtered
-	}
-	
-	return LightNovelSortConfig.Allowed
-}
-
-// SortMangas applies the given normalized key & order (use MangaSortConfig.NormalizeSort)
+// SortMedias applies the given normalized key & order (use MediaSortConfig.NormalizeSort)
 // to the slice in-place.
-func SortMangas(mangas []Manga, key, order string) {
+func SortMedias(media []Media, key, order string) {
 	asc := strings.ToLower(order) != "desc"
 	switch key {
 	case "name":
 		if asc {
-			sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name) })
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) })
 		} else {
-			sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name) })
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) })
 		}
 	case "type":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) < strings.ToLower(mangas[j].Type) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Type) > strings.ToLower(mangas[j].Type) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) < strings.ToLower(media[j].Type) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) > strings.ToLower(media[j].Type) }) }
 	case "year":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year < mangas[j].Year }) } else { sort.Slice(mangas, func(i, j int) bool { return mangas[i].Year > mangas[j].Year }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return media[i].Year < media[j].Year }) } else { sort.Slice(media, func(i, j int) bool { return media[i].Year > media[j].Year }) }
 	case "status":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Status) < strings.ToLower(mangas[j].Status) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Status) > strings.ToLower(mangas[j].Status) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) < strings.ToLower(media[j].Status) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) > strings.ToLower(media[j].Status) }) }
 	case "content_rating":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].ContentRating) < strings.ToLower(mangas[j].ContentRating) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].ContentRating) > strings.ToLower(mangas[j].ContentRating) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].ContentRating) < strings.ToLower(media[j].ContentRating) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].ContentRating) > strings.ToLower(media[j].ContentRating) }) }
 	case "created_at":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.Before(mangas[j].CreatedAt) }) } else { sort.Slice(mangas, func(i, j int) bool { return mangas[i].CreatedAt.After(mangas[j].CreatedAt) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.Before(media[j].CreatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.After(media[j].CreatedAt) }) }
 	case "updated_at":
-		if asc { sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.Before(mangas[j].UpdatedAt) }) } else { sort.Slice(mangas, func(i, j int) bool { return mangas[i].UpdatedAt.After(mangas[j].UpdatedAt) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.Before(media[j].UpdatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.After(media[j].UpdatedAt) }) }
 	default:
 		// default already handled by NormalizeSort -> name
-		if asc { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) < strings.ToLower(mangas[j].Name) }) } else { sort.Slice(mangas, func(i, j int) bool { return strings.ToLower(mangas[i].Name) > strings.ToLower(mangas[j].Name) }) }
-	}
-}
-
-// SortLightNovels applies the given normalized key & order (use LightNovelSortConfig.NormalizeSort)
-// to the slice in-place.
-func SortLightNovels(lightNovels []LightNovel, key, order string) {
-	asc := strings.ToLower(order) != "desc"
-	switch key {
-	case "name":
-		if asc {
-			sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Name) < strings.ToLower(lightNovels[j].Name) })
-		} else {
-			sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Name) > strings.ToLower(lightNovels[j].Name) })
-		}
-	case "year":
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].Year < lightNovels[j].Year }) } else { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].Year > lightNovels[j].Year }) }
-	case "status":
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Status) < strings.ToLower(lightNovels[j].Status) }) } else { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Status) > strings.ToLower(lightNovels[j].Status) }) }
-	case "content_rating":
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].ContentRating) < strings.ToLower(lightNovels[j].ContentRating) }) } else { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].ContentRating) > strings.ToLower(lightNovels[j].ContentRating) }) }
-	case "created_at":
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].CreatedAt.Before(lightNovels[j].CreatedAt) }) } else { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].CreatedAt.After(lightNovels[j].CreatedAt) }) }
-	case "updated_at":
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].UpdatedAt.Before(lightNovels[j].UpdatedAt) }) } else { sort.Slice(lightNovels, func(i, j int) bool { return lightNovels[i].UpdatedAt.After(lightNovels[j].UpdatedAt) }) }
-	default:
-		// default already handled by NormalizeSort -> name
-		if asc { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Name) < strings.ToLower(lightNovels[j].Name) }) } else { sort.Slice(lightNovels, func(i, j int) bool { return strings.ToLower(lightNovels[i].Name) > strings.ToLower(lightNovels[j].Name) }) }
+		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) }) }
 	}
 }

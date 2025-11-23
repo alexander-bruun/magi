@@ -38,7 +38,7 @@ func NotifyListeners(notification Notification) {
 type UserNotification struct {
 	ID          int64     `json:"id"`
 	UserName    string    `json:"user_name"`
-	MangaSlug   string    `json:"manga_slug"`
+	MediaSlug   string    `json:"media_slug"`
 	MangaName   string    `json:"manga_name,omitempty"`
 	ChapterSlug string    `json:"chapter_slug"`
 	ChapterName string    `json:"chapter_name,omitempty"`
@@ -50,7 +50,7 @@ type UserNotification struct {
 // CreateUserNotification creates a new notification for a user about a new chapter
 func CreateUserNotification(userName, mangaSlug, chapterSlug, message string) error {
 	query := `
-	INSERT INTO user_notifications (user_name, manga_slug, chapter_slug, message, is_read, created_at)
+	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at)
 	VALUES (?, ?, ?, ?, 0, ?)
 	`
 
@@ -62,11 +62,11 @@ func CreateUserNotification(userName, mangaSlug, chapterSlug, message string) er
 // GetUserNotifications retrieves all notifications for a user, optionally filtered by read status
 func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification, error) {
 	query := `
-	SELECT n.id, n.user_name, n.manga_slug, n.chapter_slug, n.message, n.is_read, n.created_at,
+	SELECT n.id, n.user_name, n.media_slug, n.chapter_slug, n.message, n.is_read, n.created_at,
 	       m.name as manga_name, c.name as chapter_name
 	FROM user_notifications n
-	LEFT JOIN mangas m ON n.manga_slug = m.slug
-	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.manga_slug = c.manga_slug
+	LEFT JOIN media m ON n.media_slug = m.slug
+	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.media_slug = c.media_slug
 	WHERE n.user_name = ?
 	`
 	
@@ -88,7 +88,7 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 		var createdAt int64
 		var mangaName, chapterName *string
 
-		if err := rows.Scan(&n.ID, &n.UserName, &n.MangaSlug, &n.ChapterSlug, &n.Message, &n.IsRead, &createdAt, &mangaName, &chapterName); err != nil {
+		if err := rows.Scan(&n.ID, &n.UserName, &n.MediaSlug, &n.ChapterSlug, &n.Message, &n.IsRead, &createdAt, &mangaName, &chapterName); err != nil {
 			return nil, err
 		}
 
@@ -171,7 +171,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	query := fmt.Sprintf(`
 	SELECT c.slug, c.name
 	FROM chapters c
-	WHERE c.manga_slug = ? AND c.slug IN (%s)
+	WHERE c.media_slug = ? AND c.slug IN (%s)
 	`, strings.Join(placeholders, ","))
 
 	rows, err := db.Query(query, args...)
@@ -205,7 +205,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	usersQuery := `
 	SELECT DISTINCT user_name
 	FROM reading_states
-	WHERE manga_slug = ?
+	WHERE media_slug = ?
 	`
 
 	userRows, err := db.Query(usersQuery, mangaSlug)
@@ -232,7 +232,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	}
 
 	// Get manga name
-	manga, err := GetMangaUnfiltered(mangaSlug)
+	manga, err := GetMediaUnfiltered(mangaSlug)
 	if err != nil || manga == nil {
 		log.Errorf("Failed to get manga details: %v", err)
 		return err
@@ -258,7 +258,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		// Check if a bundled notification already exists for this manga recently (within last hour)
 		existsQuery := `
 		SELECT COUNT(*) FROM user_notifications 
-		WHERE user_name = ? AND manga_slug = ? AND chapter_slug = ? AND created_at > ?
+		WHERE user_name = ? AND media_slug = ? AND chapter_slug = ? AND created_at > ?
 		`
 		var count int
 		oneHourAgo := time.Now().Add(-time.Hour).Unix()
@@ -288,12 +288,12 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 
 // BundleNotificationsForUser bundles multiple unread notifications for the same manga into one
 func BundleNotificationsForUser(userName string) error {
-	// Find mangas with multiple unread notifications
+	// Find media with multiple unread notifications
 	query := `
-	SELECT manga_slug, COUNT(*) as count
+	SELECT media_slug, COUNT(*) as count
 	FROM user_notifications
 	WHERE user_name = ? AND is_read = 0
-	GROUP BY manga_slug
+	GROUP BY media_slug
 	HAVING COUNT(*) > 1
 	`
 
@@ -314,7 +314,7 @@ func BundleNotificationsForUser(userName string) error {
 		notifsQuery := `
 		SELECT id, chapter_slug, message
 		FROM user_notifications
-		WHERE user_name = ? AND manga_slug = ? AND is_read = 0
+		WHERE user_name = ? AND media_slug = ? AND is_read = 0
 		ORDER BY created_at ASC
 		`
 		notifRows, err := db.Query(notifsQuery, userName, mangaSlug)
@@ -350,7 +350,7 @@ func BundleNotificationsForUser(userName string) error {
 			args[i+1] = slug
 		}
 		chapQuery := fmt.Sprintf(`
-		SELECT name FROM chapters WHERE manga_slug = ? AND slug IN (%s)
+		SELECT name FROM chapters WHERE media_slug = ? AND slug IN (%s)
 		`, strings.Join(placeholders, ","))
 		chapRows, err := db.Query(chapQuery, args...)
 		if err != nil {

@@ -8,7 +8,7 @@
 
     const STORAGE_KEY = 'magi-reading-mode';
     const FOCUS_STATE_STORAGE_KEY = 'magi-focus-state';
-    const LIGHT_NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
+    const NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
     const MODES = {
         WEBTOON: 'webtoon',
         SINGLE: 'single',
@@ -98,7 +98,7 @@
      */
     function loadLightNovelSettings() {
         try {
-            const saved = localStorage.getItem(LIGHT_NOVEL_SETTINGS_KEY);
+            const saved = localStorage.getItem(NOVEL_SETTINGS_KEY);
             if (saved) {
                 const settings = JSON.parse(saved);
                 currentFontSize = settings.fontSize || 18;
@@ -124,7 +124,7 @@
                 textAlign: currentTextAlign,
                 margin: currentMargin
             };
-            localStorage.setItem(LIGHT_NOVEL_SETTINGS_KEY, JSON.stringify(settings));
+            localStorage.setItem(NOVEL_SETTINGS_KEY, JSON.stringify(settings));
         } catch (e) {
             console.warn('Could not save light novel settings to localStorage:', e);
         }
@@ -250,7 +250,7 @@
         currentMargin = 20;
         applyLightNovelSettings();
         try {
-            localStorage.removeItem(LIGHT_NOVEL_SETTINGS_KEY);
+            localStorage.removeItem(NOVEL_SETTINGS_KEY);
         } catch (e) {
             console.warn('Could not clear light novel settings from localStorage:', e);
         }

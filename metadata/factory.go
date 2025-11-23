@@ -25,9 +25,9 @@ func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
 	case "jikan":
 		apiToken = "" // Jikan doesn't require auth
 	case "mangadex":
-		apiToken = "" // Mangadex doesn't require auth for public data
+		apiToken = "" // Mediadex doesn't require auth for public data
 	default:
-		// Default to Mangadex
+		// Default to Mediadex
 		providerName = "mangadex"
 		apiToken = ""
 	}

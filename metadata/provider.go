@@ -4,8 +4,8 @@ import (
 	"errors"
 )
 
-// MangaMetadata represents the standardized metadata structure returned by all providers
-type MangaMetadata struct {
+// MediaMetadata represents the standardized metadata structure returned by all providers
+type MediaMetadata struct {
 	Title             string
 	Description       string
 	Year              int
@@ -14,13 +14,13 @@ type MangaMetadata struct {
 	ContentRating     string // safe, suggestive, erotica, pornographic
 	CoverArtURL       string
 	Tags              []string
-	Type              string // manga, manhwa, manhua, webtoon, etc.
+	Type              string // media, manhwa, manhua, webtoon, etc.
 	AlternativeTitles []string
 	Author            string
 	ExternalID        string // Provider-specific ID
 }
 
-// SearchResult represents a single manga search result
+// SearchResult represents a single media search result
 type SearchResult struct {
 	ID               string
 	Title            string
@@ -35,14 +35,14 @@ type Provider interface {
 	// Name returns the provider name (e.g., "mangadex", "mal", "anilist", "jikan")
 	Name() string
 
-	// Search searches for manga by title and returns a list of results
+	// Search searches for media by title and returns a list of results
 	Search(title string) ([]SearchResult, error)
 
-	// GetMetadata fetches detailed metadata for a specific manga by provider ID
-	GetMetadata(id string) (*MangaMetadata, error)
+	// GetMetadata fetches detailed metadata for a specific media by provider ID
+	GetMetadata(id string) (*MediaMetadata, error)
 
-	// FindBestMatch searches for manga and returns the best matching result
-	FindBestMatch(title string) (*MangaMetadata, error)
+	// FindBestMatch searches for media and returns the best matching result
+	FindBestMatch(title string) (*MediaMetadata, error)
 
 	// RequiresAuth returns true if this provider requires an API token
 	RequiresAuth() bool
@@ -52,7 +52,7 @@ type Provider interface {
 
 	// GetCoverImageURL returns the actual downloadable URL for cover art
 	// This allows each provider to handle URL construction differently
-	GetCoverImageURL(metadata *MangaMetadata) string
+	GetCoverImageURL(metadata *MediaMetadata) string
 }
 
 var (

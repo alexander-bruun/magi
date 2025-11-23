@@ -16,7 +16,7 @@ type Chapter struct {
 	Type            string `json:"type"`
 	File            string `json:"file"`
 	ChapterCoverURL string `json:"chapter_cover_url"`
-	MangaSlug       string `json:"manga_slug"`
+	MediaSlug       string `json:"media_slug"`
 	Read            bool   `json:"read"`
 	CreatedAt       time.Time `json:"created_at"`
 }
@@ -24,7 +24,7 @@ type Chapter struct {
 // CreateChapter adds a new chapter if it does not already exist
 func CreateChapter(chapter Chapter) error {
 	chapter.Slug = utils.Sluggify(chapter.Name)
-	exists, err := ChapterExists(chapter.Slug, chapter.MangaSlug)
+	exists, err := ChapterExists(chapter.Slug, chapter.MediaSlug)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func CreateChapter(chapter Chapter) error {
 	}
 
 	query := `
-	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, manga_slug, created_at)
+	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, media_slug, created_at)
 	VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -41,7 +41,7 @@ func CreateChapter(chapter Chapter) error {
 	chapter.CreatedAt = timestamps.CreatedAt
 	createdAt := timestamps.CreatedAt.Unix()
 
-	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug, createdAt)
+	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, createdAt)
 	if err != nil {
 		return err
 	}
@@ -52,9 +52,9 @@ func CreateChapter(chapter Chapter) error {
 // GetChapters retrieves all chapters for a specific manga, sorted by name
 func GetChapters(mangaSlug string) ([]Chapter, error) {
 	query := `
-	SELECT slug, name, type, file, chapter_cover_url, manga_slug, created_at
+	SELECT slug, name, type, file, chapter_cover_url, media_slug, created_at
 	FROM chapters
-	WHERE manga_slug = ?
+	WHERE media_slug = ?
 	`
 
 	rows, err := db.Query(query, mangaSlug)
@@ -67,7 +67,7 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 	for rows.Next() {
 		var chapter Chapter
 		var createdAt int64
-		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug, &createdAt); err != nil {
+		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MediaSlug, &createdAt); err != nil {
 			return nil, err
 		}
 		chapter.CreatedAt = time.Unix(createdAt, 0)
@@ -85,16 +85,16 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 // GetChapter retrieves a specific chapter by its slug
 func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 	query := `
-	SELECT slug, name, type, file, chapter_cover_url, manga_slug, created_at
+	SELECT slug, name, type, file, chapter_cover_url, media_slug, created_at
 	FROM chapters
-	WHERE manga_slug = ? AND slug = ?
+	WHERE media_slug = ? AND slug = ?
 	`
 
 	row := db.QueryRow(query, mangaSlug, chapterSlug)
 
 	var chapter Chapter
 	var createdAt int64
-	err := row.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MangaSlug, &createdAt)
+	err := row.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MediaSlug, &createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No chapter found
@@ -111,10 +111,10 @@ func UpdateChapter(chapter *Chapter) error {
 	query := `
 	UPDATE chapters
 	SET name = ?, type = ?, file = ?, chapter_cover_url = ?
-	WHERE manga_slug = ? AND slug = ?
+	WHERE media_slug = ? AND slug = ?
 	`
 
-	_, err := db.Exec(query, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MangaSlug, chapter.Slug)
+	_, err := db.Exec(query, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, chapter.Slug)
 	if err != nil {
 		return err
 	}
@@ -124,17 +124,17 @@ func UpdateChapter(chapter *Chapter) error {
 
 // DeleteChapter removes a specific chapter
 func DeleteChapter(mangaSlug, chapterSlug string) error {
-	return DeleteRecord(`DELETE FROM chapters WHERE manga_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
+	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
-// DeleteChaptersByMangaSlug removes all chapters for a specific manga
-func DeleteChaptersByMangaSlug(mangaSlug string) error {
-	return DeleteRecord(`DELETE FROM chapters WHERE manga_slug = ?`, mangaSlug)
+// DeleteChaptersByMediaSlug removes all chapters for a specific manga
+func DeleteChaptersByMediaSlug(mangaSlug string) error {
+	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ?`, mangaSlug)
 }
 
 // ChapterExists checks if a chapter already exists
 func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
-	return ExistsChecker(`SELECT 1 FROM chapters WHERE manga_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
+	return ExistsChecker(`SELECT 1 FROM chapters WHERE media_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
 // GetAdjacentChapters finds the previous and next chapters based on the current chapter slug

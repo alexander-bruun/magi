@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -244,6 +245,23 @@ func SimilarityRatio(s1, s2 string) float64 {
 	
 	distance := LevenshteinDistance(s1Lower, s2Lower)
 	return 1.0 - float64(distance)/float64(maxLen)
+}
+
+// ExtractChapterName attempts to extract a volume or chapter name from a filename.
+// If no volume/chapter pattern is found, returns the cleaned filename.
+func ExtractChapterName(filename string) string {
+	// Look for volume patterns (v01, vol.1, volume 1, etc.)
+	if vol := regexp.MustCompile(`(?i)v(ol)?\.?\s*(\d+)`).FindStringSubmatch(filename); vol != nil {
+		num, _ := strconv.Atoi(vol[2])
+		return fmt.Sprintf("Volume %d", num)
+	}
+	// Look for chapter patterns (c01, ch.1, chapter 1, etc.)
+	if ch := regexp.MustCompile(`(?i)c(h)?\.?\s*(\d+)`).FindStringSubmatch(filename); ch != nil {
+		num, _ := strconv.Atoi(ch[2])
+		return fmt.Sprintf("Chapter %d", num)
+	}
+	// Otherwise, return the cleaned filename
+	return RemovePatterns(strings.TrimSuffix(filename, filepath.Ext(filename)))
 }
 
 // MarkdownToHTML converts markdown text to safe HTML using goldmark

@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/alexander-bruun/magi/executor"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/websocket/v2"
@@ -18,7 +20,7 @@ type JobStatus struct {
 	ID           int64  `json:"id"`            // Script ID (for scrapers) or 0 (for indexers)
 	LibrarySlug  string `json:"library_slug"`  // Library slug (for indexers only)
 	StartTime    int64  `json:"start_time"`    // Unix timestamp when job started
-	CurrentManga string `json:"current_manga"` // Current manga being indexed (for indexers)
+	CurrentMedia string `json:"current_manga"` // Current media being indexed (for indexers)
 	Progress     string `json:"progress"`      // Progress information (e.g., "15/100")
 }
 
@@ -60,7 +62,7 @@ func (m *JobStatusManager) pingClients() {
 				m.writeMu.Lock()
 				err := conn.WriteMessage(websocket.PingMessage, []byte{})
 				m.writeMu.Unlock()
-				
+
 				if err != nil {
 					log.Debugf("Failed to ping job status client: %v", err)
 					m.unregisterClient(conn)
@@ -179,7 +181,7 @@ func (m *JobStatusManager) broadcastJobUpdate() {
 		m.writeMu.Lock()
 		err := conn.WriteMessage(websocket.TextMessage, data)
 		m.writeMu.Unlock()
-		
+
 		if err != nil {
 			log.Debugf("Failed to send job status update: %v", err)
 			m.unregisterClient(conn)
@@ -230,12 +232,12 @@ func NotifyIndexerStarted(librarySlug string, libraryName string) {
 	log.Debugf("Notified indexer started: %s (slug=%s)", libraryName, librarySlug)
 }
 
-// NotifyIndexerProgress updates the current manga being indexed
-func NotifyIndexerProgress(librarySlug string, currentManga string, progress string) {
+// NotifyIndexerProgress updates the current media being indexed
+func NotifyIndexerProgress(librarySlug string, currentMedia string, progress string) {
 	jobStatusManager.mu.Lock()
 	key := getIndexerKey(librarySlug)
 	if job, exists := jobStatusManager.activeJobs[key]; exists {
-		job.CurrentManga = currentManga
+		job.CurrentMedia = currentMedia
 		job.Progress = progress
 		jobStatusManager.activeJobs[key] = job
 	}
@@ -262,4 +264,22 @@ func getScraperKey(scriptID int64) string {
 
 func getIndexerKey(librarySlug string) string {
 	return "indexer_" + librarySlug
+}
+
+// HandleScraperLogsWebSocketUpgrade upgrades the connection to WebSocket and extracts the script ID
+func HandleScraperLogsWebSocketUpgrade(c *fiber.Ctx) error {
+	// Check if this is a WebSocket upgrade request
+	if websocket.IsWebSocketUpgrade(c) {
+		// Extract script ID from route parameter
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("invalid script id: %v", err))
+		}
+
+		// Upgrade to WebSocket with the extracted script ID
+		return websocket.New(func(conn *websocket.Conn) {
+			executor.HandleLogsWebSocket(conn, id)
+		})(c)
+	}
+	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
 }

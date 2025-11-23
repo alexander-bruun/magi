@@ -10,11 +10,11 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
-// MangaDuplicate represents when different folders are detected as adding chapters to the same manga
-type MangaDuplicate struct {
+// MediaDuplicate represents when different folders are detected as adding chapters to the same media
+type MediaDuplicate struct {
 	ID           int64  `json:"id"`
-	MangaSlug    string `json:"manga_slug"`
-	MangaName    string `json:"manga_name"`
+	MediaSlug    string `json:"media_slug"`
+	MediaName    string `json:"manga_name"`
 	LibrarySlug  string `json:"library_slug"`
 	LibraryName  string `json:"library_name"`
 	FolderPath1  string `json:"folder_path_1"`
@@ -199,8 +199,8 @@ func GetActiveFolderSimilaritiesByLibraryWithPagination(page, limit int) (map[st
 	return grouped, total, nil
 }
 
-// CreateMangaDuplicate adds a new manga duplicate record
-func CreateMangaDuplicate(duplicate MangaDuplicate) error {
+// CreateMediaDuplicate adds a new media duplicate record
+func CreateMediaDuplicate(duplicate MediaDuplicate) error {
 	duplicate.CreatedAt = time.Now().Unix()
 	
 	// Ensure folder paths are in consistent order for uniqueness
@@ -209,13 +209,13 @@ func CreateMangaDuplicate(duplicate MangaDuplicate) error {
 	}
 	
 	query := `
-		INSERT OR IGNORE INTO manga_duplicates 
-		(manga_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at)
+		INSERT OR IGNORE INTO media_duplicates 
+		(media_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	
 	_, err := db.Exec(query, 
-		duplicate.MangaSlug, 
+		duplicate.MediaSlug, 
 		duplicate.LibrarySlug,
 		duplicate.FolderPath1, 
 		duplicate.FolderPath2, 
@@ -226,14 +226,14 @@ func CreateMangaDuplicate(duplicate MangaDuplicate) error {
 	return err
 }
 
-// GetActiveMangaDuplicates returns all non-dismissed manga duplicates with pagination
-func GetActiveMangaDuplicates(page, limit int) ([]MangaDuplicate, int, error) {
+// GetActiveMediaDuplicates returns all non-dismissed media duplicates with pagination
+func GetActiveMediaDuplicates(page, limit int) ([]MediaDuplicate, int, error) {
 	// Get total count
 	var total int
-	countQuery := `SELECT COUNT(*) FROM manga_duplicates WHERE dismissed = 0`
+	countQuery := `SELECT COUNT(*) FROM media_duplicates WHERE dismissed = 0`
 	err := db.QueryRow(countQuery).Scan(&total)
 	if err != nil {
-		log.Errorf("Failed to count active manga duplicates: %v", err)
+		log.Errorf("Failed to count active media duplicates: %v", err)
 		return nil, 0, err
 	}
 	
@@ -244,7 +244,7 @@ func GetActiveMangaDuplicates(page, limit int) ([]MangaDuplicate, int, error) {
 	query := `
 		SELECT 
 			md.id, 
-			md.manga_slug, 
+			md.media_slug, 
 			m.name as manga_name,
 			md.library_slug, 
 			l.name as library_name,
@@ -252,8 +252,8 @@ func GetActiveMangaDuplicates(page, limit int) ([]MangaDuplicate, int, error) {
 			md.folder_path_2, 
 			md.dismissed, 
 			md.created_at
-		FROM manga_duplicates md
-		LEFT JOIN mangas m ON md.manga_slug = m.slug
+		FROM media_duplicates md
+		LEFT JOIN media m ON md.media_slug = m.slug
 		LEFT JOIN libraries l ON md.library_slug = l.slug
 		WHERE md.dismissed = 0
 		ORDER BY md.created_at DESC
@@ -262,26 +262,26 @@ func GetActiveMangaDuplicates(page, limit int) ([]MangaDuplicate, int, error) {
 	
 	rows, err := db.Query(query, limit, offset)
 	if err != nil {
-		log.Errorf("Failed to get active manga duplicates: %v", err)
+		log.Errorf("Failed to get active media duplicates: %v", err)
 		return nil, 0, err
 	}
 	defer rows.Close()
 	
-	var duplicates []MangaDuplicate
+	var duplicates []MediaDuplicate
 	for rows.Next() {
-		var d MangaDuplicate
+		var d MediaDuplicate
 		var dismissed int
 		var mangaName, libraryName sql.NullString
 		
-		if err := rows.Scan(&d.ID, &d.MangaSlug, &mangaName, &d.LibrarySlug, &libraryName,
+		if err := rows.Scan(&d.ID, &d.MediaSlug, &mangaName, &d.LibrarySlug, &libraryName,
 			&d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt); err != nil {
-			log.Errorf("Failed to scan manga duplicate: %v", err)
+			log.Errorf("Failed to scan media duplicate: %v", err)
 			continue
 		}
 		
 		d.Dismissed = dismissed == 1
 		if mangaName.Valid {
-			d.MangaName = mangaName.String
+			d.MediaName = mangaName.String
 		}
 		if libraryName.Valid {
 			d.LibraryName = libraryName.String
@@ -293,44 +293,44 @@ func GetActiveMangaDuplicates(page, limit int) ([]MangaDuplicate, int, error) {
 	return duplicates, total, nil
 }
 
-// DismissMangaDuplicate marks a manga duplicate as dismissed
-func DismissMangaDuplicate(id int64) error {
-	query := `UPDATE manga_duplicates SET dismissed = 1 WHERE id = ?`
+// DismissMediaDuplicate marks a media duplicate as dismissed
+func DismissMediaDuplicate(id int64) error {
+	query := `UPDATE media_duplicates SET dismissed = 1 WHERE id = ?`
 	_, err := db.Exec(query, id)
 	if err != nil {
-		log.Errorf("Failed to dismiss manga duplicate %d: %v", id, err)
+		log.Errorf("Failed to dismiss media duplicate %d: %v", id, err)
 	}
 	return err
 }
 
-// ClearMangaDuplicatesForLibrary removes all duplicates for a library (used when re-indexing)
-func ClearMangaDuplicatesForLibrary(librarySlug string) error {
-	query := `DELETE FROM manga_duplicates WHERE library_slug = ?`
+// ClearMediaDuplicatesForLibrary removes all duplicates for a library (used when re-indexing)
+func ClearMediaDuplicatesForLibrary(librarySlug string) error {
+	query := `DELETE FROM media_duplicates WHERE library_slug = ?`
 	_, err := db.Exec(query, librarySlug)
 	if err != nil {
-		log.Errorf("Failed to clear manga duplicates for library %s: %v", librarySlug, err)
+		log.Errorf("Failed to clear media duplicates for library %s: %v", librarySlug, err)
 	}
 	return err
 }
 
-// GetMangaDuplicateByFolders checks if a duplicate record exists for the given folders
-func GetMangaDuplicateByFolders(mangaSlug, folderPath1, folderPath2 string) (*MangaDuplicate, error) {
+// GetMediaDuplicateByFolders checks if a duplicate record exists for the given folders
+func GetMediaDuplicateByFolders(mangaSlug, folderPath1, folderPath2 string) (*MediaDuplicate, error) {
 	// Ensure consistent order
 	if folderPath1 > folderPath2 {
 		folderPath1, folderPath2 = folderPath2, folderPath1
 	}
 	
 	query := `
-		SELECT id, manga_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at
-		FROM manga_duplicates
-		WHERE manga_slug = ? AND folder_path_1 = ? AND folder_path_2 = ?
+		SELECT id, media_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at
+		FROM media_duplicates
+		WHERE media_slug = ? AND folder_path_1 = ? AND folder_path_2 = ?
 	`
 	
-	var d MangaDuplicate
+	var d MediaDuplicate
 	var dismissed int
 	
 	err := db.QueryRow(query, mangaSlug, folderPath1, folderPath2).Scan(
-		&d.ID, &d.MangaSlug, &d.LibrarySlug, &d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt,
+		&d.ID, &d.MediaSlug, &d.LibrarySlug, &d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt,
 	)
 	
 	if err != nil {
@@ -344,22 +344,22 @@ func GetMangaDuplicateByFolders(mangaSlug, folderPath1, folderPath2 string) (*Ma
 	return &d, nil
 }
 
-// DeleteMangaDuplicateByID deletes a manga duplicate entry by its ID
-func DeleteMangaDuplicateByID(id int64) error {
-	query := `DELETE FROM manga_duplicates WHERE id = ?`
+// DeleteMediaDuplicateByID deletes a media duplicate entry by its ID
+func DeleteMediaDuplicateByID(id int64) error {
+	query := `DELETE FROM media_duplicates WHERE id = ?`
 	_, err := db.Exec(query, id)
 	if err != nil {
-		log.Errorf("Failed to delete manga duplicate %d: %v", id, err)
+		log.Errorf("Failed to delete media duplicate %d: %v", id, err)
 	}
 	return err
 }
 
-// GetAllMangaDuplicates returns all manga duplicates (including dismissed ones)
-func GetAllMangaDuplicates() ([]MangaDuplicate, error) {
+// GetAllMediaDuplicates returns all media duplicates (including dismissed ones)
+func GetAllMediaDuplicates() ([]MediaDuplicate, error) {
 	query := `
 		SELECT 
 			md.id, 
-			md.manga_slug, 
+			md.media_slug, 
 			m.name as manga_name,
 			md.library_slug, 
 			l.name as library_name,
@@ -367,34 +367,34 @@ func GetAllMangaDuplicates() ([]MangaDuplicate, error) {
 			md.folder_path_2, 
 			md.dismissed, 
 			md.created_at
-		FROM manga_duplicates md
-		LEFT JOIN mangas m ON md.manga_slug = m.slug
+		FROM media_duplicates md
+		LEFT JOIN media m ON md.media_slug = m.slug
 		LEFT JOIN libraries l ON md.library_slug = l.slug
 		ORDER BY md.created_at DESC
 	`
 	
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Errorf("Failed to get all manga duplicates: %v", err)
+		log.Errorf("Failed to get all media duplicates: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 	
-	var duplicates []MangaDuplicate
+	var duplicates []MediaDuplicate
 	for rows.Next() {
-		var d MangaDuplicate
+		var d MediaDuplicate
 		var dismissed int
 		var mangaName, libraryName sql.NullString
 		
-		if err := rows.Scan(&d.ID, &d.MangaSlug, &mangaName, &d.LibrarySlug, &libraryName,
+		if err := rows.Scan(&d.ID, &d.MediaSlug, &mangaName, &d.LibrarySlug, &libraryName,
 			&d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt); err != nil {
-			log.Errorf("Failed to scan manga duplicate: %v", err)
+			log.Errorf("Failed to scan media duplicate: %v", err)
 			continue
 		}
 		
 		d.Dismissed = dismissed == 1
 		if mangaName.Valid {
-			d.MangaName = mangaName.String
+			d.MediaName = mangaName.String
 		}
 		if libraryName.Valid {
 			d.LibraryName = libraryName.String
@@ -418,8 +418,8 @@ type FolderInfo struct {
 // DuplicateFolderInfo contains information about both folders in a duplicate
 type DuplicateFolderInfo struct {
 	DuplicateID int64      `json:"duplicate_id"`
-	MangaSlug   string     `json:"manga_slug"`
-	MangaName   string     `json:"manga_name"`
+	MediaSlug   string     `json:"media_slug"`
+	MediaName   string     `json:"manga_name"`
 	Folder1     FolderInfo `json:"folder1"`
 	Folder2     FolderInfo `json:"folder2"`
 }
@@ -429,12 +429,12 @@ func GetDuplicateFolderInfo(duplicateID int64) (*DuplicateFolderInfo, error) {
 	query := `
 		SELECT 
 			md.id, 
-			md.manga_slug, 
+			md.media_slug, 
 			m.name as manga_name,
 			md.folder_path_1, 
 			md.folder_path_2
-		FROM manga_duplicates md
-		LEFT JOIN mangas m ON md.manga_slug = m.slug
+		FROM media_duplicates md
+		LEFT JOIN media m ON md.media_slug = m.slug
 		WHERE md.id = ?
 	`
 	
@@ -443,7 +443,7 @@ func GetDuplicateFolderInfo(duplicateID int64) (*DuplicateFolderInfo, error) {
 	var folderPath1, folderPath2 string
 	
 	err := db.QueryRow(query, duplicateID).Scan(
-		&info.DuplicateID, &info.MangaSlug, &mangaName, &folderPath1, &folderPath2,
+		&info.DuplicateID, &info.MediaSlug, &mangaName, &folderPath1, &folderPath2,
 	)
 	
 	if err != nil {
@@ -451,7 +451,7 @@ func GetDuplicateFolderInfo(duplicateID int64) (*DuplicateFolderInfo, error) {
 	}
 	
 	if mangaName.Valid {
-		info.MangaName = mangaName.String
+		info.MediaName = mangaName.String
 	}
 	
 	// Get info for folder 1
@@ -498,8 +498,8 @@ func getFolderInfo(path string) FolderInfo {
 func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
 	// Get the duplicate entry first
 	query := `
-		SELECT folder_path_1, folder_path_2, manga_slug
-		FROM manga_duplicates
+		SELECT folder_path_1, folder_path_2, media_slug
+		FROM media_duplicates
 		WHERE id = ?
 	`
 	
@@ -521,24 +521,24 @@ func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
 	
 	log.Infof("Deleted duplicate folder: %s", folderPath)
 	
-	// After deleting the folder, we should also update the manga's path if needed
+	// After deleting the folder, we should also update the media's path if needed
 	// and delete the duplicate entry since one folder is now gone
-	if err := DeleteMangaDuplicateByID(duplicateID); err != nil {
+	if err := DeleteMediaDuplicateByID(duplicateID); err != nil {
 		log.Errorf("Failed to delete duplicate entry after folder deletion: %v", err)
 	}
 	
-	// If we deleted the primary manga path, update it to the remaining folder
-	manga, err := GetMangaUnfiltered(mangaSlug)
-	if err == nil && manga != nil {
-		if manga.Path == folderPath {
+	// If we deleted the primary media path, update it to the remaining folder
+	media, err := GetMediaUnfiltered(mangaSlug)
+	if err == nil && media != nil {
+		if media.Path == folderPath {
 			// Update to the other folder
 			remainingFolder := folder1
 			if folderPath == folder1 {
 				remainingFolder = folder2
 			}
-			manga.Path = remainingFolder
-			if err := UpdateManga(manga); err != nil {
-				log.Errorf("Failed to update manga path after folder deletion: %v", err)
+			media.Path = remainingFolder
+			if err := UpdateMedia(media); err != nil {
+				log.Errorf("Failed to update media path after folder deletion: %v", err)
 			}
 		}
 	}
