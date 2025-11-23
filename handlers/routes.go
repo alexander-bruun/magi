@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/indexer"
@@ -32,6 +33,19 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	indexer.NotifyIndexerStarted = NotifyIndexerStarted
 	indexer.NotifyIndexerProgress = NotifyIndexerProgress
 	indexer.NotifyIndexerFinished = NotifyIndexerFinished
+
+	// ========================================
+	// Start token cleanup goroutine
+	// ========================================
+	
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			utils.CleanupExpiredTokens()
+		}
+	}()
+
 
 	// ========================================
 	// Middleware Configuration

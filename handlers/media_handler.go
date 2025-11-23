@@ -1618,15 +1618,20 @@ func HandleMediaMarkRead(c *fiber.Ctx) error {
 
 // ComicHandler processes requests to serve comic book pages based on the provided query parameters.
 func ComicHandler(c *fiber.Ctx) error {
-	mangaSlug := c.Query("media")
-	chapterSlug := c.Query("chapter")
-	chapterPage := c.Query("page")
-
-	if mangaSlug == "" || chapterSlug == "" || chapterPage == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("all parameters (media, chapter, page) must be provided"), fiber.StatusBadRequest)
+	token := c.Query("token")
+	
+	if token == "" {
+		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
 	}
 
-	media, err := models.GetMedia(mangaSlug)
+	// Validate and consume the token
+	tokenInfo, err := utils.ValidateAndConsumeImageToken(token)
+	if err != nil {
+		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
+	}
+
+	// Use the token info to get the media and chapter
+	media, err := models.GetMedia(tokenInfo.MediaSlug)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -1634,7 +1639,7 @@ func ComicHandler(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("media not found or access restricted based on content rating settings"), fiber.StatusNotFound)
 	}
 
-	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+	chapter, err := models.GetChapter(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -1657,7 +1662,7 @@ func ComicHandler(c *fiber.Ctx) error {
 
 	// If the path is a directory, serve images from within it
 	if fileInfo.IsDir() {
-		return serveImageFromDirectory(c, filePath)
+		return serveImageFromDirectory(c, filePath, tokenInfo.Page)
 	}
 
 	lowerFileName := strings.ToLower(fileInfo.Name())
@@ -1669,22 +1674,16 @@ func ComicHandler(c *fiber.Ctx) error {
 		strings.HasSuffix(lowerFileName, ".gif"):
 		return c.SendFile(filePath)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
-		return serveComicBookArchiveFromRAR(c, filePath)
+		return serveComicBookArchiveFromRAR(c, filePath, tokenInfo.Page)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
-		return serveComicBookArchiveFromZIP(c, filePath)
+		return serveComicBookArchiveFromZIP(c, filePath, tokenInfo.Page)
 	default:
 		return HandleView(c, views.Error("Unsupported file type"))
 	}
 }
 
 // serveImageFromDirectory handles serving individual image files from a chapter directory.
-func serveImageFromDirectory(c *fiber.Ctx, dirPath string) error {
-	pageStr := c.Query("page")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
-	}
-
+func serveImageFromDirectory(c *fiber.Ctx, dirPath string, page int) error {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return HandleView(c, views.Error(err.Error()))
@@ -1721,13 +1720,7 @@ func serveImageFromDirectory(c *fiber.Ctx, dirPath string) error {
 }
 
 // serveComicBookArchiveFromRAR handles serving images from a RAR archive.
-func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
-	pageStr := c.Query("page")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
-	}
-
+func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string, page int) error {
 	rarFile, err := os.Open(filePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open RAR file")
@@ -1790,13 +1783,7 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string) error {
 }
 
 // serveComicBookArchiveFromZIP handles serving images from a ZIP archive.
-func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string) error {
-	pageStr := c.Query("page")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid page number")
-	}
-
+func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string, page int) error {
 	zipFile, err := os.Open(filePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to open ZIP file")
