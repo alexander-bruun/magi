@@ -63,7 +63,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	app.Use("/api/images", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
 		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
 			// Determine file extension
-			p := c.Path() // e.g. /api/images/manga-title.jpg
+			p := c.Path() // e.g. /api/images/series-title.jpg
 			ext := ""
 			if idx := strings.LastIndex(p, "."); idx != -1 {
 				ext = strings.ToLower(p[idx:])
@@ -119,75 +119,49 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	auth.Post("/logout", LogoutHandler)
 
 	// ========================================
-	// Manga Routes
+	// Media Routes
 	// ========================================
 	
-	mangas := app.Group("/mangas", ConditionalAuthMiddleware())
+	media := app.Group("/series", ConditionalAuthMiddleware())
 	
-	// Manga listing and search
-	mangas.Get("", HandleMangas)
-	mangas.Get("/search", HandleMangaSearch)
+	// Media listing and search
+	media.Get("", HandleMedias)
+	media.Get("/search", HandleMediaSearch)
 	
 	// Tag browsing
-	mangas.Get("/tags", HandleTags)
-	mangas.Get("/tags/fragment", HandleTagsFragment)
+	media.Get("/tags", HandleTags)
+	media.Get("/tags/fragment", HandleTagsFragment)
 	
-	// Individual manga
-	mangas.Get("/:manga", HandleManga)
+	// Individual media
+	media.Get("/:media", HandleMedia)
 	
-	// Manga interactions (authenticated)
-	mangas.Post("/:manga/vote", AuthMiddleware("reader"), HandleMangaVote)
-	mangas.Get("/:manga/vote/fragment", HandleMangaVoteFragment)
-	mangas.Post("/:manga/favorite", AuthMiddleware("reader"), HandleMangaFavorite)
-	mangas.Get("/:manga/favorite/fragment", HandleMangaFavoriteFragment)
+	// Media interactions (authenticated)
+	media.Post("/:media/vote", AuthMiddleware("reader"), HandleMediaVote)
+	media.Get("/:media/vote/fragment", HandleMediaVoteFragment)
+	media.Post("/:media/favorite", AuthMiddleware("reader"), HandleMediaFavorite)
+	media.Get("/:media/favorite/fragment", HandleMediaFavoriteFragment)
 	
-	// Manga metadata management (moderator+)
-	mangas.Get("/:manga/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataManga)
-	mangas.Post("/:manga/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
-	mangas.Post("/:manga/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
-	mangas.Post("/:manga/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataManga)
-	mangas.Post("/:manga/delete", AuthMiddleware("moderator"), HandleDeleteManga)
+	// Media metadata management (moderator+)
+	media.Get("/:media/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
+	media.Post("/:media/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
+	media.Post("/:media/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
+	media.Post("/:media/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataMedia)
+	media.Post("/:media/delete", AuthMiddleware("moderator"), HandleDeleteMedia)
 	
 	// Poster selector (moderator+)
-	mangas.Get("/:manga/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
-	mangas.Get("/:manga/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
-	mangas.Get("/:manga/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
-	mangas.Post("/:manga/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
+	media.Get("/:media/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
+	media.Get("/:media/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
+	media.Get("/:media/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
+	media.Post("/:media/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 	
 	// Chapter routes
-	chapters := mangas.Group("/:manga")
+	chapters := media.Group("/:media")
+	chapters.Get("/:chapter/assets/*", HandleMediaChapterAsset)
+	chapters.Get("/:chapter/toc", HandleMediaChapterTOC)
+	chapters.Get("/:chapter/content", HandleMediaChapterContent)
 	chapters.Get("/:chapter", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapter)
 	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
 	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
-
-	// ========================================
-	// Light Novel Routes
-	// ========================================
-
-	lightNovels := app.Group("/light-novels", ConditionalAuthMiddleware())
-
-	// Light novel listing and search
-	lightNovels.Get("", HandleLightNovels)
-	lightNovels.Get("/search", HandleLightNovelSearch)
-
-	// Individual light novel
-	lightNovels.Get("/:light_novel", HandleLightNovel)
-
-	// Light novel chapters
-	lightNovelChapters := lightNovels.Group("/:light_novel/chapters")
-	lightNovelChapters.Get("/:chapter", HandleLightNovelChapter)
-	lightNovelChapters.Get("/:chapter/toc", HandleLightNovelTOC)
-	lightNovelChapters.Get("/:chapter/content", HandleLightNovelBookContent)
-	lightNovelChapters.Get("/:chapter/toc/fragment", HandleLightNovelChapterTOCFragment)
-	lightNovelChapters.Get("/:chapter/reader/fragment", HandleLightNovelChapterReaderFragment)
-	lightNovelChapters.Get("/:chapter/*", HandleLightNovelAsset)
-	lightNovelChapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleLightNovelMarkRead)
-
-	// Light novel interactions (authenticated)
-	lightNovels.Post("/:light_novel/vote", AuthMiddleware("reader"), HandleLightNovelVote)
-	lightNovels.Get("/:light_novel/vote/fragment", HandleLightNovelVoteFragment)
-	lightNovels.Post("/:light_novel/favorite", AuthMiddleware("reader"), HandleLightNovelFavorite)
-	lightNovels.Get("/:light_novel/favorite/fragment", HandleLightNovelFavoriteFragment)
 
 	// ========================================
 	// User Account Routes (authenticated)
@@ -199,9 +173,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	account.Get("/upvoted", HandleAccountUpvoted)
 	account.Get("/downvoted", HandleAccountDownvoted)
 	account.Get("/reading", HandleAccountReading)
-	account.Get("/light-novel-favorites", HandleAccountLightNovelFavorites)
-	account.Get("/light-novel-upvoted", HandleAccountLightNovelUpvoted)
-	account.Get("/light-novel-downvoted", HandleAccountLightNovelDownvoted)
 
 	// ========================================
 	// Notification Routes (authenticated)

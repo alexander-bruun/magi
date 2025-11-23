@@ -188,7 +188,7 @@ List of absolute paths to scan for manga, one per line.
 ```
 /home/user/manga
 /mnt/nas/manga
-/media/external/manga
+/series/external/manga
 ```
 
 **Windows:**

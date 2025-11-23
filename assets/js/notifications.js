@@ -108,13 +108,13 @@
             <div class="notification-item uk-card uk-card-small uk-card-body mb-2 ${notif.is_read ? 'read' : 'unread'}" data-id="${notif.id}">
                 <div class="flex gap-2">
                     <div class="flex-1">
-                        <a href="/mangas/${notif.manga_slug}/chapters/${notif.chapter_slug}" 
-                           hx-get="/mangas/${notif.manga_slug}/chapters/${notif.chapter_slug}" 
+                        <a href="/series/${notif.media_slug}/chapters/${notif.chapter_slug}" 
+                           hx-get="/series/${notif.media_slug}/chapters/${notif.chapter_slug}" 
                            hx-target="#content" 
                            hx-push-url="true"
                            class="notification-link"
                            onclick="markNotificationAsRead(${notif.id})">
-                            <div class="font-semibold text-sm">${escapeHtml(notif.manga_name || 'Unknown Manga')}</div>
+                            <div class="font-semibold text-sm">${escapeHtml(notif.manga_name || 'Unknown Media')}</div>
                             <div class="text-sm uk-text-muted">${escapeHtml(notif.message)}</div>
                             <div class="text-xs uk-text-muted mt-1">${timeAgo(notif.created_at)}</div>
                         </a>
