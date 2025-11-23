@@ -2,6 +2,10 @@ package utils
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/gif"
@@ -11,7 +15,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/chai2010/webp"
 	"github.com/nfnt/resize"
@@ -387,4 +394,128 @@ func ConvertImageToWebP(img image.Image) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// GenerateSignedImageURL generates a signed URL for image access with expiration
+func GenerateSignedImageURL(baseURL, secret, mediaSlug, chapterSlug string, page int, expiration time.Duration) string {
+	expires := time.Now().Add(expiration).Unix()
+	data := fmt.Sprintf("%s:%s:%d:%d", mediaSlug, chapterSlug, page, expires)
+	
+	// Create HMAC signature
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(data))
+	signature := hex.EncodeToString(h.Sum(nil))
+	
+	// Build the signed URL
+	return fmt.Sprintf("%s?media=%s&chapter=%s&page=%d&expires=%d&signature=%s",
+		baseURL, mediaSlug, chapterSlug, page, expires, signature)
+}
+
+// ValidateImageSignature validates the signature and expiration of an image access request
+func ValidateImageSignature(secret, mediaSlug, chapterSlug, pageStr, expiresStr, signatureStr string) error {
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return fmt.Errorf("invalid page number")
+	}
+	
+	expires, err := strconv.ParseInt(expiresStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid expiration time")
+	}
+	
+	// Check if expired
+	if time.Now().Unix() > expires {
+		return fmt.Errorf("signature expired")
+	}
+	
+	// Recreate the data string
+	data := fmt.Sprintf("%s:%s:%d:%d", mediaSlug, chapterSlug, page, expires)
+	
+	// Verify signature
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(data))
+	expectedSignature := hex.EncodeToString(h.Sum(nil))
+	
+	if !hmac.Equal([]byte(signatureStr), []byte(expectedSignature)) {
+		return fmt.Errorf("invalid signature")
+	}
+	
+	return nil
+}
+
+// GenerateRandomSecret generates a random 32-byte secret encoded as hex
+func GenerateRandomSecret() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// ImageAccessToken represents a one-time use token for image access
+type ImageAccessToken struct {
+	MediaSlug   string
+	ChapterSlug string
+	Page        int
+	ExpiresAt   time.Time
+}
+
+// Global token store - in production, this should be a proper cache with TTL
+var (
+	tokenStore = make(map[string]*ImageAccessToken)
+	tokenMutex sync.RWMutex
+)
+
+// GenerateImageAccessToken generates a one-time use token for image access
+func GenerateImageAccessToken(mediaSlug, chapterSlug string, page int) string {
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		// Fallback to timestamp-based token
+		tokenBytes = []byte(fmt.Sprintf("%d-%s-%s-%d", time.Now().UnixNano(), mediaSlug, chapterSlug, page))
+	}
+	token := hex.EncodeToString(tokenBytes)
+	
+	tokenStore[token] = &ImageAccessToken{
+		MediaSlug:   mediaSlug,
+		ChapterSlug: chapterSlug,
+		Page:        page,
+		ExpiresAt:   time.Now().Add(5 * time.Minute), // 5 minute grace period
+	}
+	
+	return token
+}
+
+// ValidateAndConsumeImageToken validates a token and consumes it (one-time use)
+func ValidateAndConsumeImageToken(token string) (*ImageAccessToken, error) {
+	tokenMutex.Lock()
+	defer tokenMutex.Unlock()
+	
+	tokenInfo, exists := tokenStore[token]
+	if !exists {
+		return nil, fmt.Errorf("invalid token")
+	}
+	
+	// Check expiration
+	if time.Now().After(tokenInfo.ExpiresAt) {
+		delete(tokenStore, token)
+		return nil, fmt.Errorf("token expired")
+	}
+	
+	// Consume the token
+	delete(tokenStore, token)
+	
+	return tokenInfo, nil
+}
+
+// CleanupExpiredTokens removes expired tokens from the store
+func CleanupExpiredTokens() {
+	tokenMutex.Lock()
+	defer tokenMutex.Unlock()
+	
+	now := time.Now()
+	for token, info := range tokenStore {
+		if now.After(info.ExpiresAt) {
+			delete(tokenStore, token)
+		}
+	}
 }

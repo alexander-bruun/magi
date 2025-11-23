@@ -95,6 +95,7 @@ func loadConfigFromDB() (AppConfig, error) {
         }
         return AppConfig{}, err
     }
+    
     return AppConfig{
         AllowRegistration:  allowInt == 1,
         MaxUsers:           maxUsers,
