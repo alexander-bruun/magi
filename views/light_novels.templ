@@ -318,40 +318,44 @@ templ LightNovelFavoriteFragment(lightNovelSlug string, favCount int, isFavorite
 
 // LightNovelVoteFragment renders the vote UI fragment for a light novel
 templ LightNovelVoteFragment(lightNovelSlug string, score int, upvotes int, downvotes int, userVote int) {
+	<!-- Responsive vote fragment: buttons sit adjacent to stats (not at viewport edges) -->
 	<div id="light-novel-vote" class="light-novel-vote-fragment w-full flex justify-center">
+		<!-- Constrained group keeps buttons next to stats and centered overall -->
 		<div class="flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto">
+			<!-- Upvote: to the left of the score -->
 			<form hx-post={ fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug) } hx-target="#light-novel-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
 			if userVote == 1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn upvote active btn-circular" title="Remove upvote" aria-label="Remove upvote">
-					<uk-icon icon="ChevronUp"></uk-icon>
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up active btn-circular" title="Remove upvote" aria-label="Remove upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn upvote btn-circular" title="Upvote" aria-label="Upvote">
-					<uk-icon icon="ChevronUp"></uk-icon>
+				<button type="submit" class="uk-btn uk-btn-default vote-btn up btn-circular" title="Upvote" aria-label="Upvote">
+					<uk-icon icon="ThumbsUp"></uk-icon>
 				</button>
 			}
-			</form>
-			<!-- Score display -->
-			<div class="flex flex-col items-center flex-shrink-0 min-w-0">
-				<span class="text-sm font-semibold text-gray-800 dark:text-gray-200">{ fmt.Sprint(score) }</span>
-				<span class="text-xs text-gray-500">{ fmt.Sprintf("%d/%d", upvotes, downvotes) }</span>
+		</form>
+			<!-- Center stats: compact and centered between buttons -->
+			<div class="vote-stats flex flex-col items-center my-2 md:my-0 text-center flex-grow">
+				<div class="vote-count">{ fmt.Sprint(score) }</div>
+				<div class="vote-small">{ fmt.Sprint(upvotes) } ↑ · { fmt.Sprint(downvotes) } ↓</div>
 			</div>
+
 			<!-- Downvote: to the right of the score -->
 			<form hx-post={ fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug) } hx-target="#light-novel-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
 			if userVote == -1 {
 				<input type="hidden" name="value" value="0" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn downvote active btn-circular" title="Remove downvote" aria-label="Remove downvote">
-					<uk-icon icon="ChevronDown"></uk-icon>
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down active btn-circular" title="Remove downvote" aria-label="Remove downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			} else {
 				<input type="hidden" name="value" value="-1" />
-				<button type="submit" class="uk-btn uk-btn-default vote-btn downvote btn-circular" title="Downvote" aria-label="Downvote">
-					<uk-icon icon="ChevronDown"></uk-icon>
+				<button type="submit" class="uk-btn uk-btn-default vote-btn down btn-circular" title="Downvote" aria-label="Downvote">
+					<uk-icon icon="ThumbsDown"></uk-icon>
 				</button>
 			}
-			</form>
+		</form>
 		</div>
 	</div>
 }
@@ -489,7 +493,9 @@ templ LightNovelTOCFragment(toc string) {
 					e.preventDefault();
 					const targetId = this.getAttribute('href').substring(1);
 					const target = document.getElementById(targetId);
-					if (target) {
+					if (target && window.Magi && window.Magi.SmoothScroll) {
+						window.Magi.SmoothScroll.toElement(target);
+					} else if (target) {
 						target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					}
 				});

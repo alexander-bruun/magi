@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"strings"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/template/html/v2"
 )
 
@@ -136,52 +134,6 @@ func main() {
 		AppName:       fmt.Sprintf("Magi %s", Version),
 		Views:         engine,
 		ViewsLayout:   "base",
-	})
-
-	// Serve embedded assets but add cache headers based on file extension.
-	assetsFSHandler := filesystem.New(filesystem.Config{
-		Root:       http.FS(assetsfs),
-		PathPrefix: "assets",
-		Browse:     true,
-	})
-
-	// Helper function to set appropriate cache headers based on file extension
-	setCacheHeaders := func(c *fiber.Ctx) error {
-		// Only set caching for GET/HEAD requests
-		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
-			// Determine extension
-			p := c.Path() // e.g. /assets/js/site.js
-			ext := ""
-			if idx := strings.LastIndex(p, "."); idx != -1 {
-				ext = strings.ToLower(p[idx:])
-			}
-
-			// Default: no-cache for unknowns
-			cacheHeader := "public, max-age=0, must-revalidate"
-
-			switch ext {
-			case ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2", ".ttf", ".map":
-				// Long cache for static, fingerprinted assets (1 year)
-				// Use immutable flag since these assets are typically versioned or have content-based names
-				cacheHeader = "public, max-age=31536000, immutable"
-			case ".json":
-				cacheHeader = "public, max-age=3600"
-			case ".html", "":
-				cacheHeader = "public, max-age=0, must-revalidate"
-			}
-
-			c.Set("Cache-Control", cacheHeader)
-		}
-
-		return nil
-	}
-
-	// Wrap the fileserver to set Cache-Control headers for embedded static assets.
-	app.Use("/assets", func(c *fiber.Ctx) error {
-		if err := setCacheHeaders(c); err != nil {
-			return err
-		}
-		return assetsFSHandler(c)
 	})
 
 	// Start API in its own goroutine

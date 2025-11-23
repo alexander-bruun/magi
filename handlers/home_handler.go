@@ -17,11 +17,8 @@ const (
 
 // HandleView wraps a page component with the layout unless the request is an HTMX fragment.
 func HandleView(c *fiber.Ctx, content templ.Component) error {
-	// Check if this is an HTMX request but NOT a history restore request
-	// History restore requests should get the full layout
-	isHistoryRestore := c.Get("HX-History-Restore-Request") == "true"
-	
-	if IsHTMXRequest(c) && !isHistoryRestore {
+	// Return partial content if HTMX target is specified
+	if GetHTMXTarget(c) != "" {
 		return renderComponent(c, content)
 	}
 
@@ -39,7 +36,76 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 
 // HandleHome renders the landing page with recent manga activity and aggregate stats.
 func HandleHome(c *fiber.Ctx) error {
-	return HandleView(c, views.Home())
+	// Fetch data for the home page
+	recentlyAdded, _, _ := models.SearchMangas("", 1, 20, "created_at", "desc", "", "")
+	recentlyUpdated, _, _ := models.SearchMangas("", 1, 20, "updated_at", "desc", "", "")
+	topMangas, _ := models.GetTopMangas(10)
+	topReadToday, _ := models.GetTopReadMangas("today", 10)
+	topReadWeek, _ := models.GetTopReadMangas("week", 10)
+	topReadMonth, _ := models.GetTopReadMangas("month", 10)
+	topReadYear, _ := models.GetTopReadMangas("year", 10)
+	topReadAll, _ := models.GetTopReadMangas("all", 10)
+
+	// Stats
+	totalMangas, _ := models.GetTotalMangas()
+	totalChapters, _ := models.GetTotalChapters()
+	totalChaptersRead, _ := models.GetTotalChaptersRead()
+	totalLightNovels, _ := models.GetTotalLightNovels()
+	totalLightNovelChapters, _ := models.GetTotalLightNovelChapters()
+	totalLightNovelChaptersRead, _ := models.GetTotalLightNovelChaptersRead()
+	mangasChange, _ := models.GetDailyChange("mangas")
+	chaptersChange, _ := models.GetDailyChange("chapters")
+	chaptersReadChange, _ := models.GetDailyChange("chapters_read")
+	lightNovelsChange, _ := models.GetDailyChange("light_novels")
+	lightNovelChaptersChange, _ := models.GetDailyChange("light_novel_chapters")
+	lightNovelChaptersReadChange, _ := models.GetDailyChange("light_novel_chapters_read")
+
+	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMangas, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, totalMangas, totalChapters, totalChaptersRead, totalLightNovels, totalLightNovelChapters, totalLightNovelChaptersRead, mangasChange, chaptersChange, chaptersReadChange, lightNovelsChange, lightNovelChaptersChange, lightNovelChaptersReadChange))
+}
+
+// HandleTopReadPeriod renders the top read list for a specific period via HTMX
+func HandleTopReadPeriod(c *fiber.Ctx) error {
+	period := c.Query("period", "today")
+	log.Infof("Top read request for period: %s", period)
+	var topRead []models.Manga
+	var err error
+	switch period {
+	case "today":
+		topRead, err = models.GetTopReadMangas("today", 10)
+	case "week":
+		topRead, err = models.GetTopReadMangas("week", 10)
+	case "month":
+		topRead, err = models.GetTopReadMangas("month", 10)
+	case "year":
+		topRead, err = models.GetTopReadMangas("year", 10)
+	case "all":
+		topRead, err = models.GetTopReadMangas("all", 10)
+	default:
+		return c.Status(400).SendString("Invalid period")
+	}
+	if err != nil {
+		log.Errorf("Error getting top read: %v", err)
+		return c.Status(500).SendString(err.Error())
+	}
+
+	log.Infof("Got %d mangas for period %s", len(topRead), period)
+
+	var title string
+	var emptyMessage string
+	switch period {
+	case "today":
+		emptyMessage = "No reads today"
+	case "week":
+		emptyMessage = "No reads this week"
+	case "month":
+		emptyMessage = "No reads this month"
+	case "year":
+		emptyMessage = "No reads this year"
+	case "all":
+		emptyMessage = "No reads recorded"
+	}
+
+	return renderComponent(c, views.TopReadFragment(topRead, emptyMessage, title))
 }
 
 // HandleNotFound renders the generic not-found page for unrouted paths.

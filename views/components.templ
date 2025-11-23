@@ -92,10 +92,21 @@ templ MangaCover(coverURL string, altText string, width int, height int, fixed b
 }
 
 // StatCard shows a small statistic with label and numeric value
-templ StatCard(label string, value int) {
+templ StatCard(label string, value int, change int) {
     <div class="uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm text-center">
         <div class="text-sm text-gray-500">{ label }</div>
-        <div class="text-2xl font-bold mt-2">{ fmt.Sprint(value) }</div>
+        <div class="text-2xl font-bold mt-2 flex items-center justify-center gap-2">
+            { fmt.Sprint(value) }
+            if change > 0 {
+                <span class="uk-badge badge bg-success" title="Increase since yesterday">
+                    +{ fmt.Sprint(change) }
+                </span>
+            } else {
+                <span class="uk-badge badge bg-danger">
+                    0
+                </span>
+            }
+        </div>
     </div>
 }
 
@@ -194,6 +205,24 @@ templ MangaSlider(mangas []models.Manga, width int, height int, truncate bool, f
 		</div>
 		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
 	</div>
+}
+
+// LightNovelSlider renders a reusable UIkit slider for light novels.
+templ LightNovelSlider(lightNovels []models.LightNovel, width int, height int, truncate bool, fixed bool) {
+	<div uk-slider>
+		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
+			<ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;" role="list">
+				for _, lightNovel := range lightNovels {
+					<li role="listitem">
+						@LightNovelCard(lightNovel, width, height, truncate, fixed)
+					</li>
+				}
+			</ul>
+			<a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
+			<a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
+		</div>
+		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+	</div>
 }// Showcase renders a highlighted horizontal showcase of the newest mangas.
 // It shows a cover, title, chapter count and a simple rating based on votes.
 templ Showcase(mangas []models.Manga) {
@@ -224,7 +253,7 @@ templ Showcase(mangas []models.Manga) {
                                     </div>
                                     <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ manga.Name }</h3>
                                     <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
-                                        <a href={ templ.URL(fmt.Sprintf("/mangas/%s/chapters/%d", manga.Slug, manga.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { manga.FileCount }</a>
+                                        <a href={ templ.URL(fmt.Sprintf("/mangas/%s/%d", manga.Slug, manga.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { manga.FileCount }</a>
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
                                             <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>

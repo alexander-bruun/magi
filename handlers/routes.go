@@ -105,6 +105,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// ========================================
 	
 	app.Get("/", HandleHome)
+	app.Get("/top-read", HandleTopReadPeriod)
 
 	// ========================================
 	// Authentication Routes
@@ -154,7 +155,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	mangas.Post("/:manga/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 	
 	// Chapter routes
-	chapters := mangas.Group("/:manga/chapters")
+	chapters := mangas.Group("/:manga")
 	chapters.Get("/:chapter", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapter)
 	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
 	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
@@ -198,6 +199,9 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	account.Get("/upvoted", HandleAccountUpvoted)
 	account.Get("/downvoted", HandleAccountDownvoted)
 	account.Get("/reading", HandleAccountReading)
+	account.Get("/light-novel-favorites", HandleAccountLightNovelFavorites)
+	account.Get("/light-novel-upvoted", HandleAccountLightNovelUpvoted)
+	account.Get("/light-novel-downvoted", HandleAccountLightNovelDownvoted)
 
 	// ========================================
 	// Notification Routes (authenticated)

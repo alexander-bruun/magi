@@ -79,14 +79,3 @@ func ReloadScraperScheduler() {
 	log.Info("Reloading scraper scheduler")
 	InitializeScraperScheduler()
 }
-
-// StopScraperScheduler stops the scraper scheduler
-func StopScraperScheduler() {
-	scraperMutex.Lock()
-	defer scraperMutex.Unlock()
-
-	if scraperCron != nil {
-		scraperCron.Stop()
-		log.Info("Scraper scheduler stopped")
-	}
-}

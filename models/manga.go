@@ -30,6 +30,7 @@ type Manga struct {
 	CoverArtURL      string    `json:"cover_art_url"`
 	Path             string    `json:"path"`
 	FileCount        int       `json:"file_count"`
+	ReadCount        int       `json:"read_count"`
 	Tags             []string  `json:"tags"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`

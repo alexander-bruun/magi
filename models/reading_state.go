@@ -66,6 +66,16 @@ func GetReadChaptersForUser(userName, mangaSlug string) (map[string]bool, error)
     return m, nil
 }
 
+// GetUserReadCount returns the number of chapters read by a user for a specific manga
+func GetUserReadCount(userName, mangaSlug string) (int, error) {
+    var count int
+    row := db.QueryRow(`SELECT COUNT(*) FROM reading_states WHERE user_name = ? AND manga_slug = ?`, userName, mangaSlug)
+    if err := row.Scan(&count); err != nil {
+        return 0, err
+    }
+    return count, nil
+}
+
 // GetLastReadChapter returns the most recently read chapter slug for a user on a specific manga
 func GetLastReadChapter(userName, mangaSlug string) (string, error) {
     query := `

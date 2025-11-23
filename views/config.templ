@@ -138,47 +138,6 @@ templ ConfigForm() {
             </div>
         </div>
     </form>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Metadata provider selection handler
-            const providerSelect = document.getElementById('metadata-provider-select');
-            const malField = document.getElementById('mal-token-field');
-            const anilistField = document.getElementById('anilist-token-field');
-            
-            function updateTokenFields() {
-                const provider = providerSelect.value;
-                malField.style.display = provider === 'mal' ? 'block' : 'none';
-                anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
-            }
-            
-            if (providerSelect) {
-                providerSelect.addEventListener('change', updateTokenFields);
-                updateTokenFields(); // Initialize on page load
-            }
-        });
-        
-        // Reinitialize on HTMX swap
-        document.addEventListener('htmx:afterSettle', function(event) {
-            if (event.detail.xhr && event.detail.xhr.status === 200) {
-                // Metadata provider selection handler
-                const providerSelect = document.getElementById('metadata-provider-select');
-                const malField = document.getElementById('mal-token-field');
-                const anilistField = document.getElementById('anilist-token-field');
-                
-                function updateTokenFields() {
-                    const provider = providerSelect.value;
-                    malField.style.display = provider === 'mal' ? 'block' : 'none';
-                    anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
-                }
-                
-                if (providerSelect) {
-                    providerSelect.removeEventListener('change', updateTokenFields);
-                    providerSelect.addEventListener('change', updateTokenFields);
-                    updateTokenFields();
-                }
-            }
-        });
-    </script>
 }
 
 templ ConsoleLogs() {
@@ -194,34 +153,4 @@ templ ConsoleLogs() {
             </div>
         </div>
     </div>
-    <script>
-        (function() {
-            function initConsoleLogs() {
-                const container = document.getElementById('console-logs-container');
-                const output = document.getElementById('console-logs-output');
-                if (!container || !output) return;
-
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
-                
-                if (window.Magi && window.Magi.LogViewer) {
-                    new window.Magi.LogViewer({
-                        wsUrl: wsUrl,
-                        containerId: 'console-logs-container',
-                        outputId: 'console-logs-output',
-                        maxEntries: 1000,
-                        reconnectInterval: 3000
-                    });
-                }
-            }
-
-            // Try to initialize immediately (for HTMX swaps)
-            initConsoleLogs();
-
-            // Also listen for DOMContentLoaded (for direct page loads)
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initConsoleLogs);
-            }
-        })();
-    </script>
 }

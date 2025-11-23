@@ -221,3 +221,87 @@ func GetTagsForUserDownvoted(username string) ([]string, error) {
     }
     return tags, nil
 }
+
+// GetTagsForUserLightNovelFavorites returns all distinct tags for light novels favorited by the user
+func GetTagsForUserLightNovelFavorites(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT lnt.tag 
+        FROM light_novel_tags lnt
+        INNER JOIN light_novel_favorites lnf ON lnt.light_novel_slug = lnf.light_novel_slug
+        WHERE lnf.user_username = ?
+        ORDER BY lnt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}
+
+// GetTagsForUserLightNovelUpvoted returns all distinct tags for light novels the user has upvoted
+func GetTagsForUserLightNovelUpvoted(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT lnt.tag 
+        FROM light_novel_tags lnt
+        INNER JOIN light_novel_votes lnv ON lnt.light_novel_slug = lnv.light_novel_slug
+        WHERE lnv.user_username = ? AND lnv.value = 1
+        ORDER BY lnt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}
+
+// GetTagsForUserLightNovelDownvoted returns all distinct tags for light novels the user has downvoted
+func GetTagsForUserLightNovelDownvoted(username string) ([]string, error) {
+    query := `
+        SELECT DISTINCT lnt.tag 
+        FROM light_novel_tags lnt
+        INNER JOIN light_novel_votes lnv ON lnt.light_novel_slug = lnv.light_novel_slug
+        WHERE lnv.user_username = ? AND lnv.value = -1
+        ORDER BY lnt.tag
+    `
+    rows, err := db.Query(query, username)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var tags []string
+    for rows.Next() {
+        var tag string
+        if err := rows.Scan(&tag); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            tags = append(tags, tag)
+        }
+    }
+    return tags, nil
+}

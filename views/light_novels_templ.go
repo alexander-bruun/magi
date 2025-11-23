@@ -930,14 +930,14 @@ func LightNovelVoteFragment(lightNovelSlug string, score int, upvotes int, downv
 			templ_7745c5c3_Var39 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<div id=\"light-novel-vote\" class=\"light-novel-vote-fragment w-full flex justify-center\"><div class=\"flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto\"><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "<!-- Responsive vote fragment: buttons sit adjacent to stats (not at viewport edges) --><div id=\"light-novel-vote\" class=\"light-novel-vote-fragment w-full flex justify-center\"><!-- Constrained group keeps buttons next to stats and centered overall --><div class=\"flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto\"><!-- Upvote: to the left of the score --><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 323, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 326, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -948,71 +948,84 @@ func LightNovelVoteFragment(lightNovelSlug string, score int, upvotes int, downv
 			return templ_7745c5c3_Err
 		}
 		if userVote == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn upvote active btn-circular\" title=\"Remove upvote\" aria-label=\"Remove upvote\"><uk-icon icon=\"ChevronUp\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up active btn-circular\" title=\"Remove upvote\" aria-label=\"Remove upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn upvote btn-circular\" title=\"Upvote\" aria-label=\"Upvote\"><uk-icon icon=\"ChevronUp\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up btn-circular\" title=\"Upvote\" aria-label=\"Upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</form><!-- Score display --><div class=\"flex flex-col items-center flex-shrink-0 min-w-0\"><span class=\"text-sm font-semibold text-gray-800 dark:text-gray-200\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "</form><!-- Center stats: compact and centered between buttons --><div class=\"vote-stats flex flex-col items-center my-2 md:my-0 text-center flex-grow\"><div class=\"vote-count\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 338, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 341, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</span> <span class=\"text-xs text-gray-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</div><div class=\"vote-small\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var42 string
-		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d/%d", upvotes, downvotes))
+		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(upvotes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 339, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 342, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</span></div><!-- Downvote: to the right of the score --><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, " ↑ · ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var43 string
-		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug))
+		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(downvotes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 342, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 342, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "\" hx-target=\"#light-novel-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, " ↓</div></div><!-- Downvote: to the right of the score --><form hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var44 string
+		templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/light-novels/%s/vote", lightNovelSlug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 346, Col: 71}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\" hx-target=\"#light-novel-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if userVote == -1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn downvote active btn-circular\" title=\"Remove downvote\" aria-label=\"Remove downvote\"><uk-icon icon=\"ChevronDown\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down active btn-circular\" title=\"Remove downvote\" aria-label=\"Remove downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<input type=\"hidden\" name=\"value\" value=\"-1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn downvote btn-circular\" title=\"Downvote\" aria-label=\"Downvote\"><uk-icon icon=\"ChevronDown\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<input type=\"hidden\" name=\"value\" value=\"-1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down btn-circular\" title=\"Downvote\" aria-label=\"Downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "</form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1037,9 +1050,9 @@ func LightNovelChapterReader(lightNovel models.LightNovel, chapter models.Chapte
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var44 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var44 == nil {
-			templ_7745c5c3_Var44 = templ.NopComponent
+		templ_7745c5c3_Var45 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var45 == nil {
+			templ_7745c5c3_Var45 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("%s - %s", lightNovel.Name, chapter.Name)).Render(ctx, templ_7745c5c3_Buffer)
@@ -1055,84 +1068,84 @@ func LightNovelChapterReader(lightNovel models.LightNovel, chapter models.Chapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<div class=\"max-w-6xl mx-auto p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-2xl font-bold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<div class=\"max-w-6xl mx-auto p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-2xl font-bold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var45 string
-		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
+		var templ_7745c5c3_Var46 string
+		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 370, Col: 51}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</h1><div class=\"flex gap-2\"><a href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var46 templ.SafeURL
-		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 373, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 374, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "\" class=\"uk-btn uk-btn-primary\" title=\"Back to chapters\"><uk-icon icon=\"ArrowLeft\"></uk-icon> <span class=\"ml-1\">Back</span></a></div></div><div class=\"bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden\"><!-- Reader Header --><div class=\"border-b border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><h2 class=\"text-xl font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "</h1><div class=\"flex gap-2\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var47 string
-		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+		var templ_7745c5c3_Var47 templ.SafeURL
+		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 387, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 377, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\" class=\"uk-btn uk-btn-primary\" title=\"Back to chapters\"><uk-icon icon=\"ArrowLeft\"></uk-icon> <span class=\"ml-1\">Back</span></a></div></div><div class=\"bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden\"><!-- Reader Header --><div class=\"border-b border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><h2 class=\"text-xl font-semibold\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var48 string
+		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 391, Col: 53}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(epubContent.Chapters) > 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "<div class=\"text-sm text-gray-600 dark:text-gray-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div class=\"text-sm text-gray-600 dark:text-gray-400\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var48 string
-			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters in this volume", len(epubContent.Chapters)))
+			var templ_7745c5c3_Var49 string
+			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters in this volume", len(epubContent.Chapters)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 390, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 394, Col: 77}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</div></div><!-- EPUB CSS Styles -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div></div><!-- EPUB CSS Styles -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(epubContent.CSS) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "<style>\n\t\t\t\t\tfor _, css := range epubContent.CSS {\n\t\t\t\t\t\t@templ.Raw(css)\n\t\t\t\t\t}\n\t\t\t\t</style>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<style>\n\t\t\t\t\tfor _, css := range epubContent.CSS {\n\t\t\t\t\t\t@templ.Raw(css)\n\t\t\t\t\t}\n\t\t\t\t</style>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<!-- Reader Content --><div class=\"epub-reader p-6 max-h-screen overflow-y-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<!-- Reader Content --><div class=\"epub-reader p-6 max-h-screen overflow-y-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(epubContent.Chapters) == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<!-- Single chapter view --> <div class=\"epub-content prose prose-lg dark:prose-invert max-w-none\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<!-- Single chapter view --> <div class=\"epub-content prose prose-lg dark:prose-invert max-w-none\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1140,53 +1153,53 @@ func LightNovelChapterReader(lightNovel models.LightNovel, chapter models.Chapte
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<!-- Multi-chapter view with navigation --> <div class=\"space-y-8\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<!-- Multi-chapter view with navigation --> <div class=\"space-y-8\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for i, chapter := range epubContent.Chapters {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<div class=\"epub-chapter\" id=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"epub-chapter\" id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var49 string
-				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-%d", i))
+				var templ_7745c5c3_Var50 string
+				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-%d", i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 416, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 420, Col: 66}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if chapter.Title != fmt.Sprintf("Chapter %d", i+1) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<h3 class=\"text-lg font-semibold mb-4 text-center border-b border-gray-200 dark:border-gray-700 pb-2\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "<h3 class=\"text-lg font-semibold mb-4 text-center border-b border-gray-200 dark:border-gray-700 pb-2\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var50 string
-					templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Title)
+					var templ_7745c5c3_Var51 string
+					templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 419, Col: 25}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 423, Col: 25}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</h3>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</h3>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<div class=\"epub-content prose prose-lg dark:prose-invert max-w-none\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<div class=\"epub-content prose prose-lg dark:prose-invert max-w-none\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1194,59 +1207,59 @@ func LightNovelChapterReader(lightNovel models.LightNovel, chapter models.Chapte
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if i < len(epubContent.Chapters)-1 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "<hr class=\"my-8 border-gray-300 dark:border-gray-600\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<hr class=\"my-8 border-gray-300 dark:border-gray-600\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</div><!-- Reader Footer --><div class=\"border-t border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><div class=\"text-sm text-gray-600 dark:text-gray-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</div><!-- Reader Footer --><div class=\"border-t border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><div class=\"text-sm text-gray-600 dark:text-gray-400\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if epubContent.Metadata["author"] != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<span>Author: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span>Author: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var51 string
-			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(epubContent.Metadata["author"])
+			var templ_7745c5c3_Var52 string
+			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(epubContent.Metadata["author"])
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 439, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 443, Col: 53}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "</div><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</div><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var52 templ.SafeURL
-		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
+		var templ_7745c5c3_Var53 templ.SafeURL
+		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 443, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 447, Col: 61}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"List\"></uk-icon> <span class=\"ml-1\">All Chapters</span></a></div></div></div><!-- Reader Controls (could be enhanced with JS for better UX) --><script>\n\t\t\t// Basic scroll-based chapter highlighting (optional enhancement)\n\t\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t\tconst chapters = document.querySelectorAll('.epub-chapter');\n\t\t\t\tif (chapters.length > 1) {\n\t\t\t\t\tconst observer = new IntersectionObserver((entries) => {\n\t\t\t\t\t\tentries.forEach(entry => {\n\t\t\t\t\t\t\tif (entry.isIntersecting) {\n\t\t\t\t\t\t\t\t// Could highlight current chapter in a table of contents\n\t\t\t\t\t\t\t\tconsole.log('Viewing chapter:', entry.target.id);\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t}, { threshold: 0.1 });\n\n\t\t\t\t\tchapters.forEach(chapter => observer.observe(chapter));\n\t\t\t\t}\n\t\t\t});\n\t\t</script></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"List\"></uk-icon> <span class=\"ml-1\">All Chapters</span></a></div></div></div><!-- Reader Controls (could be enhanced with JS for better UX) --><script>\n\t\t\t// Basic scroll-based chapter highlighting (optional enhancement)\n\t\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t\tconst chapters = document.querySelectorAll('.epub-chapter');\n\t\t\t\tif (chapters.length > 1) {\n\t\t\t\t\tconst observer = new IntersectionObserver((entries) => {\n\t\t\t\t\t\tentries.forEach(entry => {\n\t\t\t\t\t\t\tif (entry.isIntersecting) {\n\t\t\t\t\t\t\t\t// Could highlight current chapter in a table of contents\n\t\t\t\t\t\t\t\tconsole.log('Viewing chapter:', entry.target.id);\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t}, { threshold: 0.1 });\n\n\t\t\t\t\tchapters.forEach(chapter => observer.observe(chapter));\n\t\t\t\t}\n\t\t\t});\n\t\t</script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1271,12 +1284,12 @@ func LightNovelTOCFragment(toc string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var53 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var53 == nil {
-			templ_7745c5c3_Var53 = templ.NopComponent
+		templ_7745c5c3_Var54 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var54 == nil {
+			templ_7745c5c3_Var54 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<div id=\"light-novel-toc\" class=\"bg-gradient-to-br from-blue-600 to-purple-700 p-4 rounded-lg shadow-lg\"><h3 class=\"text-white font-semibold mb-4 text-center\">Table of Contents</h3><div class=\"toc-content max-h-96 overflow-y-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<div id=\"light-novel-toc\" class=\"bg-gradient-to-br from-blue-600 to-purple-700 p-4 rounded-lg shadow-lg\"><h3 class=\"text-white font-semibold mb-4 text-center\">Table of Contents</h3><div class=\"toc-content max-h-96 overflow-y-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1284,7 +1297,7 @@ func LightNovelTOCFragment(toc string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</div></div><script>\n\t\t// Add smooth scrolling to TOC links\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tdocument.querySelectorAll('#light-novel-toc a[href^=\"#\"]').forEach(link => {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst targetId = this.getAttribute('href').substring(1);\n\t\t\t\t\tconst target = document.getElementById(targetId);\n\t\t\t\t\tif (target) {\n\t\t\t\t\t\ttarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "</div></div><script>\n\t\t// Add smooth scrolling to TOC links\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tdocument.querySelectorAll('#light-novel-toc a[href^=\"#\"]').forEach(link => {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst targetId = this.getAttribute('href').substring(1);\n\t\t\t\t\tconst target = document.getElementById(targetId);\n\t\t\t\t\tif (target && window.Magi && window.Magi.SmoothScroll) {\n\t\t\t\t\t\twindow.Magi.SmoothScroll.toElement(target);\n\t\t\t\t\t} else if (target) {\n\t\t\t\t\t\ttarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1309,38 +1322,38 @@ func LightNovelReaderFragment(lightNovel models.LightNovel, chapter models.Chapt
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var54 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var54 == nil {
-			templ_7745c5c3_Var54 = templ.NopComponent
+		templ_7745c5c3_Var55 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var55 == nil {
+			templ_7745c5c3_Var55 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<div id=\"light-novel-reader\" class=\"bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden\"><!-- Reader Header --><div class=\"border-b border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><h2 class=\"text-xl font-semibold\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var55 string
-		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 507, Col: 52}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</h2><div class=\"text-sm text-gray-600 dark:text-gray-400\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<div id=\"light-novel-reader\" class=\"bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden\"><!-- Reader Header --><div class=\"border-b border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-between items-center\"><h2 class=\"text-xl font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
-		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
+		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 509, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 513, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</div></div></div><!-- Reader Content --><div id=\"reader-text-container\" class=\"epub-reader p-6 max-h-screen overflow-y-auto prose prose-lg dark:prose-invert max-w-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "</h2><div class=\"text-sm text-gray-600 dark:text-gray-400\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var57 string
+		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 515, Col: 22}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</div></div></div><!-- Reader Content --><div id=\"reader-text-container\" class=\"epub-reader p-6 max-h-screen overflow-y-auto prose prose-lg dark:prose-invert max-w-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1348,20 +1361,20 @@ func LightNovelReaderFragment(lightNovel models.LightNovel, chapter models.Chapt
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</div><!-- Reader Footer --><div class=\"border-t border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-center\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</div><!-- Reader Footer --><div class=\"border-t border-gray-200 dark:border-gray-700 p-4\"><div class=\"flex justify-center\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var57 templ.SafeURL
-		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
+		var templ_7745c5c3_Var58 templ.SafeURL
+		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 523, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 529, Col: 60}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"List\"></uk-icon> <span class=\"ml-1\">Back to Chapters</span></a></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"List\"></uk-icon> <span class=\"ml-1\">Back to Chapters</span></a></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1386,9 +1399,9 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var58 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var58 == nil {
-			templ_7745c5c3_Var58 = templ.NopComponent
+		templ_7745c5c3_Var59 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var59 == nil {
+			templ_7745c5c3_Var59 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle(chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
@@ -1404,33 +1417,33 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t\t.epub-reader p {\n\t\t\ttext-align: var(--reader-text-align, justify);\n\t\t}\n\t\t.epub-reader {\n\t\t\tpadding: 0 var(--reader-margin, 20px) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color * {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader img {\n\t\t\tmax-width: 100%;\n\t\t\theight: auto;\n\t\t\tdisplay: block;\n\t\t\tmargin: 20px auto;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n\t\t}\n\t\t.epub-reader h1, .epub-reader h2, .epub-reader h3 {\n\t\t\tmargin-top: 2em;\n\t\t\tmargin-bottom: 1em;\n\t\t\tline-height: 1.3;\n\t\t\tfont-weight: 600;\n\t\t}\n\t\t.epub-reader h1 {\n\t\t\tfont-size: 2em;\n\t\t}\n\t\t.epub-reader h2 {\n\t\t\tfont-size: 1.5em;\n\t\t}\n\t\t.epub-reader h3 {\n\t\t\tfont-size: 1.25em;\n\t\t}\n\t\t.epub-reader p {\n\t\t\tmargin-bottom: 1.5em;\n\t\t\ttext-align: justify;\n\t\t\thyphens: auto;\n\t\t\tword-spacing: 0.1em;\n\t\t}\n\t\t.epub-reader .centerp, .epub-reader .section-marking {\n\t\t\ttext-align: center;\n\t\t\tmargin: 2em 0;\n\t\t}\n\t\t.epub-reader blockquote {\n\t\t\tmargin: 2em 0;\n\t\t\tpadding: 1em 2em;\n\t\t\tborder-left: 4px solid #4299e1;\n\t\t\tbackground-color: rgba(66, 153, 225, 0.1);\n\t\t\tfont-style: italic;\n\t\t}\n\t\t.dark .epub-reader blockquote {\n\t\t\tbackground-color: rgba(66, 153, 225, 0.2);\n\t\t\tborder-left-color: #63b3ed;\n\t\t}\n\t\t.toc-content ul {\n\t\t\tlist-style: none;\n\t\t\tpadding: 0;\n\t\t\tmargin: 0;\n\t\t}\n\t\t.toc-content li {\n\t\t\tmargin: 0;\n\t\t\tpadding: 0;\n\t\t}\n\t\t.toc-content a {\n\t\t\tdisplay: block;\n\t\t\tpadding: 8px 12px;\n\t\t\tcolor: #4a5568;\n\t\t\ttext-decoration: none;\n\t\t\tborder-radius: 6px;\n\t\t\ttransition: all 0.2s ease;\n\t\t\tfont-size: 14px;\n\t\t\tline-height: 1.4;\n\t\t}\n\t\t.dark .toc-content a {\n\t\t\tcolor: #cbd5e0;\n\t\t}\n\t\t.toc-content a:hover {\n\t\t\tbackground-color: #e2e8f0;\n\t\t\tcolor: #2d3748;\n\t\t}\n\t\t.dark .toc-content a:hover {\n\t\t\tbackground-color: #4a5568;\n\t\t\tcolor: #e2e8f0;\n\t\t}\n\t\t.toc-content a:active {\n\t\t\tbackground-color: #cbd5e0;\n\t\t}\n\t\t.dark .toc-content a:active {\n\t\t\tbackground-color: #2d3748;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var59 string
-		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 658, Col: 87}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</span></h2><div id=\"read-state\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t\t.epub-reader p {\n\t\t\ttext-align: var(--reader-text-align, justify);\n\t\t}\n\t\t.epub-reader {\n\t\t\tpadding: 0 var(--reader-margin, 20px) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color * {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader img {\n\t\t\tmax-width: 100%;\n\t\t\theight: auto;\n\t\t\tdisplay: block;\n\t\t\tmargin: 20px auto;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n\t\t}\n\t\t.epub-reader h1, .epub-reader h2, .epub-reader h3 {\n\t\t\tmargin-top: 2em;\n\t\t\tmargin-bottom: 1em;\n\t\t\tline-height: 1.3;\n\t\t\tfont-weight: 600;\n\t\t}\n\t\t.epub-reader h1 {\n\t\t\tfont-size: 2em;\n\t\t}\n\t\t.epub-reader h2 {\n\t\t\tfont-size: 1.5em;\n\t\t}\n\t\t.epub-reader h3 {\n\t\t\tfont-size: 1.25em;\n\t\t}\n\t\t.epub-reader p {\n\t\t\tmargin-bottom: 1.5em;\n\t\t\ttext-align: justify;\n\t\t\thyphens: auto;\n\t\t\tword-spacing: 0.1em;\n\t\t}\n\t\t.epub-reader .centerp, .epub-reader .section-marking {\n\t\t\ttext-align: center;\n\t\t\tmargin: 2em 0;\n\t\t}\n\t\t.epub-reader blockquote {\n\t\t\tmargin: 2em 0;\n\t\t\tpadding: 1em 2em;\n\t\t\tborder-left: 4px solid #4299e1;\n\t\t\tbackground-color: rgba(66, 153, 225, 0.1);\n\t\t\tfont-style: italic;\n\t\t}\n\t\t.dark .epub-reader blockquote {\n\t\t\tbackground-color: rgba(66, 153, 225, 0.2);\n\t\t\tborder-left-color: #63b3ed;\n\t\t}\n\t\t.toc-content ul {\n\t\t\tlist-style: none;\n\t\t\tpadding: 0;\n\t\t\tmargin: 0;\n\t\t}\n\t\t.toc-content li {\n\t\t\tmargin: 0;\n\t\t\tpadding: 0;\n\t\t}\n\t\t.toc-content a {\n\t\t\tdisplay: block;\n\t\t\tpadding: 8px 12px;\n\t\t\tcolor: #4a5568;\n\t\t\ttext-decoration: none;\n\t\t\tborder-radius: 6px;\n\t\t\ttransition: all 0.2s ease;\n\t\t\tfont-size: 14px;\n\t\t\tline-height: 1.4;\n\t\t}\n\t\t.dark .toc-content a {\n\t\t\tcolor: #cbd5e0;\n\t\t}\n\t\t.toc-content a:hover {\n\t\t\tbackground-color: #e2e8f0;\n\t\t\tcolor: #2d3748;\n\t\t}\n\t\t.dark .toc-content a:hover {\n\t\t\tbackground-color: #4a5568;\n\t\t\tcolor: #e2e8f0;\n\t\t}\n\t\t.toc-content a:active {\n\t\t\tbackground-color: #cbd5e0;\n\t\t}\n\t\t.dark .toc-content a:active {\n\t\t\tbackground-color: #2d3748;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var60 string
-		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/light-novels/%s/chapters/%s/read", lightNovel.Slug, chapter.Slug))
+		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(lightNovel.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 661, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 664, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "</span></h2><div id=\"read-state\" hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var61 string
+		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/light-novels/%s/chapters/%s/read", lightNovel.Slug, chapter.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 667, Col: 91}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1438,7 +1451,7 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div id=\"reader-text-container\" class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div id=\"reader-text-container\" class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1446,7 +1459,7 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "</div></div></div></div><script src=\"/assets/js/reader.js\"></script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</div></div></div></div><script src=\"/assets/js/reader.js\"></script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1454,7 +1467,7 @@ func LightNovelChapter(previousChapter string, currentChapter string, nextChapte
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</div><p class=\"uk-text-right mt-4\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Close</button></p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "</div><p class=\"uk-text-right mt-4\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Close</button></p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1479,197 +1492,197 @@ func LightNovelChapterNavigation(lightNovel models.LightNovel, chapter models.Ch
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var61 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var61 == nil {
-			templ_7745c5c3_Var61 = templ.NopComponent
+		templ_7745c5c3_Var62 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var62 == nil {
+			templ_7745c5c3_Var62 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<div class=\"flex flex-col gap-2 mt-4\"><!-- Main Navigation Row --><div class=\"flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex items-center gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<div class=\"flex flex-col gap-2 mt-4\"><!-- Main Navigation Row --><div class=\"flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex items-center gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if previousChapter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var62 templ.SafeURL
-			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, previousChapter))
+			var templ_7745c5c3_Var63 templ.SafeURL
+			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, previousChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 706, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 712, Col: 92}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Volume</span></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Volume</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "<button disabled class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Volume</span></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<button disabled class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Volume</span></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><div class=\"uk-inline\"><button id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var63 string
-		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 726, Col: 69}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><div class=\"uk-inline\"><button id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 727, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 732, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var65 string
-		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", lightNovel.Slug))
+		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 730, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 733, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\" data-trigger-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var66 string
-		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
+		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 730, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 736, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "\" data-trigger-id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var67 string
+		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", lightNovel.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 736, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, ch := range chapters {
-			var templ_7745c5c3_Var67 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var67...)
+			var templ_7745c5c3_Var68 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var68...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "<li class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "<li class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var68 string
-			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var67).String())
+			var templ_7745c5c3_Var69 string
+			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var68).String())
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 1, Col: 0}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\"><a href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var69 templ.SafeURL
-			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, ch.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 734, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var70 string
-			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+			var templ_7745c5c3_Var70 templ.SafeURL
+			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, ch.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 734, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 740, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var71 string
+			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 740, Col: 100}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if ch.Read {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "</li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</ul></div></div><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "</ul></div></div><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var71 templ.SafeURL
-		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
+		var templ_7745c5c3_Var72 templ.SafeURL
+		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s", lightNovel.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 746, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 752, Col: 62}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if nextChapter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var72 templ.SafeURL
-			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter))
+			var templ_7745c5c3_Var73 templ.SafeURL
+			templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/light-novels/%s/chapters/%s", lightNovel.Slug, nextChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 753, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/light_novels.templ`, Line: 759, Col: 88}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Volume</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Volume</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<span class=\"text-gray-400\">Next Volume</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "<span class=\"text-gray-400\">Next Volume</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -510,3 +510,318 @@ func loadAllLightNovels(lightNovels *[]LightNovel) error {
 	}
 	return nil
 }
+
+// GetLightNovelVotes returns the aggregated score and counts for a light novel
+func GetLightNovelVotes(lightNovelSlug string) (score int, upvotes int, downvotes int, err error) {
+	// Use COALESCE so aggregates return 0 instead of NULL when there are no rows
+	query := `SELECT COALESCE(SUM(value),0) as score, COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes FROM light_novel_votes WHERE light_novel_slug = ?`
+	row := db.QueryRow(query, lightNovelSlug)
+	if err := row.Scan(&score, &upvotes, &downvotes); err != nil {
+		return 0, 0, 0, err
+	}
+	return score, upvotes, downvotes, nil
+}
+
+// GetUserVoteForLightNovel returns the vote value (1, -1) for a user on a light novel. If none, returns 0.
+func GetUserVoteForLightNovel(username, lightNovelSlug string) (int, error) {
+	query := `SELECT value FROM light_novel_votes WHERE user_username = ? AND light_novel_slug = ?`
+	row := db.QueryRow(query, username, lightNovelSlug)
+	var val int
+	err := row.Scan(&val)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return val, nil
+}
+
+// SetLightNovelVote inserts or updates a user's vote for a light novel. value must be 1 or -1.
+func SetLightNovelVote(username, lightNovelSlug string, value int) error {
+	if value != 1 && value != -1 {
+		return errors.New("invalid vote value")
+	}
+	now := time.Now().Unix()
+	// Try update first
+	res, err := db.Exec(`UPDATE light_novel_votes SET value = ?, updated_at = ? WHERE user_username = ? AND light_novel_slug = ?`, value, now, username, lightNovelSlug)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	// Insert
+	_, err = db.Exec(`INSERT INTO light_novel_votes (user_username, light_novel_slug, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, username, lightNovelSlug, value, now, now)
+	return err
+}
+
+// RemoveLightNovelVote deletes a user's vote for a light novel
+func RemoveLightNovelVote(username, lightNovelSlug string) error {
+	_, err := db.Exec(`DELETE FROM light_novel_votes WHERE user_username = ? AND light_novel_slug = ?`, username, lightNovelSlug)
+	return err
+}
+
+// SetLightNovelFavorite inserts a favorite relationship for a user and light novel.
+func SetLightNovelFavorite(username, lightNovelSlug string) error {
+	now := time.Now().Unix()
+	// Try update first (in case row exists) - this keeps updated_at current
+	res, err := db.Exec(`UPDATE light_novel_favorites SET updated_at = ? WHERE user_username = ? AND light_novel_slug = ?`, now, username, lightNovelSlug)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err = db.Exec(`INSERT INTO light_novel_favorites (user_username, light_novel_slug, created_at, updated_at) VALUES (?, ?, ?, ?)`, username, lightNovelSlug, now, now)
+	return err
+}
+
+// RemoveLightNovelFavorite deletes a user's favorite for a light novel
+func RemoveLightNovelFavorite(username, lightNovelSlug string) error {
+	_, err := db.Exec(`DELETE FROM light_novel_favorites WHERE user_username = ? AND light_novel_slug = ?`, username, lightNovelSlug)
+	return err
+}
+
+// IsLightNovelFavoriteForUser returns true if the user has favorited the light novel
+func IsLightNovelFavoriteForUser(username, lightNovelSlug string) (bool, error) {
+	query := `SELECT 1 FROM light_novel_favorites WHERE user_username = ? AND light_novel_slug = ?`
+	row := db.QueryRow(query, username, lightNovelSlug)
+	var exists int
+	err := row.Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// GetLightNovelFavoritesCount returns the number of users who favorited the light novel
+func GetLightNovelFavoritesCount(lightNovelSlug string) (int, error) {
+	query := `SELECT COUNT(*) FROM light_novel_favorites WHERE light_novel_slug = ?`
+	row := db.QueryRow(query, lightNovelSlug)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// UserLightNovelListOptions defines options for querying user light novel lists
+type UserLightNovelListOptions struct {
+	Username            string
+	Page                int
+	PageSize            int
+	SortBy              string
+	SortOrder           string
+	Tags                []string
+	TagMode             string // "all" or "any"
+	SearchFilter        string
+	AccessibleLibraries []string // filter by accessible libraries for permission system
+}
+
+// GetUserLightNovelFavoritesWithOptions fetches, filters, sorts, and paginates a user's favorite light novels
+func GetUserLightNovelFavoritesWithOptions(opts UserLightNovelListOptions) ([]LightNovel, int, error) {
+	slugs, err := GetLightNovelFavoritesForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserLightNovelList(slugs, opts)
+}
+
+// GetUserLightNovelUpvotedWithOptions fetches, filters, sorts, and paginates a user's upvoted light novels
+func GetUserLightNovelUpvotedWithOptions(opts UserLightNovelListOptions) ([]LightNovel, int, error) {
+	slugs, err := GetLightNovelUpvotedForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserLightNovelList(slugs, opts)
+}
+
+// GetUserLightNovelDownvotedWithOptions fetches, filters, sorts, and paginates a user's downvoted light novels
+func GetUserLightNovelDownvotedWithOptions(opts UserLightNovelListOptions) ([]LightNovel, int, error) {
+	slugs, err := GetLightNovelDownvotedForUser(opts.Username)
+	if err != nil {
+		return nil, 0, err
+	}
+	return processUserLightNovelList(slugs, opts)
+}
+
+// GetLightNovelFavoritesForUser returns light novel slugs favorited by the user ordered by most recent update
+func GetLightNovelFavoritesForUser(username string) ([]string, error) {
+	query := `SELECT light_novel_slug FROM light_novel_favorites WHERE user_username = ? ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetLightNovelUpvotedForUser returns light novel slugs upvoted by the user ordered by most recent update
+func GetLightNovelUpvotedForUser(username string) ([]string, error) {
+	query := `SELECT light_novel_slug FROM light_novel_votes WHERE user_username = ? AND value = 1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// GetLightNovelDownvotedForUser returns light novel slugs downvoted by the user ordered by most recent update
+func GetLightNovelDownvotedForUser(username string) ([]string, error) {
+	query := `SELECT light_novel_slug FROM light_novel_votes WHERE user_username = ? AND value = -1 ORDER BY updated_at DESC`
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var slugs []string
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		slugs = append(slugs, slug)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return slugs, nil
+}
+
+// processUserLightNovelList processes a list of light novel slugs with filtering, sorting, and pagination
+func processUserLightNovelList(slugs []string, opts UserLightNovelListOptions) ([]LightNovel, int, error) {
+	// Load all light novels from slugs
+	var allLightNovels []LightNovel
+	for _, slug := range slugs {
+		if ln, err := GetLightNovel(slug); err == nil && ln != nil {
+			allLightNovels = append(allLightNovels, *ln)
+		}
+	}
+
+	// Filter by accessible libraries (permission system)
+	if len(opts.AccessibleLibraries) > 0 {
+		librarySet := make(map[string]struct{}, len(opts.AccessibleLibraries))
+		for _, lib := range opts.AccessibleLibraries {
+			librarySet[lib] = struct{}{}
+		}
+
+		filtered := make([]LightNovel, 0, len(allLightNovels))
+		for _, ln := range allLightNovels {
+			if _, ok := librarySet[ln.LibrarySlug]; ok {
+				filtered = append(filtered, ln)
+			}
+		}
+		allLightNovels = filtered
+	}
+
+	// Filter by tags if specified
+	if len(opts.Tags) > 0 {
+		allLightNovels = FilterLightNovelsByTags(allLightNovels, opts.Tags, opts.TagMode)
+	}
+
+	// Filter by search term if specified
+	if opts.SearchFilter != "" {
+		allLightNovels = filterLightNovelsBySearch(allLightNovels, opts.SearchFilter)
+	}
+
+	// Sort light novels
+	SortLightNovels(allLightNovels, opts.SortBy, opts.SortOrder)
+
+	// Calculate total before pagination
+	total := len(allLightNovels)
+
+	// Paginate
+	start := (opts.Page - 1) * opts.PageSize
+	end := start + opts.PageSize
+	if start > len(allLightNovels) {
+		start = len(allLightNovels)
+	}
+	if end > len(allLightNovels) {
+		end = len(allLightNovels)
+	}
+
+	return allLightNovels[start:end], total, nil
+}
+
+// FilterLightNovelsByTags filters a slice of light novels by selected tags
+// tagMode can be "all" (all tags must match) or "any" (at least one tag must match)
+func FilterLightNovelsByTags(lightNovels []LightNovel, selectedTags []string, tagMode string) []LightNovel {
+	if len(selectedTags) == 0 {
+		return lightNovels
+	}
+
+	var filtered []LightNovel
+	for _, lightNovel := range lightNovels {
+		lightNovelTags, err := GetTagsForLightNovel(lightNovel.Slug)
+		if err != nil {
+			continue
+		}
+
+		if tagMode == "any" {
+			// At least one selected tag must be in light novel's tags
+			for _, selTag := range selectedTags {
+				for _, lnTag := range lightNovelTags {
+					if strings.EqualFold(selTag, lnTag) {
+						filtered = append(filtered, lightNovel)
+						goto nextLightNovel
+					}
+				}
+			}
+		} else {
+			// All selected tags must be in light novel's tags
+			matchCount := 0
+			for _, selTag := range selectedTags {
+				for _, lnTag := range lightNovelTags {
+					if strings.EqualFold(selTag, lnTag) {
+						matchCount++
+						break
+					}
+				}
+			}
+			if matchCount == len(selectedTags) {
+				filtered = append(filtered, lightNovel)
+			}
+		}
+	nextLightNovel:
+	}
+
+	return filtered
+}

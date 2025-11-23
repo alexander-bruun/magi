@@ -39,7 +39,7 @@ func HandleLightNovels(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	log.Infof("Accessible libraries: %v", accessibleLibraries)
+	log.Debugf("Accessible libraries: %v", accessibleLibraries)
 
 	// Search light novels using options
 	opts := models.LightNovelSearchOptions{
@@ -58,7 +58,7 @@ func HandleLightNovels(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 	}
 
-	log.Infof("Found %d light novels", count)
+	log.Debugf("Found %d light novels", count)
 
 	totalPages := CalculateTotalPages(count, defaultLightNovelPageSize)
 
@@ -186,11 +186,11 @@ func HandleLightNovelFavorite(c *fiber.Ctx) error {
 
 	value := c.FormValue("value")
 	if value == "1" {
-		if err := models.SetFavorite(userName, lightNovelSlug); err != nil {
+		if err := models.SetLightNovelFavorite(userName, lightNovelSlug); err != nil {
 			return handleError(c, err)
 		}
 	} else {
-		if err := models.RemoveFavorite(userName, lightNovelSlug); err != nil {
+		if err := models.RemoveLightNovelFavorite(userName, lightNovelSlug); err != nil {
 			return handleError(c, err)
 		}
 	}
@@ -204,14 +204,14 @@ func HandleLightNovelFavoriteFragment(c *fiber.Ctx) error {
 	lightNovelSlug := c.Params("light_novel")
 	userName := GetUserContext(c)
 
-	favCount, err := models.GetFavoritesCount(lightNovelSlug)
+	favCount, err := models.GetLightNovelFavoritesCount(lightNovelSlug)
 	if err != nil {
 		return handleError(c, err)
 	}
 
 	isFavorite := false
 	if userName != "" {
-		isFavorite, err = models.IsFavoriteForUser(userName, lightNovelSlug)
+		isFavorite, err = models.IsLightNovelFavoriteForUser(userName, lightNovelSlug)
 		if err != nil {
 			return handleError(c, err)
 		}
@@ -235,11 +235,11 @@ func HandleLightNovelVote(c *fiber.Ctx) error {
 	}
 
 	if value == 0 {
-		if err := models.RemoveVote(userName, lightNovelSlug); err != nil {
+		if err := models.RemoveLightNovelVote(userName, lightNovelSlug); err != nil {
 			return handleError(c, err)
 		}
 	} else {
-		if err := models.SetVote(userName, lightNovelSlug, value); err != nil {
+		if err := models.SetLightNovelVote(userName, lightNovelSlug, value); err != nil {
 			return handleError(c, err)
 		}
 	}
@@ -253,14 +253,14 @@ func HandleLightNovelVoteFragment(c *fiber.Ctx) error {
 	lightNovelSlug := c.Params("light_novel")
 	userName := GetUserContext(c)
 
-	score, upvotes, downvotes, err := models.GetMangaVotes(lightNovelSlug)
+	score, upvotes, downvotes, err := models.GetLightNovelVotes(lightNovelSlug)
 	if err != nil {
 		return handleError(c, err)
 	}
 
 	userVote := 0
 	if userName != "" {
-		userVote, err = models.GetUserVoteForManga(userName, lightNovelSlug)
+		userVote, err = models.GetUserVoteForLightNovel(userName, lightNovelSlug)
 		if err != nil {
 			return handleError(c, err)
 		}
