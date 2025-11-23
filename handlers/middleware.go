@@ -301,9 +301,9 @@ func BotDetectionMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusForbidden).SendString("Access denied")
 		}
 
-		// Track access if it's a manga or chapter request
+		// Track access if it's a media or chapter request
 		path := c.Path()
-		if strings.HasPrefix(path, "/mangas/") {
+		if strings.HasPrefix(path, "/series/") {
 			trackersMu.Lock()
 			tracker := getOrCreateTracker(ip)
 			now := time.Now()

@@ -21,14 +21,14 @@ make_request() {
 echo "Making series accesses..."
 for i in {1..8}; do
     echo "Series request $i"
-    make_request "$BASE_URL/mangas/$MANGA_SLUG"
+    make_request "$BASE_URL/series/$MANGA_SLUG"
 done
 
 # Simulate chapter accesses (threshold: 10 in 60 seconds)
 echo "Making chapter accesses..."
 for i in {1..15}; do
     echo "Chapter request $i"
-    make_request "$BASE_URL/mangas/$MANGA_SLUG/chapters/$CHAPTER_SLUG"
+    make_request "$BASE_URL/series/$MANGA_SLUG/chapters/$CHAPTER_SLUG"
 done
 
 echo "Simulation complete. Check if your IP was banned at /admin/banned-ips"
