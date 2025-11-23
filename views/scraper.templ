@@ -328,6 +328,12 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				</div>
 			</div>
 		</form>
+		<!-- CodeMirror dependencies - loaded when editor is used -->
+		<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
+		<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
+		<script src="/assets/js/vendor/codemirror.min.js" defer></script>
+		<script src="/assets/js/vendor/shell.min.js" defer></script>
+		<script src="/assets/js/vendor/python.min.js" defer></script>
 }
 
 // ScraperLogsTabContent renders the logs tab content

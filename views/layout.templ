@@ -14,13 +14,7 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			<link rel="stylesheet" href="/assets/css/vendor/utilities.min.css"/>
 			<link rel="stylesheet" href="/assets/css/styles.css"/>
 			<!-- Non-critical CSS - defer loading -->
-			<link rel="preload" as="style" href="/assets/css/vendor/codemirror.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
-			<link rel="preload" as="style" href="/assets/css/vendor/dracula.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
-			<link rel="preload" as="style" href="/assets/css/vendor/cropper.min.css" onload="this.onload=null;this.rel='stylesheet'"/>
 			<noscript>
-				<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
-				<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
-				<link rel="stylesheet" href="/assets/css/vendor/cropper.min.css"/>
 			</noscript>
 			<!-- Theme initialization - must run before body renders -->
 			<script>
@@ -53,10 +47,6 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			</script>
 			<!-- Application scripts - defer for optimal loading -->
 			<script src="/assets/js/vendor/htmx.min.js" defer></script>
-			<script src="/assets/js/vendor/codemirror.min.js" defer></script>
-			<script src="/assets/js/vendor/shell.min.js" defer></script>
-			<script src="/assets/js/vendor/python.min.js" defer></script>
-			<script src="/assets/js/vendor/cropper.min.js" defer></script>
 			<script src="/assets/js/magi.js" defer></script>
 			<script src="/assets/js/notifications.js" defer></script>
 		</head>

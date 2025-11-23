@@ -1085,6 +1085,9 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 			</div>
 		}
 	</div>
+	<!-- Cropper dependencies - loaded when poster editor is used -->
+	<link rel="stylesheet" href="/assets/css/vendor/cropper.min.css"/>
+	<script src="/assets/js/vendor/cropper.min.js" defer></script>
 }
 
 // PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js
