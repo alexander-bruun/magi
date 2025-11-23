@@ -108,8 +108,8 @@
             <div class="notification-item uk-card uk-card-small uk-card-body mb-2 ${notif.is_read ? 'read' : 'unread'}" data-id="${notif.id}">
                 <div class="flex gap-2">
                     <div class="flex-1">
-                        <a href="/series/${notif.media_slug}/chapters/${notif.chapter_slug}" 
-                           hx-get="/series/${notif.media_slug}/chapters/${notif.chapter_slug}" 
+                        <a href="/series/${notif.media_slug}/${notif.chapter_slug}" 
+                           hx-get="/series/${notif.media_slug}/${notif.chapter_slug}" 
                            hx-target="#content" 
                            hx-push-url="true"
                            class="notification-link"
