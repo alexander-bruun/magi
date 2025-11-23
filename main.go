@@ -106,22 +106,6 @@ func main() {
 		log.Warnf("Failed to abort orphaned running logs: %v", err)
 	}
 
-	// Retrieve or generate JWT key
-	_, err = models.GetKey()
-	if err != nil {
-		log.Info("Error retrieving JWT key:", err)
-		key, err := models.GenerateRandomKey(32)
-		if err != nil {
-			log.Fatal("Failed to generate JWT key:", err)
-		}
-		if err := models.StoreKey(key); err != nil {
-			log.Fatal("Failed to store JWT key:", err)
-		}
-		log.Info("New JWT key generated and stored")
-	} else {
-		log.Info("JWT key retrieved from database store")
-	}
-
 	// Create a new engine
 	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
 
