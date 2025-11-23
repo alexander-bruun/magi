@@ -11,7 +11,7 @@
 
 # Magi
 
-**Magi** is a self-hosted, lightweight manga server and reader built for simplicity and performance. It helps you organize, index, and read your personal digital manga collection through a modern web interface.
+**Magi** is a self-hosted, lightweight manga & light novel server and reader built for simplicity and performance. It helps you organize, index, and read your personal digital manga collection through a modern web interface.
 
 ![Magi Frontpage](/docs/images/home.png)
 
@@ -21,9 +21,9 @@
 ## ✨ Features
 
 ### 📚 Library Management
-- **Automatic Indexing**: Scan local directories and automatically organize your manga collection
+- **Automatic Indexing**: Scan local directories and automatically organize your manga & light novels collection
 - **Multi-Library Support**: Organize manga across multiple libraries with custom scan schedules
-- **Metadata Fetching**: Automatically retrieve titles, descriptions, cover art, tags, and more from MangaDex
+- **Metadata Fetching**: Automatically retrieve titles, descriptions, cover art, tags, and more from public and private metadata providers
 - **Smart Duplicate Detection**: Identify and manage duplicate manga across different folders
 - **Manual Metadata Editing**: Override automatic metadata with custom information
 
@@ -57,7 +57,7 @@
 - **Single Binary**: No dependencies, just download and run
 - **Embedded Assets**: All CSS, JS, and views compiled into the binary
 - **SQLite Database**: Zero-configuration database with automatic migrations
-- **Efficient Archive Handling**: Native support for `.cbz`, `.cbr`, `.zip`, `.rar` formats
+- **Efficient Archive Handling**: Native support for `.cbz`, `.cbr`, `.zip`, `.rar` and `.epub` formats (other formats planned: `PDF`)
 - **HTMX-Powered UI**: Smooth, responsive interface without heavy JavaScript frameworks
 
 ## 📦 Supported Platforms
@@ -108,12 +108,8 @@ Magi is built with modern, performant technologies:
 - **[Templ](https://templ.guide/)** - Type-safe HTML templating
 - **[HTMX](https://htmx.org/)** - Dynamic HTML without heavy JavaScript
 - **[Franken UI](https://franken-ui.dev/)** - Modern UI component library
-- **[MangaDex API](https://api.mangadex.org/docs/)** - Metadata source
 
 All assets (CSS, JavaScript, templates) are embedded into the binary at compile time, making Magi truly portable with zero external dependencies.
-
-> [!NOTE]
-> MangaDex API was chosen over alternatives like MyAnimeList because it allows anonymous requests without requiring users to create API tokens.
 
 ## 📖 Usage Overview
 
@@ -143,7 +139,7 @@ All assets (CSS, JavaScript, templates) are embedded into the binary at compile 
 Moderators and admins can update manga metadata:
 
 - **Auto-refresh**: Re-scan the manga folder to detect new chapters
-- **MangaDex Search**: Find and apply metadata from MangaDex
+- **Metadata Search**: Find and apply metadata from multiple providers
 - **Manual Edit**: Override any field with custom values
 
 ## 🔧 Configuration
@@ -190,55 +186,9 @@ air
 ```
 
 The application will be available at:
+
 - `http://localhost:3000` - Main application
 - `http://localhost:3001` - Auto-reloading proxy (development only)
-
-### Building
-
-```bash
-# Build for current platform
-go build -o magi
-
-# Cross-compile for specific platform
-GOOS=linux GOARCH=amd64 go build -o magi-linux-amd64
-
-# Build with version
-go build -ldflags "-X main.Version=v1.0.0" -o magi
-```
-
-## 🐳 Docker
-
-### Docker Compose Example
-
-```yaml
-version: '3.8'
-
-services:
-  magi:
-    image: alexbruun/magi:latest
-    container_name: magi
-    ports:
-      - "3000:3000"
-    volumes:
-      - /path/to/manga:/data/manga:ro
-      - magi-data:/data/magi
-    environment:
-      - MAGI_DATA_DIR=/data/magi
-    restart: unless-stopped
-
-volumes:
-  magi-data:
-```
-
-### Building Docker Image
-
-```bash
-# Build for multiple platforms
-docker buildx build --platform linux/amd64,linux/arm64 -t magi:latest .
-
-# Build for local testing
-docker build -t magi:develop .
-```
 
 ## 🤝 Contributing
 
@@ -264,36 +214,11 @@ Contributions are welcome! Magi is in active development, and we'd love your hel
 > [!NOTE]
 > We primarily develop in the `next` branch and merge to `main` for releases. Please target `next` with your PRs.
 
-## 📋 Roadmap
-
-- [ ] OPDS support for e-reader integration
-- [ ] Improved scraper templates and library
-- [ ] Manga download scheduler
-- [ ] Email notifications for new chapters
-- [ ] Advanced statistics and reading analytics
-- [ ] Plugin system for extensibility
-- [ ] Mobile apps (iOS/Android)
-
 ## ⚠️ Known Limitations
 
 - **RAR Performance**: RAR archives have slower random access than ZIP. Consider converting to CBZ for better performance.
-- **MangaDex API**: Metadata fetching requires internet connectivity. Offline mode uses local folder names.
-- **Large Collections**: Very large libraries (10,000+ manga) may experience slower initial indexing.
-
-## 🙏 Acknowledgments
-
-- **[MangaDex](https://mangadex.org/)** for providing a free, public API
-- All the amazing open-source projects Magi is built upon
-- Contributors and users who help improve Magi
-
-## 📸 Screenshots
-
-Additional screenshots can be found in `/docs/images`.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=alexander-bruun/magi&type=date&legend=top-left)](https://www.star-history.com/#alexander-bruun/magi&type=date&legend=top-left)
+- **Large Collections**: Very large libraries (10,000+ manga) may experience slower initial indexing (looking into index parallelization)
 
 ## 📄 License
 
 [MIT License](LICENSE) - Feel free to use Magi for personal or commercial purposes.
-
-[MIT License](LICENSE)
