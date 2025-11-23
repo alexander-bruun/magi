@@ -575,6 +575,11 @@ func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// Sort results by similarity score (highest first)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].SimilarityScore > results[j].SimilarityScore
+	})
+
 	return HandleView(c, views.UpdateMetadataResults(results, mangaSlug))
 }
 
