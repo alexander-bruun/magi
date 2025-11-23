@@ -38,7 +38,7 @@ func (m *MALProvider) SetAuthToken(token string) {
 	m.apiToken = token
 }
 
-func (m *MALProvider) GetCoverImageURL(metadata *MangaMetadata) string {
+func (m *MALProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 	if metadata == nil || metadata.CoverArtURL == "" {
 		return ""
 	}
@@ -52,7 +52,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/manga?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles", malBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles", malBaseURL, titleEncoded)
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
@@ -78,7 +78,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 
 	var response struct {
 		Data []struct {
-			Node malMangaNode `json:"node"`
+			Node malMediaNode `json:"node"`
 		} `json:"data"`
 	}
 
@@ -120,12 +120,12 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 	return results, nil
 }
 
-func (m *MALProvider) GetMetadata(id string) (*MangaMetadata, error) {
+func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	if m.apiToken == "" {
 		return nil, ErrAuthRequired
 	}
 
-	fetchURL := fmt.Sprintf("%s/manga/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters", malBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters", malBaseURL, id)
 
 	req, err := http.NewRequest("GET", fetchURL, nil)
 	if err != nil {
@@ -149,15 +149,15 @@ func (m *MALProvider) GetMetadata(id string) (*MangaMetadata, error) {
 		return nil, fmt.Errorf("MAL API returned status: %s", resp.Status)
 	}
 
-	var node malMangaNode
+	var node malMediaNode
 	if err := json.NewDecoder(resp.Body).Decode(&node); err != nil {
 		return nil, fmt.Errorf("failed to decode MAL response: %w", err)
 	}
 
-	return m.convertToMangaMetadata(&node), nil
+	return m.convertToMediaMetadata(&node), nil
 }
 
-func (m *MALProvider) FindBestMatch(title string) (*MangaMetadata, error) {
+func (m *MALProvider) FindBestMatch(title string) (*MediaMetadata, error) {
 	results, err := m.Search(title)
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (m *MALProvider) FindBestMatch(title string) (*MangaMetadata, error) {
 	return m.GetMetadata(bestMatch.ID)
 }
 
-func (m *MALProvider) convertToMangaMetadata(node *malMangaNode) *MangaMetadata {
+func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata {
 	coverURL := ""
 	if node.MainPicture.Large != "" {
 		coverURL = node.MainPicture.Large
@@ -192,7 +192,7 @@ func (m *MALProvider) convertToMangaMetadata(node *malMangaNode) *MangaMetadata 
 		fmt.Sscanf(node.StartDate, "%d", &year)
 	}
 
-	metadata := &MangaMetadata{
+	metadata := &MediaMetadata{
 		Title:        node.Title,
 		Description:  node.Synopsis,
 		Year:         year,
@@ -223,7 +223,7 @@ func (m *MALProvider) convertToMangaMetadata(node *malMangaNode) *MangaMetadata 
 
 	// Try to determine language from media type
 	switch metadata.Type {
-	case "manga":
+	case "media":
 		metadata.OriginalLanguage = "ja"
 	case "manhwa":
 		metadata.OriginalLanguage = "ko"
@@ -237,7 +237,7 @@ func (m *MALProvider) convertToMangaMetadata(node *malMangaNode) *MangaMetadata 
 }
 
 // MAL API response structures
-type malMangaNode struct {
+type malMediaNode struct {
 	ID                int    `json:"id"`
 	Title             string `json:"title"`
 	Synopsis          string `json:"synopsis"`
@@ -303,6 +303,8 @@ func convertMALMediaType(mediaType string) string {
 		return "oneshot"
 	case "doujinshi":
 		return "doujinshi"
+	case "light_novel", "novel":
+		return "novel"
 	default:
 		return "manga"
 	}

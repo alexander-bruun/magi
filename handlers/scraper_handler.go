@@ -289,20 +289,40 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 
 // HandleScraperVariableAdd returns an empty variable input row for HTMX inserts
 func HandleScraperVariableAdd(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the scraper page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/scraper")
+	}
+
 	return HandleView(c, views.Variable("", "", false))
 }
 
 // HandleScraperVariableRemove acknowledges variable removal requests without returning content
 func HandleScraperVariableRemove(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the scraper page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/scraper")
+	}
+
 	return c.SendString("")
 }
 
 // HandleScraperPackageAdd returns an empty package input row for HTMX inserts
 func HandleScraperPackageAdd(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the scraper page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/scraper")
+	}
+
 	return HandleView(c, views.Package("", false))
 }
 
 // HandleScraperPackageRemove acknowledges package removal requests without returning content
 func HandleScraperPackageRemove(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the scraper page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/scraper")
+	}
+
 	return c.SendString("")
 }

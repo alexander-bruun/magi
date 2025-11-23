@@ -70,18 +70,18 @@ type OPF struct {
 	} `xml:"manifest"`
 }
 
-// IndexManga inspects a manga directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
-func IndexManga(absolutePath, librarySlug string) (string, error) {
-	defer utils.LogDuration("IndexManga", time.Now(), absolutePath)
+// IndexMedia inspects a media directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
+func IndexMedia(absolutePath, librarySlug string) (string, error) {
+	defer utils.LogDuration("IndexMedia", time.Now(), absolutePath)
 
-	// Check if this is a file (single-chapter manga)
+	// Check if this is a file (single-chapter media)
 	fileInfo, err := os.Stat(absolutePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
 	}
 	isSingleFile := !fileInfo.IsDir()
 
-	// For single files, use the filename without extension as the manga name
+	// For single files, use the filename without extension as the media name
 	baseName := filepath.Base(absolutePath)
 	if isSingleFile {
 		baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
@@ -94,17 +94,22 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 
 	slug := utils.Sluggify(cleanedName)
 
-	// If manga already exists, avoid external API calls and heavy image work.
+	// If media already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
-	// Use GetMangaUnfiltered to bypass content rating filter for indexing operations
-	existingManga, err := models.GetMangaUnfiltered(slug)
+	// Use GetMedia to check globally, then verify it's from the same library
+	existingMedia, err := models.GetMedia(slug)
 	if err != nil {
-		log.Errorf("Failed to lookup manga '%s': %s", slug, err)
+		log.Errorf("Failed to lookup media '%s': %s", slug, err)
 	}
 
-	if existingManga != nil {
-		// Detect if this is a different folder being added to an existing manga
-		if existingManga.Path != "" && existingManga.Path != absolutePath {
+	if existingMedia != nil && existingMedia.LibrarySlug != librarySlug {
+		log.Warnf("Media with slug '%s' already exists in a different library ('%s'), skipping indexing for library '%s'", slug, existingMedia.LibrarySlug, librarySlug)
+		return "", nil
+	}
+
+	if existingMedia != nil {
+		// Detect if this is a different folder being added to an existing media
+		if existingMedia.Path != "" && existingMedia.Path != absolutePath {
 			// Count chapters in the new folder
 			var newCandidateCount int
 			if isSingleFile {
@@ -126,15 +131,15 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 				})
 			}
 
-			originalPath := existingManga.Path
+			originalPath := existingMedia.Path
 
 			// If the new folder has more chapters, prioritize it
-			if newCandidateCount > existingManga.FileCount {
-				log.Infof("Prioritizing new folder with more chapters for manga '%s': old='%s' (%d chapters), new='%s' (%d chapters)",
-					slug, existingManga.Path, existingManga.FileCount, absolutePath, newCandidateCount)
-				existingManga.Path = absolutePath
-				if err := models.UpdateManga(existingManga); err != nil {
-					log.Errorf("Failed to update manga path for '%s': %s", slug, err)
+			if newCandidateCount > existingMedia.FileCount {
+				log.Infof("Prioritizing new folder with more chapters for media '%s': old='%s' (%d chapters), new='%s' (%d chapters)",
+					slug, existingMedia.Path, existingMedia.FileCount, absolutePath, newCandidateCount)
+				existingMedia.Path = absolutePath
+				if err := models.UpdateMedia(existingMedia); err != nil {
+					log.Errorf("Failed to update media path for '%s': %s", slug, err)
 				}
 			}
 
@@ -145,39 +150,39 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 			}
 
 			// Check if we've already recorded this duplicate; if so, skip logging/creating
-			existingDup, err := models.GetMangaDuplicateByFolders(slug, fp1, fp2)
+			existingDup, err := models.GetMediaDuplicateByFolders(slug, fp1, fp2)
 			if err != nil {
 				// On DB error, fall back to logging and attempt to create (best-effort)
-				log.Errorf("Failed to check existing manga duplicate for '%s': %v", slug, err)
+				log.Errorf("Failed to check existing media duplicate for '%s': %v", slug, err)
 			}
 
 			if existingDup == nil {
 				// This is a new duplicate: log and record it
-				log.Warnf("Detected duplicate folder for manga '%s': existing='%s', new='%s'", 
+				log.Warnf("Detected duplicate folder for media '%s': existing='%s', new='%s'", 
 					slug, originalPath, absolutePath)
 
-				duplicate := models.MangaDuplicate{
-					MangaSlug:   slug,
+				duplicate := models.MediaDuplicate{
+					MediaSlug:   slug,
 					LibrarySlug: librarySlug,
 					FolderPath1: originalPath,
 					FolderPath2: absolutePath,
 				}
 
-				if err := models.CreateMangaDuplicate(duplicate); err != nil {
-					log.Errorf("Failed to record manga duplicate for '%s': %v", slug, err)
+				if err := models.CreateMediaDuplicate(duplicate); err != nil {
+					log.Errorf("Failed to record media duplicate for '%s': %v", slug, err)
 				}
 			}
 			// Still index the chapters from this new folder
 		}
 		
-		// Fast path 1: use stored file_count on the Manga. If the number of
+		// Fast path 1: use stored file_count on the Media. If the number of
 		// candidate files (files that look like chapters) matches the stored
 		// FileCount, assume no changes and skip.
 		if absolutePath != "" {
 			var candidateCount int
 			
 			if isSingleFile {
-				// Single file manga always has exactly 1 chapter
+				// Single file media always has exactly 1 chapter
 				candidateCount = 1
 			} else {
 				// Count files (fast): we only need to count entries that look
@@ -199,51 +204,64 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 				})
 			}
 			
-			if candidateCount == existingManga.FileCount {
+			if candidateCount == existingMedia.FileCount {
 				return slug, nil
 			}
 		}
 
 		// Only update path if changed
-		if existingManga.Path == "" || existingManga.Path != absolutePath {
-			existingManga.Path = absolutePath
-			if err := models.UpdateManga(existingManga); err != nil {
-				log.Errorf("Failed to update manga path for '%s': %s", slug, err)
+		if existingMedia.Path == "" || existingMedia.Path != absolutePath {
+			existingMedia.Path = absolutePath
+			if err := models.UpdateMedia(existingMedia); err != nil {
+				log.Errorf("Failed to update media path for '%s': %s", slug, err)
+			}
+		}
+
+		// Check if directory contains EPUB files, if so, set type to novel
+		if containsEPUBFiles(absolutePath) && existingMedia.Type != "novel" {
+			originalType := existingMedia.Type
+			existingMedia.Type = "novel"
+			log.Debugf("Updated type to novel (was '%s') for existing media '%s' based on presence of EPUB files", originalType, slug)
+			if err := models.UpdateMedia(existingMedia); err != nil {
+				log.Errorf("Failed to update media type for '%s': %s", slug, err)
 			}
 		}
 
 		// Index chapters recursively; returns added and deleted counts.
 		added, deleted, newChapterSlugs, err := IndexChapters(slug, absolutePath)
 		if err != nil {
-			log.Errorf("Failed to index chapters for existing manga '%s': %s", slug, err)
+			log.Errorf("Failed to index chapters for existing media '%s': %s", slug, err)
 			return slug, err
 		}
 		
 		// If new chapters were added, notify users
 		if added > 0 && len(newChapterSlugs) > 0 {
 			if err := models.NotifyUsersOfNewChapters(slug, newChapterSlugs); err != nil {
-				log.Errorf("Failed to create notifications for new chapters in manga '%s': %s", slug, err)
+				log.Errorf("Failed to create notifications for new chapters in media '%s': %s", slug, err)
 			}
 		}
 		
 		if added > 0 || deleted > 0 {
-			// Update manga updated_at to mark the index time
-			if err := models.UpdateManga(existingManga); err != nil {
-				log.Errorf("Failed to update manga timestamp for '%s': %s", slug, err)
+			// Update media updated_at to mark the index time
+			if err := models.UpdateMedia(existingMedia); err != nil {
+				log.Errorf("Failed to update media timestamp for '%s': %s", slug, err)
 			}
-			log.Infof("Indexed manga: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+			log.Infof("Indexed series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
 		}
 		return slug, nil
 	}
 
-	// Manga does not exist yet — fetch metadata, create it and index chapters
+	// Media does not exist yet — fetch metadata, create it and index chapters
 	config, err := models.GetAppConfig()
-	var meta *metadata.MangaMetadata
+	var meta *metadata.MediaMetadata
 	var provider metadata.Provider
 	if err == nil {
 		provider, err = metadata.GetProviderFromConfig(&config)
 		if err == nil {
-			meta, _ = provider.FindBestMatch(cleanedName)
+			meta, err = provider.FindBestMatch(cleanedName)
+		if err != nil {
+			log.Errorf("Failed to find metadata for '%s': %s", cleanedName, err.Error())
+		}
 		}
 	}
 
@@ -257,38 +275,45 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 	
 	// If no cover was found, try local images
 	if cachedImageURL == "" {
-		log.Debugf("No metadata cover found for new manga '%s', attempting local poster generation", slug)
+		log.Debugf("No metadata cover found for new media '%s', attempting local poster generation", slug)
 		cachedImageURL, _ = HandleLocalImages(slug, absolutePath)
 		if cachedImageURL != "" {
-			log.Debugf("Successfully generated poster from local images for new manga '%s': %s", slug, cachedImageURL)
+			log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, cachedImageURL)
 		} else {
-			log.Debugf("Failed to generate poster from local images for new manga '%s'", slug)
+			log.Debugf("Failed to generate poster from local images for new media '%s'", slug)
 		}
 	}
 
-	newManga := createMangaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
+	newMedia := createMediaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
+
+	// Check if directory contains EPUB files, if so, set type to novel
+	if containsEPUBFiles(absolutePath) {
+		originalType := newMedia.Type
+		newMedia.Type = "novel"
+		log.Debugf("Detected novel (overriding metadata type '%s') for '%s' based on presence of EPUB files", originalType, slug)
+	}
 
 	// If no type was set from metadata, determine type based on image aspect ratio
-	if newManga.Type == "" {
+	if newMedia.Type == "" {
 		detectedType := DetectWebtoonFromImages(absolutePath, slug)
 		if detectedType == "webtoon" {
-			newManga.Type = "webtoon"
-			log.Infof("Detected webtoon for '%s' based on image aspect ratio", slug)
+			newMedia.Type = "webtoon"
+			log.Debugf("Detected webtoon for '%s' based on image aspect ratio", slug)
 		} else {
-			newManga.Type = "manga"
-			log.Debugf("Defaulting to manga type for '%s' (no metadata type and not detected as webtoon)", slug)
+			newMedia.Type = "media"
+			log.Debugf("Defaulting to media type for '%s' (no metadata type and not detected as webtoon)", slug)
 		}
 	}
 
-	if err := models.CreateManga(newManga); err != nil {
-		log.Errorf("Failed to create manga: %s (%s)", slug, err.Error())
+	if err := models.CreateMedia(newMedia); err != nil {
+		log.Errorf("Failed to create media: %s (%s)", slug, err.Error())
 		return "", err
 	}
 
 	// Persist tags from metadata provider (if any)
 	if meta != nil && len(meta.Tags) > 0 {
-		if err := models.SetTagsForManga(slug, meta.Tags); err != nil {
-			log.Errorf("Failed to set tags for manga '%s': %s", slug, err)
+		if err := models.SetTagsForMedia(slug, meta.Tags); err != nil {
+			log.Errorf("Failed to set tags for media '%s': %s", slug, err)
 		}
 	}
 
@@ -298,379 +323,25 @@ func IndexManga(absolutePath, librarySlug string) (string, error) {
 		return "", err
 	}
 
-	// If new chapters were added, check for users reading this manga and notify them
+	// If new chapters were added, check for users reading this media and notify them
 	if added > 0 && len(newChapterSlugs) > 0 {
 		if err := models.NotifyUsersOfNewChapters(slug, newChapterSlugs); err != nil {
-			log.Errorf("Failed to create notifications for new chapters in manga '%s': %s", slug, err)
+			log.Errorf("Failed to create notifications for new chapters in media '%s': %s", slug, err)
 		}
 	}
 
 	if added > 0 || deleted > 0 {
 		if meta == nil {
-			log.Infof("Indexed manga: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
+			log.Infof("Indexed series: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
 		} else {
-			log.Infof("Indexed manga: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+			log.Infof("Indexed series: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
 		}
 	}
 	return slug, nil
 }
 
-// IndexLightNovelSeries inspects a directory containing EPUB files, creating one LightNovel for the series
-// and Chapter entries for each EPUB file.
-func IndexLightNovelSeries(absolutePath, librarySlug string) (string, error) {
-	defer utils.LogDuration("IndexLightNovelSeries", time.Now(), absolutePath)
-
-	// Check if this is a directory
-	fileInfo, err := os.Stat(absolutePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
-	}
-	if !fileInfo.IsDir() {
-		return "", fmt.Errorf("light novel series must be a directory: %s", absolutePath)
-	}
-
-	// Use the directory name as the light novel name
-	baseName := filepath.Base(absolutePath)
-	cleanedName := utils.RemovePatterns(baseName)
-	if cleanedName == "" {
-		return "", nil
-	}
-
-	slug := utils.Sluggify(cleanedName)
-
-	// If light novel already exists, update it
-	existingLightNovel, err := models.GetLightNovelUnfiltered(slug)
-	if err != nil {
-		log.Errorf("Failed to lookup light novel '%s': %s", slug, err)
-	}
-
-	if existingLightNovel == nil {
-		log.Infof("Creating new light novel series '%s'", slug)
-		
-		// Fetch metadata from providers
-		config, err := models.GetAppConfig()
-		var meta *metadata.MangaMetadata
-		var provider metadata.Provider
-		if err == nil {
-			provider, err = metadata.GetProviderFromConfig(&config)
-			if err == nil {
-				meta, _ = provider.FindBestMatch(cleanedName)
-			}
-		}
-
-		var cachedImageURL string
-		if meta != nil {
-			coverURL := provider.GetCoverImageURL(meta)
-			if coverURL != "" {
-				cachedImageURL, _ = DownloadAndCacheImage(slug, coverURL)
-			}
-		}
-		
-		lightNovel := models.LightNovel{
-			Slug:          slug,
-			Name:          cleanedName,
-			Path:          absolutePath, // Store the directory path
-			LibrarySlug:   librarySlug,
-			Type:          "light_novel",
-			ContentRating: "safe", // Default to safe
-			CoverArtURL:   cachedImageURL,
-		}
-
-		// Populate with metadata if available
-		if meta != nil {
-			lightNovel.Author = meta.Author
-			lightNovel.Description = meta.Description
-			lightNovel.Year = meta.Year
-			lightNovel.OriginalLanguage = meta.OriginalLanguage
-			lightNovel.Status = meta.Status
-			lightNovel.ContentRating = meta.ContentRating
-			if len(meta.Tags) > 0 {
-				lightNovel.Tags = meta.Tags
-			}
-		}
-
-		// Try to extract metadata from the first EPUB file (override metadata provider if available)
-		if epubFiles, err := findEPUBFiles(absolutePath); err == nil && len(epubFiles) > 0 {
-			if epubMeta, err := extractEPUBMetadata(epubFiles[0]); err == nil {
-				if epubMeta.Author != "" {
-					lightNovel.Author = epubMeta.Author
-				}
-				if epubMeta.Description != "" {
-					lightNovel.Description = epubMeta.Description
-				}
-				if epubMeta.Year != 0 {
-					lightNovel.Year = epubMeta.Year
-				}
-				if epubMeta.Language != "" {
-					lightNovel.OriginalLanguage = epubMeta.Language
-				}
-				if epubMeta.Status != "" {
-					lightNovel.Status = epubMeta.Status
-				}
-				if epubMeta.ContentRating != "" {
-					lightNovel.ContentRating = epubMeta.ContentRating
-				}
-				if epubMeta.CoverArtURL != "" && lightNovel.CoverArtURL == "" {
-					lightNovel.CoverArtURL = epubMeta.CoverArtURL
-				}
-				if len(epubMeta.Tags) > 0 {
-					lightNovel.Tags = append(lightNovel.Tags, epubMeta.Tags...)
-				}
-			}
-		}
-
-		if err := models.CreateLightNovel(lightNovel); err != nil {
-			return "", fmt.Errorf("failed to create light novel series '%s': %w", slug, err)
-		}
-		log.Infof("Created light novel series '%s'", slug)
-
-		// Persist tags from metadata provider (if any)
-		if len(lightNovel.Tags) > 0 {
-			if err := models.UpdateTagsForLightNovel(slug, lightNovel.Tags); err != nil {
-				log.Errorf("Failed to set tags for light novel '%s': %s", slug, err)
-			}
-		}
-	}
-
-	// Index chapters (EPUB files)
-	if err := indexLightNovelChapters(absolutePath, slug, librarySlug); err != nil {
-		log.Errorf("Failed to index chapters for light novel '%s': %v", slug, err)
-	}
-
-	return slug, nil
-}
-
-// indexLightNovelChapters finds all EPUB files in a directory and creates Chapter entries for them
-func indexLightNovelChapters(seriesPath, lightNovelSlug, librarySlug string) error {
-	epubFiles, err := findEPUBFiles(seriesPath)
-	if err != nil {
-		return err
-	}
-
-	for _, epubPath := range epubFiles {
-		// Use the filename as the chapter title
-		baseName := filepath.Base(epubPath)
-		baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
-		cleanedName := utils.RemovePatterns(baseName)
-
-		chapterSlug := utils.Sluggify(cleanedName)
-
-		chapter := models.Chapter{
-			Name:      cleanedName,
-			File:      epubPath,
-			MangaSlug: lightNovelSlug, // Using MangaSlug for light novels too
-			Type:      "epub",
-		}
-
-		// Check if chapter already exists
-		existingChapter, err := models.GetChapter(lightNovelSlug, chapterSlug)
-		if err != nil {
-			log.Errorf("Failed to check if chapter exists for '%s' '%s': %v", lightNovelSlug, chapterSlug, err)
-			continue
-		}
-
-		if existingChapter != nil {
-			// Update file path if different
-			if existingChapter.File != epubPath {
-				existingChapter.File = epubPath
-				if err := models.UpdateChapter(existingChapter); err != nil {
-					log.Errorf("Failed to update chapter file for '%s' '%s': %v", lightNovelSlug, chapterSlug, err)
-				}
-			}
-		} else {
-			if err := models.CreateChapter(chapter); err != nil {
-				log.Errorf("Failed to create chapter for '%s' '%s': %v", lightNovelSlug, chapterSlug, err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// findEPUBFiles returns all .epub files in a directory
-func findEPUBFiles(dirPath string) ([]string, error) {
-	var epubFiles []string
-	
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-	
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.ToLower(filepath.Ext(entry.Name())) == ".epub" {
-			epubFiles = append(epubFiles, filepath.Join(dirPath, entry.Name()))
-		}
-	}
-	
-	return epubFiles, nil
-}
-
-// IndexLightNovel inspects an EPUB file, syncing metadata with the database.
-func IndexLightNovel(absolutePath, librarySlug string) (string, error) {
-	defer utils.LogDuration("IndexLightNovel", time.Now(), absolutePath)
-
-	// Check if this is a file
-	fileInfo, err := os.Stat(absolutePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
-	}
-	if fileInfo.IsDir() {
-		return "", fmt.Errorf("light novels must be single EPUB files, not directories")
-	}
-
-	// Verify it's an EPUB file
-	ext := strings.ToLower(filepath.Ext(absolutePath))
-	if ext != ".epub" {
-		return "", fmt.Errorf("file is not an EPUB: %s", absolutePath)
-	}
-
-	// Use the filename without extension as the light novel name
-	baseName := filepath.Base(absolutePath)
-	baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
-
-	cleanedName := utils.RemovePatterns(baseName)
-	if cleanedName == "" {
-		return "", nil
-	}
-
-	slug := utils.Sluggify(cleanedName)
-
-	// If light novel already exists, update the path if needed and check for missing cover
-	existingLightNovel, err := models.GetLightNovelUnfiltered(slug)
-	if err != nil {
-		log.Errorf("Failed to lookup light novel '%s': %s", slug, err)
-	}
-
-	if existingLightNovel != nil {
-		// Update path if different
-		if existingLightNovel.Path != absolutePath {
-			log.Infof("Updating path for existing light novel '%s': '%s' -> '%s'", slug, existingLightNovel.Path, absolutePath)
-			existingLightNovel.Path = absolutePath
-			if err := models.UpdateLightNovel(*existingLightNovel); err != nil {
-				log.Errorf("Failed to update light novel path for '%s': %s", slug, err)
-			}
-		}
-
-		// If cover is missing, try metadata providers first, then EPUB extraction
-		if existingLightNovel.CoverArtURL == "" {
-			log.Debugf("Existing light novel '%s' has no cover, attempting metadata provider lookup", slug)
-			
-			// Try metadata providers
-			config, err := models.GetAppConfig()
-			var meta *metadata.MangaMetadata
-			var provider metadata.Provider
-			if err == nil {
-				provider, err = metadata.GetProviderFromConfig(&config)
-				if err == nil {
-					meta, _ = provider.FindBestMatch(cleanedName)
-				}
-			}
-
-			var cachedImageURL string
-			if meta != nil {
-				coverURL := provider.GetCoverImageURL(meta)
-				if coverURL != "" {
-					cachedImageURL, _ = DownloadAndCacheImage(slug, coverURL)
-				}
-			}
-
-			// If no cover from metadata, try EPUB extraction
-			if cachedImageURL == "" {
-				log.Debugf("No metadata cover found for existing light novel '%s', attempting EPUB extraction", slug)
-				if epubMeta, err := extractEPUBMetadata(absolutePath); err == nil && epubMeta.CoverArtURL != "" {
-					cachedImageURL = epubMeta.CoverArtURL
-					log.Debugf("Successfully extracted cover from EPUB for existing light novel '%s': %s", slug, cachedImageURL)
-				}
-			}
-
-			if cachedImageURL != "" {
-				existingLightNovel.CoverArtURL = cachedImageURL
-				if err := models.UpdateLightNovel(*existingLightNovel); err != nil {
-					log.Errorf("Failed to update light novel cover for '%s': %s", slug, err)
-				} else {
-					log.Infof("Successfully set cover for existing light novel '%s'", slug)
-				}
-			}
-		}
-
-		return slug, nil
-	}
-
-	// Create new light novel
-	lightNovel := models.LightNovel{
-		Slug:          slug,
-		Name:          cleanedName,
-		Path:          absolutePath,
-		LibrarySlug:   librarySlug,
-		Type:          "light_novel",
-		ContentRating: "safe", // Default to safe
-	}
-
-	// Try to get metadata from providers first (similar to manga)
-	config, err := models.GetAppConfig()
-	var meta *metadata.MangaMetadata
-	var provider metadata.Provider
-	if err == nil {
-		provider, err = metadata.GetProviderFromConfig(&config)
-		if err == nil {
-			meta, _ = provider.FindBestMatch(cleanedName)
-		}
-	}
-
-	var cachedImageURL string
-	if meta != nil {
-		coverURL := provider.GetCoverImageURL(meta)
-		if coverURL != "" {
-			cachedImageURL, _ = DownloadAndCacheImage(slug, coverURL)
-		}
-	}
-
-	// If no cover from metadata, try EPUB extraction
-	if cachedImageURL == "" {
-		log.Debugf("No metadata cover found for new light novel '%s', attempting EPUB extraction", slug)
-		if epubMeta, err := extractEPUBMetadata(absolutePath); err == nil {
-			if epubMeta.CoverArtURL != "" {
-				cachedImageURL = epubMeta.CoverArtURL
-				log.Debugf("Successfully extracted cover from EPUB for new light novel '%s': %s", slug, cachedImageURL)
-			}
-			// Also use other metadata from EPUB
-			lightNovel.Author = epubMeta.Author
-			lightNovel.Description = epubMeta.Description
-			lightNovel.Year = epubMeta.Year
-			lightNovel.OriginalLanguage = epubMeta.Language
-			lightNovel.Status = epubMeta.Status
-			lightNovel.ContentRating = epubMeta.ContentRating
-			if len(epubMeta.Tags) > 0 {
-				lightNovel.Tags = epubMeta.Tags
-			}
-		} else {
-			log.Warnf("Failed to extract metadata from EPUB '%s': %v", absolutePath, err)
-		}
-	}
-
-	// Set cover URL if found
-	if cachedImageURL != "" {
-		lightNovel.CoverArtURL = cachedImageURL
-	}
-
-	// Create the light novel
-	if err := models.CreateLightNovel(lightNovel); err != nil {
-		return "", fmt.Errorf("failed to create light novel '%s': %w", slug, err)
-	}
-
-	// Update tags if any
-	if len(lightNovel.Tags) > 0 {
-		if err := models.UpdateTagsForLightNovel(slug, lightNovel.Tags); err != nil {
-			log.Errorf("Failed to update tags for light novel '%s': %v", slug, err)
-		}
-	}
-
-	log.Infof("Indexed new light novel: %s", cleanedName)
-	return slug, nil
-}
-
-func createMangaFromMetadata(meta *metadata.MangaMetadata, name, slug, librarySlug, path, coverURL string) models.Manga {
-	manga := models.Manga{
+func createMediaFromMetadata(meta *metadata.MediaMetadata, name, slug, librarySlug, path, coverURL string) models.Media {
+	media := models.Media{
 		Name:        name,
 		Slug:        slug,
 		LibrarySlug: librarySlug,
@@ -679,20 +350,20 @@ func createMangaFromMetadata(meta *metadata.MangaMetadata, name, slug, librarySl
 	}
 	
 	if meta != nil {
-		manga.Description = meta.Description
-		manga.Year = meta.Year
-		manga.OriginalLanguage = meta.OriginalLanguage
-		manga.Type = meta.Type
-		manga.Status = meta.Status
-		manga.ContentRating = meta.ContentRating
-		manga.Author = meta.Author
+		media.Description = meta.Description
+		media.Year = meta.Year
+		media.OriginalLanguage = meta.OriginalLanguage
+		media.Type = meta.Type
+		media.Status = meta.Status
+		media.ContentRating = meta.ContentRating
+		media.Author = meta.Author
 	}
 	
-	return manga
+	return media
 }
 
 func HandleLocalImages(slug, absolutePath string) (string, error) {
-	log.Debugf("Attempting to generate poster from local images for manga '%s' at path '%s'", slug, absolutePath)
+	log.Debugf("Attempting to generate poster from local images for media '%s' at path '%s'", slug, absolutePath)
 	
 	// First, check for standalone poster/thumbnail images
 	imageFiles := []string{"poster.jpg", "poster.jpeg", "poster.png", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png"}
@@ -700,12 +371,12 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 	for _, filename := range imageFiles {
 		imagePath := filepath.Join(absolutePath, filename)
 		if _, err := os.Stat(imagePath); err == nil {
-			log.Debugf("Found standalone poster image '%s' for manga '%s'", filename, slug)
+			log.Debugf("Found standalone poster image '%s' for media '%s'", filename, slug)
 			return processLocalImage(slug, imagePath)
 		}
 	}
 
-	log.Debugf("No standalone poster images found for manga '%s', checking archives", slug)
+	log.Debugf("No standalone poster images found for media '%s', checking archives", slug)
 	
 	// If no standalone image found, try to extract from archive files
 	fileInfo, err := os.Stat(absolutePath)
@@ -714,7 +385,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 		lowerPath := strings.ToLower(absolutePath)
 		if strings.HasSuffix(lowerPath, ".cbz") || strings.HasSuffix(lowerPath, ".cbr") ||
 			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") {
-			log.Debugf("Extracting poster from single archive file '%s' for manga '%s'", absolutePath, slug)
+			log.Debugf("Extracting poster from single archive file '%s' for media '%s'", absolutePath, slug)
 			return utils.ExtractAndCacheFirstImage(absolutePath, slug, cacheDataDirectory)
 		}
 	} else if err == nil && fileInfo.IsDir() {
@@ -727,7 +398,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 					if strings.HasSuffix(lowerName, ".cbz") || strings.HasSuffix(lowerName, ".cbr") ||
 						strings.HasSuffix(lowerName, ".zip") || strings.HasSuffix(lowerName, ".rar") {
 						archivePath := filepath.Join(absolutePath, entry.Name())
-						log.Debugf("Extracting poster from archive '%s' in directory for manga '%s'", entry.Name(), slug)
+						log.Debugf("Extracting poster from archive '%s' in directory for media '%s'", entry.Name(), slug)
 						return utils.ExtractAndCacheFirstImage(archivePath, slug, cacheDataDirectory)
 					}
 				}
@@ -735,7 +406,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 		}
 		
 		// If no archives found, try to find chapter directories with loose images
-		log.Debugf("No archives found in directory for manga '%s', checking for chapter directories with images", slug)
+		log.Debugf("No archives found in directory for media '%s', checking for chapter directories with images", slug)
 		if entries != nil {
 			// Sort entries to get the first chapter
 			var dirs []string
@@ -759,7 +430,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 							strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".webp") ||
 							strings.HasSuffix(lowerName, ".bmp") || strings.HasSuffix(lowerName, ".gif") {
 							imagePath := filepath.Join(chapterPath, chapterEntry.Name())
-							log.Debugf("Found first image '%s' in chapter directory '%s' for manga '%s'", chapterEntry.Name(), dirName, slug)
+							log.Debugf("Found first image '%s' in chapter directory '%s' for media '%s'", chapterEntry.Name(), dirName, slug)
 							return processLocalImage(slug, imagePath)
 						}
 					}
@@ -768,7 +439,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 		}
 	}
 
-	log.Debugf("No local images found for poster generation for manga '%s'", slug)
+	log.Debugf("No local images found for poster generation for media '%s'", slug)
 	return "", nil
 }
 
@@ -823,7 +494,7 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 	// Load existing chapters once to avoid querying the DB per file.
 	existing, err := models.GetChapters(slug)
 	if err != nil {
-		return 0, 0, nil, fmt.Errorf("failed to load existing chapters for manga '%s': %w", slug, err)
+		return 0, 0, nil, fmt.Errorf("failed to load existing chapters for media '%s': %w", slug, err)
 	}
 	existingMap := make(map[string]models.Chapter, len(existing))
 	for _, c := range existing {
@@ -843,11 +514,11 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 	presentMap := make(map[string]presentInfo)
 
 	if !fileInfo.IsDir() {
-		// Single file manga - treat the file itself as chapter 1
+		// Single file media - treat the file itself as chapter 1
 		fileName := filepath.Base(path)
-		cleanedName := utils.RemovePatterns(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
-		chapterSlug := utils.Sluggify(cleanedName)
-		presentMap[chapterSlug] = presentInfo{Rel: fileName, Name: cleanedName}
+		chapterName := utils.ExtractChapterName(fileName)
+		chapterSlug := utils.Sluggify(chapterName)
+		presentMap[chapterSlug] = presentInfo{Rel: fileName, Name: chapterName}
 	} else {
 		// Build map of files currently present (slug -> relPath). This is a
 		// full scan but cheaper than many DB ops; we only do it when file_count
@@ -864,12 +535,13 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 			if !containsNumber(cleanedName) {
 				return nil
 			}
-			chapterSlug := utils.Sluggify(cleanedName)
+			chapterName := utils.ExtractChapterName(name)
+			chapterSlug := utils.Sluggify(chapterName)
 			relPath, err := filepath.Rel(path, p)
 			if err != nil {
 				relPath = name
 			}
-			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: cleanedName}
+			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: chapterName}
 			return nil
 		});
 		if err != nil {
@@ -885,10 +557,10 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 				Name:      info.Name,
 				Slug:      slugKey,
 				File:      info.Rel,
-				MangaSlug: slug,
+				MediaSlug: slug,
 			}
 			if err := models.CreateChapter(chapter); err != nil {
-				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to create chapter '%s' for manga '%s': %w", info.Name, slug, err)
+				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to create chapter '%s' for media '%s': %w", info.Name, slug, err)
 			}
 			addedCount++
 			newChapterSlugs = append(newChapterSlugs, slugKey)
@@ -899,18 +571,18 @@ func IndexChapters(slug, path string) (int, int, []string, error) {
 	for slugKey := range existingMap {
 		if _, ok := presentMap[slugKey]; !ok {
 			if err := models.DeleteChapter(slug, slugKey); err != nil {
-				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to delete missing chapter '%s' for manga '%s': %w", slugKey, slug, err)
+				return addedCount, deletedCount, newChapterSlugs, fmt.Errorf("failed to delete missing chapter '%s' for media '%s': %w", slugKey, slug, err)
 			}
 			deletedCount++
 		}
 	}
 
-	// Update manga file count and timestamp
-	m, err := models.GetMangaUnfiltered(slug)
+	// Update media file count and timestamp
+	m, err := models.GetMediaUnfiltered(slug)
 	if err == nil && m != nil {
 		m.FileCount = len(presentMap)
-		if err := models.UpdateManga(m); err != nil {
-			log.Errorf("Failed to update manga file_count for '%s': %s", slug, err)
+		if err := models.UpdateMedia(m); err != nil {
+			log.Errorf("Failed to update media file_count for '%s': %s", slug, err)
 		}
 	}
 
@@ -926,14 +598,14 @@ func containsNumber(s string) bool {
 	return false
 }
 
-// DetectWebtoonFromImages attempts to detect if a manga is a webtoon by checking
+// DetectWebtoonFromImages attempts to detect if a media is a webtoon by checking
 // the aspect ratio of the middle image in the first chapter.
 // Returns "webtoon" if detected, or empty string if not detected or on error.
 func DetectWebtoonFromImages(mangaPath, slug string) string {
 	// Check if path is a single file or directory
 	fileInfo, err := os.Stat(mangaPath)
 	if err != nil {
-		log.Debugf("Failed to stat manga path for webtoon detection: %v", err)
+		log.Debugf("Failed to stat media path for webtoon detection: %v", err)
 		return ""
 	}
 

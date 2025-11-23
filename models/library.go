@@ -181,12 +181,7 @@ func DeleteLibrary(slug string) error {
 	time.Sleep(2 * time.Second)
 	
 	// Now delete all mangas associated with this library
-	if err := DeleteMangasByLibrarySlug(slug); err != nil {
-		return err
-	}
-
-	// Delete all light novels associated with this library
-	if err := DeleteLightNovelsByLibrarySlug(slug); err != nil {
+	if err := DeleteMediasByLibrarySlug(slug); err != nil {
 		return err
 	}
 

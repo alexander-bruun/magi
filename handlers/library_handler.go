@@ -174,16 +174,31 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
 func HandleAddFolder(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the libraries page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/libraries")
+	}
+
 	return HandleView(c, views.Folder(""))
 }
 
 // HandleRemoveFolder acknowledges folder removal requests without returning content.
 func HandleRemoveFolder(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the libraries page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/libraries")
+	}
+
 	return c.SendString("")
 }
 
 // HandleCancelEdit resets the library form to its default state.
 func HandleCancelEdit(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the libraries page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/libraries")
+	}
+
 	var buf bytes.Buffer
 	err := views.LibraryForm(models.Library{}, "post", false).Render(context.Background(), &buf)
 	if err != nil {
@@ -205,7 +220,7 @@ func HandleBetter(c *fiber.Ctx) error {
 	return HandleView(c, views.Better(page))
 }
 
-// HandleDismissDuplicate dismisses a manga duplicate entry
+// HandleDismissDuplicate dismisses a media duplicate entry
 func HandleDismissDuplicate(c *fiber.Ctx) error {
 	// Get duplicate ID from URL params
 	id, err := c.ParamsInt("id")
@@ -214,7 +229,7 @@ func HandleDismissDuplicate(c *fiber.Ctx) error {
 	}
 	
 	// Dismiss the duplicate
-	if err := models.DismissMangaDuplicate(int64(id)); err != nil {
+	if err := models.DismissMediaDuplicate(int64(id)); err != nil {
 		log.Errorf("Failed to dismiss duplicate %d: %v", id, err)
 		return c.Status(500).SendString("Failed to dismiss duplicate")
 	}

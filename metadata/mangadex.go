@@ -12,65 +12,65 @@ import (
 
 const mangadexBaseURL = "https://api.mangadex.org"
 
-// MangadexProvider implements the Provider interface for MangaDex API
-type MangadexProvider struct {
+// MediadexProvider implements the Provider interface for MediaDex API
+type MediadexProvider struct {
 	apiToken string
 }
 
-// NewMangadexProvider creates a new MangaDex metadata provider
-func NewMangadexProvider(apiToken string) Provider {
-	return &MangadexProvider{apiToken: apiToken}
+// NewMediadexProvider creates a new MediaDex metadata provider
+func NewMediadexProvider(apiToken string) Provider {
+	return &MediadexProvider{apiToken: apiToken}
 }
 
 func init() {
-	RegisterProvider("mangadex", NewMangadexProvider)
+	RegisterProvider("mangadex", NewMediadexProvider)
 }
 
-func (m *MangadexProvider) Name() string {
+func (m *MediadexProvider) Name() string {
 	return "mangadex"
 }
 
-func (m *MangadexProvider) RequiresAuth() bool {
+func (m *MediadexProvider) RequiresAuth() bool {
 	return false
 }
 
-func (m *MangadexProvider) SetAuthToken(token string) {
+func (m *MediadexProvider) SetAuthToken(token string) {
 	m.apiToken = token
 }
 
-func (m *MangadexProvider) GetCoverImageURL(metadata *MangaMetadata) string {
+func (m *MediadexProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 	if metadata == nil || metadata.CoverArtURL == "" {
 		return ""
 	}
-	// MangaDex CoverArtURL is already the full URL
+	// MediaDex CoverArtURL is already the full URL
 	return metadata.CoverArtURL
 }
 
-func (m *MangadexProvider) Search(title string) ([]SearchResult, error) {
+func (m *MediadexProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
 	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art", mangadexBaseURL, titleEncoded)
 
 	resp, err := http.Get(searchURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search MangaDex: %w", err)
+		return nil, fmt.Errorf("failed to search MediaDex: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("MangaDex API returned status: %s", resp.Status)
+		return nil, fmt.Errorf("MediaDex API returned status: %s", resp.Status)
 	}
 
 	var response struct {
 		Result   string `json:"result"`
-		Data     []mangadexMangaDetail `json:"data"`
+		Data     []mangadexMediaDetail `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode MangaDex response: %w", err)
+		return nil, fmt.Errorf("failed to decode MediaDex response: %w", err)
 	}
 
 	if response.Result != "ok" {
-		return nil, fmt.Errorf("MangaDex API error: %s", response.Result)
+		return nil, fmt.Errorf("MediaDex API error: %s", response.Result)
 	}
 
 	if len(response.Data) == 0 {
@@ -80,21 +80,21 @@ func (m *MangadexProvider) Search(title string) ([]SearchResult, error) {
 	results := make([]SearchResult, 0, len(response.Data))
 	titleLower := strings.ToLower(title)
 
-	for _, manga := range response.Data {
-		mangaTitle := extractBestTitle(manga.Attributes.Title, manga.Attributes.AltTitles)
+	for _, media := range response.Data {
+		mangaTitle := extractBestTitle(media.Attributes.Title, media.Attributes.AltTitles)
 		if mangaTitle == "" {
 			continue
 		}
 
-		coverURL := extractCoverURL(manga.ID, manga.Relationships)
-		description := extractDescription(manga.Attributes.Description)
+		coverURL := extractCoverURL(media.ID, media.Relationships)
+		description := extractDescription(media.Attributes.Description)
 
 		results = append(results, SearchResult{
-			ID:              manga.ID,
+			ID:              media.ID,
 			Title:           mangaTitle,
 			Description:     description,
 			CoverArtURL:     coverURL,
-			Year:            manga.Attributes.Year,
+			Year:            media.Attributes.Year,
 			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
 		})
 	}
@@ -102,36 +102,36 @@ func (m *MangadexProvider) Search(title string) ([]SearchResult, error) {
 	return results, nil
 }
 
-func (m *MangadexProvider) GetMetadata(id string) (*MangaMetadata, error) {
+func (m *MediadexProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", mangadexBaseURL, id)
 
 	resp, err := http.Get(fetchURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch MangaDex metadata: %w", err)
+		return nil, fmt.Errorf("failed to fetch MediaDex metadata: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("MangaDex API returned status: %s", resp.Status)
+		return nil, fmt.Errorf("MediaDex API returned status: %s", resp.Status)
 	}
 
 	var response struct {
 		Result   string `json:"result"`
-		Data     mangadexMangaDetail `json:"data"`
+		Data     mangadexMediaDetail `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode MangaDex response: %w", err)
+		return nil, fmt.Errorf("failed to decode MediaDex response: %w", err)
 	}
 
 	if response.Result != "ok" {
-		return nil, fmt.Errorf("MangaDex API error: %s", response.Result)
+		return nil, fmt.Errorf("MediaDex API error: %s", response.Result)
 	}
 
-	return m.convertToMangaMetadata(&response.Data), nil
+	return m.convertToMediaMetadata(&response.Data), nil
 }
 
-func (m *MangadexProvider) FindBestMatch(title string) (*MangaMetadata, error) {
+func (m *MediadexProvider) FindBestMatch(title string) (*MediaMetadata, error) {
 	results, err := m.Search(title)
 	if err != nil {
 		return nil, err
@@ -153,8 +153,8 @@ func (m *MangadexProvider) FindBestMatch(title string) (*MangaMetadata, error) {
 	return m.GetMetadata(bestMatch.ID)
 }
 
-func (m *MangadexProvider) convertToMangaMetadata(detail *mangadexMangaDetail) *MangaMetadata {
-	metadata := &MangaMetadata{
+func (m *MediadexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *MediaMetadata {
+	metadata := &MediaMetadata{
 		Title:            extractBestTitle(detail.Attributes.Title, detail.Attributes.AltTitles),
 		Description:      extractDescription(detail.Attributes.Description),
 		Year:             detail.Attributes.Year,
@@ -163,7 +163,7 @@ func (m *MangadexProvider) convertToMangaMetadata(detail *mangadexMangaDetail) *
 		ContentRating:    detail.Attributes.ContentRating,
 		CoverArtURL:      extractCoverURL(detail.ID, detail.Relationships),
 		ExternalID:       detail.ID,
-		Type:             determineMangaType(detail),
+		Type:             determineMediaType(detail),
 	}
 
 	// Extract tags
@@ -192,8 +192,8 @@ func (m *MangadexProvider) convertToMangaMetadata(detail *mangadexMangaDetail) *
 	return metadata
 }
 
-// MangaDex API response structures
-type mangadexMangaDetail struct {
+// MediaDex API response structures
+type mangadexMediaDetail struct {
 	ID            string `json:"id"`
 	Type          string `json:"type"`
 	Attributes    mangadexAttributes `json:"attributes"`
@@ -283,8 +283,7 @@ func extractCoverURL(mangaID string, relationships []mangadexRelationship) strin
 	return ""
 }
 
-func determineMangaType(detail *mangadexMangaDetail) string {
-	// Check tags for webtoon indicator
+func determineMediaType(detail *mangadexMediaDetail) string {
 	for _, tag := range detail.Attributes.Tags {
 		for _, name := range tag.Attributes.Name {
 			lname := strings.ToLower(strings.TrimSpace(name))

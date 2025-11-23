@@ -38,7 +38,7 @@ func (a *AniListProvider) SetAuthToken(token string) {
 	a.apiToken = token
 }
 
-func (a *AniListProvider) GetCoverImageURL(metadata *MangaMetadata) string {
+func (a *AniListProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 	if metadata == nil || metadata.CoverArtURL == "" {
 		return ""
 	}
@@ -137,7 +137,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 	return results, nil
 }
 
-func (a *AniListProvider) GetMetadata(id string) (*MangaMetadata, error) {
+func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	query := `
 		query ($id: Int) {
 			Media(id: $id, type: MANGA) {
@@ -188,10 +188,10 @@ func (a *AniListProvider) GetMetadata(id string) (*MangaMetadata, error) {
 		return nil, fmt.Errorf("invalid AniList response format")
 	}
 
-	return a.convertToMangaMetadata(media), nil
+	return a.convertToMediaMetadata(media), nil
 }
 
-func (a *AniListProvider) FindBestMatch(title string) (*MangaMetadata, error) {
+func (a *AniListProvider) FindBestMatch(title string) (*MediaMetadata, error) {
 	results, err := a.Search(title)
 	if err != nil {
 		return nil, err
@@ -265,7 +265,7 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]interf
 	return result.Data, nil
 }
 
-func (a *AniListProvider) convertToMangaMetadata(media map[string]interface{}) *MangaMetadata {
+func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *MediaMetadata {
 	titleData := media["title"].(map[string]interface{})
 	title := extractAniListTitle(titleData)
 
@@ -296,7 +296,7 @@ func (a *AniListProvider) convertToMangaMetadata(media map[string]interface{}) *
 		isAdult = adult
 	}
 
-	format := "manga"
+	format := "media"
 	if formatStr, ok := media["format"].(string); ok {
 		format = convertAniListFormat(formatStr)
 	}
@@ -310,7 +310,7 @@ func (a *AniListProvider) convertToMangaMetadata(media map[string]interface{}) *
 		}
 	}
 
-	metadata := &MangaMetadata{
+	metadata := &MediaMetadata{
 		Title:            title,
 		Description:      description,
 		Year:             year,
@@ -318,7 +318,7 @@ func (a *AniListProvider) convertToMangaMetadata(media map[string]interface{}) *
 		ContentRating:    convertAniListContentRating(isAdult),
 		CoverArtURL:      coverURL,
 		ExternalID:       fmt.Sprintf("%v", media["id"]),
-		Type:             format,
+		Type:             convertAniListFormat(format),
 		OriginalLanguage: convertCountryToLanguage(countryOfOrigin),
 	}
 
@@ -404,6 +404,8 @@ func convertAniListFormat(format string) string {
 	switch strings.ToUpper(format) {
 	case "MANGA":
 		return "manga"
+	case "LIGHT_NOVEL", "NOVEL":
+		return "novel"
 	case "ONE_SHOT":
 		return "oneshot"
 	default:

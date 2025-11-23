@@ -143,6 +143,48 @@ func GetChapters(epubPath string) ([]Chapter, error) {
 	return chapters, nil
 }
 
+// GetOPFDir returns the directory of the OPF file in the EPUB
+func GetOPFDir(epubPath string) (string, error) {
+	r, err := zip.OpenReader(epubPath)
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+
+	// Find container.xml
+	var containerFile *zip.File
+	for _, f := range r.File {
+		if f.Name == "META-INF/container.xml" {
+			containerFile = f
+			break
+		}
+	}
+	if containerFile == nil {
+		return "", fmt.Errorf("container.xml not found")
+	}
+
+	rc, err := containerFile.Open()
+	if err != nil {
+		return "", err
+	}
+	defer rc.Close()
+	containerData, err := io.ReadAll(rc)
+	if err != nil {
+		return "", err
+	}
+
+	var container Container
+	err = xml.Unmarshal(containerData, &container)
+	if err != nil {
+		return "", err
+	}
+
+	opfPath := container.Rootfiles.Rootfile.FullPath
+	opfDir := filepath.Dir(opfPath)
+
+	return opfDir, nil
+}
+
 // GetTitlesFromNCX extracts titles from NCX navigation
 func GetTitlesFromNCX(epubPath string) (map[string]string, error) {
 	r, err := zip.OpenReader(epubPath)
@@ -469,188 +511,262 @@ func GetTOC(epubPath string) string {
 	return navContent
 }
 
-// GetBookContent extracts all content from an EPUB file as HTML
-func GetBookContent(epubPath, lightNovelSlug, chapterSlug string) string {
+// GetBookContent extracts all readable content from an EPUB file as HTML
+func GetBookContent(epubPath, mangaSlug, chapterSlug string) string {
 	r, err := zip.OpenReader(epubPath)
 	if err != nil {
 		return "Error opening EPUB: " + err.Error()
 	}
 	defer r.Close()
 
-	// Find container.xml
-	var containerFile *zip.File
+	chapters, err := GetChapters(epubPath)
+	if err != nil {
+		return "Error getting chapters: " + err.Error()
+	}
+
+	// Get OPF directory
+	var opfPath string
 	for _, f := range r.File {
-		if f.Name == "META-INF/container.xml" {
-			containerFile = f
+		if strings.HasSuffix(f.Name, "/content.opf") || f.Name == "content.opf" {
+			opfPath = f.Name
 			break
 		}
 	}
-	if containerFile == nil {
-		return "container.xml not found"
-	}
-
-	rc, err := containerFile.Open()
-	if err != nil {
-		return "Error opening container.xml: " + err.Error()
-	}
-	defer rc.Close()
-	containerData, err := io.ReadAll(rc)
-	if err != nil {
-		return "Error reading container.xml: " + err.Error()
-	}
-
-	var container Container
-	err = xml.Unmarshal(containerData, &container)
-	if err != nil {
-		return "Error parsing container.xml: " + err.Error()
-	}
-
-	opfPath := container.Rootfiles.Rootfile.FullPath
-
-	// Find OPF file
-	var opfFile *zip.File
-	for _, f := range r.File {
-		if f.Name == opfPath {
-			opfFile = f
-			break
-		}
-	}
-	if opfFile == nil {
-		return "OPF file not found: " + opfPath
-	}
-
-	rc2, err := opfFile.Open()
-	if err != nil {
-		return "Error opening OPF: " + err.Error()
-	}
-	defer rc2.Close()
-	opfData, err := io.ReadAll(rc2)
-	if err != nil {
-		return "Error reading OPF: " + err.Error()
-	}
-
-	var pkg Package
-	err = xml.Unmarshal(opfData, &pkg)
-	if err != nil {
-		return "Error parsing OPF: " + err.Error()
-	}
-
-	// Create map from id to href
-	idToHref := make(map[string]string)
-	for _, item := range pkg.Manifest.Items {
-		idToHref[item.ID] = item.Href
-	}
-
-	opfDir := filepath.Dir(opfPath)
-
-	// Read spine items
-	var content strings.Builder
-	for _, itemref := range pkg.Spine.Itemrefs {
-		if itemref.Idref == "toc.xhtml" {
-			continue // Skip the embedded TOC page since we have the sidebar
-		}
-		href, ok := idToHref[itemref.Idref]
-		if !ok {
-			continue
-		}
-		chapterPath := filepath.Join(opfDir, href)
-		// Find the file
-		var file *zip.File
+	if opfPath == "" {
 		for _, f := range r.File {
-			if f.Name == chapterPath {
-				file = f
+			if f.Name == "META-INF/container.xml" {
+				rc, err := f.Open()
+				if err != nil {
+					return "Error reading container: " + err.Error()
+				}
+				data, err := io.ReadAll(rc)
+				rc.Close()
+				if err != nil {
+					return "Error reading container: " + err.Error()
+				}
+				var container Container
+				err = xml.Unmarshal(data, &container)
+				if err != nil {
+					return "Error parsing container: " + err.Error()
+				}
+				opfPath = container.Rootfiles.Rootfile.FullPath
 				break
 			}
 		}
-		if file == nil {
+	}
+	opfDir := filepath.Dir(opfPath)
+
+	var content strings.Builder
+	for i, chapter := range chapters {
+		// Find the chapter file
+		var chapterFile *zip.File
+		for _, f := range r.File {
+			if f.Name == chapter.Path {
+				chapterFile = f
+				break
+			}
+		}
+		if chapterFile == nil {
 			continue
 		}
-		frc, err := file.Open()
+
+		rc, err := chapterFile.Open()
 		if err != nil {
 			continue
 		}
-		chapterData, err := io.ReadAll(frc)
-		frc.Close()
+		chapterData, err := io.ReadAll(rc)
+		rc.Close()
 		if err != nil {
 			continue
 		}
-		chapterDir := filepath.Dir(chapterPath)
-		chapterStr := string(chapterData)
 
-		// Extract body content
-		bodyStart := strings.Index(chapterStr, "<body")
-		if bodyStart == -1 {
-			continue
+		htmlContent := string(chapterData)
+		// Clean the HTML and rewrite image paths
+		htmlContent = cleanHTMLContent(htmlContent, mangaSlug, chapterSlug, chapter.Path, opfDir)
+
+		// Add chapter ID
+		content.WriteString(fmt.Sprintf(`<div id="chapter-%s">`, chapter.Path))
+		content.WriteString(htmlContent)
+		content.WriteString(`</div>`)
+
+		// Add separator if not last
+		if i < len(chapters)-1 {
+			content.WriteString(`<hr>`)
 		}
-		bodyStart = strings.Index(chapterStr[bodyStart:], ">") + bodyStart + 1
-		bodyEnd := strings.LastIndex(chapterStr, "</body>")
-		if bodyEnd == -1 {
-			continue
-		}
-		chapterHTML := chapterStr[bodyStart:bodyEnd]
-
-		// Replace src and href attributes to use asset endpoints
-		chapterHTML = replaceAssetReferences(chapterHTML, chapterDir, lightNovelSlug, chapterSlug)
-
-		// Add anchor div wrapping the chapter
-		chapterHTML = fmt.Sprintf(`<div id="chapter-%s">`, chapterPath) + chapterHTML + `</div>`
-		content.WriteString(chapterHTML)
 	}
 
-	if content.Len() == 0 {
-		return "No content found in EPUB"
-	}
 	return content.String()
 }
 
-// replaceAssetReferences replaces src and href attributes in HTML to use asset endpoints
-func replaceAssetReferences(html, chapterDir, lightNovelSlug, chapterSlug string) string {
-	// Replace src="
-	re := regexp.MustCompile(`src="([^"]*)"`)
-	html = re.ReplaceAllStringFunc(html, func(match string) string {
-		sub := re.FindStringSubmatch(match)
-		if len(sub) < 2 {
+// cleanHTMLContent performs basic cleaning of HTML content from EPUB
+func cleanHTMLContent(html, mangaSlug, chapterSlug, chapterPath, opfDir string) string {
+	// Remove DOCTYPE, html, head, body tags
+	html = strings.ReplaceAll(html, "<!DOCTYPE html>", "")
+	html = strings.ReplaceAll(html, "<html>", "")
+	html = strings.ReplaceAll(html, "</html>", "")
+	html = strings.ReplaceAll(html, "<head>", "")
+	html = strings.ReplaceAll(html, "</head>", "")
+	html = strings.ReplaceAll(html, "<body>", "")
+	html = strings.ReplaceAll(html, "</body>", "")
+
+	// Remove script and style tags
+	for strings.Contains(html, "<script") {
+		start := strings.Index(html, "<script")
+		end := strings.Index(html[start:], "</script>")
+		if end == -1 {
+			break
+		}
+		html = html[:start] + html[start+end+9:]
+	}
+
+	for strings.Contains(html, "<style") {
+		start := strings.Index(html, "<style")
+		end := strings.Index(html[start:], "</style>")
+		if end == -1 {
+			break
+		}
+		html = html[:start] + html[start+end+8:]
+	}
+
+	// Remove link and meta tags
+	for strings.Contains(html, "<link") {
+		start := strings.Index(html, "<link")
+		end := strings.Index(html[start:], ">")
+		if end == -1 {
+			break
+		}
+		html = html[:start] + html[start+end+1:]
+	}
+
+	for strings.Contains(html, "<meta") {
+		start := strings.Index(html, "<meta")
+		end := strings.Index(html[start:], ">")
+		if end == -1 {
+			break
+		}
+		html = html[:start] + html[start+end+1:]
+	}
+
+	// Rewrite img src attributes to point to asset endpoint
+	html = rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir)
+
+	return html
+}
+
+// rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint
+func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir string) string {
+	// Use regex to find img tags with src attributes
+	imgRe := regexp.MustCompile(`<img[^>]*src=(["']?)([^"'\s>]+)[^>]*>`)
+	html = imgRe.ReplaceAllStringFunc(html, func(match string) string {
+		// Extract the src value - find the position of src=
+		srcIndex := strings.Index(match, `src=`)
+		if srcIndex == -1 {
 			return match
 		}
-		src := sub[1]
-		resolved := filepath.Join(chapterDir, src)
-		return fmt.Sprintf(`src="/light-novels/%s/chapters/%s/%s"`, lightNovelSlug, chapterSlug, resolved)
+		
+		// Find the quote character
+		quoteChar := ""
+		valueStart := srcIndex + 4 // after src=
+		if valueStart < len(match) {
+			if match[valueStart] == '"' || match[valueStart] == '\'' {
+				quoteChar = string(match[valueStart])
+				valueStart++
+			}
+		}
+		
+		// Find the end of the value
+		valueEnd := valueStart
+		for valueEnd < len(match) {
+			if quoteChar != "" {
+				if match[valueEnd] == quoteChar[0] {
+					break
+				}
+			} else {
+				if match[valueEnd] == ' ' || match[valueEnd] == '>' || match[valueEnd] == '\t' {
+					break
+				}
+			}
+			valueEnd++
+		}
+		
+		if valueStart >= valueEnd {
+			return match
+		}
+		
+		originalSrc := match[valueStart:valueEnd]
+
+		// Skip if already an absolute URL or data URI
+		if strings.HasPrefix(originalSrc, "http://") || strings.HasPrefix(originalSrc, "https://") || strings.HasPrefix(originalSrc, "data:") {
+			return match
+		}
+
+		// Clean the path by resolving .. 
+		cleanPath := strings.ReplaceAll(filepath.Clean(originalSrc), "../", "")
+
+		// Build the asset URL
+		assetURL := fmt.Sprintf("/series/%s/%s/assets/%s", mangaSlug, chapterSlug, cleanPath)
+
+		// Replace the src attribute
+		oldAttr := `src=` + quoteChar + originalSrc + quoteChar
+		newAttr := `src="` + assetURL + `"`
+		return strings.Replace(match, oldAttr, newAttr, 1)
 	})
 
-	// Replace src='
-	re2 := regexp.MustCompile(`src='([^']*)'`)
-	html = re2.ReplaceAllStringFunc(html, func(match string) string {
-		sub := re2.FindStringSubmatch(match)
-		if len(sub) < 2 {
+	// Use regex to find link tags with href attributes
+	linkRe := regexp.MustCompile(`<link[^>]*href=(["']?)([^"'\s>]+)[^>]*>`)
+	html = linkRe.ReplaceAllStringFunc(html, func(match string) string {
+		// Extract the href value - find the position of href=
+		hrefIndex := strings.Index(match, `href=`)
+		if hrefIndex == -1 {
 			return match
 		}
-		src := sub[1]
-		resolved := filepath.Join(chapterDir, src)
-		return fmt.Sprintf(`src='/light-novels/%s/chapters/%s/%s'`, lightNovelSlug, chapterSlug, resolved)
-	})
+		
+		// Find the quote character
+		quoteChar := ""
+		valueStart := hrefIndex + 5 // after href=
+		if valueStart < len(match) {
+			if match[valueStart] == '"' || match[valueStart] == '\'' {
+				quoteChar = string(match[valueStart])
+				valueStart++
+			}
+		}
+		
+		// Find the end of the value
+		valueEnd := valueStart
+		for valueEnd < len(match) {
+			if quoteChar != "" {
+				if match[valueEnd] == quoteChar[0] {
+					break
+				}
+			} else {
+				if match[valueEnd] == ' ' || match[valueEnd] == '>' || match[valueEnd] == '\t' {
+					break
+				}
+			}
+			valueEnd++
+		}
+		
+		if valueStart >= valueEnd {
+			return match
+		}
+		
+		originalHref := match[valueStart:valueEnd]
 
-	// Replace href="
-	re3 := regexp.MustCompile(`href="([^"]*)"`)
-	html = re3.ReplaceAllStringFunc(html, func(match string) string {
-		sub := re3.FindStringSubmatch(match)
-		if len(sub) < 2 {
+		// Skip if already an absolute URL or data URI
+		if strings.HasPrefix(originalHref, "http://") || strings.HasPrefix(originalHref, "https://") || strings.HasPrefix(originalHref, "data:") {
 			return match
 		}
-		href := sub[1]
-		resolved := filepath.Join(chapterDir, href)
-		return fmt.Sprintf(`href="/light-novels/%s/chapters/%s/%s"`, lightNovelSlug, chapterSlug, resolved)
-	})
 
-	// Replace href='
-	re4 := regexp.MustCompile(`href='([^']*)'`)
-	html = re4.ReplaceAllStringFunc(html, func(match string) string {
-		sub := re4.FindStringSubmatch(match)
-		if len(sub) < 2 {
-			return match
-		}
-		href := sub[1]
-		resolved := filepath.Join(chapterDir, href)
-		return fmt.Sprintf(`href='/light-novels/%s/chapters/%s/%s'`, lightNovelSlug, chapterSlug, resolved)
+		// Clean the path by resolving .. 
+		cleanPath := strings.ReplaceAll(filepath.Clean(originalHref), "../", "")
+
+		// Build the asset URL
+		assetURL := fmt.Sprintf("/mangas/%s/%s/assets/%s", mangaSlug, chapterSlug, cleanPath)
+
+		// Replace the href attribute
+		oldAttr := `href=` + quoteChar + originalHref + quoteChar
+		newAttr := `href="` + assetURL + `"`
+		return strings.Replace(match, oldAttr, newAttr, 1)
 	})
 
 	return html

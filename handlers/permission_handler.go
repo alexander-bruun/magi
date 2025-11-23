@@ -12,6 +12,11 @@ import (
 
 // HandleGetPermissions retrieves all permissions and renders the fragment
 func HandleGetPermissions(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the permissions management page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/permissions")
+	}
+
 	permissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
 		log.Errorf("Failed to get permissions: %v", err)
@@ -23,6 +28,11 @@ func HandleGetPermissions(c *fiber.Ctx) error {
 
 // HandleGetPermissionForm renders the create/edit form for a permission
 func HandleGetPermissionForm(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the permissions management page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/permissions")
+	}
+
 	idParam := c.Params("id")
 	
 	libraries, err := models.GetLibraries()
@@ -248,6 +258,11 @@ func HandleRevokePermissionFromUser(c *fiber.Ctx) error {
 
 // HandleGetUserPermissions retrieves all permissions for a user and renders fragment
 func HandleGetUserPermissions(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the permissions management page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/permissions")
+	}
+
 	username := c.Query("username")
 	if username == "" {
 		return HandleView(c, views.UserPermissionsEmpty())
@@ -275,6 +290,11 @@ func HandleGetUserPermissions(c *fiber.Ctx) error {
 
 // HandleGetBulkAssignForm returns a form for bulk assigning a permission to multiple users
 func HandleGetBulkAssignForm(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the permissions management page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/permissions")
+	}
+
 	permissionID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return handleError(c, err)
@@ -345,6 +365,11 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 
 // HandleGetRolePermissions retrieves all permissions for a role and renders fragment
 func HandleGetRolePermissions(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the permissions management page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/permissions")
+	}
+
 	role := c.Query("role")
 	if role == "" {
 		return HandleView(c, views.RolePermissionsEmpty())

@@ -38,7 +38,7 @@ func (j *JikanProvider) SetAuthToken(token string) {
 	j.apiToken = token
 }
 
-func (j *JikanProvider) GetCoverImageURL(metadata *MangaMetadata) string {
+func (j *JikanProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 	if metadata == nil || metadata.CoverArtURL == "" {
 		return ""
 	}
@@ -48,7 +48,7 @@ func (j *JikanProvider) GetCoverImageURL(metadata *MangaMetadata) string {
 
 func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/manga?q=%s&limit=50&order_by=popularity", jikanBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&order_by=popularity", jikanBaseURL, titleEncoded)
 
 	resp, err := http.Get(searchURL)
 	if err != nil {
@@ -65,7 +65,7 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	var response struct {
-		Data []jikanMangaData `json:"data"`
+		Data []jikanMediaData `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -79,34 +79,34 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 	results := make([]SearchResult, 0, len(response.Data))
 	titleLower := strings.ToLower(title)
 
-	for _, manga := range response.Data {
+	for _, media := range response.Data {
 		coverURL := ""
-		if manga.Images.JPG.LargeImageURL != "" {
-			coverURL = manga.Images.JPG.LargeImageURL
-		} else if manga.Images.JPG.ImageURL != "" {
-			coverURL = manga.Images.JPG.ImageURL
+		if media.Images.JPG.LargeImageURL != "" {
+			coverURL = media.Images.JPG.LargeImageURL
+		} else if media.Images.JPG.ImageURL != "" {
+			coverURL = media.Images.JPG.ImageURL
 		}
 
 		year := 0
-		if manga.Published.From != "" {
-			fmt.Sscanf(manga.Published.From, "%d", &year)
+		if media.Published.From != "" {
+			fmt.Sscanf(media.Published.From, "%d", &year)
 		}
 
 		results = append(results, SearchResult{
-			ID:              fmt.Sprintf("%d", manga.MalID),
-			Title:           manga.Title,
-			Description:     manga.Synopsis,
+			ID:              fmt.Sprintf("%d", media.MalID),
+			Title:           media.Title,
+			Description:     media.Synopsis,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(manga.Title)),
+			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(media.Title)),
 		})
 	}
 
 	return results, nil
 }
 
-func (j *JikanProvider) GetMetadata(id string) (*MangaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s/full", jikanBaseURL, id)
+func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
+	fetchURL := fmt.Sprintf("%s/series/%s/full", jikanBaseURL, id)
 
 	resp, err := http.Get(fetchURL)
 	if err != nil {
@@ -123,17 +123,17 @@ func (j *JikanProvider) GetMetadata(id string) (*MangaMetadata, error) {
 	}
 
 	var response struct {
-		Data jikanMangaData `json:"data"`
+		Data jikanMediaData `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode Jikan response: %w", err)
 	}
 
-	return j.convertToMangaMetadata(&response.Data), nil
+	return j.convertToMediaMetadata(&response.Data), nil
 }
 
-func (j *JikanProvider) FindBestMatch(title string) (*MangaMetadata, error) {
+func (j *JikanProvider) FindBestMatch(title string) (*MediaMetadata, error) {
 	results, err := j.Search(title)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (j *JikanProvider) FindBestMatch(title string) (*MangaMetadata, error) {
 	return j.GetMetadata(bestMatch.ID)
 }
 
-func (j *JikanProvider) convertToMangaMetadata(data *jikanMangaData) *MangaMetadata {
+func (j *JikanProvider) convertToMediaMetadata(data *jikanMediaData) *MediaMetadata {
 	coverURL := ""
 	if data.Images.JPG.LargeImageURL != "" {
 		coverURL = data.Images.JPG.LargeImageURL
@@ -168,7 +168,7 @@ func (j *JikanProvider) convertToMangaMetadata(data *jikanMangaData) *MangaMetad
 		fmt.Sscanf(data.Published.From, "%d", &year)
 	}
 
-	metadata := &MangaMetadata{
+	metadata := &MediaMetadata{
 		Title:        data.Title,
 		Description:  data.Synopsis,
 		Year:         year,
@@ -205,7 +205,7 @@ func (j *JikanProvider) convertToMangaMetadata(data *jikanMangaData) *MangaMetad
 
 	// Determine language based on type
 	switch metadata.Type {
-	case "manga":
+	case "media":
 		metadata.OriginalLanguage = "ja"
 	case "manhwa":
 		metadata.OriginalLanguage = "ko"
@@ -219,7 +219,7 @@ func (j *JikanProvider) convertToMangaMetadata(data *jikanMangaData) *MangaMetad
 }
 
 // Jikan API response structures
-type jikanMangaData struct {
+type jikanMediaData struct {
 	MalID          int    `json:"mal_id"`
 	Title          string `json:"title"`
 	TitleEnglish   string `json:"title_english"`
@@ -302,6 +302,8 @@ func convertJikanType(mangaType string) string {
 		return "oneshot"
 	case "doujinshi":
 		return "doujinshi"
+	case "light_novel", "novel":
+		return "novel"
 	default:
 		return "manga"
 	}
