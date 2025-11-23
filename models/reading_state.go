@@ -22,7 +22,12 @@ func MarkChapterRead(userName, mangaSlug, chapterSlug string) error {
     `
 
     _, err := db.Exec(query, userName, mangaSlug, chapterSlug)
-    return err
+    if err != nil {
+        return err
+    }
+
+    // Update today's daily statistics to reflect the new read
+    return RecordDailyStatistics()
 }
 
 // UnmarkChapterRead deletes a reading state for a given user/manga/chapter
@@ -33,7 +38,12 @@ func UnmarkChapterRead(userName, mangaSlug, chapterSlug string) error {
     `
 
     _, err := db.Exec(query, userName, mangaSlug, chapterSlug)
-    return err
+    if err != nil {
+        return err
+    }
+
+    // Update today's daily statistics to reflect the removed read
+    return RecordDailyStatistics()
 }
 
 // GetReadChaptersForUser returns a map of chapterSlug->true for chapters the user has read for a given manga

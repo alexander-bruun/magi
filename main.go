@@ -45,21 +45,27 @@ func init() {
 
 	var defaultDataDirectory string
 
-	switch runtime.GOOS {
-	case "windows":
-		defaultDataDirectory = filepath.Join(os.Getenv("LOCALAPPDATA"), "magi")
-	case "darwin":
-		// macOS
-		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "magi")
-	case "linux", "freebsd", "openbsd", "netbsd", "dragonfly":
-		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
-	case "plan9":
-		defaultDataDirectory = filepath.Join(os.Getenv("home"), "magi")
-	case "solaris":
-		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
-	default:
-		// Fallback for unknown OS
-		defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+	// Check for environment variable override
+	if envDataDir := os.Getenv("MAGI_DATA_DIR"); envDataDir != "" {
+		defaultDataDirectory = envDataDir
+	} else {
+		// OS-specific defaults
+		switch runtime.GOOS {
+		case "windows":
+			defaultDataDirectory = filepath.Join(os.Getenv("LOCALAPPDATA"), "magi")
+		case "darwin":
+			// macOS
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "magi")
+		case "linux", "freebsd", "openbsd", "netbsd", "dragonfly":
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+		case "plan9":
+			defaultDataDirectory = filepath.Join(os.Getenv("home"), "magi")
+		case "solaris":
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+		default:
+			// Fallback for unknown OS
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+		}
 	}
 
 	flag.StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
@@ -75,17 +81,22 @@ func main() {
 
 	flag.Parse()
 
-	// Cache directory under the data directory
-	joinedCacheDataDirectory := filepath.Join(dataDirectory, "cache")
+	// Determine cache directory
+	var cacheDirectory string
+	if cacheDir := os.Getenv("MAGI_CACHE_DIR"); cacheDir != "" {
+		cacheDirectory = cacheDir
+	} else {
+		cacheDirectory = filepath.Join(dataDirectory, "cache")
+	}
 
 	// Ensure the directories exist
-	if err := os.MkdirAll(joinedCacheDataDirectory, os.ModePerm); err != nil {
-		log.Errorf("Failed to create directories: %s", err)
+	if err := os.MkdirAll(cacheDirectory, os.ModePerm); err != nil {
+		log.Errorf("Failed to create cache directory: %s", err)
 		return
 	}
 
-	log.Debugf("Using '%s/magi.db' as the database location", dataDirectory)
-	log.Debugf("Using '%s' as the image caching location", joinedCacheDataDirectory)
+	log.Infof("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
+	log.Infof("Using '%s/...' as the image caching location", cacheDirectory)
 
 	// Initialize console log streaming for admin panel
 	utils.InitializeConsoleLogger()
@@ -121,7 +132,7 @@ func main() {
 	})
 
 	// Start API in its own goroutine
-	go handlers.Initialize(app, joinedCacheDataDirectory)
+	go handlers.Initialize(app, cacheDirectory)
 
 	// Start Indexer in its own goroutine
 	libraries, err := models.GetLibraries()
@@ -129,7 +140,7 @@ func main() {
 		log.Warnf("Failed to get libraries: %v", err)
 		return
 	}
-	go indexer.Initialize(joinedCacheDataDirectory, libraries)
+	go indexer.Initialize(cacheDirectory, libraries)
 
 	// Block main thread to keep goroutines running
 	select {}

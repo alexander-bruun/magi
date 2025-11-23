@@ -46,23 +46,7 @@ func HandleHome(c *fiber.Ctx) error {
 	topReadYear, _ := models.GetTopReadMedias("year", 10)
 	topReadAll, _ := models.GetTopReadMedias("all", 10)
 
-	// Stats
-	totalMedias, _ := models.GetTotalMedias()
-	totalChapters, _ := models.GetTotalChapters()
-	totalChaptersRead, _ := models.GetTotalChaptersRead()
-	mangasChange, _ := models.GetDailyChange("media")
-	chaptersChange, _ := models.GetDailyChange("chapters")
-	chaptersReadChange, _ := models.GetDailyChange("chapters_read")
-
-	// Light Novel Stats
-	totalLightNovels, _ := models.GetTotalMediasByType("novel")
-	totalLightNovelChapters, _ := models.GetTotalChaptersByType("novel")
-	totalLightNovelChaptersRead, _ := models.GetTotalChaptersReadByType("novel")
-	lightNovelsChange, _ := models.GetDailyChangeByType("media", "novel")
-	lightNovelChaptersChange, _ := models.GetDailyChangeByType("chapters", "novel")
-	lightNovelChaptersReadChange, _ := models.GetDailyChangeByType("chapters_read", "novel")
-
-	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, totalMedias, totalChapters, totalChaptersRead, mangasChange, chaptersChange, chaptersReadChange, totalLightNovels, totalLightNovelChapters, totalLightNovelChaptersRead, lightNovelsChange, lightNovelChaptersChange, lightNovelChaptersReadChange))
+	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll))
 }
 
 // HandleTopReadPeriod renders the top read list for a specific period via HTMX
@@ -113,6 +97,16 @@ func HandleTopReadPeriod(c *fiber.Ctx) error {
 	}
 
 	return HandleView(c, views.TopReadFragment(topRead, emptyMessage, title))
+}
+
+// HandleStatistics renders the statistics section via HTMX
+func HandleStatistics(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the home page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/")
+	}
+
+	return renderComponent(c, views.StatisticsFragment())
 }
 
 // HandleNotFound renders the generic not-found page for unrouted paths.
