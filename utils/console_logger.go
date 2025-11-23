@@ -104,7 +104,7 @@ func InitializeConsoleLogger() {
 	consoleLogManager.captureActive = true
 	consoleLogManager.mu.Unlock()
 	
-	log.Info("Console log streaming initialized")
+	log.Debug("Console log streaming initialized")
 }
 
 // HandleConsoleLogsWebSocket establishes a WebSocket connection for streaming console logs

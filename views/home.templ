@@ -39,7 +39,30 @@ templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
 	@TopReadList(media, emptyMessage, title)
 }
 
-templ Home(recentlyAdded []models.Media, recentlyUpdated []models.Media, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, totalMedias int, totalChapters int, totalChaptersRead int,  mangasChange int, chaptersChange int, chaptersReadChange int, totalNovels int, totalNovelChapters int, totalNovelChaptersRead int, novelsChange int, novelChaptersChange int, novelChaptersReadChange int) {
+templ StatisticsFragment() {
+	{{ totalMedias, _ := models.GetTotalMedias() }}
+	{{ totalChapters, _ := models.GetTotalChapters() }}
+	{{ totalChaptersRead, _ := models.GetTotalChaptersRead() }}
+	{{ mangasChange, _ := models.GetDailyChange("media") }}
+	{{ chaptersChange, _ := models.GetDailyChange("chapters") }}
+	{{ chaptersReadChange, _ := models.GetDailyChange("chapters_read") }}
+	{{ totalNovels, _ := models.GetTotalMediasByType("novel") }}
+	{{ totalNovelChapters, _ := models.GetTotalChaptersByType("novel") }}
+	{{ totalNovelChaptersRead, _ := models.GetTotalChaptersReadByType("novel") }}
+	{{ novelsChange, _ := models.GetDailyChangeByType("media", "novel") }}
+	{{ novelChaptersChange, _ := models.GetDailyChangeByType("chapters", "novel") }}
+	{{ novelChaptersReadChange, _ := models.GetDailyChangeByType("chapters_read", "novel") }}
+	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+		@StatCard("Mangas", totalMedias, mangasChange)
+		@StatCard("Manga Chapters", totalChapters, chaptersChange)
+		@StatCard("Manga Chapters Read", totalChaptersRead, chaptersReadChange)
+		@StatCard("Novels", totalNovels, novelsChange)
+		@StatCard("Novel Chapters", totalNovelChapters, novelChaptersChange)
+		@StatCard("Novel Chapters Read", totalNovelChaptersRead, novelChaptersReadChange)
+	</div>
+}
+
+templ Home(recentlyAdded []models.Media, recentlyUpdated []models.Media, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -108,7 +131,7 @@ templ Home(recentlyAdded []models.Media, recentlyUpdated []models.Media, topMedi
 									<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" style="cursor: pointer;">All Time</a></li>
 								</ul>
 							</div>
-							<div id="top-read-content" hx-get="/top-read?period=today" hx-trigger="intersect"></div>
+							<div id="top-read-content" hx-get="/top-read?period=today" hx-trigger="intersect, every 30s"></div>
 						</li>
 					</ul>
 				</div>
@@ -116,16 +139,9 @@ templ Home(recentlyAdded []models.Media, recentlyUpdated []models.Media, topMedi
 		</div>
 
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-6"><span>Statistics</span></h2>
-		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-			@StatCard("Mangas", totalMedias, mangasChange)
-			@StatCard("Manga Chapters", totalChapters, chaptersChange)
-			@StatCard("Manga Chapters Read", totalChaptersRead, chaptersReadChange)
-			@StatCard("Novels", totalNovels, novelsChange)
-			@StatCard("Novel Chapters", totalNovelChapters, novelChaptersChange)
-			@StatCard("Novel Chapters Read", totalNovelChaptersRead, novelChaptersReadChange)
-		</div>
+		<div id="statistics-content" hx-get="/statistics" hx-trigger="intersect, every 30s"></div>
 		<div class="text-center mt-2">
-			<small class="text-gray-500">Green badges show daily increases since yesterday</small>
+			<small class="text-gray-500">Green badges show chapters read today</small>
 		</div>
 	</div>
 

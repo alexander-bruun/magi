@@ -100,11 +100,11 @@ templ StatCard(label string, value int, change int) {
         <div class="text-2xl font-bold mt-2 flex items-center justify-center gap-2">
             { fmt.Sprint(value) }
             if change > 0 {
-                <span class="uk-badge badge bg-success" title="Increase since yesterday">
+                <span class="uk-badge badge bg-success" title="Read today">
                     +{ fmt.Sprint(change) }
                 </span>
             } else {
-                <span class="uk-badge badge bg-danger">
+                <span class="uk-badge badge bg-muted" title="No reads today">
                     0
                 </span>
             }

@@ -89,7 +89,7 @@ func RecordDailyStatistics() error {
 
     query := `
         INSERT OR REPLACE INTO daily_statistics 
-        (date, total_mangas, total_chapters, total_chapters_read)
+        (date, total_media, total_chapters, total_chapters_read)
         VALUES (?, ?, ?, ?)
     `
     _, err = db.Exec(query, today, totalMedias, totalChapters, totalChaptersRead)
@@ -98,31 +98,23 @@ func RecordDailyStatistics() error {
 
 func GetDailyChange(statType string) (int, error) {
     today := time.Now().Format("2006-01-02")
-    yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
     
-    // First, ensure today's statistics are recorded
-    if err := ensureTodaysStatsRecorded(today); err != nil {
-        return 0, err
-    }
-    
-    var column string
+    var query string
     switch statType {
     case "media":
-        column = "total_mangas"
+        // For media, count distinct media that have chapters read today
+        query = `SELECT COUNT(DISTINCT media_slug) FROM reading_states WHERE DATE(created_at) = ?`
     case "chapters":
-        column = "total_chapters"
+        // For chapters, count total chapters read today
+        query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
     case "chapters_read":
-        column = "total_chapters_read"
+        // This is the same as chapters for reading_states
+        query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
     default:
         return 0, fmt.Errorf("unknown stat type: %s", statType)
     }
-
-    query := fmt.Sprintf(`
-        SELECT COALESCE((SELECT %s FROM daily_statistics WHERE date = ?), 0) - 
-               COALESCE((SELECT %s FROM daily_statistics WHERE date = ?), 0)
-    `, column, column)
     
-    row := db.QueryRow(query, today, yesterday)
+    row := db.QueryRow(query, today)
     var change int
     err := row.Scan(&change)
     return change, err

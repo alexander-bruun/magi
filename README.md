@@ -154,6 +154,9 @@ Moderators and admins can update manga metadata:
 # Data directory (default: OS-specific)
 MAGI_DATA_DIR=/path/to/data
 
+# Cache directory (default: $MAGI_DATA_DIR/cache)
+MAGI_CACHE_DIR=/path/to/cache
+
 # Server port (default: 3000)
 PORT=3000
 ```

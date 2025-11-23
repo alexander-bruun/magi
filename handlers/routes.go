@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"strings"
 
 	"github.com/alexander-bruun/magi/executor"
@@ -106,6 +107,7 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	
 	app.Get("/", HandleHome)
 	app.Get("/top-read", HandleTopReadPeriod)
+	app.Get("/statistics", HandleStatistics)
 
 	// ========================================
 	// Authentication Routes
@@ -310,6 +312,11 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// Start Server
 	// ========================================
 	
-	log.Info("Starting server on port 3000")
-	log.Fatal(app.Listen(":3000"))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+	
+	log.Debug("Starting server on port %s", port)
+	log.Fatal(app.Listen(":" + port))
 }
