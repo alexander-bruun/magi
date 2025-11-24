@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"os"
 	"path/filepath"
@@ -334,7 +337,7 @@ func Initialize(app *fiber.App, cacheDirectory string, port string) {
 	log.Fatal(app.Listen(":" + port))
 }
 
-// handleImageRequest serves images with WebP conversion for better compression
+// handleImageRequest serves images with quality based on user role
 func handleImageRequest(c *fiber.Ctx, cacheDir string) error {
 	// Get the requested path (remove /api/images/ prefix)
 	imagePath := strings.TrimPrefix(c.Path(), "/api/images/")
@@ -350,37 +353,89 @@ func handleImageRequest(c *fiber.Ctx, cacheDir string) error {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
 	}
 
-	// Always try WebP conversion first for better compression
-	if !strings.HasSuffix(strings.ToLower(imagePath), ".webp") {
-		// Convert to WebP in memory
-		webpData, err := utils.ConvertToWebP(fullPath)
-		if err != nil {
-			log.Warnf("Failed to convert image to WebP: %v", err)
-			// Fall back to original format
+	// Get user role for compression quality
+	userName, _ := c.Locals("user_name").(string)
+	var quality int
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			quality = models.GetCompressionQualityForRole(user.Role)
 		} else {
-			// Set WebP content type and serve the converted data
-			c.Set("Content-Type", "image/webp")
-			c.Set("Cache-Control", "public, max-age=1800") // 30 minutes cache for in-memory conversions
-			return c.Send(webpData)
+			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
 		}
+	} else {
+		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
 	}
 
-	// Fall back to original format with appropriate content type and cache headers
-	switch strings.ToLower(filepath.Ext(imagePath)) {
-	case ".jpg", ".jpeg":
-		c.Set("Content-Type", "image/jpeg")
-	case ".png":
-		c.Set("Content-Type", "image/png")
-	case ".gif":
-		c.Set("Content-Type", "image/gif")
-	case ".webp":
-		c.Set("Content-Type", "image/webp")
-	default:
-		c.Set("Content-Type", "application/octet-stream")
+	// Load the image
+	file, err := os.Open(fullPath)
+	if err != nil {
+		// If loading fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+			case ".jpg", ".jpeg":
+				c.Set("Content-Type", "image/jpeg")
+			case ".png":
+				c.Set("Content-Type", "image/png")
+			case ".gif":
+				c.Set("Content-Type", "image/gif")
+			case ".webp":
+				c.Set("Content-Type", "image/webp")
+			default:
+				c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		// If loading fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+			case ".jpg", ".jpeg":
+				c.Set("Content-Type", "image/jpeg")
+			case ".png":
+				c.Set("Content-Type", "image/png")
+			case ".gif":
+				c.Set("Content-Type", "image/gif")
+			case ".webp":
+				c.Set("Content-Type", "image/webp")
+			default:
+				c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
+	}
+
+	// Encode all images as JPEG for better performance and consistent compression
+	var buf bytes.Buffer
+	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+	jpegQuality := quality
+	if jpegQuality < 1 {
+		jpegQuality = 1
+	}
+	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+	c.Set("Content-Type", "image/jpeg")
+
+	if err != nil {
+		// If encoding fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
 	}
 
 	c.Set("Cache-Control", "public, max-age=31536000, immutable")
-	return c.SendFile(fullPath)
+	return c.Send(buf.Bytes())
 }
 
 // ImageHandler serves images for both comics and light novels using token-based authentication

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -20,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/webp" // Register WebP format
@@ -29,7 +27,6 @@ import (
 const (
 	targetWidth  = 400
 	targetHeight = 600
-	jpegQuality  = 85 // Increased from default ~75 to 85 for better quality/size balance
 
 	// Thumbnail sizes for different use cases
 	thumbWidth  = 200
@@ -39,7 +36,7 @@ const (
 )
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string) error {
+func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string, quality int) error {
 	if err := ensureDirExists(downloadDir); err != nil {
 		return err
 	}
@@ -55,28 +52,28 @@ func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string) error {
 
 	// Save original (unprocessed) for potential future use
 	originalFilePath := filepath.Join(downloadDir, baseName+"_original"+filepath.Ext(fileNameWithExtension))
-	if err := saveImage(originalFilePath, img, format); err != nil {
+	if err := saveImage(originalFilePath, img, format, quality); err != nil {
 		return err
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
 	fullFilePath := filepath.Join(downloadDir, fileNameWithExtension)
-	if err := saveImage(fullFilePath, fullImg, "jpeg"); err != nil {
+	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
 		return err
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
 	thumbFilePath := filepath.Join(downloadDir, baseName+"_thumb.jpg")
-	if err := saveImage(thumbFilePath, thumbImg, "jpeg"); err != nil {
+	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
 		return err
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
 	smallFilePath := filepath.Join(downloadDir, baseName+"_small.jpg")
-	return saveImage(smallFilePath, smallImg, "jpeg")
+	return saveImage(smallFilePath, smallImg, "jpeg", quality)
 }
 
 // ensureDirExists checks if the directory exists; if not, returns an error.
@@ -132,7 +129,7 @@ func fetchImage(url string) (image.Image, string, error) {
 }
 
 // saveImage encodes and saves an image to the specified path.
-func saveImage(filePath string, img image.Image, format string) error {
+func saveImage(filePath string, img image.Image, format string, quality int) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %v", err)
@@ -141,15 +138,22 @@ func saveImage(filePath string, img image.Image, format string) error {
 
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
+		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+		jpegQuality := quality
+		if jpegQuality < 1 {
+			jpegQuality = 1
+		}
 		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
 	case "png":
 		return png.Encode(file, img)
 	case "gif":
 		return gif.Encode(file, img, nil)
-	case "webp":
-		return webp.Encode(file, img, &webp.Options{Quality: float32(jpegQuality)})
 	default:
 		// Unknown format - save as progressive JPEG
+		jpegQuality := quality
+		if jpegQuality < 1 {
+			jpegQuality = 1
+		}
 		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
 	}
 }
@@ -181,7 +185,7 @@ func cropImage(img image.Image, x, y, width, height int) image.Image {
 }
 
 // ProcessImage processes an image by resizing and cropping it, then saving it to a new file.
-func ProcessImage(fromPath, toPath string) error {
+func ProcessImage(fromPath, toPath string, quality int) error {
 	if err := checkFileExists(fromPath); err != nil {
 		return err
 	}
@@ -192,12 +196,12 @@ func ProcessImage(fromPath, toPath string) error {
 	}
 
 	processedImg := resizeAndCrop(img, targetWidth, targetHeight)
-	return saveProcessedImage(toPath, processedImg)
+	return saveProcessedImage(toPath, processedImg, quality)
 }
 
 // ProcessImageWithTopCrop processes an image by extracting the top portion and resizing it.
 // It takes the top square (or near-square) section of the image, useful for cover/poster areas.
-func ProcessImageWithTopCrop(fromPath, toPath string) error {
+func ProcessImageWithTopCrop(fromPath, toPath string, quality int) error {
 	if err := checkFileExists(fromPath); err != nil {
 		return err
 	}
@@ -208,11 +212,11 @@ func ProcessImageWithTopCrop(fromPath, toPath string) error {
 	}
 
 	processedImg := cropFromTopAndResize(img, targetWidth, targetHeight)
-	return saveProcessedImage(toPath, processedImg)
+	return saveProcessedImage(toPath, processedImg, quality)
 }
 
 // ProcessImageWithCrop processes an image by applying user-defined cropping and resizing
-func ProcessImageWithCrop(fromPath, toPath string, cropData map[string]interface{}) error {
+func ProcessImageWithCrop(fromPath, toPath string, cropData map[string]interface{}, quality int) error {
 	if err := checkFileExists(fromPath); err != nil {
 		return err
 	}
@@ -223,7 +227,7 @@ func ProcessImageWithCrop(fromPath, toPath string, cropData map[string]interface
 	}
 
 	processedImg := applyCropAndResize(img, cropData, targetWidth, targetHeight)
-	return saveProcessedImage(toPath, processedImg)
+	return saveProcessedImage(toPath, processedImg, quality)
 }
 
 // applyCropAndResize applies user-defined crop coordinates and resizes the image
@@ -348,7 +352,7 @@ func openImage(path string) (image.Image, error) {
 }
 
 // saveProcessedImage encodes and saves a processed image to the specified path.
-func saveProcessedImage(filePath string, img image.Image) error {
+func saveProcessedImage(filePath string, img image.Image, quality int) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
@@ -357,7 +361,7 @@ func saveProcessedImage(filePath string, img image.Image) error {
 
 	switch {
 	case strings.HasSuffix(filePath, ".jpg"), strings.HasSuffix(filePath, ".jpeg"):
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
+		return jpeg.Encode(file, img, &jpeg.Options{Quality: quality})
 	case strings.HasSuffix(filePath, ".png"):
 		return png.Encode(file, img)
 	case strings.HasSuffix(filePath, ".gif"):
@@ -365,36 +369,6 @@ func saveProcessedImage(filePath string, img image.Image) error {
 	default:
 		return fmt.Errorf("unsupported file format: %s", filePath)
 	}
-}
-
-// ConvertToWebP converts an image file to WebP format in memory
-func ConvertToWebP(sourcePath string) ([]byte, error) {
-	// Load the source image
-	img, err := openImage(sourcePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load image for WebP conversion: %w", err)
-	}
-
-	// Encode to WebP in memory
-	var buf bytes.Buffer
-	err = webp.Encode(&buf, img, &webp.Options{Quality: 75})
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode image to WebP: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-// ConvertImageToWebP converts an image.Image to WebP format in memory
-func ConvertImageToWebP(img image.Image) ([]byte, error) {
-	// Encode to WebP in memory
-	var buf bytes.Buffer
-	err := webp.Encode(&buf, img, &webp.Options{Quality: 75})
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode image to WebP: %w", err)
-	}
-
-	return buf.Bytes(), nil
 }
 
 // GenerateSignedImageURL generates a signed URL for image access with expiration

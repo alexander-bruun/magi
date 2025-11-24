@@ -300,7 +300,7 @@ func CopyFile(src, dst string) error {
 // ExtractAndCacheFirstImage extracts the first image from an archive and caches it with proper resizing.
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Returns the cached image URL path.
-func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, error) {
+func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string, quality int) (string, error) {
 	log.Debugf("Extracting first image from archive '%s' for manga '%s'", archivePath, slug)
 	
 	// Create a temporary directory for extraction
@@ -355,7 +355,7 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string) (string, erro
 		return "", fmt.Errorf("failed to copy image to cache: %w", err)
 	}
 
-	if err := ProcessImageWithTopCrop(originalFile, croppedFile); err != nil {
+	if err := ProcessImageWithTopCrop(originalFile, croppedFile, quality); err != nil {
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
@@ -448,7 +448,7 @@ func listImagesInRar(rarPath string) ([]string, error) {
 }
 
 // ExtractAndCacheImageWithCrop extracts an image (from a file path or archive) and caches it with optional cropping.
-func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[string]interface{}) (string, error) {
+func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int) (string, error) {
 	cacheDir := GetCacheDirectory()
 
 	// Extract image to temp location
@@ -464,7 +464,7 @@ func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[st
 		if !strings.HasSuffix(lowerPath, ".cbz") && !strings.HasSuffix(lowerPath, ".cbr") &&
 			!strings.HasSuffix(lowerPath, ".zip") && !strings.HasSuffix(lowerPath, ".rar") {
 			// It's a direct image file
-			return processCroppedImage(imagePath, slug, cacheDir, cropData)
+			return processCroppedImage(imagePath, slug, cacheDir, cropData, quality)
 		}
 	}
 
@@ -473,7 +473,7 @@ func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[st
 	return "", fmt.Errorf("archive image extraction not yet supported for custom posters")
 }
 
-func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]interface{}) (string, error) {
+func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]interface{}, quality int) (string, error) {
 	fileExt := filepath.Ext(imagePath)[1:]
 	originalFile := filepath.Join(cacheDir, fmt.Sprintf("%s_original.%s", slug, fileExt))
 	croppedFile := filepath.Join(cacheDir, fmt.Sprintf("%s.%s", slug, fileExt))
@@ -484,7 +484,7 @@ func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]i
 	}
 
 	// Apply cropping if provided
-	if err := ProcessImageWithCrop(originalFile, croppedFile, cropData); err != nil {
+	if err := ProcessImageWithCrop(originalFile, croppedFile, cropData, quality); err != nil {
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
@@ -650,7 +650,7 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 }
 
 // ExtractAndCacheImageWithCropByIndex extracts an image by index with cropping
-func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}) (string, error) {
+func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, quality int) (string, error) {
 	cacheDir := GetCacheDirectory()
 	tempDir, err := os.MkdirTemp("", "magi-poster-")
 	if err != nil {
@@ -701,7 +701,7 @@ func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int,
 		}
 	}
 
-	return processCroppedImage(imagePath, slug, cacheDir, cropData)
+	return processCroppedImage(imagePath, slug, cacheDir, cropData, quality)
 }
 
 // extractImageFromZipToPath extracts a specific image from a zip archive

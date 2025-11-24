@@ -324,7 +324,137 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Compression Quality Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Compression Quality</span></h4><p class=\"text-sm text-muted-foreground mb-4\">Configure JPEG compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p><div class=\"uk-margin\"><label class=\"block mb-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"anonymous_compression_quality\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var12 string
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 141, Col: 233}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" id=\"anonymous-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"anonymous-value\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var13 string
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 142, Col: 180}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Reader compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"reader_compression_quality\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var14 string
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 149, Col: 227}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" id=\"reader-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"reader-value\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var15 string
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 150, Col: 174}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with reader role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Moderator compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"moderator_compression_quality\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var16 string
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 157, Col: 233}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\" id=\"moderator-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"moderator-value\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var17 string
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 158, Col: 180}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Admin compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"admin_compression_quality\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 165, Col: 225}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\" id=\"admin-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"admin-value\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 166, Col: 172}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with admin role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Processed image quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"processed_image_quality\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var20 string
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 173, Col: 221}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\" id=\"processed-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"processed-value\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var21 string
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 174, Col: 174}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><style>\n        .slider::-webkit-slider-thumb {\n            appearance: none;\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n        .slider::-moz-range-thumb {\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n    </style><script>\n        // Update value displays when sliders change\n        document.getElementById('reader-slider').addEventListener('input', function() {\n            document.getElementById('reader-value').textContent = this.value;\n        });\n        document.getElementById('moderator-slider').addEventListener('input', function() {\n            document.getElementById('moderator-value').textContent = this.value;\n        });\n        document.getElementById('admin-slider').addEventListener('input', function() {\n            document.getElementById('admin-value').textContent = this.value;\n        });\n        document.getElementById('anonymous-slider').addEventListener('input', function() {\n            document.getElementById('anonymous-value').textContent = this.value;\n        });\n        document.getElementById('processed-slider').addEventListener('input', function() {\n            document.getElementById('processed-value').textContent = this.value;\n        });\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -348,12 +478,12 @@ func ConsoleLogs() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var12 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var12 == nil {
-			templ_7745c5c3_Var12 = templ.NopComponent
+		templ_7745c5c3_Var22 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var22 == nil {
+			templ_7745c5c3_Var22 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"uk-container mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div class=\"uk-container mt-8\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\"></div></div></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

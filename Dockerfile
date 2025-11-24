@@ -21,9 +21,6 @@ COPY go.mod go.sum ./
 # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
-# Install dependencies for static CGO build with WebP support
-RUN apk add --no-cache gcc musl-dev libwebp-dev
-
 # Build the Go app
 RUN go build --tags extended -ldflags="-extldflags '-static' -X 'main.Version=${VERSION}'" -o magi ./main.go
 

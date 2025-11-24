@@ -9,3 +9,5 @@ CREATE TABLE IF NOT EXISTS chapters (
     created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
     PRIMARY KEY (media_slug, slug)
 );
+
+CREATE INDEX IF NOT EXISTS idx_chapters_media_slug ON chapters(media_slug);

@@ -114,6 +114,62 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
         return handleError(c, err)
     }
     
+    // Update compression quality configuration
+    readerQualityStr := c.FormValue("reader_compression_quality")
+    moderatorQualityStr := c.FormValue("moderator_compression_quality")
+    adminQualityStr := c.FormValue("admin_compression_quality")
+    anonymousQualityStr := c.FormValue("anonymous_compression_quality")
+    processedQualityStr := c.FormValue("processed_image_quality")
+    var readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality int
+    if readerQualityStr != "" {
+        if v, err := strconv.Atoi(readerQualityStr); err == nil && v >= 0 && v <= 100 {
+            readerQuality = v
+        } else {
+            readerQuality = 70
+        }
+    } else {
+        readerQuality = 70
+    }
+    if moderatorQualityStr != "" {
+        if v, err := strconv.Atoi(moderatorQualityStr); err == nil && v >= 0 && v <= 100 {
+            moderatorQuality = v
+        } else {
+            moderatorQuality = 85
+        }
+    } else {
+        moderatorQuality = 85
+    }
+    if adminQualityStr != "" {
+        if v, err := strconv.Atoi(adminQualityStr); err == nil && v >= 0 && v <= 100 {
+            adminQuality = v
+        } else {
+            adminQuality = 100
+        }
+    } else {
+        adminQuality = 100
+    }
+    if anonymousQualityStr != "" {
+        if v, err := strconv.Atoi(anonymousQualityStr); err == nil && v >= 0 && v <= 100 {
+            anonymousQuality = v
+        } else {
+            anonymousQuality = 70
+        }
+    } else {
+        anonymousQuality = 70
+    }
+    if processedQualityStr != "" {
+        if v, err := strconv.Atoi(processedQualityStr); err == nil && v >= 0 && v <= 100 {
+            processedQuality = v
+        } else {
+            processedQuality = 85
+        }
+    } else {
+        processedQuality = 85
+    }
+    if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality); err != nil {
+        return handleError(c, err)
+    }
+    
     return HandleView(c, views.ConfigForm())
 }
 

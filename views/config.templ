@@ -131,6 +131,52 @@ templ ConfigForm() {
             </div>
         </div>
         
+        <!-- Compression Quality Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Compression Quality</span></h4>
+            <p class="text-sm text-muted-foreground mb-4">Configure JPEG compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p>
+            <div class="uk-margin">
+                <label class="block mb-2">Anonymous compression quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="anonymous-value">{ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-2">Reader compression quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="reader-value">{ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with reader role. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-2">Moderator compression quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="moderator-value">{ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-2">Admin compression quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="admin-value">{ fmt.Sprintf("%d", cfg.AdminCompressionQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with admin role. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-2">Processed image quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="processed_image_quality" value={ fmt.Sprintf("%d", cfg.ProcessedImageQuality) } id="processed-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="processed-value">{ fmt.Sprintf("%d", cfg.ProcessedImageQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p>
+            </div>
+        </div>
+        
         <!-- Save Button Card -->
         <div class="p-4">
             <div class="flex justify-center">
@@ -138,6 +184,47 @@ templ ConfigForm() {
             </div>
         </div>
     </form>
+
+    <style>
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+    </style>
+
+    <script>
+        // Update value displays when sliders change
+        document.getElementById('reader-slider').addEventListener('input', function() {
+            document.getElementById('reader-value').textContent = this.value;
+        });
+        document.getElementById('moderator-slider').addEventListener('input', function() {
+            document.getElementById('moderator-value').textContent = this.value;
+        });
+        document.getElementById('admin-slider').addEventListener('input', function() {
+            document.getElementById('admin-value').textContent = this.value;
+        });
+        document.getElementById('anonymous-slider').addEventListener('input', function() {
+            document.getElementById('anonymous-value').textContent = this.value;
+        });
+        document.getElementById('processed-slider').addEventListener('input', function() {
+            document.getElementById('processed-value').textContent = this.value;
+        });
+    </script>
 }
 
 templ ConsoleLogs() {

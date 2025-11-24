@@ -4,7 +4,6 @@ go 1.25.3
 
 require (
 	github.com/a-h/templ v0.3.960
-	github.com/chai2010/webp v1.4.0
 	github.com/dchest/captcha v1.1.0
 	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/gofiber/template/html/v2 v2.1.3

@@ -24,6 +24,13 @@ type AppConfig struct {
     BotSeriesThreshold       int  // max series accesses per time window
     BotChapterThreshold      int  // max chapter accesses per time window
     BotDetectionWindow       int  // time window in seconds for bot detection
+    
+    // Compression quality settings per role
+    ReaderCompressionQuality    int // JPEG quality for reader role (0-100)
+    ModeratorCompressionQuality int // JPEG quality for moderator role (0-100)
+    AdminCompressionQuality     int // JPEG quality for admin role (0-100)
+    AnonymousCompressionQuality int // JPEG quality for anonymous users (0-100)
+    ProcessedImageQuality       int // JPEG quality for processed images (thumbnails, covers) (0-100)
 }
 
 // Implement metadata.ConfigProvider interface
@@ -57,7 +64,12 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(bot_detection_enabled, 1),
         COALESCE(bot_series_threshold, 5),
         COALESCE(bot_chapter_threshold, 10),
-        COALESCE(bot_detection_window, 60)
+        COALESCE(bot_detection_window, 60),
+        COALESCE(reader_compression_quality, 70),
+        COALESCE(moderator_compression_quality, 85),
+        COALESCE(admin_compression_quality, 100),
+        COALESCE(anonymous_compression_quality, 70),
+        COALESCE(processed_image_quality, 85)
         FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
@@ -72,9 +84,15 @@ func loadConfigFromDB() (AppConfig, error) {
     var botSeriesThreshold int
     var botChapterThreshold int
     var botDetectionWindow int
+    var readerCompressionQuality int
+    var moderatorCompressionQuality int
+    var adminCompressionQuality int
+    var anonymousCompressionQuality int
+    var processedImageQuality int
     
     if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, 
-        &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow); err != nil {
+        &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
+        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &anonymousCompressionQuality, &processedImageQuality); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
@@ -91,6 +109,11 @@ func loadConfigFromDB() (AppConfig, error) {
                 BotSeriesThreshold:  5,
                 BotChapterThreshold: 10,
                 BotDetectionWindow:  60,
+                ReaderCompressionQuality:    70,
+                ModeratorCompressionQuality: 85,
+                AdminCompressionQuality:     100,
+                AnonymousCompressionQuality: 70,
+                ProcessedImageQuality:       85,
             }, nil
         }
         return AppConfig{}, err
@@ -110,6 +133,11 @@ func loadConfigFromDB() (AppConfig, error) {
         BotSeriesThreshold:  botSeriesThreshold,
         BotChapterThreshold: botChapterThreshold,
         BotDetectionWindow:  botDetectionWindow,
+        ReaderCompressionQuality:    readerCompressionQuality,
+        ModeratorCompressionQuality: moderatorCompressionQuality,
+        AdminCompressionQuality:     adminCompressionQuality,
+        AnonymousCompressionQuality: anonymousCompressionQuality,
+        ProcessedImageQuality:       processedImageQuality,
     }, nil
 }
 
@@ -178,7 +206,48 @@ func UpdateRateLimitConfig(enabled bool, requests, window int) (AppConfig, error
     return RefreshAppConfig()
 }
 
-// UpdateMetadataConfig updates the metadata provider and API tokens
+// UpdateCompressionConfig updates the compression quality settings per role
+func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality int) (AppConfig, error) {
+    // Ensure qualities are within valid range (0-100)
+    if readerQuality < 0 {
+        readerQuality = 0
+    }
+    if readerQuality > 100 {
+        readerQuality = 100
+    }
+    if moderatorQuality < 0 {
+        moderatorQuality = 0
+    }
+    if moderatorQuality > 100 {
+        moderatorQuality = 100
+    }
+    if adminQuality < 0 {
+        adminQuality = 0
+    }
+    if adminQuality > 100 {
+        adminQuality = 100
+    }
+    if anonymousQuality < 0 {
+        anonymousQuality = 0
+    }
+    if anonymousQuality > 100 {
+        anonymousQuality = 100
+    }
+    if processedQuality < 0 {
+        processedQuality = 0
+    }
+    if processedQuality > 100 {
+        processedQuality = 100
+    }
+    _, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, anonymous_compression_quality = ?, processed_image_quality = ? WHERE id = 1`,
+        readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdateMetadataConfig updates the metadata provider configuration
 func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, error) {
     // Validate provider
     validProviders := map[string]bool{
@@ -235,4 +304,43 @@ func ContentRatingToInt(rating string) int {
 func IsContentRatingAllowed(rating string, limit int) bool {
     ratingLevel := ContentRatingToInt(rating)
     return ratingLevel <= limit
+}
+
+// GetCompressionQualityForRole returns the JPEG compression quality for the given user role
+func GetCompressionQualityForRole(role string) int {
+    cfg, err := GetAppConfig()
+    if err != nil {
+        // Return default if config can't be loaded
+        switch role {
+        case "admin":
+            return 100
+        case "moderator":
+            return 85
+        case "anonymous":
+            return 70
+        default:
+            return 70
+        }
+    }
+    
+    switch role {
+    case "admin":
+        return cfg.AdminCompressionQuality
+    case "moderator":
+        return cfg.ModeratorCompressionQuality
+    case "anonymous":
+        return cfg.AnonymousCompressionQuality
+    default:
+        return cfg.ReaderCompressionQuality
+    }
+}
+
+// GetProcessedImageQuality returns the JPEG compression quality for processed images (thumbnails, covers)
+func GetProcessedImageQuality() int {
+    cfg, err := GetAppConfig()
+    if err != nil {
+        // Return default if config can't be loaded
+        return 85
+    }
+    return cfg.ProcessedImageQuality
 }

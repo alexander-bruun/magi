@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"io"
 	"net/url"
 	"os"
@@ -521,6 +522,13 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 	}
 	defer rc.Close()
 
+	// Read the asset data
+	assetData, err := io.ReadAll(rc)
+	if err != nil {
+		log.Errorf("Error reading asset %s: %v", assetPath, err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error reading asset")
+	}
+
 	// Set content type based on extension
 	ext := strings.ToLower(filepath.Ext(assetPath))
 	switch ext {
@@ -540,13 +548,51 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 		c.Set("Content-Type", "application/octet-stream")
 	}
 
-	log.Debugf("Serving asset %s", assetPath)
-	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
-		log.Errorf("Error writing asset %s to response: %v", assetPath, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Error writing asset")
-	}
+	// For image assets, apply compression based on user role
+	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
+		// Get user role for compression quality
+		userName, _ := c.Locals("user_name").(string)
+		var quality int
+		if userName != "" {
+			user, err := models.FindUserByUsername(userName)
+			if err == nil && user != nil {
+				quality = models.GetCompressionQualityForRole(user.Role)
+			} else {
+				quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+			}
+		} else {
+			quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+		}
 
-	return nil
+		// Decode the image
+		imageReader := bytes.NewReader(assetData)
+		img, _, err := image.Decode(imageReader)
+		if err != nil {
+			// If decoding fails, serve original data
+			log.Debugf("Serving asset %s (original, decode failed)", assetPath)
+			return c.Send(assetData)
+		}
+
+		// Encode all images as JPEG for better performance and consistent compression
+		var buf bytes.Buffer
+		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+		jpegQuality := quality
+		if jpegQuality < 1 {
+			jpegQuality = 1
+		}
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+		if err != nil {
+			// If encoding fails, serve original data
+			log.Debugf("Serving asset %s (original, encode failed)", assetPath)
+			return c.Send(assetData)
+		}
+		log.Debugf("Serving asset %s (compressed)", assetPath)
+		return c.Send(buf.Bytes())
+	} else {
+		// For non-image assets, serve original data
+		log.Debugf("Serving asset %s", assetPath)
+		return c.Send(assetData)
+	}
 }
 
 // HandleMarkRead marks a chapter as read for the logged-in user via HTMX
@@ -1326,7 +1372,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Extract crop from image and cache it
-	cachedImageURL, err := utils.ExtractAndCacheImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData)
+	cachedImageURL, err := utils.ExtractAndCacheImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, models.GetProcessedImageQuality())
 	if err != nil {
 		return handleError(c, fmt.Errorf("failed to extract and cache image: %w", err))
 	}
@@ -1597,6 +1643,13 @@ func HandleMediaAsset(c *fiber.Ctx) error {
 	}
 	defer rc.Close()
 
+	// Read the asset data
+	assetData, err := io.ReadAll(rc)
+	if err != nil {
+		log.Errorf("Error reading asset %s: %v", assetPath, err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error reading asset")
+	}
+
 	// Set content type based on extension
 	ext := strings.ToLower(filepath.Ext(assetPath))
 	switch ext {
@@ -1616,13 +1669,51 @@ func HandleMediaAsset(c *fiber.Ctx) error {
 		c.Set("Content-Type", "application/octet-stream")
 	}
 
-	log.Debugf("Serving asset %s", assetPath)
-	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
-		log.Errorf("Error writing asset %s to response: %v", assetPath, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Error writing asset")
-	}
+	// For image assets, apply compression based on user role
+	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
+		// Get user role for compression quality
+		userName, _ := c.Locals("user_name").(string)
+		var quality int
+		if userName != "" {
+			user, err := models.FindUserByUsername(userName)
+			if err == nil && user != nil {
+				quality = models.GetCompressionQualityForRole(user.Role)
+			} else {
+				quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+			}
+		} else {
+			quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+		}
 
-	return nil
+		// Decode the image
+		imageReader := bytes.NewReader(assetData)
+		img, _, err := image.Decode(imageReader)
+		if err != nil {
+			// If decoding fails, serve original data
+			log.Debugf("Serving asset %s (original, decode failed)", assetPath)
+			return c.Send(assetData)
+		}
+
+		// Encode all images as JPEG for better performance and consistent compression
+		var buf bytes.Buffer
+		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+		jpegQuality := quality
+		if jpegQuality < 1 {
+			jpegQuality = 1
+		}
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+		if err != nil {
+			// If encoding fails, serve original data
+			log.Debugf("Serving asset %s (original, encode failed)", assetPath)
+			return c.Send(assetData)
+		}
+		log.Debugf("Serving asset %s (compressed)", assetPath)
+		return c.Send(buf.Bytes())
+	} else {
+		// For non-image assets, serve original data
+		log.Debugf("Serving asset %s", assetPath)
+		return c.Send(assetData)
+	}
 }
 
 func HandleMediaMarkRead(c *fiber.Ctx) error {
@@ -1695,7 +1786,45 @@ func ComicHandler(c *fiber.Ctx) error {
 	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".jpeg"),
 		strings.HasSuffix(lowerFileName, ".png"), strings.HasSuffix(lowerFileName, ".webp"),
 		strings.HasSuffix(lowerFileName, ".gif"):
+		// Get user role for compression quality
+		userName, _ := c.Locals("user_name").(string)
+		var quality int
+		if userName != "" {
+			user, err := models.FindUserByUsername(userName)
+			if err == nil && user != nil {
+				quality = models.GetCompressionQualityForRole(user.Role)
+			} else {
+				quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+			}
+		} else {
+			quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+		}
+
+	// Load the image
+	file, err := os.Open(filePath)
+	if err != nil {
+		// If loading fails, serve original file
 		return c.SendFile(filePath)
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		// If loading fails, serve original file
+		return c.SendFile(filePath)
+	}		// Encode all images as JPEG for better performance and consistent compression
+		var buf bytes.Buffer
+		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+		jpegQuality := quality
+		if jpegQuality < 1 {
+			jpegQuality = 1
+		}
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+		c.Set("Content-Type", "image/jpeg")
+		if err != nil {
+			// If encoding fails, serve original
+			return c.SendFile(filePath)
+		}
+		return c.Send(buf.Bytes())
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
 		return serveComicBookArchiveFromRAR(c, filePath, tokenInfo.Page)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
@@ -1739,7 +1868,48 @@ func serveImageFromDirectory(c *fiber.Ctx, dirPath string, page int) error {
 	}
 
 	imagePath := filepath.Join(dirPath, imageFiles[page-1])
-	return c.SendFile(imagePath)
+
+	// Get user role for compression quality
+	userName, _ := c.Locals("user_name").(string)
+	var quality int
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			quality = models.GetCompressionQualityForRole(user.Role)
+		} else {
+			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+		}
+	} else {
+		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+	}
+
+	// Load the image
+	file, err := os.Open(imagePath)
+	if err != nil {
+		// If loading fails, serve original file
+		return c.SendFile(imagePath)
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		// If loading fails, serve original file
+		return c.SendFile(imagePath)
+	}
+
+	// Encode all images as JPEG for better performance and consistent compression
+	var buf bytes.Buffer
+	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+	jpegQuality := quality
+	if jpegQuality < 1 {
+		jpegQuality = 1
+	}
+	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+	c.Set("Content-Type", "image/jpeg")
+	if err != nil {
+		// If encoding fails, serve original
+		return c.SendFile(imagePath)
+	}
+	return c.Send(buf.Bytes())
 }
 
 // serveComicBookArchiveFromRAR handles serving images from a RAR archive.
@@ -1774,6 +1944,20 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string, page int) error
 					return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image data")
 				}
 
+				// Get user role for compression quality
+				userName, _ := c.Locals("user_name").(string)
+				var quality int
+				if userName != "" {
+					user, err := models.FindUserByUsername(userName)
+					if err == nil && user != nil {
+						quality = models.GetCompressionQualityForRole(user.Role)
+					} else {
+						quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+					}
+				} else {
+					quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+				}
+
 				// Create a reader for the image data to decode it
 				imageReader := bytes.NewReader(imageData)
 
@@ -1786,18 +1970,22 @@ func serveComicBookArchiveFromRAR(c *fiber.Ctx, filePath string, page int) error
 					return c.Send(imageData)
 				}
 
-				// Convert to WebP in memory
-				webpData, err := utils.ConvertImageToWebP(img)
+				// Encode all images as JPEG for better performance and consistent compression
+				var buf bytes.Buffer
+				// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+				jpegQuality := quality
+				if jpegQuality < 1 {
+					jpegQuality = 1
+				}
+				err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
 				if err != nil {
-					// If WebP conversion fails, serve original data
+					// If encoding fails, serve original data
 					contentType := getContentType(header.Name)
 					c.Set("Content-Type", contentType)
 					return c.Send(imageData)
 				}
-
-				// Serve WebP data
-				c.Set("Content-Type", "image/webp")
-				return c.Send(webpData)
+				c.Set("Content-Type", "image/jpeg")
+				return c.Send(buf.Bytes())
 			}
 		}
 	}
@@ -1845,6 +2033,20 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string, page int) error
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read image data")
 	}
 
+	// Get user role for compression quality
+	userName, _ := c.Locals("user_name").(string)
+	var quality int
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			quality = models.GetCompressionQualityForRole(user.Role)
+		} else {
+			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+		}
+	} else {
+		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+	}
+
 	// Create a reader for the image data to decode it
 	imageReader := bytes.NewReader(imageData)
 
@@ -1857,18 +2059,22 @@ func serveComicBookArchiveFromZIP(c *fiber.Ctx, filePath string, page int) error
 		return c.Send(imageData)
 	}
 
-	// Convert to WebP in memory
-	webpData, err := utils.ConvertImageToWebP(img)
+	// Encode all images as JPEG for better performance and consistent compression
+	var buf bytes.Buffer
+	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+	jpegQuality := quality
+	if jpegQuality < 1 {
+		jpegQuality = 1
+	}
+	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
 	if err != nil {
-		// If WebP conversion fails, serve original data
+		// If encoding fails, serve original data
 		contentType := getContentType(imageFile.Name)
 		c.Set("Content-Type", contentType)
 		return c.Send(imageData)
 	}
-
-	// Serve WebP data
-	c.Set("Content-Type", "image/webp")
-	return c.Send(webpData)
+	c.Set("Content-Type", "image/jpeg")
+	return c.Send(buf.Bytes())
 }
 
 // isImageFile checks if a filename has an image extension.

@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS media (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_media_library_slug ON media(library_slug);

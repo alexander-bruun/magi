@@ -391,7 +391,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 		if strings.HasSuffix(lowerPath, ".cbz") || strings.HasSuffix(lowerPath, ".cbr") ||
 			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") {
 			log.Debugf("Extracting poster from single archive file '%s' for media '%s'", absolutePath, slug)
-			return utils.ExtractAndCacheFirstImage(absolutePath, slug, cacheDataDirectory)
+			return utils.ExtractAndCacheFirstImage(absolutePath, slug, cacheDataDirectory, models.GetProcessedImageQuality())
 		}
 	} else if err == nil && fileInfo.IsDir() {
 		// For directories, try to extract from archive files within the directory
@@ -404,7 +404,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 						strings.HasSuffix(lowerName, ".zip") || strings.HasSuffix(lowerName, ".rar") {
 						archivePath := filepath.Join(absolutePath, entry.Name())
 						log.Debugf("Extracting poster from archive '%s' in directory for media '%s'", entry.Name(), slug)
-						return utils.ExtractAndCacheFirstImage(archivePath, slug, cacheDataDirectory)
+						return utils.ExtractAndCacheFirstImage(archivePath, slug, cacheDataDirectory, models.GetProcessedImageQuality())
 					}
 				}
 			}
@@ -457,7 +457,7 @@ func processLocalImage(slug, imagePath string) (string, error) {
 		return "", fmt.Errorf("failed to copy file: %w", err)
 	}
 
-	if err := utils.ProcessImage(originalFile, croppedFile); err != nil {
+	if err := utils.ProcessImage(originalFile, croppedFile, models.GetProcessedImageQuality()); err != nil {
 		return "", fmt.Errorf("failed to crop image: %w", err)
 	}
 
@@ -476,7 +476,7 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	fileExt := filepath.Ext(u.Path)[1:]
 	cachedImageURL := fmt.Sprintf("%s/%s.%s", localServerBaseURL, slug, fileExt)
 
-	if err := utils.DownloadImageWithThumbnails(cacheDataDirectory, slug, coverArtURL); err != nil {
+	if err := utils.DownloadImageWithThumbnails(cacheDataDirectory, slug, coverArtURL, models.GetProcessedImageQuality()); err != nil {
 		log.Errorf("Error downloading file from %s: %s", coverArtURL, err)
 		return coverArtURL, nil
 	}
