@@ -75,12 +75,18 @@ func Initialize(cacheDirectory string, libraries []models.Library) {
 
 // NewIndexer creates a new Indexer instance
 func NewIndexer(library models.Library) *Indexer {
-	// Deep copy the Folders slice to prevent sharing underlying arrays
+	// Deep copy the Folders slice and strings to prevent sharing underlying arrays and string backing
 	foldersCopy := make([]string, len(library.Folders))
-	copy(foldersCopy, library.Folders)
+	for i, f := range library.Folders {
+		foldersCopy[i] = string([]byte(f))
+	}
 	
 	libraryCopy := library
 	libraryCopy.Folders = foldersCopy
+	libraryCopy.Slug = string([]byte(library.Slug))
+	libraryCopy.Name = string([]byte(library.Name))
+	libraryCopy.Description = string([]byte(library.Description))
+	libraryCopy.Cron = string([]byte(library.Cron))
 	
 	return &Indexer{
 		Library: libraryCopy,
@@ -269,7 +275,6 @@ func (idx *Indexer) RunIndexingJob() {
 	idx.runIndexingJob()
 }
 
-// ✅ UPDATED: processFolder now sorts folders alphabetically and processes media concurrently
 func (idx *Indexer) processFolder(folder string) error {
 	// Validate that the folder path is reasonable for this library
 	if !filepath.IsAbs(folder) {

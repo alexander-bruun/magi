@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/webp" // Register WebP format
 )
@@ -457,65 +458,80 @@ type ImageAccessToken struct {
 	MediaSlug   string
 	ChapterSlug string
 	Page        int
+	AssetPath   string // For light novel assets
 	ExpiresAt   time.Time
 }
 
-// Global token store - in production, this should be a proper cache with TTL
-var (
-	tokenStore = make(map[string]*ImageAccessToken)
-	tokenMutex sync.RWMutex
-)
+// Global token store
+var tokens sync.Map // map[string]*ImageAccessToken
 
 // GenerateImageAccessToken generates a one-time use token for image access
 func GenerateImageAccessToken(mediaSlug, chapterSlug string, page int) string {
+	return GenerateImageAccessTokenWithAsset(mediaSlug, chapterSlug, page, "")
+}
+
+// GenerateImageAccessTokenWithAsset generates a one-time use token for image access with optional asset path
+func GenerateImageAccessTokenWithAsset(mediaSlug, chapterSlug string, page int, assetPath string) string {
+	log.Debugf("Generating token for mediaSlug=%s, chapterSlug=%s, assetPath=%s", mediaSlug, chapterSlug, assetPath)
 	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
-		// Fallback to timestamp-based token
-		tokenBytes = []byte(fmt.Sprintf("%d-%s-%s-%d", time.Now().UnixNano(), mediaSlug, chapterSlug, page))
+	var token string
+	if _, err := rand.Read(tokenBytes); err == nil {
+		token = hex.EncodeToString(tokenBytes)
+	} else {
+		// Fallback to UUID if crypto/rand fails
+		uuid := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", time.Now().UnixNano(), page, len(mediaSlug), len(chapterSlug), time.Now().UnixNano())
+		token = uuid
+		log.Errorf("crypto/rand failed for token generation, using UUID fallback: %s", token)
 	}
-	token := hex.EncodeToString(tokenBytes)
 	
-	tokenStore[token] = &ImageAccessToken{
+	// Store the token
+	tokens.Store(token, &ImageAccessToken{
 		MediaSlug:   mediaSlug,
 		ChapterSlug: chapterSlug,
 		Page:        page,
+		AssetPath:   assetPath,
 		ExpiresAt:   time.Now().Add(5 * time.Minute), // 5 minute grace period
-	}
-	
+	})
+	log.Debugf("Stored token %s: media=%s, chapter=%s, page=%d, asset=%s", token, mediaSlug, chapterSlug, page, assetPath)
+
 	return token
 }
 
 // ValidateAndConsumeImageToken validates a token and consumes it (one-time use)
 func ValidateAndConsumeImageToken(token string) (*ImageAccessToken, error) {
-	tokenMutex.Lock()
-	defer tokenMutex.Unlock()
-	
-	tokenInfo, exists := tokenStore[token]
-	if !exists {
-		return nil, fmt.Errorf("invalid token")
+	val, ok := tokens.Load(token)
+	if !ok {
+		log.Debugf("Token %s is invalid: not found or already consumed", token)
+		return nil, fmt.Errorf("invalid token: not found or already consumed")
 	}
-	
+	tokenInfo := val.(*ImageAccessToken)
+
+	log.Debugf("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
+
 	// Check expiration
 	if time.Now().After(tokenInfo.ExpiresAt) {
-		delete(tokenStore, token)
-		return nil, fmt.Errorf("token expired")
+		log.Debugf("Token %s is invalid: expired at %v (now: %v)", token, tokenInfo.ExpiresAt, time.Now())
+		tokens.Delete(token)
+		return nil, fmt.Errorf("invalid token: expired")
 	}
-	
+
 	// Consume the token
-	delete(tokenStore, token)
-	
+	tokens.Delete(token)
+	log.Debugf("Token %s consumed successfully", token)
+
 	return tokenInfo, nil
 }
 
 // CleanupExpiredTokens removes expired tokens from the store
 func CleanupExpiredTokens() {
-	tokenMutex.Lock()
-	defer tokenMutex.Unlock()
-	
 	now := time.Now()
-	for token, info := range tokenStore {
+	tokens.Range(func(key, value interface{}) bool {
+		token := key.(string)
+		info := value.(*ImageAccessToken)
 		if now.After(info.ExpiresAt) {
-			delete(tokenStore, token)
+			tokens.Delete(token)
+			log.Debugf("Expired token: %s", token)
 		}
-	}
+		return true
+	})
 }
