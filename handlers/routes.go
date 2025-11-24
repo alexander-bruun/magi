@@ -24,7 +24,7 @@ import (
 var savedCacheDirectory string
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, cacheDirectory string) {
+func Initialize(app *fiber.App, cacheDirectory string, port string) {
 	log.Info("Initializing application routes and middleware")
 
 	savedCacheDirectory = cacheDirectory
@@ -326,7 +326,6 @@ func Initialize(app *fiber.App, cacheDirectory string) {
 	// ========================================
 	// Start Server
 	// ========================================
-	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"
 	}

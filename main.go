@@ -39,20 +39,13 @@ var viewsfs embed.FS
 var assetsfs embed.FS
 
 var dataDirectory string
+var logLevel string
+var cacheDirectory string
+var port string
 
 func init() {
-	// Set log level from environment variable or default to info
-	logLevel := os.Getenv("LOG_LEVEL")
-	switch logLevel {
-	case "debug":
-		log.SetLevel(log.LevelDebug)
-	case "warn":
-		log.SetLevel(log.LevelWarn)
-	case "error":
-		log.SetLevel(log.LevelError)
-	default:
-		log.SetLevel(log.LevelInfo)
-	}
+	flag.StringVar(&logLevel, "log-level", os.Getenv("LOG_LEVEL"), "Set the log level (debug, info, warn, error)")
+	flag.StringVar(&port, "port", os.Getenv("PORT"), "Port to run the server on")
 
 	var defaultDataDirectory string
 
@@ -80,6 +73,25 @@ func init() {
 	}
 
 	flag.StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
+	flag.StringVar(&cacheDirectory, "cache-directory", os.Getenv("MAGI_CACHE_DIR"), "Path to the cache directory")
+
+	// Parse flags early to set log level
+	flag.Parse()
+
+	// Set log level from flag or environment variable or default to info
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	switch logLevel {
+	case "debug":
+		log.SetLevel(log.LevelDebug)
+	case "warn":
+		log.SetLevel(log.LevelWarn)
+	case "error":
+		log.SetLevel(log.LevelError)
+	default:
+		log.SetLevel(log.LevelInfo)
+	}
 }
 
 func main() {
@@ -90,13 +102,8 @@ func main() {
 
 	log.Info("Starting Magi!")
 	
-	flag.Parse()
-
 	// Determine cache directory
-	var cacheDirectory string
-	if cacheDir := os.Getenv("MAGI_CACHE_DIR"); cacheDir != "" {
-		cacheDirectory = cacheDir
-	} else {
+	if cacheDirectory == "" {
 		cacheDirectory = filepath.Join(dataDirectory, "cache")
 	}
 
@@ -143,7 +150,7 @@ func main() {
 	})
 
 	// Start API in its own goroutine
-	go handlers.Initialize(app, cacheDirectory)
+	go handlers.Initialize(app, cacheDirectory, port)
 
 	// Start Indexer in its own goroutine
 	libraries, err := models.GetLibraries()
