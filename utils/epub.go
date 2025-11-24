@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // EPUB parsing structures (from POC)
@@ -653,7 +655,7 @@ func cleanHTMLContent(html, mangaSlug, chapterSlug, chapterPath, opfDir string) 
 	return html
 }
 
-// rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint
+// rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint with tokens
 func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir string) string {
 	// Use regex to find img tags with src attributes
 	imgRe := regexp.MustCompile(`<img[^>]*src=(["']?)([^"'\s>]+)[^>]*>`)
@@ -700,15 +702,33 @@ func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir strin
 			return match
 		}
 
-		// Clean the path by resolving .. 
-		cleanPath := strings.ReplaceAll(filepath.Clean(originalSrc), "../", "")
+		// Resolve the asset path relative to the chapter's directory, then relative to OPF dir
+		chapterDir := filepath.Dir(chapterPath)
+		absoluteAsset := filepath.Clean(filepath.Join(chapterDir, originalSrc))
+		
+		// Make it relative to the OPF directory
+		var cleanPath string
+		if strings.HasPrefix(absoluteAsset, opfDir+"/") {
+			cleanPath = strings.TrimPrefix(absoluteAsset, opfDir+"/")
+		} else if absoluteAsset == opfDir {
+			cleanPath = ""
+		} else {
+			// If it's not under OPF dir, try the old cleaning method as fallback
+			cleanPath = strings.ReplaceAll(filepath.Clean(originalSrc), "../", "")
+			log.Warnf("Asset path %s resolved to %s which is not under OPF dir %s, using fallback cleaning: %s", originalSrc, absoluteAsset, opfDir, cleanPath)
+		}
 
-		// Build the asset URL
-		assetURL := fmt.Sprintf("/series/%s/%s/assets/%s", mangaSlug, chapterSlug, cleanPath)
+		// Generate a token for this asset
+		token := GenerateImageAccessTokenWithAsset(mangaSlug, chapterSlug, 0, cleanPath) // Use page 0 for light novel assets
+		log.Debugf("Generated token for light novel asset: media=%s, chapter=%s, original=%s, clean=%s, token=%s", mangaSlug, chapterSlug, originalSrc, cleanPath, token)
 
+		// Build the asset URL with token
+		assetURL := fmt.Sprintf("/api/image?token=%s", token)
+		log.Debugf("originalSrc=%s, cleanPath=%s, token=%s\n", originalSrc, cleanPath, token)
 		// Replace the src attribute
 		oldAttr := `src=` + quoteChar + originalSrc + quoteChar
 		newAttr := `src="` + assetURL + `"`
+		log.Debugf("Replacing img src: %s -> %s", oldAttr, newAttr)
 		return strings.Replace(match, oldAttr, newAttr, 1)
 	})
 
@@ -757,16 +777,85 @@ func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir strin
 			return match
 		}
 
-		// Clean the path by resolving .. 
-		cleanPath := strings.ReplaceAll(filepath.Clean(originalHref), "../", "")
+		// Resolve the asset path relative to the chapter's directory, then relative to OPF dir
+		chapterDir := filepath.Dir(chapterPath)
+		absoluteAsset := filepath.Clean(filepath.Join(chapterDir, originalHref))
+		
+		// Make it relative to the OPF directory
+		var cleanPath string
+		if strings.HasPrefix(absoluteAsset, opfDir+"/") {
+			cleanPath = strings.TrimPrefix(absoluteAsset, opfDir+"/")
+		} else if absoluteAsset == opfDir {
+			cleanPath = ""
+		} else {
+			// If it's not under OPF dir, try the old cleaning method as fallback
+			cleanPath = strings.ReplaceAll(filepath.Clean(originalHref), "../", "")
+			log.Warnf("Asset path %s resolved to %s which is not under OPF dir %s, using fallback cleaning: %s", originalHref, absoluteAsset, opfDir, cleanPath)
+		}
 
-		// Build the asset URL
-		assetURL := fmt.Sprintf("/mangas/%s/%s/assets/%s", mangaSlug, chapterSlug, cleanPath)
+		// Generate a token for this asset
+		token := GenerateImageAccessTokenWithAsset(mangaSlug, chapterSlug, 0, cleanPath)
+		log.Infof("Generated token for link asset %s: %s", cleanPath, token)
+
+		// Build the asset URL with token
+		assetURL := fmt.Sprintf("/api/image?token=%s", token)
+
+		log.Infof("originalHref=%s, cleanPath=%s, token=%s\n", originalHref, cleanPath, token)
 
 		// Replace the href attribute
 		oldAttr := `href=` + quoteChar + originalHref + quoteChar
 		newAttr := `href="` + assetURL + `"`
 		return strings.Replace(match, oldAttr, newAttr, 1)
+	})
+
+	// Use regex to find a tags with href attributes
+	aRe := regexp.MustCompile(`<a[^>]*href=(["']?)([^"'\s>]+)[^>]*>`)
+	html = aRe.ReplaceAllStringFunc(html, func(match string) string {
+		// Extract the href value - find the position of href=
+		hrefIndex := strings.Index(match, `href=`)
+		if hrefIndex == -1 {
+			return match
+		}
+		
+		// Find the quote character
+		quoteChar := ""
+		valueStart := hrefIndex + 5 // after href=
+		if valueStart < len(match) {
+			if match[valueStart] == '"' || match[valueStart] == '\'' {
+				quoteChar = string(match[valueStart])
+				valueStart++
+			}
+		}
+		
+		// Find the end of the value
+		valueEnd := valueStart
+		for valueEnd < len(match) {
+			if quoteChar != "" {
+				if match[valueEnd] == quoteChar[0] {
+					break
+				}
+			} else {
+				if match[valueEnd] == ' ' || match[valueEnd] == '>' || match[valueEnd] == '\t' {
+					break
+				}
+			}
+			valueEnd++
+		}
+		
+		if valueStart >= valueEnd {
+			return match
+		}
+		
+		originalHref := match[valueStart:valueEnd]
+
+		// If href starts with "/series/", disable the link to prevent navigation to wrong series
+		if strings.HasPrefix(originalHref, "/series/") {
+			oldAttr := `href=` + quoteChar + originalHref + quoteChar
+			newAttr := `href="#"`
+			return strings.Replace(match, oldAttr, newAttr, 1)
+		}
+
+		return match
 	})
 
 	return html

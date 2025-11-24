@@ -985,7 +985,7 @@ func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
 	for i := 0; i < pageCount; i++ {
 		// Generate one-time use token
 		token := utils.GenerateImageAccessToken(media.Slug, chapter.Slug, i+1)
-		images[i] = fmt.Sprintf("/api/comic?token=%s", token)
+		images[i] = fmt.Sprintf("/api/image?token=%s", token)
 	}
 
 	return images, nil

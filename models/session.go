@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // SessionToken represents a user session
@@ -93,7 +96,7 @@ func ValidateSessionToken(token string) (string, error) {
 	_, err = db.Exec(updateQuery, time.Now(), token)
 	if err != nil {
 		// Log error but don't fail validation
-		fmt.Printf("Warning: failed to update last_used_at: %v\n", err)
+		log.Errorf("Warning: failed to update last_used_at: %v\n", err)
 	}
 
 	return username, nil

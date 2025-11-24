@@ -230,8 +230,13 @@ func HandleMedia(c *fiber.Ctx) error {
 
 // HandleChapter shows a chapter reader with navigation and optional read tracking.
 func HandleChapter(c *fiber.Ctx) error {
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	mangaSlug := string([]byte(c.Params("media")))
+	chapterSlug := string([]byte(c.Params("chapter")))
+
+	// Validate media slug to prevent malformed URLs
+	if strings.ContainsAny(mangaSlug, "/,") {
+		return handleErrorWithStatus(c, fmt.Errorf("invalid media slug"), fiber.StatusBadRequest)
+	}
 
 	media, chapters, err := models.GetMediaAndChapters(mangaSlug)
 	if err != nil {
@@ -360,8 +365,8 @@ func HandleMediaChapterTOC(c *fiber.Ctx) error {
 
 // HandleMediaChapterContent handles book content requests for media chapters
 func HandleMediaChapterContent(c *fiber.Ctx) error {
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	mangaSlug := string([]byte(c.Params("media")))
+	chapterSlug := string([]byte(c.Params("chapter")))
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
@@ -402,17 +407,35 @@ func HandleMediaChapterContent(c *fiber.Ctx) error {
 	}
 
 	content := utils.GetBookContent(chapterFilePath, mangaSlug, chapterSlug)
+
 	c.Set("Content-Type", "text/html")
 	return c.SendString(content)
 }
 
-// HandleMediaChapterAsset handles asset requests from EPUB files
+// HandleMediaChapterAsset handles asset requests from EPUB files with token validation
 func HandleMediaChapterAsset(c *fiber.Ctx) error {
+	token := c.Query("token")
+	
+	if token == "" {
+		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
+	}
+
+	// Validate and consume the token
+	tokenInfo, err := utils.ValidateAndConsumeImageToken(token)
+	if err != nil {
+		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
+	}
+
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Params("chapter")
 	assetPath := c.Params("*")
 
 	log.Debugf("Asset request: media=%s, chapter=%s, assetPath=%s", mangaSlug, chapterSlug, assetPath)
+
+	// Verify token matches the requested resource
+	if tokenInfo.MediaSlug != mangaSlug || tokenInfo.ChapterSlug != chapterSlug {
+		return handleErrorWithStatus(c, fmt.Errorf("token does not match requested resource"), fiber.StatusForbidden)
+	}
 
 	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 	if err != nil {
