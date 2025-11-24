@@ -318,6 +318,76 @@ func DeleteMediasByLibrarySlug(librarySlug string) error {
 	return nil
 }
 
+// GetMediasBySlugs loads multiple media by slugs with their tags in batch to avoid N+1 queries
+func GetMediasBySlugs(slugs []string) ([]Media, error) {
+	if len(slugs) == 0 {
+		return []Media{}, nil
+	}
+
+	// Build query with IN clause
+	placeholders := strings.Repeat("?,", len(slugs))
+	placeholders = placeholders[:len(placeholders)-1] // Remove trailing comma
+
+	query := fmt.Sprintf(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug IN (%s)`, placeholders)
+
+	args := make([]interface{}, len(slugs))
+	for i, slug := range slugs {
+		args[i] = slug
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config for content rating check: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
+	}
+
+	var medias []Media
+	for rows.Next() {
+		var m Media
+		var createdAt, updatedAt int64
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		m.CreatedAt = time.Unix(createdAt, 0)
+		m.UpdatedAt = time.Unix(updatedAt, 0)
+
+		// Apply content rating filter
+		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
+			medias = append(medias, m)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Batch load tags for all media
+	if len(medias) > 0 {
+		tagMap, err := GetAllMediaTagsMap()
+		if err != nil {
+			log.Errorf("Failed to load tags for media batch: %v", err)
+			// Continue without tags rather than failing
+		} else {
+			for i := range medias {
+				if tags, ok := tagMap[medias[i].Slug]; ok {
+					medias[i].Tags = tags
+				}
+			}
+		}
+	}
+
+	return medias, nil
+}
+
 // GetMediasByLibrarySlug returns all media that belong to a specific library
 func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 	var mediaList []Media
@@ -402,12 +472,33 @@ func GetTopMedias(limit int) ([]Media, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	// Batch load tags for all media
+	if len(mediaList) > 0 {
+		tagMap, err := GetAllMediaTagsMap()
+		if err != nil {
+			log.Errorf("Failed to load tags for top media: %v", err)
+			// Continue without tags rather than failing
+		} else {
+			for i := range mediaList {
+				if tags, ok := tagMap[mediaList[i].Slug]; ok {
+					mediaList[i].Tags = tags
+				}
+			}
+		}
+	}
+
 	return mediaList, nil
 }
 
 // Helper functions
 
 func loadAllMedias(media *[]Media) error {
+	return loadAllMediasWithTags(media, false)
+}
+
+// loadAllMediasWithTags loads all media with optional tag loading to avoid N+1 queries when tags are needed
+func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media`
 
 	rows, err := db.Query(query)
@@ -438,6 +529,25 @@ func loadAllMedias(media *[]Media) error {
 			*media = append(*media, m)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	// Batch load tags for all media if requested
+	if loadTags && len(*media) > 0 {
+		tagMap, err := GetAllMediaTagsMap()
+		if err != nil {
+			log.Errorf("Failed to load tags for media batch: %v", err)
+			// Continue without tags rather than failing
+		} else {
+			for i := range *media {
+				if tags, ok := tagMap[(*media)[i].Slug]; ok {
+					(*media)[i].Tags = tags
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -755,12 +865,10 @@ func GetUserDownvotedWithOptions(opts UserMediaListOptions) ([]Media, int, error
 
 // processUserMediaList handles the common logic for filtering, sorting, and paginating user media lists
 func processUserMediaList(slugs []string, opts UserMediaListOptions) ([]Media, int, error) {
-	// Load all media from slugs
-	var allMedias []Media
-	for _, slug := range slugs {
-		if m, err := GetMedia(slug); err == nil && m != nil {
-			allMedias = append(allMedias, *m)
-		}
+	// Load all media from slugs in batch (with tags) to avoid N+1 queries
+	allMedias, err := GetMediasBySlugs(slugs)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// Filter by accessible libraries (permission system)
@@ -826,6 +934,8 @@ func processUserMediaList(slugs []string, opts UserMediaListOptions) ([]Media, i
 
 // FilterMediasByTags filters a slice of media by selected tags
 // tagMode can be "all" (all tags must match) or "any" (at least one tag must match)
+// FilterMediasByTags filters a slice of media by selected tags
+// This function assumes that media.Tags are already populated to avoid N+1 queries
 func FilterMediasByTags(mediaList []Media, selectedTags []string, tagMode string) []Media {
 	if len(selectedTags) == 0 {
 		return mediaList
@@ -833,15 +943,10 @@ func FilterMediasByTags(mediaList []Media, selectedTags []string, tagMode string
 
 	var filtered []Media
 	for _, media := range mediaList {
-		mangaTags, err := GetTagsForMedia(media.Slug)
-		if err != nil {
-			continue
-		}
-
 		if tagMode == "any" {
 			// At least one selected tag must be in media's tags
 			for _, selTag := range selectedTags {
-				for _, mTag := range mangaTags {
+				for _, mTag := range media.Tags {
 					if strings.EqualFold(selTag, mTag) {
 						filtered = append(filtered, media)
 						goto nextMedia
@@ -852,7 +957,7 @@ func FilterMediasByTags(mediaList []Media, selectedTags []string, tagMode string
 			// All selected tags must be in media's tags
 			matchCount := 0
 			for _, selTag := range selectedTags {
-				for _, mTag := range mangaTags {
+				for _, mTag := range media.Tags {
 					if strings.EqualFold(selTag, mTag) {
 						matchCount++
 						break
