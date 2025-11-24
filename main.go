@@ -1,15 +1,11 @@
 package main
 
 import (
-	// _ "net/http/pprof" // Import for side-effect of registering pprof handlers
-
-	"embed"
-	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
@@ -19,18 +15,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/template/html/v2"
+	"github.com/spf13/cobra"
+	"embed"
+	"net/http"
 )
 
 var Version = "develop"
-
-// //go:embed migrations/*.sql
-// var MigrationsDirectory embed.FS
-
-// //go:embed views/*.go
-// var ViewsDirectory embed.FS
-
-// //go:embed assets/*
-// var AssetsDirectory embed.FS
 
 //go:embed views/*
 var viewsfs embed.FS
@@ -38,14 +28,11 @@ var viewsfs embed.FS
 //go:embed assets/*
 var assetsfs embed.FS
 
-var dataDirectory string
-var logLevel string
-var cacheDirectory string
-var port string
-
-func init() {
-	flag.StringVar(&logLevel, "log-level", os.Getenv("LOG_LEVEL"), "Set the log level (debug, info, warn, error)")
-	flag.StringVar(&port, "port", os.Getenv("PORT"), "Port to run the server on")
+func main() {
+	var dataDirectory string
+	var logLevel string
+	var cacheDirectory string
+	var port string
 
 	var defaultDataDirectory string
 
@@ -72,94 +59,215 @@ func init() {
 		}
 	}
 
-	flag.StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
-	flag.StringVar(&cacheDirectory, "cache-directory", os.Getenv("MAGI_CACHE_DIR"), "Path to the cache directory")
+	var rootCmd = &cobra.Command{
+		Use:   "magi",
+		Short: "Magi - A manga reader application",
+		Long:  `Magi is a web-based manga reader application.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Set log level
+			if logLevel == "" {
+				logLevel = "info"
+			}
+			switch logLevel {
+			case "debug":
+				log.SetLevel(log.LevelDebug)
+			case "warn":
+				log.SetLevel(log.LevelWarn)
+			case "error":
+				log.SetLevel(log.LevelError)
+			default:
+				log.SetLevel(log.LevelInfo)
+			}
 
-	// Parse flags early to set log level
-	flag.Parse()
+			log.Info("Starting Magi!")
 
-	// Set log level from flag or environment variable or default to info
-	if logLevel == "" {
-		logLevel = "info"
+			// Determine cache directory
+			if cacheDirectory == "" {
+				cacheDirectory = filepath.Join(dataDirectory, "cache")
+			}
+
+			// Ensure the directories exist
+			if err := os.MkdirAll(cacheDirectory, os.ModePerm); err != nil {
+				log.Errorf("Failed to create cache directory: %s", err)
+				return
+			}
+
+			log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
+			log.Debugf("Using '%s/...' as the image caching location", cacheDirectory)
+
+			// Initialize console log streaming for admin panel
+			utils.InitializeConsoleLogger()
+
+			// Initialize database connection
+			err := models.Initialize(dataDirectory)
+			if err != nil {
+				log.Errorf("Failed to connect to database: %v", err)
+				return
+			}
+			defer func() {
+				if err := models.Close(); err != nil {
+					log.Errorf("Failed to close database: %v", err)
+				}
+			}()
+
+			// Abort any orphaned "running" logs from previous application run
+			if err := models.AbortOrphanedRunningLogs(); err != nil {
+				log.Warnf("Failed to abort orphaned running logs: %v", err)
+			}
+
+			// Create a new engine
+			engine := html.NewFileSystem(http.FS(viewsfs), ".html")
+
+			// Custom config
+			app := fiber.New(fiber.Config{
+				Prefork:       false,
+				CaseSensitive: true,
+				StrictRouting: true,
+				ServerHeader:  "Magi",
+				AppName:       fmt.Sprintf("Magi %s", Version),
+				Views:         engine,
+				ViewsLayout:   "base",
+			})
+
+			// Start API in its own goroutine
+			go handlers.Initialize(app, cacheDirectory, port)
+
+			// Start Indexer in its own goroutine
+			libraries, err := models.GetLibraries()
+			if err != nil {
+				log.Warnf("Failed to get libraries: %v", err)
+				return
+			}
+			go indexer.Initialize(cacheDirectory, libraries)
+
+			// Block main thread to keep goroutines running
+			select {}
+		},
 	}
-	switch logLevel {
-	case "debug":
-		log.SetLevel(log.LevelDebug)
-	case "warn":
-		log.SetLevel(log.LevelWarn)
-	case "error":
-		log.SetLevel(log.LevelError)
-	default:
-		log.SetLevel(log.LevelInfo)
-	}
-}
 
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "version" {
-		log.Infof("Version: %s", Version)
-		return
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+
+	rootCmd.PersistentFlags().StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
+	rootCmd.PersistentFlags().StringVar(&cacheDirectory, "cache-directory", os.Getenv("MAGI_CACHE_DIR"), "Path to the cache directory")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", os.Getenv("LOG_LEVEL"), "Set the log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&port, "port", os.Getenv("PORT"), "Port to run the server on")
+
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Infof("Version: %s", Version)
+		},
 	}
 
-	log.Info("Starting Magi!")
-	
-	// Determine cache directory
-	if cacheDirectory == "" {
-		cacheDirectory = filepath.Join(dataDirectory, "cache")
+	var migrateCmd = &cobra.Command{
+		Use:   "migrate",
+		Short: "Run database migrations",
 	}
 
-	// Ensure the directories exist
-	if err := os.MkdirAll(cacheDirectory, os.ModePerm); err != nil {
-		log.Errorf("Failed to create cache directory: %s", err)
-		return
+	var migrateUpCmd = &cobra.Command{
+		Use:   "up [version|all]",
+		Short: "Run migrations up to a specific version or all pending migrations",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			var version int
+			var err error
+			if args[0] == "all" {
+				// Apply all pending migrations
+				err = models.InitializeWithMigration(dataDirectory, true)
+				if err != nil {
+					log.Errorf("Failed to apply migrations: %v", err)
+					os.Exit(1)
+				}
+				log.Info("All pending migrations applied successfully")
+				return
+			} else {
+				version, err = strconv.Atoi(args[0])
+				if err != nil {
+					log.Errorf("Invalid version number: %s", args[0])
+					os.Exit(1)
+				}
+			}
+
+			// Initialize database without auto-migrations
+			err = models.InitializeWithMigration(dataDirectory, false)
+			if err != nil {
+				log.Errorf("Failed to connect to database: %v", err)
+				os.Exit(1)
+			}
+			defer models.Close()
+
+			err = models.MigrateUp("migrations", version)
+			if err != nil {
+				log.Errorf("Migration failed: %v", err)
+				os.Exit(1)
+			}
+
+			log.Infof("Migration up %d completed successfully", version)
+		},
 	}
 
-	log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
-	log.Debugf("Using '%s/...' as the image caching location", cacheDirectory)
+	var migrateDownCmd = &cobra.Command{
+		Use:   "down [version|all]",
+		Short: "Rollback migrations down to a specific version or rollback all migrations",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			var version int
+			var err error
+			if args[0] == "all" {
+				// Rollback all migrations
+				err = models.InitializeWithMigration(dataDirectory, false)
+				if err != nil {
+					log.Errorf("Failed to connect to database: %v", err)
+					os.Exit(1)
+				}
+				defer models.Close()
 
-	// Initialize console log streaming for admin panel
-	utils.InitializeConsoleLogger()
+				// Get all applied migrations and rollback them in reverse order
+				// For simplicity, rollback from highest to lowest
+				for v := 17; v >= 1; v-- {
+					err = models.MigrateDown("migrations", v)
+					if err != nil {
+						log.Errorf("Failed to rollback migration %d: %v", v, err)
+						os.Exit(1)
+					}
+				}
+				log.Info("All migrations rolled back successfully")
+				return
+			} else {
+				version, err = strconv.Atoi(args[0])
+				if err != nil {
+					log.Errorf("Invalid version number: %s", args[0])
+					os.Exit(1)
+				}
+			}
 
-	// Initialize database connection
-	err := models.Initialize(dataDirectory)
-	if err != nil {
-		log.Errorf("Failed to connect to database: %v", err)
+			// Initialize database without auto-migrations
+			err = models.InitializeWithMigration(dataDirectory, false)
+			if err != nil {
+				log.Errorf("Failed to connect to database: %v", err)
+				os.Exit(1)
+			}
+			defer models.Close()
+
+			err = models.MigrateDown("migrations", version)
+			if err != nil {
+				log.Errorf("Migration failed: %v", err)
+				os.Exit(1)
+			}
+
+			log.Infof("Migration down %d completed successfully", version)
+		},
 	}
-	defer func() {
-		if err := models.Close(); err != nil {
-			log.Errorf("Failed to close database: %v", err)
-		}
-	}()
 
-	// Abort any orphaned "running" logs from previous application run
-	if err := models.AbortOrphanedRunningLogs(); err != nil {
-		log.Warnf("Failed to abort orphaned running logs: %v", err)
+	migrateCmd.AddCommand(migrateUpCmd)
+	migrateCmd.AddCommand(migrateDownCmd)
+
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(migrateCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		log.Error(err)
+		os.Exit(1)
 	}
-
-	// Create a new engine
-	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
-
-	// Custom config
-	app := fiber.New(fiber.Config{
-		Prefork:       false,
-		CaseSensitive: true,
-		StrictRouting: true,
-		ServerHeader:  "Magi",
-		AppName:       fmt.Sprintf("Magi %s", Version),
-		Views:         engine,
-		ViewsLayout:   "base",
-	})
-
-	// Start API in its own goroutine
-	go handlers.Initialize(app, cacheDirectory, port)
-
-	// Start Indexer in its own goroutine
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		log.Warnf("Failed to get libraries: %v", err)
-		return
-	}
-	go indexer.Initialize(cacheDirectory, libraries)
-
-	// Block main thread to keep goroutines running
-	select {}
 }

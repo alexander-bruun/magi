@@ -19,8 +19,13 @@ import (
 
 var db *sql.DB
 
-// Initialize connects to the SQLite database and applies necessary migrations
+// Initialize connects to the SQLite database and optionally applies necessary migrations
 func Initialize(cacheDirectory string) error {
+	return InitializeWithMigration(cacheDirectory, true)
+}
+
+// InitializeWithMigration connects to the SQLite database and applies migrations if applyMigrations is true
+func InitializeWithMigration(cacheDirectory string, applyMigrationsFlag bool) error {
 	start := time.Now()
 	defer utils.LogDuration("Initialize", start)
 
@@ -49,10 +54,12 @@ func Initialize(cacheDirectory string) error {
 		return err
 	}
 
-	// Apply migrations from the "migrations" folder
-	err = applyMigrations("migrations")
-	if err != nil {
-		return err
+	// Apply migrations from the "migrations" folder if requested
+	if applyMigrationsFlag {
+		err = applyMigrations("migrations")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -160,7 +167,7 @@ func extractVersion(fileName string) (int, error) {
 
 // rollbackMigration rolls back a migration by applying its .down.sql file
 func rollbackMigration(migrationsDir string, version int) error {
-	downFileName := fmt.Sprintf("%03d*.down.sql", version) // Example: 001*.down.sql
+	downFileName := fmt.Sprintf("%04d*.down.sql", version) // Example: 0001*.down.sql
 	files, err := filepath.Glob(filepath.Join(migrationsDir, downFileName))
 	if err != nil || len(files) == 0 {
 		return fmt.Errorf("no rollback file found for version %d", version)
@@ -185,6 +192,44 @@ func rollbackMigration(migrationsDir string, version int) error {
 
 	log.Infof("Rollback version %d applied successfully.\n", version)
 	return nil
+}
+
+// MigrateUp applies a specific migration version up
+func MigrateUp(migrationsDir string, version int) error {
+	// Check if already applied
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)", version).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		log.Infof("Migration %d is already applied.\n", version)
+		return nil
+	}
+
+	fileName := fmt.Sprintf("%04d_*.up.sql", version)
+	files, err := filepath.Glob(filepath.Join(migrationsDir, fileName))
+	if err != nil || len(files) == 0 {
+		return fmt.Errorf("no up migration file found for version %d", version)
+	}
+
+	return applyMigration(migrationsDir, filepath.Base(files[0]), version)
+}
+
+// MigrateDown rolls back a specific migration version
+func MigrateDown(migrationsDir string, version int) error {
+	// Check if applied
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)", version).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		log.Infof("Migration %d is not applied.\n", version)
+		return nil
+	}
+
+	return rollbackMigration(migrationsDir, version)
 }
 
 // ExistsChecker is a generic function to check if a record exists
