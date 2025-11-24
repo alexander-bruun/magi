@@ -169,6 +169,9 @@ jobs:
         with:
           go-version: '1.25.3'
 
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebp-dev
+
       - name: Build binaries
         run: make go-build PLATFORM="all" VERSION="v${{ needs.semantic.outputs.version }}"
 
