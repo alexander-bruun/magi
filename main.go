@@ -109,6 +109,7 @@ func main() {
 					log.Errorf("Failed to close database: %v", err)
 				}
 			}()
+			defer handlers.StopJobStatusManager()
 
 			// Abort any orphaned "running" logs from previous application run
 			if err := models.AbortOrphanedRunningLogs(); err != nil {

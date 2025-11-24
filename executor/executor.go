@@ -111,23 +111,9 @@ func BroadcastLog(scriptID int64, logType string, message string) {
     
     // Clean up failed connections
     if len(failedConns) > 0 {
-        logStreamManager.mu.Lock()
         for _, failedConn := range failedConns {
-            if connections, exists := logStreamManager.clients[scriptID]; exists {
-                for i, c := range connections {
-                    if c == failedConn {
-                        logStreamManager.clients[scriptID] = append(connections[:i], connections[i+1:]...)
-                        log.Debugf("[WEBSOCKET] Removed stale connection for script %d", scriptID)
-                        break
-                    }
-                }
-                if len(logStreamManager.clients[scriptID]) == 0 {
-                    delete(logStreamManager.clients, scriptID)
-                    log.Debugf("[WEBSOCKET] Removed all connections for script %d", scriptID)
-                }
-            }
+            unregisterClient(scriptID, failedConn)
         }
-        logStreamManager.mu.Unlock()
     }
 }
 
@@ -149,6 +135,7 @@ func unregisterClient(scriptID int64, conn *websocket.Conn) {
         for i, c := range connections {
             if c == conn {
                 logStreamManager.clients[scriptID] = append(connections[:i], connections[i+1:]...)
+                conn.Close() // Close the connection
                 break
             }
         }

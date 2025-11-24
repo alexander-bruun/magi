@@ -153,7 +153,8 @@ func (clm *ConsoleLogManager) broadcastLog(logType string, message string) {
 
 	for _, conn := range conns {
 		if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
-			// Client disconnected, will be cleaned up by unregister
+			// Client disconnected, clean up
+			unregisterConsoleClient(conn)
 		}
 	}
 }
@@ -190,6 +191,7 @@ func unregisterConsoleClient(conn *websocket.Conn) {
 	for i, c := range consoleLogManager.clients {
 		if c == conn {
 			consoleLogManager.clients = append(consoleLogManager.clients[:i], consoleLogManager.clients[i+1:]...)
+			conn.Close() // Close the connection
 			break
 		}
 	}

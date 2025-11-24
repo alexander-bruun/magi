@@ -46,6 +46,19 @@ func init() {
 	go jobStatusManager.pingClients()
 }
 
+// StopJobStatusManager gracefully stops the job status manager
+func StopJobStatusManager() {
+	close(jobStatusManager.stopPing)
+	jobStatusManager.pingTicker.Stop()
+	
+	jobStatusManager.mu.Lock()
+	for conn := range jobStatusManager.clients {
+		conn.Close()
+		delete(jobStatusManager.clients, conn)
+	}
+	jobStatusManager.mu.Unlock()
+}
+
 // pingClients sends periodic pings to all connected clients
 func (m *JobStatusManager) pingClients() {
 	for {
@@ -65,6 +78,7 @@ func (m *JobStatusManager) pingClients() {
 
 				if err != nil {
 					log.Debugf("Failed to ping job status client: %v", err)
+					conn.Close() // Close the connection to signal the read loop to exit
 					m.unregisterClient(conn)
 				}
 			}
@@ -128,7 +142,7 @@ func (m *JobStatusManager) unregisterClient(conn *websocket.Conn) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.clients, conn)
-	conn.Close()
+	// Note: Connection will be closed by the websocket handler when it returns
 }
 
 // sendActiveJobsToClient sends the current list of active jobs to a specific client
@@ -184,6 +198,7 @@ func (m *JobStatusManager) broadcastJobUpdate() {
 
 		if err != nil {
 			log.Debugf("Failed to send job status update: %v", err)
+			conn.Close() // Close the connection to signal the read loop to exit
 			m.unregisterClient(conn)
 		}
 	}

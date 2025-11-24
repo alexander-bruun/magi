@@ -33,6 +33,11 @@ func Initialize(app *fiber.App, cacheDirectory string, port string) {
 	savedCacheDirectory = cacheDirectory
 
 	// ========================================
+	// Initialize console logger for WebSocket streaming
+	// ========================================
+	utils.InitializeConsoleLogger()
+
+	// ========================================
 	// Set up job status notification callbacks
 	// ========================================
 	executor.NotifyScraperStarted = NotifyScraperStarted
