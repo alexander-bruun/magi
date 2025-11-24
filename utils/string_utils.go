@@ -176,18 +176,19 @@ func collapseHyphens(s string) string {
 
 // ExtractNumber extracts the first number found in the given string.
 func ExtractNumber(name string) (int, error) {
-	var numStr string
+	var builder strings.Builder
 	found := false
 
 	for _, r := range name {
 		if unicode.IsDigit(r) {
-			numStr += string(r)
+			builder.WriteRune(r)
 			found = true
 		} else if found {
 			break
 		}
 	}
 
+	numStr := builder.String()
 	if numStr == "" {
 		return 0, fmt.Errorf("no number found in string")
 	}
