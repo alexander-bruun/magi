@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 )
 
 // QueryParams holds parsed query parameters for media listings

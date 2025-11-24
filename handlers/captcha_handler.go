@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/alexander-bruun/magi/views"
 	"github.com/dchest/captcha"
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 )
 
 // HandleCaptchaPage serves the captcha verification page

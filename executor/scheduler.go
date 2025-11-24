@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/robfig/cron/v3"
+	cron "github.com/robfig/cron/v3"
 
 	"github.com/alexander-bruun/magi/models"
 )

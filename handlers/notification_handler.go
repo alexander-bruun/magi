@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 )
 
 // HandleGetNotifications retrieves all notifications for the authenticated user

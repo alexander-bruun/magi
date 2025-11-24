@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/executor"
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/websocket/v2"
+	websocket "github.com/gofiber/websocket/v2"
 )
 
 // JobStatus represents the current status of a running job

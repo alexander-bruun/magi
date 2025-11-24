@@ -12,7 +12,7 @@ import (
     "time"
 
     "github.com/gofiber/fiber/v2/log"
-    "github.com/gofiber/websocket/v2"
+    websocket "github.com/gofiber/websocket/v2"
 
     "github.com/alexander-bruun/magi/models"
 )

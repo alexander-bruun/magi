@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/websocket/v2"
+	websocket "github.com/gofiber/websocket/v2"
 )
 
 // ConsoleLogManager manages WebSocket connections for console log streaming

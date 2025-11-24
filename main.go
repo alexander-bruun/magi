@@ -6,18 +6,18 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"embed"
+	"net/http"
 
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/template/html/v2"
+	html "github.com/gofiber/template/html/v2"
 	"github.com/spf13/cobra"
-	"embed"
-	"net/http"
 )
 
 var Version = "develop"

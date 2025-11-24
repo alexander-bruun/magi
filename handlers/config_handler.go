@@ -5,8 +5,8 @@ import (
     "github.com/alexander-bruun/magi/models"
     "github.com/alexander-bruun/magi/utils"
     "github.com/alexander-bruun/magi/views"
-    "github.com/gofiber/fiber/v2"
-    "github.com/gofiber/websocket/v2"
+    fiber "github.com/gofiber/fiber/v2"
+    websocket "github.com/gofiber/websocket/v2"
 )
 
 // HandleConfiguration renders the configuration page.
