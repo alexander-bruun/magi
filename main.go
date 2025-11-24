@@ -41,7 +41,18 @@ var assetsfs embed.FS
 var dataDirectory string
 
 func init() {
-	log.SetLevel(log.LevelInfo)
+	// Set log level from environment variable or default to info
+	logLevel := os.Getenv("LOG_LEVEL")
+	switch logLevel {
+	case "debug":
+		log.SetLevel(log.LevelDebug)
+	case "warn":
+		log.SetLevel(log.LevelWarn)
+	case "error":
+		log.SetLevel(log.LevelError)
+	default:
+		log.SetLevel(log.LevelInfo)
+	}
 
 	var defaultDataDirectory string
 
@@ -78,7 +89,7 @@ func main() {
 	}
 
 	log.Info("Starting Magi!")
-
+	
 	flag.Parse()
 
 	// Determine cache directory
