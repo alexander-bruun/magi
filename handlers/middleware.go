@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -200,33 +200,8 @@ func RateLimitingMiddleware() fiber.Handler {
 				seconds = 0
 			}
 			
-			// Return HTML with error page
-			html := fmt.Sprintf(`<!DOCTYPE html>
-<html lang="en" data-theme="dim">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rate Limited</title>
-    <link rel="stylesheet" href="/assets/css/vendor/core.min.css">
-    <link rel="stylesheet" href="/assets/css/vendor/utilities.min.css">
-    <link rel="stylesheet" href="/assets/css/styles.css">
-</head>
-<body class="bg-background text-foreground">
-    <section class="flex items-center justify-center min-h-screen">
-        <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
-            <div class="mx-auto max-w-screen-sm text-center">
-                <h1 class="mb-4 text-7xl tracking-tight font-extrabold lg:text-9xl text-primary-600 dark:text-primary-500">429</h1>
-                <p class="mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white">Too Many Requests</p>
-                <p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">Whoa buddy, you are a bit too fast! Try again in <strong>%d seconds</strong>.</p>
-                <p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">This helps protect the server from abuse.</p>
-                <a href="/" class="inline-flex text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-primary-900 my-4">Back to Homepage</a>
-            </div>
-        </div>
-    </section>
-</body>
-</html>`, seconds)
-			
-			return c.Type("html").SendString(html)
+			// Return rate limit error page
+			return HandleView(c, views.RateLimit(seconds))
 		}
 		
 		// Add current request
@@ -501,4 +476,124 @@ func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 	
 	// Regular users - check permissions
 	return models.UserHasLibraryAccess(username, librarySlug)
+}
+
+// ImageProtectionMiddleware provides advanced protection for image endpoints
+// Uses scoring system to detect bots and requires captcha for high-risk requests
+func ImageProtectionMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		score := calculateBotScore(c)
+		
+		// If score is high, require captcha
+		if score >= 50 {
+			if c.Cookies("captcha_solved") != "true" {
+				log.Infof("High bot score (%d) for IP: %s, redirecting to captcha", score, getRealIP(c))
+				// Set redirect cookie
+				c.Cookie(&fiber.Cookie{
+					Name:     "captcha_redirect",
+					Value:    c.OriginalURL(),
+					MaxAge:   300, // 5 minutes
+					HTTPOnly: true,
+					Secure:   isSecureRequest(c),
+					SameSite: fiber.CookieSameSiteLaxMode,
+				})
+				return c.Redirect("/captcha", fiber.StatusSeeOther)
+			}
+		}
+		
+		// If score is very high, block outright
+		if score >= 80 {
+			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
+			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
+		}
+		
+		return c.Next()
+	}
+}
+
+// calculateBotScore assigns a score based on various bot indicators
+func calculateBotScore(c *fiber.Ctx) int {
+	score := 0
+	userAgent := c.Get("User-Agent")
+	userAgentLower := strings.ToLower(userAgent)
+	
+	// User-Agent checks
+	if userAgent == "" {
+		score += 30
+	} else if len(userAgent) < 20 {
+		score += 20
+	}
+	
+	// Bot indicators in User-Agent
+	botKeywords := []string{"bot", "crawler", "spider", "scraper", "headless", "selenium", "puppeteer", "phantomjs", "python-requests", "curl", "wget"}
+	for _, keyword := range botKeywords {
+		if strings.Contains(userAgentLower, keyword) {
+			score += 40
+			break
+		}
+	}
+	
+	// Check if it's a known browser
+	browserFound := false
+	browsers := []string{"chrome", "firefox", "safari", "edge", "opera", "brave", "vivaldi"}
+	for _, browser := range browsers {
+		if strings.Contains(userAgentLower, browser) {
+			browserFound = true
+			break
+		}
+	}
+	if !browserFound && userAgent != "" {
+		score += 25
+	}
+	
+	// Header checks
+	if c.Get("Referer") == "" {
+		score += 10
+	}
+	
+	accept := c.Get("Accept")
+	if accept == "" || (!strings.Contains(accept, "image") && !strings.Contains(accept, "*/*")) {
+		score += 15
+	}
+	
+	// Modern browser headers
+	if c.Get("Sec-Fetch-Dest") == "" {
+		score += 10
+	}
+	if c.Get("Sec-Fetch-Mode") == "" {
+		score += 10
+	}
+	if c.Get("Sec-Fetch-Site") == "" {
+		score += 10
+	}
+	
+	// Check for automation headers
+	if c.Get("X-Requested-With") != "" {
+		score += 15
+	}
+	
+	// Check for proxy/VPN indicators
+	if c.Get("X-Forwarded-For") != "" && strings.Contains(c.Get("X-Forwarded-For"), ",") {
+		score += 10 // Multiple proxies
+	}
+	
+	// Check for unusual Accept-Language
+	acceptLang := c.Get("Accept-Language")
+	if acceptLang == "" {
+		score += 10
+	} else if len(strings.Split(acceptLang, ",")) > 5 {
+		score += 5 // Too many languages
+	}
+	
+	// Check for DNT (Do Not Track)
+	if c.Get("DNT") == "1" {
+		score += 5
+	}
+	
+	// Check request method - images should be GET
+	if c.Method() != fiber.MethodGet && c.Method() != fiber.MethodHead {
+		score += 20
+	}
+	
+	return score
 }
