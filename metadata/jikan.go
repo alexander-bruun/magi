@@ -92,6 +92,18 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 			fmt.Sscanf(media.Published.From, "%d", &year)
 		}
 
+		// Extract tags from genres, themes, and demographics
+		var tags []string
+		for _, genre := range media.Genres {
+			tags = append(tags, genre.Name)
+		}
+		for _, theme := range media.Themes {
+			tags = append(tags, theme.Name)
+		}
+		for _, demo := range media.Demographics {
+			tags = append(tags, demo.Name)
+		}
+
 		results = append(results, SearchResult{
 			ID:              fmt.Sprintf("%d", media.MalID),
 			Title:           media.Title,
@@ -99,6 +111,7 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 			CoverArtURL:     coverURL,
 			Year:            year,
 			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(media.Title)),
+			Tags:            tags,
 		})
 	}
 

@@ -28,6 +28,7 @@ type SearchResult struct {
 	CoverArtURL      string
 	Year             int
 	SimilarityScore  float64
+	Tags             []string
 }
 
 // Provider is the interface that all metadata providers must implement

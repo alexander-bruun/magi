@@ -694,7 +694,7 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 								if userRole == "moderator" || userRole == "admin" {
 									<button
 										type="button"
-										class="ml-2 uk-btn uk-btn-small uk-btn-default uk-border-circle"
+										class="ml-2 uk-btn uk-btn-small uk-btn-default btn-circular"
 										hx-post={ fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug) }
 										hx-confirm="Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users."
 										title="Unmark as premium"
@@ -794,6 +794,11 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 					if result.Description != "" {
 						<div class="text-sm text-gray-700 mb-3 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; max-height: 4.5rem;" title={ result.Description }>
 							{ result.Description }
+						</div>
+					}
+					if len(result.Tags) > 0 {
+						<div class="text-sm text-blue-600 mb-3 text-center">
+							<strong>Tags:</strong> { strings.Join(result.Tags, ", ") }
 						</div>
 					}
 				</div>

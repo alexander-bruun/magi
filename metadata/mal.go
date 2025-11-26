@@ -52,7 +52,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles", malBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles,genres", malBaseURL, titleEncoded)
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
@@ -107,6 +107,12 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 			fmt.Sscanf(node.StartDate, "%d", &year)
 		}
 
+		// Extract tags from genres
+		var tags []string
+		for _, genre := range node.Genres {
+			tags = append(tags, genre.Name)
+		}
+
 		results = append(results, SearchResult{
 			ID:              fmt.Sprintf("%d", node.ID),
 			Title:           node.Title,
@@ -114,6 +120,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 			CoverArtURL:     coverURL,
 			Year:            year,
 			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(node.Title)),
+			Tags:            tags,
 		})
 	}
 

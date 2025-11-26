@@ -89,6 +89,21 @@ func (m *MediadexProvider) Search(title string) ([]SearchResult, error) {
 		coverURL := extractCoverURL(media.ID, media.Relationships)
 		description := extractDescription(media.Attributes.Description)
 
+		// Extract tags
+		var tags []string
+		for _, tag := range media.Attributes.Tags {
+			if name, ok := tag.Attributes.Name["en"]; ok && name != "" {
+				tags = append(tags, name)
+			} else {
+				for _, v := range tag.Attributes.Name {
+					if v != "" {
+						tags = append(tags, v)
+						break
+					}
+				}
+			}
+		}
+
 		results = append(results, SearchResult{
 			ID:              media.ID,
 			Title:           mangaTitle,
@@ -96,6 +111,7 @@ func (m *MediadexProvider) Search(title string) ([]SearchResult, error) {
 			CoverArtURL:     coverURL,
 			Year:            media.Attributes.Year,
 			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
+			Tags:            tags,
 		})
 	}
 

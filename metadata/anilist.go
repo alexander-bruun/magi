@@ -65,6 +65,10 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 						large
 						medium
 					}
+					genres
+					tags {
+						name
+					}
 				}
 			}
 		}
@@ -124,6 +128,25 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 			}
 		}
 
+		// Extract tags
+		var tags []string
+		if genres, ok := media["genres"].([]interface{}); ok {
+			for _, genre := range genres {
+				if genreStr, ok := genre.(string); ok {
+					tags = append(tags, genreStr)
+				}
+			}
+		}
+		if tagList, ok := media["tags"].([]interface{}); ok {
+			for _, tag := range tagList {
+				if tagMap, ok := tag.(map[string]interface{}); ok {
+					if name, ok := tagMap["name"].(string); ok {
+						tags = append(tags, name)
+					}
+				}
+			}
+		}
+
 		results = append(results, SearchResult{
 			ID:              id,
 			Title:           mangaTitle,
@@ -131,6 +154,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 			CoverArtURL:     coverURL,
 			Year:            year,
 			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
+			Tags:            tags,
 		})
 	}
 
