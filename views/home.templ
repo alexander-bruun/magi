@@ -121,17 +121,20 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 				<div class="flex-1 min-w-0">
 					<div class="flex items-center gap-2 mb-1">
 						<a href={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } hx-get={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } hx-target="#content" hx-push-url="true" class="font-medium text-sm truncate">{ chapter.MediaName }</a>
-							if chapter.IsPremium {
-								<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12); margin-left: 0.25rem;">
-									<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
-										<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-									</svg>
-									{ getCountdownText(chapter.CreatedAt, premiumDuration) }
-								</span>
-							}
 					</div>
 					<a href={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } hx-get={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } hx-target="#content" hx-push-url="true" class="text-sm text-gray-600 truncate block">{ chapter.Name }</a>
-					<div class="text-xs text-gray-400 mt-1">{ chapter.CreatedAt.Format("Jan 2, 2006") }</div>
+					<div class="text-xs text-gray-400 mt-1">
+						if chapter.IsPremium {
+							<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+								<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+								</svg>
+								{ getCountdownText(chapter.CreatedAt, premiumDuration) }
+							</span>
+						} else {
+							{ getRelativeTime(chapter.CreatedAt) }
+						}
+					</div>
 				</div>
 			</li>
 		}
@@ -295,16 +298,19 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 									<div class="flex items-center gap-2">
 										<span class="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0"></span>
 										<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } hx-get={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } hx-target="#content" hx-push-url="true" onclick="event.stopPropagation()" class="text-sm text-gray-600 hover:text-blue-600 transition-colors truncate leading-tight">{ chapter.Name }</a>
+									</div>
+									<span class="text-sm text-gray-500 flex-shrink-0 whitespace-nowrap">
 										if chapter.IsPremium {
-											<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12); margin-left: 0.25rem;">
+											<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
 												<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
 													<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
 												</svg>
 												{ getCountdownText(chapter.CreatedAt, premiumDuration) }
 											</span>
+										} else {
+											{ getRelativeTime(chapter.CreatedAt) }
 										}
-									</div>
-									<span class="text-sm text-gray-500 flex-shrink-0 whitespace-nowrap">{ getRelativeTime(chapter.CreatedAt) }</span>
+									</span>
 								</div>
 							}
 						</div>
