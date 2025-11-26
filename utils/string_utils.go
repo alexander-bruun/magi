@@ -278,8 +278,8 @@ func SimilarityRatio(s1, s2 string) float64 {
 // If no volume/chapter pattern is found, returns the cleaned filename.
 func ExtractChapterName(filename string) string {
 	// Look for volume patterns (v01, vol.1, volume 1, etc.)
-	if vol := regexp.MustCompile(`(?i)v(ol)?\.?\s*(\d+)`).FindStringSubmatch(filename); vol != nil {
-		num, _ := strconv.Atoi(vol[2])
+	if vol := regexp.MustCompile(`(?i)(?:v(?:ol(?:ume)?)?)\.?\s*(\d+)`).FindStringSubmatch(filename); vol != nil {
+		num, _ := strconv.Atoi(vol[1])
 		return fmt.Sprintf("Volume %d", num)
 	}
 	// Look for chapter patterns (c01, ch.1, chapter 1, etc.)

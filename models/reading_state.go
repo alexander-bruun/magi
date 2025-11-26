@@ -166,9 +166,11 @@ func GetRecentReadingActivity(userName string, limit int) ([]ReadingActivityItem
     var activities []ReadingActivityItem
     for rows.Next() {
         var rs ReadingState
-        if err := rows.Scan(&rs.ID, &rs.UserName, &rs.MediaSlug, &rs.Chapter, &rs.CreatedAt); err != nil {
+        var createdAt int64
+        if err := rows.Scan(&rs.ID, &rs.UserName, &rs.MediaSlug, &rs.Chapter, &createdAt); err != nil {
             return nil, err
         }
+        rs.CreatedAt = time.Unix(createdAt, 0)
 
         manga, err := GetMedia(rs.MediaSlug)
         if err != nil {

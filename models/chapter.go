@@ -506,8 +506,8 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 
 // extractChapterNumber extracts the chapter number from a chapter name
 func extractChapterNumber(name string) int {
-	// Look for patterns like "Chapter 123", "Vol 1 Ch 123", etc.
-	re := regexp.MustCompile(`(?i)(?:chapter|ch\.?|episode|ep\.?)\s*(\d+)`)
+	// Look for patterns like "Chapter 123", "Vol 1 Ch 123", "Volume 1", etc.
+	re := regexp.MustCompile(`(?i)(?:chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*(\d+)`)
 	matches := re.FindStringSubmatch(name)
 	if len(matches) > 1 {
 		if num, err := strconv.Atoi(matches[1]); err == nil {

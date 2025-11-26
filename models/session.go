@@ -158,10 +158,14 @@ func GetUserSessions(username string) ([]SessionToken, error) {
 	var sessions []SessionToken
 	for rows.Next() {
 		var session SessionToken
-		err := rows.Scan(&session.Token, &session.Username, &session.CreatedAt, &session.ExpiresAt, &session.LastUsedAt)
+		var createdAt, expiresAt, lastUsedAt int64
+		err := rows.Scan(&session.Token, &session.Username, &createdAt, &expiresAt, &lastUsedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan session: %w", err)
 		}
+		session.CreatedAt = time.Unix(createdAt, 0)
+		session.ExpiresAt = time.Unix(expiresAt, 0)
+		session.LastUsedAt = time.Unix(lastUsedAt, 0)
 		sessions = append(sessions, session)
 	}
 
