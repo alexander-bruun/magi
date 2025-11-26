@@ -183,7 +183,7 @@ templ Showcase(media []models.EnrichedMedia) {
                             {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
                         }
                         <li>
-                            <a hx-get={ fmt.Sprintf("/series/%s", media.Slug) } hx-target="#content" hx-push-url="true" class="block">
+                            <a href={ fmt.Sprintf("/series/%s", media.Slug) } hx-get={ fmt.Sprintf("/series/%s", media.Slug) } hx-target="#content" hx-push-url="true" class="block">
                                 <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
                                         @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
