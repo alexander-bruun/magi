@@ -172,7 +172,7 @@ func (idx *Indexer) runIndexingJob() bool {
 		}
 	}
 
-	log.Infof("Starting scheduled indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName)
+	log.Debugf("Starting scheduled indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName)
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
@@ -207,7 +207,7 @@ func (idx *Indexer) runIndexingJob() bool {
 	totalScanned := scannedPathCount
 	scanMutex.Unlock()
 	
-	log.Infof(
+	log.Debugf(
 		"Scheduled indexing for library '%s' completed in %.1fs (scanned %d content paths)",
 		idx.Library.Name,
 		seconds,
