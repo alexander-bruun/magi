@@ -74,7 +74,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - semantic
-      - lint
     if: needs.semantic.outputs.version != ''  # Run only if a new version is available
     strategy:
       fail-fast: false
@@ -199,7 +198,6 @@ jobs:
       - semantic
       - build
       - merge
-      - lint
       - security
     if: needs.semantic.outputs.version != ''  # Run only if a new version is available
 
