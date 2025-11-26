@@ -10,16 +10,7 @@ import (
 )
 
 // QueryParams holds parsed query parameters for media listings
-type QueryParams struct {
-	Page         int
-	Sort         string
-	Order        string
-	Tags         []string
-	TagMode      string
-	Types        []string
-	LibrarySlug  string
-	SearchFilter string
-}
+type QueryParams = models.QueryParams
 
 // ParseQueryParams extracts and normalizes query parameters from the request
 func ParseQueryParams(c *fiber.Ctx) QueryParams {

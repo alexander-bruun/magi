@@ -118,9 +118,10 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
     readerQualityStr := c.FormValue("reader_compression_quality")
     moderatorQualityStr := c.FormValue("moderator_compression_quality")
     adminQualityStr := c.FormValue("admin_compression_quality")
+    premiumQualityStr := c.FormValue("premium_compression_quality")
     anonymousQualityStr := c.FormValue("anonymous_compression_quality")
     processedQualityStr := c.FormValue("processed_image_quality")
-    var readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality int
+    var readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality int
     if readerQualityStr != "" {
         if v, err := strconv.Atoi(readerQualityStr); err == nil && v >= 0 && v <= 100 {
             readerQuality = v
@@ -148,6 +149,15 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
     } else {
         adminQuality = 100
     }
+    if premiumQualityStr != "" {
+        if v, err := strconv.Atoi(premiumQualityStr); err == nil && v >= 0 && v <= 100 {
+            premiumQuality = v
+        } else {
+            premiumQuality = 90
+        }
+    } else {
+        premiumQuality = 90
+    }
     if anonymousQualityStr != "" {
         if v, err := strconv.Atoi(anonymousQualityStr); err == nil && v >= 0 && v <= 100 {
             anonymousQuality = v
@@ -166,7 +176,55 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
     } else {
         processedQuality = 85
     }
-    if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality); err != nil {
+    if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality); err != nil {
+        return handleError(c, err)
+    }
+    
+    // Update image token validity configuration
+    imageTokenValidityStr := c.FormValue("image_token_validity_minutes")
+    var imageTokenValidity int
+    if imageTokenValidityStr != "" {
+        if v, err := strconv.Atoi(imageTokenValidityStr); err == nil && v >= 1 && v <= 60 {
+            imageTokenValidity = v
+        } else {
+            imageTokenValidity = 5
+        }
+    } else {
+        imageTokenValidity = 5
+    }
+    if _, err := models.UpdateImageTokenConfig(imageTokenValidity); err != nil {
+        return handleError(c, err)
+    }
+    
+    // Update premium early access configuration
+    premiumEarlyAccessStr := c.FormValue("premium_early_access_duration")
+    var premiumEarlyAccess int
+    if premiumEarlyAccessStr != "" {
+        if v, err := strconv.Atoi(premiumEarlyAccessStr); err == nil && v >= 0 {
+            premiumEarlyAccess = v
+        } else {
+            premiumEarlyAccess = 3600
+        }
+    } else {
+        premiumEarlyAccess = 3600
+    }
+    if _, err := models.UpdatePremiumEarlyAccessConfig(premiumEarlyAccess); err != nil {
+        return handleError(c, err)
+    }
+    
+    // Update max premium chapters configuration
+    maxPremiumChaptersStr := c.FormValue("max_premium_chapters")
+    var maxPremiumChapters int
+    if maxPremiumChaptersStr != "" {
+        if v, err := strconv.Atoi(maxPremiumChaptersStr); err == nil && v >= 0 {
+            maxPremiumChapters = v
+        } else {
+            maxPremiumChapters = 3
+        }
+    } else {
+        maxPremiumChapters = 3
+    }
+    if _, err := models.UpdateMaxPremiumChaptersConfig(maxPremiumChapters); err != nil {
         return handleError(c, err)
     }
     

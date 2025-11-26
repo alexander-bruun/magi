@@ -1608,6 +1608,26 @@
     SiteUI.init();
   }
 
+  // ============================================================================
+  // NOTIFICATION SYSTEM
+  // ============================================================================
+
+  /**
+   * Handle HTMX-triggered notifications
+   */
+  document.addEventListener('showNotification', function(event) {
+    const detail = event.detail;
+    if (detail && detail.message) {
+      const options = {
+        message: detail.message,
+        status: detail.status || 'primary',
+        timeout: 5000,
+        pos: 'top-right'
+      };
+      UIkit.notification(options);
+    }
+  });
+
   // Export to window
   window.Magi = {
     SmoothScroll: SmoothScroll,

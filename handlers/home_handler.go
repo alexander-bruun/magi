@@ -39,6 +39,49 @@ func HandleHome(c *fiber.Ctx) error {
 	// Fetch data for the home page
 	recentlyAdded, _, _ := models.SearchMedias("", 1, 20, "created_at", "desc", "", "")
 	recentlyUpdated, _, _ := models.SearchMedias("", 1, 20, "updated_at", "desc", "", "")
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config: %v", err)
+	}
+
+	// Enrich recently added media with premium countdowns
+	enrichedRecentlyAdded := make([]models.EnrichedMedia, len(recentlyAdded))
+	for i, m := range recentlyAdded {
+		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+		if err != nil {
+			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
+		}
+		latestSlug, latestName, err := models.GetLatestChapter(m.Slug)
+		if err != nil {
+			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
+		}
+		enrichedRecentlyAdded[i] = models.EnrichedMedia{
+			Media:              m,
+			PremiumCountdown:   countdown,
+			LatestChapterSlug:  latestSlug,
+			LatestChapterName:  latestName,
+		}
+	}
+
+	// Enrich recently updated media with premium countdowns
+	enrichedRecentlyUpdated := make([]models.EnrichedMedia, len(recentlyUpdated))
+	for i, m := range recentlyUpdated {
+		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+		if err != nil {
+			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
+		}
+		latestSlug, latestName, err := models.GetLatestChapter(m.Slug)
+		if err != nil {
+			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
+		}
+		enrichedRecentlyUpdated[i] = models.EnrichedMedia{
+			Media:              m,
+			PremiumCountdown:   countdown,
+			LatestChapterSlug:  latestSlug,
+			LatestChapterName:  latestName,
+		}
+	}
+
 	topMedias, _ := models.GetTopMedias(10)
 	topReadToday, _ := models.GetTopReadMedias("today", 10)
 	topReadWeek, _ := models.GetTopReadMedias("week", 10)
@@ -46,7 +89,14 @@ func HandleHome(c *fiber.Ctx) error {
 	topReadYear, _ := models.GetTopReadMedias("year", 10)
 	topReadAll, _ := models.GetTopReadMedias("all", 10)
 
-	return HandleView(c, views.Home(recentlyAdded, recentlyUpdated, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll))
+	// Fetch latest updates data
+	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+	if err != nil {
+		log.Errorf("Failed to get latest updates: %v", err)
+		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error
+	}
+
+	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates))
 }
 
 // HandleTopReadPeriod renders the top read list for a specific period via HTMX

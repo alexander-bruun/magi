@@ -11,6 +11,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -441,11 +442,21 @@ var tokens sync.Map // map[string]*ImageAccessToken
 
 // GenerateImageAccessToken generates a one-time use token for image access
 func GenerateImageAccessToken(mediaSlug, chapterSlug string, page int) string {
-	return GenerateImageAccessTokenWithAsset(mediaSlug, chapterSlug, page, "")
+	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, chapterSlug, page, "", 5) // default 5 minutes
+}
+
+// GenerateImageAccessTokenWithValidity generates a one-time use token for image access with custom validity
+func GenerateImageAccessTokenWithValidity(mediaSlug, chapterSlug string, page int, validityMinutes int) string {
+	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, chapterSlug, page, "", validityMinutes)
 }
 
 // GenerateImageAccessTokenWithAsset generates a one-time use token for image access with optional asset path
 func GenerateImageAccessTokenWithAsset(mediaSlug, chapterSlug string, page int, assetPath string) string {
+	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, chapterSlug, page, assetPath, 5) // default 5 minutes
+}
+
+// GenerateImageAccessTokenWithAssetAndValidity generates a one-time use token for image access with optional asset path and custom validity
+func GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, chapterSlug string, page int, assetPath string, validityMinutes int) string {
 	log.Debugf("Generating token for mediaSlug=%s, chapterSlug=%s, assetPath=%s", mediaSlug, chapterSlug, assetPath)
 	tokenBytes := make([]byte, 32)
 	var token string
@@ -464,7 +475,7 @@ func GenerateImageAccessTokenWithAsset(mediaSlug, chapterSlug string, page int, 
 		ChapterSlug: chapterSlug,
 		Page:        page,
 		AssetPath:   assetPath,
-		ExpiresAt:   time.Now().Add(5 * time.Minute), // 5 minute grace period
+		ExpiresAt:   time.Now().Add(time.Duration(validityMinutes) * time.Minute),
 	})
 	log.Debugf("Stored token %s: media=%s, chapter=%s, page=%d, asset=%s", token, mediaSlug, chapterSlug, page, assetPath)
 
@@ -508,4 +519,195 @@ func CleanupExpiredTokens() {
 		}
 		return true
 	})
+}
+
+// ExtractPosterImage extracts a poster-sized image from any supported file type (image or archive)
+// and caches it with proper processing. For archives, it extracts the first image.
+// For tall images (webtoons), it crops from the top to capture the cover/title area.
+// Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
+// Returns the cached image URL path.
+func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, error) {
+	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
+
+	var img image.Image
+	var format string
+	var err error
+
+	// Check if it's a regular image file
+	if isImageFile(filepath.Base(filePath)) {
+		// Process the image directly
+		img, err = openImage(filePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to open image: %w", err)
+		}
+		// Determine format from file extension
+		ext := strings.ToLower(filepath.Ext(filePath))
+		switch ext {
+		case ".jpg", ".jpeg":
+			format = "jpeg"
+		case ".png":
+			format = "png"
+		case ".gif":
+			format = "gif"
+		case ".webp":
+			format = "webp"
+		default:
+			format = "jpeg" // fallback
+		}
+	} else if strings.HasSuffix(strings.ToLower(filePath), ".zip") || strings.HasSuffix(strings.ToLower(filePath), ".cbz") ||
+		strings.HasSuffix(strings.ToLower(filePath), ".rar") || strings.HasSuffix(strings.ToLower(filePath), ".cbr") ||
+		strings.HasSuffix(strings.ToLower(filePath), ".epub") {
+
+		// Create a temporary directory for extraction
+		tempDir, err := os.MkdirTemp("", "magi-poster-extract-")
+		if err != nil {
+			return "", fmt.Errorf("failed to create temp directory: %w", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		// Extract the first image
+		if err := ExtractFirstImage(filePath, tempDir); err != nil {
+			// If archive is invalid or has no images, log and skip rather than failing
+			if strings.Contains(err.Error(), "invalid or corrupt") ||
+			   strings.Contains(err.Error(), "no image files found") {
+				log.Debugf("Skipping invalid or empty archive '%s' for media '%s': %v", filePath, slug, err)
+				return "", nil
+			}
+			log.Errorf("Failed to extract first image from '%s' for media '%s': %v", filePath, slug, err)
+			return "", fmt.Errorf("failed to extract first image: %w", err)
+		}
+
+		log.Debugf("Successfully extracted image from archive '%s' for media '%s'", filePath, slug)
+
+		// Find the extracted image file (search recursively)
+		var extractedImagePath string
+		err = filepath.WalkDir(tempDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && isImageFile(d.Name()) {
+				extractedImagePath = path
+				log.Debugf("Found extracted image '%s' for media '%s'", d.Name(), slug)
+				return fs.SkipAll // Stop after finding the first image
+			}
+			return nil
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to walk temp directory: %w", err)
+		}
+
+		if extractedImagePath == "" {
+			log.Debugf("No image file found after extraction from '%s' for media '%s'", filePath, slug)
+			return "", fmt.Errorf("no image file found after extraction")
+		}
+
+		// Load the extracted image
+		img, err = openImage(extractedImagePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to open extracted image: %w", err)
+		}
+
+		// Determine format from extracted file extension
+		ext := strings.ToLower(filepath.Ext(extractedImagePath))
+		switch ext {
+		case ".jpg", ".jpeg":
+			format = "jpeg"
+		case ".png":
+			format = "png"
+		case ".gif":
+			format = "gif"
+		case ".webp":
+			format = "webp"
+		default:
+			format = "jpeg" // fallback
+		}
+	} else {
+		return "", fmt.Errorf("unsupported file type for poster extraction: %s", filePath)
+	}
+
+	// Save original (unprocessed) for potential future use
+	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
+	if err := saveImage(originalFilePath, img, format, quality); err != nil {
+		return "", fmt.Errorf("failed to save original image: %w", err)
+	}
+
+	// Generate full-size version (400x600)
+	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
+	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
+	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save full-size image: %w", err)
+	}
+
+	// Generate thumbnail version (200x300) for listings
+	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
+	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
+	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
+	}
+
+	// Generate small version (100x150) for compact views
+	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
+	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
+	if err := saveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save small image: %w", err)
+	}
+
+	log.Debugf("Successfully processed and cached poster images for media '%s'", slug)
+	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
+}
+
+// ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
+// Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
+// Returns the URL path for the full-size image
+func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality int) (string, error) {
+	// Load the image
+	img, err := openImage(imagePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open image: %w", err)
+	}
+
+	// Determine format from file extension
+	ext := strings.ToLower(filepath.Ext(imagePath))
+	var format string
+	switch ext {
+	case ".jpg", ".jpeg":
+		format = "jpeg"
+	case ".png":
+		format = "png"
+	case ".gif":
+		format = "gif"
+	case ".webp":
+		format = "webp"
+	default:
+		format = "jpeg" // fallback
+	}
+
+	// Save original (unprocessed) for potential future use
+	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
+	if err := saveImage(originalFilePath, img, format, quality); err != nil {
+		return "", fmt.Errorf("failed to save original image: %w", err)
+	}
+
+	// Generate full-size version (400x600)
+	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
+	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
+	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save full-size image: %w", err)
+	}
+
+	// Generate thumbnail version (200x300) for listings
+	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
+	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
+	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
+	}
+
+	// Generate small version (100x150) for compact views
+	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
+	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
+	if err := saveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+		return "", fmt.Errorf("failed to save small image: %w", err)
+	}
+
+	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
 }

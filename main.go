@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"syscall"
 	"embed"
 	"net/http"
 
+	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
@@ -141,8 +144,22 @@ func main() {
 			}
 			go indexer.Initialize(cacheDirectory, libraries)
 
-			// Block main thread to keep goroutines running
-			select {}
+			// Set up signal handling for graceful shutdown
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+			log.Info("Magi started successfully. Press Ctrl+C to stop.")
+
+			// Wait for shutdown signal
+			<-sigChan
+			log.Info("Received shutdown signal, stopping services...")
+
+			// Stop all background services
+			indexer.StopAllIndexers()
+			handlers.StopTokenCleanup()
+			executor.StopScraperScheduler()
+
+			log.Info("Shutdown complete.")
 		},
 	}
 

@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -161,23 +162,44 @@ func ensureTodaysStatsRecorded(today string) error {
 
 // GetTopReadMedias returns the top media by reading activity for the given period
 func GetTopReadMedias(period string, limit int) ([]Media, error) {
-    var dateFilter string
-    switch period {
-    case "today":
-        dateFilter = "AND rs.created_at >= datetime('now', 'start of day')"
-    case "week":
-        dateFilter = "AND rs.created_at >= datetime('now', '-7 days', 'start of day')"
-    case "month":
-        dateFilter = "AND rs.created_at >= datetime('now', '-1 month', 'start of day')"
-    case "year":
-        dateFilter = "AND rs.created_at >= datetime('now', '-1 year', 'start of day')"
-    case "all":
-        dateFilter = ""
-    default:
-        return nil, fmt.Errorf("invalid period: %s", period)
-    }
+	cfg, err := GetAppConfig()
+	if err != nil {
+		// If we can't get config, default to showing all content
+		cfg.ContentRatingLimit = 3
+	}
 
-    query := fmt.Sprintf(`
+	var allowedRatings []string
+	switch cfg.ContentRatingLimit {
+	case 0:
+		allowedRatings = []string{"safe"}
+	case 1:
+		allowedRatings = []string{"safe", "suggestive"}
+	case 2:
+		allowedRatings = []string{"safe", "suggestive", "erotica"}
+	default:
+		allowedRatings = []string{"safe", "suggestive", "erotica", "pornographic"}
+	}
+
+	placeholders := strings.Repeat("?,", len(allowedRatings))
+	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
+
+	var dateFilter string
+	switch period {
+	case "today":
+		dateFilter = "AND rs.created_at >= datetime('now', 'start of day')"
+	case "week":
+		dateFilter = "AND rs.created_at >= datetime('now', '-7 days', 'start of day')"
+	case "month":
+		dateFilter = "AND rs.created_at >= datetime('now', '-1 month', 'start of day')"
+	case "year":
+		dateFilter = "AND rs.created_at >= datetime('now', '-1 year', 'start of day')"
+	case "all":
+		dateFilter = ""
+	default:
+		return nil, fmt.Errorf("invalid period: %s", period)
+	}
+
+	query := fmt.Sprintf(`
         SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, top_reads.read_count, m.created_at, m.updated_at
         FROM media m
         INNER JOIN (
@@ -188,42 +210,41 @@ func GetTopReadMedias(period string, limit int) ([]Media, error) {
             ORDER BY read_count DESC
             LIMIT ?
         ) top_reads ON m.slug = top_reads.media_slug
+        WHERE m.content_rating IN (%s)
         ORDER BY top_reads.read_count DESC
-    `, dateFilter)
+    `, dateFilter, placeholders)
 
-    rows, err := db.Query(query, limit)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	args := make([]interface{}, len(allowedRatings)+1)
+	args[0] = limit
+	for i, rating := range allowedRatings {
+		args[i+1] = rating
+	}
 
-    cfg, err := GetAppConfig()
-    if err != nil {
-        // If we can't get config, default to showing all content
-        cfg.ContentRatingLimit = 3
-    }
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var media []Media
-    for rows.Next() {
-        var m Media
-        var createdAt, updatedAt int64
-        var year sql.NullInt64
-        err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &m.ReadCount, &createdAt, &updatedAt)
-        if err != nil {
-            return nil, err
-        }
-        if year.Valid {
-            m.Year = int(year.Int64)
-        } else {
-            m.Year = 0
-        }
-        m.CreatedAt = time.Unix(createdAt, 0)
-        m.UpdatedAt = time.Unix(updatedAt, 0)
+	var media []Media
+	for rows.Next() {
+		var m Media
+		var createdAt, updatedAt int64
+		var year sql.NullInt64
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &m.ReadCount, &createdAt, &updatedAt)
+		if err != nil {
+			return nil, err
+		}
+		if year.Valid {
+			m.Year = int(year.Int64)
+		} else {
+			m.Year = 0
+		}
+		m.CreatedAt = time.Unix(createdAt, 0)
+		m.UpdatedAt = time.Unix(updatedAt, 0)
 
-        if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
-            media = append(media, m)
-        }
-    }
+		media = append(media, m)
+	}
 
-    return media, rows.Err()
+	return media, rows.Err()
 }

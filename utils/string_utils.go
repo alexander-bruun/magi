@@ -288,7 +288,14 @@ func ExtractChapterName(filename string) string {
 		return fmt.Sprintf("Chapter %d", num)
 	}
 	// Otherwise, return the cleaned filename
-	return RemovePatterns(strings.TrimSuffix(filename, filepath.Ext(filename)))
+	cleaned := RemovePatterns(strings.TrimSuffix(filename, filepath.Ext(filename)))
+	// If the cleaned name is just digits, assume it's a chapter number
+	if regexp.MustCompile(`^\d+$`).MatchString(cleaned) {
+		if num, err := strconv.Atoi(cleaned); err == nil {
+			return fmt.Sprintf("Chapter %d", num)
+		}
+	}
+	return cleaned
 }
 
 // MarkdownToHTML converts markdown text to safe HTML using goldmark

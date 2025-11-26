@@ -7,19 +7,58 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// RegisterHandler renders the registration form page.
-func RegisterHandler(c *fiber.Ctx) error {
+// AuthConfig holds authentication configuration
+type AuthConfig struct {
+	AllowRegistration bool
+	MaxUsers          int
+	UserCount         int
+}
+
+// GetAuthConfig gets authentication configuration
+func GetAuthConfig() (*AuthConfig, error) {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
-		return handleError(c, err)
+		return nil, err
 	}
+
 	count, err := models.CountUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthConfig{
+		AllowRegistration: cfg.AllowRegistration,
+		MaxUsers:          int(cfg.MaxUsers),
+		UserCount:         int(count),
+	}, nil
+}
+
+// CreateUser creates a new user
+func CreateUser(username, password string) error {
+	return models.CreateUser(username, password)
+}
+
+// CanRegister checks if registration is allowed
+func CanRegister() (bool, error) {
+	config, err := GetAuthConfig()
+	if err != nil {
+		return false, err
+	}
+
+	return config.AllowRegistration && (config.MaxUsers == 0 || config.UserCount < config.MaxUsers), nil
+}
+
+// RegisterHandler renders the registration form page.
+func RegisterHandler(c *fiber.Ctx) error {
+	canRegister, err := CanRegister()
 	if err != nil {
 		return handleError(c, err)
 	}
-	if !cfg.AllowRegistration || (cfg.MaxUsers > 0 && count >= cfg.MaxUsers) {
+
+	if !canRegister {
 		return HandleView(c, views.Error("Registration is currently disabled."))
 	}
+
 	return HandleView(c, views.Register())
 }
 
@@ -31,21 +70,19 @@ func LoginHandler(c *fiber.Ctx) error {
 
 // CreateUserHandler processes a registration submission and redirects to login on success.
 func CreateUserHandler(c *fiber.Ctx) error {
-	cfg, err := models.GetAppConfig()
+	canRegister, err := CanRegister()
 	if err != nil {
 		return handleError(c, err)
 	}
-	count, err := models.CountUsers()
-	if err != nil {
-		return handleError(c, err)
-	}
-	if !cfg.AllowRegistration || (cfg.MaxUsers > 0 && count >= cfg.MaxUsers) {
+
+	if !canRegister {
 		return HandleView(c, views.Error("Registration is currently disabled."))
 	}
+
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
-	if err := models.CreateUser(username, password); err != nil {
+	if err := CreateUser(username, password); err != nil {
 		return HandleView(c, views.Error(err.Error()))
 	}
 

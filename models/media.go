@@ -36,6 +36,14 @@ type Media struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
+// EnrichedMedia extends Media with premium countdown information
+type EnrichedMedia struct {
+	Media
+	PremiumCountdown  string
+	LatestChapterSlug  string
+	LatestChapterName  string
+}
+
 // CreateMedia adds a new media to the database
 func CreateMedia(media Media) error {
 	exists, err := MediaExists(media.Slug)
@@ -431,7 +439,28 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 // GetTopMedias returns the top media ordered by vote score (descending).
 // It joins the media table with aggregated votes and respects content rating limits.
 func GetTopMedias(limit int) ([]Media, error) {
-	query := `
+	cfg, err := GetAppConfig()
+	if err != nil {
+		// If we can't get config, default to showing all content
+		cfg.ContentRatingLimit = 3
+	}
+
+	var allowedRatings []string
+	switch cfg.ContentRatingLimit {
+	case 0:
+		allowedRatings = []string{"safe"}
+	case 1:
+		allowedRatings = []string{"safe", "suggestive"}
+	case 2:
+		allowedRatings = []string{"safe", "suggestive", "erotica"}
+	default:
+		allowedRatings = []string{"safe", "suggestive", "erotica", "pornographic"}
+	}
+
+	placeholders := strings.Repeat("?,", len(allowedRatings))
+	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
+
+	query := fmt.Sprintf(`
 	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
 	FROM media m
 	LEFT JOIN (
@@ -439,21 +468,22 @@ func GetTopMedias(limit int) ([]Media, error) {
 		FROM votes
 		GROUP BY media_slug
 	) v ON v.media_slug = m.slug
+	WHERE m.content_rating IN (%s)
 	ORDER BY v.score DESC
 	LIMIT ?
-	`
+	`, placeholders)
 
-	rows, err := db.Query(query, limit)
+	args := make([]interface{}, len(allowedRatings)+1)
+	for i, rating := range allowedRatings {
+		args[i] = rating
+	}
+	args[len(allowedRatings)] = limit
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	cfg, err := GetAppConfig()
-	if err != nil {
-		// If we can't get config, default to showing all content
-		cfg.ContentRatingLimit = 3
-	}
 
 	var mediaList []Media
 	for rows.Next() {
@@ -465,9 +495,7 @@ func GetTopMedias(limit int) ([]Media, error) {
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
 
-		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
-			mediaList = append(mediaList, m)
-		}
+		mediaList = append(mediaList, m)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -692,6 +720,20 @@ func SetFavorite(username, mangaSlug string) error {
 func RemoveFavorite(username, mangaSlug string) error {
 	_, err := db.Exec(`DELETE FROM favorites WHERE user_username = ? AND media_slug = ?`, username, mangaSlug)
 	return err
+}
+
+// ToggleFavorite toggles the favorite status for a user and media
+func ToggleFavorite(username, mangaSlug string) error {
+	isFavorite, err := IsFavoriteForUser(username, mangaSlug)
+	if err != nil {
+		return err
+	}
+
+	if isFavorite {
+		return RemoveFavorite(username, mangaSlug)
+	} else {
+		return SetFavorite(username, mangaSlug)
+	}
 }
 
 // IsFavoriteForUser returns true if the user has favorited the media
@@ -1089,7 +1131,8 @@ func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
 	images := make([]string, pageCount)
 	for i := 0; i < pageCount; i++ {
 		// Generate one-time use token
-		token := utils.GenerateImageAccessToken(media.Slug, chapter.Slug, i+1)
+		validityMinutes := GetImageTokenValidityMinutes()
+		token := utils.GenerateImageAccessTokenWithValidity(media.Slug, chapter.Slug, i+1, validityMinutes)
 		images[i] = fmt.Sprintf("/api/image?token=%s", token)
 	}
 
@@ -1330,4 +1373,16 @@ func paginateMedias(mangas []Media, page, pageSize int) []Media {
 		end = len(mangas)
 	}
 	return mangas[start:end]
+}
+
+// QueryParams holds parsed query parameters for media listings
+type QueryParams struct {
+	Page         int
+	Sort         string
+	Order        string
+	Tags         []string
+	TagMode      string
+	Types        []string
+	LibrarySlug  string
+	SearchFilter string
 }

@@ -74,6 +74,7 @@ templ LibraryTable(libraries []models.Library) {
 										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
 										hx-post={ fmt.Sprintf("/admin/libraries/%s/scan", library.Slug) }
 										hx-trigger="click"
+										hx-disabled-elt="this"
 									>
 										<uk-icon icon="RefreshCw"></uk-icon>
 									</button>

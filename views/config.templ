@@ -160,6 +160,14 @@ templ ConfigForm() {
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p>
             </div>
             <div class="uk-margin">
+                <label class="block mb-2">Premium compression quality</label>
+                <div class="flex items-center space-x-4">
+                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
+                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="premium-value">{ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) }</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with premium role. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
                 <label class="block mb-2">Admin compression quality</label>
                 <div class="flex items-center space-x-4">
                     <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
@@ -174,6 +182,21 @@ templ ConfigForm() {
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="processed-value">{ fmt.Sprintf("%d", cfg.ProcessedImageQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Image token validity (minutes)</label>
+                <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
+                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid. Tokens are consumed after first use.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Premium early access duration (seconds)</label>
+                <input type="number" min="0" class="uk-input" name="premium_early_access_duration" value={ fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration) } />
+                <p class="text-xs text-muted-foreground mt-1">Time in seconds that premium users can access chapters before their release time.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Maximum premium chapters</label>
+                <input type="number" min="0" class="uk-input" name="max_premium_chapters" value={ fmt.Sprintf("%d", cfg.MaxPremiumChapters) } />
+                <p class="text-xs text-muted-foreground mt-1">Maximum number of the most recent chapters that can be marked as premium.</p>
             </div>
         </div>
         

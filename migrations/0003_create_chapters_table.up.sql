@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS chapters (
     file TEXT,
     chapter_cover_url TEXT,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    released_at INTEGER,
     PRIMARY KEY (media_slug, slug)
 );
 

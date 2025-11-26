@@ -8,7 +8,7 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 )
 
-templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool) {
+templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int) {
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -30,7 +30,7 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
 			<div id="chapters-section">
-				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug)
+				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug, premiumDuration, userRole)
 			</div>
 			if userRole == "moderator" || userRole == "admin" {
 				<div class="uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center">
@@ -659,7 +659,7 @@ templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int,
 	</div>
 }
 
-templ Chapters(media models.Media, chapters []models.Chapter) {
+templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration int, userRole string) {
 	<ul class="uk-accordion" uk-accordion>
 		for _, chapter := range chapters {
 			<li class="uk-closed">
@@ -683,8 +683,30 @@ templ Chapters(media models.Media, chapters []models.Chapter) {
 								@InlineEyeToggle(chapter.Read, media.Slug, chapter.Slug)
 							</div>
 						}
+						if chapter.IsPremium {
+							<div class="flex items-center mr-3">
+								<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+									<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+										<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+									</svg>
+									{ getCountdownText(chapter.CreatedAt, premiumDuration) }
+								</span>
+								if userRole == "moderator" || userRole == "admin" {
+									<button
+										type="button"
+										class="ml-2 uk-btn uk-btn-small uk-btn-default uk-border-circle"
+										hx-post={ fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug) }
+										hx-confirm="Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users."
+										title="Unmark as premium"
+										aria-label="Unmark chapter as premium"
+									>
+										<uk-icon icon="Unlock" ratio="0.8"></uk-icon>
+									</button>
+								}
+							</div>
+						}
 						if !chapter.CreatedAt.IsZero() {
-							<span class="text-xs text-gray-500 mr-3">{ chapter.CreatedAt.Format("2006-01-02") }</span>
+							<span class="text-xs text-gray-500">{ chapter.CreatedAt.Format("2006-01-02") }</span>
 						}
 					</div>
 				</div>
@@ -693,11 +715,11 @@ templ Chapters(media models.Media, chapters []models.Chapter) {
 	</ul>
 }
 
-templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse bool) {
-	@Chapters(media, chapters)
+templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse bool, premiumDuration int, userRole string) {
+	@Chapters(media, chapters, premiumDuration, userRole)
 }
 
-templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterSlug string) {
+templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterSlug string, premiumDuration int, userRole string) {
 	{{ toggleURL := fmt.Sprintf("/series/%s", media.Slug) }}
 	{{ buttonText := "" }}
 	{{ buttonIcon := "" }}
@@ -741,7 +763,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 	</div>
 	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
 		<div id="chapters-container" class="p-2">
-			@ChaptersContainer(media, chapters, reverse)
+			@ChaptersContainer(media, chapters, reverse, premiumDuration, userRole)
 		</div>
 	</div>
 }
@@ -1661,3 +1683,81 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 	</div>
 }
 
+templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDuration int) {
+@PageTitle("Premium Chapter - " + media.Name + " - " + chapter.Name)
+@Breadcrumb([]BreadcrumbItem{
+{ Label: "Home", Href: "/" },
+{ Label: "Medias", Href: "/series" },
+{ Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug) },
+{ Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug) },
+})
+
+<div class="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center px-4">
+<div class="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+<!-- Header with lock icon -->
+<div class="bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-center">
+<div class="inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-full mb-4">
+<svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+</svg>
+</div>
+<h1 class="text-2xl font-bold text-white mb-2">Premium Chapter</h1>
+<p class="text-yellow-100">Early access content</p>
+</div>
+
+<!-- Content -->
+<div class="p-8">
+<div class="text-center mb-6">
+<h2 class="text-xl font-semibold text-gray-800 mb-2">{ media.Name }</h2>
+<p class="text-gray-600">{ chapter.Name }</p>
+</div>
+
+<!-- Countdown timer -->
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+<div class="flex items-center justify-center mb-2">
+<svg class="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+</svg>
+<span class="text-sm font-medium text-yellow-800">Available in</span>
+</div>
+<div class="text-center">
+<span class="text-2xl font-bold text-yellow-800" id="countdown">{ getCountdownText(chapter.CreatedAt, premiumDuration) }</span>
+</div>
+</div>
+
+<!-- Call to action -->
+<div class="text-center">
+<p class="text-gray-600 mb-4">Upgrade to premium to access this chapter early!</p>
+<a href="/settings" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-medium rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg">
+<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+</svg>
+Upgrade to Premium
+</a>
+</div>
+
+<!-- Back to series link -->
+<div class="text-center mt-6">
+<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="text-gray-500 hover:text-gray-700 text-sm">
+← Back to { media.Name }
+</a>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+// Update countdown every second
+function updateCountdown() {
+const countdownEl = document.getElementById(countdown);
+if (countdownEl) {
+// This would need server-side calculation for accuracy
+// For now, just refresh the page or implement client-side calculation
+setTimeout(() => {
+location.reload();
+}, 30000); // Refresh every 30 seconds
+}
+}
+updateCountdown();
+</script>
+}

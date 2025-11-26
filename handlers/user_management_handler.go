@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -15,6 +17,14 @@ const (
 	AccountListDownvoted AccountListType = "downvoted"
 	AccountListReading   AccountListType = "reading"
 )
+
+// AccountListConfig holds configuration for account list types
+type AccountListConfig struct {
+	Title          string
+	BreadcrumbLabel string
+	EmptyMessage   string
+	Path           string
+}
 
 // GetAccountListConfig returns the title and breadcrumb for an account list type
 func GetAccountListConfig(listType string) (title string, breadcrumbLabel string, emptyMessage string, path string) {
@@ -32,48 +42,120 @@ func GetAccountListConfig(listType string) (title string, breadcrumbLabel string
 	}
 }
 
-// accountListConfig defines the configuration for each account list type
-type accountListConfig struct {
-	listType      AccountListType
-	getMediasFunc func(models.UserMediaListOptions) ([]models.Media, int, error)
-	getTagsFunc   func(string) ([]string, error)
-	emptyMessage  string
-	path          string
+// AccountListData holds data for account list pages
+type AccountListData struct {
+	Media       []models.Media
+	TotalPages  int
+	AllTags     []string
+	SearchCount int
+	Title       string
+	EmptyMessage string
+	Path        string
 }
 
-// getAccountListConfig returns the configuration for a given list type
-func getAccountListConfig(listType AccountListType) accountListConfig {
-	configs := map[AccountListType]accountListConfig{
-		AccountListFavorites: {
-			listType:      AccountListFavorites,
-			getMediasFunc: models.GetUserFavoritesWithOptions,
-			getTagsFunc:   models.GetTagsForUserFavorites,
-			emptyMessage:  "You have no favorites yet.",
-			path:          "/account/favorites",
-		},
-		AccountListUpvoted: {
-			listType:        AccountListUpvoted,
-			getMediasFunc:   models.GetUserUpvotedWithOptions,
-			getTagsFunc:     models.GetTagsForUserUpvoted,
-			emptyMessage:    "You have not upvoted any media yet.",
-			path:            "/account/upvoted",
-		},
-		AccountListDownvoted: {
-			listType:        AccountListDownvoted,
-			getMediasFunc:   models.GetUserDownvotedWithOptions,
-			getTagsFunc:     models.GetTagsForUserDownvoted,
-			emptyMessage:    "You have not downvoted any media yet.",
-			path:            "/account/downvoted",
-		},
-		AccountListReading: {
-			listType:      AccountListReading,
-			getMediasFunc: models.GetUserReadingWithOptions,
-			getTagsFunc:   models.GetTagsForUserReading,
-			emptyMessage:  "You are not reading any media right now.",
-			path:          "/account/reading",
-		},
+// GetAccountListData retrieves data for user account lists (favorites, upvoted, etc.)
+func GetAccountListData(listType AccountListType, params models.QueryParams, userName string) (*AccountListData, error) {
+	title, _, emptyMessage, path := GetAccountListConfig(string(listType))
+
+	var getMediasFunc func(models.UserMediaListOptions) ([]models.Media, int, error)
+	var getTagsFunc func(string) ([]string, error)
+
+	switch listType {
+	case AccountListFavorites:
+		getMediasFunc = models.GetUserFavoritesWithOptions
+		getTagsFunc = models.GetTagsForUserFavorites
+	case AccountListUpvoted:
+		getMediasFunc = models.GetUserUpvotedWithOptions
+		getTagsFunc = models.GetTagsForUserUpvoted
+	case AccountListDownvoted:
+		getMediasFunc = models.GetUserDownvotedWithOptions
+		getTagsFunc = models.GetTagsForUserDownvoted
+	case AccountListReading:
+		getMediasFunc = models.GetUserReadingWithOptions
+		getTagsFunc = models.GetTagsForUserReading
+	default:
+		return nil, fmt.Errorf("unknown list type: %s", listType)
 	}
-	return configs[listType]
+
+	opts := models.UserMediaListOptions{
+		Username:     userName,
+		SearchFilter: params.SearchFilter,
+		Page:         params.Page,
+		PageSize:     16, // defaultPageSize
+		SortBy:       params.Sort,
+		SortOrder:    params.Order,
+		Tags:         params.Tags,
+		TagMode:      params.TagMode,
+		Types:        params.Types,
+	}
+
+	media, count, err := getMediasFunc(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := CalculateTotalPages(int64(count), 16)
+
+	allTags, err := getTagsFunc(userName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AccountListData{
+		Media:        media,
+		TotalPages:   totalPages,
+		AllTags:      allTags,
+		SearchCount:  int(count),
+		Title:        title,
+		EmptyMessage: emptyMessage,
+		Path:         path,
+	}, nil
+}
+
+// UserMediaListData holds data for user media lists (favorites, reading, etc.)
+type UserMediaListData struct {
+	Media      []models.Media
+	TotalCount int
+	Tags       []string
+}
+
+// GetUserMediaListData gets media list data for a user
+func GetUserMediaListData(userName, listType string, options models.UserMediaListOptions) (*UserMediaListData, error) {
+	var getMediasFunc func(models.UserMediaListOptions) ([]models.Media, int, error)
+	var getTagsFunc func(string) ([]string, error)
+
+	switch listType {
+	case "favorites":
+		getMediasFunc = models.GetUserFavoritesWithOptions
+		getTagsFunc = models.GetTagsForUserFavorites
+	case "upvoted":
+		getMediasFunc = models.GetUserUpvotedWithOptions
+		getTagsFunc = models.GetTagsForUserUpvoted
+	case "downvoted":
+		getMediasFunc = models.GetUserDownvotedWithOptions
+		getTagsFunc = models.GetTagsForUserDownvoted
+	case "reading":
+		getMediasFunc = models.GetUserReadingWithOptions
+		getTagsFunc = models.GetTagsForUserReading
+	default:
+		return nil, nil // Unknown list type
+	}
+
+	media, count, err := getMediasFunc(options)
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := getTagsFunc(userName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserMediaListData{
+		Media:      media,
+		TotalCount: count,
+		Tags:       tags,
+	}, nil
 }
 
 // HandleAccountList is the unified handler for all account media lists
@@ -84,38 +166,11 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 			return fiber.ErrUnauthorized
 		}
 
-		config := getAccountListConfig(listType)
 		params := ParseQueryParams(c)
-		pageSize := 16
 
-		// Get accessible libraries for the current user
-		accessibleLibraries, err := GetUserAccessibleLibraries(c)
+		data, err := GetAccountListData(listType, params, userName)
 		if err != nil {
 			return handleError(c, err)
-		}
-
-		opts := models.UserMediaListOptions{
-			Username:            userName,
-			Page:                params.Page,
-			PageSize:            pageSize,
-			SortBy:              params.Sort,
-			SortOrder:           params.Order,
-			Tags:                params.Tags,
-			TagMode:             params.TagMode,
-			SearchFilter:        params.SearchFilter,
-			AccessibleLibraries: accessibleLibraries,
-		}
-
-		media, total, err := config.getMediasFunc(opts)
-		if err != nil {
-			return handleError(c, err)
-		}
-
-		totalPages := CalculateTotalPages(int64(total), pageSize)
-
-		allTags, tagsErr := config.getTagsFunc(userName)
-		if tagsErr != nil {
-			return handleError(c, tagsErr)
 		}
 
 		// HTMX fragment support
@@ -123,13 +178,13 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 			target := GetHTMXTarget(c)
 			if target == "account-listing" {
 				return HandleView(c, views.AccountMediaListingWithTags(
-					media, params.Page, totalPages, params.Sort, params.Order,
-					config.path, config.emptyMessage, params.Tags, params.TagMode, allTags, params.SearchFilter,
+					data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
+					data.Path, data.EmptyMessage, params.Tags, params.TagMode, data.AllTags, params.SearchFilter,
 				))
 			} else if target == "account-media-list-results" {
 				return HandleView(c, views.MediaListingFragment(
-					media, params.Page, totalPages, params.Sort, params.Order,
-					config.emptyMessage, config.path, "account-media-list-results",
+					data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
+					data.EmptyMessage, data.Path, "account-media-list-results",
 					params.Tags, params.TagMode, nil, params.SearchFilter,
 				))
 			}
@@ -138,8 +193,8 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 		// All views now call the standard AccountPageLayout function
 		title, breadcrumbLabel, _, _ := GetAccountListConfig(string(listType))
 		return HandleView(c, views.AccountPageLayout(
-			title, breadcrumbLabel, config.path, media, params.Page, totalPages, params.Sort, params.Order,
-			config.emptyMessage, allTags, params.Tags, params.TagMode, params.SearchFilter,
+			title, breadcrumbLabel, data.Path, data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
+			data.EmptyMessage, data.AllTags, params.Tags, params.TagMode, params.SearchFilter,
 		))
 	}
 }
@@ -175,8 +230,9 @@ func HandlePermissionsManagement(c *fiber.Ctx) error {
 func HandleUserBan(c *fiber.Ctx) error {
 	username := c.Params("username")
 
-	models.UpdateUserRole(username, "reader")
-	models.BanUser(username)
+	if err := models.BanUserWithDemotion(username); err != nil {
+		return handleError(c, err)
+	}
 
 	users, err := models.GetUsers()
 	if err != nil {

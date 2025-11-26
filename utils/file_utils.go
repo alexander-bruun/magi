@@ -161,6 +161,8 @@ func ExtractFirstImage(archivePath, outputFolder string) error {
 		return extractFirstImageFromZip(archivePath, outputFolder)
 	case ".rar", ".cbr":
 		return extractFirstImageFromRar(archivePath, outputFolder)
+	case ".epub":
+		return extractFirstImageFromEPUB(archivePath, outputFolder)
 	default:
 		return fmt.Errorf("unsupported archive format: %s", ext)
 	}
@@ -227,6 +229,41 @@ func extractFirstImageFromRar(rarPath, outputFolder string) error {
 		return fmt.Errorf("no image files found in archive")
 	}
 	return nil
+}
+
+func extractFirstImageFromEPUB(epubPath, outputFolder string) error {
+	reader, err := zip.OpenReader(epubPath)
+	if err != nil {
+		return fmt.Errorf("invalid or corrupt epub file: %w", err)
+	}
+	defer reader.Close()
+
+	// For EPUB files, prioritize images in common image directories
+	imageDirs := []string{"OEBPS/Images/", "Images/", "images/", "OEBPS/images/"}
+	
+	// First, try to find images in prioritized directories
+	for _, imgDir := range imageDirs {
+		for _, file := range reader.File {
+			if strings.HasPrefix(file.Name, imgDir) && isImageFile(file.Name) {
+				if err := extractZipFile(file, outputFolder); err != nil {
+					return fmt.Errorf("failed to extract image: %w", err)
+				}
+				return nil
+			}
+		}
+	}
+	
+	// If no images found in prioritized directories, extract the first image found
+	for _, file := range reader.File {
+		if isImageFile(file.Name) {
+			if err := extractZipFile(file, outputFolder); err != nil {
+				return fmt.Errorf("failed to extract image: %w", err)
+			}
+			return nil
+		}
+	}
+	
+	return fmt.Errorf("no image files found in epub")
 }
 
 func extractZipFile(file *zip.File, outputFolder string) error {
@@ -360,7 +397,7 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string, quality int) 
 	}
 
 	log.Debugf("Successfully processed and cached poster for manga '%s': %s", slug, croppedFile)
-	return fmt.Sprintf("/api/images/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
+	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
 }
 
 // ListImagesInManga returns a list of image paths/URIs from a manga file or directory.
@@ -488,7 +525,7 @@ func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]i
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/images/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
+	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
 }
 
 // GetCacheDirectory returns the cache directory path

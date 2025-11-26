@@ -37,10 +37,10 @@ var (
 var (
 	cacheDataDirectory = ""
 	cacheDirMutex      sync.RWMutex
-	activeIndexers     = make(map[string]*Indexer)
-	activeIndexersMutex sync.Mutex
+	activeIndexers     sync.Map
 	scannedPathCount   int
 	scanMutex          sync.Mutex
+	indexingRunning   sync.Map
 )
 
 // Indexer represents the state of an indexer
@@ -98,7 +98,7 @@ func NewIndexer(library models.Library) *Indexer {
 func (idx *Indexer) Start() {
 	idx.Cron = cron.New()
 	var err error
-	idx.CronJobID, err = idx.Cron.AddFunc(idx.Library.Cron, idx.runIndexingJob)
+	idx.CronJobID, err = idx.Cron.AddFunc(idx.Library.Cron, func() { idx.runIndexingJob() })
 	if err != nil {
 		log.Errorf("Error adding cron job: %s", err)
 		return
@@ -106,9 +106,7 @@ func (idx *Indexer) Start() {
 	idx.Cron.Start()
 	idx.CronRunning = true
 
-	activeIndexersMutex.Lock()
-	activeIndexers[idx.Library.Slug] = idx
-	activeIndexersMutex.Unlock()
+	activeIndexers.Store(idx.Library.Slug, idx)
 
 	log.Infof("Library indexer '%s' registered with cron schedule '%s'",
 		idx.Library.Name, idx.Library.Cron)
@@ -129,20 +127,22 @@ func (idx *Indexer) Stop() {
 			idx.CronRunning = false
 			log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
 		}
-		activeIndexersMutex.Lock()
-		delete(activeIndexers, idx.Library.Slug)
-		activeIndexersMutex.Unlock()
+		activeIndexers.Delete(idx.Library.Slug)
 		close(idx.stop)
 	})
 }
 
 // runIndexingJob performs the indexing job
-func (idx *Indexer) runIndexingJob() {
-	if idx.JobRunning {
-		log.Infof("Indexing job for library '%s' already running, skipping scheduled run", idx.Library.Name)
-		return
+func (idx *Indexer) runIndexingJob() bool {
+	if val, ok := indexingRunning.Load(idx.Library.Slug); ok && val.(bool) {
+		log.Infof("Indexing job for library '%s' already running, skipping run", idx.Library.Name)
+		return false
 	}
+	indexingRunning.Store(idx.Library.Slug, true)
+
 	defer func() {
+		indexingRunning.Delete(idx.Library.Slug)
+
 		idx.JobRunning = false
 		// Reset the scanned path count after indexing completes
 		scanMutex.Lock()
@@ -196,7 +196,7 @@ func (idx *Indexer) runIndexingJob() {
 		select {
 		case <-idx.stop:
 			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
-			return
+			return true
 		default:
 		}
 	}
@@ -268,11 +268,13 @@ func (idx *Indexer) runIndexingJob() {
 			log.Errorf("Failed to cleanup orphaned duplicates for library '%s': %s", library.Name, err)
 		}
 	}(idx.Library)
+
+	return true
 }
 
 // RunIndexingJob triggers the indexer job immediately
-func (idx *Indexer) RunIndexingJob() {
-	idx.runIndexingJob()
+func (idx *Indexer) RunIndexingJob() bool {
+	return idx.runIndexingJob()
 }
 
 func (idx *Indexer) processFolder(folder string) error {
@@ -451,39 +453,30 @@ func (nl *NotificationListener) Notify(notification models.Notification) {
 
 func (nl *NotificationListener) handleLibraryCreated(newLibrary models.Library) {
 	indexer := NewIndexer(newLibrary)
-	activeIndexersMutex.Lock()
-	activeIndexers[newLibrary.Slug] = indexer
-	activeIndexersMutex.Unlock()
+	activeIndexers.Store(newLibrary.Slug, indexer)
 	go indexer.Start()
 }
 
 func (nl *NotificationListener) handleLibraryUpdated(updatedLibrary models.Library) {
-	activeIndexersMutex.Lock()
-	if existingIndexer, exists := activeIndexers[updatedLibrary.Slug]; exists {
-		activeIndexersMutex.Unlock()
+	if val, ok := activeIndexers.Load(updatedLibrary.Slug); ok {
+		existingIndexer := val.(*Indexer)
 		existingIndexer.Stop()
-		activeIndexersMutex.Lock()
-		delete(activeIndexers, updatedLibrary.Slug)
+		activeIndexers.Delete(updatedLibrary.Slug)
 	}
-	activeIndexers[updatedLibrary.Slug] = nil // Placeholder while creating new indexer
-	activeIndexersMutex.Unlock()
+	activeIndexers.Store(updatedLibrary.Slug, nil) // Placeholder while creating new indexer
 
 	newIndexer := NewIndexer(updatedLibrary)
-	activeIndexersMutex.Lock()
-	activeIndexers[updatedLibrary.Slug] = newIndexer
-	activeIndexersMutex.Unlock()
+	activeIndexers.Store(updatedLibrary.Slug, newIndexer)
 	go newIndexer.Start()
 }
 
 func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Library) {
-	activeIndexersMutex.Lock()
-	if existingIndexer, exists := activeIndexers[deletedLibrary.Slug]; exists {
-		activeIndexersMutex.Unlock()
+	if val, ok := activeIndexers.Load(deletedLibrary.Slug); ok {
+		existingIndexer := val.(*Indexer)
 		existingIndexer.Stop()
 		// Stop already removes from the map, so no need to delete again
 		return
 	}
-	activeIndexersMutex.Unlock()
 }
 
 // determineContentType determines if a path should be indexed as media
@@ -525,4 +518,17 @@ func containsEPUBFiles(dirPath string) bool {
 	})
 
 	return hasEPUB
+}
+
+// StopAllIndexers stops all running indexers
+func StopAllIndexers() {
+	activeIndexers.Range(func(key, value interface{}) bool {
+		indexer := value.(*Indexer)
+		if indexer != nil {
+			log.Infof("Stopping indexer for library: %s", key.(string))
+			close(indexer.stop)
+		}
+		activeIndexers.Delete(key)
+		return true
+	})
 }

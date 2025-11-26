@@ -14,6 +14,30 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// CreateLibraryData holds data for creating a library
+type CreateLibraryData struct {
+	Library models.Library
+}
+
+// CreateLibrary creates a new library and returns all libraries
+func CreateLibrary(library models.Library) ([]models.Library, error) {
+	if err := models.CreateLibrary(library); err != nil {
+		return nil, err
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return nil, err
+	}
+
+	return libraries, nil
+}
+
+// GetLibraries retrieves all libraries
+func GetLibraries() ([]models.Library, error) {
+	return models.GetLibraries()
+}
+
 // HandleLibraries renders the libraries dashboard with the current library list.
 func HandleLibraries(c *fiber.Ctx) error {
 	return HandleView(c, views.Libraries())
@@ -40,11 +64,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	if err := models.CreateLibrary(library); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	libraries, err := models.GetLibraries()
+	libraries, err := CreateLibrary(library)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
@@ -167,9 +187,12 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	// preserve the same logging and lifecycle as scheduled jobs.
 	idx := indexer.NewIndexer(*library)
 	// RunIndexingJob will process all folders for the library.
-	idx.RunIndexingJob()
+	if ran := idx.RunIndexingJob(); !ran {
+		c.Set("HX-Trigger", `{"showNotification": {"message": "Indexing already in progress for this library", "type": "warning"}}`)
+		return c.SendString("")
+	}
 
-	return c.SendString(`<uk-icon icon="Check"></uk-icon>`)
+	return c.SendString(`<uk-icon icon="check"></uk-icon>`)
 }
 
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.

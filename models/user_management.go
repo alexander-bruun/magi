@@ -27,7 +27,7 @@ type BannedIP struct {
 }
 
 // roleHierarchy defines the order of roles from lowest to highest.
-var roleHierarchy = []string{"reader", "moderator", "admin"}
+var roleHierarchy = []string{"reader", "premium", "moderator", "admin"}
 
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
@@ -163,6 +163,32 @@ func UpdateUserRole(username, newRole string) error {
 	return nil
 }
 
+// UpdateUserRoleTx updates the role of a user within a transaction.
+func UpdateUserRoleTx(tx *sql.Tx, username, newRole string) error {
+	if !isValidRole(newRole) {
+		return errors.New("invalid role")
+	}
+
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return err
+	}
+
+	user.Role = newRole
+	query := `
+	UPDATE users
+	SET role = ?
+	WHERE username = ?
+	`
+
+	_, err = tx.Exec(query, user.Role, username)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CountUsers returns the total number of users.
 func CountUsers() (int64, error) {
 	return CountRecords(`SELECT COUNT(*) FROM users`)
@@ -271,6 +297,52 @@ func BanUser(username string) error {
 
 	log.Infof("User '%s' has been banned", username)
 	return nil
+}
+
+// BanUserTx bans a user by setting the Banned field to true within a transaction.
+func BanUserTx(tx *sql.Tx, username string) error {
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return fmt.Errorf("failed to find user to ban: %w", err)
+	}
+
+	if user.Banned {
+		return fmt.Errorf("user '%s' is already banned", username)
+	}
+
+	user.Banned = true
+	query := `
+	UPDATE users
+	SET banned = ?
+	WHERE username = ?
+	`
+
+	_, err = tx.Exec(query, user.Banned, username)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("User '%s' has been banned", username)
+	return nil
+}
+
+// BanUserWithDemotion demotes a user to reader role and bans them atomically.
+func BanUserWithDemotion(username string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := UpdateUserRoleTx(tx, username, "reader"); err != nil {
+		return err
+	}
+
+	if err := BanUserTx(tx, username); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // UnbanUser unbans a user by setting the Banned field to false.

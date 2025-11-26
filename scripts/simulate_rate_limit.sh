@@ -20,7 +20,7 @@ make_request() {
 
 # Make many requests to trigger rate limiting
 for i in $(seq 1 $REQUESTS); do
-    make_request "$BASE_URL/api/images/test.jpg" "$i"
+    make_request "$BASE_URL/api/posters/test.jpg" "$i"
     sleep $DELAY
 done
 

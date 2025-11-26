@@ -515,6 +515,11 @@ func GetTOC(epubPath string) string {
 
 // GetBookContent extracts all readable content from an EPUB file as HTML
 func GetBookContent(epubPath, mangaSlug, chapterSlug string) string {
+	return GetBookContentWithValidity(epubPath, mangaSlug, chapterSlug, 5)
+}
+
+// GetBookContentWithValidity extracts all readable content from an EPUB file as HTML with custom token validity
+func GetBookContentWithValidity(epubPath, mangaSlug, chapterSlug string, validityMinutes int) string {
 	r, err := zip.OpenReader(epubPath)
 	if err != nil {
 		return "Error opening EPUB: " + err.Error()
@@ -584,7 +589,7 @@ func GetBookContent(epubPath, mangaSlug, chapterSlug string) string {
 
 		htmlContent := string(chapterData)
 		// Clean the HTML and rewrite image paths
-		htmlContent = cleanHTMLContent(htmlContent, mangaSlug, chapterSlug, chapter.Path, opfDir)
+		htmlContent = cleanHTMLContentWithValidity(htmlContent, mangaSlug, chapterSlug, chapter.Path, opfDir, validityMinutes)
 
 		// Add chapter ID
 		content.WriteString(fmt.Sprintf(`<div id="chapter-%s">`, chapter.Path))
@@ -602,6 +607,11 @@ func GetBookContent(epubPath, mangaSlug, chapterSlug string) string {
 
 // cleanHTMLContent performs basic cleaning of HTML content from EPUB
 func cleanHTMLContent(html, mangaSlug, chapterSlug, chapterPath, opfDir string) string {
+	return cleanHTMLContentWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir, 5)
+}
+
+// cleanHTMLContentWithValidity performs basic cleaning of HTML content from EPUB with custom token validity
+func cleanHTMLContentWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir string, validityMinutes int) string {
 	// Remove DOCTYPE, html, head, body tags
 	html = strings.ReplaceAll(html, "<!DOCTYPE html>", "")
 	html = strings.ReplaceAll(html, "<html>", "")
@@ -649,14 +659,18 @@ func cleanHTMLContent(html, mangaSlug, chapterSlug, chapterPath, opfDir string) 
 		html = html[:start] + html[start+end+1:]
 	}
 
-	// Rewrite img src attributes to point to asset endpoint
-	html = rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir)
-
-	return html
+        // Rewrite img src attributes to point to asset endpoint
+        html = rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir, validityMinutes)
+        return html
 }
 
 // rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint with tokens
 func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir string) string {
+	return rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir, 5)
+}
+
+// rewriteAssetSourcesWithValidity rewrites img src and link href attributes to point to the asset endpoint with tokens and custom validity
+func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir string, validityMinutes int) string {
 	// Use regex to find img tags with src attributes
 	imgRe := regexp.MustCompile(`<img[^>]*src=(["']?)([^"'\s>]+)[^>]*>`)
 	html = imgRe.ReplaceAllStringFunc(html, func(match string) string {
@@ -719,7 +733,7 @@ func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir strin
 		}
 
 		// Generate a token for this asset
-		token := GenerateImageAccessTokenWithAsset(mangaSlug, chapterSlug, 0, cleanPath) // Use page 0 for light novel assets
+		token := GenerateImageAccessTokenWithAssetAndValidity(mangaSlug, chapterSlug, 0, cleanPath, validityMinutes) // Use page 0 for light novel assets
 		log.Debugf("Generated token for light novel asset: media=%s, chapter=%s, original=%s, clean=%s, token=%s", mangaSlug, chapterSlug, originalSrc, cleanPath, token)
 
 		// Build the asset URL with token
@@ -794,7 +808,7 @@ func rewriteAssetSources(html, mangaSlug, chapterSlug, chapterPath, opfDir strin
 		}
 
 		// Generate a token for this asset
-		token := GenerateImageAccessTokenWithAsset(mangaSlug, chapterSlug, 0, cleanPath)
+		token := GenerateImageAccessTokenWithAssetAndValidity(mangaSlug, chapterSlug, 0, cleanPath, validityMinutes)
 		log.Infof("Generated token for link asset %s: %s", cleanPath, token)
 
 		// Build the asset URL with token

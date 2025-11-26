@@ -54,8 +54,13 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 		sessionToken := c.Cookies("session_token")
 
 		if sessionToken != "" {
-			if err := validateSessionToken(c, sessionToken, requiredRole); err == nil {
+			err := validateSessionToken(c, sessionToken, requiredRole)
+			if err == nil {
 				return c.Next()
+			}
+			if IsHTMXRequest(c) && err == fiber.ErrForbidden {
+				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied", "status": "destructive"}}`)
+				return c.Status(fiber.StatusForbidden).SendString("")
 			}
 		}
 
@@ -273,6 +278,10 @@ func BotDetectionMiddleware() fiber.Handler {
 			c.Locals("bot_check_error", err)
 		} else if banned {
 			log.Infof("Blocking banned IP: %s", ip)
+			if IsHTMXRequest(c) {
+				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied", "status": "destructive"}}`)
+				return c.Status(fiber.StatusForbidden).SendString("")
+			}
 			return c.Status(fiber.StatusForbidden).SendString("Access denied")
 		}
 
@@ -504,6 +513,10 @@ func ImageProtectionMiddleware() fiber.Handler {
 		// If score is very high, block outright
 		if score >= 80 {
 			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
+			if IsHTMXRequest(c) {
+				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: suspicious activity detected", "status": "destructive"}}`)
+				return c.Status(fiber.StatusForbidden).SendString("")
+			}
 			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
 		}
 		

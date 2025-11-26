@@ -273,6 +273,16 @@ func (t *TimestampPair) FromUnixTimestamps(createdAt, updatedAt int64) {
 	t.UpdatedAt = time.Unix(updatedAt, 0)
 }
 
+// PingDB checks if the database connection is healthy
+func PingDB() error {
+	return db.Ping()
+}
+
+// BeginTx starts a new database transaction
+func BeginTx() (*sql.Tx, error) {
+	return db.Begin()
+}
+
 // CountRecords returns count from a query
 func CountRecords(query string, args ...interface{}) (int64, error) {
 	var count int64
@@ -283,5 +293,11 @@ func CountRecords(query string, args ...interface{}) (int64, error) {
 // DeleteRecord executes a delete query
 func DeleteRecord(query string, args ...interface{}) error {
 	_, err := db.Exec(query, args...)
+	return err
+}
+
+// DeleteRecordTx executes a delete query within a transaction
+func DeleteRecordTx(tx *sql.Tx, query string, args ...interface{}) error {
+	_, err := tx.Exec(query, args...)
 	return err
 }

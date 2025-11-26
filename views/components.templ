@@ -124,6 +124,8 @@ templ ProfileCard(user models.User) {
                     <h3  class="role-admin uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
                 } else if user.Role == "moderator" {
                     <h3 class="role-moderator uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
+                } else if user.Role == "premium" {
+                    <h3 class="role-premium uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
                 } else {
                     <h3 class="role-reader uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
                 }
@@ -167,7 +169,7 @@ templ MediaSlider(media []models.Media, width int, height int, truncate bool, fi
 
 // Showcase renders a highlighted horizontal showcase of the newest media.
 // It shows a cover, title, chapter count and a simple rating based on votes.
-templ Showcase(media []models.Media) {
+templ Showcase(media []models.EnrichedMedia) {
     if len(media) == 0 {
         @EmptyState("No media have been indexed yet.")
     } else {
@@ -181,7 +183,7 @@ templ Showcase(media []models.Media) {
                             {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
                         }
                         <li>
-                            <a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block">
+                            <a hx-get={ fmt.Sprintf("/series/%s", media.Slug) } hx-target="#content" hx-push-url="true" class="block">
                                 <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
                                         @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
@@ -191,11 +193,23 @@ templ Showcase(media []models.Media) {
                                         }
                                         <div class="absolute left-2 top-2">
                                             <span class="uk-badge shadow-sm" style="background: hsl(var(--background)); box-shadow: 0 4px 10px rgba(0,0,0,0.12);">{ strings.ToUpper(derived) }</span>
+                                            if media.PremiumCountdown != "" {
+                                                <span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12); margin-left: 0.25rem;">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    { media.PremiumCountdown }
+                                                </span>
+                                            }
                                         </div>
                                     </div>
                                     <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ media.Name }</h3>
                                     <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
-                                        <a href={ templ.URL(fmt.Sprintf("/series/%s/%d", media.Slug, media.FileCount)) } class="flex-1 text-left truncate text-sm text-gray-400">Chapter { media.FileCount }</a>
+                                        if media.LatestChapterSlug != "" {
+                                            <a href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)) } hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug) } hx-target="#content" hx-push-url="true" onclick="event.stopPropagation()" class="flex-1 text-left truncate text-sm text-gray-400">{ media.LatestChapterName }</a>
+                                        } else {
+                                            <span class="flex-1 text-left truncate text-sm text-gray-400">No chapters</span>
+                                        }
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
                                             <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>

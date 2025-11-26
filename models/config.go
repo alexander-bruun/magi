@@ -29,8 +29,16 @@ type AppConfig struct {
     ReaderCompressionQuality    int // JPEG quality for reader role (0-100)
     ModeratorCompressionQuality int // JPEG quality for moderator role (0-100)
     AdminCompressionQuality     int // JPEG quality for admin role (0-100)
+    PremiumCompressionQuality   int // JPEG quality for premium role (0-100)
     AnonymousCompressionQuality int // JPEG quality for anonymous users (0-100)
     ProcessedImageQuality       int // JPEG quality for processed images (thumbnails, covers) (0-100)
+    
+    // Image token settings
+    ImageTokenValidityMinutes int // validity time for image access tokens in minutes
+    
+    // Premium early access settings
+    PremiumEarlyAccessDuration int // duration in seconds that premium users can access chapters early
+    MaxPremiumChapters         int // maximum number of chapters that can be premium (latest chapters)
 }
 
 // Implement metadata.ConfigProvider interface
@@ -68,8 +76,12 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(reader_compression_quality, 70),
         COALESCE(moderator_compression_quality, 85),
         COALESCE(admin_compression_quality, 100),
+        COALESCE(premium_compression_quality, 90),
         COALESCE(anonymous_compression_quality, 70),
-        COALESCE(processed_image_quality, 85)
+        COALESCE(processed_image_quality, 85),
+        COALESCE(image_token_validity_minutes, 5),
+        COALESCE(premium_early_access_duration, 3600),
+        COALESCE(max_premium_chapters, 3)
         FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
@@ -87,12 +99,16 @@ func loadConfigFromDB() (AppConfig, error) {
     var readerCompressionQuality int
     var moderatorCompressionQuality int
     var adminCompressionQuality int
+    var premiumCompressionQuality int
     var anonymousCompressionQuality int
     var processedImageQuality int
+    var imageTokenValidityMinutes int
+    var premiumEarlyAccessDuration int
+    var maxPremiumChapters int
     
     if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, 
         &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &anonymousCompressionQuality, &processedImageQuality); err != nil {
+        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
@@ -112,8 +128,12 @@ func loadConfigFromDB() (AppConfig, error) {
                 ReaderCompressionQuality:    70,
                 ModeratorCompressionQuality: 85,
                 AdminCompressionQuality:     100,
+                PremiumCompressionQuality:   90,
                 AnonymousCompressionQuality: 70,
                 ProcessedImageQuality:       85,
+                ImageTokenValidityMinutes:   5,
+                PremiumEarlyAccessDuration:  3600,
+                MaxPremiumChapters:         3,
             }, nil
         }
         return AppConfig{}, err
@@ -136,8 +156,12 @@ func loadConfigFromDB() (AppConfig, error) {
         ReaderCompressionQuality:    readerCompressionQuality,
         ModeratorCompressionQuality: moderatorCompressionQuality,
         AdminCompressionQuality:     adminCompressionQuality,
+        PremiumCompressionQuality:   premiumCompressionQuality,
         AnonymousCompressionQuality: anonymousCompressionQuality,
         ProcessedImageQuality:       processedImageQuality,
+        ImageTokenValidityMinutes:   imageTokenValidityMinutes,
+        PremiumEarlyAccessDuration:  premiumEarlyAccessDuration,
+        MaxPremiumChapters:         maxPremiumChapters,
     }, nil
 }
 
@@ -207,7 +231,7 @@ func UpdateRateLimitConfig(enabled bool, requests, window int) (AppConfig, error
 }
 
 // UpdateCompressionConfig updates the compression quality settings per role
-func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality int) (AppConfig, error) {
+func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality int) (AppConfig, error) {
     // Ensure qualities are within valid range (0-100)
     if readerQuality < 0 {
         readerQuality = 0
@@ -227,6 +251,12 @@ func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anon
     if adminQuality > 100 {
         adminQuality = 100
     }
+    if premiumQuality < 0 {
+        premiumQuality = 0
+    }
+    if premiumQuality > 100 {
+        premiumQuality = 100
+    }
     if anonymousQuality < 0 {
         anonymousQuality = 0
     }
@@ -239,8 +269,34 @@ func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, anon
     if processedQuality > 100 {
         processedQuality = 100
     }
-    _, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, anonymous_compression_quality = ?, processed_image_quality = ? WHERE id = 1`,
-        readerQuality, moderatorQuality, adminQuality, anonymousQuality, processedQuality)
+    _, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, premium_compression_quality = ?, anonymous_compression_quality = ?, processed_image_quality = ? WHERE id = 1`,
+        readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdatePremiumEarlyAccessConfig updates the premium early access duration
+func UpdatePremiumEarlyAccessConfig(duration int) (AppConfig, error) {
+    // Ensure duration is positive
+    if duration < 0 {
+        duration = 0
+    }
+    _, err := db.Exec(`UPDATE app_config SET premium_early_access_duration = ? WHERE id = 1`, duration)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdateMaxPremiumChaptersConfig updates the maximum number of premium chapters
+func UpdateMaxPremiumChaptersConfig(maxChapters int) (AppConfig, error) {
+    // Ensure maxChapters is positive
+    if maxChapters < 0 {
+        maxChapters = 0
+    }
+    _, err := db.Exec(`UPDATE app_config SET max_premium_chapters = ? WHERE id = 1`, maxChapters)
     if err != nil {
         return AppConfig{}, err
     }
@@ -282,6 +338,22 @@ func UpdateBotDetectionConfig(enabled bool, seriesThreshold, chapterThreshold, d
     return RefreshAppConfig()
 }
 
+// UpdateImageTokenConfig updates the image token validity time configuration
+func UpdateImageTokenConfig(validityMinutes int) (AppConfig, error) {
+    // Ensure validity is within reasonable range (1-60 minutes)
+    if validityMinutes < 1 {
+        validityMinutes = 1
+    }
+    if validityMinutes > 60 {
+        validityMinutes = 60
+    }
+    _, err := db.Exec(`UPDATE app_config SET image_token_validity_minutes = ? WHERE id = 1`, validityMinutes)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
 // ContentRatingToInt converts a content rating string to its integer level
 // 0=safe, 1=suggestive, 2=erotica, 3=pornographic
 // https://api.mangadex.org/docs/3-enumerations/#manga-content-rating
@@ -316,6 +388,8 @@ func GetCompressionQualityForRole(role string) int {
             return 100
         case "moderator":
             return 85
+        case "premium":
+            return 90
         case "anonymous":
             return 70
         default:
@@ -328,11 +402,23 @@ func GetCompressionQualityForRole(role string) int {
         return cfg.AdminCompressionQuality
     case "moderator":
         return cfg.ModeratorCompressionQuality
+    case "premium":
+        return cfg.PremiumCompressionQuality
     case "anonymous":
         return cfg.AnonymousCompressionQuality
     default:
         return cfg.ReaderCompressionQuality
     }
+}
+
+// GetImageTokenValidityMinutes returns the configured validity time for image tokens in minutes
+func GetImageTokenValidityMinutes() int {
+    cfg, err := GetAppConfig()
+    if err != nil {
+        // Return default if config can't be loaded
+        return 5
+    }
+    return cfg.ImageTokenValidityMinutes
 }
 
 // GetProcessedImageQuality returns the JPEG compression quality for processed images (thumbnails, covers)

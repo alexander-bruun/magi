@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   REGISTRY_IMAGE: alexbruun/magi
@@ -60,6 +61,33 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up GoLang
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.3'
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   build:
     name: Build partial (${{ matrix.platform }})
@@ -168,6 +196,20 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ needs.semantic.outputs.version }}
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          scan-ref: '${{ env.REGISTRY_IMAGE }}:${{ needs.semantic.outputs.version }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
   create-release:
     name: Create Release
     permissions:
@@ -178,6 +220,7 @@ jobs:
       - build
       - merge
       - lint
+      - security
     if: needs.semantic.outputs.version != ''  # Run only if a new version is available
 
     steps:
