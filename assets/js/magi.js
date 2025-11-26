@@ -1561,7 +1561,7 @@
         tooltipDiv.style.display = 'none';
       });
       
-      console.log('[JobStatus] Indicator found, initializing WebSocket connection');
+      console.debug('[JobStatus] Indicator found, initializing WebSocket connection');
       connect();
     }
     
