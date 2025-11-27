@@ -205,7 +205,9 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 										{{ _, up, down, _ := models.GetMediaVotes(m.Slug) }}
 										<li class="flex items-center gap-3 py-2">
 											<div class="w-10 h-14 overflow-hidden rounded-sm">
-												@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
+												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true">
+													@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
+												</a>
 											</div>
 											<div class="flex-1">
 												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
