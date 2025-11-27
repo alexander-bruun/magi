@@ -21,3 +21,12 @@ If there is a series that exists as multiple media types, we should suffix -type
 Add the chapter read counter to the series page to the left of the release date of each chapter.
 When not mod / admin the hover effect should not be present when hovering the poster on the series page.
 Use the thumb image on the home page to optimize page load times.
+Take the global content rating into consideration when using metadat api's.
+Update the series page chapters list to start in descending.
+Update the goto first ... buttons on the series page to say chapter or volume depending on what the files use.
+Add some space between the dropdown in the top right navbar between icon and page name.
+Add new sorting items for the series page: most popular, most read - based off the sort type, show a badge on top of the image indicating the sort by value (not when its by title since this is always present above the poster).
+Updating the poster through the metadata editor, should trigger a new updated at timestamp for the series.
+Rework the voting presentation, instead of amount of thumbs up / down minused. So a number out of 10 should be calculated based off the up&down-votes.
+Make the poster in the top 10 results clickable to go to the series.
+When opening the search modal, bring the text field into focus so the user doesnt have to click it.
