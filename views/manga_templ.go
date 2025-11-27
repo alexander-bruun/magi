@@ -2074,7 +2074,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 					}
 				}
 				if ch.IsPremium {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "<span class=\"text-yellow-500 inline-flex items-center\" title=\"Premium\"><uk-icon icon=\"Star\" ratio=\"0.8\"></uk-icon></span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "<span class=\"text-yellow-500 inline-flex items-center\" title=\"Premium\"><uk-icon icon=\"Clock\" ratio=\"0.8\"></uk-icon></span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

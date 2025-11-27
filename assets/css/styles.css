@@ -194,7 +194,7 @@ html {
 }
 
 .icon-pad {
-  padding-right: 5px;
+  margin-right: var(--space-sm);
 }
 
 .modal-body-transparent {
