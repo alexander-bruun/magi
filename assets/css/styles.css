@@ -796,6 +796,16 @@ main.site-main::-webkit-scrollbar-thumb:hover {
     margin-left: 0 !important;
   }
 
+  /* Enable pull-to-refresh on mobile by making body scrollable */
+  body {
+    overflow: auto;
+  }
+
+  main.site-main {
+    height: auto;
+    overflow-y: visible;
+  }
+
   #sidebar-backdrop {
     position: fixed;
     inset: 0;
