@@ -43,7 +43,7 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{
 			{Label: "Home", Href: "/"},
-			{Label: "Medias", Href: "/series"},
+			{Label: "Series", Href: "/series"},
 			{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {

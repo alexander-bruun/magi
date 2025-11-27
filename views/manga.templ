@@ -12,7 +12,7 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
-		{ Label: "Medias", Href: "/series" },
+		{ Label: "Series", Href: "/series" },
 		{ Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug) },
 	})
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ media.Name }</h1>
