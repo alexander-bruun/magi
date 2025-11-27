@@ -1406,6 +1406,24 @@
       }
     };
 
+    // Search Modal Focus Manager
+    const SearchModalManager = {
+      init() {
+        const searchModal = document.getElementById('search-modal');
+        if (!searchModal) return;
+
+        // Focus search input when modal is shown
+        UIkit.util.on(searchModal, 'shown', () => {
+          setTimeout(() => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+              searchInput.focus();
+            }
+          }, 100); // Small delay to ensure modal is fully rendered
+        });
+      }
+    };
+
     // Main initialization
     function init() {
       safeExecute(() => SidebarManager.init(), 'Sidebar init');
@@ -1416,6 +1434,7 @@
       safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
       safeExecute(() => DropdownManager.init(), 'Dropdown manager');
       safeExecute(() => ThemeManager.init(), 'Theme manager');
+      safeExecute(() => SearchModalManager.init(), 'Search modal focus');
       safeExecute(() => CropperManager.init(), 'Cropper manager');
       safeExecute(() => ScraperManager.init(), 'Scraper manager');
       safeExecute(() => ConfigManager.init(), 'Config manager');
