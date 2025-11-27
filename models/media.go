@@ -34,6 +34,7 @@ type Media struct {
 	Tags             []string  `json:"tags"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
+	PremiumCountdown string    `json:"premium_countdown,omitempty"`
 }
 
 // EnrichedMedia extends Media with premium countdown information

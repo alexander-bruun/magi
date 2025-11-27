@@ -6,6 +6,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // AccountListType represents the type of account list
@@ -95,6 +96,19 @@ func GetAccountListData(listType AccountListType, params models.QueryParams, use
 	}
 
 	totalPages := CalculateTotalPages(int64(count), 16)
+
+	// For account pages, we don't need premium countdowns, but populate anyway for consistency
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return nil, err
+	}
+	for i := range media {
+		_, countdown, err := models.HasPremiumChapters(media[i].Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
+		if err != nil {
+			log.Errorf("Error checking premium chapters for %s: %v", media[i].Slug, err)
+		}
+		media[i].PremiumCountdown = countdown
+	}
 
 	allTags, err := getTagsFunc(userName)
 	if err != nil {

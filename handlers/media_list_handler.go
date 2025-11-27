@@ -71,6 +71,15 @@ func GetMediaListData(params models.QueryParams, userName string) (*MediaListDat
 
 	totalPages := CalculateTotalPages(int64(count), defaultPageSize)
 
+	// Enrich media with premium countdowns
+	for i := range media {
+		_, countdown, err := models.HasPremiumChapters(media[i].Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
+		if err != nil {
+			log.Errorf("Error checking premium chapters for %s: %v", media[i].Slug, err)
+		}
+		media[i].PremiumCountdown = countdown
+	}
+
 	// Fetch all known tags for the dropdown
 	allTags, err := models.GetAllTags()
 	if err != nil {
@@ -167,7 +176,12 @@ func HandleMedia(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this media"), fiber.StatusForbidden)
 	}
 
-	chapters, err := models.GetChapters(slug)
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config: %v", err)
+	}
+
+	chapters, err := models.GetChaptersByMediaSlug(slug, 1000, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -201,11 +215,6 @@ func HandleMedia(c *fiber.Ctx) error {
 		if err == nil {
 			lastReadChapterSlug = lastReadChapter
 		}
-	}
-	
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		log.Errorf("Failed to get app config: %v", err)
 	}
 	
 	if IsHTMXRequest(c) && c.Query("reverse") != "" {

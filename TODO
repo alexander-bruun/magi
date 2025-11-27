@@ -21,8 +21,6 @@ Add the chapter read counter to the series page to the left of the release date 
 When not mod / admin the hover effect should not be present when hovering the poster on the series page.
 Use the thumb image on the home page to optimize page load times.
 Take the global content rating into consideration when using metadat api's.
-Update the series page chapters list to start in descending.
 Update the goto first ... buttons on the series page to say chapter or volume depending on what the files use.
 Add some space between the dropdown in the top right navbar between icon and page name.
 Add new sorting items for the series page: most popular, most read - based off the sort type, show a badge on top of the image indicating the sort by value (not when its by title since this is always present above the poster).
-Updating the poster through the metadata editor, should trigger a new updated at timestamp for the series.
