@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 const anilistBaseURL = "https://graphql.anilist.co"
@@ -365,6 +366,8 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 			}
 		}
 	}
+
+	log.Debugf("Extracted %d tags for AniList media %v: %v", len(metadata.Tags), media["id"], metadata.Tags)
 
 	// Extract synonyms
 	if synonyms, ok := media["synonyms"].([]interface{}); ok {

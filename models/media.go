@@ -124,6 +124,9 @@ func getMedia(slug string, applyContentFilter bool) (*Media, error) {
 	// Load tags for this media if any
 	if tags, err := GetTagsForMedia(m.Slug); err == nil {
 		m.Tags = tags
+		log.Debugf("Loaded %d tags for media '%s': %v", len(tags), m.Slug, tags)
+	} else {
+		log.Errorf("Failed to load tags for media '%s': %v", m.Slug, err)
 	}
 	return &m, nil
 }

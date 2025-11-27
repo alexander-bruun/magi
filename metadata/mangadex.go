@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 const mangadexBaseURL = "https://api.mangadex.org"
@@ -195,6 +196,8 @@ func (m *MediadexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *
 			}
 		}
 	}
+
+	log.Debugf("Extracted %d tags for MangaDex media %s: %v", len(metadata.Tags), detail.ID, metadata.Tags)
 
 	// Extract alternative titles
 	for _, altTitleMap := range detail.Attributes.AltTitles {

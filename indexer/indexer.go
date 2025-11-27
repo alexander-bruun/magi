@@ -94,6 +94,16 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 
 	slug := utils.Sluggify(cleanedName)
 
+	// Get metadata provider if configured
+	config, err := models.GetAppConfig()
+	var provider metadata.Provider
+	if err == nil {
+		provider, err = metadata.GetProviderFromConfig(&config)
+		if err != nil {
+			log.Debugf("No metadata provider configured")
+		}
+	}
+
 	// If media already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
 	// Use GetMediaUnfiltered to check globally, then verify it's from the same library
@@ -108,6 +118,17 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if existingMedia != nil {
+		// If existing media has no tags, try to fetch metadata to get tags
+		if len(existingMedia.Tags) == 0 && provider != nil {
+			meta, err := provider.FindBestMatch(cleanedName)
+			if err == nil && meta != nil && len(meta.Tags) > 0 {
+				if err := models.SetTagsForMedia(slug, meta.Tags); err != nil {
+					log.Errorf("Failed to set tags for existing media '%s': %s", slug, err)
+				} else {
+					log.Debugf("Fetched and set %d tags for existing media '%s'", len(meta.Tags), slug)
+				}
+			}
+		}
 		// Detect if this is a different folder being added to an existing media
 		if existingMedia.Path != "" && existingMedia.Path != absolutePath {
 			// Count chapters in the new folder
@@ -475,9 +496,12 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 
 	// Persist tags from metadata provider (if any)
 	if meta != nil && len(meta.Tags) > 0 {
+		log.Debugf("Setting %d tags for new media '%s': %v", len(meta.Tags), slug, meta.Tags)
 		if err := models.SetTagsForMedia(slug, meta.Tags); err != nil {
 			log.Errorf("Failed to set tags for media '%s': %s", slug, err)
 		}
+	} else if meta != nil {
+		log.Debugf("No tags found in metadata for new media '%s'", slug)
 	}
 
 	added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, false)
@@ -520,6 +544,7 @@ func createMediaFromMetadata(meta *metadata.MediaMetadata, name, slug, librarySl
 		media.Status = meta.Status
 		media.ContentRating = meta.ContentRating
 		media.Author = meta.Author
+		media.Tags = meta.Tags
 	}
 	
 	return media

@@ -104,9 +104,12 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 
 	// Persist tags
 	if len(meta.Tags) > 0 {
+		log.Debugf("Setting %d tags for media '%s' from metadata update: %v", len(meta.Tags), existingMedia.Slug, meta.Tags)
 		if err := models.SetTagsForMedia(existingMedia.Slug, meta.Tags); err != nil {
 			log.Warnf("Failed to persist tags: %v", err)
 		}
+	} else {
+		log.Debugf("No tags in metadata for media '%s'", existingMedia.Slug)
 	}
 
 	if err := models.UpdateMedia(existingMedia); err != nil {
