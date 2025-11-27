@@ -195,6 +195,36 @@ func UpdateUserRoleTx(tx *sql.Tx, username, newRole string) error {
 	return nil
 }
 
+// ResetUserPassword resets a user's password to a new hashed password.
+func ResetUserPassword(username, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	query := `
+	UPDATE users
+	SET password = ?
+	WHERE username = ?
+	`
+
+	result, err := db.Exec(query, string(hashedPassword), username)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user '%s' not found", username)
+	}
+
+	return nil
+}
+
 // CountUsers returns the total number of users.
 func CountUsers() (int64, error) {
 	return CountRecords(`SELECT COUNT(*) FROM users`)

@@ -281,8 +281,42 @@ func main() {
 	migrateCmd.AddCommand(migrateUpCmd)
 	migrateCmd.AddCommand(migrateDownCmd)
 
+	var userCmd = &cobra.Command{
+		Use:   "user",
+		Short: "User management commands",
+	}
+
+	var resetPasswordCmd = &cobra.Command{
+		Use:   "reset-password [username] [new-password]",
+		Short: "Reset a user's password",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			username := args[0]
+			newPassword := args[1]
+
+			// Initialize database without auto-migrations
+			err := models.InitializeWithMigration(dataDirectory, false)
+			if err != nil {
+				log.Errorf("Failed to connect to database: %v", err)
+				os.Exit(1)
+			}
+			defer models.Close()
+
+			err = models.ResetUserPassword(username, newPassword)
+			if err != nil {
+				log.Errorf("Failed to reset password for user '%s': %v", username, err)
+				os.Exit(1)
+			}
+
+			log.Infof("Password reset successfully for user '%s'", username)
+		},
+	}
+
+	userCmd.AddCommand(resetPasswordCmd)
+
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(migrateCmd)
+	rootCmd.AddCommand(userCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)
