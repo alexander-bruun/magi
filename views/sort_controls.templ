@@ -100,7 +100,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                         Sort by
                     }
                 </button>
-                <div id="sort-dropdown" class="uk-drop uk-dropdown" data-uk-dropdown="mode: click; pos: bottom-left; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+                <div id="sort-dropdown" class="uk-drop uk-dropdown" data-uk-dropdown="mode: click; pos: bottom-left; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
                     <ul class="uk-nav uk-dropdown-nav">
                         for _, s := range sorts {
                             <li>
@@ -191,7 +191,7 @@ templ TagsDropdownButton(path string, targetID string, parentID string, currentS
         <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
             <uk-icon icon="Tag"></uk-icon>
         </button>
-        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
                 <div class="uk-width-1-1 uk-margin-small">
                     <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">

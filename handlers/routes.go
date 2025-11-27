@@ -212,10 +212,10 @@ func Initialize(app *fiber.App, cacheDirectory string, port string) {
 	media.Get("/:media<[A-Za-z0-9_-]+>/favorite/fragment", HandleMediaFavoriteFragment)
 
 	// Metadata routes
-	media.Get("/:media<[A-Za-z0-9_-]+>/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataMedia)
+	media.Get("/:media/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
+	media.Post("/:media/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
+	media.Post("/:media/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
+	media.Post("/:media/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataMedia)
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("moderator"), HandleDeleteMedia)
 
 	// Poster selector

@@ -11,7 +11,7 @@ templ TagsDropdown(path string, targetID string, currentSort string, currentOrde
         <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
             <uk-icon icon="Tag"></uk-icon>
         </button>
-        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
                 <input type="hidden" name="sort" value={ currentSort }>
                 <input type="hidden" name="order" value={ currentOrder }>
@@ -43,8 +43,8 @@ templ TagsFilterButton(path string, targetID string) {
 }
 
 // Drop-only to be placed outside button group
-templ TagsFilterDrop(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
-    <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+templ TagsFilterDrop(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string) {
+    <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
         <form id="tag-filter-form" class="uk-form">
             <input type="hidden" name="sort" value={ currentSort }>
             <input type="hidden" name="order" value={ currentOrder }>
@@ -60,8 +60,7 @@ templ TagsFilterDrop(path string, targetID string, currentSort string, currentOr
                     </div>
                 </div>
             </div>
-            <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
-                @TagsFragment(allTags, selectedTags)
+            <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;" hx-get="/series/tags/fragment" hx-trigger="revealed" hx-target="this" hx-swap="innerHTML">
             </div>
         </form>
     </div>
@@ -128,7 +127,7 @@ templ TagsFragment(allTags []string, selected []string) {
     for _, v := range selected {
         {{ selectedMap[strings.ToLower(strings.TrimSpace(v))] = true }}
     }
-    <div class="grid grid-cols-2 gap-x-6 gap-y-3" style="padding-top: 5px;">
+    <div class="grid grid-cols-1 gap-y-3" style="padding-top: 5px;">
         for _, tag := range allTags {
             {{ isChecked := selectedMap[strings.ToLower(tag)] }}
             <div class="uk-margin-small flex items-center">

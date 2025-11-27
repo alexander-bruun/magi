@@ -262,11 +262,6 @@ func HandleTags(c *fiber.Ctx) error {
 
 // HandleTagsFragment returns an HTMX-ready fragment with tag checkboxes
 func HandleTagsFragment(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the main series page
-	if !IsHTMXRequest(c) {
-		return c.Redirect("/series")
-	}
-
 	tags, err := models.GetAllTags()
 	if err != nil {
 		return handleError(c, err)
@@ -289,7 +284,7 @@ func HandleTagsFragment(c *fiber.Ctx) error {
 		}
 	}
 	// Render fragment directly without layout wrapper
-	return HandleView(c, views.TagsFragment(tags, selectedTags))
+	return renderComponent(c, views.TagsFragment(tags, selectedTags))
 }
 
 // templEscape provides a minimal HTML escape for values inserted into the fragment

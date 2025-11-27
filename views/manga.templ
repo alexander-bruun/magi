@@ -343,6 +343,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string) {
 				<form
 					hx-get={ fmt.Sprintf("/series/%s/metadata/form", media.Slug) }
 					hx-target="#modal-content"
+					action={ fmt.Sprintf("/series/%s/metadata/form", media.Slug) }
 					aria-label="Search for media metadata"
 				>
 					<div class="folder-row mb-4 flex items-center">
