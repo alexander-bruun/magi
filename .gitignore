@@ -1,12 +1,11 @@
-node_modules/
+!scripts/scrapers/*.sh
 .tmp/
 builds/
-scripts/scrapers/**
-!scripts/scrapers/*.sh
 cache/
+magi
 magi.db
+magi.db-journal
 magi.db-shm
 magi.db-wal
-magi.db-journal
-magi
-TODO
+node_modules/
+scripts/scrapers/**

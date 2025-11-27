@@ -1,0 +1,13 @@
+Make metadata api configurable in the library creation, if not selected fall back to the global.
+User comments and reviews: Allow users to leave comments on media or chapters, and write reviews with ratings.
+User profiles and avatars: Add profile pages with reading stats, favorite lists, and customizable avatars.
+Following system: Let users follow other users to see their activity or shared lists.
+External service sync: Sync reading progress, ratings, and lists with MyAnimeList, AniList, or MangaDex accounts.
+Collections/series grouping: Group related media into custom collections (e.g., "Batman Universe" or "Shonen Jump").
+Themes and UI customization: Dark/light modes, custom color schemes, or resizable panels.
+Progressive Web App (PWA): Enable installation on mobile devices for a native app-like experience.
+Offline reading: Cache chapters locally for offline access (especially useful for mobile).
+Download support: Allow downloading chapters or entire media as archives.
+Email notifications: Notify users of new chapters in followed series or library updates.
+Backup and restore: Automated database backups with restore functionality.
+Advanced statistics dashboard: Charts for user activity, popular media, or system performance.
