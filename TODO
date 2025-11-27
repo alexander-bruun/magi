@@ -12,7 +12,6 @@ Backup and restore: Automated database backups with restore functionality.
 Advanced statistics dashboard: Charts for user activity, popular media, or system performance.
 Figure out why tags are not downloaded.
 In the admin users page, let's update the user list to a table with pagination and a simple search field.
-When on the reader page, let's add a yellow star to the chapters / volumes that are premium.
 If there is not enough results for top 10 most popular, let's sort the remainder by most reads.
 Standardize the log output, and use proper log levels for the logs.
 Return the correct http error codes on errors.
