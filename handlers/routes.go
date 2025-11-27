@@ -17,14 +17,26 @@ import (
 // savedCacheDirectory stores the cache directory path for image downloads
 var savedCacheDirectory string
 
+// savedBackupDirectory stores the backup directory path
+var savedBackupDirectory string
+
+// shutdownChan is used to trigger application shutdown
+var shutdownChan = make(chan struct{})
+
 // tokenCleanupStop is used to stop the token cleanup goroutine
 var tokenCleanupStop = make(chan struct{})
 
+// GetShutdownChan returns the shutdown channel for triggering application shutdown
+func GetShutdownChan() <-chan struct{} {
+	return shutdownChan
+}
+
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, cacheDirectory string, port string) {
+func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, port string) {
 	log.Info("Initializing application routes and middleware")
 
 	savedCacheDirectory = cacheDirectory
+	savedBackupDirectory = backupDirectory
 
 	// ========================================
 	// Initialize console logger for WebSocket streaming
@@ -349,6 +361,14 @@ func Initialize(app *fiber.App, cacheDirectory string, port string) {
 	config.Get("", HandleConfiguration)
 	config.Post("", HandleConfigurationUpdate)
 	config.Get("/logs", HandleConsoleLogsWebSocketUpgrade)
+
+	// ========================================
+	// Backups
+	// ========================================
+	backups := app.Group("/admin/backups", AuthMiddleware("admin"))
+	backups.Get("", HandleBackups)
+	backups.Post("/create", HandleCreateBackup)
+	backups.Post("/restore/:filename", HandleRestoreBackup)
 
 	// ========================================
 	// Job Status WebSocket

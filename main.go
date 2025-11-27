@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"syscall"
 	"embed"
 	"net/http"
 
+	"github.com/alexander-bruun/magi/cmd"
 	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/indexer"
@@ -35,6 +35,7 @@ func main() {
 	var dataDirectory string
 	var logLevel string
 	var cacheDirectory string
+	var backupDirectory string
 	var port string
 
 	var defaultDataDirectory string
@@ -89,14 +90,24 @@ func main() {
 				cacheDirectory = filepath.Join(dataDirectory, "cache")
 			}
 
+			// Determine backup directory
+			if backupDirectory == "" {
+				backupDirectory = filepath.Join(dataDirectory, "backups")
+			}
+
 			// Ensure the directories exist
 			if err := os.MkdirAll(cacheDirectory, os.ModePerm); err != nil {
 				log.Errorf("Failed to create cache directory: %s", err)
 				return
 			}
+			if err := os.MkdirAll(backupDirectory, os.ModePerm); err != nil {
+				log.Errorf("Failed to create backup directory: %s", err)
+				return
+			}
 
 			log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
 			log.Debugf("Using '%s/...' as the image caching location", cacheDirectory)
+			log.Debugf("Using '%s/...' as the backup location", backupDirectory)
 
 			// Initialize console log streaming for admin panel
 			utils.InitializeConsoleLogger()
@@ -134,7 +145,7 @@ func main() {
 			})
 
 			// Start API in its own goroutine
-			go handlers.Initialize(app, cacheDirectory, port)
+			go handlers.Initialize(app, cacheDirectory, backupDirectory, port)
 
 			// Start Indexer in its own goroutine
 			libraries, err := models.GetLibraries()
@@ -151,8 +162,12 @@ func main() {
 			log.Info("Magi started successfully. Press Ctrl+C to stop.")
 
 			// Wait for shutdown signal
-			<-sigChan
-			log.Info("Received shutdown signal, stopping services...")
+			select {
+			case <-sigChan:
+				log.Info("Received shutdown signal, stopping services...")
+			case <-handlers.GetShutdownChan():
+				log.Info("Received internal shutdown request, stopping services...")
+			}
 
 			// Stop all background services
 			indexer.StopAllIndexers()
@@ -167,156 +182,15 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
 	rootCmd.PersistentFlags().StringVar(&cacheDirectory, "cache-directory", os.Getenv("MAGI_CACHE_DIR"), "Path to the cache directory")
+	rootCmd.PersistentFlags().StringVar(&backupDirectory, "backup-directory", os.Getenv("MAGI_BACKUP_DIR"), "Path to the backup directory")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", os.Getenv("LOG_LEVEL"), "Set the log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&port, "port", os.Getenv("PORT"), "Port to run the server on")
 
-	var versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print the version number",
-		Run: func(cmd *cobra.Command, args []string) {
-			log.Infof("Version: %s", Version)
-		},
-	}
-
-	var migrateCmd = &cobra.Command{
-		Use:   "migrate",
-		Short: "Run database migrations",
-	}
-
-	var migrateUpCmd = &cobra.Command{
-		Use:   "up [version|all]",
-		Short: "Run migrations up to a specific version or all pending migrations",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			var version int
-			var err error
-			if args[0] == "all" {
-				// Apply all pending migrations
-				err = models.InitializeWithMigration(dataDirectory, true)
-				if err != nil {
-					log.Errorf("Failed to apply migrations: %v", err)
-					os.Exit(1)
-				}
-				log.Info("All pending migrations applied successfully")
-				return
-			} else {
-				version, err = strconv.Atoi(args[0])
-				if err != nil {
-					log.Errorf("Invalid version number: %s", args[0])
-					os.Exit(1)
-				}
-			}
-
-			// Initialize database without auto-migrations
-			err = models.InitializeWithMigration(dataDirectory, false)
-			if err != nil {
-				log.Errorf("Failed to connect to database: %v", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			err = models.MigrateUp("migrations", version)
-			if err != nil {
-				log.Errorf("Migration failed: %v", err)
-				os.Exit(1)
-			}
-
-			log.Infof("Migration up %d completed successfully", version)
-		},
-	}
-
-	var migrateDownCmd = &cobra.Command{
-		Use:   "down [version|all]",
-		Short: "Rollback migrations down to a specific version or rollback all migrations",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			var version int
-			var err error
-			if args[0] == "all" {
-				// Rollback all migrations
-				err = models.InitializeWithMigration(dataDirectory, false)
-				if err != nil {
-					log.Errorf("Failed to connect to database: %v", err)
-					os.Exit(1)
-				}
-				defer models.Close()
-
-				// Get all applied migrations and rollback them in reverse order
-				// For simplicity, rollback from highest to lowest
-				for v := 17; v >= 1; v-- {
-					err = models.MigrateDown("migrations", v)
-					if err != nil {
-						log.Errorf("Failed to rollback migration %d: %v", v, err)
-						os.Exit(1)
-					}
-				}
-				log.Info("All migrations rolled back successfully")
-				return
-			} else {
-				version, err = strconv.Atoi(args[0])
-				if err != nil {
-					log.Errorf("Invalid version number: %s", args[0])
-					os.Exit(1)
-				}
-			}
-
-			// Initialize database without auto-migrations
-			err = models.InitializeWithMigration(dataDirectory, false)
-			if err != nil {
-				log.Errorf("Failed to connect to database: %v", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			err = models.MigrateDown("migrations", version)
-			if err != nil {
-				log.Errorf("Migration failed: %v", err)
-				os.Exit(1)
-			}
-
-			log.Infof("Migration down %d completed successfully", version)
-		},
-	}
-
-	migrateCmd.AddCommand(migrateUpCmd)
-	migrateCmd.AddCommand(migrateDownCmd)
-
-	var userCmd = &cobra.Command{
-		Use:   "user",
-		Short: "User management commands",
-	}
-
-	var resetPasswordCmd = &cobra.Command{
-		Use:   "reset-password [username] [new-password]",
-		Short: "Reset a user's password",
-		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			username := args[0]
-			newPassword := args[1]
-
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(dataDirectory, false)
-			if err != nil {
-				log.Errorf("Failed to connect to database: %v", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			err = models.ResetUserPassword(username, newPassword)
-			if err != nil {
-				log.Errorf("Failed to reset password for user '%s': %v", username, err)
-				os.Exit(1)
-			}
-
-			log.Infof("Password reset successfully for user '%s'", username)
-		},
-	}
-
-	userCmd.AddCommand(resetPasswordCmd)
-
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(migrateCmd)
-	rootCmd.AddCommand(userCmd)
+	// Add commands
+	rootCmd.AddCommand(cmd.NewVersionCmd(Version))
+	rootCmd.AddCommand(cmd.NewMigrateCmd(&dataDirectory))
+	rootCmd.AddCommand(cmd.NewUserCmd(&dataDirectory))
+	rootCmd.AddCommand(cmd.NewBackupCmd(&dataDirectory, &backupDirectory))
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)

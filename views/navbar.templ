@@ -137,6 +137,7 @@ templ Navbar(userRole string, currentPath string) {
 								<li><a href="/admin/libraries" hx-get="/admin/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
 								<li><a href="/admin/config" hx-get="/admin/config" hx-target="#content" hx-push-url="true"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
 								<li><a href="/admin/banned-ips" hx-get="/admin/banned-ips" hx-target="#content" hx-push-url="true"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
+								<li><a href="/admin/backups" hx-get="/admin/backups" hx-target="#content" hx-push-url="true"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							if userRole == "" {

@@ -7,7 +7,6 @@ Progressive Web App (PWA): Enable installation on mobile devices for a native ap
 Offline reading: Cache chapters locally for offline access (especially useful for mobile).
 Download support: Allow downloading chapters or entire media as archives.
 Email notifications: Notify users of new chapters in followed series or library updates.
-Backup and restore: Automated database backups with restore functionality.
 Advanced statistics dashboard: Charts for user activity, popular media, or system performance.
 In the admin users page, let's update the user list to a table with pagination and a simple search field.
 If there is not enough results for top 10 most popular, let's sort the remainder by most reads.

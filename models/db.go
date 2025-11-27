@@ -19,6 +19,13 @@ import (
 
 var db *sql.DB
 
+// BackupInfo represents information about a backup
+type BackupInfo struct {
+	Filename string
+	Size     int64
+	Created  time.Time
+}
+
 // Initialize connects to the SQLite database and optionally applies necessary migrations
 func Initialize(cacheDirectory string) error {
 	return InitializeWithMigration(cacheDirectory, true)

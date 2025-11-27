@@ -526,9 +526,8 @@ func StopAllIndexers() {
 		indexer := value.(*Indexer)
 		if indexer != nil {
 			log.Infof("Stopping indexer for library: %s", key.(string))
-			close(indexer.stop)
+			indexer.Stop()
 		}
-		activeIndexers.Delete(key)
 		return true
 	})
 }

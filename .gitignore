@@ -1,5 +1,6 @@
 !scripts/scrapers/*.sh
 .tmp/
+backups/
 builds/
 cache/
 magi
