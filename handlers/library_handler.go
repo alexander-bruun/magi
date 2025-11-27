@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -14,9 +15,13 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
-// CreateLibraryData holds data for creating a library
-type CreateLibraryData struct {
-	Library models.Library
+// LibraryFormData holds form data for creating/updating libraries
+type LibraryFormData struct {
+	Name             string   `form:"name"`
+	Description      string   `form:"description"`
+	Cron             string   `form:"cron"`
+	Folders          []string `form:"folders"`
+	MetadataProvider string   `form:"metadata_provider"`
 }
 
 // CreateLibrary creates a new library and returns all libraries
@@ -59,9 +64,24 @@ func setCommonHeaders(c *fiber.Ctx) {
 
 // HandleCreateLibrary persists a new library and returns the refreshed table markup.
 func HandleCreateLibrary(c *fiber.Ctx) error {
-	var library models.Library
-	if err := c.BodyParser(&library); err != nil {
+	var formData LibraryFormData
+	if err := c.BodyParser(&formData); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	// Convert form data to Library model
+	library := models.Library{
+		Name:        formData.Name,
+		Description: formData.Description,
+		Cron:        formData.Cron,
+		Folders:     formData.Folders,
+	}
+
+	// Handle metadata_provider: empty string means use global (NULL in DB)
+	if formData.MetadataProvider != "" {
+		library.MetadataProvider = sql.NullString{String: formData.MetadataProvider, Valid: true}
+	} else {
+		library.MetadataProvider = sql.NullString{Valid: false}
 	}
 
 	libraries, err := CreateLibrary(library)
@@ -117,9 +137,24 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 
 // HandleUpdateLibrary updates library information and returns the refreshed listing.
 func HandleUpdateLibrary(c *fiber.Ctx) error {
-	var library models.Library
-	if err := c.BodyParser(&library); err != nil {
+	var formData LibraryFormData
+	if err := c.BodyParser(&formData); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	// Convert form data to Library model
+	library := models.Library{
+		Name:        formData.Name,
+		Description: formData.Description,
+		Cron:        formData.Cron,
+		Folders:     formData.Folders,
+	}
+
+	// Handle metadata_provider: empty string means use global (NULL in DB)
+	if formData.MetadataProvider != "" {
+		library.MetadataProvider = sql.NullString{String: formData.MetadataProvider, Valid: true}
+	} else {
+		library.MetadataProvider = sql.NullString{Valid: false}
 	}
 
 	library.Slug = c.Params("slug")

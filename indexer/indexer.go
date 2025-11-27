@@ -98,9 +98,15 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	config, err := models.GetAppConfig()
 	var provider metadata.Provider
 	if err == nil {
-		provider, err = metadata.GetProviderFromConfig(&config)
-		if err != nil {
-			log.Debugf("No metadata provider configured")
+		// Get library to check for library-specific metadata provider
+		library, libErr := models.GetLibrary(librarySlug)
+		if libErr != nil {
+			log.Warnf("Failed to get library '%s': %v", librarySlug, libErr)
+		} else {
+			provider, err = metadata.GetProviderForLibrary(library.MetadataProvider, &config)
+			if err != nil {
+				log.Debugf("No metadata provider configured for library '%s'", librarySlug)
+			}
 		}
 	}
 
@@ -262,16 +268,21 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	}
 
 	// Media does not exist yet — fetch metadata, create it and index chapters
-	config, err := models.GetAppConfig()
+	config, err = models.GetAppConfig()
 	var meta *metadata.MediaMetadata
-	var provider metadata.Provider
 	if err == nil {
-		provider, err = metadata.GetProviderFromConfig(&config)
-		if err == nil {
-			meta, err = provider.FindBestMatch(cleanedName)
-		if err != nil {
-			log.Errorf("Failed to find metadata for '%s': %s", cleanedName, err.Error())
-		}
+		// Get library to check for library-specific metadata provider
+		library, libErr := models.GetLibrary(librarySlug)
+		if libErr != nil {
+			log.Warnf("Failed to get library '%s': %v", librarySlug, libErr)
+		} else {
+			provider, err = metadata.GetProviderForLibrary(library.MetadataProvider, &config)
+			if err == nil {
+				meta, err = provider.FindBestMatch(cleanedName)
+				if err != nil {
+					log.Errorf("Failed to find metadata for '%s': %s", cleanedName, err.Error())
+				}
+			}
 		}
 	}
 

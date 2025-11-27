@@ -1,4 +1,3 @@
-Make metadata api configurable in the library creation, if not selected fall back to the global.
 User comments and reviews: Allow users to leave comments on media or chapters, and write reviews with ratings.
 User profiles and avatars: Add profile pages with reading stats, favorite lists, and customizable avatars.
 Following system: Let users follow other users to see their activity or shared lists.

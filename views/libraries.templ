@@ -39,6 +39,7 @@ templ LibraryTable(libraries []models.Library) {
 					<th class="text-center">ID</th>
 					<th class="text-center">Name</th>
 					<th class="text-center">Cron</th>
+					<th class="text-center">Metadata Provider</th>
 					<th class="text-center">Folders</th>
 					<th class="text-center">Actions</th>
 				</tr>
@@ -59,6 +60,15 @@ templ LibraryTable(libraries []models.Library) {
 						<td>
 							<div class="mt-2 flex items-center justify-center">
 								{ library.Cron }
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								if library.MetadataProvider.Valid && library.MetadataProvider.String != "" {
+									{ library.MetadataProvider.String }
+								} else {
+									<span class="text-gray-500">Global</span>
+								}
 							</div>
 						</td>
 						<td>
@@ -171,6 +181,15 @@ templ FormContent(library models.Library, editing bool) {
 				rows="5"
 				required
 			/>
+		</div>
+		<div class="uk-margin">
+			<select class="uk-select" name="metadata_provider">
+				<option value="">Use Global Setting</option>
+				<option value="mangadex" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mangadex" }>MangaDex</option>
+				<option value="mal" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mal" }>MyAnimeList</option>
+				<option value="anilist" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "anilist" }>AniList</option>
+				<option value="jikan" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "jikan" }>Jikan (MAL API)</option>
+			</select>
 		</div>
 		@FolderInputs(library.Folders, editing)
 		<div id="response" class="mt-8"></div>
