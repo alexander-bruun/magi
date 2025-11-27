@@ -292,16 +292,21 @@ func BotDetectionMiddleware() fiber.Handler {
 			tracker := getOrCreateTracker(ip)
 			now := time.Now()
 
-			if strings.Contains(path, "/chapters/") {
-				// Chapter access
+			// Count path segments to determine if it's a chapter page
+			// /series -> 1 segment
+			// /series/{media} -> 2 segments (series page)
+			// /series/{media}/{chapter} -> 3 segments (chapter page)
+			pathParts := strings.Split(strings.Trim(path, "/"), "/")
+			if len(pathParts) >= 3 && pathParts[0] == "series" {
+				// Chapter access (3 or more segments after trimming leading slash)
 				tracker.ChapterAccesses = append(tracker.ChapterAccesses, now)
 				if isBotBehavior(tracker.ChapterAccesses, cfg.BotChapterThreshold, cfg.BotDetectionWindow) {
 					log.Infof("Banning IP %s for excessive chapter accesses", ip)
 					models.BanIP(ip, "Excessive chapter accesses")
 					// Continue processing the request - ban is for future requests
 				}
-			} else if !strings.Contains(path, "/search") && !strings.Contains(path, "/tags") {
-				// Series access (not search or tags)
+			} else if !strings.Contains(path, "/search") && !strings.Contains(path, "/tags") && len(pathParts) == 2 {
+				// Series access (exactly 2 segments, not search or tags)
 				tracker.SeriesAccesses = append(tracker.SeriesAccesses, now)
 				if isBotBehavior(tracker.SeriesAccesses, cfg.BotSeriesThreshold, cfg.BotDetectionWindow) {
 					log.Infof("Banning IP %s for excessive series accesses", ip)

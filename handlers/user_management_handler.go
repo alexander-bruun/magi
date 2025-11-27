@@ -260,7 +260,18 @@ func HandleUserUnban(c *fiber.Ctx) error {
 func HandleUserPromote(c *fiber.Ctx) error {
 	username := c.Params("username")
 
-	models.PromoteUser(username)
+	if err := models.PromoteUser(username); err != nil {
+		// For HTMX requests, return the table unchanged instead of an error
+		// to avoid breaking the UI
+		if IsHTMXRequest(c) {
+			users, err := models.GetUsers()
+			if err != nil {
+				return handleError(c, err)
+			}
+			return HandleView(c, views.UsersTable(users))
+		}
+		return handleError(c, err)
+	}
 
 	users, err := models.GetUsers()
 	if err != nil {
@@ -274,7 +285,18 @@ func HandleUserPromote(c *fiber.Ctx) error {
 func HandleUserDemote(c *fiber.Ctx) error {
 	username := c.Params("username")
 
-	models.DemoteUser(username)
+	if err := models.DemoteUser(username); err != nil {
+		// For HTMX requests, return the table unchanged instead of an error
+		// to avoid breaking the UI
+		if IsHTMXRequest(c) {
+			users, err := models.GetUsers()
+			if err != nil {
+				return handleError(c, err)
+			}
+			return HandleView(c, views.UsersTable(users))
+		}
+		return handleError(c, err)
+	}
 
 	users, err := models.GetUsers()
 	if err != nil {

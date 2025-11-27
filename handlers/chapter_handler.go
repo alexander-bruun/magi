@@ -27,28 +27,34 @@ func isChapterAccessible(chapter *models.Chapter, userName string) bool {
 	}
 
 	if userName == "" {
-		// Anonymous user - only allow fully released chapters (after early access period)
-		cfg, err := models.GetAppConfig()
+		// Anonymous user
+		if !chapter.IsPremium {
+			// Non-premium chapters are accessible to everyone
+			return true
+		}
+
+		// For premium chapters, check if anonymous role has premium chapter access
+		hasAccess, err := models.RoleHasAccess("anonymous")
 		if err != nil {
-			log.Errorf("Failed to get app config: %v", err)
+			log.Errorf("Failed to check premium chapter access for anonymous role: %v", err)
 			return false
 		}
-		releaseTime := chapter.CreatedAt.Add(time.Duration(cfg.PremiumEarlyAccessDuration) * time.Second)
-		return time.Now().After(releaseTime)
+		return hasAccess
 	}
 
-	user, err := models.FindUserByUsername(userName)
-	if err != nil || user == nil {
-		return false
-	}
-
-	if user.Role == "premium" {
-		// Premium users can access all chapters
+	// For logged-in users
+	if !chapter.IsPremium {
+		// Non-premium chapters are accessible to everyone
 		return true
 	}
 
-	// For other roles, allow after creation (no early access restriction)
-	return time.Now().After(chapter.CreatedAt)
+	// For premium chapters, check if user has premium chapter access via permissions
+	hasAccess, err := models.UserHasPremiumChapterAccess(userName)
+	if err != nil {
+		log.Errorf("Failed to check premium chapter access for user %s: %v", userName, err)
+		return false
+	}
+	return hasAccess
 }
 
 // ChapterData holds all data needed to render a chapter view
@@ -99,10 +105,13 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 		return nil, nil // Access denied
 	}
 
-	// Get chapter
-	chapter, err := models.GetChapter(mediaSlug, chapterSlug)
-	if err != nil {
-		return nil, err
+	// Get chapter from the chapters array (which has IsPremium set correctly)
+	var chapter *models.Chapter
+	for i := range chapters {
+		if chapters[i].Slug == chapterSlug {
+			chapter = &chapters[i]
+			break
+		}
 	}
 	if chapter == nil {
 		return nil, nil // Not found

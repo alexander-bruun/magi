@@ -28,6 +28,7 @@ templ UsersTable(users []models.User) {
 			<thead>
 				<tr>
 					<th class="text-center">Username</th>
+					<th class="text-center">Role</th>
 					<th class="text-center">Actions</th>
 				</tr>
 			</thead>
@@ -53,6 +54,13 @@ templ UsersTable(users []models.User) {
 										{ user.Username }
 									</p>
 								}
+							}
+						</td>
+						<td class="text-center">
+							if user.Banned {
+								<span class="text-red-500">Banned</span>
+							} else {
+								{ user.Role }
 							}
 						</td>
 						<td colspan="3">

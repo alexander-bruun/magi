@@ -1926,3 +1926,10 @@ textarea.code-editor-hidden {
   border: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
 }
+
+/* ============================================
+   PERMISSION MODAL IMPROVEMENTS
+   ============================================ */
+.hoverable-label:not(.uk-text-muted):hover {
+  background-color: #f0f0f0 !important;
+}

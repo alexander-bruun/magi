@@ -8,13 +8,14 @@ import (
 
 // Permission represents a permission that can be assigned to users
 type Permission struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsWildcard  bool   `json:"is_wildcard"`
-	IsEnabled   bool   `json:"is_enabled"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
+	ID                   int64  `json:"id"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	IsWildcard           bool   `json:"is_wildcard"`
+	IsEnabled            bool   `json:"is_enabled"`
+	PremiumChapterAccess bool   `json:"premium_chapter_access"`
+	CreatedAt            int64  `json:"created_at"`
+	UpdatedAt            int64  `json:"updated_at"`
 }
 
 // LibraryPermission links a permission to a library
@@ -45,18 +46,18 @@ type PermissionWithLibraries struct {
 }
 
 // CreatePermission creates a new permission
-func CreatePermission(name, description string, isWildcard bool) (*Permission, error) {
+func CreatePermission(name, description string, isWildcard, premiumChapterAccess bool) (*Permission, error) {
 	if name == "" {
 		return nil, fmt.Errorf("permission name cannot be empty")
 	}
 
 	now := time.Now().Unix()
 	query := `
-	INSERT INTO permissions (name, description, is_wildcard, is_enabled, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?)
+	INSERT INTO permissions (name, description, is_wildcard, is_enabled, premium_chapter_access, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := db.Exec(query, name, description, isWildcard, true, now, now)
+	result, err := db.Exec(query, name, description, isWildcard, true, premiumChapterAccess, now, now)
 	if err != nil {
 		return nil, err
 	}
@@ -67,19 +68,20 @@ func CreatePermission(name, description string, isWildcard bool) (*Permission, e
 	}
 
 	return &Permission{
-		ID:          id,
-		Name:        name,
-		Description: description,
-		IsWildcard:  isWildcard,
-		IsEnabled:   true,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:                   id,
+		Name:                 name,
+		Description:          description,
+		IsWildcard:           isWildcard,
+		IsEnabled:            true,
+		PremiumChapterAccess: premiumChapterAccess,
+		CreatedAt:            now,
+		UpdatedAt:            now,
 	}, nil
 }
 
 // GetPermissions retrieves all permissions
 func GetPermissions() ([]Permission, error) {
-	query := `SELECT id, name, description, is_wildcard, is_enabled, created_at, updated_at FROM permissions ORDER BY name`
+	query := `SELECT id, name, description, is_wildcard, is_enabled, premium_chapter_access, created_at, updated_at FROM permissions ORDER BY name`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -90,7 +92,7 @@ func GetPermissions() ([]Permission, error) {
 	var permissions []Permission
 	for rows.Next() {
 		var p Permission
-		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.IsWildcard, &p.IsEnabled, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.IsWildcard, &p.IsEnabled, &p.PremiumChapterAccess, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		permissions = append(permissions, p)
@@ -101,10 +103,10 @@ func GetPermissions() ([]Permission, error) {
 
 // GetPermission retrieves a single permission by ID
 func GetPermission(id int64) (*Permission, error) {
-	query := `SELECT id, name, description, is_wildcard, is_enabled, created_at, updated_at FROM permissions WHERE id = ?`
+	query := `SELECT id, name, description, is_wildcard, is_enabled, premium_chapter_access, created_at, updated_at FROM permissions WHERE id = ?`
 
 	var p Permission
-	err := db.QueryRow(query, id).Scan(&p.ID, &p.Name, &p.Description, &p.IsWildcard, &p.IsEnabled, &p.CreatedAt, &p.UpdatedAt)
+	err := db.QueryRow(query, id).Scan(&p.ID, &p.Name, &p.Description, &p.IsWildcard, &p.IsEnabled, &p.PremiumChapterAccess, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -157,7 +159,7 @@ func GetAllPermissionsWithLibraries() ([]PermissionWithLibraries, error) {
 }
 
 // UpdatePermission updates an existing permission
-func UpdatePermission(id int64, name, description string, isWildcard, isEnabled bool) error {
+func UpdatePermission(id int64, name, description string, isWildcard, isEnabled, premiumChapterAccess bool) error {
 	if name == "" {
 		return fmt.Errorf("permission name cannot be empty")
 	}
@@ -165,11 +167,11 @@ func UpdatePermission(id int64, name, description string, isWildcard, isEnabled 
 	now := time.Now().Unix()
 	query := `
 	UPDATE permissions
-	SET name = ?, description = ?, is_wildcard = ?, is_enabled = ?, updated_at = ?
+	SET name = ?, description = ?, is_wildcard = ?, is_enabled = ?, premium_chapter_access = ?, updated_at = ?
 	WHERE id = ?
 	`
 
-	_, err := db.Exec(query, name, description, isWildcard, isEnabled, now, id)
+	_, err := db.Exec(query, name, description, isWildcard, isEnabled, premiumChapterAccess, now, id)
 	return err
 }
 
@@ -686,4 +688,62 @@ func roleHasWildcardPermission(role string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+// RoleHasAccess checks if a role has access to premium chapters
+// Returns true if the role has any enabled permission with premium_chapter_access = true
+func RoleHasAccess(role string) (bool, error) {
+	query := `
+	SELECT COUNT(*)
+	FROM role_permissions rp
+	JOIN permissions p ON rp.permission_id = p.id
+	WHERE rp.role = ?
+	  AND p.premium_chapter_access = 1
+	  AND p.is_enabled = 1
+	`
+
+	var count int
+	err := db.QueryRow(query, role).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// UserHasPremiumChapterAccess checks if a user has access to premium chapters
+// Returns true if:
+// 1. User has an enabled permission with premium_chapter_access = true (direct or role-based)
+func UserHasPremiumChapterAccess(username string) (bool, error) {
+	// Get user's role
+	user, err := FindUserByUsername(username)
+	if err != nil {
+		return false, err
+	}
+	if user == nil {
+		return false, nil
+	}
+
+	// Check direct user permissions
+	query := `
+	SELECT COUNT(*)
+	FROM user_permissions up
+	JOIN permissions p ON up.permission_id = p.id
+	WHERE up.username = ?
+	  AND p.premium_chapter_access = 1
+	  AND p.is_enabled = 1
+	`
+
+	var directCount int
+	err = db.QueryRow(query, username).Scan(&directCount)
+	if err != nil {
+		return false, err
+	}
+
+	if directCount > 0 {
+		return true, nil
+	}
+
+	// Check role-based permissions
+	return RoleHasAccess(user.Role)
 }

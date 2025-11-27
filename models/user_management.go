@@ -147,6 +147,9 @@ func UpdateUserRole(username, newRole string) error {
 	if err != nil {
 		return err
 	}
+	if user == nil {
+		return fmt.Errorf("user '%s' not found", username)
+	}
 
 	user.Role = newRole
 	query := `
@@ -172,6 +175,9 @@ func UpdateUserRoleTx(tx *sql.Tx, username, newRole string) error {
 	user, err := FindUserByUsername(username)
 	if err != nil {
 		return err
+	}
+	if user == nil {
+		return fmt.Errorf("user '%s' not found", username)
 	}
 
 	user.Role = newRole
@@ -230,6 +236,9 @@ func PromoteUser(username string) error {
 	if err != nil {
 		return fmt.Errorf("failed to find user to promote: %w", err)
 	}
+	if user == nil {
+		return fmt.Errorf("user '%s' not found", username)
+	}
 
 	if user.Banned {
 		return fmt.Errorf("user '%s' is banned and cannot be promoted", username)
@@ -253,6 +262,9 @@ func DemoteUser(username string) error {
 	user, err := FindUserByUsername(username)
 	if err != nil {
 		return fmt.Errorf("failed to find user to demote: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("user '%s' not found", username)
 	}
 
 	if user.Banned {
@@ -350,6 +362,9 @@ func UnbanUser(username string) error {
 	user, err := FindUserByUsername(username)
 	if err != nil {
 		return fmt.Errorf("failed to find user to unban: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("user '%s' not found", username)
 	}
 
 	if !user.Banned {

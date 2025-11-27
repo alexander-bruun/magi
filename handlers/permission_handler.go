@@ -69,6 +69,7 @@ func HandleCreatePermission(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	isWildcard := c.FormValue("is_wildcard") == "on"
+	premiumChapterAccess := c.FormValue("premium_chapter_access") == "on"
 	
 	if name == "" {
 		return handleErrorWithStatus(c, fmt.Errorf("permission name is required"), fiber.StatusBadRequest)
@@ -84,7 +85,7 @@ func HandleCreatePermission(c *fiber.Ctx) error {
 	}
 
 	// Create the permission
-	permission, err := models.CreatePermission(name, description, isWildcard)
+	permission, err := models.CreatePermission(name, description, isWildcard, premiumChapterAccess)
 	if err != nil {
 		log.Errorf("Failed to create permission: %v", err)
 		return handleError(c, err)
@@ -116,6 +117,7 @@ func HandleUpdatePermission(c *fiber.Ctx) error {
 	description := c.FormValue("description")
 	isWildcard := c.FormValue("is_wildcard") == "on"
 	isEnabled := c.FormValue("is_enabled") == "on"
+	premiumChapterAccess := c.FormValue("premium_chapter_access") == "on"
 	
 	if name == "" {
 		return handleErrorWithStatus(c, fmt.Errorf("permission name is required"), fiber.StatusBadRequest)
@@ -131,7 +133,7 @@ func HandleUpdatePermission(c *fiber.Ctx) error {
 	}
 
 	// Update the permission
-	err = models.UpdatePermission(id, name, description, isWildcard, isEnabled)
+	err = models.UpdatePermission(id, name, description, isWildcard, isEnabled, premiumChapterAccess)
 	if err != nil {
 		log.Errorf("Failed to update permission: %v", err)
 		return handleError(c, err)
