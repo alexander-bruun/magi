@@ -47,7 +47,7 @@ func HandleHome(c *fiber.Ctx) error {
 	// Enrich recently added media with premium countdowns
 	enrichedRecentlyAdded := make([]models.EnrichedMedia, len(recentlyAdded))
 	for i, m := range recentlyAdded {
-		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
 		if err != nil {
 			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
 		}
@@ -66,7 +66,7 @@ func HandleHome(c *fiber.Ctx) error {
 	// Enrich recently updated media with premium countdowns
 	enrichedRecentlyUpdated := make([]models.EnrichedMedia, len(recentlyUpdated))
 	for i, m := range recentlyUpdated {
-		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
 		if err != nil {
 			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
 		}
@@ -90,7 +90,7 @@ func HandleHome(c *fiber.Ctx) error {
 	topReadAll, _ := models.GetTopReadMedias("all", 10)
 
 	// Fetch latest updates data
-	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration)
+	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
 	if err != nil {
 		log.Errorf("Failed to get latest updates: %v", err)
 		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error

@@ -11,7 +11,11 @@ import (
 
 // HandleConfiguration renders the configuration page.
 func HandleConfiguration(c *fiber.Ctx) error {
-    return HandleView(c, views.Config())
+    cfg, err := models.GetAppConfig()
+    if err != nil {
+        return handleError(c, err)
+    }
+    return HandleView(c, views.Config(cfg))
 }
 
 // HandleConfigurationUpdate processes updates to the global configuration.
@@ -225,6 +229,12 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
         maxPremiumChapters = 3
     }
     if _, err := models.UpdateMaxPremiumChaptersConfig(maxPremiumChapters); err != nil {
+        return handleError(c, err)
+    }
+    
+    // Update premium cooldown scaling configuration
+    premiumCooldownScalingEnabled := c.FormValue("premium_cooldown_scaling_enabled") == "on"
+    if _, err := models.UpdatePremiumCooldownScalingConfig(premiumCooldownScalingEnabled); err != nil {
         return handleError(c, err)
     }
     

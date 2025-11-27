@@ -39,6 +39,7 @@ type AppConfig struct {
     // Premium early access settings
     PremiumEarlyAccessDuration int // duration in seconds that premium users can access chapters early
     MaxPremiumChapters         int // maximum number of chapters that can be premium (latest chapters)
+    PremiumCooldownScalingEnabled bool // whether to scale cooldown based on chapter position
 }
 
 // Implement metadata.ConfigProvider interface
@@ -81,7 +82,8 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(processed_image_quality, 85),
         COALESCE(image_token_validity_minutes, 5),
         COALESCE(premium_early_access_duration, 3600),
-        COALESCE(max_premium_chapters, 3)
+        COALESCE(max_premium_chapters, 3),
+        COALESCE(premium_cooldown_scaling_enabled, 0)
         FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
@@ -105,10 +107,11 @@ func loadConfigFromDB() (AppConfig, error) {
     var imageTokenValidityMinutes int
     var premiumEarlyAccessDuration int
     var maxPremiumChapters int
+    var premiumCooldownScalingEnabled int
     
     if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, 
         &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters); err != nil {
+        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
@@ -134,6 +137,7 @@ func loadConfigFromDB() (AppConfig, error) {
                 ImageTokenValidityMinutes:   5,
                 PremiumEarlyAccessDuration:  3600,
                 MaxPremiumChapters:         3,
+                PremiumCooldownScalingEnabled: false,
             }, nil
         }
         return AppConfig{}, err
@@ -162,6 +166,7 @@ func loadConfigFromDB() (AppConfig, error) {
         ImageTokenValidityMinutes:   imageTokenValidityMinutes,
         PremiumEarlyAccessDuration:  premiumEarlyAccessDuration,
         MaxPremiumChapters:         maxPremiumChapters,
+        PremiumCooldownScalingEnabled: premiumCooldownScalingEnabled == 1,
     }, nil
 }
 
@@ -297,6 +302,19 @@ func UpdateMaxPremiumChaptersConfig(maxChapters int) (AppConfig, error) {
         maxChapters = 0
     }
     _, err := db.Exec(`UPDATE app_config SET max_premium_chapters = ? WHERE id = 1`, maxChapters)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
+// UpdatePremiumCooldownScalingConfig updates whether premium cooldown scaling is enabled
+func UpdatePremiumCooldownScalingConfig(enabled bool) (AppConfig, error) {
+    enabledInt := 0
+    if enabled {
+        enabledInt = 1
+    }
+    _, err := db.Exec(`UPDATE app_config SET premium_cooldown_scaling_enabled = ? WHERE id = 1`, enabledInt)
     if err != nil {
         return AppConfig{}, err
     }

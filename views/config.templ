@@ -5,7 +5,7 @@ import (
     "fmt"
 )
 
-templ Config() {
+templ Config(cfg models.AppConfig) {
     @PageTitle("Configuration")
     <div class="uk-container mt-2">
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
@@ -197,6 +197,13 @@ templ ConfigForm() {
                 <label class="block mb-1">Maximum premium chapters</label>
                 <input type="number" min="0" class="uk-input" name="max_premium_chapters" value={ fmt.Sprintf("%d", cfg.MaxPremiumChapters) } />
                 <p class="text-xs text-muted-foreground mt-1">Maximum number of the most recent chapters that can be marked as premium.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">
+                    <input type="checkbox" class="uk-checkbox" name="premium_cooldown_scaling_enabled" if cfg.PremiumCooldownScalingEnabled { checked } />
+                    Enable premium cooldown scaling
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p>
             </div>
         </div>
         

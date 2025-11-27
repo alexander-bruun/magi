@@ -25,6 +25,7 @@ type Chapter struct {
 	CreatedAt       time.Time `json:"created_at"`
 	ReleasedAt      *time.Time `json:"released_at,omitempty"`
 	IsPremium       bool   `json:"is_premium"`
+	PremiumCountdown string `json:"premium_countdown,omitempty"`
 }
 
 // CreateChapter adds a new chapter if it does not already exist
@@ -329,16 +330,34 @@ func GetRecentChapters(limit int) ([]ChapterWithMedia, error) {
 }
 
 // HasPremiumChapters checks if a media has any chapters that are still in the premium early access period
-func HasPremiumChapters(mediaSlug string, maxPremiumChapters int, premiumDuration int) (bool, string, error) {
-	chapters, err := GetChaptersByMediaSlug(mediaSlug, maxPremiumChapters, maxPremiumChapters, premiumDuration)
+func HasPremiumChapters(mediaSlug string, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) (bool, string, error) {
+	chapters, err := GetChaptersByMediaSlug(mediaSlug, maxPremiumChapters, maxPremiumChapters, premiumDuration, scalingEnabled)
 	if err != nil {
 		return false, "", err
 	}
 
 	for _, chapter := range chapters {
 		if chapter.IsPremium {
+			// Find the position of this chapter among premium chapters
+			premiumPosition := 0
+			for j := 0; j < len(chapters); j++ {
+				if chapters[j].IsPremium {
+					if chapters[j].Slug == chapter.Slug {
+						break
+					}
+					premiumPosition++
+				}
+			}
+			
+			// Calculate scaled duration for this chapter's position
+			multiplier := premiumPosition + 1
+			if !scalingEnabled {
+				multiplier = 1
+			}
+			scaledDuration := premiumDuration * multiplier
+			
 			// Calculate countdown for this chapter
-			releaseTime := chapter.CreatedAt.Add(time.Duration(premiumDuration) * time.Second)
+			releaseTime := chapter.CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
 			duration := time.Until(releaseTime)
 			var countdown string
 			if duration.Hours() >= 24 {
@@ -386,7 +405,7 @@ func GetLatestChapter(mediaSlug string) (string, string, error) {
 }
 
 // GetChaptersByMediaSlug returns the highest numbered chapters for a media (limited by count)
-func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int, premiumDuration int) ([]Chapter, error) {
+func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]Chapter, error) {
 	query := `
 		SELECT slug, name, type, file, chapter_cover_url, media_slug, created_at, released_at
 		FROM chapters
@@ -424,16 +443,52 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 
 	// Set IsPremium for chapters within maxPremiumChapters and within time
 	now := time.Now()
+	premiumChapters := make([]int, 0) // Store indices of premium chapters
 	for i := range chapters {
 		if i < maxPremiumChapters {
 			if chapters[i].ReleasedAt != nil {
 				chapters[i].IsPremium = false
 			} else {
+				// First pass: determine which chapters are premium using base duration
 				releaseTime := chapters[i].CreatedAt.Add(time.Duration(premiumDuration) * time.Second)
 				chapters[i].IsPremium = now.Before(releaseTime)
+				if chapters[i].IsPremium {
+					premiumChapters = append(premiumChapters, i)
+				}
 			}
 		} else {
 			chapters[i].IsPremium = false
+		}
+	}
+	
+	// Second pass: calculate scaled durations for premium chapters
+	// Newest premium chapter gets highest multiplier, oldest gets 1x
+	for position, chapterIndex := range premiumChapters {
+		multiplier := len(premiumChapters) - position
+		if !scalingEnabled {
+			multiplier = 1
+		}
+		scaledDuration := premiumDuration * multiplier
+		releaseTime := chapters[chapterIndex].CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
+		
+		// Recalculate IsPremium with scaled duration (in case it changed)
+		chapters[chapterIndex].IsPremium = now.Before(releaseTime)
+		
+		// Calculate countdown for premium chapters
+		if chapters[chapterIndex].IsPremium {
+			duration := time.Until(releaseTime)
+			if duration.Hours() >= 24 {
+				days := int(duration.Hours() / 24)
+				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dd", days)
+			} else if duration.Hours() >= 1 {
+				hours := int(duration.Hours())
+				minutes := int(duration.Minutes()) % 60
+				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dh %dm", hours, minutes)
+			} else {
+				minutes := int(duration.Minutes())
+				seconds := int(duration.Seconds()) % 60
+				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dm %ds", minutes, seconds)
+			}
 		}
 	}
 
@@ -452,7 +507,7 @@ type MediaWithRecentChapters struct {
 }
 
 // GetRecentSeriesWithChapters returns the most recently updated series with their 3 highest numbered chapters
-func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDuration int) ([]MediaWithRecentChapters, error) {
+func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]MediaWithRecentChapters, error) {
 	query := `
 		SELECT DISTINCT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
 		FROM media m
@@ -490,7 +545,7 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 	// For each media, get the 3 most recent chapters
 	var result []MediaWithRecentChapters
 	for _, slug := range mediaSlugs {
-		chapters, err := GetChaptersByMediaSlug(slug, 3, maxPremiumChapters, premiumDuration) // Get 3 highest numbered chapters
+		chapters, err := GetChaptersByMediaSlug(slug, 3, maxPremiumChapters, premiumDuration, scalingEnabled) // Get 3 highest numbered chapters
 		if err != nil {
 			return nil, err
 		}
