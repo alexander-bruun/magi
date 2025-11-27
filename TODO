@@ -4,7 +4,6 @@ User profiles and avatars: Add profile pages with reading stats, favorite lists,
 Following system: Let users follow other users to see their activity or shared lists.
 External service sync: Sync reading progress, ratings, and lists with MyAnimeList, AniList, or MangaDex accounts.
 Collections/series grouping: Group related media into custom collections (e.g., "Batman Universe" or "Shonen Jump").
-Themes and UI customization: Dark/light modes, custom color schemes, or resizable panels.
 Progressive Web App (PWA): Enable installation on mobile devices for a native app-like experience.
 Offline reading: Cache chapters locally for offline access (especially useful for mobile).
 Download support: Allow downloading chapters or entire media as archives.
@@ -27,4 +26,3 @@ Update the goto first ... buttons on the series page to say chapter or volume de
 Add some space between the dropdown in the top right navbar between icon and page name.
 Add new sorting items for the series page: most popular, most read - based off the sort type, show a badge on top of the image indicating the sort by value (not when its by title since this is always present above the poster).
 Updating the poster through the metadata editor, should trigger a new updated at timestamp for the series.
-Rework the voting presentation, instead of amount of thumbs up / down minused. So a number out of 10 should be calculated based off the up&down-votes.

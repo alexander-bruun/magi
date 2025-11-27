@@ -202,7 +202,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 							} else {
 								<ul class="top-media-list">
 									for i, m := range topMedias {
-										{{ _, up, down, _ := models.GetMediaVotes(m.Slug) }}
+										{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
 										<li class="flex items-center gap-3 py-2">
 											<div class="w-10 h-14 overflow-hidden rounded-sm">
 												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true">
@@ -216,8 +216,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 											<div class="flex flex-col items-center">
 												<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
 												<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
-													<span class="flex items-center gap-1"><uk-icon icon="ThumbsUp" stroke-width="2"></uk-icon> { fmt.Sprint(up) }</span>
-													<span class="flex items-center gap-1"><uk-icon icon="ThumbsDown" stroke-width="2"></uk-icon> { fmt.Sprint(down) }</span>
+													<span class="flex items-center gap-1"><uk-icon icon="Star" stroke-width="2"></uk-icon> { fmt.Sprint(score) }</span>
 												</div>
 											</div>
 										</li>

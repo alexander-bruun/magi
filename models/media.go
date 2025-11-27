@@ -636,7 +636,13 @@ type Vote struct {
 // GetMediaVotes returns the aggregated score and counts for a media
 func GetMediaVotes(mangaSlug string) (score int, upvotes int, downvotes int, err error) {
 	// Use COALESCE so aggregates return 0 instead of NULL when there are no rows
-	query := `SELECT COALESCE(SUM(value),0) as score, COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes FROM votes WHERE media_slug = ?`
+	query := `SELECT 
+		CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+		THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+		ELSE 0 END as score,
+		COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, 
+		COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes 
+		FROM votes WHERE media_slug = ?`
 	row := db.QueryRow(query, mangaSlug)
 	if err := row.Scan(&score, &upvotes, &downvotes); err != nil {
 		return 0, 0, 0, err

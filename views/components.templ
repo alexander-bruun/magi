@@ -177,11 +177,7 @@ templ Showcase(media []models.EnrichedMedia) {
             <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
                 <ul class="uk-slider-items uk-child-width-auto" style="gap: 1rem;">
                     for _, media := range media {
-                        {{ _, up, down, _ := models.GetMediaVotes(media.Slug) }}
-                        {{ rating := 0.0 }}
-                        if up+down > 0 {
-                            {{ rating = (float64(up) / float64(up+down)) * 10.0 }}
-                        }
+                        {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
                         <li>
                             <a href={ fmt.Sprintf("/series/%s", media.Slug) } hx-get={ fmt.Sprintf("/series/%s", media.Slug) } hx-target="#content" hx-push-url="true" class="block">
                                 <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
@@ -212,7 +208,7 @@ templ Showcase(media []models.EnrichedMedia) {
                                         }
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
-                                            <span class="ml-2">{ fmt.Sprintf("%.1f", rating) }</span>
+                                            <span class="ml-2">{ fmt.Sprint(score) }</span>
                                         </div>
                                     </div>
                                 </div>
