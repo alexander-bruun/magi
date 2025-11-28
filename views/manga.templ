@@ -148,11 +148,13 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 }
 
 templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit string) {
+	{{ posterClass := "relative flex justify-center items-center poster-container" }}
+	{{ if userRole == "moderator" || userRole == "admin" { posterClass += " admin-hover" } }}
 	<style>
-		.poster-container:hover .poster-image {
+		.admin-hover:hover .poster-image {
 			opacity: 0.5;
 		}
-		.poster-container:hover .edit-poster-btn {
+		.admin-hover:hover .edit-poster-btn {
 			opacity: 1;
 			pointer-events: auto;
 		}
@@ -180,7 +182,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			pointer-events: auto;
 		}
 	</style>
-	<div class="relative flex justify-center items-center poster-container">
+	<div class={ posterClass }>
 		<img loading="lazy" src={ media.CoverArtURL } width="300" height="500" alt={ media.Name } class="poster-image transition-opacity duration-300"/>
 		if userRole == "moderator" || userRole == "admin" {
 			<button
