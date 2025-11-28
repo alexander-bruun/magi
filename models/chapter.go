@@ -22,6 +22,7 @@ type Chapter struct {
 	ChapterCoverURL string `json:"chapter_cover_url"`
 	MediaSlug       string `json:"media_slug"`
 	Read            bool   `json:"read"`
+	ReadCount       int    `json:"read_count"`
 	CreatedAt       time.Time `json:"created_at"`
 	ReleasedAt      *time.Time `json:"released_at,omitempty"`
 	IsPremium       bool   `json:"is_premium"`
@@ -407,12 +408,19 @@ func GetLatestChapter(mediaSlug string) (string, string, error) {
 // GetChaptersByMediaSlug returns the highest numbered chapters for a media (limited by count)
 func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]Chapter, error) {
 	query := `
-		SELECT slug, name, type, file, chapter_cover_url, media_slug, created_at, released_at
-		FROM chapters
-		WHERE media_slug = ?
+		SELECT c.slug, c.name, c.type, c.file, c.chapter_cover_url, c.media_slug, c.created_at, c.released_at,
+		       COALESCE(rs.read_count, 0) as read_count
+		FROM chapters c
+		LEFT JOIN (
+			SELECT chapter_slug, COUNT(*) as read_count
+			FROM reading_states
+			WHERE media_slug = ?
+			GROUP BY chapter_slug
+		) rs ON c.slug = rs.chapter_slug
+		WHERE c.media_slug = ?
 	`
 
-	rows, err := db.Query(query, mediaSlug)
+	rows, err := db.Query(query, mediaSlug, mediaSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +431,7 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 		var chapter Chapter
 		var createdAt int64
 		var releasedAt sql.NullInt64
-		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MediaSlug, &createdAt, &releasedAt); err != nil {
+		if err := rows.Scan(&chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MediaSlug, &createdAt, &releasedAt, &chapter.ReadCount); err != nil {
 			return nil, err
 		}
 		chapter.CreatedAt = time.Unix(createdAt, 0)

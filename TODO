@@ -8,7 +8,6 @@ Advanced statistics dashboard: Charts for user activity, popular media, or syste
 Standardize the log output, and use proper log levels for the logs.
 Return the correct http error codes on errors.
 If there is a series that exists as multiple media types, we should suffix -type in their slugs so they are unique.
-Add the chapter read counter to the series page to the left of the release date of each chapter.
 Use the thumb image on the home page to optimize page load times.
 Take the global content rating into consideration when using metadata api's.
 Add new sorting items for the series page: most popular, most read - based off the sort type, show a badge on top of the image indicating the sort by value (not when its by title since this is always present above the poster).

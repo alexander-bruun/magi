@@ -700,6 +700,11 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 								}
 							</div>
 						}
+						if chapter.ReadCount > 0 {
+							<span class="text-xs text-blue-600 mr-2 flex items-center" title={ fmt.Sprintf("%d readers", chapter.ReadCount) }>
+								{ fmt.Sprint(chapter.ReadCount) }
+							</span>
+						}
 						if !chapter.CreatedAt.IsZero() {
 							<span class="text-xs text-gray-500">{ chapter.CreatedAt.Format("2006-01-02") }</span>
 						}
