@@ -3,5 +3,6 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     password TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('reader', 'premium', 'moderator', 'admin')),
-    banned BOOLEAN NOT NULL DEFAULT FALSE
+    banned BOOLEAN NOT NULL DEFAULT FALSE,
+    avatar TEXT DEFAULT ''
 );
