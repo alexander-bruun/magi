@@ -40,9 +40,6 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 			<div id="chapters-section">
 				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug, premiumDuration, userRole)
 			</div>
-			<div id="reviews-section" class="mt-8">
-				@MediaReviewsSection(media, reviews, userReview, userRole, userName)
-			</div>
 			if userRole == "moderator" || userRole == "admin" {
 				<div class="uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center">
 					<div class="flex justify-around gap-2">
@@ -85,6 +82,9 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 					</div>
 				</div>
 			}
+			<div id="reviews-section" class="mt-8">
+				@MediaReviewsSection(media, reviews, userReview, userRole, userName)
+			</div>
 		</div>
 	</div>
 }

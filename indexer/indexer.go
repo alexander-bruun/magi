@@ -584,7 +584,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") ||
 			strings.HasSuffix(lowerPath, ".epub") {
 			log.Debugf("Extracting poster from single archive file '%s' for media '%s'", absolutePath, slug)
-			return utils.ExtractPosterImage(absolutePath, slug, cacheDataDirectory, models.GetProcessedImageQuality())
+			return utils.ExtractPosterImage(absolutePath, slug, filepath.Join(cacheDataDirectory, "posters"), models.GetProcessedImageQuality())
 		} else {
 			log.Debugf("Path '%s' is a file but not a supported archive format", absolutePath)
 		}
@@ -608,7 +608,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 					strings.HasSuffix(lowerName, ".epub") {
 					archivePath := filepath.Join(absolutePath, entry.Name())
 					log.Debugf("Extracting poster from archive '%s' in directory for media '%s'", entry.Name(), slug)
-					return utils.ExtractPosterImage(archivePath, slug, cacheDataDirectory, models.GetProcessedImageQuality())
+					return utils.ExtractPosterImage(archivePath, slug, filepath.Join(cacheDataDirectory, "posters"), models.GetProcessedImageQuality())
 				}
 			}
 		}
@@ -676,7 +676,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 }
 
 func processLocalImage(slug, imagePath string) (string, error) {
-	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, cacheDataDirectory, models.GetProcessedImageQuality())
+	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, filepath.Join(cacheDataDirectory, "posters"), models.GetProcessedImageQuality())
 }
 
 func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
@@ -694,7 +694,7 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	// Retry logic for downloading images
 	maxRetries := 3
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		if err := utils.DownloadImageWithThumbnails(cacheDataDirectory, slug, coverArtURL, models.GetProcessedImageQuality()); err != nil {
+		if err := utils.DownloadImageWithThumbnails(filepath.Join(cacheDataDirectory, "posters"), slug, coverArtURL, models.GetProcessedImageQuality()); err != nil {
 			log.Warnf("Error downloading file from %s (attempt %d/%d): %s", coverArtURL, attempt, maxRetries, err)
 			if attempt < maxRetries {
 				// Wait before retrying (exponential backoff)
@@ -1082,7 +1082,10 @@ func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string
 	}
 
 	// Cache the image
-	cachePath := filepath.Join(cacheDataDirectory, fmt.Sprintf("%s%s", slug, ext))
+	cachePath := filepath.Join(cacheDataDirectory, "posters", fmt.Sprintf("%s%s", slug, ext))
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		return "", fmt.Errorf("failed to create cache directory: %w", err)
+	}
 	if err := os.WriteFile(cachePath, imageData, 0644); err != nil {
 		return "", fmt.Errorf("failed to cache image: %w", err)
 	}

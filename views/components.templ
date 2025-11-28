@@ -3,6 +3,7 @@ package views
 import (
     "fmt"
     "strings"
+    "path/filepath"
     "github.com/alexander-bruun/magi/metadata"
     "github.com/alexander-bruun/magi/models"
 )
@@ -91,6 +92,12 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 // MediaCover renders the media cover image with proper sizing
 templ MediaCover(coverURL string, altText string, width int, height int, fixed bool) {
     {{ imageURL := coverURL }}
+    // Use small thumbnail for compact views (e.g., top 10 lists)
+    if width <= 100 && height <= 150 {
+        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_small.jpg" }}
+    } else if width == 200 && height == 300 {
+        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_thumb.jpg" }}
+    }
     
     if fixed {
         <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>

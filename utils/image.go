@@ -77,12 +77,9 @@ func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string, quality 
 	return saveImage(smallFilePath, smallImg, "jpeg", quality)
 }
 
-// ensureDirExists checks if the directory exists; if not, returns an error.
+// ensureDirExists ensures the directory exists, creating it if necessary.
 func ensureDirExists(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return fmt.Errorf("directory does not exist: %s", dir)
-	}
-	return nil
+	return os.MkdirAll(dir, 0755)
 }
 
 // getFileNameWithExtension returns the file name with an extension if not already present.
@@ -531,6 +528,10 @@ func CleanupExpiredTokens() {
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
 func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, error) {
+	if err := ensureDirExists(cacheDir); err != nil {
+		return "", err
+	}
+
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
 	var img image.Image
@@ -664,6 +665,10 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
 func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality int) (string, error) {
+	if err := ensureDirExists(cacheDir); err != nil {
+		return "", err
+	}
+
 	// Load the image
 	img, err := openImage(imagePath)
 	if err != nil {

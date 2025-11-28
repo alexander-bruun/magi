@@ -128,7 +128,17 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div id=\"reviews-section\" class=\"mt-8\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if userRole == "moderator" || userRole == "admin" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center\"><div class=\"flex justify-around gap-2\"><button type=\"button\" class=\"uk-btn uk-btn-secondary\" uk-toggle=\"target: #metadata-modal\" title=\"Search for metadata\" aria-label=\"Search for metadata\"><uk-icon icon=\"Search\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #edit-metadata-modal\" title=\"Edit metadata manually\" aria-label=\"Edit metadata manually\"><uk-icon icon=\"Pencil\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #refresh-metadata-modal\" title=\"Refresh metadata from MediaDex\" aria-label=\"Refresh metadata from MediaDex\"><uk-icon icon=\"FolderSync\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-destructive\" uk-toggle=\"target: #delete-media-modal\" title=\"Delete media\" aria-label=\"Delete media\"><uk-icon icon=\"Trash\"></uk-icon></button></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div id=\"reviews-section\" class=\"mt-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -136,17 +146,7 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center\"><div class=\"flex justify-around gap-2\"><button type=\"button\" class=\"uk-btn uk-btn-secondary\" uk-toggle=\"target: #metadata-modal\" title=\"Search for metadata\" aria-label=\"Search for metadata\"><uk-icon icon=\"Search\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #edit-metadata-modal\" title=\"Edit metadata manually\" aria-label=\"Edit metadata manually\"><uk-icon icon=\"Pencil\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #refresh-metadata-modal\" title=\"Refresh metadata from MediaDex\" aria-label=\"Refresh metadata from MediaDex\"><uk-icon icon=\"FolderSync\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-destructive\" uk-toggle=\"target: #delete-media-modal\" title=\"Delete media\" aria-label=\"Delete media\"><uk-icon icon=\"Trash\"></uk-icon></button></div></div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
