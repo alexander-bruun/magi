@@ -63,6 +63,8 @@ templ ConfigForm() {
                     <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
                     <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
                     <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
+                    <option value="mangaupdates" selected?={ cfg.MetadataProvider == "mangaupdates" }>MangaUpdates (Free, No Auth Required)</option>
+                    <option value="kitsu" selected?={ cfg.MetadataProvider == "kitsu" }>Kitsu (Free, No Auth Required)</option>
                 </select>
                 <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching media information.</p>
             </div>

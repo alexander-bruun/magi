@@ -10,7 +10,7 @@ type AppConfig struct {
     AllowRegistration  bool
     MaxUsers           int64  // 0 means unlimited
     ContentRatingLimit int    // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-    MetadataProvider   string // mangadex, mal, anilist, jikan
+    MetadataProvider   string // mangadex, mal, anilist, jikan, mangaupdates, kitsu
     MALApiToken        string // MyAnimeList API token
     AniListApiToken    string // AniList API token (optional)
     
@@ -325,10 +325,12 @@ func UpdatePremiumCooldownScalingConfig(enabled bool) (AppConfig, error) {
 func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, error) {
     // Validate provider
     validProviders := map[string]bool{
-        "mangadex": true,
-        "mal":      true,
-        "anilist":  true,
-        "jikan":    true,
+        "mangadex":     true,
+        "mal":          true,
+        "anilist":      true,
+        "jikan":        true,
+        "mangaupdates": true,
+        "kitsu":        true,
     }
     if !validProviders[provider] {
         provider = "mangadex"
