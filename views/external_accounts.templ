@@ -1,0 +1,49 @@
+package views
+
+import (
+    "github.com/alexander-bruun/magi/models"
+)
+
+templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
+    @PageTitle("External Accounts")
+    @Breadcrumb([]BreadcrumbItem{
+        { Label: "Home", Href: "/" },
+        { Label: "Account", Href: "/account" },
+        { Label: "External Accounts", Href: "/account/external" },
+    })
+    <div class="uk-container uk-container-small uk-margin-top">
+        <h1>External Accounts</h1>
+        <p>Connect your accounts to sync reading progress with external services.</p>
+
+        <div class="uk-card uk-card-default uk-card-body">
+            <h3>MyAnimeList</h3>
+            {{ connected := false }}
+            {{ for _, account := range accounts { if account.ServiceName == "mal" { connected = true } } }}
+            if !connected {
+                <p>Connect your MyAnimeList account to sync reading progress.</p>
+                <form hx-post="/account/external/mal/connect" hx-target="#content" hx-swap="innerHTML">
+                    <div class="uk-margin">
+                        <label class="uk-form-label" for="client_id">Client ID</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input" id="client_id" name="client_id" type="text" required>
+                        </div>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label" for="client_secret">Client Secret</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input" id="client_secret" name="client_secret" type="password" required>
+                        </div>
+                    </div>
+                    <button class="uk-button uk-button-primary" type="submit">Save Credentials</button>
+                </form>
+                <p><small>Get your Client ID and Secret from <a href="https://myanimelist.net/apiconfig" target="_blank">MAL API Config</a></small></p>
+            } else {
+                <p>Your MyAnimeList credentials are saved.</p>
+                <a href="/account/external/mal/authorize" class="uk-button uk-button-secondary">Authorize with MyAnimeList</a>
+                <form hx-post="/account/external/mal/disconnect" hx-target="#content" hx-swap="innerHTML" style="display: inline;">
+                    <button class="uk-button uk-button-danger" type="submit">Disconnect</button>
+                </form>
+            }
+        </div>
+    </div>
+}

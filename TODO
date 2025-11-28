@@ -1,7 +1,6 @@
 User comments and reviews: Allow users to leave comments on media or chapters, and write reviews with ratings.
 User profiles and avatars: Add profile pages with reading stats, favorite lists, and customizable avatars.
 Following system: Let users follow other users to see their activity or shared lists.
-External service sync: Sync reading progress, ratings, and lists with MyAnimeList, AniList, or MangaDex accounts.
 Collections/series grouping: Group related media into custom collections (e.g., "Batman Universe" or "Shonen Jump").
 Progressive Web App (PWA): Enable installation on mobile devices for a native app-like experience.
 Offline reading: Cache chapters locally for offline access (especially useful for mobile).
