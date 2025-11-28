@@ -344,7 +344,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Compression Quality Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Compression Quality</span></h4><p class=\"text-sm text-muted-foreground mb-4\">Configure JPEG compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p><div class=\"uk-margin\"><label class=\"block mb-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"anonymous_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Compression Quality Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Compression Quality</span></h4><p class=\"text-sm text-muted-foreground mb-4\">Configure JPEG compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p><div class=\"uk-margin\"><label class=\"block mb-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"anonymous_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -370,7 +370,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Reader compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"reader_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Reader compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"reader_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -396,7 +396,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with reader role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Moderator compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"moderator_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with reader role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Moderator compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"moderator_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -422,7 +422,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Premium compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"premium_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Premium compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"premium_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -448,7 +448,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with premium role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Admin compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"admin_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with premium role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Admin compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"admin_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -474,7 +474,7 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with admin role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Processed image quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"0\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"processed_image_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for users with admin role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Processed image quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"processed_image_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

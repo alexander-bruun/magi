@@ -140,7 +140,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Anonymous compression quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="anonymous-value">{ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p>
@@ -148,7 +148,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Reader compression quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="reader-value">{ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with reader role. Higher values = better quality but larger files.</p>
@@ -156,7 +156,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Moderator compression quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="moderator-value">{ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with moderator role. Higher values = better quality but larger files.</p>
@@ -164,7 +164,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Premium compression quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="premium-value">{ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with premium role. Higher values = better quality but larger files.</p>
@@ -172,7 +172,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Admin compression quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="admin-value">{ fmt.Sprintf("%d", cfg.AdminCompressionQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with admin role. Higher values = better quality but larger files.</p>
@@ -180,7 +180,7 @@ templ ConfigForm() {
             <div class="uk-margin">
                 <label class="block mb-2">Processed image quality</label>
                 <div class="flex items-center space-x-4">
-                    <input type="range" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="processed_image_quality" value={ fmt.Sprintf("%d", cfg.ProcessedImageQuality) } id="processed-slider" />
+                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="processed_image_quality" value={ fmt.Sprintf("%d", cfg.ProcessedImageQuality) } id="processed-slider" />
                     <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="processed-value">{ fmt.Sprintf("%d", cfg.ProcessedImageQuality) }</span>
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p>
