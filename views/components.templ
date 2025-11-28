@@ -121,11 +121,18 @@ templ StatCard(label string, value int, change int) {
 }
 
 // ProfileCard renders a user's profile summary used on the account page
-templ ProfileCard(user models.User) {
+templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, readingStreak int, favoriteGenres []string) {
     <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
         <div class="flex items-center space-x-6">
+            <!-- Avatar -->
             <div class="w-32 flex-shrink-0">
-                <img src="/assets/img/icon.png" alt="avatar" class="rounded-full w-32 h-32 object-cover" />
+                if user.Avatar != "" {
+                    <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 object-cover border-2 border-gray-300"/>
+                } else {
+                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300">
+                        { string(user.Username[0]) }
+                    </div>
+                }
             </div>
             <div class="flex-1">
                 if user.Role == "admin" {
@@ -140,9 +147,109 @@ templ ProfileCard(user models.User) {
                 if user.Banned {
                     <p class="role-banned font-semibold">This account is banned</p>
                 } else {
-                    <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary uk-btn-small mt-2">Manage External Accounts</a>
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{ totalChaptersRead }</div>
+                            <div class="text-sm text-gray-600">Chapters Read</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">{ totalMediaRead }</div>
+                            <div class="text-sm text-gray-600">Series Read</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-orange-600">{ readingStreak }</div>
+                            <div class="text-sm text-gray-600">Day Streak</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-purple-600">{ len(favoriteGenres) }</div>
+                            <div class="text-sm text-gray-600">Fav Genres</div>
+                        </div>
+                    </div>
+                    
+                    if len(favoriteGenres) > 0 {
+                        <div class="mb-4">
+                            <span class="text-sm text-gray-600">Favorite genres: </span>
+                            for i, genre := range favoriteGenres {
+                                <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">{ genre }</span>
+                                if i < len(favoriteGenres)-1 {
+                                    <span class="text-gray-400">•</span>
+                                }
+                            }
+                        </div>
+                    }
+                    
+                    <div class="flex space-x-2">
+                        <button class="uk-btn uk-btn-primary uk-btn-small" uk-toggle="target: #avatar-modal">Change Avatar</button>
+                        <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary uk-btn-small">Manage External Accounts</a>
+                    </div>
                 }
             </div>
+        </div>
+    </div>
+    
+    <!-- Avatar Upload Modal -->
+    <div id="avatar-modal" uk-modal>
+        <div class="uk-modal-dialog uk-modal-body">
+            <h2 class="uk-modal-title">Change Avatar</h2>
+            <form hx-post="/account/avatar" hx-target="#avatar-modal" hx-swap="none" enctype="multipart/form-data">
+                <div class="uk-margin">
+                    <label class="uk-form-label">Upload Avatar Image</label>
+                    <div class="relative">
+                        <input type="file" name="avatar" accept="image/*" id="avatar-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 appearance-none" style="font-size: 0;" required/>
+                        <div class="flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50">
+                            <div class="text-center">
+                                <svg class="mx-auto h-6 w-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <span id="file-text" class="text-sm text-gray-600">Choose an image file...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="uk-text-meta">Supported formats: JPG, PNG, GIF. Max size: 2MB</p>
+                <div class="uk-modal-footer uk-text-right">
+                    <button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
+                    <button class="uk-btn uk-btn-primary" type="submit">Upload</button>
+                </div>
+            </form>
+            <script>
+                document.getElementById('avatar-input').addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const fileText = document.getElementById('file-text');
+                    if (file) {
+                        fileText.textContent = file.name;
+                        fileText.classList.remove('text-gray-600');
+                        fileText.classList.add('text-blue-600', 'font-medium');
+                    } else {
+                        fileText.textContent = 'Choose an image file...';
+                        fileText.classList.remove('text-blue-600', 'font-medium');
+                        fileText.classList.add('text-gray-600');
+                    }
+                });
+
+                // Handle HTMX avatar update trigger
+                document.addEventListener('avatarUpdated', function(evt) {
+                    // Show notification
+                    if (typeof showNotification === 'function') {
+                        showNotification(evt.detail.message, evt.detail.status);
+                    }
+
+                    // Close modal
+                    const modal = document.getElementById('avatar-modal');
+                    if (modal && typeof UIkit !== 'undefined') {
+                        UIkit.modal(modal).hide();
+                    }
+
+                    // Refresh avatar image
+                    const avatarImg = document.querySelector('img[alt="avatar"]');
+                    if (avatarImg) {
+                        // Add timestamp to force reload
+                        const src = avatarImg.src;
+                        avatarImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    }
+                });
+            </script>
         </div>
     </div>
 }

@@ -95,51 +95,25 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	})
 
 	// ========================================
-	// Static Assets with Cache Headers
+	// Image Routes with Cache Headers
 	// ========================================
-	app.Use("/api/images", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
-		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
-			p := c.Path()
-			ext := ""
-			if idx := strings.LastIndex(p, "."); idx != -1 {
-				ext = strings.ToLower(p[idx:])
-			}
 
-			switch ext {
-			case ".png", ".jpg", ".jpeg", ".gif", ".webp":
-				c.Set("Cache-Control", "public, max-age=31536000, immutable")
-			default:
-				c.Set("Cache-Control", "public, max-age=0, must-revalidate")
-			}
-		}
-		return c.Next()
-	})
-
-	// Dynamic image serving
+	// Dynamic image serving (legacy - returns 404 for cached images)
+	app.Use("/api/images", BotDetectionMiddleware(), imageCacheMiddleware)
 	app.Get("/api/images/*", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
 		return handleImageRequest(c)
 	})
 
 	// Poster serving (no bot detection for better UX)
-	app.Use("/api/posters", func(c *fiber.Ctx) error {
-		if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
-			p := c.Path()
-			ext := ""
-			if idx := strings.LastIndex(p, "."); idx != -1 {
-				ext = strings.ToLower(p[idx:])
-			}
-
-			switch ext {
-			case ".png", ".jpg", ".jpeg", ".gif", ".webp":
-				c.Set("Cache-Control", "public, max-age=31536000, immutable")
-			default:
-				c.Set("Cache-Control", "public, max-age=0, must-revalidate")
-			}
-		}
-		return c.Next()
-	})
+	app.Use("/api/posters", imageCacheMiddleware)
 	app.Get("/api/posters/*", func(c *fiber.Ctx) error {
-		return handleImageRequest(c)
+		return handlePosterRequest(c)
+	})
+
+	// Avatar serving
+	app.Use("/api/avatars", imageCacheMiddleware)
+	app.Get("/api/avatars/*", func(c *fiber.Ctx) error {
+		return handleAvatarRequest(c)
 	})
 
 	// Static assets (must be early)
@@ -274,6 +248,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	account.Get("/downvoted", HandleAccountDownvoted)
 	account.Get("/reading", HandleAccountReading)
 	account.Get("/external", HandleExternalAccounts)
+	account.Post("/avatar", HandleUploadAvatar)
 	account.Post("/external/mal/connect", HandleConnectMAL)
 	account.Get("/external/mal/authorize", HandleAuthorizeMAL)
 	account.Post("/external/mal/disconnect", HandleDisconnectMAL)

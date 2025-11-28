@@ -226,7 +226,11 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		// Handle upload
 		ext := filepath.Ext(file.Filename)
 		cacheDir := utils.GetCacheDirectory()
-		cachedPath := filepath.Join(cacheDir, fmt.Sprintf("%s%s", mangaSlug, ext))
+		postersDir := filepath.Join(cacheDir, "posters")
+		if err := os.MkdirAll(postersDir, 0755); err != nil {
+			return handleError(c, fmt.Errorf("failed to create posters directory: %w", err))
+		}
+		cachedPath := filepath.Join(postersDir, fmt.Sprintf("%s%s", mangaSlug, ext))
 		if err := c.SaveFile(file, cachedPath); err != nil {
 			return handleError(c, fmt.Errorf("failed to save uploaded file: %w", err))
 		}

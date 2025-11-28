@@ -248,3 +248,113 @@ func GetTopReadMedias(period string, limit int) ([]Media, error) {
 
 	return media, rows.Err()
 }
+
+// User-specific statistics functions
+
+// GetUserTotalChaptersRead returns the total number of chapters read by a user
+func GetUserTotalChaptersRead(userName string) (int, error) {
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM reading_states WHERE user_name = ?`, userName)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetUserTotalMediaRead returns the total number of distinct media read by a user
+func GetUserTotalMediaRead(userName string) (int, error) {
+	var count int
+	row := db.QueryRow(`SELECT COUNT(DISTINCT media_slug) FROM reading_states WHERE user_name = ?`, userName)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetUserReadingStreak returns the current reading streak in days
+func GetUserReadingStreak(userName string) (int, error) {
+	// Get the most recent reading date
+	var latestDate time.Time
+	row := db.QueryRow(`
+		SELECT DATE(MAX(created_at))
+		FROM reading_states
+		WHERE user_name = ?
+	`, userName)
+
+	if err := row.Scan(&latestDate); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	// If the latest reading is not today or yesterday, streak is broken
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	yesterday := today.AddDate(0, 0, -1)
+
+	if latestDate.Before(yesterday) {
+		return 0, nil
+	}
+
+	// Count consecutive days with readings
+	streak := 0
+	currentDate := today
+
+	for {
+		var count int
+		row := db.QueryRow(`
+			SELECT COUNT(*)
+			FROM reading_states
+			WHERE user_name = ? AND DATE(created_at) = DATE(?)
+		`, userName, currentDate)
+
+		if err := row.Scan(&count); err != nil {
+			return 0, err
+		}
+
+		if count == 0 {
+			break
+		}
+
+		streak++
+		currentDate = currentDate.AddDate(0, 0, -1)
+	}
+
+	return streak, nil
+}
+
+// GetUserFavoriteGenres returns the top 5 genres based on user's reading history
+func GetUserFavoriteGenres(userName string) ([]string, error) {
+	rows, err := db.Query(`
+		SELECT m.genres, COUNT(*) as read_count
+		FROM reading_states rs
+		JOIN media m ON rs.media_slug = m.slug
+		WHERE rs.user_name = ? AND m.genres != ''
+		GROUP BY m.genres
+		ORDER BY read_count DESC
+		LIMIT 5
+	`, userName)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var genres []string
+	for rows.Next() {
+		var genreList string
+		var count int
+		if err := rows.Scan(&genreList, &count); err != nil {
+			return nil, err
+		}
+		// Split comma-separated genres and take the first one as representative
+		if strings.Contains(genreList, ",") {
+			genres = append(genres, strings.TrimSpace(strings.Split(genreList, ",")[0]))
+		} else {
+			genres = append(genres, strings.TrimSpace(genreList))
+		}
+	}
+
+	return genres, nil
+}

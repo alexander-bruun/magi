@@ -8,8 +8,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
@@ -911,6 +913,68 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
+}
+
+// HandleUploadAvatar handles avatar image uploads
+func HandleUploadAvatar(c *fiber.Ctx) error {
+	userName := GetUserContext(c)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	// Get the uploaded file
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("No file uploaded")
+	}
+
+	// Validate file size (max 2MB)
+	if file.Size > 2*1024*1024 {
+		return c.Status(fiber.StatusBadRequest).SendString("File too large. Maximum size is 2MB")
+	}
+
+	// Validate file type
+	contentType := file.Header.Get("Content-Type")
+	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/gif" {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid file type. Only JPG, PNG, and GIF are allowed")
+	}
+
+	// Generate unique filename
+	ext := ".jpg"
+	switch contentType {
+	case "image/png":
+		ext = ".png"
+	case "image/gif":
+		ext = ".gif"
+	}
+	filename := fmt.Sprintf("%s_%d%s", userName, time.Now().Unix(), ext)
+	filepath := fmt.Sprintf("./cache/avatars/%s", filename)
+
+	// Ensure avatars directory exists
+	if err := os.MkdirAll("./cache/avatars", 0755); err != nil {
+		return handleError(c, err)
+	}
+
+	// Save the file
+	if err := c.SaveFile(file, filepath); err != nil {
+		return handleError(c, err)
+	}
+
+	// Update user avatar in database
+	avatarURL := fmt.Sprintf("/api/avatars/%s", filename)
+	if err := models.UpdateUserAvatar(userName, avatarURL); err != nil {
+		// Clean up file if DB update fails
+		os.Remove(filepath)
+		return handleError(c, err)
+	}
+
+	// Return success response for HTMX
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Trigger", `{"avatarUpdated": {"message": "Avatar updated successfully", "status": "success"}}`)
+		return c.SendString("")
+	}
+
+	return c.Redirect("/account", fiber.StatusSeeOther)
 }
 
 // generateCodeVerifier generates a random code verifier for PKCE

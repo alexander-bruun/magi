@@ -17,6 +17,7 @@ type User struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 	Banned   bool   `json:"banned"`
+	Avatar   string `json:"avatar,omitempty"`
 }
 
 // BannedIP represents a banned IP address
@@ -33,7 +34,7 @@ var roleHierarchy = []string{"reader", "premium", "moderator", "admin"}
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
 	query := `
-	SELECT username, password, role, banned
+	SELECT username, password, role, banned, avatar
 	FROM users
 	`
 
@@ -46,7 +47,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned); err != nil {
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -135,11 +136,11 @@ func CreateUser(username, password string) error {
 	}
 
 	query := `
-	INSERT INTO users (username, password, role, banned)
-	VALUES (?, ?, ?, ?)
+	INSERT INTO users (username, password, role, banned, avatar)
+	VALUES (?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, user.Username, user.Password, user.Role, user.Banned)
+	_, err = db.Exec(query, user.Username, user.Password, user.Role, user.Banned, user.Avatar)
 	if err != nil {
 		return err
 	}
@@ -171,7 +172,7 @@ func assignDefaultPermissionToUser(username string) error {
 // FindUserByUsername retrieves a user by their username.
 func FindUserByUsername(username string) (*User, error) {
 	query := `
-	SELECT username, password, role, banned
+	SELECT username, password, role, banned, avatar
 	FROM users
 	WHERE username = ?
 	`
@@ -179,7 +180,7 @@ func FindUserByUsername(username string) (*User, error) {
 	row := db.QueryRow(query, username)
 
 	var user User
-	err := row.Scan(&user.Username, &user.Password, &user.Role, &user.Banned)
+	err := row.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No user found
@@ -532,4 +533,16 @@ func GetBannedIPs() ([]BannedIP, error) {
 	}
 	log.Debugf("Retrieved %d banned IPs", len(bannedIPs))
 	return bannedIPs, nil
+}
+
+// UpdateUserAvatar updates a user's avatar URL
+func UpdateUserAvatar(username, avatarURL string) error {
+	query := `
+	UPDATE users
+	SET avatar = ?
+	WHERE username = ?
+	`
+
+	_, err := db.Exec(query, avatarURL, username)
+	return err
 }

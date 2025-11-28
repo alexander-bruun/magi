@@ -615,3 +615,22 @@ func calculateBotScore(c *fiber.Ctx) int {
 	
 	return score
 }
+
+// imageCacheMiddleware sets appropriate cache headers for image requests
+func imageCacheMiddleware(c *fiber.Ctx) error {
+	if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
+		p := c.Path()
+		ext := ""
+		if idx := strings.LastIndex(p, "."); idx != -1 {
+			ext = strings.ToLower(p[idx:])
+		}
+
+		switch ext {
+		case ".png", ".jpg", ".jpeg", ".gif", ".webp":
+			c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		default:
+			c.Set("Cache-Control", "public, max-age=0, must-revalidate")
+		}
+	}
+	return c.Next()
+}

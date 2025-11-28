@@ -487,6 +487,10 @@ func listImagesInRar(rarPath string) ([]string, error) {
 // ExtractAndCacheImageWithCrop extracts an image (from a file path or archive) and caches it with optional cropping.
 func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int) (string, error) {
 	cacheDir := GetCacheDirectory()
+	postersDir := filepath.Join(cacheDir, "posters")
+	if err := os.MkdirAll(postersDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create posters directory: %w", err)
+	}
 
 	// Extract image to temp location
 	tempDir, err := os.MkdirTemp("", "magi-poster-")
@@ -501,7 +505,7 @@ func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[st
 		if !strings.HasSuffix(lowerPath, ".cbz") && !strings.HasSuffix(lowerPath, ".cbr") &&
 			!strings.HasSuffix(lowerPath, ".zip") && !strings.HasSuffix(lowerPath, ".rar") {
 			// It's a direct image file
-			return processCroppedImage(imagePath, slug, cacheDir, cropData, quality)
+			return processCroppedImage(imagePath, slug, postersDir, cropData, quality)
 		}
 	}
 
@@ -689,6 +693,10 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 // ExtractAndCacheImageWithCropByIndex extracts an image by index with cropping
 func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, quality int) (string, error) {
 	cacheDir := GetCacheDirectory()
+	postersDir := filepath.Join(cacheDir, "posters")
+	if err := os.MkdirAll(postersDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create posters directory: %w", err)
+	}
 	tempDir, err := os.MkdirTemp("", "magi-poster-")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
@@ -738,7 +746,7 @@ func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int,
 		}
 	}
 
-	return processCroppedImage(imagePath, slug, cacheDir, cropData, quality)
+	return processCroppedImage(imagePath, slug, postersDir, cropData, quality)
 }
 
 // extractImageFromZipToPath extracts a specific image from a zip archive

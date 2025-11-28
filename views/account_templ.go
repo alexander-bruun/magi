@@ -76,6 +76,10 @@ func Account(userName string) templ.Component {
 			}
 		}
 		activities, _ := models.GetRecentReadingActivity(userName, 10)
+		totalChaptersRead, _ := models.GetUserTotalChaptersRead(userName)
+		totalMediaRead, _ := models.GetUserTotalMediaRead(userName)
+		readingStreak, _ := models.GetUserReadingStreak(userName)
+		favoriteGenres, _ := models.GetUserFavoriteGenres(userName)
 		templ_7745c5c3_Err = PageTitle(fmt.Sprintf("Account - %s", userName)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -92,7 +96,7 @@ func Account(userName string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if user != nil {
-			templ_7745c5c3_Err = ProfileCard(*user).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ProfileCard(*user, totalChaptersRead, totalMediaRead, readingStreak, favoriteGenres).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -112,7 +116,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 72, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 77, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -125,7 +129,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/upvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 72, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 77, Col: 92}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -153,7 +157,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 83, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 88, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -166,7 +170,7 @@ func Account(userName string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL("/account/downvoted"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 83, Col: 96}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/account.templ`, Line: 88, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {

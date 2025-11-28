@@ -17,11 +17,125 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// handleAvatarRequest serves avatar images with quality based on user role
+func handleAvatarRequest(c *fiber.Ctx) error {
+	return handleCachedImageRequest(c, "avatars")
+}
+
+// handlePosterRequest serves poster images with quality based on user role
+func handlePosterRequest(c *fiber.Ctx) error {
+	return handleCachedImageRequest(c, "posters")
+}
+
+// handleCachedImageRequest serves cached images with quality based on user role
+func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
+	// Get the requested path (remove /api/{subDir}/ prefix)
+	imagePath := filepath.Join(subDir, strings.TrimPrefix(c.Path(), "/api/"+subDir+"/"))
+
+	if imagePath == "" || imagePath == subDir+"/" {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
+	}
+
+	// Construct full file path
+	fullPath := filepath.Join(savedCacheDirectory, imagePath)
+
+	// Check if the original file exists
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+	}
+
+	// Get user role for compression quality
+	userName, _ := c.Locals("user_name").(string)
+	var quality int
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			quality = models.GetCompressionQualityForRole(user.Role)
+		} else {
+			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+		}
+	} else {
+		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+	}
+
+	// Load the image
+	file, err := os.Open(fullPath)
+	if err != nil {
+		// If loading fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+			case ".jpg", ".jpeg":
+				c.Set("Content-Type", "image/jpeg")
+			case ".png":
+				c.Set("Content-Type", "image/png")
+			case ".gif":
+				c.Set("Content-Type", "image/gif")
+			case ".webp":
+				c.Set("Content-Type", "image/webp")
+			default:
+				c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		// If loading fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+			case ".jpg", ".jpeg":
+				c.Set("Content-Type", "image/jpeg")
+			case ".png":
+				c.Set("Content-Type", "image/png")
+			case ".gif":
+				c.Set("Content-Type", "image/gif")
+			case ".webp":
+				c.Set("Content-Type", "image/webp")
+			default:
+				c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
+	}
+
+	// Encode all images as JPEG for better performance and consistent compression
+	var buf bytes.Buffer
+	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
+	jpegQuality := quality
+	if jpegQuality < 1 {
+		jpegQuality = 1
+	}
+	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+	c.Set("Content-Type", "image/jpeg")
+
+	if err != nil {
+		// If encoding fails, serve original file
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		return c.SendFile(fullPath)
+	}
+
+	c.Set("Cache-Control", "public, max-age=31536000, immutable")
+	return c.Send(buf.Bytes())
+}
+
 // handleImageRequest serves images with quality based on user role
 func handleImageRequest(c *fiber.Ctx) error {
 	// Determine cache directory based on route
 	var cacheDir string
 	if strings.HasPrefix(c.Path(), "/api/posters/") {
+		cacheDir = savedCacheDirectory
+	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
 		cacheDir = savedCacheDirectory
 	} else if strings.HasPrefix(c.Path(), "/api/images/") {
 		// /api/images/* should not serve cached images
@@ -35,7 +149,9 @@ func handleImageRequest(c *fiber.Ctx) error {
 	if strings.HasPrefix(c.Path(), "/api/images/") {
 		imagePath = strings.TrimPrefix(c.Path(), "/api/images/")
 	} else if strings.HasPrefix(c.Path(), "/api/posters/") {
-		imagePath = strings.TrimPrefix(c.Path(), "/api/posters/")
+		imagePath = filepath.Join("posters", strings.TrimPrefix(c.Path(), "/api/posters/"))
+	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
+		imagePath = filepath.Join("avatars", strings.TrimPrefix(c.Path(), "/api/avatars/"))
 	}
 	
 	if imagePath == "" {
