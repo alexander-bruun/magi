@@ -496,34 +496,34 @@ func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 // Uses scoring system to detect bots and requires captcha for high-risk requests
 func ImageProtectionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// score := calculateBotScore(c)
+		score := calculateBotScore(c)
 		
-		// // If score is high, require captcha
-		// if score >= 50 {
-		// 	if c.Cookies("captcha_solved") != "true" {
-		// 		log.Infof("High bot score (%d) for IP: %s, redirecting to captcha", score, getRealIP(c))
-		// 		// Set redirect cookie
-		// 		c.Cookie(&fiber.Cookie{
-		// 			Name:     "captcha_redirect",
-		// 			Value:    c.OriginalURL(),
-		// 			MaxAge:   300, // 5 minutes
-		// 			HTTPOnly: true,
-		// 			Secure:   isSecureRequest(c),
-		// 			SameSite: fiber.CookieSameSiteLaxMode,
-		// 		})
-		// 		return c.Redirect("/captcha", fiber.StatusSeeOther)
-		// 	}
-		// }
+		// If score is high, require captcha
+		if score >= 50 {
+			if c.Cookies("captcha_solved") != "true" {
+				log.Infof("High bot score (%d) for IP: %s, redirecting to captcha", score, getRealIP(c))
+				// Set redirect cookie
+				c.Cookie(&fiber.Cookie{
+					Name:     "captcha_redirect",
+					Value:    c.OriginalURL(),
+					MaxAge:   300, // 5 minutes
+					HTTPOnly: true,
+					Secure:   isSecureRequest(c),
+					SameSite: fiber.CookieSameSiteLaxMode,
+				})
+				return c.Redirect("/captcha", fiber.StatusSeeOther)
+			}
+		}
 		
-		// // If score is very high, block outright
-		// if score >= 80 {
-		// 	log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
-		// 	if IsHTMXRequest(c) {
-		// 		c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: suspicious activity detected", "status": "destructive"}}`)
-		// 		return c.Status(fiber.StatusForbidden).SendString("")
-		// 	}
-		// 	return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
-		// }
+		// If score is very high, block outright
+		if score >= 80 {
+			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
+			if IsHTMXRequest(c) {
+				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: suspicious activity detected", "status": "destructive"}}`)
+				return c.Status(fiber.StatusForbidden).SendString("")
+			}
+			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
+		}
 		
 		return c.Next()
 	}
