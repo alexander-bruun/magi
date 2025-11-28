@@ -21,7 +21,14 @@ type GenericSortConfig struct {
 func (c GenericSortConfig) NormalizeSort(sortBy, order string) (key string, ord string) {
 	sb := strings.ToLower(strings.TrimSpace(sortBy))
 	ob := strings.ToLower(strings.TrimSpace(order))
-	if ob != "asc" && ob != "desc" { ob = c.DefaultOrder }
+	
+	// Determine default order based on sort key
+	defaultOrder := c.DefaultOrder
+	if sb == "popularity" || sb == "read_count" {
+		defaultOrder = "desc"
+	}
+	
+	if ob != "asc" && ob != "desc" { ob = defaultOrder }
 	key = c.DefaultKey
 	for _, opt := range c.Allowed {
 		if sb == opt.Key {
@@ -47,6 +54,8 @@ var MediaSortConfig = GenericSortConfig{
 		{Key: "content_rating", Aliases: []string{"contentrating"}},
 		{Key: "created_at", Aliases: []string{"createdat"}},
 		{Key: "updated_at", Aliases: []string{"updatedat"}},
+		{Key: "read_count", Aliases: []string{"readcount"}},
+		{Key: "popularity"},
 	},
 	DefaultKey: "name",
 	DefaultOrder: "asc",
@@ -98,6 +107,10 @@ func SortMedias(media []Media, key, order string) {
 		if asc { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.Before(media[j].CreatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.After(media[j].CreatedAt) }) }
 	case "updated_at":
 		if asc { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.Before(media[j].UpdatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.After(media[j].UpdatedAt) }) }
+	case "read_count":
+		if asc { sort.Slice(media, func(i, j int) bool { return media[i].ReadCount < media[j].ReadCount }) } else { sort.Slice(media, func(i, j int) bool { return media[i].ReadCount > media[j].ReadCount }) }
+	case "popularity":
+		if asc { sort.Slice(media, func(i, j int) bool { return media[i].VoteScore < media[j].VoteScore }) } else { sort.Slice(media, func(i, j int) bool { return media[i].VoteScore > media[j].VoteScore }) }
 	default:
 		// default already handled by NormalizeSort -> name
 		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) }) }

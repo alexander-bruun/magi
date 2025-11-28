@@ -31,6 +31,7 @@ type Media struct {
 	Path             string    `json:"path"`
 	FileCount        int       `json:"file_count"`
 	ReadCount        int       `json:"read_count"`
+	VoteScore        int       `json:"vote_score"`
 	Tags             []string  `json:"tags"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
@@ -469,7 +470,10 @@ func GetTopMedias(limit int) ([]Media, error) {
 	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
 	FROM media m
 	LEFT JOIN (
-		SELECT media_slug, COALESCE(SUM(value),0) as score
+		SELECT media_slug, 
+			CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+			THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+			ELSE 0 END as score
 		FROM votes
 		GROUP BY media_slug
 	) v ON v.media_slug = m.slug
@@ -532,7 +536,24 @@ func loadAllMedias(media *[]Media) error {
 
 // loadAllMediasWithTags loads all media with optional tag loading to avoid N+1 queries when tags are needed
 func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
-	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media`
+	query := `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, 
+		COALESCE(read_counts.read_count, 0) as read_count,
+		COALESCE(vote_scores.score, 0) as vote_score,
+		m.created_at, m.updated_at 
+	FROM media m
+	LEFT JOIN (
+		SELECT media_slug, COUNT(*) as read_count
+		FROM reading_states
+		GROUP BY media_slug
+	) read_counts ON m.slug = read_counts.media_slug
+	LEFT JOIN (
+		SELECT media_slug, 
+			CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+			THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+			ELSE 0 END as score
+		FROM votes
+		GROUP BY media_slug
+	) vote_scores ON m.slug = vote_scores.media_slug`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -551,11 +572,13 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt); err != nil {
+		var voteScore int
+		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt); err != nil {
 			return err
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
+		m.VoteScore = voteScore
 		
 		// Filter based on content rating limit
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {

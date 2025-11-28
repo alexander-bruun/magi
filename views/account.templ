@@ -80,7 +80,7 @@ templ Account(userName string) {
         if len(liked) == 0 {
             <p class="role-reader">You have not upvoted any media yet.</p>
         } else {
-            @MediaSlider(liked, 200, 300, true, true)
+            @MediaSlider(liked, 200, 300, true, true, "")
         }
 
         <div class="flex items-center justify-between mt-6">
@@ -90,7 +90,7 @@ templ Account(userName string) {
         if len(downvoted) == 0 {
             <p class="role-reader">You have not downvoted any media yet.</p>
         } else {
-            @MediaSlider(downvoted, 200, 300, true, true)
+            @MediaSlider(downvoted, 200, 300, true, true, "")
         }
     </div>
 }

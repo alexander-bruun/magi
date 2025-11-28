@@ -10,7 +10,7 @@ import (
 templ MediaListingFragment(media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, path string, targetID string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
     <div id={ targetID }>
         if len(media) > 0 {
-            @MediaGrid(media, 300, 450, false, false)
+            @MediaGrid(media, 300, 450, false, false, sort)
             <div class="flex justify-center items-center py-8">
                 @Pagination(path, targetID, totalPages, currentPage, sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
             </div>
@@ -56,6 +56,10 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                     {{ sorts = append(sorts, struct{ Key, Label string }{"created_at", "Created"}) }}
                 case "updated_at":
                     {{ sorts = append(sorts, struct{ Key, Label string }{"updated_at", "Updated"}) }}
+                case "read_count":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"read_count", "Most Read"}) }}
+                case "popularity":
+                    {{ sorts = append(sorts, struct{ Key, Label string }{"popularity", "Most Popular"}) }}
             }
         }
         
@@ -64,6 +68,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
             <!-- Sort Select -->
             <form id="sort-controls-form">
                 <input type="hidden" name="order" value={ currentOrder }/>
+                <input type="hidden" name="sort" value={ currentSort }/>
                 <input type="hidden" name="page" value="1"/>
                 if len(selectedTags) > 0 {
                     for _, tag := range selectedTags {
@@ -96,6 +101,10 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                         Created
                     } else if currentSort == "updated_at" {
                         Updated
+                    } else if currentSort == "read_count" {
+                        Most Read
+                    } else if currentSort == "popularity" {
+                        Most Popular
                     } else {
                         Sort by
                     }
@@ -103,8 +112,12 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 <div id="sort-dropdown" class="uk-drop uk-dropdown" data-uk-dropdown="mode: click; pos: bottom-left; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
                     <ul class="uk-nav uk-dropdown-nav">
                         for _, s := range sorts {
+                            {{ order := "asc" }}
+                            if s.Key == "popularity" || s.Key == "read_count" {
+                                {{ order = "desc" }}
+                            }
                             <li>
-                                <a href="#" hx-get={ path } hx-vals={ fmt.Sprintf(`{"sort":"%s"}`, s.Key) } hx-target={ "#" + parentID } hx-include="#sort-controls-form, #search-input" hx-push-url="true" hx-swap="outerHTML">
+                                <a href="#" hx-get={ path } hx-vals={ fmt.Sprintf(`{"sort":"%s", "order":"%s"}`, s.Key, order) } hx-target={ "#" + parentID } hx-include="#sort-controls-form, #search-input" hx-push-url="true" hx-swap="outerHTML">
                                     { s.Label }
                                 </a>
                             </li>
