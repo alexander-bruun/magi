@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
@@ -239,7 +240,47 @@ func HandleAccountReading(c *fiber.Ctx) error {
 
 // HandleUsers renders the user administration view.
 func HandleUsers(c *fiber.Ctx) error {
-	return HandleView(c, views.Users())
+	// Load initial data for the table
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   "",
+		Page:     1,
+		PageSize: 10,
+	})
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return HandleView(c, views.UsersWithData(users, 1, 10, total, ""))
+}
+
+// HandleUsersTable renders the users table fragment with pagination and search.
+func HandleUsersTable(c *fiber.Ctx) error {
+	page := 1
+	pageSize := 10
+	filter := ""
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	filter = c.Query("filter")
+
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   filter,
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandlePermissionsManagement renders the permissions management page
@@ -255,12 +296,32 @@ func HandleUserBan(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	users, err := models.GetUsers()
+	page := 1
+	pageSize := 10
+	filter := ""
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	filter = c.Query("filter")
+
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   filter,
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.UsersTable(users))
+	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserUnban lifts a user's ban and refreshes the table fragment.
@@ -269,12 +330,32 @@ func HandleUserUnban(c *fiber.Ctx) error {
 
 	models.UnbanUser(username)
 
-	users, err := models.GetUsers()
+	page := 1
+	pageSize := 10
+	filter := ""
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	filter = c.Query("filter")
+
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   filter,
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.UsersTable(users))
+	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserPromote upgrades a user's role and returns the updated table.
@@ -285,21 +366,61 @@ func HandleUserPromote(c *fiber.Ctx) error {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
 		if IsHTMXRequest(c) {
-			users, err := models.GetUsers()
+			page := 1
+			pageSize := 10
+			filter := ""
+
+			if p := c.Query("page"); p != "" {
+				if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+					page = parsed
+				}
+			}
+			if ps := c.Query("pageSize"); ps != "" {
+				if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+					pageSize = parsed
+				}
+			}
+			filter = c.Query("filter")
+
+			users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+				Filter:   filter,
+				Page:     page,
+				PageSize: pageSize,
+			})
 			if err != nil {
 				return handleError(c, err)
 			}
-			return HandleView(c, views.UsersTable(users))
+			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
 		return handleError(c, err)
 	}
 
-	users, err := models.GetUsers()
+	page := 1
+	pageSize := 10
+	filter := ""
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	filter = c.Query("filter")
+
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   filter,
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.UsersTable(users))
+	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserDemote reduces a user's role and refreshes the table view.
@@ -310,21 +431,61 @@ func HandleUserDemote(c *fiber.Ctx) error {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
 		if IsHTMXRequest(c) {
-			users, err := models.GetUsers()
+			page := 1
+			pageSize := 10
+			filter := ""
+
+			if p := c.Query("page"); p != "" {
+				if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+					page = parsed
+				}
+			}
+			if ps := c.Query("pageSize"); ps != "" {
+				if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+					pageSize = parsed
+				}
+			}
+			filter = c.Query("filter")
+
+			users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+				Filter:   filter,
+				Page:     page,
+				PageSize: pageSize,
+			})
 			if err != nil {
 				return handleError(c, err)
 			}
-			return HandleView(c, views.UsersTable(users))
+			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
 		return handleError(c, err)
 	}
 
-	users, err := models.GetUsers()
+	page := 1
+	pageSize := 10
+	filter := ""
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	filter = c.Query("filter")
+
+	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
+		Filter:   filter,
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.UsersTable(users))
+	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleAccount renders the current user's account page showing favorites, reading lists and liked media

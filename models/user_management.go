@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -56,6 +57,58 @@ func GetUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+// UserSearchOptions holds options for user search and pagination
+type UserSearchOptions struct {
+	Filter   string
+	Page     int
+	PageSize int
+}
+
+// GetUsersWithOptions performs a flexible user search with pagination
+func GetUsersWithOptions(opts UserSearchOptions) ([]User, int64, error) {
+	users, err := GetUsers()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total := int64(len(users))
+
+	// Apply text search filter
+	if opts.Filter != "" {
+		filtered := make([]User, 0, len(users))
+		filterLower := strings.ToLower(opts.Filter)
+		for _, user := range users {
+			if strings.Contains(strings.ToLower(user.Username), filterLower) {
+				filtered = append(filtered, user)
+			}
+		}
+		users = filtered
+		total = int64(len(users))
+	}
+
+	// Paginate
+	return paginateUsers(users, opts.Page, opts.PageSize), total, nil
+}
+
+// paginateUsers returns a slice of users for the given page
+func paginateUsers(users []User, page, pageSize int) []User {
+	if pageSize <= 0 {
+		return users
+	}
+	start := (page - 1) * pageSize
+	if start < 0 {
+		start = 0
+	}
+	end := start + pageSize
+	if start > len(users) {
+		return []User{}
+	}
+	if end > len(users) {
+		end = len(users)
+	}
+	return users[start:end]
 }
 
 // CreateUser creates a new user with hashed password and default role.

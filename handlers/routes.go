@@ -282,6 +282,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// ========================================
 	users := app.Group("/admin/users", AuthMiddleware("moderator"))
 	users.Get("", HandleUsers)
+	users.Get("/table", HandleUsersTable)
 	users.Post("/:username/ban", HandleUserBan)
 	users.Post("/:username/unban", HandleUserUnban)
 	users.Post("/:username/promote", HandleUserPromote)

@@ -2,27 +2,115 @@ package views
 
 import (
 	"fmt"
+	"math"
+	"net/url"
 	"github.com/alexander-bruun/magi/models"
 )
 
 templ Users() {
-	{{ users, _ := models.GetUsers() }}
-	
 	@PageTitle("Users")
 	<div class="uk-container mt-2">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
 		<div class="flex place-content-center">
-			<div class="w-2/4">
+			<div class="w-3/4">
 				<div class="uk-card p-2">
-					@UsersTable(users)
+					<!-- Search and Page Size Controls -->
+					<div class="mb-4 flex gap-4">
+						<div class="flex-1">
+							<input 
+								type="text" 
+								class="uk-input" 
+								placeholder="Search users..." 
+								id="user-search"
+								hx-get="/admin/users/table"
+								hx-trigger="input changed delay:300ms, search"
+								hx-target="#users-container"
+								hx-include="[name='pageSize']"
+								name="filter"
+							>
+						</div>
+						<div class="flex items-center gap-2">
+							<label for="pageSize" class="text-sm">Page size:</label>
+							<select 
+								id="pageSize" 
+								name="pageSize" 
+								class="uk-select"
+								hx-get="/admin/users/table"
+								hx-trigger="change"
+								hx-target="#users-container"
+								hx-include="[name='filter']"
+							>
+								<option value="5">5</option>
+								<option value="10" selected>10</option>
+								<option value="25">25</option>
+								<option value="50">50</option>
+							</select>
+						</div>
+					</div>
+					
+					<div id="users-container">
+						@UsersTable([]models.User{}, 1, 10, 0, "")
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 }
 
-templ UsersTable(users []models.User) {
+templ UsersWithData(users []models.User, page, pageSize int, total int64, filter string) {
+	@PageTitle("Users")
+	<div class="uk-container mt-2">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
+		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
+		<div class="flex place-content-center">
+			<div class="w-3/4">
+				<div class="uk-card p-2">
+					<!-- Search and Page Size Controls -->
+					<div class="mb-4 flex gap-4">
+						<div class="flex-1">
+							<input 
+								type="text" 
+								class="uk-input" 
+								placeholder="Search users..." 
+								id="user-search"
+								value={ filter }
+								hx-get="/admin/users/table"
+								hx-trigger="input changed delay:300ms, search"
+								hx-target="#users-container"
+								hx-include="[name='pageSize']"
+								name="filter"
+							>
+						</div>
+						<div class="flex items-center gap-2">
+							<label for="pageSize" class="text-sm">Page size:</label>
+							<select 
+								id="pageSize" 
+								name="pageSize" 
+								class="uk-select"
+								hx-get="/admin/users/table"
+								hx-trigger="change"
+								hx-target="#users-container"
+								hx-include="[name='filter']"
+							>
+								<option value="5" selected?={ pageSize == 5 }>5</option>
+								<option value="10" selected?={ pageSize == 10 }>10</option>
+								<option value="25" selected?={ pageSize == 25 }>25</option>
+								<option value="50" selected?={ pageSize == 50 }>50</option>
+							</select>
+						</div>
+					</div>
+					
+					<div id="users-container">
+						@UsersTable(users, page, pageSize, total, filter)
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ UsersTable(users []models.User, page, pageSize int, total int64, filter string) {
 	<div id="users-table">
 		<table class="uk-table">
 			<thead>
@@ -56,7 +144,7 @@ templ UsersTable(users []models.User) {
 								}
 							}
 						</td>
-						<td class="text-center">
+						<td class="text-center" style="vertical-align: middle;">
 							if user.Banned {
 								<span class="text-red-500">Banned</span>
 							} else {
@@ -70,7 +158,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-post={ fmt.Sprintf("/admin/users/%s/promote", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/promote?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 											disabled
@@ -81,7 +169,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-post={ fmt.Sprintf("/admin/users/%s/promote", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/promote?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -92,7 +180,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-post={ fmt.Sprintf("/admin/users/%s/demote", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/demote?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 											disabled
@@ -103,7 +191,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-post={ fmt.Sprintf("/admin/users/%s/demote", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/demote?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -114,7 +202,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-default"
-											hx-post={ fmt.Sprintf("/admin/users/%s/unban", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/unban?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -124,7 +212,7 @@ templ UsersTable(users []models.User) {
 										<button
 											type="button"
 											class="uk-btn uk-btn-destructive"
-											hx-post={ fmt.Sprintf("/admin/users/%s/ban", user.Username) }
+											hx-post={ fmt.Sprintf("/admin/users/%s/ban?page=%d&pageSize=%d&filter=%s", user.Username, page, pageSize, url.QueryEscape(filter)) }
 											hx-trigger="click"
 											hx-target="#users-table"
 										>
@@ -138,5 +226,75 @@ templ UsersTable(users []models.User) {
 				}
 			</tbody>
 		</table>
+		
+		<!-- Pagination -->
+		{{ totalPages := int(math.Ceil(float64(total) / float64(pageSize))) }}
+		if totalPages > 1 {
+			<div class="flex justify-center items-center py-8">
+				@UsersPagination("/admin/users/table", "users-container", totalPages, page, filter, pageSize)
+			</div>
+		}
 	</div>
+}
+
+templ UsersPagination(path string, targetID string, totalPages int, currentPage int, filter string, pageSize int) {
+    <nav class="mt-4" aria-label="Pagination">
+        <ul class="uk-pgn uk-pgn-default">
+            @UsersPaginationItem(path, targetID, currentPage > 1, currentPage-1, "Previous", "previous", filter, pageSize)
+            @UsersPaginationNumbers(path, targetID, totalPages, currentPage, filter, pageSize)
+            @UsersPaginationItem(path, targetID, currentPage < totalPages, currentPage+1, "Next", "next", filter, pageSize)
+        </ul>
+    </nav>
+}
+
+templ UsersPaginationItem(path string, targetID string, enabled bool, page int, text string, icon string, filter string, pageSize int) {
+    {{ href := fmt.Sprintf("%s?page=%d&pageSize=%d", path, page, pageSize) }}
+    if filter != "" {
+        {{ href = href + "&filter=" + url.QueryEscape(filter) }}
+    }
+    
+    if enabled {
+        <li>
+            <a href={ templ.URL(href) } 
+               hx-get={ href } 
+               hx-target={ "#" + targetID } 
+               hx-push-url="true">
+                if icon != "" {
+                    if icon == "next" {
+                        <uk-icon icon="ChevronRight"></uk-icon>
+                    } else {
+                        <uk-icon icon="ChevronLeft"></uk-icon>
+                    }
+                } else {
+                    { text }
+                }
+            </a>
+        </li>
+    } else {
+        <li class="uk-disabled">
+            <span>
+                if icon != "" {
+                    if icon == "next" {
+                        <uk-icon icon="ChevronRight"></uk-icon>
+                    } else {
+                        <uk-icon icon="ChevronLeft"></uk-icon>
+                    }
+                } else {
+                    { text }
+                }
+            </span>
+        </li>
+    }
+}
+
+templ UsersPaginationNumbers(path string, targetID string, totalPages int, currentPage int, filter string, pageSize int) {
+    for i := 1; i <= totalPages; i++ {
+        if i == currentPage {
+            <li class="uk-active"><span>{ fmt.Sprint(i) }</span></li>
+        } else if i == 1 || i == totalPages || (i >= currentPage-2 && i <= currentPage+2) {
+            @UsersPaginationItem(path, targetID, true, i, fmt.Sprint(i), "", filter, pageSize)
+        } else if (i == 2 && currentPage > 4) || (i == totalPages-1 && currentPage < totalPages-3) {
+            <li class="uk-disabled"><span>…</span></li>
+        }
+    }
 }
