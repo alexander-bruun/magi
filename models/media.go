@@ -1151,8 +1151,8 @@ func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
 // GetFirstAndLastChapterSlugs returns the first and last chapter slugs for a media
 func GetFirstAndLastChapterSlugs(chapters []Chapter) (firstSlug, lastSlug string) {
 	if len(chapters) > 0 {
-		firstSlug = chapters[0].Slug
-		lastSlug = chapters[len(chapters)-1].Slug
+		firstSlug = chapters[len(chapters)-1].Slug
+		lastSlug = chapters[0].Slug
 	}
 	return firstSlug, lastSlug
 }
