@@ -249,11 +249,14 @@ func ComicHandler(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
 	}
 
-	// Validate and consume the token
-	tokenInfo, err := utils.ValidateAndConsumeImageToken(token)
+	// Validate the token
+	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
 		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
 	}
+
+	// Consume the token after the response is sent
+	defer utils.ConsumeImageToken(token)
 
 	// Get image serve data from service
 	imageData, err := GetImageServeData(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)

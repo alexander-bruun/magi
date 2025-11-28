@@ -250,20 +250,13 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 			return slug, err
 		}
 		
-		// If new chapters were added, notify users
 		if added > 0 && len(newChapterSlugs) > 0 {
 			if err := models.NotifyUsersOfNewChapters(slug, newChapterSlugs); err != nil {
 				log.Errorf("Failed to create notifications for new chapters in media '%s': %s", slug, err)
 			}
 		}
 		
-		if added > 0 || deleted > 0 {
-			// Update media updated_at to mark the index time
-			if err := models.UpdateMedia(existingMedia); err != nil {
-				log.Errorf("Failed to update media timestamp for '%s': %s", slug, err)
-			}
-			log.Infof("Indexed series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
-		}
+		log.Infof("Indexed series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
 		return slug, nil
 	}
 

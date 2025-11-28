@@ -856,7 +856,6 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 	></div>
 	
 	@ChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
-	
 	<!-- Pagination Controls (hidden in webtoon mode) -->
 	<div id="reader-pagination" style="display: none;">
 		<div class="pagination-controls">
@@ -876,21 +875,10 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		</div>
 	</div>
 	
-	<div>
-		<!-- Image container that will be controlled by the reader.js script -->
-		{{ imagesJSON := "" }}
-		{{ imagesArr := make([]string, len(images)) }}
-		{{ for i, img := range images {
-			imagesArr[i] = img
-		} }}
-		{{ imagesJSON = fmt.Sprintf("[%s]", strings.Join(func() []string {
-			quoted := make([]string, len(imagesArr))
-			for i, s := range imagesArr {
-				quoted[i] = fmt.Sprintf("\"%s\"", s)
-			}
-			return quoted
-		}(), ",")) }}
-		<div id="reader-images-container" data-images={ imagesJSON } data-media-type={ media.Type }></div>
+	<div id="reader-images-container" data-media-type={ media.Type }>
+		for _, image := range images {
+			<img data-src={ image } class="reader-image lazy" alt="Chapter image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" />
+		}
 	</div>
 	
 	<!-- Pagination Controls (bottom, hidden in webtoon mode) -->
@@ -940,27 +928,21 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 						<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 					</button>
 					<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-						<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
+						<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;padding-right: 5px;">
 							for _, ch := range chapters {
-								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug), "flex", "justify-between", "items-center" }>
+								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
 									<a
+										class="flex justify-between items-center w-full"
 										href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)) }
 										hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug) }
 										hx-target="#content"
 										hx-push-url="true"
-									>{ ch.Name }</a>
-									<div class="flex items-center">
-										if ch.Read {
-											<span class="text-green-600 inline-flex items-center" title="Read">
-												<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
-											</span>
-										}
+									>
+										<span>{ ch.Name }</span>
 										if ch.IsPremium {
-											<span class="text-yellow-500 inline-flex items-center" title="Premium">
-												<uk-icon icon="Clock" ratio="0.8"></uk-icon>
-											</span>
+											<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
 										}
-									</div>
+									</a>
 								</li>
 							}
 						</ul>
@@ -972,7 +954,7 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 			</div>
 		} else {
 			<div class="reader-mode-selector">
-				<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary mr-2">
+				<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary mr-2 btn-circular">
 					<uk-icon icon="library" ratio="0.8"></uk-icon>
 				</a>
 				<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="webtoon">

@@ -256,6 +256,10 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	account.Get("/upvoted", HandleAccountUpvoted)
 	account.Get("/downvoted", HandleAccountDownvoted)
 	account.Get("/reading", HandleAccountReading)
+	account.Get("/external", HandleExternalAccounts)
+	account.Post("/external/mal/connect", HandleConnectMAL)
+	account.Get("/external/mal/authorize", HandleAuthorizeMAL)
+	account.Post("/external/mal/disconnect", HandleDisconnectMAL)
 
 	// ========================================
 	// Notification Routes
@@ -374,6 +378,11 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// Job Status WebSocket
 	// ========================================
 	app.Get("/ws/job-status", HandleJobStatusWebSocketUpgrade)
+
+	// ========================================
+	// MAL OAuth Callback
+	// ========================================
+	app.Get("/callback", HandleMALCallback)
 
 	// ========================================
 	// Fallback Route

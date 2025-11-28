@@ -1275,8 +1275,6 @@ main.site-main::-webkit-scrollbar-thumb:hover {
 #reader-pagination-bottom {
   position: fixed;
   top: 0;
-  left: var(--sidebar-width);
-  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1287,23 +1285,23 @@ main.site-main::-webkit-scrollbar-thumb:hover {
   background: transparent;
   border: none;
   z-index: 100;
-  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, left 0.2s ease;
-  transform: translateY(0);
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   opacity: 1;
   pointer-events: none;
+  width: auto;
 }
 
 /* Adjust for collapsed sidebar */
 body.sidebar-collapsed #reader-pagination,
 body.sidebar-collapsed #reader-pagination-bottom {
-  left: var(--sidebar-slim-width);
+  /* No change needed since we're centering */
 }
 
 /* Mobile - no sidebar offset */
 @media (max-width: 768px) {
   #reader-pagination,
   #reader-pagination-bottom {
-    left: 0;
+    /* No change needed since we're centering */
   }
 }
 
@@ -1322,7 +1320,6 @@ body.sidebar-collapsed #reader-pagination-bottom {
 #reader-pagination-bottom {
   top: auto;
   bottom: 0;
-  transform: translateY(0);
 }
 
 #reader-pagination-bottom.hide-controls {
@@ -1669,7 +1666,6 @@ body.sidebar-collapsed #reader-pagination-bottom {
   position: absolute;
   bottom: 1.5rem;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 100000;
   display: flex;
   align-items: center;

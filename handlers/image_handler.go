@@ -137,42 +137,54 @@ func handleImageRequest(c *fiber.Ctx) error {
 
 // ImageHandler serves images for both comics and light novels using token-based authentication
 func ImageHandler(c *fiber.Ctx) error {
-	log.Debugf("ImageHandler called with token: %s", c.Query("token"))
+	// log.Infof("ImageHandler called with token: %s", c.Query("token"))
+	// log.Infof("ImageHandler: request from IP %s, User-Agent: %s, Referer: %s", c.IP(), c.Get("User-Agent"), c.Get("Referer"))
 	
 	token := c.Query("token")
 	
 	if token == "" {
+		log.Errorf("ImageHandler: token parameter is required")
 		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
 	}
 
-	// Validate and consume the token
-	tokenInfo, err := utils.ValidateAndConsumeImageToken(token)
+	// log.Infof("ImageHandler: validating token %s", token)
+	// Validate the token
+	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
-		log.Errorf("Token validation failed for token %s: %v", token, err)
+		log.Errorf("ImageHandler: Token validation failed for token %s: %v", token, err)
 		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
 	}
 
+	// log.Infof("ImageHandler: token %s validated successfully, consuming", token)
+	// Consume the token
+	utils.ConsumeImageToken(token)
+	// log.Infof("ImageHandler: token %s consumed", token)
+
 	// Validate MediaSlug to prevent malformed tokens
 	if strings.ContainsAny(tokenInfo.MediaSlug, "/,") {
-		log.Errorf("Invalid MediaSlug in token: %s", tokenInfo.MediaSlug)
+		log.Errorf("ImageHandler: Invalid MediaSlug in token: %s", tokenInfo.MediaSlug)
 		return handleErrorWithStatus(c, fmt.Errorf("invalid token"), fiber.StatusForbidden)
 	}
+	// log.Infof("ImageHandler: MediaSlug validated: %s", tokenInfo.MediaSlug)
 
 	media, err := models.GetMedia(tokenInfo.MediaSlug)
 	if err != nil {
-		log.Errorf("Failed to get media %s: %v", tokenInfo.MediaSlug, err)
+		log.Errorf("ImageHandler: Failed to get media %s: %v", tokenInfo.MediaSlug, err)
 		return handleError(c, err)
 	}
 	if media == nil {
-		log.Errorf("Media not found for slug: %s, %v, %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.AssetPath)
+		log.Errorf("ImageHandler: Media not found for slug: %s", tokenInfo.MediaSlug)
 		return handleErrorWithStatus(c, fmt.Errorf("media not found or access restricted based on content rating settings"), fiber.StatusNotFound)
 	}
+	// log.Infof("ImageHandler: Media found: %s", media.Slug)
 	
 	var chapter *models.Chapter
 	if tokenInfo.AssetPath != "" {
+		log.Infof("ImageHandler: Handling light novel asset: %s", tokenInfo.AssetPath)
 		// Light novel asset: chapterSlug may be 0 or empty, but should be valid for asset lookup
 		chapterSlug := tokenInfo.ChapterSlug
 		if chapterSlug == "" || strings.ContainsAny(chapterSlug, "./ ") {
+			// log.Infof("ImageHandler: ChapterSlug empty or invalid, checking Referer")
 			// Fallback: try to extract from Referer if possible
 			referer := c.Get("Referer")
 			if referer != "" {
@@ -185,53 +197,66 @@ func ImageHandler(c *fiber.Ctx) error {
 				}
 			}
 		}
+		// log.Infof("ImageHandler: Using chapterSlug: %s", chapterSlug)
 		chapter, err = models.GetChapter(tokenInfo.MediaSlug, chapterSlug)
 		if err != nil {
-			log.Errorf("Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, chapterSlug, err)
+			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, chapterSlug, err)
 			return handleError(c, err)
 		}
 		if chapter == nil {
+			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, chapterSlug)
 			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 		}
+		// log.Infof("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
+			log.Errorf("ImageHandler: Error checking access: %v", err)
 			return handleError(c, err)
 		}
 		if !hasAccess {
+			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
 			if IsHTMXRequest(c) {
 				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
 				return c.Status(fiber.StatusForbidden).SendString("")
 			}
 			return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this chapter"), fiber.StatusForbidden)
 		}
+		// log.Infof("ImageHandler: Access granted, serving light novel asset")
 		return serveLightNovelAsset(c, media, chapter, tokenInfo.AssetPath)
 	} else {
+		// log.Infof("ImageHandler: Handling comic page: %d", tokenInfo.Page)
 		// Comic page
 		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 		if err != nil {
-			log.Errorf("Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, err)
+			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, err)
 			return handleError(c, err)
 		}
 		if chapter == nil {
+			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
 		}
+		// log.Debugf("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
+			log.Errorf("ImageHandler: Error checking access: %v", err)
 			return handleError(c, err)
 		}
 		if !hasAccess {
+			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
 			if IsHTMXRequest(c) {
 				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
 				return c.Status(fiber.StatusForbidden).SendString("")
 			}
 			return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this chapter"), fiber.StatusForbidden)
 		}
+		// log.Debugf("ImageHandler: Access granted, serving comic page")
 		return serveComicPage(c, media, chapter, tokenInfo.Page)
 	}
 }
 
 // serveComicPage serves a comic page image
 func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, page int) error {
+	// log.Infof("serveComicPage: serving page %d for media %s chapter %s", page, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	// For single-file media (cbz/cbr), media.Path is the file itself
 	// For directory-based media, we need to join path and chapter file
@@ -279,6 +304,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 
 // serveLightNovelAsset serves a light novel asset from an EPUB file
 func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, assetPath string) error {
+	log.Infof("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	chapterFilePath := media.Path
 	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {

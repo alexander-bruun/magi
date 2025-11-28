@@ -83,6 +83,11 @@ func Close() error {
 	return nil
 }
 
+// GetDB returns the database connection
+func GetDB() *sql.DB {
+	return db
+}
+
 // initializeSchemaMigrationsTable ensures that the schema_migrations table exists
 func initializeSchemaMigrationsTable() error {
 	query := `

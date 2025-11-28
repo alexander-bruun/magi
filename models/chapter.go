@@ -511,8 +511,12 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 	query := `
 		SELECT DISTINCT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
 		FROM media m
-		JOIN chapters c ON m.slug = c.media_slug
-		ORDER BY c.created_at DESC
+		WHERE EXISTS (
+			SELECT 1 FROM chapters c 
+			WHERE c.media_slug = m.slug 
+			AND c.created_at >= m.updated_at
+		)
+		ORDER BY m.updated_at DESC
 		LIMIT ?
 	`
 

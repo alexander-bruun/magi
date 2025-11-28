@@ -434,7 +434,7 @@ func GetImageTokenValidityMinutes() int {
     cfg, err := GetAppConfig()
     if err != nil {
         // Return default if config can't be loaded
-        return 5
+        return 60
     }
     return cfg.ImageTokenValidityMinutes
 }

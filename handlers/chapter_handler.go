@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/sync"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -167,7 +168,12 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 // MarkChapterReadIfNeeded marks a chapter as read for non-HTMX requests
 func MarkChapterReadIfNeeded(userName, mediaSlug, chapterSlug string, isHTMX bool) error {
 	if userName != "" && !isHTMX {
-		return models.MarkChapterRead(userName, mediaSlug, chapterSlug)
+		err := models.MarkChapterRead(userName, mediaSlug, chapterSlug)
+		if err != nil {
+			return err
+		}
+		sync.SyncReadingProgressForUser(userName, mediaSlug, chapterSlug)
+		return nil
 	}
 	return nil
 }
@@ -353,11 +359,14 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
 	}
 
-	// Validate and consume the token
-	tokenInfo, err := utils.ValidateAndConsumeImageToken(token)
+	// Validate the token
+	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
 		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
 	}
+
+	// Consume the token after the response is sent
+	defer utils.ConsumeImageToken(token)
 
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Params("chapter")
@@ -522,6 +531,7 @@ func HandleMarkRead(c *fiber.Ctx) error {
 	if err := models.MarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
 		return handleError(c, err)
 	}
+	sync.SyncReadingProgressForUser(userName, mangaSlug, chapterSlug)
 	// Return the inline eye toggle fragment so HTMX will swap the icon in-place.
 	return HandleView(c, views.InlineEyeToggle(true, mangaSlug, chapterSlug))
 }

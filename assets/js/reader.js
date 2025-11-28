@@ -1,1415 +1,853 @@
 /**
- * Reader Module - Handles different reading modes for manga chapters and light novels
- * Supports: webtoon (vertical scroll), single-page, side-by-side modes for manga
- * Supports: text customization (font size, colors, alignment, margins) for light novels
+ * Reader Module - Handles reading modes for manga and light novels
  */
 (function() {
     'use strict';
 
     const STORAGE_KEY = 'magi-reading-mode';
-    const FOCUS_STATE_STORAGE_KEY = 'magi-focus-state';
+    const FOCUS_STATE_KEY = 'magi-focus-state';
     const NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
-    const MODES = {
-        WEBTOON: 'webtoon',
-        SINGLE: 'single',
-        SIDE_BY_SIDE: 'side-by-side'
+    const MODES = { WEBTOON: 'webtoon', SINGLE: 'single', SIDE_BY_SIDE: 'side-by-side' };
+
+    // Lazy loading setup
+    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.classList.remove('lazy');
+                observer.unobserve(img);
+            }
+        });
+    }, { rootMargin: '50px' }); // Load 50px before entering viewport
+
+    const observeLazyImages = () => {
+        document.querySelectorAll('img.lazy').forEach(img => {
+            lazyLoadObserver.observe(img);
+        });
     };
 
-    // Light novel settings
-    let currentFontSize = 18;
-    let currentTextColor = null; // null means use default
-    let currentBgColor = null; // null means transparent
-    let currentTextAlign = 'justify';
-    let currentMargin = 20; // default margin in pixels
-    const minFontSize = 12;
-    const maxFontSize = 32;
-    const fontSizeStep = 2;
-    const minMargin = 0;
-    const maxMargin = 50;
-    const marginStep = 5;
-
+    // State
     let currentMode = MODES.WEBTOON;
     let currentPage = 0;
     let images = [];
     let containerElement = null;
     let focusModal = null;
-    let focusModalContent = null;
     let scrollPositionBeforeFocus = 0;
     let focusModalZoom = 1;
-    let focusModalViewportWidth = 0; // Track the focus modal's viewport width for aspect ratio calculations
-    let focusStateData = {
-        imageIndex: 0,
-        mainImageWidth: 0,
-        mainImageHeight: 0,
-        viewportScrollOffset: 0,
-        naturalAspectRatio: 0,
-        focusImageHeight: 0
-    };
+    let focusStateData = {};
     let isLightNovel = false;
+    let originalImageParents = [];
 
-    /**
-     * Save focus state (scroll position within modal and main page) to localStorage
-     */
-    function saveFocusState(modalScrollTop) {
-        try {
-            const state = {
-                imageIndex: focusStateData.imageIndex,
-                mainImageWidth: focusStateData.mainImageWidth,
-                mainImageHeight: focusStateData.mainImageHeight,
-                viewportScrollOffset: focusStateData.viewportScrollOffset,
-                naturalAspectRatio: focusStateData.naturalAspectRatio,
-                focusImageHeight: focusStateData.focusImageHeight,
-                modalScrollTop: modalScrollTop || 0,
-                mainPageScrollTop: scrollPositionBeforeFocus,
-                timestamp: Date.now()
-            };
-            localStorage.setItem(FOCUS_STATE_STORAGE_KEY, JSON.stringify(state));
-        } catch (e) {
-            console.warn('Could not save focus state to localStorage:', e);
-        }
-    }
+    // Light novel settings
+    const novelSettings = {
+        fontSize: 18,
+        textColor: null,
+        bgColor: null,
+        textAlign: 'justify',
+        margin: 20
+    };
+    const novelLimits = {
+        fontSize: { min: 12, max: 32, step: 2 },
+        margin: { min: 0, max: 50, step: 5 }
+    };
 
-    /**
-     * Get saved focus state from localStorage
-     */
-    function getSavedFocusState() {
-        try {
-            const saved = localStorage.getItem(FOCUS_STATE_STORAGE_KEY);
-            return saved ? JSON.parse(saved) : null;
-        } catch (e) {
-            console.warn('Could not retrieve focus state from localStorage:', e);
-            return null;
-        }
-    }
+    // Utility functions
+    const saveToStorage = (key, data) => {
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.warn(`Failed to save ${key}:`, e); }
+    };
+    const loadFromStorage = (key) => {
+        try { return JSON.parse(localStorage.getItem(key)); } catch (e) { console.warn(`Failed to load ${key}:`, e); return null; }
+    };
+    const removeFromStorage = (key) => {
+        try { localStorage.removeItem(key); } catch (e) { console.warn(`Failed to remove ${key}:`, e); }
+    };
 
-    /**
-     * Clear focus state from localStorage
-     */
-    function clearFocusState() {
-        try {
-            localStorage.removeItem(FOCUS_STATE_STORAGE_KEY);
-        } catch (e) {
-            console.warn('Could not clear focus state from localStorage:', e);
-        }
-    }
+    // Light novel functions
+    const loadNovelSettings = () => {
+        const saved = loadFromStorage(NOVEL_SETTINGS_KEY);
+        if (saved) Object.assign(novelSettings, saved);
+    };
 
-    /**
-     * Load light novel reader settings from localStorage
-     */
-    function loadLightNovelSettings() {
-        try {
-            const saved = localStorage.getItem(NOVEL_SETTINGS_KEY);
-            if (saved) {
-                const settings = JSON.parse(saved);
-                currentFontSize = settings.fontSize || 18;
-                currentTextColor = settings.textColor || null;
-                currentBgColor = settings.bgColor || null;
-                currentTextAlign = settings.textAlign || 'justify';
-                currentMargin = settings.margin || 20;
-            }
-        } catch (e) {
-            console.warn('Could not load light novel settings from localStorage:', e);
-        }
-    }
+    const saveNovelSettings = () => saveToStorage(NOVEL_SETTINGS_KEY, novelSettings);
 
-    /**
-     * Save light novel reader settings to localStorage
-     */
-    function saveLightNovelSettings() {
-        try {
-            const settings = {
-                fontSize: currentFontSize,
-                textColor: currentTextColor,
-                bgColor: currentBgColor,
-                textAlign: currentTextAlign,
-                margin: currentMargin
-            };
-            localStorage.setItem(NOVEL_SETTINGS_KEY, JSON.stringify(settings));
-        } catch (e) {
-            console.warn('Could not save light novel settings to localStorage:', e);
-        }
-    }
-
-    /**
-     * Apply light novel reader settings to the DOM
-     */
-    function applyLightNovelSettings() {
+    const applyNovelSettings = () => {
         const reader = document.querySelector('.epub-reader');
         if (!reader) return;
 
         const card = reader.closest('.uk-card');
 
-        // Apply font size
-        reader.style.fontSize = currentFontSize + 'px';
+        reader.style.fontSize = novelSettings.fontSize + 'px';
         const fontSizeDisplay = document.getElementById('current-font-size');
-        if (fontSizeDisplay) fontSizeDisplay.textContent = currentFontSize + 'px';
+        if (fontSizeDisplay) fontSizeDisplay.textContent = novelSettings.fontSize + 'px';
 
-        // Apply text color if set
-        if (currentTextColor) {
-            reader.style.cssText += `color: ${currentTextColor} !important;`;
-            const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
-            elements.forEach(el => {
-                el.style.cssText += `color: ${currentTextColor} !important;`;
-            });
+        if (novelSettings.textColor) {
+            reader.style.color = novelSettings.textColor;
+            reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a').forEach(el => el.style.color = novelSettings.textColor);
         } else {
-            // Reset to default
             reader.style.color = '';
-            const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
-            elements.forEach(el => {
-                el.style.color = '';
-            });
+            reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a').forEach(el => el.style.color = '');
         }
 
-        // Apply background to the card
         if (card) {
-            if (currentBgColor) {
-                card.style.backgroundColor = currentBgColor;
-                reader.setAttribute('data-bg-color', currentBgColor);
-            } else {
-                card.style.backgroundColor = '';
-                reader.removeAttribute('data-bg-color');
-            }
+            card.style.backgroundColor = novelSettings.bgColor || '';
+            if (novelSettings.bgColor) reader.setAttribute('data-bg-color', novelSettings.bgColor);
+            else reader.removeAttribute('data-bg-color');
         }
 
-        // Apply text alignment directly
-        reader.style.textAlign = currentTextAlign;
+        reader.style.textAlign = novelSettings.textAlign;
+        document.documentElement.style.setProperty('--reader-margin', novelSettings.margin + 'px');
 
-        // Apply margin
-        document.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');
-
-        // Update UI controls
         const colorPicker = document.getElementById('font-color-picker');
-        if (colorPicker) colorPicker.value = currentTextColor || '#000000';
-
+        if (colorPicker) colorPicker.value = novelSettings.textColor || '#000000';
         const bgColorPicker = document.getElementById('bg-color-picker');
-        if (bgColorPicker) bgColorPicker.value = currentBgColor || '#ffffff';
+        if (bgColorPicker) bgColorPicker.value = novelSettings.bgColor || '#ffffff';
 
-        // Update alignment buttons
         document.querySelectorAll('.text-align-btn').forEach(btn => {
-            btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);
-            btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);
+            btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === novelSettings.textAlign);
+            btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== novelSettings.textAlign);
         });
 
-        // Update margin display
         const marginDisplay = document.getElementById('current-margin');
-        if (marginDisplay) marginDisplay.textContent = currentMargin + 'px';
-    }
+        if (marginDisplay) marginDisplay.textContent = novelSettings.margin + 'px';
+    };
 
-    /**
-     * Increase font size
-     */
-    function increaseFontSize() {
-        if (currentFontSize < maxFontSize) {
-            currentFontSize += fontSizeStep;
-            applyLightNovelSettings();
-            saveLightNovelSettings();
+    const adjustSetting = (key, direction) => {
+        const limit = novelLimits[key];
+        if (!limit) return;
+        const newValue = novelSettings[key] + (direction * limit.step);
+        if (newValue >= limit.min && newValue <= limit.max) {
+            novelSettings[key] = newValue;
+            applyNovelSettings();
+            saveNovelSettings();
         }
-    }
+    };
 
-    /**
-     * Decrease font size
-     */
-    function decreaseFontSize() {
-        if (currentFontSize > minFontSize) {
-            currentFontSize -= fontSizeStep;
-            applyLightNovelSettings();
-            saveLightNovelSettings();
-        }
-    }
+    const resetNovelSettings = () => {
+        Object.assign(novelSettings, { fontSize: 18, textColor: null, bgColor: null, textAlign: 'justify', margin: 20 });
+        applyNovelSettings();
+        removeFromStorage(NOVEL_SETTINGS_KEY);
+    };
 
-    /**
-     * Increase margin
-     */
-    function increaseMargin() {
-        if (currentMargin < maxMargin) {
-            currentMargin += marginStep;
-            applyLightNovelSettings();
-            saveLightNovelSettings();
-        }
-    }
-
-    /**
-     * Decrease margin
-     */
-    function decreaseMargin() {
-        if (currentMargin > minMargin) {
-            currentMargin -= marginStep;
-            applyLightNovelSettings();
-            saveLightNovelSettings();
-        }
-    }
-
-    /**
-     * Reset light novel settings
-     */
-    function resetLightNovelSettings() {
-        currentFontSize = 18;
-        currentTextColor = null;
-        currentBgColor = null;
-        currentTextAlign = 'justify';
-        currentMargin = 20;
-        applyLightNovelSettings();
-        try {
-            localStorage.removeItem(NOVEL_SETTINGS_KEY);
-        } catch (e) {
-            console.warn('Could not clear light novel settings from localStorage:', e);
-        }
-    }
-
-    /**
-     * Create focus modal HTML structure
-     */
-    function createFocusModal() {
+    // Focus modal functions
+    const createFocusModal = () => {
         const modal = document.createElement('div');
         modal.className = 'webtoon-focus-modal';
         modal.id = 'webtoon-focus-modal';
-        
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.zIndex = '9999';
+        modal.style.display = 'none';
+
         const overlay = document.createElement('div');
         overlay.className = 'webtoon-focus-modal-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        overlay.style.zIndex = '1';
         overlay.addEventListener('click', closeFocusModal);
-        
+
         const scrollContainer = document.createElement('div');
         scrollContainer.className = 'webtoon-focus-modal-scroll';
         scrollContainer.id = 'webtoon-focus-modal-scroll';
-        scrollContainer.addEventListener('click', (e) => {
-            // Close if clicking on the scrollContainer directly
-            if (e.target === scrollContainer) {
-                closeFocusModal();
-            }
-        });
-        
+        scrollContainer.style.position = 'absolute';
+        scrollContainer.style.top = '0';
+        scrollContainer.style.left = '0';
+        scrollContainer.style.width = '100%';
+        scrollContainer.style.height = '100%';
+        scrollContainer.style.overflow = 'auto';
+        scrollContainer.style.zIndex = '2';
+        scrollContainer.addEventListener('click', (e) => { if (e.target === scrollContainer) closeFocusModal(); });
+
         const closeBtn = document.createElement('button');
         closeBtn.className = 'webtoon-focus-modal-close';
         closeBtn.innerHTML = '&times;';
+        closeBtn.style.position = 'absolute';
+        closeBtn.style.top = '10px';
+        closeBtn.style.right = '10px';
+        closeBtn.style.zIndex = '10000';
+        closeBtn.style.background = 'rgba(0,0,0,0.5)';
+        closeBtn.style.color = 'white';
+        closeBtn.style.border = 'none';
+        closeBtn.style.padding = '10px';
+        closeBtn.style.cursor = 'pointer';
         closeBtn.setAttribute('aria-label', 'Close');
         closeBtn.addEventListener('click', closeFocusModal);
-        
-        modal.appendChild(overlay);
-        modal.appendChild(scrollContainer);
-        modal.appendChild(closeBtn);
-        
+
+        modal.append(overlay, scrollContainer, closeBtn);
         document.body.appendChild(modal);
         return modal;
-    }
+    };    const getFocusModal = () => focusModal || (focusModal = createFocusModal());
 
-    /**
-     * Get or create the focus modal
-     */
-    function getFocusModal() {
-        if (!focusModal) {
-            focusModal = createFocusModal();
-        }
-        return focusModal;
-    }
+    const saveFocusState = (modalScrollTop = 0) => {
+        const state = { ...focusStateData, modalScrollTop, mainPageScrollTop: scrollPositionBeforeFocus, timestamp: Date.now() };
+        saveToStorage(FOCUS_STATE_KEY, state);
+    };
 
-    /**
-     * Handle image click inside focus modal - prevent closing/navigation
-     */
-    function handleFocusModalImageClick(e) {
-        // Stop propagation so clicks on images don't trigger modal close
+    const getSavedFocusState = () => loadFromStorage(FOCUS_STATE_KEY);
+
+    const clearFocusState = () => removeFromStorage(FOCUS_STATE_KEY);
+
+    const handleFocusModalImageClick = (e) => {
         e.stopPropagation();
-    }
+        e.preventDefault();
+        closeFocusModal();
+    };
 
-    /**
-     * Open focus modal with existing images
-     */
-    function openFocusModal(clickedImg) {
+    const openFocusModal = (clickedImg) => {
         const modal = getFocusModal();
         const scrollContainer = modal.querySelector('.webtoon-focus-modal-scroll');
-        
-        // Check if we have a saved focus state to restore
+
         const savedState = getSavedFocusState();
         const shouldRestoreScroll = savedState && clickedImg === undefined;
-        
-        // Store current main page scroll position
-        const mainElement = document.querySelector('main.site-main');
-        scrollPositionBeforeFocus = mainElement ? mainElement.scrollTop : (window.scrollY || document.documentElement.scrollTop);
-        
-        // Find which image was clicked
+
+        scrollPositionBeforeFocus = document.querySelector('main.site-main')?.scrollTop ?? document.documentElement.scrollTop;
+
+        const navbar = document.querySelector('nav') || document.querySelector('.navbar') || document.querySelector('.top-navbar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        const effectiveScrollPosition = scrollPositionBeforeFocus + navbarHeight;
+
         let clickedIndex = -1;
-        const mainImages = containerElement.querySelectorAll('img');
-        mainImages.forEach((img, index) => {
-            if (img === clickedImg) clickedIndex = index;
-        });
-        if (clickedIndex === -1 && clickedImg.src) {
-            clickedIndex = Array.from(mainImages).findIndex(img => img.src === clickedImg.src);
-        }
+        const mainImages = containerElement.querySelectorAll('.reader-image');
+        mainImages.forEach((img, index) => { if (img === clickedImg) clickedIndex = index; });
+        if (clickedIndex === -1 && clickedImg && clickedImg.src) clickedIndex = Array.from(mainImages).findIndex(img => img.src === clickedImg.src);
         if (clickedIndex === -1) clickedIndex = 0;
-        
-        // Store the main image dimensions and click position
+
         const mainImageWidth = clickedImg.offsetWidth;
         const mainImageHeight = clickedImg.offsetHeight;
-        
-        // Calculate the position of the clicked image from the start of the container
+
         let imageTopPosition = 0;
-        for (let i = 0; i < clickedIndex; i++) {
-            imageTopPosition += mainImages[i].offsetHeight;
-        }
-        
-        // Get container's top padding to account for it in scroll calculations
+        for (let i = 0; i < clickedIndex; i++) imageTopPosition += mainImages[i].offsetHeight;
+
         const containerStyles = window.getComputedStyle(containerElement);
         const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
-        
-        // Calculate offset within the clicked image based on current scroll position
-        // We need to find how far into this image the current scroll is
-        // Account for container offset AND container padding
-        const scrollOffsetFromImageStart = scrollPositionBeforeFocus - (imageTopPosition + containerElement.offsetTop + containerPaddingTop);
-        
-        // Get natural aspect ratio for later calculations
+        const scrollOffsetFromImageStart = effectiveScrollPosition - (imageTopPosition + containerElement.offsetTop + containerPaddingTop);
         const naturalAspectRatio = clickedImg.naturalWidth / clickedImg.naturalHeight;
-        
-        // Store all needed data
-        focusStateData = {
-            imageIndex: clickedIndex,
-            mainImageWidth: mainImageWidth,
-            mainImageHeight: mainImageHeight,
-            viewportScrollOffset: scrollOffsetFromImageStart,
-            naturalAspectRatio: naturalAspectRatio
-        };
-        
-        // Clone images to modal instead of moving them
+
+        focusStateData = { imageIndex: clickedIndex, mainImageWidth, mainImageHeight, viewportScrollOffset: scrollOffsetFromImageStart, naturalAspectRatio };
+
         scrollContainer.innerHTML = '';
-        mainImages.forEach((img, index) => {
-            const clone = img.cloneNode(true);
-            // Ensure cloned images have no margins, padding or gaps to prevent spacing issues when resizing
-            clone.style.display = 'block';
-            clone.style.margin = '0';
-            clone.style.padding = '0';
-            clone.addEventListener('click', handleFocusModalImageClick);
-            scrollContainer.appendChild(clone);
-        });
-        
-        // Activate modal
+        if (currentMode === MODES.WEBTOON) {
+            originalImageParents = [];
+            mainImages.forEach((img, index) => {
+                originalImageParents.push(img.parentNode);
+                scrollContainer.appendChild(img);
+                img.addEventListener('click', handleFocusModalImageClick);
+                // Load lazy images immediately when opening focus modal
+                if (img.classList.contains('lazy')) {
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    lazyLoadObserver.unobserve(img);
+                }
+                // Remove the open focus listener while in modal
+                if (img.openFocusListener) {
+                    img.removeEventListener('click', img.openFocusListener);
+                }
+            });
+        } else {
+            // For single/double, create enlarged copies of current page
+            if (currentMode === MODES.SINGLE) {
+                const currentSrc = images[currentPage];
+                if (currentSrc) {
+                    const img = document.createElement('img');
+                    img.src = currentSrc;
+                    img.className = 'reader-image';
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    scrollContainer.appendChild(img);
+                    img.addEventListener('click', handleFocusModalImageClick);
+                }
+            } else if (currentMode === MODES.SIDE_BY_SIDE) {
+                const leftSrc = images[currentPage * 2];
+                const rightSrc = images[currentPage * 2 + 1];
+                if (leftSrc) {
+                    const img = document.createElement('img');
+                    img.src = leftSrc;
+                    img.className = 'reader-image';
+                    img.style.setProperty('width', '50%', 'important');
+                    img.style.setProperty('height', 'auto', 'important');
+                    scrollContainer.appendChild(img);
+                    img.addEventListener('click', handleFocusModalImageClick);
+                }
+                if (rightSrc) {
+                    const img = document.createElement('img');
+                    img.src = rightSrc;
+                    img.className = 'reader-image';
+                    img.style.setProperty('width', '50%', 'important');
+                    img.style.setProperty('height', 'auto', 'important');
+                    scrollContainer.appendChild(img);
+                    img.addEventListener('click', handleFocusModalImageClick);
+                }
+                // Set container to flex for side by side
+                scrollContainer.style.setProperty('display', 'flex', 'important');
+                scrollContainer.style.setProperty('flex-direction', 'row', 'important');
+                scrollContainer.style.setProperty('justify-content', 'space-between', 'important');
+                scrollContainer.style.setProperty('align-items', 'flex-start', 'important');
+            }
+        }
+
         modal.classList.add('active');
+        modal.style.display = 'flex';
         document.body.classList.add('webtoon-focus-open');
-        
-        // Immediately calculate and set scroll position before animation
-        const focusImages = scrollContainer.querySelectorAll('img');
+
+        const focusImages = scrollContainer.querySelectorAll('.reader-image');
         if (focusImages[clickedIndex]) {
             const focusImage = focusImages[clickedIndex];
-            
-            // Calculate target scroll position
             let targetScrollTop = 0;
-            
-            // Sum all previous images
-            for (let i = 0; i < clickedIndex; i++) {
-                targetScrollTop += focusImages[i].offsetHeight;
-            }
-            
-            // Add offset into current image, scaled by height change
-            const focusImageHeight = focusImage.offsetHeight;
-            const heightRatio = focusImageHeight / mainImageHeight;
-            const scaledOffset = focusStateData.viewportScrollOffset * heightRatio;
-            targetScrollTop += scaledOffset;
-            
-            // Use saved state if restoring
-            if (shouldRestoreScroll && savedState && savedState.modalScrollTop !== undefined) {
-                targetScrollTop = savedState.modalScrollTop;
-            }
-            
-            // Store the calculated target for later restoration
-            focusStateData.targetScrollTop = targetScrollTop;
-            focusStateData.focusImageHeight = focusImageHeight;
-            
-            // Set scroll position directly to target - the modal fade-in animation provides visual feedback
+            for (let i = 0; i < clickedIndex; i++) targetScrollTop += focusImages[i].offsetHeight;
+            const heightRatio = focusImage.offsetHeight / mainImageHeight;
+            targetScrollTop += scrollOffsetFromImageStart * heightRatio;
             scrollContainer.scrollTop = targetScrollTop;
-            
-            // Save state immediately
-            saveFocusState(targetScrollTop);
         }
-    }
 
-    /**
-     * Close focus modal and return to normal view
-     */
-    function closeFocusModal() {
-        if (!focusModal) return;
-        
-        const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-        let modalScrollPosition = 0;
-        let offsetInFocusImage = 0;
-        let focusImageHeight = 0;
-        
-        if (scrollContainer) {
-            modalScrollPosition = scrollContainer.scrollTop;
-            
-            // Calculate offset from where we are in focus mode
-            const focusImages = scrollContainer.querySelectorAll('img');
-            let currentImageTopInModal = 0;
-            for (let i = 0; i < focusStateData.imageIndex; i++) {
-                currentImageTopInModal += focusImages[i].offsetHeight;
-            }
-            offsetInFocusImage = modalScrollPosition - currentImageTopInModal;
-            
-            // Capture focus image height before clearing
-            if (focusImages[focusStateData.imageIndex]) {
-                focusImageHeight = focusImages[focusStateData.imageIndex].offsetHeight;
-            }
-            
-            // Reset zoom level for all images
-            scrollContainer.querySelectorAll('img').forEach(img => {
-                img.style.transform = '';
-                img.style.transformOrigin = '';
-            });
+        if (shouldRestoreScroll && savedState.modalScrollTop !== undefined) {
+            scrollContainer.scrollTop = savedState.modalScrollTop;
         }
-        
+
         focusModalZoom = 1;
-        
-        // Calculate and set the scroll position in main view BEFORE closing the modal
-        updateMainViewScrollPosition(offsetInFocusImage, focusImageHeight);
-        
-        // Add closing class to trigger backdrop animation
-        focusModal.classList.add('closing');
-        
-        // Wait for animation to complete, then finalize
-        setTimeout(() => {
-            finishCloseFocusModal(scrollContainer, modalScrollPosition);
-        }, 350);
-    }
-    
-    /**
-     * Update main view scroll position based on focus modal scroll
-     */
-    function updateMainViewScrollPosition(offsetInFocusImage, focusImageHeight) {
-        const mainElement = document.querySelector('main.site-main');
-        const mainImages = containerElement.querySelectorAll('img');
-        let targetScrollTop = scrollPositionBeforeFocus;
-        
-        if (mainImages[focusStateData.imageIndex]) {
-            // Get container's top padding
+        updateFocusModalZoom();
+
+        // Bring pagination to top in focus mode for single/double modes
+        if (currentMode !== MODES.WEBTOON) {
+            const pagination = document.getElementById('reader-pagination-bottom');
+            if (pagination) {
+                pagination.style.setProperty('z-index', '10002', 'important');
+                pagination.style.setProperty('position', 'fixed', 'important');
+                pagination.style.setProperty('bottom', '10px', 'important');
+                pagination.style.setProperty('top', 'auto', 'important');
+                pagination.style.setProperty('left', '50%', 'important');
+                pagination.style.setProperty('display', 'flex', 'important');
+                pagination.stopPropagationListener = (e) => e.stopPropagation();
+                pagination.addEventListener('click', pagination.stopPropagationListener);
+            }
+        }
+
+        scrollContainer.addEventListener('scroll', () => saveFocusState(scrollContainer.scrollTop));
+    };
+
+    const closeFocusModal = () => {
+        if (!focusModal) return;
+
+        const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
+        const currentModalScrollTop = scrollContainer.scrollTop;
+        saveFocusState(currentModalScrollTop);
+
+        if (currentMode === MODES.WEBTOON) {
+            const focusImages = scrollContainer.querySelectorAll('.reader-image');
+
+        // Store modal heights before moving images back
+        const modalHeights = Array.from(focusImages).map(img => img.offsetHeight);
+
+        // Calculate the current position in the modal
+        let currentImageIndex = 0;
+        let cumulativeModalHeight = 0;
+        for (let i = 0; i < focusImages.length; i++) {
+            const imgHeight = modalHeights[i];
+            if (cumulativeModalHeight + imgHeight > currentModalScrollTop) {
+                currentImageIndex = i;
+                break;
+            }
+            cumulativeModalHeight += imgHeight;
+        }
+        const offsetInModal = currentModalScrollTop - cumulativeModalHeight;
+
+        // Move images back
+        focusImages.forEach((img, index) => {
+            if (originalImageParents[index]) {
+                originalImageParents[index].appendChild(img);
+                img.removeEventListener('click', handleFocusModalImageClick);
+                // Restore the open focus listener
+                if (img.openFocusListener) {
+                    img.addEventListener('click', img.openFocusListener);
+                }
+            }
+        });
+
+        // Restore scroll position with proper mapping
+        requestAnimationFrame(() => {
+            const mainElement = document.querySelector('main.site-main');
+            const mainImages = containerElement.querySelectorAll('.reader-image');
             const containerStyles = window.getComputedStyle(containerElement);
             const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
-            
-            // Calculate position of the target image from the start of container
-            let imageTopPosition = 0;
-            for (let i = 0; i < focusStateData.imageIndex; i++) {
-                imageTopPosition += mainImages[i].offsetHeight;
+
+            let mainScrollTop = containerElement.offsetTop + containerPaddingTop;
+            for (let i = 0; i < currentImageIndex; i++) {
+                mainScrollTop += mainImages[i].offsetHeight;
             }
-            
-            // Scale the offset from focus modal back to main view dimensions
-            const mainImageHeight = mainImages[focusStateData.imageIndex].offsetHeight;
-            const effectiveFocusImageHeight = focusImageHeight || focusStateData.focusImageHeight || mainImageHeight;
-            
-            // Scale the offset proportionally based on height ratio
-            const heightRatio = mainImageHeight / effectiveFocusImageHeight;
-            const scaledOffset = offsetInFocusImage * heightRatio;
-            
-            // Update the viewport scroll offset to reflect how far the user actually scrolled in focus mode
-            focusStateData.viewportScrollOffset = scaledOffset;
-            
-            // Calculate total scroll position: account for container offset AND container padding
-            targetScrollTop = containerElement.offsetTop + containerPaddingTop + imageTopPosition + focusStateData.viewportScrollOffset;
-        }
-        
-        // Set scroll position immediately - no animation
-        if (mainElement) {
-            mainElement.scrollTop = targetScrollTop;
-        } else {
-            window.scrollTo({
-                top: targetScrollTop,
-                left: 0
-            });
-        }
-    }
-    
-    /**
-     * Finish closing focus modal after animation
-     */
-    function finishCloseFocusModal(scrollContainer, modalScrollPosition) {
-        // Deactivate modal
-        focusModal.classList.remove('active');
-        focusModal.classList.remove('closing');
-        document.body.classList.remove('webtoon-focus-open');
-        
-        // Clear the scroll container
-        if (scrollContainer) {
-            scrollContainer.innerHTML = '';
-        }
-        
-        // Save state
-        saveFocusState(modalScrollPosition);
-    }
 
-    /**
-     * Handle focus modal keyboard events
-     */
-    function handleFocusModalKeyboard(e) {
-        if (focusModal && focusModal.classList.contains('active')) {
-            if (e.key === 'Escape') {
-                closeFocusModal();
-                e.preventDefault();
-            }
-        }
-    }
+            const heightRatio = (currentImageIndex < mainImages.length && modalHeights[currentImageIndex]) ?
+                mainImages[currentImageIndex].offsetHeight / modalHeights[currentImageIndex] : 1;
+            mainScrollTop += offsetInModal * heightRatio;
 
-    /**
-     * Set up focus modal event listeners
-     */
-    function setupFocusModal() {
-        document.addEventListener('keydown', handleFocusModalKeyboard);
-        document.addEventListener('wheel', handleFocusModalWheel, { passive: false });
-    }
+            // Adjust for navbar height to match perceived position
+            const navbar = document.querySelector('nav') || document.querySelector('.navbar') || document.querySelector('.top-navbar');
+            const navbarHeight = navbar ? navbar.offsetHeight : 0;
+            mainScrollTop = Math.max(0, mainScrollTop - navbarHeight);
 
-    /**
-     * Handle wheel scroll in focus modal
-     */
-    function handleFocusModalWheel(e) {
-        if (!focusModal || !focusModal.classList.contains('active')) return;
-        
-        const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-        if (!scrollContainer) return;
-        
-        // Check if CTRL (or CMD on Mac) is pressed for zoom
-        if (e.ctrlKey || e.metaKey) {
-            // Prevent default zoom behavior
-            e.preventDefault();
-            
-            // Calculate zoom change (deltaY is negative for scroll up = zoom in)
-            const zoomStep = 0.1;
-            const direction = e.deltaY > 0 ? -1 : 1; // Invert: scroll down = zoom out
-            const newZoom = Math.max(0.5, Math.min(3, focusModalZoom + (direction * zoomStep)));
-            
-            if (newZoom !== focusModalZoom) {
-                // Get current scroll position and viewport info
-                const oldZoom = focusModalZoom;
-                const scrollTop = scrollContainer.scrollTop;
-                const viewportHeight = scrollContainer.clientHeight;
-                
-                // Calculate the center of the viewport in the unscaled coordinate system
-                const centerInView = scrollTop + viewportHeight / 2;
-                
-                focusModalZoom = newZoom;
-                
-                // Apply zoom to all images in the modal
-                const images = scrollContainer.querySelectorAll('img');
-                images.forEach(img => {
-                    img.style.transform = `scale(${focusModalZoom})`;
-                    img.style.transformOrigin = 'top center';
-                });
-                
-                // Adjust scroll position to keep the center point in view
-                // When zooming, the scaled content changes, so we need to adjust the scroll
-                const zoomRatio = newZoom / oldZoom;
-                const newScrollTop = centerInView * zoomRatio - viewportHeight / 2;
-                
-                // Use requestAnimationFrame to ensure DOM has updated before scrolling
-                requestAnimationFrame(() => {
-                    scrollContainer.scrollTop = Math.max(0, newScrollTop);
-                });
-            }
-        } else {
-            // Normal scrolling behavior
-            e.preventDefault();
-            
-            // Scroll the modal instead
-            scrollContainer.scrollTop += e.deltaY;
-        }
-    }
-
-    /**
-     * Apply zoom to the focus modal images and update the zoom input
-     */
-    function applyZoom(newZoom) {
-        if (!focusModal) return;
-        
-        const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-        if (!scrollContainer) return;
-        
-        newZoom = Math.max(0.5, Math.min(3, newZoom));
-        
-        if (newZoom !== focusModalZoom) {
-            const oldZoom = focusModalZoom;
-            const scrollTop = scrollContainer.scrollTop;
-            const viewportHeight = scrollContainer.clientHeight;
-            
-            // Calculate the center of the viewport in the unscaled coordinate system
-            const centerInView = scrollTop + viewportHeight / 2;
-            
-            focusModalZoom = newZoom;
-            
-            // Update the zoom input field
-            const zoomInput = focusModal.querySelector('#webtoon-zoom-input');
-            if (zoomInput) {
-                zoomInput.value = Math.round(focusModalZoom * 100) + '%';
-            }
-            
-            // Apply zoom to all images in the modal
-            const images = scrollContainer.querySelectorAll('img');
-            images.forEach(img => {
-                img.style.transform = `scale(${focusModalZoom})`;
-                img.style.transformOrigin = 'top center';
-            });
-            
-            // Adjust scroll position to keep the center point in view
-            const zoomRatio = newZoom / oldZoom;
-            const newScrollTop = centerInView * zoomRatio - viewportHeight / 2;
-            
-            // Use requestAnimationFrame to ensure DOM has updated before scrolling
-            requestAnimationFrame(() => {
-                scrollContainer.scrollTop = Math.max(0, newScrollTop);
-            });
-        }
-    }
-
-    /**
-     * Handle zoom button clicks (minus/plus buttons)
-     */
-    function handleZoomClick(direction) {
-        const zoomStep = 0.1;
-        const newZoom = focusModalZoom + (direction * zoomStep);
-        applyZoom(newZoom);
-    }
-
-    /**
-     * Handle zoom input change
-     */
-    function handleZoomInputChange(e) {
-        let value = e.target.value.trim();
-        
-        // Remove the % sign if present
-        value = value.replace('%', '').trim();
-        
-        // Parse as a number
-        const zoomPercent = parseFloat(value);
-        
-        if (!isNaN(zoomPercent) && zoomPercent > 0) {
-            const newZoom = Math.max(0.5, Math.min(3, zoomPercent / 100));
-            applyZoom(newZoom);
-        } else {
-            // Reset to current zoom if invalid
-            const zoomInput = focusModal.querySelector('#webtoon-zoom-input');
-            if (zoomInput) {
-                zoomInput.value = Math.round(focusModalZoom * 100) + '%';
-            }
-        }
-    }
-
-    /**
-     * Handle zoom input blur (restore valid value if needed)
-     */
-    function handleZoomInputBlur(e) {
-        const zoomInput = e.target;
-        if (zoomInput && focusModal) {
-            // Ensure the input always shows a valid zoom percentage
-            zoomInput.value = Math.round(focusModalZoom * 100) + '%';
-        }
-    }
-
-    /**
-     * Handle image click in webtoon mode
-     */
-    function handleWebtoonImageClick(e) {
-        if (currentMode === MODES.WEBTOON) {
-            const img = e.target;
-            if (img.tagName === 'IMG') {
-                openFocusModal(img);
-            }
-        }
-    }
-
-    /**
-     * Get saved reading mode from localStorage
-     */
-    function getStoredMode() {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            return stored && Object.values(MODES).includes(stored) ? stored : MODES.WEBTOON;
-        } catch (e) {
-            console.warn('Could not access localStorage:', e);
-            return MODES.WEBTOON;
-        }
-    }
-
-    /**
-     * Save reading mode to localStorage
-     */
-    function saveMode(mode) {
-        try {
-            localStorage.setItem(STORAGE_KEY, mode);
-        } catch (e) {
-            console.warn('Could not save to localStorage:', e);
-        }
-    }
-
-    /**
-     * Set the reading mode
-     */
-    function setMode(mode) {
-        if (!Object.values(MODES).includes(mode)) {
-            console.error('Invalid reading mode:', mode);
-            return;
-        }
-
-        currentMode = mode;
-        saveMode(mode);
-        updateModeButtons();
-        renderCurrentMode();
-    }
-
-    /**
-     * Update mode button states
-     */
-    function updateModeButtons() {
-        document.querySelectorAll('.reader-mode-btn').forEach(btn => {
-            const btnMode = btn.dataset.mode;
-            if (btnMode === currentMode) {
-                btn.classList.add('uk-active');
+            if (mainElement) {
+                mainElement.scrollTop = mainScrollTop;
             } else {
-                btn.classList.remove('uk-active');
+                document.documentElement.scrollTop = mainScrollTop;
             }
+
+            // Reset pagination styles
+            const pagination = document.getElementById('reader-pagination-bottom');
+            if (pagination) {
+                if (pagination.stopPropagationListener) {
+                    pagination.removeEventListener('click', pagination.stopPropagationListener);
+                    delete pagination.stopPropagationListener;
+                }
+                pagination.style.removeProperty('z-index');
+                pagination.style.removeProperty('position');
+                pagination.style.removeProperty('bottom');
+                pagination.style.removeProperty('top');
+                pagination.style.removeProperty('left');
+                pagination.style.removeProperty('transform');
+                pagination.style.removeProperty('display');
+            }
+
+            // Hide the modal
+            focusModal.classList.remove('active');
+            focusModal.style.display = 'none';
+            document.body.classList.remove('webtoon-focus-open');
+
+            // Update visibility after modal is hidden
+            updateModeVisibility();
         });
-    }
+        } else {
+            // For single/double, just hide the modal
+            requestAnimationFrame(() => {
+                // Update visibility after modal is hidden
+                updateModeVisibility();
 
-    /**
-     * Render images based on current mode
-     */
-    function renderCurrentMode() {
+                // Hide the modal
+                focusModal.classList.remove('active');
+                focusModal.style.display = 'none';
+                document.body.classList.remove('webtoon-focus-open');
+
+                // Reset pagination styles
+                const pagination = document.getElementById('reader-pagination-bottom');
+                if (pagination) {
+                    if (pagination.stopPropagationListener) {
+                        pagination.removeEventListener('click', pagination.stopPropagationListener);
+                        delete pagination.stopPropagationListener;
+                    }
+                    pagination.style.removeProperty('z-index');
+                    pagination.style.removeProperty('position');
+                    pagination.style.removeProperty('bottom');
+                    pagination.style.removeProperty('top');
+                    pagination.style.removeProperty('left');
+                    pagination.style.removeProperty('transform');
+                    pagination.style.removeProperty('display');
+                }
+            });
+        }
+    };
+
+    const updateFocusModalZoom = () => {
+        const scrollContainer = focusModal ? focusModal.querySelector('.webtoon-focus-modal-scroll') : null;
+        if (!scrollContainer) return;
+
+        const focusImages = scrollContainer.querySelectorAll('.reader-image');
+        focusImages.forEach(img => {
+            img.style.transform = `scale(${focusModalZoom})`;
+            img.style.transformOrigin = 'top center';
+        });
+    };
+
+    const zoomInFocusModal = () => {
+        if (focusModalZoom < 3) {
+            focusModalZoom += 0.25;
+            updateFocusModalZoom();
+        }
+    };
+
+    const zoomOutFocusModal = () => {
+        if (focusModalZoom > 0.5) {
+            focusModalZoom -= 0.25;
+            updateFocusModalZoom();
+        }
+    };
+
+    const resetFocusModalZoom = () => {
+        focusModalZoom = 1;
+        updateFocusModalZoom();
+    };
+
+    // Reading mode functions
+    const setReadingMode = (mode) => {
+        currentMode = mode;
+        localStorage.setItem(STORAGE_KEY, mode);
+        updateModeVisibility();
+        updateModeButtons();
+    };
+
+    const renderWebtoonMode = () => {
         if (!containerElement) return;
-
-        // Ensure container is visible
-        containerElement.style.display = 'block';
-
-        switch (currentMode) {
-            case MODES.WEBTOON:
-                renderWebtoonMode();
-                break;
-            case MODES.SINGLE:
-                renderSinglePageMode();
-                break;
-            case MODES.SIDE_BY_SIDE:
-                renderSideBySideMode();
-                break;
-        }
-
-        // Hide/show pagination controls
-        const paginationControls = document.getElementById('reader-pagination');
-        const paginationBottom = document.getElementById('reader-pagination-bottom');
-        if (paginationControls) {
-            paginationControls.style.display = currentMode === MODES.WEBTOON ? 'none' : 'flex';
-            if (currentMode !== MODES.WEBTOON) {
-                paginationControls.classList.remove('hide-controls');
-            }
-        }
-        if (paginationBottom) {
-            paginationBottom.style.display = currentMode === MODES.WEBTOON ? 'none' : 'flex';
-            if (currentMode !== MODES.WEBTOON) {
-                paginationBottom.classList.remove('hide-controls');
-            }
-        }
-
-        // Restart auto-hide timer when mode changes
-        if (currentMode !== MODES.WEBTOON) {
-            showPaginationControls();
-        }
-    }
-
-    /**
-     * Render webtoon mode (vertical scroll)
-     */
-    function renderWebtoonMode() {
-        // Reset to original classes for webtoon mode with centering
         containerElement.className = 'flex flex-col items-center justify-center p-0 sm:p-4 w-full mx-auto';
         containerElement.style.maxWidth = '1200px';
-        
-        // Clear container safely
-        containerElement.textContent = '';
-        
-        // Create and append images safely using DOM methods
+        containerElement.innerHTML = '';
         images.forEach(src => {
             const img = document.createElement('img');
-            img.src = src;
-            img.className = 'h-auto max-w-full mx-auto';
-            img.alt = 'loading page...';
-            img.style.cursor = 'pointer';
-            img.addEventListener('click', handleWebtoonImageClick);
-            containerElement.appendChild(img);
+            img.setAttribute('data-src', src);
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
+            img.className = 'reader-image lazy';
+            img.setAttribute('loading', 'lazy');
+            img.alt = 'Manga page';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'webtoon-image-wrapper';
+            wrapper.appendChild(img);
+            containerElement.appendChild(wrapper);
         });
-    }
+        attachImageListeners();
+        observeLazyImages();
+    };
 
-    /**
-     * Render single page mode
-     */
-    function renderSinglePageMode() {
-        // Remove flex-col and width constraints for single page
+    const renderSinglePageMode = () => {
+        if (!containerElement) return;
         containerElement.className = 'reader-single-page-container';
-        
-        if (images.length === 0) {
-            containerElement.textContent = 'No pages available';
-            return;
+        containerElement.innerHTML = '';
+        if (images[currentPage]) {
+            const img = document.createElement('img');
+            img.setAttribute('data-src', images[currentPage]);
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
+            img.className = 'reader-image lazy';
+            img.setAttribute('loading', 'lazy');
+            img.alt = 'Manga page';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'single-page-wrapper';
+            wrapper.appendChild(img);
+            containerElement.appendChild(wrapper);
         }
+        attachImageListeners();
+        observeLazyImages();
+    };
 
-        const imgSrc = images[currentPage] || images[0];
-        
-        // Clear container safely
-        containerElement.textContent = '';
-        
-        // Create elements safely using DOM methods
-        const pageDiv = document.createElement('div');
-        pageDiv.className = 'reader-single-page';
-        
-        const img = document.createElement('img');
-        img.src = imgSrc;
-        img.className = 'reader-page-image';
-        img.alt = `Page ${currentPage + 1}`;
-        img.style.cursor = 'pointer';
-        
-        // Add click handler for navigation
-        img.addEventListener('click', handleImageClick);
-        
-        pageDiv.appendChild(img);
-        containerElement.appendChild(pageDiv);
+    const renderSideBySideMode = () => {
+        if (!containerElement) return;
+        containerElement.className = '';
+        containerElement.style.display = 'flex';
+        containerElement.style.justifyContent = 'space-between';
+        containerElement.style.alignItems = 'flex-start';
+        containerElement.style.gap = '0';
+        containerElement.innerHTML = '';
+        const leftSrc = images[currentPage * 2];
+        const rightSrc = images[currentPage * 2 + 1];
+        if (leftSrc) {
+            const img = document.createElement('img');
+            img.setAttribute('data-src', leftSrc);
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
+            img.className = 'reader-image lazy';
+            img.setAttribute('loading', 'lazy');
+            img.alt = 'Manga page';
+            img.style.maxWidth = '50%';
+            img.style.height = 'auto';
+            containerElement.appendChild(img);
+        }
+        if (rightSrc) {
+            const img = document.createElement('img');
+            img.setAttribute('data-src', rightSrc);
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
+            img.className = 'reader-image lazy';
+            img.setAttribute('loading', 'lazy');
+            img.alt = 'Manga page';
+            img.style.maxWidth = '50%';
+            img.style.height = 'auto';
+            containerElement.appendChild(img);
+        }
+        attachImageListeners();
+        observeLazyImages();
+    };
 
+    const updatePageCounter = () => {
+        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
+        const counter = (currentPage + 1) + ' / ' + maxPages;
+        const pageCounter = document.getElementById('page-counter');
+        if (pageCounter) pageCounter.textContent = counter;
+        const pageCounterBottom = document.getElementById('page-counter-bottom');
+        if (pageCounterBottom) pageCounterBottom.textContent = counter;
+    };
+
+    const updateModeVisibility = () => {
+        if (isLightNovel) return;
+        const allImgs = containerElement.querySelectorAll('.reader-image');
+        allImgs.forEach(img => {
+            img.style.display = 'none';
+            img.style.maxWidth = '';
+            img.style.height = '';
+        });
+        if (currentMode === MODES.WEBTOON) {
+            containerElement.className = 'flex flex-col items-center justify-center p-0 sm:p-4 w-full mx-auto';
+            containerElement.style.maxWidth = '1200px';
+            const wrappers = containerElement.querySelectorAll('.webtoon-image-wrapper');
+            wrappers.forEach(wrapper => wrapper.style.display = 'block');
+            allImgs.forEach(img => img.style.display = 'block');
+        } else if (currentMode === MODES.SINGLE) {
+            renderSinglePageMode();
+        } else if (currentMode === MODES.SIDE_BY_SIDE) {
+            renderSideBySideMode();
+        }
+        attachImageListeners();
         updatePageCounter();
-    }
-
-    /**
-     * Render side-by-side mode (two pages)
-     */
-    function renderSideBySideMode() {
-        // Remove ALL existing classes that might interfere
-        containerElement.className = 'reader-side-by-side-container';
-        
-        if (images.length === 0) {
-            containerElement.textContent = 'No pages available';
-            return;
-        }
-
-        // For side-by-side, show two pages at once
-        const leftPage = images[currentPage];
-        const rightPage = images[currentPage + 1];
-
-        // Clear container safely
-        containerElement.textContent = '';
-        
-        // Create wrapper div
-        const wrapperDiv = document.createElement('div');
-        wrapperDiv.className = 'reader-side-by-side';
-        
-        // Always render left page if it exists
-        if (leftPage) {
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'reader-page-left';
-            
-            const leftImg = document.createElement('img');
-            leftImg.src = leftPage;
-            leftImg.className = 'reader-page-image';
-            leftImg.alt = `Page ${currentPage + 1}`;
-            leftImg.style.cursor = 'pointer';
-            
-            // Add click handler for navigation
-            leftImg.addEventListener('click', handleImageClick);
-            
-            leftDiv.appendChild(leftImg);
-            wrapperDiv.appendChild(leftDiv);
+        const pagination = document.getElementById('reader-pagination');
+        const paginationBottom = document.getElementById('reader-pagination-bottom');
+        if (currentMode === MODES.WEBTOON) {
+            if (pagination) pagination.style.display = 'none';
+            if (paginationBottom) paginationBottom.style.display = 'none';
         } else {
-            console.warn('Left page is undefined at index:', currentPage);
-        }
-        
-        // Always render right page if it exists
-        if (rightPage) {
-            const rightDiv = document.createElement('div');
-            rightDiv.className = 'reader-page-right';
-            
-            const rightImg = document.createElement('img');
-            rightImg.src = rightPage;
-            rightImg.className = 'reader-page-image';
-            rightImg.alt = `Page ${currentPage + 2}`;
-            rightImg.style.cursor = 'pointer';
-            
-            // Add click handler for navigation
-            rightImg.addEventListener('click', handleImageClick);
-            
-            rightDiv.appendChild(rightImg);
-            wrapperDiv.appendChild(rightDiv);
-        }
-        
-        containerElement.appendChild(wrapperDiv);
-
-        updatePageCounter();
-    }
-
-    /**
-     * Handle click on image for navigation
-     * Left 50% goes to previous page, right 50% goes to next page
-     */
-    function handleImageClick(e) {
-        // Only handle in single or side-by-side mode
-        if (currentMode === MODES.WEBTOON) return;
-
-        const img = e.currentTarget;
-        const rect = img.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const imgWidth = rect.width;
-        
-        // Determine if click was on left or right half
-        if (clickX < imgWidth / 2) {
-            // Left half - go to previous page
-            prevPage();
-        } else {
-            // Right half - go to next page
-            nextPage();
-        }
-    }
-
-    /**
-     * Navigate to next page(s)
-     */
-    function nextPage() {
-        if (currentMode === MODES.WEBTOON) return;
-
-        const increment = currentMode === MODES.SIDE_BY_SIDE ? 2 : 1;
-        
-        if (currentMode === MODES.SIDE_BY_SIDE) {
-            // For side-by-side, ensure we don't go past the last page
-            if (currentPage + increment < images.length) {
-                currentPage += increment;
-            } else if (currentPage + 1 < images.length) {
-                // If only one page left, move to it
-                currentPage += 1;
-            } else {
-                return; // Already at the end
-            }
-        } else {
-            if (currentPage < images.length - 1) {
-                currentPage += increment;
-            } else {
-                return; // Already at the end
-            }
-        }
-        
-        renderCurrentMode();
-        scrollToTopInstant();
-    }
-
-    /**
-     * Navigate to previous page(s)
-     */
-    function prevPage() {
-        if (currentMode === MODES.WEBTOON) return;
-
-        const decrement = currentMode === MODES.SIDE_BY_SIDE ? 2 : 1;
-
-        if (currentPage >= decrement) {
-            currentPage -= decrement;
-            renderCurrentMode();
-            scrollToTopInstant();
-        }
-    }
-
-    /**
-     * Go to first page
-     */
-    function firstPage() {
-        if (currentMode === MODES.WEBTOON) return;
-        currentPage = 0;
-        renderCurrentMode();
-        scrollToTopInstant();
-    }
-
-    /**
-     * Go to last page
-     */
-    function lastPage() {
-        if (currentMode === MODES.WEBTOON) return;
-        
-        if (currentMode === MODES.SIDE_BY_SIDE) {
-            // Go to the last pair of pages
-            currentPage = images.length % 2 === 0 ? images.length - 2 : images.length - 1;
-        } else {
-            currentPage = images.length - 1;
-        }
-        renderCurrentMode();
-        scrollToTopInstant();
-    }
-
-    /**
-     * Update page counter display
-     */
-    function updatePageCounter() {
-        const counter = document.getElementById('page-counter');
-        const counterBottom = document.getElementById('page-counter-bottom');
-        
-        let counterText = '';
-        if (currentMode === MODES.SIDE_BY_SIDE) {
-            const endPage = Math.min(currentPage + 2, images.length);
-            counterText = `${currentPage + 1}-${endPage} / ${images.length}`;
-        } else {
-            counterText = `${currentPage + 1} / ${images.length}`;
-        }
-        
-        if (counter) counter.textContent = counterText;
-        if (counterBottom) counterBottom.textContent = counterText;
-
-        // Update button states
-        const prevBtn = document.getElementById('prev-page-btn');
-        const nextBtn = document.getElementById('next-page-btn');
-        const firstBtn = document.getElementById('first-page-btn');
-        const lastBtn = document.getElementById('last-page-btn');
-
-        if (prevBtn) prevBtn.disabled = currentPage === 0;
-        if (firstBtn) firstBtn.disabled = currentPage === 0;
-
-        const atEnd = currentMode === MODES.SIDE_BY_SIDE ? 
-            currentPage >= images.length - 1 : currentPage >= images.length - 1;
-        
-        if (nextBtn) nextBtn.disabled = atEnd;
-        if (lastBtn) lastBtn.disabled = atEnd;
-    }
-
-    /**
-     * Scroll to top instantly (used when changing pages)
-     */
-    function scrollToTopInstant() {
-        // Scroll the reader container into view, centered when possible
-        if (containerElement) {
-            containerElement.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' });
-        } else if (window.scrollToTopInstant) {
-            window.scrollToTopInstant();
-        } else {
-            window.scrollTo({ top: 0, behavior: 'auto' });
-        }
-    }
-
-    /**
-     * Handle keyboard navigation
-     */
-    function handleKeyboard(e) {
-        if (currentMode === MODES.WEBTOON) return;
-
-        // Ignore if user is typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            return;
+            if (pagination) pagination.style.display = 'flex';
+            if (paginationBottom) paginationBottom.style.display = 'flex';
+            centerPaginationToContent();
         }
 
-        switch(e.key) {
-            case 'ArrowLeft':
-                prevPage();
-                e.preventDefault();
-                break;
-            case 'ArrowRight':
-                nextPage();
-                e.preventDefault();
-                break;
-            case 'Home':
-                firstPage();
-                e.preventDefault();
-                break;
-            case 'End':
-                lastPage();
-                e.preventDefault();
-                break;
-        }
-    }
-
-    /**
-     * Auto-hide pagination controls on mouse inactivity
-     */
-    let hideControlsTimeout = null;
-    let stopMovingTimeout = null;
-    let isMouseMoving = false;
-    
-    function showPaginationControls() {
-        const topControls = document.getElementById('reader-pagination');
-        const bottomControls = document.getElementById('reader-pagination-bottom');
-        
-        if (topControls) topControls.classList.remove('hide-controls');
-        if (bottomControls) bottomControls.classList.remove('hide-controls');
-        
-        // Clear existing timeouts
-        if (hideControlsTimeout) {
-            clearTimeout(hideControlsTimeout);
-        }
-        if (stopMovingTimeout) {
-            clearTimeout(stopMovingTimeout);
-        }
-        
-        // Mark that mouse is moving
-        isMouseMoving = true;
-        
-        // Wait 500ms to confirm mouse has actually stopped moving
-        stopMovingTimeout = setTimeout(() => {
-            isMouseMoving = false;
-            // After confirming mouse stopped, wait 4 more seconds before hiding
-            hideControlsTimeout = setTimeout(() => {
-                if (!isMouseMoving && currentMode !== MODES.WEBTOON) {
-                    if (topControls) topControls.classList.add('hide-controls');
-                    if (bottomControls) bottomControls.classList.add('hide-controls');
+        // If focus modal is active
+        if (focusModal && focusModal.classList.contains('active')) {
+            if (currentMode === MODES.WEBTOON) {
+                const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
+                const focusImages = scrollContainer.querySelectorAll('.reader-image');
+                let targetScrollTop = 0;
+                let targetIndex = currentPage; // For webtoon, currentPage is 0
+                for (let i = 0; i < targetIndex && i < focusImages.length; i++) {
+                    targetScrollTop += focusImages[i].offsetHeight;
                 }
-            }, 4000);
-        }, 500);
-    }
-    
-    function setupAutoHideControls() {
-        // Show controls on mouse move
-        document.addEventListener('mousemove', showPaginationControls);
-        
-        // Show controls on touch
-        document.addEventListener('touchstart', showPaginationControls);
-        
-        // Initial show
-        showPaginationControls();
-    }
-
-    /**
-     * Restore focus mode from saved state if available
-     */
-    function restoreFocusState() {
-        const savedState = getSavedFocusState();
-        if (!savedState) {
-            return;
-        }
-        
-        // Restore the focus state data
-        focusStateData = {
-            imageIndex: savedState.imageIndex || 0,
-            mainImageWidth: savedState.mainImageWidth || 0,
-            mainImageHeight: savedState.mainImageHeight || 0,
-            viewportScrollOffset: savedState.viewportScrollOffset || 0,
-            naturalAspectRatio: savedState.naturalAspectRatio || 0,
-            focusImageHeight: savedState.focusImageHeight || 0
-        };
-        
-        // Restore main page scroll position
-        scrollPositionBeforeFocus = savedState.mainPageScrollTop || 0;
-        
-        // Check if we still have images loaded
-        const mainImages = containerElement.querySelectorAll('img');
-        if (mainImages.length === 0) {
-            clearFocusState();
-            return;
-        }
-        
-        // Open focus modal without clicking an image
-        const clickedImg = mainImages[focusStateData.imageIndex];
-        if (clickedImg) {
-            openFocusModal(clickedImg);
-        }
-    }
-
-    /**
-     * Initialize the reader
-     */
-    function init() {
-        // Clear any previous focus state when loading a new chapter
-        clearFocusState();
-
-        // Check if this is a light novel reader
-        const lightNovelContainer = document.getElementById('reader-text-container');
-        const mangaContainer = document.getElementById('reader-images-container');
-
-        if (lightNovelContainer) {
-            // Initialize light novel reader
-            isLightNovel = true;
-            containerElement = lightNovelContainer;
-            initLightNovelReader();
-        } else if (mangaContainer) {
-            // Initialize manga reader
-            isLightNovel = false;
-            containerElement = mangaContainer;
-            initMangaReader();
-        } else {
-            console.warn('No reader container found');
-            return;
-        }
-    }
-
-    /**
-     * Initialize manga reader
-     */
-    function initMangaReader() {
-        // Extract images from data attribute or existing img tags
-        const imagesData = containerElement.dataset.images;
-        if (imagesData) {
-            try {
-                images = JSON.parse(imagesData);
-            } catch (e) {
-                console.error('Could not parse images data:', e);
-                return;
+                scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+            } else {
+                // Update modal content for single/double
+                const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
+                scrollContainer.innerHTML = '';
+                if (currentMode === MODES.SINGLE) {
+                    const currentSrc = images[currentPage];
+                    if (currentSrc) {
+                        const img = document.createElement('img');
+                        img.src = currentSrc;
+                        img.className = 'reader-image';
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        scrollContainer.appendChild(img);
+                        img.addEventListener('click', handleFocusModalImageClick);
+                    }
+                } else if (currentMode === MODES.SIDE_BY_SIDE) {
+                    const leftSrc = images[currentPage * 2];
+                    const rightSrc = images[currentPage * 2 + 1];
+                    if (leftSrc) {
+                        const img = document.createElement('img');
+                        img.src = leftSrc;
+                        img.className = 'reader-image';
+                        img.style.setProperty('width', '50%', 'important');
+                        img.style.setProperty('height', 'auto', 'important');
+                        scrollContainer.appendChild(img);
+                        img.addEventListener('click', handleFocusModalImageClick);
+                    }
+                    if (rightSrc) {
+                        const img = document.createElement('img');
+                        img.src = rightSrc;
+                        img.className = 'reader-image';
+                        img.style.setProperty('width', '50%', 'important');
+                        img.style.setProperty('height', 'auto', 'important');
+                        scrollContainer.appendChild(img);
+                        img.addEventListener('click', handleFocusModalImageClick);
+                    }
+                    // Set container to flex for side by side
+                    scrollContainer.style.setProperty('display', 'flex', 'important');
+                    scrollContainer.style.setProperty('flex-direction', 'row', 'important');
+                    scrollContainer.style.setProperty('justify-content', 'space-between', 'important');
+                    scrollContainer.style.setProperty('align-items', 'flex-start', 'important');
+                }
             }
-        } else {
-            // Fallback: extract from existing img tags
-            const existingImages = containerElement.querySelectorAll('img[src]');
-            images = Array.from(existingImages).map(img => img.src);
         }
+    };
 
-        if (images.length === 0) {
-            console.warn('No images found for reader');
+    const updateModeButtons = () => {
+        document.querySelectorAll('.reader-mode-btn').forEach(btn => {
+            const mode = btn.getAttribute('data-mode');
+            btn.classList.toggle('uk-btn-primary', mode === currentMode);
+            btn.classList.toggle('uk-btn-default', mode !== currentMode);
+        });
+    };
+
+    const attachImageListeners = () => {
+        containerElement.querySelectorAll('.reader-image').forEach(img => {
+            if (!img.openFocusListener) {
+                img.openFocusListener = () => openFocusModal(img);
+                img.addEventListener('click', img.openFocusListener);
+            }
+        });
+    };
+
+    const centerPaginationToContent = () => {
+        const pagination = document.getElementById('reader-pagination');
+        const paginationBottom = document.getElementById('reader-pagination-bottom');
+        if (!containerElement || (!pagination && !paginationBottom)) return;
+
+        const containerRect = containerElement.getBoundingClientRect();
+        const centerX = containerRect.left + (containerRect.width / 2);
+
+        if (pagination) {
+            pagination.style.left = centerX + 'px';
+            pagination.style.transform = 'translateX(-50%)';
+        }
+        if (paginationBottom) {
+            paginationBottom.style.left = centerX + 'px';
+            paginationBottom.style.transform = 'translateX(-50%) translateY(0)';
+        }
+    };
+
+    // Navigation functions
+    const nextPage = () => {
+        if (isLightNovel) return;
+        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
+        if (currentPage < maxPages - 1) {
+            currentPage++;
+            updateModeVisibility();
+        }
+    };
+
+    const prevPage = () => {
+        if (isLightNovel) return;
+        if (currentPage > 0) {
+            currentPage--;
+            updateModeVisibility();
+        }
+    };
+
+    const goToPage = (page) => {
+        if (isLightNovel) return;
+        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
+        if (page >= 0 && page < maxPages) {
+            currentPage = page;
+            updateModeVisibility();
+        }
+    };
+
+    // Initialization
+    const init = () => {
+        containerElement = document.getElementById('reader-images-container');
+        const textContainer = document.getElementById('reader-text-container');
+        isLightNovel = !!textContainer;
+
+        if (isLightNovel) {
+            loadNovelSettings();
+            applyNovelSettings();
             return;
         }
 
-        // Set reading mode based on manga type before loading images
-        const mangaType = containerElement.dataset.mangaType;
-        if (mangaType === 'webtoon' || mangaType === 'manhwa') {
-            // Webtoons and manhwa default to webtoon reading mode
-            currentMode = MODES.WEBTOON;
-            saveMode(MODES.WEBTOON);
-        } else if (mangaType === 'manga') {
-            // Manga defaults to single page reading mode
-            currentMode = MODES.SINGLE;
-            saveMode(MODES.SINGLE);
-        } else {
-            // Load saved mode for other types
-            currentMode = getStoredMode();
-        }
-        currentPage = 0;
+        if (!containerElement) return;
 
-        // Set up mode buttons
+        const savedMode = localStorage.getItem(STORAGE_KEY);
+        if (savedMode && Object.values(MODES).includes(savedMode)) currentMode = savedMode;
+
+        images = Array.from(containerElement.querySelectorAll('.reader-image')).map(img => img.dataset.src);
+        currentPage = 0;
+        observeLazyImages();
+        updateModeVisibility();
+        updateModeButtons();
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+            switch (e.key) {
+                case 'ArrowRight': case ' ': nextPage(); break;
+                case 'ArrowLeft': prevPage(); break;
+                case 'f': case 'F': openFocusModal(); break;
+                case 'Escape': if (focusModal && focusModal.classList.contains('active')) closeFocusModal(); break;
+            }
+        });
+
         document.querySelectorAll('.reader-mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                setMode(btn.dataset.mode);
+                setReadingMode(btn.getAttribute('data-mode'));
             });
         });
 
-        // Set up pagination buttons
-        const prevBtn = document.getElementById('prev-page-btn');
-        const nextBtn = document.getElementById('next-page-btn');
-        const firstBtn = document.getElementById('first-page-btn');
-        const lastBtn = document.getElementById('last-page-btn');
-
-        if (prevBtn) prevBtn.addEventListener('click', prevPage);
-        if (nextBtn) nextBtn.addEventListener('click', nextPage);
-        if (firstBtn) firstBtn.addEventListener('click', firstPage);
-        if (lastBtn) lastBtn.addEventListener('click', lastPage);
-
-        // Set up keyboard navigation
-        document.addEventListener('keydown', handleKeyboard);
-
-        // Set up auto-hide controls
-        setupAutoHideControls();
-
-        // Set up focus modal
-        setupFocusModal();
-
-        // Initial render
-        updateModeButtons();
-        renderCurrentMode();
-    }
-
-    /**
-     * Initialize light novel reader
-     */
-    function initLightNovelReader() {
-        // Load saved settings
-        loadLightNovelSettings();
-
-        // Apply settings to DOM
-        applyLightNovelSettings();
-
-        // Set up font size button handlers
-        document.querySelectorAll('.font-size-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const action = this.getAttribute('data-action');
-                if (action === 'increase') {
-                    increaseFontSize();
-                } else if (action === 'decrease') {
-                    decreaseFontSize();
-                }
-            });
-        });
-
-        // Set up color picker handlers
-        const fontColorPicker = document.getElementById('font-color-picker');
-        if (fontColorPicker) {
-            fontColorPicker.addEventListener('input', function(e) {
-                currentTextColor = e.target.value;
-                applyLightNovelSettings();
-                saveLightNovelSettings();
+        // Pagination button event listeners
+        const firstPageBtn = document.getElementById('first-page-btn');
+        if (firstPageBtn) firstPageBtn.addEventListener('click', () => goToPage(0));
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        if (prevPageBtn) prevPageBtn.addEventListener('click', prevPage);
+        const nextPageBtn = document.getElementById('next-page-btn');
+        if (nextPageBtn) nextPageBtn.addEventListener('click', nextPage);
+        const lastPageBtn = document.getElementById('last-page-btn');
+        if (lastPageBtn) {
+            lastPageBtn.addEventListener('click', () => {
+                const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
+                goToPage(maxPages - 1);
             });
         }
 
-        const bgColorPicker = document.getElementById('bg-color-picker');
-        if (bgColorPicker) {
-            bgColorPicker.addEventListener('input', function(e) {
-                currentBgColor = e.target.value;
-                applyLightNovelSettings();
-                saveLightNovelSettings();
-            });
-        }
-
-        // Set up reset button handler
-        const resetBtn = document.getElementById('reset-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function() {
-                if (confirm('Are you sure you want to reset all reading customizations?')) {
-                    resetLightNovelSettings();
-                }
-            });
-        }
-
-        // Set up text alignment handlers
-        document.querySelectorAll('.text-align-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                currentTextAlign = this.getAttribute('data-align');
-                applyLightNovelSettings();
-                saveLightNovelSettings();
-            });
-        });
-
-        // Set up margin button handlers
-        document.querySelectorAll('.margin-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const action = this.getAttribute('data-action');
-                if (action === 'increase') {
-                    increaseMargin();
-                } else if (action === 'decrease') {
-                    decreaseMargin();
-                }
-            });
-        });
-
-        // Set up TOC link handlers
-        document.addEventListener('click', function(e) {
-            if (e.target.matches('.toc-content a')) {
-                e.preventDefault();
-                const targetId = e.target.getAttribute('href').substring(1);
-                const target = document.getElementById(targetId);
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-                // Close the modal if it exists
-                const tocModal = document.getElementById('toc-modal');
-                if (tocModal && window.UIkit) {
-                    window.UIkit.modal(tocModal).hide();
-                }
+        // Center pagination on window resize
+        window.addEventListener('resize', () => {
+            if (currentMode !== MODES.WEBTOON) {
+                centerPaginationToContent();
             }
         });
-    }
 
-    // Expose public API
-    window.MangaReader = {
-        init,
-        setMode,
-        nextPage,
-        prevPage,
-        firstPage,
-        lastPage,
-        restoreFocusState,
-        clearFocusState,
-        MODES,
-        // Light novel functions
-        increaseFontSize,
-        decreaseFontSize,
-        increaseMargin,
-        decreaseMargin,
-        resetLightNovelSettings
+        // Light novel controls
+        const increaseFontSizeBtn = document.getElementById('increase-font-size');
+        if (increaseFontSizeBtn) increaseFontSizeBtn.addEventListener('click', () => adjustSetting('fontSize', 1));
+        const decreaseFontSizeBtn = document.getElementById('decrease-font-size');
+        if (decreaseFontSizeBtn) decreaseFontSizeBtn.addEventListener('click', () => adjustSetting('fontSize', -1));
+        const increaseMarginBtn = document.getElementById('increase-margin');
+        if (increaseMarginBtn) increaseMarginBtn.addEventListener('click', () => adjustSetting('margin', 1));
+        const decreaseMarginBtn = document.getElementById('decrease-margin');
+        if (decreaseMarginBtn) decreaseMarginBtn.addEventListener('click', () => adjustSetting('margin', -1));
+        const resetBtn = document.getElementById('reset-light-novel-settings');
+        if (resetBtn) resetBtn.addEventListener('click', resetNovelSettings);
+
+        const fontColorPicker = document.getElementById('font-color-picker');
+        if (fontColorPicker) fontColorPicker.addEventListener('input', (e) => {
+            novelSettings.textColor = e.target.value;
+            applyNovelSettings();
+            saveNovelSettings();
+        });
+
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        if (bgColorPicker) bgColorPicker.addEventListener('input', (e) => {
+            novelSettings.bgColor = e.target.value;
+            applyNovelSettings();
+            saveNovelSettings();
+        });
+
+        document.querySelectorAll('.text-align-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                novelSettings.textAlign = btn.getAttribute('data-align');
+                applyNovelSettings();
+                saveNovelSettings();
+            });
+        });
+
+        // Focus modal controls
+        document.addEventListener('keydown', (e) => {
+            if (!focusModal || !focusModal.classList.contains('active')) return;
+            switch (e.key) {
+                case '+': case '=': zoomInFocusModal(); break;
+                case '-': zoomOutFocusModal(); break;
+                case '0': resetFocusModalZoom(); break;
+            }
+        });
     };
 
-    // Auto-initialize when DOM is ready
+    // Auto-init on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
-        // DOM already loaded, check if we need to initialize
-        if (document.getElementById('reader-images-container') || document.getElementById('reader-text-container')) {
-            init();
-        }
+        init();
     }
 
-    // Re-initialize on HTMX content swap
+    // Re-init on HTMX content swap
     document.addEventListener('htmx:afterSwap', (event) => {
         if (event.detail.target && event.detail.target.id === 'content' &&
             (document.getElementById('reader-images-container') || document.getElementById('reader-text-container'))) {
             setTimeout(init, 50); // Small delay to ensure DOM is ready
         }
     });
+
+    // Expose functions globally if needed
+    window.ReaderModule = { init, setReadingMode, openFocusModal, closeFocusModal };
 })();

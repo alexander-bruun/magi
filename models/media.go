@@ -178,7 +178,7 @@ func (m *Media) SetContentRating(rating string)        { m.ContentRating = ratin
 func (m *Media) SetType(mangaType string)              { m.Type = mangaType }
 func (m *Media) SetCoverArtURL(url string)             { m.CoverArtURL = url }
 
-// UpdateMedia modifies an existing media
+// UpdateMedia modifies an existing media and always updates the updated_at timestamp to the current time
 func UpdateMedia(media *Media) error {
 	media.UpdatedAt = time.Now()
 
@@ -198,16 +198,15 @@ func UpdateMedia(media *Media) error {
 
 // UpdateMediaMetadata updates media metadata fields while preserving the original created_at timestamp.
 // This is useful for refresh operations where we want to preserve the original creation date.
+// It does not update the updated_at timestamp.
 func UpdateMediaMetadata(media *Media) error {
-	media.UpdatedAt = time.Now()
-
 	query := `
 	UPDATE media
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?, updated_at = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.UpdatedAt.Unix(), media.Slug)
+	_, err := db.Exec(query, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.Slug)
 	if err != nil {
 		return err
 	}

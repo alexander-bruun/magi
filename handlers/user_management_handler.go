@@ -2,6 +2,15 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
+	"encoding/json"
+	"strings"
+	"time"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"io"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
@@ -353,4 +362,200 @@ func HandleUnbanIP(c *fiber.Ctx) error {
 	}
 
 	return HandleView(c, views.BannedIPsTable(bannedIPs))
+}
+
+// HandleExternalAccounts shows the external accounts page
+func HandleExternalAccounts(c *fiber.Ctx) error {
+	userName := GetUserContext(c)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	// Get user's external accounts
+	accounts, err := models.GetUserExternalAccounts(userName)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return HandleView(c, views.ExternalAccountsPage(accounts))
+}
+
+// HandleConnectMAL saves MAL credentials
+func HandleConnectMAL(c *fiber.Ctx) error {
+	userName := GetUserContext(c)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	clientID := c.FormValue("client_id")
+	clientSecret := c.FormValue("client_secret")
+	if clientID == "" || clientSecret == "" {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID and Secret required"))
+	}
+
+	// Save the account with client_id and client_secret
+	account := &models.UserExternalAccount{
+		UserName:    userName,
+		ServiceName: "mal",
+		AccessToken: clientID,    // Store client_id here
+		RefreshToken: clientSecret, // Store client_secret here
+	}
+	err := models.SaveUserExternalAccount(account)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return c.Redirect("/account/external")
+}
+
+// HandleAuthorizeMAL redirects to MAL for OAuth authorization
+func HandleAuthorizeMAL(c *fiber.Ctx) error {
+	userName := GetUserContext(c)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	// Get the stored credentials
+	account, err := models.GetUserExternalAccount(userName, "mal")
+	if err != nil {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No MAL credentials found"))
+	}
+
+	clientID := account.AccessToken
+	if clientID == "" {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID not set"))
+	}
+
+	// Generate PKCE code verifier and challenge
+	codeVerifier := generateCodeVerifier()
+	codeChallenge := codeVerifier // For plain method
+
+	// Generate state for security
+	state := userName + "|" + generateCodeVerifier()[:8]
+
+	redirectURI := "http://localhost:3000/callback" // Must match MAL app config
+
+	authURL := fmt.Sprintf("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=%s&redirect_uri=%s&code_challenge=%s&code_challenge_method=plain&state=%s",
+		clientID, redirectURI, codeChallenge, state)
+
+	// Store code_verifier and state temporarily
+	account.ExternalUserID = codeVerifier + "|" + state
+	err = models.SaveUserExternalAccount(account)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return c.Redirect(authURL)
+}
+
+// HandleDisconnectMAL disconnects the MyAnimeList account
+func HandleDisconnectMAL(c *fiber.Ctx) error {
+	userName := GetUserContext(c)
+	if userName == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	err := models.DeleteUserExternalAccount(userName, "mal")
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return c.Redirect("/account/external")
+}
+
+// generateCodeVerifier generates a random code verifier for PKCE
+func generateCodeVerifier() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_~"
+	b := make([]byte, 43)
+	rand.Read(b)
+	for i := range b {
+		b[i] = charset[b[i]%byte(len(charset))]
+	}
+	return string(b)
+}
+
+// generateCodeChallenge generates the code challenge from verifier using S256
+func generateCodeChallenge(verifier string) string {
+	hash := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(hash[:])
+}
+
+// HandleMALCallback handles the OAuth callback from MAL
+func HandleMALCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	state := c.Query("state")
+	if code == "" || state == "" {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No code or state provided"))
+	}
+
+	// Parse state to get userName
+	parts := strings.Split(state, "|")
+	if len(parts) != 2 {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid state"))
+	}
+	userName := parts[0]
+
+	account, err := models.GetUserExternalAccount(userName, "mal")
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	storedParts := strings.Split(account.ExternalUserID, "|")
+	if len(storedParts) != 3 {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid stored data"))
+	}
+	storedVerifier := storedParts[0]
+	storedState := storedParts[1] + "|" + storedParts[2]
+	if storedState != state {
+		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "State mismatch"))
+	}
+	codeVerifier := storedVerifier
+
+	clientID := account.AccessToken
+	clientSecret := account.RefreshToken
+
+	// Exchange code for token
+	tokenURL := "https://myanimelist.net/v1/oauth2/token"
+	data := fmt.Sprintf("client_id=%s&client_secret=%s&grant_type=authorization_code&code=%s&redirect_uri=%s&code_verifier=%s",
+		url.QueryEscape(clientID), url.QueryEscape(clientSecret), code, url.QueryEscape("http://localhost:3000/callback"), codeVerifier)
+
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data))
+	if err != nil {
+		return handleError(c, err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return handleError(c, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Error(fmt.Sprintf("Token exchange failed: %d, body: %s", resp.StatusCode, string(body)))
+		return handleError(c, fmt.Errorf("Token exchange failed: %d", resp.StatusCode))
+	}
+
+	var tokenResp struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		ExpiresIn    int    `json:"expires_in"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return handleError(c, err)
+	}
+
+	// Update the account with the access token
+	account.AccessToken = tokenResp.AccessToken
+	account.RefreshToken = tokenResp.RefreshToken
+	account.TokenExpiresAt = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+	account.ExternalUserID = "" // Clear
+	err = models.SaveUserExternalAccount(account)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	return c.Redirect("/account/external")
 }

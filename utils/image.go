@@ -435,6 +435,7 @@ type ImageAccessToken struct {
 	Page        int
 	AssetPath   string // For light novel assets
 	ExpiresAt   time.Time
+	UsedCount   int
 }
 
 // Global token store
@@ -482,29 +483,32 @@ func GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, chapterSlug string,
 	return token
 }
 
-// ValidateAndConsumeImageToken validates a token and consumes it (one-time use)
-func ValidateAndConsumeImageToken(token string) (*ImageAccessToken, error) {
+// ValidateImageToken validates a token (reusable)
+func ValidateImageToken(token string) (*ImageAccessToken, error) {
+	// log.Infof("ValidateImageToken: attempting to validate token %s", token)
 	val, ok := tokens.Load(token)
 	if !ok {
-		log.Debugf("Token %s is invalid: not found or already consumed", token)
-		return nil, fmt.Errorf("invalid token: not found or already consumed")
+		return nil, fmt.Errorf("Token %s is invalid: not found", token)
 	}
 	tokenInfo := val.(*ImageAccessToken)
 
-	log.Debugf("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
+	// log.Infof("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
 
 	// Check expiration
 	if time.Now().After(tokenInfo.ExpiresAt) {
-		log.Debugf("Token %s is invalid: expired at %v (now: %v)", token, tokenInfo.ExpiresAt, time.Now())
 		tokens.Delete(token)
-		return nil, fmt.Errorf("invalid token: expired")
+		return nil, fmt.Errorf("Token %s is invalid: expired at %v (now: %v)", token, tokenInfo.ExpiresAt, time.Now())
 	}
 
-	// Consume the token
-	tokens.Delete(token)
-	log.Debugf("Token %s consumed successfully", token)
+	log.Debugf("Token %s validated successfully", token)
 
 	return tokenInfo, nil
+}
+
+// ConsumeImageToken consumes a validated token
+func ConsumeImageToken(token string) {
+	tokens.Delete(token)
+	// log.Infof("Token %s consumed", token)
 }
 
 // CleanupExpiredTokens removes expired tokens from the store
