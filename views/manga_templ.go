@@ -49,6 +49,13 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		unit := "chapter"
+		for _, ch := range chapters {
+			if strings.HasPrefix(ch.Name, "Volume ") {
+				unit = "volume"
+				break
+			}
+		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h1 class=\"uk-heading-divider uk-h2 uk-margin mt-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -56,7 +63,7 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 18, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 20, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -66,7 +73,7 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Info(media, userRole, lastReadChapterSlug).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Info(media, userRole, lastReadChapterSlug, unit).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -74,32 +81,45 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ChapterJumpButton(media.Slug, firstChapterSlug, "Go to first chapter", "MoveLeft", false).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = ChapterJumpButton(media.Slug, firstChapterSlug, fmt.Sprintf("Go to first %s", unit), "MoveLeft", false).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h2 class=\"text-xl font-bold uk-h2 text-center m-auto\"><span>Chapters (")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h2 class=\"text-xl font-bold uk-h2 text-center m-auto\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(chapterCount))
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Title(unit) + "s")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 28, Col: 101}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 30, Col: 92}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, ")</span></h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " (")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ChapterJumpButton(media.Slug, lastChapterSlug, "Go to last chapter", "MoveRight", false).Render(ctx, templ_7745c5c3_Buffer)
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(chapterCount))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 30, Col: 122}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><hr class=\"uk-divider-icon mb-4\"><div id=\"chapters-section\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, ")</span></h2>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = ChapterJumpButton(media.Slug, lastChapterSlug, fmt.Sprintf("Go to last %s", unit), "MoveRight", false).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><hr class=\"uk-divider-icon mb-4\"><div id=\"chapters-section\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -107,17 +127,17 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center\"><div class=\"flex justify-around gap-2\"><button type=\"button\" class=\"uk-btn uk-btn-secondary\" uk-toggle=\"target: #metadata-modal\" title=\"Search for metadata\" aria-label=\"Search for metadata\"><uk-icon icon=\"Search\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #edit-metadata-modal\" title=\"Edit metadata manually\" aria-label=\"Edit metadata manually\"><uk-icon icon=\"Pencil\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #refresh-metadata-modal\" title=\"Refresh metadata from MediaDex\" aria-label=\"Refresh metadata from MediaDex\"><uk-icon icon=\"FolderSync\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-destructive\" uk-toggle=\"target: #delete-media-modal\" title=\"Delete media\" aria-label=\"Delete media\"><uk-icon icon=\"Trash\"></uk-icon></button></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center\"><div class=\"flex justify-around gap-2\"><button type=\"button\" class=\"uk-btn uk-btn-secondary\" uk-toggle=\"target: #metadata-modal\" title=\"Search for metadata\" aria-label=\"Search for metadata\"><uk-icon icon=\"Search\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #edit-metadata-modal\" title=\"Edit metadata manually\" aria-label=\"Edit metadata manually\"><uk-icon icon=\"Pencil\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #refresh-metadata-modal\" title=\"Refresh metadata from MediaDex\" aria-label=\"Refresh metadata from MediaDex\"><uk-icon icon=\"FolderSync\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-destructive\" uk-toggle=\"target: #delete-media-modal\" title=\"Delete media\" aria-label=\"Delete media\"><uk-icon icon=\"Trash\"></uk-icon></button></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -142,128 +162,128 @@ func ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		href := fmt.Sprintf("/series/%s/%s", mangaSlug, chapterSlug)
 		if chapterSlug != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<a class=\"uk-btn uk-btn-default\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<a class=\"uk-btn uk-btn-default\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var5 templ.SafeURL
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(href)
+			var templ_7745c5c3_Var6 templ.SafeURL
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(href)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 87, Col: 14}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" onclick=\"scrollToTopInstant()\" aria-label=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(label)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 89, Col: 21}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 89, Col: 14}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" onclick=\"scrollToTopInstant()\" aria-label=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 91, Col: 21}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if icon == "MoveLeft" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<uk-icon icon=\"MoveLeft\"></uk-icon> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<uk-icon icon=\"MoveLeft\"></uk-icon> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if !hideOnMobile {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"hidden md:inline\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<span class=\"hidden md:inline\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+				var templ_7745c5c3_Var8 string
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 95, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 97, Col: 42}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if icon == "MoveRight" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<uk-icon icon=\"MoveRight\"></uk-icon>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<uk-icon icon=\"MoveRight\"></uk-icon>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<a class=\"uk-btn uk-btn-default uk-disabled\" aria-label=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<a class=\"uk-btn uk-btn-default uk-disabled\" aria-label=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label + " (unavailable)")
+			var templ_7745c5c3_Var9 string
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label + " (unavailable)")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 102, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 104, Col: 84}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" tabindex=\"-1\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" tabindex=\"-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if icon == "MoveLeft" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<uk-icon icon=\"MoveLeft\"></uk-icon> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<uk-icon icon=\"MoveLeft\"></uk-icon> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if !hideOnMobile {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<span class=\"hidden md:inline\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"hidden md:inline\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+				var templ_7745c5c3_Var10 string
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 107, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 109, Col: 42}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if icon == "MoveRight" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<uk-icon icon=\"MoveRight\"></uk-icon>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<uk-icon icon=\"MoveRight\"></uk-icon>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -290,44 +310,44 @@ func InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) templ.Comp
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var10 == nil {
-			templ_7745c5c3_Var10 = templ.NopComponent
+		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var11 == nil {
+			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if read {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"chapter-read-icon text-green-600 inline-flex items-center\" title=\"Read\"><form hx-post=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 122, Col: 73}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" hx-target=\"this\" hx-swap=\"outerHTML\"><button type=\"submit\" class=\"uk-icon-button\" title=\"Mark as unread\" aria-label=\"Mark as unread\"><uk-icon class=\"eye-open\" icon=\"eye\" style=\"display:inline-flex\"></uk-icon> <uk-icon class=\"eye-closed\" icon=\"eye-closed\" style=\"display:none\"></uk-icon></button></form></div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"chapter-read-icon text-gray-500 inline-flex items-center\" title=\"Unread\"><form hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"chapter-read-icon text-green-600 inline-flex items-center\" title=\"Read\"><form hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug))
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 135, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 124, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"this\" hx-swap=\"outerHTML\"><button type=\"submit\" class=\"uk-icon-button\" title=\"Mark as read\" aria-label=\"Mark as read\"><uk-icon class=\"eye-open\" icon=\"eye\" style=\"display:none\"></uk-icon> <uk-icon class=\"eye-closed\" icon=\"eye-closed\" style=\"display:inline-flex\"></uk-icon></button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-target=\"this\" hx-swap=\"outerHTML\"><button type=\"submit\" class=\"uk-icon-button\" title=\"Mark as unread\" aria-label=\"Mark as unread\"><uk-icon class=\"eye-open\" icon=\"eye\" style=\"display:inline-flex\"></uk-icon> <uk-icon class=\"eye-closed\" icon=\"eye-closed\" style=\"display:none\"></uk-icon></button></form></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div class=\"chapter-read-icon text-gray-500 inline-flex items-center\" title=\"Unread\"><form hx-post=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var13 string
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 137, Col: 71}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" hx-target=\"this\" hx-swap=\"outerHTML\"><button type=\"submit\" class=\"uk-icon-button\" title=\"Mark as read\" aria-label=\"Mark as read\"><uk-icon class=\"eye-open\" icon=\"eye\" style=\"display:none\"></uk-icon> <uk-icon class=\"eye-closed\" icon=\"eye-closed\" style=\"display:inline-flex\"></uk-icon></button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -336,7 +356,7 @@ func InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) templ.Comp
 	})
 }
 
-func Info(media models.Media, userRole string, lastReadChapterSlug string) templ.Component {
+func Info(media models.Media, userRole string, lastReadChapterSlug string, unit string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -352,97 +372,97 @@ func Info(media models.Media, userRole string, lastReadChapterSlug string) templ
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var13 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var13 == nil {
-			templ_7745c5c3_Var13 = templ.NopComponent
+		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var14 == nil {
+			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<style>\n\t\t.poster-container:hover .poster-image {\n\t\t\topacity: 0.5;\n\t\t}\n\t\t.poster-container:hover .edit-poster-btn {\n\t\t\topacity: 1;\n\t\t\tpointer-events: auto;\n\t\t}\n\t\t.edit-poster-btn {\n\t\t\tposition: absolute;\n\t\t\ttop: 50%;\n\t\t\tleft: 50%;\n\t\t\ttransform: translate(-50%, -50%);\n\t\t\twidth: 60px;\n\t\t\theight: 60px;\n\t\t\tborder-radius: 50%;\n\t\t\topacity: 0;\n\t\t\tpointer-events: auto;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tbackground: rgba(0, 0, 0, 0.7);\n\t\t\tcolor: white;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tborder: none;\n\t\t\tcursor: pointer;\n\t\t}\n\t\t.edit-poster-btn:hover {\n\t\t\topacity: 1;\n\t\t\tpointer-events: auto;\n\t\t}\n\t</style><div class=\"relative flex justify-center items-center poster-container\"><img loading=\"lazy\" src=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(media.CoverArtURL)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 182, Col: 45}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" width=\"300\" height=\"500\" alt=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<style>\n\t\t.poster-container:hover .poster-image {\n\t\t\topacity: 0.5;\n\t\t}\n\t\t.poster-container:hover .edit-poster-btn {\n\t\t\topacity: 1;\n\t\t\tpointer-events: auto;\n\t\t}\n\t\t.edit-poster-btn {\n\t\t\tposition: absolute;\n\t\t\ttop: 50%;\n\t\t\tleft: 50%;\n\t\t\ttransform: translate(-50%, -50%);\n\t\t\twidth: 60px;\n\t\t\theight: 60px;\n\t\t\tborder-radius: 50%;\n\t\t\topacity: 0;\n\t\t\tpointer-events: auto;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tbackground: rgba(0, 0, 0, 0.7);\n\t\t\tcolor: white;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tborder: none;\n\t\t\tcursor: pointer;\n\t\t}\n\t\t.edit-poster-btn:hover {\n\t\t\topacity: 1;\n\t\t\tpointer-events: auto;\n\t\t}\n\t</style><div class=\"relative flex justify-center items-center poster-container\"><img loading=\"lazy\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(media.CoverArtURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 182, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 184, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" class=\"poster-image transition-opacity duration-300\"> ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<button type=\"button\" class=\"edit-poster-btn\" uk-toggle=\"target: #edit-poster-modal\" title=\"Edit poster\" aria-label=\"Edit poster\"><uk-icon icon=\"Pencil\" class=\"text-2xl\"></uk-icon></button>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div><!-- Status and voting under poster --><div class=\"mt-2 flex justify-center\"><div id=\"media-favorite\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" width=\"300\" height=\"500\" alt=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/favorite/fragment", media.Slug))
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 198, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 184, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div><div class=\"mt-2 flex justify-center\"><div id=\"media-vote\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" class=\"poster-image transition-opacity duration-300\"> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if userRole == "moderator" || userRole == "admin" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<button type=\"button\" class=\"edit-poster-btn\" uk-toggle=\"target: #edit-poster-modal\" title=\"Edit poster\" aria-label=\"Edit poster\"><uk-icon icon=\"Pencil\" class=\"text-2xl\"></uk-icon></button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div><!-- Status and voting under poster --><div class=\"mt-2 flex justify-center\"><div id=\"media-favorite\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote/fragment", media.Slug))
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/favorite/fragment", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 201, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 200, Col: 91}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div><div class=\"mt-2 flex justify-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div><div class=\"mt-2 flex justify-center\"><div id=\"media-vote\" hx-get=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote/fragment", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 203, Col: 83}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" hx-trigger=\"load\" hx-swap=\"outerHTML\"></div></div><div class=\"mt-2 flex justify-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if media.Status != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<span class=\"uk-badge\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<span class=\"uk-badge\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var18 string
-			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(media.Status)
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(media.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 205, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 207, Col: 40}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><div class=\"mt-3\"><div class=\"uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div><div class=\"mt-3\"><div class=\"uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -450,502 +470,515 @@ func Info(media models.Media, userRole string, lastReadChapterSlug string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div></div><!-- Improved metadata grid with modern styling --><div class=\"mt-3 space-y-1.5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</div></div><!-- Improved metadata grid with modern styling --><div class=\"mt-3 space-y-1.5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if media.Year != 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"calendar\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Year</strong> <span class=\"text-sm text-gray-800 break-words\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var19 string
-			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.Year))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 224, Col: 77}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span></div></div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		if media.OriginalLanguage != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"globe\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Language</strong> <span class=\"text-sm text-gray-800 break-words\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"calendar\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Year</strong> <span class=\"text-sm text-gray-800 break-words\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var20 string
-			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(media.OriginalLanguage)
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.Year))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 235, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 226, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</span></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</span></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if media.Type != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"book\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Type</strong> <span class=\"text-sm text-gray-800 break-words\">")
+		if media.OriginalLanguage != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"globe\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Language</strong> <span class=\"text-sm text-gray-800 break-words\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var21 string
-			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(media.Type)
+			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(media.OriginalLanguage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 246, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 237, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</span></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if media.ContentRating != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"star\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Rating</strong> <span class=\"text-sm text-gray-800 break-words\">")
+		if media.Type != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"book\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Type</strong> <span class=\"text-sm text-gray-800 break-words\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(media.ContentRating)
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(media.Type)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 257, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 248, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</span></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</span></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if media.FileCount != 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"file-text\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Chapters</strong> <span class=\"text-sm text-gray-800 break-words\">")
+		if media.ContentRating != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"star\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Rating</strong> <span class=\"text-sm text-gray-800 break-words\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.FileCount))
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(media.ContentRating)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 268, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 259, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</span></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</span></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if media.FileCount != 0 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"file-text\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var24 string
+			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Title(unit) + "s")
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 269, Col: 103}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</strong> <span class=\"text-sm text-gray-800 break-words\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var25 string
+			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.FileCount))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 270, Col: 82}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if userRole == "moderator" || userRole == "admin" {
 			if !media.CreatedAt.IsZero() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"plus-circle\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Added</strong> <span class=\"text-sm text-gray-800 break-words\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"plus-circle\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Added</strong> <span class=\"text-sm text-gray-800 break-words\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var24 string
-				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(media.CreatedAt.Format("2006-01-02"))
+				var templ_7745c5c3_Var26 string
+				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(media.CreatedAt.Format("2006-01-02"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 280, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 282, Col: 92}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if !media.UpdatedAt.IsZero() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"calendar-clock\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Updated</strong> <span class=\"text-sm text-gray-800 break-words\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "<div class=\"flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors\"><div class=\"shrink-0 mt-0.5\"><uk-icon icon=\"calendar-clock\"></uk-icon></div><div class=\"flex flex-wrap items-baseline gap-x-2 min-w-0\"><strong class=\"text-xs text-gray-500 uppercase tracking-wide shrink-0\">Updated</strong> <span class=\"text-sm text-gray-800 break-words\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var25 string
-				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(media.UpdatedAt.Format("2006-01-02"))
+				var templ_7745c5c3_Var27 string
+				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(media.UpdatedAt.Format("2006-01-02"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 291, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 293, Col: 92}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</span></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</span></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</div><!-- Tags section with modern styling -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</div><!-- Tags section with modern styling -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(media.Tags) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<div class=\"mt-4 p-2 rounded\"><div class=\"flex items-center gap-2 mb-2\"><div class=\"shrink-0\"><uk-icon icon=\"tag\"></uk-icon></div><strong class=\"text-xs text-gray-500 uppercase tracking-wide\">Tags</strong></div><div class=\"flex flex-wrap gap-1.5 pl-7\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<div class=\"mt-4 p-2 rounded\"><div class=\"flex items-center gap-2 mb-2\"><div class=\"shrink-0\"><uk-icon icon=\"tag\"></uk-icon></div><strong class=\"text-xs text-gray-500 uppercase tracking-wide\">Tags</strong></div><div class=\"flex flex-wrap gap-1.5 pl-7\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, tag := range media.Tags {
 				if tag != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<span class=\"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "<span class=\"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var26 string
-					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
+					var templ_7745c5c3_Var28 string
+					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 311, Col: 12}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 313, Col: 12}
 					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<!-- stack on small/medium screens, switch to row on large screens --><div class=\"mt-3 flex flex-col lg:flex-row justify-center items-center gap-2\"><!-- Left: author/metadata compact --><div class=\"flex items-center space-x-3\"><div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "<!-- stack on small/medium screens, switch to row on large screens --><div class=\"mt-3 flex flex-col lg:flex-row justify-center items-center gap-2\"><!-- Left: author/metadata compact --><div class=\"flex items-center space-x-3\"><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if media.Author != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "<span class=\"uk-text-muted\">By ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<span class=\"uk-text-muted\">By ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(media.Author)
+			var templ_7745c5c3_Var29 string
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(media.Author)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 325, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 327, Col: 50}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "</span>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "</div></div><div class=\"w-full\"><!-- Second row: metadata + favorite centered and tighter --><div class=\"controls-row\"></div></div></div><!-- This is the modal --><div id=\"metadata-modal\" uk-modal role=\"dialog\" aria-labelledby=\"metadata-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog\" style=\"max-width: min(1000px, 95vw); width: min(1000px, 95vw);\"><h2 id=\"metadata-modal-title\" class=\"uk-modal-title\">Update metadata</h2><p>This form, is used in case you believe the metadata was scraped from the wrong media. Use the search field below to get a list of other options to pick from.</p><div class=\"uk-margin my-2\"><form hx-get=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/form", media.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 344, Col: 65}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\" hx-target=\"#modal-content\" action=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var29 templ.SafeURL
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/metadata/form", media.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 346, Col: 65}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" aria-label=\"Search for media metadata\"><div class=\"folder-row mb-4 flex items-center\"><input id=\"metadata-search\" class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Media name\" aria-label=\"Media name\"> <button type=\"submit\" class=\"uk-btn uk-btn-default ml-1 h-10 w-10\" aria-label=\"Search\"><uk-icon icon=\"Search\"></uk-icon></button></div></form></div><div id=\"modal-content\" role=\"region\" aria-live=\"polite\"></div></div></div><!-- Edit Metadata Modal for Moderators/Admins --><div id=\"edit-metadata-modal\" uk-modal role=\"dialog\" aria-labelledby=\"edit-metadata-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog hide-scrollbar\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 id=\"edit-metadata-modal-title\" class=\"uk-modal-title mb-3\">Edit Media Metadata</h2><p class=\"uk-text-muted mb-6\">Manually edit the metadata for this media. Changes will overwrite existing data.</p><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "</div></div><div class=\"w-full\"><!-- Second row: metadata + favorite centered and tighter --><div class=\"controls-row\"></div></div></div><!-- This is the modal --><div id=\"metadata-modal\" uk-modal role=\"dialog\" aria-labelledby=\"metadata-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog\" style=\"max-width: min(1000px, 95vw); width: min(1000px, 95vw);\"><h2 id=\"metadata-modal-title\" class=\"uk-modal-title\">Update metadata</h2><p>This form, is used in case you believe the metadata was scraped from the wrong media. Use the search field below to get a list of other options to pick from.</p><div class=\"uk-margin my-2\"><form hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var30 string
-		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/manual", media.Slug))
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/form", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 369, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 346, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\" class=\"space-y-6\"><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"name\">Name</label> <input class=\"uk-input\" type=\"text\" id=\"name\" name=\"name\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\" hx-target=\"#modal-content\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var31 string
-		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		var templ_7745c5c3_Var31 templ.SafeURL
+		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/metadata/form", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 374, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 348, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"author\">Author</label> <input class=\"uk-input\" type=\"text\" id=\"author\" name=\"author\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\" aria-label=\"Search for media metadata\"><div class=\"folder-row mb-4 flex items-center\"><input id=\"metadata-search\" class=\"uk-input folder-input mr-1\" type=\"text\" name=\"search\" placeholder=\"Media name\" aria-label=\"Media name\"> <button type=\"submit\" class=\"uk-btn uk-btn-default ml-1 h-10 w-10\" aria-label=\"Search\"><uk-icon icon=\"Search\"></uk-icon></button></div></form></div><div id=\"modal-content\" role=\"region\" aria-live=\"polite\"></div></div></div><!-- Edit Metadata Modal for Moderators/Admins --><div id=\"edit-metadata-modal\" uk-modal role=\"dialog\" aria-labelledby=\"edit-metadata-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog hide-scrollbar\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 id=\"edit-metadata-modal-title\" class=\"uk-modal-title mb-3\">Edit Media Metadata</h2><p class=\"uk-text-muted mb-6\">Manually edit the metadata for this media. Changes will overwrite existing data.</p><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var32 string
-		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(media.Author)
+		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/manual", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 379, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 371, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"description\">Description <span class=\"uk-text-meta uk-text-small ml-2\">(Markdown supported)</span></label> <textarea class=\"uk-textarea\" id=\"description\" name=\"description\" rows=\"5\" placeholder=\"Supports **bold**, *italic*, [links](url), lists, and more...\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "\" class=\"space-y-6\"><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"name\">Name</label> <input class=\"uk-input\" type=\"text\" id=\"name\" name=\"name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var33 string
-		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(media.Description)
+		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 387, Col: 175}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 376, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "</textarea><p class=\"uk-text-meta uk-text-small mt-1\">Tip: Use markdown formatting for rich descriptions.  <a href=\"https://www.markdownguide.org/basic-syntax/\" target=\"_blank\" class=\"uk-link-text\">Markdown Guide</a></p></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"year\">Year</label> <input class=\"uk-input\" type=\"number\" id=\"year\" name=\"year\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"author\">Author</label> <input class=\"uk-input\" type=\"text\" id=\"author\" name=\"author\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var34 string
-		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.Year))
+		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(media.Author)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 396, Col: 95}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 381, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"original_language\">Original Language</label> <input class=\"uk-input\" type=\"text\" id=\"original_language\" name=\"original_language\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"description\">Description <span class=\"uk-text-meta uk-text-small ml-2\">(Markdown supported)</span></label> <textarea class=\"uk-textarea\" id=\"description\" name=\"description\" rows=\"5\" placeholder=\"Supports **bold**, *italic*, [links](url), lists, and more...\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var35 string
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(media.OriginalLanguage)
+		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(media.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 401, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 389, Col: 175}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"manga_type\">Type</label> <select class=\"uk-select\" id=\"manga_type\" name=\"manga_type\"><option value=\"manga\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "</textarea><p class=\"uk-text-meta uk-text-small mt-1\">Tip: Use markdown formatting for rich descriptions.  <a href=\"https://www.markdownguide.org/basic-syntax/\" target=\"_blank\" class=\"uk-link-text\">Markdown Guide</a></p></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"year\">Year</label> <input class=\"uk-input\" type=\"number\" id=\"year\" name=\"year\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var36 string
+		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(media.Year))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 398, Col: 95}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"original_language\">Original Language</label> <input class=\"uk-input\" type=\"text\" id=\"original_language\" name=\"original_language\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var37 string
+		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(media.OriginalLanguage)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 403, Col: 119}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, "\"></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"manga_type\">Type</label> <select class=\"uk-select\" id=\"manga_type\" name=\"manga_type\"><option value=\"manga\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if media.Type == "manga" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, ">Manga</option> <option value=\"manhwa\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if media.Type == "manhwa" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, ">Manhwa</option> <option value=\"manhua\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, ">Manga</option> <option value=\"manhwa\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "manhua" {
+		if media.Type == "manhwa" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, ">Manhua</option> <option value=\"comic\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, ">Manhwa</option> <option value=\"manhua\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "comic" {
+		if media.Type == "manhua" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, ">Comic</option> <option value=\"webtoon\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, ">Manhua</option> <option value=\"comic\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "webtoon" {
+		if media.Type == "comic" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, ">Webtoon</option> <option value=\"novel\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, ">Comic</option> <option value=\"webtoon\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "novel" {
+		if media.Type == "webtoon" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, ">Novel</option> <option value=\"oneshot\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, ">Webtoon</option> <option value=\"novel\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "oneshot" {
+		if media.Type == "novel" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, ">Oneshot</option> <option value=\"doujinshi\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, ">Novel</option> <option value=\"oneshot\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "doujinshi" {
+		if media.Type == "oneshot" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, ">Doujinshi</option> <option value=\"oel\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, ">Oneshot</option> <option value=\"doujinshi\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "oel" {
+		if media.Type == "doujinshi" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, ">OEL</option> <option value=\"other\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, ">Doujinshi</option> <option value=\"oel\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Type == "other" {
+		if media.Type == "oel" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, ">Other</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"status\">Status</label> <select class=\"uk-select\" id=\"status\" name=\"status\"><option value=\"ongoing\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, ">OEL</option> <option value=\"other\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Status == "ongoing" {
+		if media.Type == "other" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, ">Ongoing</option> <option value=\"completed\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, ">Other</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"status\">Status</label> <select class=\"uk-select\" id=\"status\" name=\"status\"><option value=\"ongoing\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Status == "completed" {
+		if media.Status == "ongoing" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, ">Completed</option> <option value=\"hiatus\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, ">Ongoing</option> <option value=\"completed\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Status == "hiatus" {
+		if media.Status == "completed" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, ">Hiatus</option> <option value=\"cancelled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, ">Completed</option> <option value=\"hiatus\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Status == "cancelled" {
+		if media.Status == "hiatus" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, ">Cancelled</option> <option value=\"upcoming\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, ">Hiatus</option> <option value=\"cancelled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.Status == "upcoming" {
+		if media.Status == "cancelled" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, ">Upcoming</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"content_rating\">Content Rating</label> <select class=\"uk-select\" id=\"content_rating\" name=\"content_rating\"><option value=\"safe\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, ">Cancelled</option> <option value=\"upcoming\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.ContentRating == "safe" {
+		if media.Status == "upcoming" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, ">Safe</option> <option value=\"suggestive\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, ">Upcoming</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"content_rating\">Content Rating</label> <select class=\"uk-select\" id=\"content_rating\" name=\"content_rating\"><option value=\"safe\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.ContentRating == "suggestive" {
+		if media.ContentRating == "safe" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, ">Suggestive</option> <option value=\"erotica\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, ">Safe</option> <option value=\"suggestive\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.ContentRating == "erotica" {
+		if media.ContentRating == "suggestive" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, ">Erotica</option> <option value=\"pornographic\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, ">Suggestive</option> <option value=\"erotica\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if media.ContentRating == "pornographic" {
+		if media.ContentRating == "erotica" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ">Pornographic</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"tags\">Tags (comma-separated)</label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ">Erotica</option> <option value=\"pornographic\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if media.ContentRating == "pornographic" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, ">Pornographic</option></select></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"tags\">Tags (comma-separated)</label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -953,111 +986,111 @@ func Info(media models.Media, userRole string, lastReadChapterSlug string) templ
 		if len(media.Tags) > 0 {
 			tagsString = strings.Join(media.Tags, ", ")
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "<input class=\"uk-input\" type=\"text\" id=\"tags\" name=\"tags\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var36 string
-		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(tagsString)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 447, Col: 81}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "\" placeholder=\"e.g. Action, Adventure, Fantasy\"> <small class=\"uk-text-muted block mt-2\">Separate tags with commas</small></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"cover_url\">Cover Art URL</label> <input class=\"uk-input\" type=\"url\" id=\"cover_url\" name=\"cover_url\" placeholder=\"https://example.com/cover.jpg\"> <small class=\"uk-text-muted block mt-2\">Enter a URL to download and cache a new cover image</small></div><div class=\"uk-flex uk-flex-right gap-3 mt-8 pt-4\" style=\"border-top: 1px solid #e5e5e5;\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"submit\" class=\"uk-btn uk-btn-primary px-6\">Save Changes</button></div></form></div></div><!-- Refresh Metadata Modal for Moderators/Admins --><div id=\"refresh-metadata-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title mb-3\">Refresh Metadata</h2><p class=\"uk-text-muted mb-4\">This will fetch fresh metadata from MediaDex and re-scan the folder for new or removed chapters.</p><div class=\"mb-4\"><p class=\"text-sm\"><strong>Media Path:</strong></p><p class=\"text-sm uk-text-muted break-all\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var37 string
-		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(media.Path)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 473, Col: 59}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</p></div><div class=\"uk-alert uk-alert-primary text-sm mb-4\" style=\"padding: 1rem;\"><div class=\"flex items-start gap-2\"><uk-icon icon=\"Info\" class=\"shrink-0 mt-0.5\"></uk-icon><div><strong>What will be updated:</strong><ul class=\"list-disc ml-5 mt-2 space-y-1\"><li>Title, description, and other metadata from MediaDex</li><li>Cover art and tags</li><li>Chapter list (new chapters added, deleted chapters removed)</li></ul><p class=\"mt-3 text-xs\">Your reading progress and manual edits to metadata will be preserved.</p></div></div></div><div class=\"uk-flex uk-flex-right gap-3 mt-6\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"button\" class=\"uk-btn uk-btn-destructive px-6\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<input class=\"uk-input\" type=\"text\" id=\"tags\" name=\"tags\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var38 string
-		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/refresh", media.Slug))
+		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(tagsString)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 494, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 449, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\" hx-target=\"#content\" uk-close>Refresh Metadata</button></div></div></div><!-- Delete Media Modal for Moderators/Admins --><div id=\"delete-media-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title mb-3\">Delete Media</h2><p class=\"uk-text-muted mb-4\">Are you sure you want to delete this media? This action cannot be undone.</p><div class=\"mb-4\"><p class=\"text-sm\"><strong>Media:</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "\" placeholder=\"e.g. Action, Adventure, Fantasy\"> <small class=\"uk-text-muted block mt-2\">Separate tags with commas</small></div><div class=\"mb-5\"><label class=\"uk-form-label mb-2 block font-semibold\" for=\"cover_url\">Cover Art URL</label> <input class=\"uk-input\" type=\"url\" id=\"cover_url\" name=\"cover_url\" placeholder=\"https://example.com/cover.jpg\"> <small class=\"uk-text-muted block mt-2\">Enter a URL to download and cache a new cover image</small></div><div class=\"uk-flex uk-flex-right gap-3 mt-8 pt-4\" style=\"border-top: 1px solid #e5e5e5;\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"submit\" class=\"uk-btn uk-btn-primary px-6\">Save Changes</button></div></form></div></div><!-- Refresh Metadata Modal for Moderators/Admins --><div id=\"refresh-metadata-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title mb-3\">Refresh Metadata</h2><p class=\"uk-text-muted mb-4\">This will fetch fresh metadata from MediaDex and re-scan the folder for new or removed chapters.</p><div class=\"mb-4\"><p class=\"text-sm\"><strong>Media Path:</strong></p><p class=\"text-sm uk-text-muted break-all\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var39 string
-		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(media.Path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 512, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 475, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</p><p class=\"text-sm\"><strong>Path:</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</p></div><div class=\"uk-alert uk-alert-primary text-sm mb-4\" style=\"padding: 1rem;\"><div class=\"flex items-start gap-2\"><uk-icon icon=\"Info\" class=\"shrink-0 mt-0.5\"></uk-icon><div><strong>What will be updated:</strong><ul class=\"list-disc ml-5 mt-2 space-y-1\"><li>Title, description, and other metadata from MediaDex</li><li>Cover art and tags</li><li>Chapter list (new chapters added, deleted chapters removed)</li></ul><p class=\"mt-3 text-xs\">Your reading progress and manual edits to metadata will be preserved.</p></div></div></div><div class=\"uk-flex uk-flex-right gap-3 mt-6\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"button\" class=\"uk-btn uk-btn-destructive px-6\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var40 string
-		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(media.Path)
+		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/refresh", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 513, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 496, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</p></div><div class=\"uk-alert uk-alert-destructive text-sm mb-4\" style=\"padding: 1rem;\"><div class=\"flex items-start gap-2\"><uk-icon icon=\"AlertTriangle\" class=\"shrink-0 mt-0.5\"></uk-icon><div><strong>Warning:</strong> This will permanently delete the media and all associated data.</div></div></div><div class=\"uk-flex uk-flex-right gap-3 mt-6\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"button\" class=\"uk-btn uk-btn-destructive px-6\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "\" hx-target=\"#content\" uk-close>Refresh Metadata</button></div></div></div><!-- Delete Media Modal for Moderators/Admins --><div id=\"delete-media-modal\" uk-modal><div class=\"uk-modal-body uk-modal-dialog\"><h2 class=\"uk-modal-title mb-3\">Delete Media</h2><p class=\"uk-text-muted mb-4\">Are you sure you want to delete this media? This action cannot be undone.</p><div class=\"mb-4\"><p class=\"text-sm\"><strong>Media:</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var41 string
-		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/delete", media.Slug))
+		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 528, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 514, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" hx-target=\"#content\" uk-close>Delete Media</button></div></div></div><!-- Edit Poster Modal for Moderators/Admins --><div id=\"edit-poster-modal\" uk-modal role=\"dialog\" aria-labelledby=\"edit-poster-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog hide-scrollbar\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 id=\"edit-poster-modal-title\" class=\"uk-modal-title mb-3\">Edit Poster</h2><p class=\"uk-text-muted mb-6\">Upload a new poster image or select one from your media files.</p><!-- Tabs for different poster edit modes --><ul class=\"uk-tab\" uk-tab=\"swiping: false\"><li><a href=\"#\">Upload</a></li><li><a href=\"#\">Select</a></li></ul><ul class=\"uk-switcher uk-margin\"><!-- Upload Tab --><li><div class=\"uk-margin\"><p class=\"uk-text-muted\">Upload a new poster image:</p><form method=\"post\" enctype=\"multipart/form-data\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</p><p class=\"text-sm\"><strong>Path:</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var42 string
-		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", media.Slug))
+		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(media.Path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 560, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 515, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\" hx-encoding=\"multipart/form-data\" class=\"uk-margin-bottom\"><div class=\"uk-margin\"><input type=\"file\" name=\"poster\" accept=\"image/*\" required class=\"uk-input\"></div><div class=\"uk-margin\"><button type=\"submit\" class=\"uk-btn uk-btn-primary\">Upload Poster</button></div></form></div></li><!-- Select Tab --><li><div class=\"uk-margin\"><p class=\"uk-text-muted\">Select a poster image from your media files:</p><div id=\"poster-selector-content\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</p></div><div class=\"uk-alert uk-alert-destructive text-sm mb-4\" style=\"padding: 1rem;\"><div class=\"flex items-start gap-2\"><uk-icon icon=\"AlertTriangle\" class=\"shrink-0 mt-0.5\"></uk-icon><div><strong>Warning:</strong> This will permanently delete the media and all associated data.</div></div></div><div class=\"uk-flex uk-flex-right gap-3 mt-6\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close px-6\">Cancel</button> <button type=\"button\" class=\"uk-btn uk-btn-destructive px-6\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var43 string
-		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/chapters", media.Slug))
+		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/delete", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 582, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 530, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\" hx-trigger=\"load\"><div class=\"uk-text-center uk-padding\"><div uk-spinner></div><p>Loading chapters...</p></div></div></div></li></ul></div></div><!-- Poster Selector Modal for Moderators/Admins -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "\" hx-target=\"#content\" uk-close>Delete Media</button></div></div></div><!-- Edit Poster Modal for Moderators/Admins --><div id=\"edit-poster-modal\" uk-modal role=\"dialog\" aria-labelledby=\"edit-poster-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog hide-scrollbar\" style=\"max-height: 80vh; overflow-y: auto; padding: 2rem;\"><h2 id=\"edit-poster-modal-title\" class=\"uk-modal-title mb-3\">Edit Poster</h2><p class=\"uk-text-muted mb-6\">Upload a new poster image or select one from your media files.</p><!-- Tabs for different poster edit modes --><ul class=\"uk-tab\" uk-tab=\"swiping: false\"><li><a href=\"#\">Upload</a></li><li><a href=\"#\">Select</a></li></ul><ul class=\"uk-switcher uk-margin\"><!-- Upload Tab --><li><div class=\"uk-margin\"><p class=\"uk-text-muted\">Upload a new poster image:</p><form method=\"post\" enctype=\"multipart/form-data\" hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var44 string
+		templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 562, Col: 65}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\" hx-encoding=\"multipart/form-data\" class=\"uk-margin-bottom\"><div class=\"uk-margin\"><input type=\"file\" name=\"poster\" accept=\"image/*\" required class=\"uk-input\"></div><div class=\"uk-margin\"><button type=\"submit\" class=\"uk-btn uk-btn-primary\">Upload Poster</button></div></form></div></li><!-- Select Tab --><li><div class=\"uk-margin\"><p class=\"uk-text-muted\">Select a poster image from your media files:</p><div id=\"poster-selector-content\" hx-get=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var45 string
+		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/chapters", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 584, Col: 69}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" hx-trigger=\"load\"><div class=\"uk-text-center uk-padding\"><div uk-spinner></div><p>Loading chapters...</p></div></div></div></li></ul></div></div><!-- Poster Selector Modal for Moderators/Admins -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1082,40 +1115,40 @@ func MediaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) temp
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var44 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var44 == nil {
-			templ_7745c5c3_Var44 = templ.NopComponent
+		templ_7745c5c3_Var46 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var46 == nil {
+			templ_7745c5c3_Var46 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div id=\"media-favorite\" class=\"media-favorite-fragment inline-flex items-center\"><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<div id=\"media-favorite\" class=\"media-favorite-fragment inline-flex items-center\"><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var45 string
-		templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/favorite", mangaSlug))
+		var templ_7745c5c3_Var47 string
+		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/favorite", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 602, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 604, Col: 63}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "\" hx-target=\"#media-favorite\" hx-swap=\"outerHTML\" class=\"inline-flex items-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" hx-target=\"#media-favorite\" hx-swap=\"outerHTML\" class=\"inline-flex items-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isFavorite {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default favorite-btn active btn-circular\" title=\"Remove favorite\" aria-label=\"Remove favorite\"><uk-icon icon=\"Star\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default favorite-btn active btn-circular\" title=\"Remove favorite\" aria-label=\"Remove favorite\"><uk-icon icon=\"Star\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default favorite-btn btn-circular\" title=\"Add favorite\" aria-label=\"Add favorite\"><uk-icon icon=\"Star\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default favorite-btn btn-circular\" title=\"Add favorite\" aria-label=\"Add favorite\"><uk-icon icon=\"Star\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "</form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "</form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1141,107 +1174,107 @@ func MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var46 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var46 == nil {
-			templ_7745c5c3_Var46 = templ.NopComponent
+		templ_7745c5c3_Var48 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var48 == nil {
+			templ_7745c5c3_Var48 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<!-- Responsive vote fragment: buttons sit adjacent to stats (not at viewport edges) --><div id=\"media-vote\" class=\"media-vote-fragment w-full flex justify-center\"><!-- Constrained group keeps buttons next to stats and centered overall --><div class=\"flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto\"><!-- Upvote: to the left of the score --><form hx-post=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var47 string
-		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote", mangaSlug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 626, Col: 60}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 125, "\" hx-target=\"#media-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if userVote == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up active btn-circular\" title=\"Remove upvote\" aria-label=\"Remove upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up btn-circular\" title=\"Upvote\" aria-label=\"Upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "</form><!-- Center stats: compact and centered between buttons --><div class=\"vote-stats flex flex-col items-center my-2 md:my-0 text-center flex-grow\"><div class=\"vote-count\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var48 string
-		templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 641, Col: 47}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "</div><div class=\"vote-small\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<!-- Responsive vote fragment: buttons sit adjacent to stats (not at viewport edges) --><div id=\"media-vote\" class=\"media-vote-fragment w-full flex justify-center\"><!-- Constrained group keeps buttons next to stats and centered overall --><div class=\"flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto\"><!-- Upvote: to the left of the score --><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var49 string
-		templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(upvotes))
+		templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 642, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 628, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, " ↑ · ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "\" hx-target=\"#media-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if userVote == 1 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up active btn-circular\" title=\"Remove upvote\" aria-label=\"Remove upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<input type=\"hidden\" name=\"value\" value=\"1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn up btn-circular\" title=\"Upvote\" aria-label=\"Upvote\"><uk-icon icon=\"ThumbsUp\"></uk-icon></button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</form><!-- Center stats: compact and centered between buttons --><div class=\"vote-stats flex flex-col items-center my-2 md:my-0 text-center flex-grow\"><div class=\"vote-count\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var50 string
-		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(downvotes))
+		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 642, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 643, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, " ↓</div></div><!-- Downvote: to the right of the score --><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 131, "</div><div class=\"vote-small\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var51 string
-		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote", mangaSlug))
+		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(upvotes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 646, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 644, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\" hx-target=\"#media-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, " ↑ · ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var52 string
+		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(downvotes))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 644, Col: 82}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, " ↓</div></div><!-- Downvote: to the right of the score --><form hx-post=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var53 string
+		templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/vote", mangaSlug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 648, Col: 60}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\" hx-target=\"#media-vote\" hx-swap=\"outerHTML\" class=\"inline-flex items-center flex-shrink-0\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if userVote == -1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 133, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down active btn-circular\" title=\"Remove downvote\" aria-label=\"Remove downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "<input type=\"hidden\" name=\"value\" value=\"0\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down active btn-circular\" title=\"Remove downvote\" aria-label=\"Remove downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<input type=\"hidden\" name=\"value\" value=\"-1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down btn-circular\" title=\"Downvote\" aria-label=\"Downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<input type=\"hidden\" name=\"value\" value=\"-1\"> <button type=\"submit\" class=\"uk-btn uk-btn-default vote-btn down btn-circular\" title=\"Downvote\" aria-label=\"Downvote\"><uk-icon icon=\"ThumbsDown\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 135, "</form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "</form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1265,61 +1298,61 @@ func Chapters(media models.Media, chapters []models.Chapter, premiumDuration int
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var52 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var52 == nil {
-			templ_7745c5c3_Var52 = templ.NopComponent
+		templ_7745c5c3_Var54 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var54 == nil {
+			templ_7745c5c3_Var54 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<ul class=\"uk-accordion\" uk-accordion>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "<ul class=\"uk-accordion\" uk-accordion>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, chapter := range chapters {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "<li class=\"uk-closed\"><!-- Row layout: left = link/title, right = optional icon --><div class=\"flex items-center justify-between w-full\"><a class=\"uk-accordion-title flex-1 min-w-0 pr-2 truncate\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<li class=\"uk-closed\"><!-- Row layout: left = link/title, right = optional icon --><div class=\"flex items-center justify-between w-full\"><a class=\"uk-accordion-title flex-1 min-w-0 pr-2 truncate\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var53 templ.SafeURL
-			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)))
+			var templ_7745c5c3_Var55 templ.SafeURL
+			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 670, Col: 78}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" hx-get=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var54 string
-			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 671, Col: 69}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "\" hx-target=\"#content\" hx-push-url=\"true\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var55 string
-			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 675, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 672, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, " <span class=\"uk-accordion-icon\" uk-icon=\"icon: chevron-down; ratio: 0.8\"></span></a><div class=\"flex items-center\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 140, "\" hx-get=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var56 string
+			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 673, Col: 69}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "\" hx-target=\"#content\" hx-push-url=\"true\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var57 string
+			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 677, Col: 20}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, " <span class=\"uk-accordion-icon\" uk-icon=\"icon: chevron-down; ratio: 0.8\"></span></a><div class=\"flex items-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if chapter.Read {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<div class=\"mr-3\" title=\"Read\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "<div class=\"mr-3\" title=\"Read\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1327,78 +1360,78 @@ func Chapters(media models.Media, chapters []models.Chapter, premiumDuration int
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 142, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			if chapter.IsPremium {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "<div class=\"flex items-center mr-3\"><span class=\"uk-badge\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z\" clip-rule=\"evenodd\"></path></svg> ")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var56 string
-				templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.PremiumCountdown)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 693, Col: 35}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 144, "</span> ")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				if userRole == "moderator" || userRole == "admin" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<button type=\"button\" class=\"ml-2 uk-btn uk-btn-small uk-btn-default btn-circular\" hx-post=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var57 string
-					templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug))
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 699, Col: 89}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "\" hx-confirm=\"Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users.\" title=\"Unmark as premium\" aria-label=\"Unmark chapter as premium\"><uk-icon icon=\"Unlock\" ratio=\"0.8\"></uk-icon></button>")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "</div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			if !chapter.CreatedAt.IsZero() {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<span class=\"text-xs text-gray-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div class=\"flex items-center mr-3\"><span class=\"uk-badge\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z\" clip-rule=\"evenodd\"></path></svg> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var58 string
-				templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.CreatedAt.Format("2006-01-02"))
+				templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.PremiumCountdown)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 710, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 695, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</span> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if userRole == "moderator" || userRole == "admin" {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 147, "<button type=\"button\" class=\"ml-2 uk-btn uk-btn-small uk-btn-default btn-circular\" hx-post=\"")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var59 string
+					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 701, Col: 89}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "\" hx-confirm=\"Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users.\" title=\"Unmark as premium\" aria-label=\"Unmark chapter as premium\"><uk-icon icon=\"Unlock\" ratio=\"0.8\"></uk-icon></button>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 149, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "</div></div></li>")
+			if !chapter.CreatedAt.IsZero() {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span class=\"text-xs text-gray-500\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var60 string
+				templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.CreatedAt.Format("2006-01-02"))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 712, Col: 83}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "</span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "</div></div></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 151, "</ul>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "</ul>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1422,9 +1455,9 @@ func ChaptersContainer(media models.Media, chapters []models.Chapter, reverse bo
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var59 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var59 == nil {
-			templ_7745c5c3_Var59 = templ.NopComponent
+		templ_7745c5c3_Var61 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var61 == nil {
+			templ_7745c5c3_Var61 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = Chapters(media, chapters, premiumDuration, userRole).Render(ctx, templ_7745c5c3_Buffer)
@@ -1451,9 +1484,9 @@ func MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var60 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var60 == nil {
-			templ_7745c5c3_Var60 = templ.NopComponent
+		templ_7745c5c3_Var62 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var62 == nil {
+			templ_7745c5c3_Var62 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		toggleURL := fmt.Sprintf("/series/%s", media.Slug)
@@ -1471,95 +1504,95 @@ func MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse
 			buttonIcon = "arrow-down"
 			buttonTitle = "Sort chapters in descending order"
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<div class=\"flex justify-between items-center mb-4\"><button id=\"reverse-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var61 string
-		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(toggleURL)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 744, Col: 21}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 153, "\" hx-target=\"#chapters-section\" title=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var62 string
-		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(buttonTitle)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 746, Col: 22}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "\"><uk-icon icon=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "<div class=\"flex justify-between items-center mb-4\"><button id=\"reverse-btn\" type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var63 string
-		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(buttonIcon)
+		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(toggleURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 748, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 746, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "\"></uk-icon> <span class=\"ml-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "\" hx-target=\"#chapters-section\" title=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(buttonText)
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(buttonTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 749, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 748, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "</span></button> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "\"><uk-icon icon=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var65 string
+		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(buttonIcon)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 750, Col: 29}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "\"></uk-icon> <span class=\"ml-1\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var66 string
+		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(buttonText)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 751, Col: 34}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "</span></button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if lastReadChapterSlug != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 157, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var65 templ.SafeURL
-			templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)))
+			var templ_7745c5c3_Var67 templ.SafeURL
+			templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 753, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 755, Col: 83}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 158, "\" hx-get=\"")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var66 string
-			templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 754, Col: 74}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-primary\" title=\"Resume reading from where you left off\"><uk-icon icon=\"Play\"></uk-icon> <span class=\"ml-1\">Resume</span></a>")
+			var templ_7745c5c3_Var68 string
+			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 756, Col: 74}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-primary\" title=\"Resume reading from where you left off\"><uk-icon icon=\"Play\"></uk-icon> <span class=\"ml-1\">Resume</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 160, "</div><div class=\"uk-card p-2 uk-card-scroll hide-scrollbar\"><div id=\"chapters-container\" class=\"p-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "</div><div class=\"uk-card p-2 uk-card-scroll hide-scrollbar\"><div id=\"chapters-container\" class=\"p-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1567,7 +1600,7 @@ func MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 161, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1591,22 +1624,22 @@ func UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) te
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var67 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var67 == nil {
-			templ_7745c5c3_Var67 = templ.NopComponent
+		templ_7745c5c3_Var69 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var69 == nil {
+			templ_7745c5c3_Var69 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "<div class=\"grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "<div class=\"grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, result := range results {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 163, "<div class=\"uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col h-full\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<div class=\"uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col h-full\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if result.CoverArtURL != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 164, "<div class=\"mb-3 flex justify-center\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<div class=\"mb-3 flex justify-center\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1614,71 +1647,52 @@ func UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) te
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<div class=\"flex-1\"><h3 class=\"font-semibold text-lg leading-tight mb-1 text-center\" title=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "<div class=\"flex-1\"><h3 class=\"font-semibold text-lg leading-tight mb-1 text-center\" title=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var68 string
-			templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(result.Title)
+			var templ_7745c5c3_Var70 string
+			templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(result.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 782, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 784, Col: 90}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 167, "\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var69 string
-			templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(result.Title)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 783, Col: 20}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 168, "</h3>")
+			var templ_7745c5c3_Var71 string
+			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(result.Title)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 785, Col: 20}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "</h3>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if result.Year > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "<div class=\"text-sm text-gray-600 mb-2 text-center\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<div class=\"text-sm text-gray-600 mb-2 text-center\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var70 string
-				templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Year: %d", result.Year))
+				var templ_7745c5c3_Var72 string
+				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Year: %d", result.Year))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 787, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 789, Col: 45}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 170, "</div>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			if result.SimilarityScore > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 171, "<div class=\"text-sm text-green-600 mb-2 font-medium text-center\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var71 string
-				templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Match: %.1f%%", result.SimilarityScore*100))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 792, Col: 65}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1687,49 +1701,49 @@ func UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) te
 					return templ_7745c5c3_Err
 				}
 			}
-			if result.Description != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "<div class=\"text-sm text-gray-700 mb-3 overflow-hidden\" style=\"display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; max-height: 4.5rem;\" title=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var72 string
-				templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(result.Description)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 796, Col: 191}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "\">")
+			if result.SimilarityScore > 0 {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 173, "<div class=\"text-sm text-green-600 mb-2 font-medium text-center\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var73 string
-				templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(result.Description)
+				templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Match: %.1f%%", result.SimilarityScore*100))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 797, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 794, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 174, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			if len(result.Tags) > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "<div class=\"text-sm text-blue-600 mb-3 text-center\"><strong>Tags:</strong> ")
+			if result.Description != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 175, "<div class=\"text-sm text-gray-700 mb-3 overflow-hidden\" style=\"display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; max-height: 4.5rem;\" title=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var74 string
-				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Join(result.Tags, ", "))
+				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(result.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 802, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 798, Col: 191}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 176, "\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var75 string
+				templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinStringErrs(result.Description)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 799, Col: 27}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1738,25 +1752,44 @@ func UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) te
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "</div><button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-small w-full flex items-center justify-center mt-4\" uk-toggle=\"target: #metadata-modal\" hx-post=\"")
+			if len(result.Tags) > 0 {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 178, "<div class=\"text-sm text-blue-600 mb-3 text-center\"><strong>Tags:</strong> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var76 string
+				templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Join(result.Tags, ", "))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 804, Col: 63}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "</div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "</div><button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-small w-full flex items-center justify-center mt-4\" uk-toggle=\"target: #metadata-modal\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var75 string
-			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, result.ID, mangaSlug))
+			var templ_7745c5c3_Var77 string
+			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, result.ID, mangaSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 810, Col: 106}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 812, Col: 106}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 179, "\" hx-target=\"#content\" title=\"Apply this metadata\"><uk-icon icon=\"Check\"></uk-icon></button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "\" hx-target=\"#content\" title=\"Apply this metadata\"><uk-icon icon=\"Check\"></uk-icon></button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 180, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1780,9 +1813,9 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var76 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var76 == nil {
-			templ_7745c5c3_Var76 = templ.NopComponent
+		templ_7745c5c3_Var78 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var78 == nil {
+			templ_7745c5c3_Var78 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle(chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
@@ -1798,33 +1831,33 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 181, "<script src=\"/assets/js/reader.js\"></script><style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "<script src=\"/assets/js/reader.js\"></script><style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var77 string
-		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		var templ_7745c5c3_Var79 string
+		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 850, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 852, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 182, "</span></h2><div id=\"read-state\" hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var78 string
-		templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 852, Col: 71}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "</span></h2><div id=\"read-state\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
+		var templ_7745c5c3_Var80 string
+		templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 854, Col: 71}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1832,43 +1865,43 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "<!-- Pagination Controls (hidden in webtoon mode) --><div id=\"reader-pagination\" style=\"display: none;\"><div class=\"pagination-controls\"><button id=\"first-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button id=\"prev-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span id=\"page-counter\" class=\"uk-text-bold\">1 / 1</span> <button id=\"next-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button id=\"last-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"0.8\"></uk-icon></button></div></div><div id=\"reader-images-container\" data-media-type=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "<!-- Pagination Controls (hidden in webtoon mode) --><div id=\"reader-pagination\" style=\"display: none;\"><div class=\"pagination-controls\"><button id=\"first-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button id=\"prev-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span id=\"page-counter\" class=\"uk-text-bold\">1 / 1</span> <button id=\"next-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button id=\"last-page-btn\" type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"0.8\"></uk-icon></button></div></div><div id=\"reader-images-container\" data-media-type=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var79 string
-		templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(media.Type)
+		var templ_7745c5c3_Var81 string
+		templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(media.Type)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 878, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 880, Col: 63}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, image := range images {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "<img data-src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "<img data-src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var80 string
-			templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(image)
+			var templ_7745c5c3_Var82 string
+			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(image)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 880, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 882, Col: 24}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\" class=\"reader-image lazy\" alt=\"Chapter image\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\" loading=\"lazy\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "\" class=\"reader-image lazy\" alt=\"Chapter image\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\" loading=\"lazy\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "</div><!-- Pagination Controls (bottom, hidden in webtoon mode) --><div id=\"reader-pagination-bottom\" style=\"display: none;\"><div class=\"pagination-controls\"><button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('first-page-btn').click()\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('prev-page-btn').click()\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span class=\"uk-text-bold\" id=\"page-counter-bottom\">1 / 1</span> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('next-page-btn').click()\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('last-page-btn').click()\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"1.5\"></uk-icon></button></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "</div><!-- Pagination Controls (bottom, hidden in webtoon mode) --><div id=\"reader-pagination-bottom\" style=\"display: none;\"><div class=\"pagination-controls\"><button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('first-page-btn').click()\" title=\"First page\"><uk-icon icon=\"chevrons-left\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('prev-page-btn').click()\" title=\"Previous page\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon></button> <span class=\"uk-text-bold\" id=\"page-counter-bottom\">1 / 1</span> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('next-page-btn').click()\" title=\"Next page\"><uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular\" onclick=\"document.getElementById('last-page-btn').click()\" title=\"Last page\"><uk-icon icon=\"chevrons-right\" ratio=\"1.5\"></uk-icon></button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1897,254 +1930,254 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var81 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var81 == nil {
-			templ_7745c5c3_Var81 = templ.NopComponent
+		templ_7745c5c3_Var83 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var83 == nil {
+			templ_7745c5c3_Var83 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "<div class=\"flex items-center justify-between p-4\"><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "<div class=\"flex items-center justify-between p-4\"><button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var82 string
-		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
+		var templ_7745c5c3_Var84 string
+		templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 912, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 914, Col: 67}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "\" hx-get=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var83 string
-		templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 913, Col: 69}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "\" hx-target=\"#content\" hx-push-url=\"true\"")
+		var templ_7745c5c3_Var85 string
+		templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 915, Col: 69}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, "\" hx-target=\"#content\" hx-push-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if previousChapter == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 192, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 193, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveLeft\"></uk-icon></button> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveLeft\"></uk-icon></button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if chapters != nil && len(chapters) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 194, "<div class=\"flex items-center gap-2\"><div class=\"uk-inline\"><button id=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var84 string
-			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 926, Col: 64}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 195, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var85 string
-			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 927, Col: 51}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 196, "<div class=\"flex items-center gap-2\"><div class=\"uk-inline\"><button id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var86 string
-			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", media.Slug))
+			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 930, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 928, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "\" data-trigger-id=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 197, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var87 string
-			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
+			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 930, Col: 129}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 929, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;padding-right: 5px;\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 198, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var88 string
+			templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", media.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 932, Col: 62}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, "\" data-trigger-id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var89 string
+			templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 932, Col: 129}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;padding-right: 5px;\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, ch := range chapters {
-				var templ_7745c5c3_Var88 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
-				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var88...)
+				var templ_7745c5c3_Var90 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
+				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var90...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 199, "<li class=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var89 string
-				templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var88).String())
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1, Col: 0}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 200, "\"><a class=\"flex justify-between items-center w-full\" href=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var90 templ.SafeURL
-				templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 936, Col: 77}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 201, "<li class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var91 string
-				templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug))
+				templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var90).String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 937, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1, Col: 0}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "\" hx-target=\"#content\" hx-push-url=\"true\"><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 202, "\"><a class=\"flex justify-between items-center w-full\" href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var92 string
-				templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+				var templ_7745c5c3_Var92 templ.SafeURL
+				templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 941, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 938, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "</span> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 203, "\" hx-get=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var93 string
+				templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 939, Col: 68}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "\" hx-target=\"#content\" hx-push-url=\"true\"><span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var94 string
+				templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 943, Col: 25}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</span> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				if ch.IsPremium {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 204, "<uk-icon icon=\"Clock\" ratio=\"0.8\" class=\"text-yellow-500\"></uk-icon>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "<uk-icon icon=\"Clock\" ratio=\"0.8\" class=\"text-yellow-500\"></uk-icon>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 205, "</a></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 206, "</ul></div></div><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "</ul></div></div><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var93 templ.SafeURL
-			templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
+			var templ_7745c5c3_Var95 templ.SafeURL
+			templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 951, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 953, Col: 51}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 207, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 208, "<div class=\"reader-mode-selector\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "<div class=\"reader-mode-selector\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var94 templ.SafeURL
-			templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
+			var templ_7745c5c3_Var96 templ.SafeURL
+			templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 957, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 959, Col: 51}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 209, "\" class=\"uk-btn uk-btn-secondary mr-2 btn-circular\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"webtoon\"><uk-icon icon=\"menu\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Webtoon</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"single\"><uk-icon icon=\"file-text\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Single Page</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"side-by-side\"><uk-icon icon=\"columns\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Side by Side</span></button></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "\" class=\"uk-btn uk-btn-secondary mr-2 btn-circular\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"webtoon\"><uk-icon icon=\"menu\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Webtoon</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"single\"><uk-icon icon=\"file-text\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Single Page</span></button> <button type=\"button\" class=\"uk-btn uk-btn-default reader-mode-btn\" data-mode=\"side-by-side\"><uk-icon icon=\"columns\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Side by Side</span></button></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 210, "<button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "<button type=\"button\" class=\"uk-btn uk-btn-default\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var95 string
-		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
+		var templ_7745c5c3_Var97 string
+		templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 977, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 979, Col: 63}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 211, "\" hx-get=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var96 string
-		templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 978, Col: 65}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "\" hx-target=\"#content\" hx-push-url=\"true\"")
+		var templ_7745c5c3_Var98 string
+		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 980, Col: 65}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, "\" hx-target=\"#content\" hx-push-url=\"true\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if nextChapter == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 213, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 214, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveRight\"></uk-icon></button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, " onclick=\"scrollToTopInstant()\"><uk-icon icon=\"MoveRight\"></uk-icon></button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2169,44 +2202,44 @@ func ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) templ.Com
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var97 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var97 == nil {
-			templ_7745c5c3_Var97 = templ.NopComponent
+		templ_7745c5c3_Var99 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var99 == nil {
+			templ_7745c5c3_Var99 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if read {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 215, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge inline-flex items-center gap-1\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.9\"></uk-icon> Read</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge inline-flex items-center gap-1\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.9\"></uk-icon> Read</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var98 string
-			templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug))
+			var templ_7745c5c3_Var100 string
+			templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1002, Col: 73}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1004, Col: 73}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 216, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as unread</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as unread</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 217, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge uk-badge-warning inline-flex items-center gap-1\"><uk-icon icon=\"Circle\" ratio=\"0.9\"></uk-icon> Unread</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "<div id=\"read-state\" class=\"flex items-center justify-center gap-2 my-2\"><span class=\"uk-badge uk-badge-warning inline-flex items-center gap-1\"><uk-icon icon=\"Circle\" ratio=\"0.9\"></uk-icon> Unread</span> <button type=\"button\" class=\"uk-btn uk-btn-default uk-button-small\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var99 string
-			templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug))
+			var templ_7745c5c3_Var101 string
+			templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1016, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1018, Col: 71}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 218, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as read</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, "\" hx-target=\"#read-state\" hx-swap=\"outerHTML\">Mark as read</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2232,25 +2265,25 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var100 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var100 == nil {
-			templ_7745c5c3_Var100 = templ.NopComponent
+		templ_7745c5c3_Var102 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var102 == nil {
+			templ_7745c5c3_Var102 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 219, "<div id=\"poster-selector-content\" class=\"poster-editor uk-margin\"><div class=\"uk-margin-bottom\"><label class=\"uk-form-label\"><strong>Select a Chapter (")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "<div id=\"poster-selector-content\" class=\"poster-editor uk-margin\"><div class=\"uk-margin-bottom\"><label class=\"uk-form-label\"><strong>Select a Chapter (")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var101 string
-		templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(chapters)))
+		var templ_7745c5c3_Var103 string
+		templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(chapters)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1028, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1030, Col: 84}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 220, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin-top uk-margin-bottom\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin-top uk-margin-bottom\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2263,220 +2296,220 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 		}
 		for i := start; i < end; i++ {
 			chapter := chapters[i]
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 221, "<button type=\"button\" id=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var102 string
-			templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-selector-btn-%s", chapter.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1039, Col: 63}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 222, "\" class=\"uk-btn uk-btn-default\" hx-get=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var103 string
-			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?chapter=%s", mangaSlug, chapter.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1041, Col: 92}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if chapter.Slug == currentChapterSlug {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, " disabled")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "><div class=\"uk-text-center text-sm\">Chapter ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 223, "<button type=\"button\" id=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var104 string
-			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
+			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-selector-btn-%s", chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1048, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1041, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, "</div></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 224, "\" class=\"uk-btn uk-btn-default\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "</div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if totalPages > 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "<div class=\"grid grid-cols-3 gap-2 uk-margin-top\"><div class=\"text-left\">")
+			var templ_7745c5c3_Var105 string
+			templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?chapter=%s", mangaSlug, chapter.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1043, Col: 92}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if chapterPage > 1 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var105 string
-				templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?page=%d", mangaSlug, chapterPage-1))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1057, Col: 129}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Prev</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 225, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if chapter.Slug == currentChapterSlug {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 226, " disabled")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "</div><div class=\"text-center\"><span>Page ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 227, "><div class=\"uk-text-center text-sm\">Chapter ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var106 string
-			templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(chapterPage)
+			templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1061, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1050, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, " of ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var107 string
-			templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(totalPages)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1061, Col: 48}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "</span></div><div class=\"text-right\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if chapterPage < totalPages {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var108 string
-				templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?page=%d", mangaSlug, chapterPage+1))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1065, Col: 129}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Next</button>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 228, "</div></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 229, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if currentChapterSlug != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "<hr class=\"uk-divider-icon\"><div class=\"uk-margin-bottom\"><label class=\"uk-form-label\"><strong>Select an Image (")
+		if totalPages > 1 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 230, "<div class=\"grid grid-cols-3 gap-2 uk-margin-top\"><div class=\"text-left\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if chapterPage > 1 {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 231, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var107 string
+				templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?page=%d", mangaSlug, chapterPage-1))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1059, Col: 129}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 232, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Prev</button>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 233, "</div><div class=\"text-center\"><span>Page ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var108 string
+			templ_7745c5c3_Var108, templ_7745c5c3_Err = templ.JoinStringErrs(chapterPage)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1063, Col: 30}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var108))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 234, " of ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var109 string
-			templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageCount))
+			templ_7745c5c3_Var109, templ_7745c5c3_Err = templ.JoinStringErrs(totalPages)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1074, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1063, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var109))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 235, "</span></div><div class=\"text-right\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			for i := 0; i < imageCount; i++ {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "<button type=\"button\" id=\"")
+			if chapterPage < totalPages {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 236, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var110 string
-				templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("image-selector-btn-%d", i))
+				templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?page=%d", mangaSlug, chapterPage+1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1079, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1067, Col: 129}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var110))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, "\" class=\"uk-btn uk-btn-default\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 237, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Next</button>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var111 string
-				templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/preview?chapter=%s&index=%d", mangaSlug, currentChapterSlug, i))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1081, Col: 110}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				if i == currentImageIndex {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, " disabled")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "><div class=\"uk-text-center text-sm\">Image ")
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 238, "</div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 239, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if currentChapterSlug != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 240, "<hr class=\"uk-divider-icon\"><div class=\"uk-margin-bottom\"><label class=\"uk-form-label\"><strong>Select an Image (")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var111 string
+			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageCount))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1076, Col: 81}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 241, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			for i := 0; i < imageCount; i++ {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 242, "<button type=\"button\" id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var112 string
-				templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
+				templ_7745c5c3_Var112, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("image-selector-btn-%d", i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1089, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1081, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var112))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, "</div></button>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 243, "\" class=\"uk-btn uk-btn-default\" hx-get=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var113 string
+				templ_7745c5c3_Var113, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/preview?chapter=%s&index=%d", mangaSlug, currentChapterSlug, i))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1083, Col: 110}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var113))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 244, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if i == currentImageIndex {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 245, " disabled")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "><div class=\"uk-text-center text-sm\">Image ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var114 string
+				templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1091, Col: 33}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, "</div></button>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 246, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-preview-area\" class=\"uk-margin\" data-smooth-scroll>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "</div></div><hr class=\"uk-divider-icon\"><div id=\"poster-preview-area\" class=\"uk-margin\" data-smooth-scroll>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2486,17 +2519,17 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 247, "<p class=\"uk-text-muted text-center\">Click an image to preview and select crop area</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, "<p class=\"uk-text-muted text-center\">Click an image to preview and select crop area</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 248, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 249, "</div><!-- Cropper dependencies - loaded when poster editor is used --><link rel=\"stylesheet\" href=\"/assets/css/vendor/cropper.min.css\"><script src=\"/assets/js/vendor/cropper.min.js\" defer></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "</div><!-- Cropper dependencies - loaded when poster editor is used --><link rel=\"stylesheet\" href=\"/assets/css/vendor/cropper.min.css\"><script src=\"/assets/js/vendor/cropper.min.js\" defer></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2521,90 +2554,90 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var113 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var113 == nil {
-			templ_7745c5c3_Var113 = templ.NopComponent
+		templ_7745c5c3_Var115 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var115 == nil {
+			templ_7745c5c3_Var115 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 250, "<div class=\"poster-preview-cropper\" style=\"display: flex; flex-direction: column; height: 100%;\"><div class=\"uk-margin-bottom\"><p><strong>Selected Image #")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var114 string
-		templ_7745c5c3_Var114, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex + 1))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1115, Col: 58}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var114))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 251, "</strong></p><p class=\"uk-text-small uk-text-muted\">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p></div><!-- Image container for Cropper.js --><div id=\"image-container\" style=\"max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;\"><img id=\"poster-crop-image\" loading=\"lazy\" src=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var115 string
-		templ_7745c5c3_Var115, templ_7745c5c3_Err = templ.JoinStringErrs(imageDataURI)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1127, Col: 22}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var115))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, "\" alt=\"Poster preview\" style=\"display: block; width: 100%; height: auto;\"></div><!-- Buttons always visible at bottom --><div class=\"uk-flex uk-flex-center gap-2 uk-margin-top\" style=\"padding-top: 16px; border-top: 1px solid #ddd; flex-shrink: 0;\"><button type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 252, "<div class=\"poster-preview-cropper\" style=\"display: flex; flex-direction: column; height: 100%;\"><div class=\"uk-margin-bottom\"><p><strong>Selected Image #")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var116 string
-		templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?chapter=%s", mangaSlug, chapterSlug))
+		templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex + 1))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1138, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1117, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var116))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Back to Image List</button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" disabled hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 253, "</strong></p><p class=\"uk-text-small uk-text-muted\">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p></div><!-- Image container for Cropper.js --><div id=\"image-container\" style=\"max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;\"><img id=\"poster-crop-image\" loading=\"lazy\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var117 string
-		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", mangaSlug))
+		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(imageDataURI)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1148, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1129, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "\" hx-include=\"[data-crop-data], [name='image_index'], [name='chapter_slug']\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Save Poster</button></div><input type=\"hidden\" name=\"image_index\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 254, "\" alt=\"Poster preview\" style=\"display: block; width: 100%; height: auto;\"></div><!-- Buttons always visible at bottom --><div class=\"uk-flex uk-flex-center gap-2 uk-margin-top\" style=\"padding-top: 16px; border-top: 1px solid #ddd; flex-shrink: 0;\"><button type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var118 string
-		templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex))
+		templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector?chapter=%s", mangaSlug, chapterSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1156, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1140, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var118))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, "\"> <input type=\"hidden\" name=\"chapter_slug\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 255, "\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Back to Image List</button> <button type=\"button\" class=\"uk-btn uk-btn-primary\" disabled hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var119 string
-		templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.JoinStringErrs(chapterSlug)
+		templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1157, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1150, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var119))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, "\"> <input type=\"hidden\" name=\"crop_data\" data-crop-data value=\"{}\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 256, "\" hx-include=\"[data-crop-data], [name='image_index'], [name='chapter_slug']\" hx-target=\"#poster-selector-content\" hx-swap=\"outerHTML\">Save Poster</button></div><input type=\"hidden\" name=\"image_index\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var120 string
+		templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1158, Col: 72}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "\"> <input type=\"hidden\" name=\"chapter_slug\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var121 string
+		templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.JoinStringErrs(chapterSlug)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1159, Col: 62}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var121))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "\"> <input type=\"hidden\" name=\"crop_data\" data-crop-data value=\"{}\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2629,9 +2662,9 @@ func NovelChapter(previousChapter string, currentChapter string, nextChapter str
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var120 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var120 == nil {
-			templ_7745c5c3_Var120 = templ.NopComponent
+		templ_7745c5c3_Var122 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var122 == nil {
+			templ_7745c5c3_Var122 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle(chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
@@ -2647,33 +2680,33 @@ func NovelChapter(previousChapter string, currentChapter string, nextChapter str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 257, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t\t.epub-reader p {\n\t\t\ttext-align: var(--reader-text-align, justify);\n\t\t}\n\t\t.epub-reader {\n\t\t\tpadding: 0 var(--reader-margin, 20px) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color * {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader img {\n\t\t\tmax-width: 100%;\n\t\t\theight: auto;\n\t\t\tdisplay: block;\n\t\t\tmargin: 20px auto;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n\t\t}\n\t\t.epub-reader h1, .epub-reader h2, .epub-reader h3 {\n\t\t\tmargin-top: 2em;\n\t\t\tmargin-bottom: 1em;\n\t\t\tline-height: 1.3;\n\t\t\tfont-weight: 600;\n\t\t}\n\t\t.epub-reader h1 {\n\t\t\tfont-size: 2em;\n\t\t}\n\t\t.epub-reader h2 {\n\t\t\tfont-size: 1.5em;\n\t\t}\n\t\t.epub-reader h3 {\n\t\t\tfont-size: 1.25em;\n\t\t}\n\t\t.epub-reader p {\n\t\t\tmargin-bottom: 1.5em;\n\t\t\ttext-align: justify;\n\t\t\thyphens: auto;\n\t\t\tword-spacing: 0.1em;\n\t\t}\n\t\t.epub-reader .centerp, .epub-reader .section-marking {\n\t\t\ttext-align: center;\n\t\t\tmargin: 2em 0;\n\t\t}\n\t\t.epub-reader blockquote {\n\t\t\tmargin: 2em 0;\n\t\t\tpadding: 1em 2em;\n\t\t\tborder-left: 4px solid #4299e1;\n\t\t\tbackground-color: rgba(66, 153, 225, 0.1);\n\t\t\tfont-style: italic;\n\t\t}\n\t\t.dark .epub-reader blockquote {\n\t\t\tbackground-color: rgba(66, 153, 225, 0.2);\n\t\t\tborder-left-color: #63b3ed;\n\t\t}\n\t\t.toc-content ul {\n\t\t\tlist-style: none;\n\t\t\tpadding: 0;\n\t\t\tmargin: 0;\n\t\t}\n\t\t.toc-content li {\n\t\t\tmargin: 0;\n\t\t\tpadding: 0;\n\t\t}\n\t\t.toc-content a {\n\t\t\tdisplay: block;\n\t\t\tpadding: 8px 12px;\n\t\t\tcolor: #4a5568;\n\t\t\ttext-decoration: none;\n\t\t\tborder-radius: 6px;\n\t\t\ttransition: all 0.2s ease;\n\t\t\tfont-size: 14px;\n\t\t\tline-height: 1.4;\n\t\t}\n\t\t.dark .toc-content a {\n\t\t\tcolor: #cbd5e0;\n\t\t}\n\t\t.toc-content a:hover {\n\t\t\tbackground-color: #e2e8f0;\n\t\t\tcolor: #2d3748;\n\t\t}\n\t\t.dark .toc-content a:hover {\n\t\t\tbackground-color: #4a5568;\n\t\t\tcolor: #e2e8f0;\n\t\t}\n\t\t.toc-content a:active {\n\t\t\tbackground-color: #cbd5e0;\n\t\t}\n\t\t.dark .toc-content a:active {\n\t\t\tbackground-color: #2d3748;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "<style>\n\t\t.scroll-to-top {\n\t\t\tposition: fixed;\n\t\t\tbottom: 20px;\n\t\t\tright: 20px;\n\t\t\tborder-radius: 50%;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcursor: pointer;\n\t\t\tz-index: 1000;\n\t\t}\n\t\t.epub-reader p {\n\t\t\ttext-align: var(--reader-text-align, justify);\n\t\t}\n\t\t.epub-reader {\n\t\t\tpadding: 0 var(--reader-margin, 20px) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader.custom-text-color * {\n\t\t\tcolor: var(--custom-text-color) !important;\n\t\t}\n\t\t.epub-reader img {\n\t\t\tmax-width: 100%;\n\t\t\theight: auto;\n\t\t\tdisplay: block;\n\t\t\tmargin: 20px auto;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n\t\t}\n\t\t.epub-reader h1, .epub-reader h2, .epub-reader h3 {\n\t\t\tmargin-top: 2em;\n\t\t\tmargin-bottom: 1em;\n\t\t\tline-height: 1.3;\n\t\t\tfont-weight: 600;\n\t\t}\n\t\t.epub-reader h1 {\n\t\t\tfont-size: 2em;\n\t\t}\n\t\t.epub-reader h2 {\n\t\t\tfont-size: 1.5em;\n\t\t}\n\t\t.epub-reader h3 {\n\t\t\tfont-size: 1.25em;\n\t\t}\n\t\t.epub-reader p {\n\t\t\tmargin-bottom: 1.5em;\n\t\t\ttext-align: justify;\n\t\t\thyphens: auto;\n\t\t\tword-spacing: 0.1em;\n\t\t}\n\t\t.epub-reader .centerp, .epub-reader .section-marking {\n\t\t\ttext-align: center;\n\t\t\tmargin: 2em 0;\n\t\t}\n\t\t.epub-reader blockquote {\n\t\t\tmargin: 2em 0;\n\t\t\tpadding: 1em 2em;\n\t\t\tborder-left: 4px solid #4299e1;\n\t\t\tbackground-color: rgba(66, 153, 225, 0.1);\n\t\t\tfont-style: italic;\n\t\t}\n\t\t.dark .epub-reader blockquote {\n\t\t\tbackground-color: rgba(66, 153, 225, 0.2);\n\t\t\tborder-left-color: #63b3ed;\n\t\t}\n\t\t.toc-content ul {\n\t\t\tlist-style: none;\n\t\t\tpadding: 0;\n\t\t\tmargin: 0;\n\t\t}\n\t\t.toc-content li {\n\t\t\tmargin: 0;\n\t\t\tpadding: 0;\n\t\t}\n\t\t.toc-content a {\n\t\t\tdisplay: block;\n\t\t\tpadding: 8px 12px;\n\t\t\tcolor: #4a5568;\n\t\t\ttext-decoration: none;\n\t\t\tborder-radius: 6px;\n\t\t\ttransition: all 0.2s ease;\n\t\t\tfont-size: 14px;\n\t\t\tline-height: 1.4;\n\t\t}\n\t\t.dark .toc-content a {\n\t\t\tcolor: #cbd5e0;\n\t\t}\n\t\t.toc-content a:hover {\n\t\t\tbackground-color: #e2e8f0;\n\t\t\tcolor: #2d3748;\n\t\t}\n\t\t.dark .toc-content a:hover {\n\t\t\tbackground-color: #4a5568;\n\t\t\tcolor: #e2e8f0;\n\t\t}\n\t\t.toc-content a:active {\n\t\t\tbackground-color: #cbd5e0;\n\t\t}\n\t\t.dark .toc-content a:active {\n\t\t\tbackground-color: #2d3748;\n\t\t}\n\t</style><button class=\"scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2\" type=\"button\" onclick=\"scrollToTop()\"><uk-icon icon=\"ChevronUp\" ratio=\"0.8\"></uk-icon></button><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var121 string
-		templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		var templ_7745c5c3_Var123 string
+		templ_7745c5c3_Var123, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1286, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1288, Col: 82}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var121))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 258, "</span></h2><div id=\"read-state\" hx-post=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var123))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var122 string
-		templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1289, Col: 71}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var122))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "</span></h2><div id=\"read-state\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 259, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
+		var templ_7745c5c3_Var124 string
+		templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1291, Col: 71}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "\" hx-trigger=\"load\" hx-swap=\"none\" class=\"hidden\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2681,7 +2714,7 @@ func NovelChapter(previousChapter string, currentChapter string, nextChapter str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 260, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "<div class=\"flex flex-col gap-4 mt-4\"><!-- Reader Content --><div class=\"w-full\"><div class=\"uk-card uk-card-default p-6 max-h-screen overflow-y-auto\"><div class=\"epub-reader custom-text-color\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2689,7 +2722,7 @@ func NovelChapter(previousChapter string, currentChapter string, nextChapter str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 261, "</div></div></div></div><script>\n\t\tfunction scrollToTop() {\n\t\t\tconst mainContent = document.getElementById('main-content');\n\t\t\tif (mainContent) {\n\t\t\t\tmainContent.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t} else {\n\t\t\t\twindow.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t}\n\t\t}\n\n\t\t// Reader customization variables\n\t\tlet currentFontSize = 18;\n\t\tconst minFontSize = 12;\n\t\tconst maxFontSize = 28;\n\t\tconst fontSizeStep = 2;\n\n\t\tconst minMargin = 0;\n\t\tconst maxMargin = 100;\n\t\tconst marginStep = 5;\n\n\t\tlet currentTextColor = null; // null means use default\n\t\tlet currentBgColor = null; // null means transparent\n\t\tlet currentTextAlign = 'justify';\n\t\tlet currentMargin = 20; // default margin in pixels\n\n\t\tfunction loadReaderSettings() {\n\t\t\t// Check for new settings format first\n\t\t\tconst saved = localStorage.getItem('novelReaderSettings');\n\t\t\tif (saved) {\n\t\t\t\tconst settings = JSON.parse(saved);\n\t\t\t\tcurrentFontSize = settings.fontSize || 18;\n\t\t\t\tcurrentTextColor = settings.textColor || null;\n\t\t\t\tcurrentBgColor = settings.bgColor || null;\n\t\t\t\tcurrentTextAlign = settings.textAlign || 'justify';\n\t\t\t\tcurrentMargin = settings.margin || 20;\n\t\t\t} else {\n\t\t\t\t// Backward compatibility: check for old font size setting\n\t\t\t\tconst oldFontSize = localStorage.getItem('novelFontSize');\n\t\t\t\tif (oldFontSize) {\n\t\t\t\t\tcurrentFontSize = parseInt(oldFontSize);\n\t\t\t\t\t// Remove old setting and save new format\n\t\t\t\t\tlocalStorage.removeItem('novelFontSize');\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t}\n\t\t\t}\n\t\t\tapplyReaderSettings();\n\t\t}\n\n\t\tfunction saveReaderSettings() {\n\t\t\tconst settings = {\n\t\t\t\tfontSize: currentFontSize,\n\t\t\t\ttextColor: currentTextColor,\n\t\t\t\tbgColor: currentBgColor,\n\t\t\t\ttextAlign: currentTextAlign,\n\t\t\t\tmargin: currentMargin\n\t\t\t};\n\t\t\tlocalStorage.setItem('novelReaderSettings', JSON.stringify(settings));\n\t\t}\n\n\t\tfunction applyReaderSettings() {\n\t\t\tconst reader = document.querySelector('.epub-reader');\n\t\t\tconst card = reader.closest('.uk-card');\n\n\t\t\t// Apply font size\n\t\t\treader.style.fontSize = currentFontSize + 'px';\n\t\t\tdocument.getElementById('current-font-size').textContent = currentFontSize + 'px';\n\n\t\t\t// Apply text color if set\n\t\t\tif (currentTextColor) {\n\t\t\t\treader.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\t});\n\t\t\t} else {\n\t\t\t\t// Reset to default\n\t\t\t\treader.style.color = '';\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.color = '';\n\t\t\t\t});\n\t\t\t}\n\n\t\t\t// Apply background to the card\n\t\t\tif (currentBgColor) {\n\t\t\t\tcard.style.backgroundColor = currentBgColor;\n\t\t\t\treader.setAttribute('data-bg-color', currentBgColor);\n\t\t\t} else {\n\t\t\t\tcard.style.backgroundColor = '';\n\t\t\t\treader.removeAttribute('data-bg-color');\n\t\t\t}\n\n\t\t\t// Apply text alignment directly\n\t\t\treader.style.textAlign = currentTextAlign;\n\n\t\t\t// Apply margin\n\t\t\tdocument.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');\n\n\t\t\t// Update UI controls\n\t\t\tdocument.getElementById('font-color-picker').value = currentTextColor || '#000000';\n\t\t\tdocument.getElementById('bg-color-picker').value = currentBgColor || '#ffffff';\n\n\t\t\t// Update alignment buttons\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);\n\t\t\t\tbtn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);\n\t\t\t});\n\n\t\t\t// Update margin display\n\t\t\tdocument.getElementById('current-margin').textContent = currentMargin + 'px';\n\t\t}\n\n\t\tfunction increaseFontSize() {\n\t\t\tif (currentFontSize < maxFontSize) {\n\t\t\t\tcurrentFontSize += fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseFontSize() {\n\t\t\tif (currentFontSize > minFontSize) {\n\t\t\t\tcurrentFontSize -= fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction increaseMargin() {\n\t\t\tif (currentMargin < maxMargin) {\n\t\t\t\tcurrentMargin += marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseMargin() {\n\t\t\tif (currentMargin > minMargin) {\n\t\t\t\tcurrentMargin -= marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\t// Smooth scrolling for TOC links\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tloadReaderSettings();\n\n\t\t\t// Font size button handlers\n\t\t\tdocument.querySelectorAll('.font-size-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseFontSize();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseFontSize();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Color picker handlers\n\t\t\tdocument.getElementById('font-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentTextColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\tdocument.getElementById('bg-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentBgColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\t// Reset button handler\n\t\t\tdocument.getElementById('reset-btn').addEventListener('click', function() {\n\t\t\t\tif (confirm('Are you sure you want to reset all reading customizations?')) {\n\t\t\t\t\tlocalStorage.removeItem('novelReaderSettings');\n\t\t\t\t\t// Reset variables to defaults\n\t\t\t\t\tcurrentFontSize = 18;\n\t\t\t\t\tcurrentTextColor = null;\n\t\t\t\t\tcurrentBgColor = null;\n\t\t\t\t\tcurrentTextAlign = 'justify';\n\t\t\t\t\tcurrentMargin = 20;\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t}\n\t\t\t});\n\n\t\t\t// Text alignment handlers\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tcurrentTextAlign = this.getAttribute('data-align');\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Margin button handlers\n\t\t\tdocument.querySelectorAll('.margin-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseMargin();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseMargin();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\tconst tocLinks = document.querySelectorAll('.toc-content a');\n\t\t\ttocLinks.forEach(link => {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst targetId = this.getAttribute('href').substring(1);\n\t\t\t\t\tconst target = document.getElementById(targetId);\n\t\t\t\t\tif (target) {\n\t\t\t\t\t\ttarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\n\t\t\t\t\t}\n\t\t\t\t\t// Close the modal after clicking a TOC link\n\t\t\t\t\tUIkit.modal('#toc-modal').hide();\n\t\t\t\t});\n\t\t\t});\n\t\t});\n\t</script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "</div></div></div></div><script>\n\t\tfunction scrollToTop() {\n\t\t\tconst mainContent = document.getElementById('main-content');\n\t\t\tif (mainContent) {\n\t\t\t\tmainContent.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t} else {\n\t\t\t\twindow.scrollTo({ top: 0, behavior: 'smooth' });\n\t\t\t}\n\t\t}\n\n\t\t// Reader customization variables\n\t\tlet currentFontSize = 18;\n\t\tconst minFontSize = 12;\n\t\tconst maxFontSize = 28;\n\t\tconst fontSizeStep = 2;\n\n\t\tconst minMargin = 0;\n\t\tconst maxMargin = 100;\n\t\tconst marginStep = 5;\n\n\t\tlet currentTextColor = null; // null means use default\n\t\tlet currentBgColor = null; // null means transparent\n\t\tlet currentTextAlign = 'justify';\n\t\tlet currentMargin = 20; // default margin in pixels\n\n\t\tfunction loadReaderSettings() {\n\t\t\t// Check for new settings format first\n\t\t\tconst saved = localStorage.getItem('novelReaderSettings');\n\t\t\tif (saved) {\n\t\t\t\tconst settings = JSON.parse(saved);\n\t\t\t\tcurrentFontSize = settings.fontSize || 18;\n\t\t\t\tcurrentTextColor = settings.textColor || null;\n\t\t\t\tcurrentBgColor = settings.bgColor || null;\n\t\t\t\tcurrentTextAlign = settings.textAlign || 'justify';\n\t\t\t\tcurrentMargin = settings.margin || 20;\n\t\t\t} else {\n\t\t\t\t// Backward compatibility: check for old font size setting\n\t\t\t\tconst oldFontSize = localStorage.getItem('novelFontSize');\n\t\t\t\tif (oldFontSize) {\n\t\t\t\t\tcurrentFontSize = parseInt(oldFontSize);\n\t\t\t\t\t// Remove old setting and save new format\n\t\t\t\t\tlocalStorage.removeItem('novelFontSize');\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t}\n\t\t\t}\n\t\t\tapplyReaderSettings();\n\t\t}\n\n\t\tfunction saveReaderSettings() {\n\t\t\tconst settings = {\n\t\t\t\tfontSize: currentFontSize,\n\t\t\t\ttextColor: currentTextColor,\n\t\t\t\tbgColor: currentBgColor,\n\t\t\t\ttextAlign: currentTextAlign,\n\t\t\t\tmargin: currentMargin\n\t\t\t};\n\t\t\tlocalStorage.setItem('novelReaderSettings', JSON.stringify(settings));\n\t\t}\n\n\t\tfunction applyReaderSettings() {\n\t\t\tconst reader = document.querySelector('.epub-reader');\n\t\t\tconst card = reader.closest('.uk-card');\n\n\t\t\t// Apply font size\n\t\t\treader.style.fontSize = currentFontSize + 'px';\n\t\t\tdocument.getElementById('current-font-size').textContent = currentFontSize + 'px';\n\n\t\t\t// Apply text color if set\n\t\t\tif (currentTextColor) {\n\t\t\t\treader.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.cssText += `color: ${currentTextColor} !important;`;\n\t\t\t\t});\n\t\t\t} else {\n\t\t\t\t// Reset to default\n\t\t\t\treader.style.color = '';\n\t\t\t\tconst elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');\n\t\t\t\telements.forEach(el => {\n\t\t\t\t\tel.style.color = '';\n\t\t\t\t});\n\t\t\t}\n\n\t\t\t// Apply background to the card\n\t\t\tif (currentBgColor) {\n\t\t\t\tcard.style.backgroundColor = currentBgColor;\n\t\t\t\treader.setAttribute('data-bg-color', currentBgColor);\n\t\t\t} else {\n\t\t\t\tcard.style.backgroundColor = '';\n\t\t\t\treader.removeAttribute('data-bg-color');\n\t\t\t}\n\n\t\t\t// Apply text alignment directly\n\t\t\treader.style.textAlign = currentTextAlign;\n\n\t\t\t// Apply margin\n\t\t\tdocument.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');\n\n\t\t\t// Update UI controls\n\t\t\tdocument.getElementById('font-color-picker').value = currentTextColor || '#000000';\n\t\t\tdocument.getElementById('bg-color-picker').value = currentBgColor || '#ffffff';\n\n\t\t\t// Update alignment buttons\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);\n\t\t\t\tbtn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);\n\t\t\t});\n\n\t\t\t// Update margin display\n\t\t\tdocument.getElementById('current-margin').textContent = currentMargin + 'px';\n\t\t}\n\n\t\tfunction increaseFontSize() {\n\t\t\tif (currentFontSize < maxFontSize) {\n\t\t\t\tcurrentFontSize += fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseFontSize() {\n\t\t\tif (currentFontSize > minFontSize) {\n\t\t\t\tcurrentFontSize -= fontSizeStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction increaseMargin() {\n\t\t\tif (currentMargin < maxMargin) {\n\t\t\t\tcurrentMargin += marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\tfunction decreaseMargin() {\n\t\t\tif (currentMargin > minMargin) {\n\t\t\t\tcurrentMargin -= marginStep;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t}\n\t\t}\n\n\t\t// Smooth scrolling for TOC links\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tloadReaderSettings();\n\n\t\t\t// Font size button handlers\n\t\t\tdocument.querySelectorAll('.font-size-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseFontSize();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseFontSize();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Color picker handlers\n\t\t\tdocument.getElementById('font-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentTextColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\tdocument.getElementById('bg-color-picker').addEventListener('input', function(e) {\n\t\t\t\tcurrentBgColor = e.target.value;\n\t\t\t\tapplyReaderSettings();\n\t\t\t\tsaveReaderSettings();\n\t\t\t});\n\n\t\t\t// Reset button handler\n\t\t\tdocument.getElementById('reset-btn').addEventListener('click', function() {\n\t\t\t\tif (confirm('Are you sure you want to reset all reading customizations?')) {\n\t\t\t\t\tlocalStorage.removeItem('novelReaderSettings');\n\t\t\t\t\t// Reset variables to defaults\n\t\t\t\t\tcurrentFontSize = 18;\n\t\t\t\t\tcurrentTextColor = null;\n\t\t\t\t\tcurrentBgColor = null;\n\t\t\t\t\tcurrentTextAlign = 'justify';\n\t\t\t\t\tcurrentMargin = 20;\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t}\n\t\t\t});\n\n\t\t\t// Text alignment handlers\n\t\t\tdocument.querySelectorAll('.text-align-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tcurrentTextAlign = this.getAttribute('data-align');\n\t\t\t\t\tapplyReaderSettings();\n\t\t\t\t\tsaveReaderSettings();\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Margin button handlers\n\t\t\tdocument.querySelectorAll('.margin-btn').forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', function() {\n\t\t\t\t\tconst action = this.getAttribute('data-action');\n\t\t\t\t\tif (action === 'increase') {\n\t\t\t\t\t\tincreaseMargin();\n\t\t\t\t\t} else if (action === 'decrease') {\n\t\t\t\t\t\tdecreaseMargin();\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t});\n\n\t\t\tconst tocLinks = document.querySelectorAll('.toc-content a');\n\t\t\ttocLinks.forEach(link => {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst targetId = this.getAttribute('href').substring(1);\n\t\t\t\t\tconst target = document.getElementById(targetId);\n\t\t\t\t\tif (target) {\n\t\t\t\t\t\ttarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\n\t\t\t\t\t}\n\t\t\t\t\t// Close the modal after clicking a TOC link\n\t\t\t\t\tUIkit.modal('#toc-modal').hide();\n\t\t\t\t});\n\t\t\t});\n\t\t});\n\t</script><!-- TOC Modal --><div id=\"toc-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center\"><uk-icon icon=\"list\" ratio=\"0.9\" class=\"mr-2\"></uk-icon> Table of Contents</h2><div class=\"toc-content max-h-96 overflow-y-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2697,7 +2730,7 @@ func NovelChapter(previousChapter string, currentChapter string, nextChapter str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 262, "</div><p class=\"uk-text-right mt-4\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Close</button></p></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "</div><p class=\"uk-text-right mt-4\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Close</button></p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2722,197 +2755,197 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var123 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var123 == nil {
-			templ_7745c5c3_Var123 = templ.NopComponent
+		templ_7745c5c3_Var125 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var125 == nil {
+			templ_7745c5c3_Var125 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 263, "<div class=\"flex flex-col gap-2 mt-4\"><!-- Main Navigation Row --><div class=\"flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex items-center gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "<div class=\"flex flex-col gap-2 mt-4\"><!-- Main Navigation Row --><div class=\"flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex items-center gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if previousChapter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 264, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var124 templ.SafeURL
-			templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
+			var templ_7745c5c3_Var126 templ.SafeURL
+			templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1556, Col: 72}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1558, Col: 72}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 265, "\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Chapter</span></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "\" class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Chapter</span></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 266, "<button disabled class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Chapter</span></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "<button disabled class=\"uk-btn uk-btn-default\"><uk-icon icon=\"chevron-left\" ratio=\"0.8\"></uk-icon> <span class=\"ml-1\">Previous Chapter</span></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><div class=\"uk-inline\"><button id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var125 string
-		templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1576, Col: 64}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var125))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 268, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var126 string
-		templ_7745c5c3_Var126, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1577, Col: 51}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var126))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 269, "</div><div class=\"flex items-center gap-2\"><!-- TOC Button --><button class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #toc-modal\"><uk-icon icon=\"list\" ratio=\"0.8\"></uk-icon></button><!-- Chapter Dropdown --><div class=\"uk-inline\"><button id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var127 string
-		templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", media.Slug))
+		templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1580, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1578, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var127))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "\" data-trigger-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 270, "\" class=\"uk-btn uk-btn-default\" type=\"button\" aria-expanded=\"false\"><span class=\"hidden sm:inline\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var128 string
-		templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
+		templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1580, Col: 129}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1579, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var128))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 271, "</span> <span class=\"inline sm:hidden\"><uk-icon icon=\"ChevronDown\" ratio=\"0.9\"></uk-icon></span></button><div id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var129 string
+		templ_7745c5c3_Var129, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1582, Col: 62}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var129))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "\" data-trigger-id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var130 string
+		templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1582, Col: 129}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "\" class=\"uk-drop uk-dropdown min-w-52\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><ul class=\"uk-dropdown-nav uk-nav\" style=\"max-height:300px;overflow:auto;margin: 0;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, ch := range chapters {
-			var templ_7745c5c3_Var129 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var129...)
+			var templ_7745c5c3_Var131 = []any{templ.KV("uk-active", ch.Slug == chapter.Slug)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var131...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 272, "<li class=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var130 string
-			templ_7745c5c3_Var130, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var129).String())
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1, Col: 0}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var130))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 273, "\"><a href=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var131 templ.SafeURL
-			templ_7745c5c3_Var131, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1584, Col: 68}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var131))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 274, "<li class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var132 string
-			templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
+			templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var131).String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1584, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var132))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if ch.Read {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
+			var templ_7745c5c3_Var133 templ.SafeURL
+			templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1586, Col: 68}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "</li>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var133))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "</ul></div></div><a href=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var133 templ.SafeURL
-		templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1596, Col: 51}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var133))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if nextChapter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 276, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var134 templ.SafeURL
-			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
+			var templ_7745c5c3_Var134 string
+			templ_7745c5c3_Var134, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1603, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1586, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var134))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Chapter</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 277, "</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "<span class=\"text-gray-400\">Next Chapter</span>")
+			if ch.Read {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 278, "<span class=\"ml-2 text-green-600 inline-flex items-center\" title=\"Read\"><uk-icon icon=\"BadgeCheck\" ratio=\"0.8\"></uk-icon></span>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 279, "</li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-primary text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 280, "</ul></div></div><a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var135 templ.SafeURL
+		templ_7745c5c3_Var135, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1598, Col: 51}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var135))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 281, "\" class=\"uk-btn uk-btn-secondary\"><uk-icon icon=\"library\" ratio=\"0.8\"></uk-icon></a></div><div class=\"flex items-center gap-2\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if nextChapter != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 282, "<a href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var136 templ.SafeURL
+			templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1605, Col: 68}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 283, "\" class=\"uk-btn uk-btn-default\"><span class=\"mr-1\">Next Chapter</span> <uk-icon icon=\"chevron-right\" ratio=\"0.8\"></uk-icon></a>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "<span class=\"text-gray-400\">Next Chapter</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "</div></div><!-- Reader Controls Row --><div class=\"p-3 bg-gray-50 dark:bg-gray-800 rounded-lg\"><div class=\"flex flex-wrap justify-center items-center gap-4\"><!-- Font Size Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Font Size:</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"decrease\" title=\"Decrease font size\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-font-size\">18px</span> <button class=\"uk-btn uk-btn-small uk-btn-default font-size-btn\" data-action=\"increase\" title=\"Increase font size\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Font Color and Background Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Text:</span> <input type=\"color\" id=\"font-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Font color\"></div><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Background:</span> <input type=\"color\" id=\"bg-color-picker\" class=\"w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer\" title=\"Background color\"></div><!-- Text Alignment Controls --><div class=\"flex items-center gap-2\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Alignment:</span><div class=\"flex gap-1\"><button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"left\" title=\"Align left\"><uk-icon icon=\"align-left\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"center\" title=\"Align center\"><uk-icon icon=\"align-center\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-default text-align-btn\" data-align=\"right\" title=\"Align right\"><uk-icon icon=\"align-right\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-small uk-btn-primary text-align-btn\" data-align=\"justify\" title=\"Justify\"><uk-icon icon=\"align-justify\" ratio=\"0.7\"></uk-icon></button></div></div><!-- Margin Controls --><div class=\"flex items-center gap-1\"><span class=\"text-sm text-gray-600 dark:text-gray-400\">Margins:</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"decrease\" title=\"Decrease margins\"><uk-icon icon=\"minus\" ratio=\"0.7\"></uk-icon></button> <span class=\"text-sm px-3 font-medium min-w-12 text-center\" id=\"current-margin\">20px</span> <button class=\"uk-btn uk-btn-small uk-btn-default margin-btn\" data-action=\"increase\" title=\"Increase margins\"><uk-icon icon=\"plus\" ratio=\"0.7\"></uk-icon></button></div><!-- Reset Button --><div class=\"flex items-center\"><button class=\"uk-btn uk-btn-small uk-btn-destructive\" id=\"reset-btn\" title=\"Reset all customizations\"><uk-icon icon=\"refresh-cw\" ratio=\"0.7\"></uk-icon> <span class=\"ml-1\">Reset</span></button></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2936,9 +2969,9 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var135 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var135 == nil {
-			templ_7745c5c3_Var135 = templ.NopComponent
+		templ_7745c5c3_Var137 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var137 == nil {
+			templ_7745c5c3_Var137 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle("Premium Chapter - "+media.Name+" - "+chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
@@ -2954,72 +2987,72 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 284, "<div class=\"min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center px-4\"><div class=\"max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden\"><!-- Header with lock icon --><div class=\"bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-center\"><div class=\"inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-full mb-4\"><svg class=\"w-10 h-10 text-white\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z\" clip-rule=\"evenodd\"></path></svg></div><h1 class=\"text-2xl font-bold text-white mb-2\">Premium Chapter</h1><p class=\"text-yellow-100\">Early access content</p></div><!-- Content --><div class=\"p-8\"><div class=\"text-center mb-6\"><h2 class=\"text-xl font-semibold text-gray-800 mb-2\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var136 string
-		templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1706, Col: 65}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 285, "</h2><p class=\"text-gray-600\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var137 string
-		templ_7745c5c3_Var137, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1707, Col: 39}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var137))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "</p></div><!-- Countdown timer --><div class=\"bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6\"><div class=\"flex items-center justify-center mb-2\"><svg class=\"w-5 h-5 text-yellow-600 mr-2\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> <span class=\"text-sm font-medium text-yellow-800\">Available in</span></div><div class=\"text-center\"><span class=\"text-2xl font-bold text-yellow-800\" id=\"countdown\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 286, "<div class=\"min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center px-4\"><div class=\"max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden\"><!-- Header with lock icon --><div class=\"bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-center\"><div class=\"inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-full mb-4\"><svg class=\"w-10 h-10 text-white\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z\" clip-rule=\"evenodd\"></path></svg></div><h1 class=\"text-2xl font-bold text-white mb-2\">Premium Chapter</h1><p class=\"text-yellow-100\">Early access content</p></div><!-- Content --><div class=\"p-8\"><div class=\"text-center mb-6\"><h2 class=\"text-xl font-semibold text-gray-800 mb-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var138 string
-		templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.JoinStringErrs(getCountdownText(chapter.CreatedAt, premiumDuration))
+		templ_7745c5c3_Var138, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1719, Col: 118}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1708, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var138))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, "</span></div></div><!-- Call to action --><div class=\"text-center\"><p class=\"text-gray-600 mb-4\">Upgrade to premium to access this chapter early!</p><a href=\"/settings\" class=\"inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-medium rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg\"><svg class=\"w-5 h-5 mr-2\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path d=\"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\"></path></svg> Upgrade to Premium</a></div><!-- Back to series link --><div class=\"text-center mt-6\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 287, "</h2><p class=\"text-gray-600\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var139 templ.SafeURL
-		templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", media.Slug)))
+		var templ_7745c5c3_Var139 string
+		templ_7745c5c3_Var139, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1736, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1709, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var139))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "\" class=\"text-gray-500 hover:text-gray-700 text-sm\">← Back to ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 288, "</p></div><!-- Countdown timer --><div class=\"bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6\"><div class=\"flex items-center justify-center mb-2\"><svg class=\"w-5 h-5 text-yellow-600 mr-2\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> <span class=\"text-sm font-medium text-yellow-800\">Available in</span></div><div class=\"text-center\"><span class=\"text-2xl font-bold text-yellow-800\" id=\"countdown\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var140 string
-		templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		templ_7745c5c3_Var140, templ_7745c5c3_Err = templ.JoinStringErrs(getCountdownText(chapter.CreatedAt, premiumDuration))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1737, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1721, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var140))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "</a></div></div></div></div><script>\n// Update countdown every second\nfunction updateCountdown() {\nconst countdownEl = document.getElementById(countdown);\nif (countdownEl) {\n// This would need server-side calculation for accuracy\n// For now, just refresh the page or implement client-side calculation\nsetTimeout(() => {\nlocation.reload();\n}, 30000); // Refresh every 30 seconds\n}\n}\nupdateCountdown();\n</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 289, "</span></div></div><!-- Call to action --><div class=\"text-center\"><p class=\"text-gray-600 mb-4\">Upgrade to premium to access this chapter early!</p><a href=\"/settings\" class=\"inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-medium rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg\"><svg class=\"w-5 h-5 mr-2\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path d=\"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\"></path></svg> Upgrade to Premium</a></div><!-- Back to series link --><div class=\"text-center mt-6\"><a href=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var141 templ.SafeURL
+		templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", media.Slug)))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1738, Col: 58}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var141))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 290, "\" class=\"text-gray-500 hover:text-gray-700 text-sm\">← Back to ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var142 string
+		templ_7745c5c3_Var142, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1739, Col: 24}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var142))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 291, "</a></div></div></div></div><script>\n// Update countdown every second\nfunction updateCountdown() {\nconst countdownEl = document.getElementById(countdown);\nif (countdownEl) {\n// This would need server-side calculation for accuracy\n// For now, just refresh the page or implement client-side calculation\nsetTimeout(() => {\nlocation.reload();\n}, 30000); // Refresh every 30 seconds\n}\n}\nupdateCountdown();\n</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

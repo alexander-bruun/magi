@@ -15,18 +15,20 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 		{ Label: "Series", Href: "/series" },
 		{ Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug) },
 	})
+	{{ unit := "chapter" }}
+	{{ for _, ch := range chapters { if strings.HasPrefix(ch.Name, "Volume ") { unit = "volume"; break } } }}
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ media.Name }</h1>
 	<div class="flex flex-col lg:flex-row mt-2">
 		<div id="form-column" class="w-full lg:w-1/4 m-2">
 			<div class="uk-card p-2">
-				@Info(media, userRole, lastReadChapterSlug)
+				@Info(media, userRole, lastReadChapterSlug, unit)
 			</div>
 		</div>
 		<div id="table-column" class="w-full lg:w-3/4 m-2">
 			<div class="flex justify-between px-4">
-				@ChapterJumpButton(media.Slug, firstChapterSlug, "Go to first chapter", "MoveLeft", false)
-				<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>Chapters ({ fmt.Sprint(chapterCount) })</span></h2>
-				@ChapterJumpButton(media.Slug, lastChapterSlug, "Go to last chapter", "MoveRight", false)
+				@ChapterJumpButton(media.Slug, firstChapterSlug, fmt.Sprintf("Go to first %s", unit), "MoveLeft", false)
+				<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>{ strings.Title(unit) + "s" } ({ fmt.Sprint(chapterCount) })</span></h2>
+				@ChapterJumpButton(media.Slug, lastChapterSlug, fmt.Sprintf("Go to last %s", unit), "MoveRight", false)
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
 			<div id="chapters-section">
@@ -145,7 +147,7 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 	}
 }
 
-templ Info(media models.Media, userRole string, lastReadChapterSlug string) {
+templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit string) {
 	<style>
 		.poster-container:hover .poster-image {
 			opacity: 0.5;
@@ -264,7 +266,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string) {
 					<uk-icon icon="file-text"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
-					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Chapters</strong>
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">{ strings.Title(unit) + "s" }</strong>
 					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(media.FileCount) }</span>
 				</div>
 			</div>
