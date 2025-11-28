@@ -46,7 +46,7 @@ func Captcha(errorMsg string, captchaID string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if errorMsg != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"uk-alert uk-alert-danger uk-alert-small mb-4\"><span class=\"inline-flex items-center\"><uk-icon icon=\"AlertTriangle\" class=\"mr-2\"></uk-icon> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"uk-alert uk-alert-destructive uk-alert-small mb-4\"><span class=\"inline-flex items-center\"><uk-icon icon=\"AlertTriangle\" class=\"mr-2\"></uk-icon> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

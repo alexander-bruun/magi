@@ -55,11 +55,17 @@ func HandleHome(c *fiber.Ctx) error {
 		if err != nil {
 			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
 		}
+		avgRating, reviewCount, err := models.GetAverageRating(m.Slug)
+		if err != nil {
+			log.Errorf("Error getting average rating for %s: %v", m.Slug, err)
+		}
 		enrichedRecentlyAdded[i] = models.EnrichedMedia{
 			Media:              m,
 			PremiumCountdown:   countdown,
 			LatestChapterSlug:  latestSlug,
 			LatestChapterName:  latestName,
+			AverageRating:      avgRating,
+			ReviewCount:        reviewCount,
 		}
 	}
 
@@ -74,11 +80,17 @@ func HandleHome(c *fiber.Ctx) error {
 		if err != nil {
 			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
 		}
+		avgRating, reviewCount, err := models.GetAverageRating(m.Slug)
+		if err != nil {
+			log.Errorf("Error getting average rating for %s: %v", m.Slug, err)
+		}
 		enrichedRecentlyUpdated[i] = models.EnrichedMedia{
 			Media:              m,
 			PremiumCountdown:   countdown,
 			LatestChapterSlug:  latestSlug,
 			LatestChapterName:  latestName,
+			AverageRating:      avgRating,
+			ReviewCount:        reviewCount,
 		}
 	}
 

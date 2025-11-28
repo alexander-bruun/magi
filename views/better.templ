@@ -160,7 +160,7 @@ templ Better(currentPage int) {
 					</div>
 				`;
 			} catch (error) {
-				modalContent.innerHTML = '<div class="uk-alert-danger" uk-alert><p>Failed to load folder information</p></div>';
+				modalContent.innerHTML = '<div class="uk-alert-destructive" uk-alert><p>Failed to load folder information</p></div>';
 			}
 		}
 
@@ -170,7 +170,7 @@ templ Better(currentPage int) {
 					<div>
 						<div class="uk-card uk-card-default uk-card-body uk-card-small">
 							<h3 class="uk-card-title">${title}</h3>
-							<p class="uk-text-danger">
+							<p class="uk-text-destructive">
 								<uk-icon icon="AlertCircle"></uk-icon>
 								Folder not found
 							</p>
@@ -254,7 +254,7 @@ templ Better(currentPage int) {
 			} catch (error) {
 				UIkit.notification({
 					message: `Error: ${error.message}`,
-					status: 'danger',
+					status: 'destructive',
 					pos: 'top-right',
 					timeout: 5000
 				});

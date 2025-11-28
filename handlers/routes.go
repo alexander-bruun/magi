@@ -153,6 +153,9 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	api.Get("/comic", BotDetectionMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
 	api.Get("/image", ImageProtectionMiddleware(), BotDetectionMiddleware(), ConditionalAuthMiddleware(), ImageHandler)
 
+	// Comments
+	api.Delete("/comments/:id", AuthMiddleware("reader"), HandleDeleteComment)
+
 	apiAdmin := api.Group("/admin", AuthMiddleware("admin"))
 	apiAdmin.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
 	apiAdmin.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
@@ -225,6 +228,14 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	media.Post("/:media<[A-Za-z0-9_-]+>/favorite", AuthMiddleware("reader"), HandleMediaFavorite)
 	media.Get("/:media<[A-Za-z0-9_-]+>/favorite/fragment", HandleMediaFavoriteFragment)
 
+	// Comments and reviews
+	media.Get("/:media<[A-Za-z0-9_-]+>/comments", HandleGetComments)
+	media.Post("/:media<[A-Za-z0-9_-]+>/comments", AuthMiddleware("reader"), HandleCreateComment)
+	media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
+	media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
+	media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
+	media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:reviewId?", AuthMiddleware("reader"), HandleDeleteReview)
+
 	// Metadata routes
 	media.Get("/:media/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
 	media.Post("/:media/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
@@ -248,6 +259,10 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
 	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
 	chapters.Post("/:chapter/unmark-premium", AuthMiddleware("moderator"), HandleUnmarkChapterPremium)
+
+	// Chapter comments
+	chapters.Get("/:chapter/comments", HandleGetComments)
+	chapters.Post("/:chapter/comments", AuthMiddleware("reader"), HandleCreateComment)
 
 	// ========================================
 	// Account Routes

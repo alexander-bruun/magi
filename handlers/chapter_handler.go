@@ -220,6 +220,15 @@ func HandleChapter(c *fiber.Ctx) error {
 
 	userName := GetUserContext(c)
 
+	// Get user role for conditional rendering
+	userRole := ""
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			userRole = user.Role
+		}
+	}
+
 	// Get chapter data from service
 	data, err := GetChapterData(mangaSlug, chapterSlug, userName)
 	if err != nil {
@@ -245,6 +254,13 @@ func HandleChapter(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("chapter not found or access denied"), fiber.StatusNotFound)
 	}
 
+	// Fetch comments for the chapter
+	comments, err := models.GetCommentsByTarget("chapter", chapterSlug)
+	if err != nil {
+		log.Errorf("Failed to fetch comments for chapter %s: %v", chapterSlug, err)
+		comments = []models.Comment{} // Initialize empty slice on error
+	}
+
 	// Mark read if needed (fallback for non-HTMX requests)
 	err = MarkChapterReadIfNeeded(userName, mangaSlug, chapterSlug, IsHTMXRequest(c))
 	if err != nil {
@@ -262,7 +278,7 @@ func HandleChapter(c *fiber.Ctx) error {
 		return HandleView(c, views.NovelChapter(data.PrevSlug, data.Chapter.Slug, data.NextSlug, *data.Media, *data.Chapter, rev, data.TOC, data.Content))
 	}
 
-	return HandleView(c, views.Chapter(data.PrevSlug, data.Chapter.Slug, data.NextSlug, *data.Media, data.Images, *data.Chapter, rev))
+	return HandleView(c, views.Chapter(data.PrevSlug, data.Chapter.Slug, data.NextSlug, *data.Media, data.Images, *data.Chapter, rev, comments, userRole, userName))
 }
 
 // HandleMediaChapterTOC handles TOC requests for media chapters

@@ -198,6 +198,7 @@ func HandleMedia(c *fiber.Ctx) error {
 	userRole := ""
 	userName := GetUserContext(c)
 	lastReadChapterSlug := ""
+	var userReview *models.Review
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil {
@@ -215,6 +216,18 @@ func HandleMedia(c *fiber.Ctx) error {
 		if err == nil {
 			lastReadChapterSlug = lastReadChapter
 		}
+		// Fetch user's review if exists
+		userReview, err = models.GetReviewByUserAndMedia(userName, slug)
+		if err != nil {
+			log.Errorf("Error getting user review for %s: %v", slug, err)
+		}
+	}
+	
+	// Fetch all reviews for the media
+	reviews, err := models.GetReviewsByMedia(slug)
+	if err != nil {
+		log.Errorf("Error getting reviews for %s: %v", slug, err)
+		reviews = []models.Review{} // Initialize empty slice on error
 	}
 	
 	if IsHTMXRequest(c) && c.Query("reverse") != "" {
@@ -222,10 +235,10 @@ func HandleMedia(c *fiber.Ctx) error {
 	}
 	
 	if IsHTMXRequest(c) {
-		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration))
+		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName))
 	}
 	
-	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration))
+	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName))
 }// HandleMediaSearch returns search results for the quick-search panel.
 func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")

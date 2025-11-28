@@ -68,7 +68,7 @@ func (m *MALProvider) SyncReadingProgress(userName string, mediaSlug string, cha
 		return err
 	}
 
-	log.Info("MAL sync: status update completed")
+	log.Debug("MAL sync: status update completed")
 	return nil
 }
 
@@ -80,7 +80,7 @@ func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
 		return 0, fmt.Errorf("failed to get media %s: %v", mediaSlug, err)
 	}
 
-	log.Infof("MAL sync: searching for manga with title '%s'", media.Name)
+	log.Debugf("MAL sync: searching for manga with title '%s'", media.Name)
 	// Search for the manga by title
 	encodedTitle := url.QueryEscape(media.Name)
 	url := fmt.Sprintf("%s/manga?q=%s&limit=1", malBaseURL, encodedTitle)
@@ -112,7 +112,7 @@ func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
 		return 0, err
 	}
 
-	log.Infof("MAL sync: search returned %d results", len(result.Data))
+	log.Debugf("MAL sync: search returned %d results", len(result.Data))
 	if len(result.Data) == 0 {
 		return 0, fmt.Errorf("no manga found for title '%s'", media.Name)
 	}
@@ -124,7 +124,7 @@ func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
 
 // updateStatusOnly updates MAL status without chapter progress (currently just ensures manga is in reading list)
 func (m *MALProvider) updateStatusOnly(mangaID int) error {
-	log.Infof("MAL updateStatusOnly: updating manga %d status to reading", mangaID)
+	log.Debugf("MAL updateStatusOnly: updating manga %d status to reading", mangaID)
 	url := fmt.Sprintf("%s/manga/%d/my_list_status", malBaseURL, mangaID)
 	data := map[string]interface{}{
 		"status": "reading", // Ensure manga is marked as reading

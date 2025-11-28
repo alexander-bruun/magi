@@ -43,6 +43,8 @@ type EnrichedMedia struct {
 	PremiumCountdown  string
 	LatestChapterSlug  string
 	LatestChapterName  string
+	AverageRating      float64
+	ReviewCount        int
 }
 
 // CreateMedia adds a new media to the database
