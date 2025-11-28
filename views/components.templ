@@ -139,6 +139,8 @@ templ ProfileCard(user models.User) {
                 }
                 if user.Banned {
                     <p class="role-banned font-semibold">This account is banned</p>
+                } else {
+                    <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary uk-btn-small mt-2">Manage External Accounts</a>
                 }
             </div>
         </div>

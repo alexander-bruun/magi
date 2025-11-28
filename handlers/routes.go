@@ -172,6 +172,8 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	app.Get("/", HandleHome)
 	app.Get("/top-read", HandleTopReadPeriod)
 	app.Get("/statistics", HandleStatistics)
+	app.Get("/external/callback/mal", HandleMALCallback)
+	app.Get("/external/callback/anilist", HandleAniListCallback)
 
 	// ========================================
 	// Authentication Routes
@@ -260,6 +262,9 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	account.Post("/external/mal/connect", HandleConnectMAL)
 	account.Get("/external/mal/authorize", HandleAuthorizeMAL)
 	account.Post("/external/mal/disconnect", HandleDisconnectMAL)
+	account.Post("/external/anilist/connect", HandleConnectAniList)
+	account.Get("/external/anilist/authorize", HandleAuthorizeAniList)
+	account.Post("/external/anilist/disconnect", HandleDisconnectAniList)
 
 	// ========================================
 	// Notification Routes
@@ -378,11 +383,6 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// Job Status WebSocket
 	// ========================================
 	app.Get("/ws/job-status", HandleJobStatusWebSocketUpgrade)
-
-	// ========================================
-	// MAL OAuth Callback
-	// ========================================
-	app.Get("/callback", HandleMALCallback)
 
 	// ========================================
 	// Fallback Route

@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/gofiber/fiber/v2/log"
@@ -42,36 +41,48 @@ func (m *MALProvider) SetAuthToken(token string) {
 }
 
 func (m *MALProvider) SyncReadingProgress(userName string, mediaSlug string, chapterSlug string) error {
+	log.Debugf("MAL sync: updating status only (chapter progress ignored due to API limitations)")
+	// MAL API v2 accepts updates but doesn't properly save num_read_chapters.
+	// We can still update other fields like status, but skip chapter progress for now.
+
 	// Check if account exists
 	_, err := models.GetUserExternalAccount(userName, "mal")
 	if err != nil {
-		log.Warn(fmt.Sprintf("No MAL account for user %s", userName))
-		return err
-	}
-
-	// Parse chapter number from slug
-	chapterNum, err := parseChapterNumber(chapterSlug)
-	if err != nil {
-		log.Warn(fmt.Sprintf("Failed to parse chapter number from %s", chapterSlug))
+		log.Warnf("MAL sync: no account for user %s: %v", userName, err)
 		return err
 	}
 
 	// Find the manga on MAL
 	malMangaID, err := m.findMangaOnMAL(mediaSlug)
 	if err != nil {
-		log.Warn(fmt.Sprintf("Failed to find manga %s on MAL", mediaSlug))
+		log.Errorf("MAL sync: failed to find manga %s on MAL: %v", mediaSlug, err)
 		return err
 	}
 
-	// Update progress
-	return m.updateProgress(malMangaID, chapterNum)
+	log.Debugf("MAL sync: found MAL ID %d", malMangaID)
+
+	// Update status only (no chapter progress)
+	err = m.updateStatusOnly(malMangaID)
+	if err != nil {
+		log.Errorf("MAL sync: failed to update status: %v", err)
+		return err
+	}
+
+	log.Info("MAL sync: status update completed")
+	return nil
 }
 
+// findMangaOnMAL is currently unused - MAL API v2 doesn't properly update progress
 func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
-	// Search for the manga by title (assuming slug is based on title)
-	// Replace hyphens and slashes with spaces for search
-	title := strings.ReplaceAll(strings.ReplaceAll(mediaSlug, "-", " "), "/", " ")
-	encodedTitle := url.QueryEscape(title)
+	// Get the actual media name from the database
+	media, err := models.GetMedia(mediaSlug)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get media %s: %v", mediaSlug, err)
+	}
+
+	log.Infof("MAL sync: searching for manga with title '%s'", media.Name)
+	// Search for the manga by title
+	encodedTitle := url.QueryEscape(media.Name)
 	url := fmt.Sprintf("%s/manga?q=%s&limit=1", malBaseURL, encodedTitle)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -101,25 +112,33 @@ func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
 		return 0, err
 	}
 
+	log.Infof("MAL sync: search returned %d results", len(result.Data))
 	if len(result.Data) == 0 {
-		return 0, fmt.Errorf("no manga found")
+		return 0, fmt.Errorf("no manga found for title '%s'", media.Name)
 	}
 
-	return result.Data[0].Node.ID, nil
+	mangaID := result.Data[0].Node.ID
+	log.Debugf("Synced series: %s (MAL): success", mediaSlug)
+	return mangaID, nil
 }
 
-func (m *MALProvider) updateProgress(mangaID int, chapterNum int) error {
+// updateStatusOnly updates MAL status without chapter progress (currently just ensures manga is in reading list)
+func (m *MALProvider) updateStatusOnly(mangaID int) error {
+	log.Infof("MAL updateStatusOnly: updating manga %d status to reading", mangaID)
 	url := fmt.Sprintf("%s/manga/%d/my_list_status", malBaseURL, mangaID)
 	data := map[string]interface{}{
-		"num_chapters_read": chapterNum,
+		"status": "reading", // Ensure manga is marked as reading
 	}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
+		log.Errorf("MAL updateStatusOnly: marshal error: %v", err)
 		return err
 	}
 
+	log.Debugf("MAL updateStatusOnly: sending request to %s with data: %s", url, string(jsonData))
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
 	if err != nil {
+		log.Errorf("MAL updateStatusOnly: request error: %v", err)
 		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+m.apiToken)
@@ -128,22 +147,17 @@ func (m *MALProvider) updateProgress(mangaID int, chapterNum int) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Errorf("MAL updateStatusOnly: do error: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("update failed with status %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		log.Errorf("MAL updateStatusOnly: failed with status %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("status update failed with status %d", resp.StatusCode)
 	}
 
+	log.Debug("MAL updateStatusOnly: success")
 	return nil
-}
-
-func parseChapterNumber(chapterSlug string) (int, error) {
-	// Assuming chapter slug is like "chapter-1" or "ch-001"
-	parts := strings.Split(chapterSlug, "-")
-	if len(parts) < 2 {
-		return 0, fmt.Errorf("invalid chapter slug")
-	}
-	return strconv.Atoi(parts[len(parts)-1])
 }

@@ -45,28 +45,59 @@ func ExternalAccountsPage(accounts []models.UserExternalAccount) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container uk-container-small uk-margin-top\"><h1>External Accounts</h1><p>Connect your accounts to sync reading progress with external services.</p><div class=\"uk-card uk-card-default uk-card-body\"><h3>MyAnimeList</h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>External Accounts</span></h2><div class=\"uk-container mt-4\"><p class=\"uk-text-center uk-text-muted mb-6\">Connect your accounts to sync reading progress with external services.</p><div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-h4 mb-4\">MyAnimeList</h3>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		connected := false
+		malAccount := (models.UserExternalAccount{})
 		for _, account := range accounts {
 			if account.ServiceName == "mal" {
-				connected = true
+				malAccount = account
 			}
 		}
-		if !connected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p>Connect your MyAnimeList account to sync reading progress.</p><form hx-post=\"/account/external/mal/connect\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_id\">Client ID</label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_id\" name=\"client_id\" type=\"text\" required></div></div><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_secret\">Client Secret</label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_secret\" name=\"client_secret\" type=\"password\" required></div></div><button class=\"uk-button uk-button-primary\" type=\"submit\">Save Credentials</button></form><p><small>Get your Client ID and Secret from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\">MAL API Config</a></small></p>")
+		if malAccount.ServiceName == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"mb-4\">Connect your MyAnimeList account to sync reading progress.</p><form hx-post=\"/account/external/mal/connect\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_id\">Client ID <button type=\"button\" uk-tooltip=\"title: 1. Go to MAL API Config<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left\" class=\"uk-icon-button uk-icon-button-small\"><uk-icon icon=\"Question\"></uk-icon></button></label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_id\" name=\"client_id\" type=\"text\" required></div></div><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_secret\">Client Secret <button type=\"button\" uk-tooltip=\"title: 1. Go to MAL API Config<br>2. Create a new application<br>3. Copy the Client Secret; pos: top-left\" class=\"uk-icon-button uk-icon-button-small\"><uk-icon icon=\"Question\"></uk-icon></button></label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_secret\" name=\"client_secret\" type=\"password\" required></div></div><button class=\"uk-btn uk-btn-primary\" type=\"submit\">Save Credentials</button></form><div class=\"uk-alert uk-alert-primary uk-margin-small\"><p class=\"uk-text-small\"><strong>Important:</strong> When creating your MAL application, set the redirect URI to:</p><code class=\"uk-text-small\">http://localhost:3000/external/callback/mal</code></div><p><small>Get your Client ID and Secret from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\">MAL API Config</a></small></p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else if malAccount.AccessToken == "" || len(malAccount.AccessToken) < 30 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"mb-4\">Your MyAnimeList credentials are saved.</p><a href=\"/account/external/mal/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with MyAnimeList</a><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p>Your MyAnimeList credentials are saved.</p><a href=\"/account/external/mal/authorize\" class=\"uk-button uk-button-secondary\">Authorize with MyAnimeList</a><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-button uk-button-danger\" type=\"submit\">Disconnect</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"mb-4\">Your MyAnimeList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-h4 mb-4\">AniList</h3>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		anilistAccount := (models.UserExternalAccount{})
+		for _, account := range accounts {
+			if account.ServiceName == "anilist" {
+				anilistAccount = account
+			}
+		}
+		if anilistAccount.ServiceName == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<p class=\"mb-4\">Connect your AniList account to sync reading progress.</p><form hx-post=\"/account/external/anilist/connect\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_id\">Client ID <button type=\"button\" uk-tooltip=\"title: 1. Go to AniList Developer Settings<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left\" class=\"uk-icon-button uk-icon-button-small\"><uk-icon icon=\"Question\"></uk-icon></button></label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_id\" name=\"client_id\" type=\"text\" required></div></div><div class=\"uk-margin\"><label class=\"uk-form-label\" for=\"client_secret\">Client Secret <button type=\"button\" uk-tooltip=\"title: 1. Go to AniList Developer Settings<br>2. Create a new application<br>3. Copy the Client Secret; pos: top-left\" class=\"uk-icon-button uk-icon-button-small\"><uk-icon icon=\"Question\"></uk-icon></button></label><div class=\"uk-form-controls\"><input class=\"uk-input\" id=\"client_secret\" name=\"client_secret\" type=\"password\" required></div></div><button class=\"uk-btn uk-btn-primary\" type=\"submit\">Save Credentials</button></form><div class=\"uk-alert uk-alert-primary uk-margin-small\"><p class=\"uk-text-small\"><strong>Important:</strong> When creating your AniList application, set the redirect URI to:</p><code class=\"uk-text-small\">http://localhost:3000/external/callback/anilist</code></div><p><small>Get your Client ID and Secret from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\">AniList Developer Settings</a></small></p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else if anilistAccount.AccessToken == "" || len(anilistAccount.AccessToken) < 30 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"mb-4\">Your AniList credentials are saved.</p><a href=\"/account/external/anilist/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with AniList</a><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"mb-4\">Your AniList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

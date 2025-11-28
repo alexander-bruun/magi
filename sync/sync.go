@@ -1,7 +1,13 @@
 package sync
 
 import (
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"github.com/alexander-bruun/magi/models"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // SyncProvider interface for external service sync
@@ -42,7 +48,10 @@ func SyncReadingProgressForUser(userName string, mediaSlug string, chapterSlug s
 		provider := GetProvider(account.ServiceName, account.AccessToken)
 		if provider != nil {
 			go func(p SyncProvider) {
-				_ = p.SyncReadingProgress(userName, mediaSlug, chapterSlug)
+				err := p.SyncReadingProgress(userName, mediaSlug, chapterSlug)
+				if err != nil {
+					log.Errorf("Sync error for %s: %v", account.ServiceName, err)
+				}
 			}(provider)
 		}
 	}
@@ -74,4 +83,33 @@ func getUserExternalAccounts(userName string) ([]models.UserExternalAccount, err
 	}
 
 	return accounts, nil
+}
+
+func parseChapterNumber(chapterSlug string) (int, error) {
+	// Assuming chapter slug is like "chapter-1" or "ch-001"
+	parts := strings.Split(chapterSlug, "-")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("invalid chapter slug")
+	}
+	return strconv.Atoi(parts[len(parts)-1])
+}
+
+func parseVolumeNumber(chapterName string) (int, error) {
+	// Try to parse volume from chapter name, e.g. "Vol. 1 Ch. 5" or "Volume 1 Chapter 5"
+	// Look for patterns like "Vol. X", "Volume X", "V X"
+	patterns := []string{
+		`Vol\. (\d+)`,
+		`Volume (\d+)`,
+		`V (\d+)`,
+	}
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(chapterName)
+		if len(matches) > 1 {
+			return strconv.Atoi(matches[1])
+		}
+	}
+
+	return 0, fmt.Errorf("no volume found in chapter name")
 }
