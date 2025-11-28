@@ -1,0 +1,74 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ MediaCollections(mediaSlug string, userCollections []models.Collection, mediaCollections []models.Collection) {
+	<div class="container mx-auto px-4 py-8 max-w-2xl">
+		<div class="uk-card uk-card-default uk-card-body">
+			<h1 class="text-2xl font-bold mb-6">Add to Collections</h1>
+
+			if len(userCollections) == 0 {
+				<div class="text-center py-8">
+					<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
+					<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
+					<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+					<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+						Create Collection
+					</a>
+				</div>
+			} else {
+				<p class="text-gray-600 mb-6">Select which of your collections this series should be added to or removed from.</p>
+
+				<div class="space-y-3">
+					for _, collection := range userCollections {
+						{{ inCollection := false }}
+						for _, mc := range mediaCollections {
+							if mc.ID == collection.ID {
+								inCollection = true
+								break
+							}
+						}
+
+						<div class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+							<div class="flex-1">
+								<h3 class="font-semibold">{ collection.Name }</h3>
+								if collection.Description != "" {
+									<p class="text-sm text-gray-600 mt-1">{ collection.Description }</p>
+								}
+								<p class="text-xs text-gray-500 mt-1">{ collection.MediaCount } series</p>
+							</div>
+
+							if inCollection {
+								<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
+									<button type="submit" class="uk-btn uk-btn-danger uk-btn-small">
+										<uk-icon icon="x"></uk-icon>
+										Remove
+									</button>
+								</form>
+							} else {
+								<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
+									<button type="submit" class="uk-btn uk-btn-primary uk-btn-small">
+										<uk-icon icon="plus"></uk-icon>
+										Add
+									</button>
+								</form>
+							}
+						</div>
+					}
+				</div>
+
+				<div class="mt-6 pt-4 border-t">
+					<a href="/collections/create" class="uk-btn uk-btn-secondary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+						<uk-icon icon="plus"></uk-icon>
+						Create New Collection
+					</a>
+				</div>
+			}
+		</div>
+	</div>
+}

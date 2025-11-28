@@ -9,7 +9,73 @@ import (
 	"strings"
 )
 
-templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string) {
+templ MediaCollectionItem(mediaSlug string, collection models.Collection, inCollection bool) {
+	<div class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+		<div class="flex-1">
+			<h3 class="font-semibold">{ collection.Name }</h3>
+			if collection.Description != "" {
+				<p class="text-sm text-gray-600 mt-1">{ collection.Description }</p>
+			}
+			<p class="text-xs text-gray-500 mt-1">{ collection.MediaCount } series</p>
+		</div>
+
+		if inCollection {
+			<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+				<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
+				<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small">
+					<uk-icon icon="x"></uk-icon>
+					Remove
+				</button>
+			</form>
+		} else {
+			<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+				<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
+				<button type="submit" class="uk-btn uk-btn-primary uk-btn-small">
+					<uk-icon icon="plus"></uk-icon>
+					Add
+				</button>
+			</form>
+		}
+	</div>
+}
+
+templ MediaCollectionsModal(mediaSlug string, userCollections []models.Collection) {
+	<div class="uk-modal-header">
+		<h2 class="uk-modal-title">Add to Collections</h2>
+		<button class="uk-modal-close" type="button" uk-close></button>
+	</div>
+
+	if len(userCollections) == 0 {
+		<div class="text-center py-8">
+			<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
+			<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
+			<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+			<a href="/collections/create" class="uk-btn uk-btn-primary" onclick="UIkit.modal('#collections-modal').hide(); window.location.href='/collections/create'">
+				Create Collection
+			</a>
+		</div>
+	} else {
+		<p class="text-gray-600 mb-6">Select which of your collections this series should be added to or removed from.</p>
+
+		<div class="space-y-3">
+			for _, collection := range userCollections {
+				{{ inCollection, _ := models.IsMediaInCollection(collection.ID, mediaSlug) }}
+				@MediaCollectionItem(mediaSlug, collection, inCollection)
+			}
+		</div>
+
+		<div class="mt-6 pt-4 border-t">
+			<a href="/collections/create" class="uk-btn uk-btn-secondary" onclick="UIkit.modal('#collections-modal').hide(); window.location.href='/collections/create'">
+				<uk-icon icon="plus"></uk-icon>
+				Create New Collection
+			</a>
+		</div>
+	}
+}
+
+templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection) {
+	{{ _ = userCollections }}
+	{{ _ = mediaCollections }}
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Home", Href: "/"},
@@ -213,6 +279,12 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	</div>
 	<div class="mt-2 flex justify-center">
 		<div id="media-vote" hx-get={ fmt.Sprintf("/series/%s/vote/fragment", media.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+	</div>
+	<div class="mt-2 flex justify-center">
+		<button type="button" class="uk-btn uk-btn-default uk-btn-small" uk-toggle="target: #collections-modal" hx-get={ fmt.Sprintf("/series/%s/collections/modal", media.Slug) } hx-target="#collections-modal-content" hx-swap="innerHTML" hx-trigger="click">
+			<uk-icon icon="folder"></uk-icon>
+			Add to Collection
+		</button>
 	</div>
 	<div class="mt-2 flex justify-center">
 		if media.Status != "" {
@@ -587,7 +659,12 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			</ul>
 		</div>
 	</div>
-	<!-- Poster Selector Modal for Moderators/Admins -->
+	<!-- Collections Modal -->
+	<div id="collections-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<div id="collections-modal-content"></div>
+		</div>
+	</div>
 }
 
 // Favorite fragment for a media. Returned by HTMX when toggling favorite state.

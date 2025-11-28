@@ -1,0 +1,72 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Collection(collection models.CollectionWithMedia, canEdit bool) {
+	<div class="container mx-auto px-4 py-8">
+		<div class="flex justify-between items-start mb-8">
+			<div class="flex-1">
+				<h1 class="text-3xl font-bold mb-2">{ collection.Name }</h1>
+				if collection.Description != "" {
+					<p class="text-lg text-gray-600 mb-4">{ collection.Description }</p>
+				}
+				<div class="flex items-center text-sm text-gray-500 space-x-4">
+					<span>Created by { collection.CreatedBy }</span>
+					<span>•</span>
+					<span>{ len(collection.Media) } series</span>
+					<span>•</span>
+					<span>Created { collection.CreatedAt.Format("Jan 2, 2006") }</span>
+				</div>
+			</div>
+
+			if canEdit {
+				<div class="flex space-x-2 ml-4">
+					<a href={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } class="uk-btn uk-btn-default uk-btn-small" hx-get={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#content" hx-push-url="true">
+						<uk-icon icon="pencil"></uk-icon>
+						Edit
+					</a>
+					<button class="uk-btn uk-btn-destructive uk-btn-small" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/delete", collection.ID)) } hx-confirm="Are you sure you want to delete this collection? This action cannot be undone." hx-target="#content" hx-push-url="true">
+						<uk-icon icon="trash"></uk-icon>
+						Delete
+					</button>
+				</div>
+			}
+		</div>
+
+		if len(collection.Media) == 0 {
+			<div class="text-center py-12">
+				<uk-icon icon="book" ratio="3" class="text-gray-400 mb-4"></uk-icon>
+				<h2 class="text-xl font-semibold mb-2">No series in this collection</h2>
+				if canEdit {
+					<p class="text-gray-600 mb-4">Add some series to get started.</p>
+					<p class="text-sm text-gray-500">Series can be added from individual series pages.</p>
+				}
+			</div>
+		} else {
+			if canEdit {
+				<div class="mb-6">
+					<p class="text-sm text-gray-600">Remove series by clicking the X button on each card.</p>
+				</div>
+			}
+
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
+				for _, media := range collection.Media {
+					<div class="relative group">
+						<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block" hx-get={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } hx-target="#content" hx-push-url="true">
+							@MediaCard(media, 150, 200, true, true, "title")
+						</a>
+
+						if canEdit {
+							<button class="absolute top-2 right-2 uk-btn uk-btn-destructive uk-btn-small opacity-0 group-hover:opacity-100 transition-opacity" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/remove-media/%s", collection.ID, media.Slug)) } hx-target="closest .relative" hx-swap="outerHTML">
+								<uk-icon icon="x"></uk-icon>
+							</button>
+						}
+					</div>
+				}
+			</div>
+		}
+	</div>
+}

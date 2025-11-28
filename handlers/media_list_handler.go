@@ -199,6 +199,8 @@ func HandleMedia(c *fiber.Ctx) error {
 	userName := GetUserContext(c)
 	lastReadChapterSlug := ""
 	var userReview *models.Review
+	var userCollections []models.Collection
+	var mediaCollections []models.Collection
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil {
@@ -221,6 +223,19 @@ func HandleMedia(c *fiber.Ctx) error {
 		if err != nil {
 			log.Errorf("Error getting user review for %s: %v", slug, err)
 		}
+		// Fetch user's collections
+		userCollections, err = models.GetCollectionsByUser(userName)
+		if err != nil {
+			log.Errorf("Error getting user collections: %v", err)
+			userCollections = []models.Collection{}
+		}
+		// Check which collections contain this media
+		for _, collection := range userCollections {
+			isIn, err := models.IsMediaInCollection(collection.ID, slug)
+			if err == nil && isIn {
+				mediaCollections = append(mediaCollections, collection)
+			}
+		}
 	}
 	
 	// Fetch all reviews for the media
@@ -235,10 +250,10 @@ func HandleMedia(c *fiber.Ctx) error {
 	}
 	
 	if IsHTMXRequest(c) {
-		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName))
+		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections))
 	}
 	
-	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName))
+	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections))
 }// HandleMediaSearch returns search results for the quick-search panel.
 func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")

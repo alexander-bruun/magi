@@ -521,8 +521,7 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 		FROM media m
 		WHERE EXISTS (
 			SELECT 1 FROM chapters c 
-			WHERE c.media_slug = m.slug 
-			AND c.created_at >= m.updated_at
+			WHERE c.media_slug = m.slug
 		)
 		ORDER BY m.updated_at DESC
 		LIMIT ?

@@ -1,0 +1,56 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Collections(collections []models.Collection) {
+	<div class="container mx-auto px-4 py-8">
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="text-3xl font-bold">Collections</h1>
+			<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+				<uk-icon icon="plus"></uk-icon>
+				Create Collection
+			</a>
+		</div>
+
+		if len(collections) == 0 {
+			<div class="text-center py-12">
+				<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
+				<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
+				<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+				<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+					Create Collection
+				</a>
+			</div>
+		} else {
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+				for _, collection := range collections {
+					<div class="uk-card uk-card-default uk-card-body hover:shadow-lg transition-shadow">
+						<div class="flex items-start justify-between mb-3">
+							<h3 class="uk-card-title text-lg font-semibold truncate">
+								<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="hover:text-blue-600" hx-get={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } hx-target="#content" hx-push-url="true">
+									{ collection.Name }
+								</a>
+							</h3>
+						</div>
+
+						if collection.Description != "" {
+							<p class="text-sm text-gray-600 mb-3 line-clamp-2">{ collection.Description }</p>
+						}
+
+						<div class="flex items-center justify-between text-sm text-gray-500">
+							<span>by { collection.CreatedBy }</span>
+							<span>{ collection.MediaCount } series</span>
+						</div>
+
+						<div class="mt-3 text-xs text-gray-400">
+							Created { collection.CreatedAt.Format("Jan 2, 2006") }
+						</div>
+					</div>
+				}
+			</div>
+		}
+	</div>
+}

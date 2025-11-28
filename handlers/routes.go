@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -161,6 +162,34 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	auth.Get("/register", RegisterHandler)
 	auth.Post("/register", CreateUserHandler)
 	auth.Post("/logout", LogoutHandler)
+
+	// ========================================
+	// Collections Routes
+	// ========================================
+	app.Get("/collections", HandleCollections)
+	app.Get("/collections/create", AuthMiddleware("reader"), HandleCreateCollectionForm)
+	app.Post("/collections/create", AuthMiddleware("reader"), HandleCreateCollection)
+
+	collections := app.Group("/collections/:id", func(c *fiber.Ctx) error {
+		idStr := c.Params("id")
+		if _, err := strconv.Atoi(idStr); err != nil {
+			return c.Status(400).SendString("Invalid collection ID")
+		}
+		return c.Next()
+	})
+
+	collections.Get("", HandleCollection)
+	collections.Get("/edit", AuthMiddleware("reader"), HandleEditCollectionForm)
+	collections.Post("/edit", AuthMiddleware("reader"), HandleUpdateCollection)
+	collections.Post("/delete", AuthMiddleware("reader"), HandleDeleteCollection)
+	collections.Post("/add-media", AuthMiddleware("reader"), HandleAddMediaToCollection)
+	collections.Post("/remove-media/:mediaSlug", AuthMiddleware("reader"), HandleRemoveMediaFromCollection)
+
+	// Media collections routes
+	app.Get("/series/:media/collections", AuthMiddleware("reader"), HandleGetMediaCollections)
+	app.Get("/series/:media/collections/modal", AuthMiddleware("reader"), HandleGetMediaCollectionsModal)
+	app.Post("/series/:media/collections/add", AuthMiddleware("reader"), HandleAddMediaToCollectionFromMedia)
+	app.Post("/series/:media/collections/remove", AuthMiddleware("reader"), HandleRemoveMediaFromCollectionFromMedia)
 
 	// ========================================
 	// Media Routes (FIXED)
