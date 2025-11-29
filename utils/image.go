@@ -53,28 +53,28 @@ func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string, quality 
 
 	// Save original (unprocessed) for potential future use
 	originalFilePath := filepath.Join(downloadDir, baseName+"_original"+filepath.Ext(fileNameWithExtension))
-	if err := saveImage(originalFilePath, img, format, quality); err != nil {
+	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
 		return err
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
 	fullFilePath := filepath.Join(downloadDir, fileNameWithExtension)
-	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
 		return err
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
 	thumbFilePath := filepath.Join(downloadDir, baseName+"_thumb.jpg")
-	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
 		return err
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
 	smallFilePath := filepath.Join(downloadDir, baseName+"_small.jpg")
-	return saveImage(smallFilePath, smallImg, "jpeg", quality)
+	return SaveImage(smallFilePath, smallImg, "jpeg", quality)
 }
 
 // ensureDirExists ensures the directory exists, creating it if necessary.
@@ -127,7 +127,8 @@ func fetchImage(url string) (image.Image, string, error) {
 }
 
 // saveImage encodes and saves an image to the specified path.
-func saveImage(filePath string, img image.Image, format string, quality int) error {
+// SaveImage saves an image to the given path with the specified format and quality
+func SaveImage(filePath string, img image.Image, format string, quality int) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %v", err)
@@ -188,7 +189,7 @@ func ProcessImage(fromPath, toPath string, quality int) error {
 		return err
 	}
 
-	img, err := openImage(fromPath)
+	img, err := OpenImage(fromPath)
 	if err != nil {
 		return err
 	}
@@ -204,7 +205,7 @@ func ProcessImageWithTopCrop(fromPath, toPath string, quality int) error {
 		return err
 	}
 
-	img, err := openImage(fromPath)
+	img, err := OpenImage(fromPath)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func ProcessImageWithCrop(fromPath, toPath string, cropData map[string]interface
 		return err
 	}
 
-	img, err := openImage(fromPath)
+	img, err := OpenImage(fromPath)
 	if err != nil {
 		return err
 	}
@@ -335,7 +336,8 @@ func checkFileExists(path string) error {
 }
 
 // openImage opens and decodes an image file.
-func openImage(path string) (image.Image, error) {
+// OpenImage opens and decodes an image from the given path
+func OpenImage(path string) (image.Image, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -541,7 +543,7 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 	// Check if it's a regular image file
 	if isImageFile(filepath.Base(filePath)) {
 		// Process the image directly
-		img, err = openImage(filePath)
+		img, err = OpenImage(filePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to open image: %w", err)
 		}
@@ -607,7 +609,7 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 		}
 
 		// Load the extracted image
-		img, err = openImage(extractedImagePath)
+		img, err = OpenImage(extractedImagePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to open extracted image: %w", err)
 		}
@@ -632,28 +634,28 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 
 	// Save original (unprocessed) for potential future use
 	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
-	if err := saveImage(originalFilePath, img, format, quality); err != nil {
+	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
 	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
-	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
 	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
-	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
 	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
-	if err := saveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+	if err := SaveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
@@ -670,7 +672,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality i
 	}
 
 	// Load the image
-	img, err := openImage(imagePath)
+	img, err := OpenImage(imagePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open image: %w", err)
 	}
@@ -693,30 +695,51 @@ func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality i
 
 	// Save original (unprocessed) for potential future use
 	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
-	if err := saveImage(originalFilePath, img, format, quality); err != nil {
+	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
 	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
-	if err := saveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
 	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
-	if err := saveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
 	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
-	if err := saveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+	if err := SaveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
 	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
+}
+
+// GenerateThumbnails generates thumbnail and small versions from a cached full-size image
+func GenerateThumbnails(fullImagePath, slug, cacheDir string, quality int) error {
+	// Load the full-size image
+	img, err := OpenImage(fullImagePath)
+	if err != nil {
+		return fmt.Errorf("failed to open image: %w", err)
+	}
+
+	// Generate thumbnail version (200x300) for listings
+	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
+	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
+	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+		return fmt.Errorf("failed to save thumbnail image: %w", err)
+	}
+
+	// Generate small version (100x150) for compact views
+	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
+	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
+	return SaveImage(smallFilePath, smallImg, "jpeg", quality)
 }

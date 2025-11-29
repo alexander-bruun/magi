@@ -219,6 +219,9 @@ func UpdateMediaMetadata(media *Media) error {
 
 // DeleteMedia removes a media and its associated chapters
 func DeleteMedia(slug string) error {
+	// Delete poster images
+	deletePosterImages(slug)
+
 	// Delete associated chapters first
 	if err := DeleteChaptersByMediaSlug(slug); err != nil {
 		return err
@@ -230,6 +233,36 @@ func DeleteMedia(slug string) error {
 	}
 
 	return DeleteRecord(`DELETE FROM media WHERE slug = ?`, slug)
+}
+
+// deletePosterImages deletes the poster image files for a media
+func deletePosterImages(slug string) {
+	cacheDir := utils.GetCacheDirectory()
+	postersDir := filepath.Join(cacheDir, "posters")
+
+	// Delete main poster image
+	mainPath := filepath.Join(postersDir, fmt.Sprintf("%s.jpg", slug))
+	if err := os.Remove(mainPath); err != nil && !os.IsNotExist(err) {
+		log.Warnf("Failed to delete poster image %s: %v", mainPath, err)
+	}
+
+	// Delete original image
+	originalPath := filepath.Join(postersDir, fmt.Sprintf("%s_original.jpg", slug))
+	if err := os.Remove(originalPath); err != nil && !os.IsNotExist(err) {
+		log.Warnf("Failed to delete poster original image %s: %v", originalPath, err)
+	}
+
+	// Delete thumbnail
+	thumbPath := filepath.Join(postersDir, fmt.Sprintf("%s_thumb.jpg", slug))
+	if err := os.Remove(thumbPath); err != nil && !os.IsNotExist(err) {
+		log.Warnf("Failed to delete poster thumbnail %s: %v", thumbPath, err)
+	}
+
+	// Delete small image
+	smallPath := filepath.Join(postersDir, fmt.Sprintf("%s_small.jpg", slug))
+	if err := os.Remove(smallPath); err != nil && !os.IsNotExist(err) {
+		log.Warnf("Failed to delete poster small image %s: %v", smallPath, err)
+	}
 }
 
 // SearchMedias filters, sorts, and paginates media based on provided criteria

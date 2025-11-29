@@ -922,6 +922,25 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
+	// Get current user to check for existing avatar
+	currentUser, err := models.FindUserByUsername(userName)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if currentUser == nil {
+		return fiber.ErrUnauthorized
+	}
+
+	// Delete old avatar file if exists
+	if currentUser.Avatar != "" {
+		oldFilename := strings.TrimPrefix(currentUser.Avatar, "/api/avatars/")
+		oldFilepath := fmt.Sprintf("./cache/avatars/%s", oldFilename)
+		if err := os.Remove(oldFilepath); err != nil && !os.IsNotExist(err) {
+			// Log but don't fail the request
+			log.Warnf("Failed to delete old avatar file %s: %v", oldFilepath, err)
+		}
+	}
+
 	// Get the uploaded file
 	file, err := c.FormFile("avatar")
 	if err != nil {

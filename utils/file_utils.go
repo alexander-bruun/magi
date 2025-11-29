@@ -515,11 +515,11 @@ func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[st
 }
 
 func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]interface{}, quality int) (string, error) {
-	fileExt := filepath.Ext(imagePath)[1:]
-	originalFile := filepath.Join(cacheDir, fmt.Sprintf("%s_original.%s", slug, fileExt))
-	croppedFile := filepath.Join(cacheDir, fmt.Sprintf("%s.%s", slug, fileExt))
+	// Always save as JPG for consistency and compression
+	originalFile := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
+	croppedFile := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
 
-	// Copy original
+	// Copy original and convert to JPG
 	if err := CopyFile(imagePath, originalFile); err != nil {
 		return "", fmt.Errorf("failed to copy image: %w", err)
 	}
@@ -529,7 +529,7 @@ func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]i
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
+	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
 }
 
 // GetCacheDirectory returns the cache directory path
