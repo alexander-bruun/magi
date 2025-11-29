@@ -149,14 +149,55 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
     <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
         <div class="flex items-center space-x-6">
             <!-- Avatar -->
-            <div class="w-32 flex-shrink-0">
+            <div class="relative flex justify-center items-center avatar-container">
+                <style>
+                    .avatar-container:hover .avatar-image {
+                        opacity: 0.5;
+                    }
+                    .avatar-container:hover .change-avatar-btn {
+                        opacity: 1;
+                        pointer-events: auto;
+                    }
+                    .change-avatar-btn {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: opacity 0.3s ease;
+                        background: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: none;
+                        cursor: pointer;
+                    }
+                    .change-avatar-btn:hover {
+                        opacity: 1;
+                        pointer-events: auto;
+                    }
+                </style>
                 if user.Avatar != "" {
-                    <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 object-cover border-2 border-gray-300"/>
+                    <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 object-cover border-2 border-gray-300 avatar-image transition-opacity duration-300"/>
                 } else {
-                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300">
+                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300 avatar-image transition-opacity duration-300">
                         { string(user.Username[0]) }
                     </div>
                 }
+                <button
+                    type="button"
+                    class="change-avatar-btn"
+                    uk-toggle="target: #avatar-modal"
+                    title="Change avatar"
+                    aria-label="Change avatar"
+                >
+                    <uk-icon icon="Pencil" class="text-lg"></uk-icon>
+                </button>
             </div>
             <div class="flex-1">
                 if user.Role == "admin" {
@@ -204,7 +245,6 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                     }
                     
                     <div class="flex space-x-2">
-                        <button class="uk-btn uk-btn-primary uk-btn-small" uk-toggle="target: #avatar-modal">Change Avatar</button>
                         <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary uk-btn-small">Manage External Accounts</a>
                     </div>
                 }

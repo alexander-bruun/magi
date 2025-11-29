@@ -680,7 +680,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			templ_7745c5c3_Var35 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"w-32 flex-shrink-0\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"relative flex justify-center items-center avatar-container\"><style>\n                    .avatar-container:hover .avatar-image {\n                        opacity: 0.5;\n                    }\n                    .avatar-container:hover .change-avatar-btn {\n                        opacity: 1;\n                        pointer-events: auto;\n                    }\n                    .change-avatar-btn {\n                        position: absolute;\n                        top: 50%;\n                        left: 50%;\n                        transform: translate(-50%, -50%);\n                        width: 40px;\n                        height: 40px;\n                        border-radius: 50%;\n                        opacity: 0;\n                        pointer-events: none;\n                        transition: opacity 0.3s ease;\n                        background: rgba(0, 0, 0, 0.7);\n                        color: white;\n                        display: flex;\n                        align-items: center;\n                        justify-content: center;\n                        border: none;\n                        cursor: pointer;\n                    }\n                    .change-avatar-btn:hover {\n                        opacity: 1;\n                        pointer-events: auto;\n                    }\n                </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -692,25 +692,25 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var36 string
 			templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(user.Avatar)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 154, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 186, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" alt=\"avatar\" class=\"rounded-full w-32 h-32 object-cover border-2 border-gray-300\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" alt=\"avatar\" class=\"rounded-full w-32 h-32 object-cover border-2 border-gray-300 avatar-image transition-opacity duration-300\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300 avatar-image transition-opacity duration-300\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(string(user.Username[0]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 157, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 189, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 			if templ_7745c5c3_Err != nil {
@@ -721,7 +721,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</div><div class=\"flex-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<button type=\"button\" class=\"change-avatar-btn\" uk-toggle=\"target: #avatar-modal\" title=\"Change avatar\" aria-label=\"Change avatar\"><uk-icon icon=\"Pencil\" class=\"text-lg\"></uk-icon></button></div><div class=\"flex-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -733,7 +733,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 163, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 204, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 			if templ_7745c5c3_Err != nil {
@@ -751,7 +751,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 165, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 206, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 			if templ_7745c5c3_Err != nil {
@@ -769,7 +769,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var40 string
 			templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 167, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 208, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 			if templ_7745c5c3_Err != nil {
@@ -787,7 +787,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 169, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 210, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 			if templ_7745c5c3_Err != nil {
@@ -811,7 +811,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var42 string
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(totalChaptersRead)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 177, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 218, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 			if templ_7745c5c3_Err != nil {
@@ -824,7 +824,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(totalMediaRead)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 181, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 222, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -837,7 +837,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(readingStreak)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 185, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 226, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -850,7 +850,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(len(favoriteGenres))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 189, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 230, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -873,7 +873,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 					var templ_7745c5c3_Var46 string
 					templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(genre)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 198, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 239, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 					if templ_7745c5c3_Err != nil {
@@ -895,7 +895,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <div class=\"flex space-x-2\"><button class=\"uk-btn uk-btn-primary uk-btn-small\" uk-toggle=\"target: #avatar-modal\">Change Avatar</button> <a href=\"/account/external\" hx-get=\"/account/external\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-secondary uk-btn-small\">Manage External Accounts</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " <div class=\"flex space-x-2\"><a href=\"/account/external\" hx-get=\"/account/external\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-secondary uk-btn-small\">Manage External Accounts</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1046,7 +1046,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var50 templ.SafeURL
 				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 323, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 363, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 				if templ_7745c5c3_Err != nil {
@@ -1059,7 +1059,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var51 string
 				templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s", media.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 323, Col: 124}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 363, Col: 124}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 				if templ_7745c5c3_Err != nil {
@@ -1084,7 +1084,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var52 string
 				templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToUpper(derived))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 332, Col: 188}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 372, Col: 188}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 				if templ_7745c5c3_Err != nil {
@@ -1102,7 +1102,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					var templ_7745c5c3_Var53 string
 					templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(media.PremiumCountdown)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 338, Col: 76}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 378, Col: 76}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 					if templ_7745c5c3_Err != nil {
@@ -1120,7 +1120,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var54 string
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 343, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 383, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 				if templ_7745c5c3_Err != nil {
@@ -1138,7 +1138,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					var templ_7745c5c3_Var55 templ.SafeURL
 					templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 346, Col: 130}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 386, Col: 130}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 					if templ_7745c5c3_Err != nil {
@@ -1151,7 +1151,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					var templ_7745c5c3_Var56 string
 					templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(media.LatestChapterName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 346, Col: 248}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 386, Col: 248}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 					if templ_7745c5c3_Err != nil {
@@ -1174,7 +1174,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var57 string
 				templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 352, Col: 82}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 392, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 				if templ_7745c5c3_Err != nil {
@@ -1223,7 +1223,7 @@ func SuccessAlert(message string) templ.Component {
 		var templ_7745c5c3_Var59 string
 		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 372, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 412, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 		if templ_7745c5c3_Err != nil {
@@ -1283,7 +1283,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var61 templ.SafeURL
 						templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/series/" + activity.Media.Slug))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 398, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 438, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 						if templ_7745c5c3_Err != nil {
@@ -1296,7 +1296,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var62 string
 						templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(activity.Media.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 399, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 439, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 						if templ_7745c5c3_Err != nil {
@@ -1309,7 +1309,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var63 string
 						templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(activity.ReadingState.CreatedAt.Format("Jan 2"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 402, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 442, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 						if templ_7745c5c3_Err != nil {
@@ -1337,7 +1337,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var64 templ.SafeURL
 						templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/series/" + activity.Media.Slug))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 418, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 458, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 						if templ_7745c5c3_Err != nil {
@@ -1350,7 +1350,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var65 string
 						templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(activity.Media.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 419, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 459, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 						if templ_7745c5c3_Err != nil {
@@ -1363,7 +1363,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var66 string
 						templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(activity.ReadingState.CreatedAt.Format("Jan 2"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 422, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 462, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 						if templ_7745c5c3_Err != nil {
