@@ -190,6 +190,7 @@ templ FormContent(library models.Library, editing bool) {
 				<option value="anilist" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "anilist" }>AniList</option>
 				<option value="jikan" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "jikan" }>Jikan (MAL API)</option>
 				<option value="mangaupdates" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mangaupdates" }>MangaUpdates</option>
+				<option value="kitsu" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "kitsu" }>Kitsu</option>
 			</select>
 		</div>
 		@FolderInputs(library.Folders, editing)

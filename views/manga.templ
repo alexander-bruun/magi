@@ -131,8 +131,8 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 							type="button"
 							class="uk-btn uk-btn-primary"
 							uk-toggle="target: #refresh-metadata-modal"
-							title="Refresh metadata from MediaDex"
-							aria-label="Refresh metadata from MediaDex"
+							title="Refresh metadata from MangaDex"
+							aria-label="Refresh metadata from MangaDex"
 						>
 							<uk-icon icon="FolderSync"></uk-icon>
 						</button>
@@ -538,7 +538,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 		<div class="uk-modal-body uk-modal-dialog">
 			<h2 class="uk-modal-title mb-3">Refresh Metadata</h2>
 			<p class="uk-text-muted mb-4">
-				This will fetch fresh metadata from MediaDex and re-scan the folder for new or removed chapters.
+				This will fetch fresh metadata from MangaDex and re-scan the folder for new or removed chapters.
 			</p>
 			<div class="mb-4">
 				<p class="text-sm"><strong>Media Path:</strong></p>
@@ -550,7 +550,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 					<div>
 						<strong>What will be updated:</strong>
 						<ul class="list-disc ml-5 mt-2 space-y-1">
-							<li>Title, description, and other metadata from MediaDex</li>
+							<li>Title, description, and other metadata from MangaDex</li>
 							<li>Cover art and tags</li>
 							<li>Chapter list (new chapters added, deleted chapters removed)</li>
 						</ul>

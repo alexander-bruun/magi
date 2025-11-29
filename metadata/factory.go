@@ -32,13 +32,13 @@ func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
 	case "jikan":
 		apiToken = "" // Jikan doesn't require auth
 	case "mangadex":
-		apiToken = "" // Mediadex doesn't require auth for public data
+		apiToken = "" // MangaDex doesn't require auth for public data
 	case "mangaupdates":
 		apiToken = "" // MangaUpdates doesn't require auth for public data
 	case "kitsu":
 		apiToken = "" // Kitsu doesn't require auth for public data
 	default:
-		// Default to Mediadex
+		// Default to MangaDex
 		providerName = "mangadex"
 		apiToken = ""
 	}
@@ -68,13 +68,13 @@ func GetProviderForLibrary(libraryProvider sql.NullString, config ConfigProvider
 	case "jikan":
 		apiToken = "" // Jikan doesn't require auth
 	case "mangadex":
-		apiToken = "" // Mediadex doesn't require auth for public data
+		apiToken = "" // MangaDex doesn't require auth for public data
 	case "mangaupdates":
 		apiToken = "" // MangaUpdates doesn't require auth for public data
 	case "kitsu":
 		apiToken = "" // Kitsu doesn't require auth for public data
 	default:
-		// Default to Mediadex
+		// Default to MangaDex
 		providerName = "mangadex"
 		apiToken = ""
 	}
