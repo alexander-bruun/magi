@@ -232,7 +232,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		}
 
 		// Save uploaded file temporarily
-		tempPath := filepath.Join(postersDir, fmt.Sprintf("temp_%s_%s", mangaSlug, time.Now().Unix()))
+		tempPath := filepath.Join(postersDir, fmt.Sprintf("temp_%s_%d", mangaSlug, time.Now().Unix()))
 		if err := c.SaveFile(file, tempPath); err != nil {
 			return handleError(c, fmt.Errorf("failed to save uploaded file: %w", err))
 		}

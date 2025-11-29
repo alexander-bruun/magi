@@ -16,6 +16,7 @@ const mangadexBaseURL = "https://api.mangadex.org"
 // MangaDexProvider implements the Provider interface for MangaDex API
 type MangaDexProvider struct {
 	apiToken string
+	config   ConfigProvider
 }
 
 // NewMangaDexProvider creates a new MangaDex metadata provider
@@ -39,6 +40,10 @@ func (m *MangaDexProvider) SetAuthToken(token string) {
 	m.apiToken = token
 }
 
+func (m *MangaDexProvider) SetConfig(config ConfigProvider) {
+	m.config = config
+}
+
 func (m *MangaDexProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 	if metadata == nil || metadata.CoverArtURL == "" {
 		return ""
@@ -49,7 +54,35 @@ func (m *MangaDexProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 
 func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art", mangadexBaseURL, titleEncoded)
+	
+	// Build content rating query parameters based on global setting
+	var contentRatingParams []string
+	if m.config != nil {
+		limit := m.config.GetContentRatingLimit()
+		if limit >= 0 {
+			contentRatingParams = append(contentRatingParams, "contentRating[]=safe")
+		}
+		if limit >= 1 {
+			contentRatingParams = append(contentRatingParams, "contentRating[]=suggestive")
+		}
+		if limit >= 2 {
+			contentRatingParams = append(contentRatingParams, "contentRating[]=erotica")
+		}
+		if limit >= 3 {
+			contentRatingParams = append(contentRatingParams, "contentRating[]=pornographic")
+		}
+	} else {
+		// Default to all if no config
+		contentRatingParams = []string{
+			"contentRating[]=safe",
+			"contentRating[]=suggestive", 
+			"contentRating[]=erotica",
+			"contentRating[]=pornographic",
+		}
+	}
+	
+	contentRatingQuery := strings.Join(contentRatingParams, "&")
+	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", mangadexBaseURL, titleEncoded, contentRatingQuery)
 
 	resp, err := http.Get(searchURL)
 	if err != nil {

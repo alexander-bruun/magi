@@ -15,6 +15,7 @@ const malBaseURL = "https://api.myanimelist.net/v2"
 // MALProvider implements the Provider interface for MyAnimeList API
 type MALProvider struct {
 	apiToken string
+	config   ConfigProvider
 }
 
 // NewMALProvider creates a new MyAnimeList metadata provider
@@ -36,6 +37,10 @@ func (m *MALProvider) RequiresAuth() bool {
 
 func (m *MALProvider) SetAuthToken(token string) {
 	m.apiToken = token
+}
+
+func (m *MALProvider) SetConfig(config ConfigProvider) {
+	m.config = config
 }
 
 func (m *MALProvider) GetCoverImageURL(metadata *MediaMetadata) string {

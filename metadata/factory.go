@@ -11,6 +11,7 @@ type ConfigProvider interface {
 	GetMetadataProvider() string
 	GetMALApiToken() string
 	GetAniListApiToken() string
+	GetContentRatingLimit() int
 }
 
 // LibraryConfigProvider extends ConfigProvider with library-specific settings
@@ -48,6 +49,8 @@ func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
 		return nil, fmt.Errorf("failed to initialize metadata provider '%s': %w", providerName, err)
 	}
 
+	provider.SetConfig(config)
+
 	return provider, nil
 }
 
@@ -83,6 +86,8 @@ func GetProviderForLibrary(libraryProvider sql.NullString, config ConfigProvider
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize metadata provider '%s': %w", providerName, err)
 	}
+
+	provider.SetConfig(config)
 
 	return provider, nil
 }

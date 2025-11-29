@@ -55,6 +55,10 @@ func (c *AppConfig) GetAniListApiToken() string {
     return c.AniListApiToken
 }
 
+func (c *AppConfig) GetContentRatingLimit() int {
+    return c.ContentRatingLimit
+}
+
 var (
     cachedConfig AppConfig
     configOnce   sync.Once

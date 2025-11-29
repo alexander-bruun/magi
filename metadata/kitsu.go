@@ -17,6 +17,7 @@ const kitsuBaseURL = "https://kitsu.io/api/edge"
 // KitsuProvider implements the Provider interface for Kitsu API
 type KitsuProvider struct {
 	apiToken string
+	config   ConfigProvider
 }
 
 // NewKitsuProvider creates a new Kitsu metadata provider
@@ -38,6 +39,10 @@ func (k *KitsuProvider) RequiresAuth() bool {
 
 func (k *KitsuProvider) SetAuthToken(token string) {
 	k.apiToken = token
+}
+
+func (k *KitsuProvider) SetConfig(config ConfigProvider) {
+	k.config = config
 }
 
 func (k *KitsuProvider) GetCoverImageURL(metadata *MediaMetadata) string {

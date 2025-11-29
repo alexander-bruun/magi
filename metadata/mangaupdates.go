@@ -16,6 +16,7 @@ const mangaupdatesBaseURL = "https://api.mangaupdates.com/v1"
 // MangaUpdatesProvider implements the Provider interface for MangaUpdates API
 type MangaUpdatesProvider struct {
 	apiToken string
+	config   ConfigProvider
 }
 
 // NewMangaUpdatesProvider creates a new MangaUpdates metadata provider
@@ -37,6 +38,10 @@ func (m *MangaUpdatesProvider) RequiresAuth() bool {
 
 func (m *MangaUpdatesProvider) SetAuthToken(token string) {
 	m.apiToken = token
+}
+
+func (m *MangaUpdatesProvider) SetConfig(config ConfigProvider) {
+	m.config = config
 }
 
 func (m *MangaUpdatesProvider) GetCoverImageURL(metadata *MediaMetadata) string {

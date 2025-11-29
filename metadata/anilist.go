@@ -16,6 +16,7 @@ const anilistBaseURL = "https://graphql.anilist.co"
 // AniListProvider implements the Provider interface for AniList GraphQL API
 type AniListProvider struct {
 	apiToken string
+	config   ConfigProvider
 }
 
 // NewAniListProvider creates a new AniList metadata provider
@@ -37,6 +38,10 @@ func (a *AniListProvider) RequiresAuth() bool {
 
 func (a *AniListProvider) SetAuthToken(token string) {
 	a.apiToken = token
+}
+
+func (a *AniListProvider) SetConfig(config ConfigProvider) {
+	a.config = config
 }
 
 func (a *AniListProvider) GetCoverImageURL(metadata *MediaMetadata) string {

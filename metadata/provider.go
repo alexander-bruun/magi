@@ -51,6 +51,9 @@ type Provider interface {
 	// SetAuthToken sets the authentication token for the provider
 	SetAuthToken(token string)
 
+	// SetConfig sets the configuration for the provider
+	SetConfig(config ConfigProvider)
+
 	// GetCoverImageURL returns the actual downloadable URL for cover art
 	// This allows each provider to handle URL construction differently
 	GetCoverImageURL(metadata *MediaMetadata) string

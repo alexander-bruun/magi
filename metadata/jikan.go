@@ -15,6 +15,7 @@ const jikanBaseURL = "https://api.jikan.moe/v4"
 // JikanProvider implements the Provider interface for Jikan API (unofficial MAL API)
 type JikanProvider struct {
 	apiToken string // Not used, but kept for interface compatibility
+	config   ConfigProvider
 }
 
 // NewJikanProvider creates a new Jikan API metadata provider
@@ -36,6 +37,10 @@ func (j *JikanProvider) RequiresAuth() bool {
 
 func (j *JikanProvider) SetAuthToken(token string) {
 	j.apiToken = token
+}
+
+func (j *JikanProvider) SetConfig(config ConfigProvider) {
+	j.config = config
 }
 
 func (j *JikanProvider) GetCoverImageURL(metadata *MediaMetadata) string {
