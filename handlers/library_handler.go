@@ -223,7 +223,7 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	idx := scheduler.NewIndexer(*library)
 	// RunIndexingJob will process all folders for the library.
 	if ran := idx.RunIndexingJob(); !ran {
-		c.Set("HX-Trigger", `{"showNotification": {"message": "Indexing already in progress for this library", "type": "warning"}}`)
+		c.Set("HX-Trigger", `{"showNotification": {"message": "Indexing already in progress for this library", "status": "destructive"}}`)
 		return c.SendString("")
 	}
 

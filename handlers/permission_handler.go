@@ -338,7 +338,7 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 	selectedUsernames := form.Value["usernames[]"]
 	if len(selectedUsernames) == 0 {
 		// No users selected, just close modal
-		c.Set("HX-Trigger", `{"closeModal": true, "showNotification": {"message": "No users selected", "type": "warning"}}`)
+		c.Set("HX-Trigger", `{"closeModal": true, "showNotification": {"message": "No users selected", "status": "destructive"}}`)
 		return c.SendStatus(200)
 	}
 
@@ -361,7 +361,7 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 		message += fmt.Sprintf(" (%d failed)", failCount)
 	}
 
-	c.Set("HX-Trigger", `{"closeModal": true, "refreshPermissions": true, "showNotification": {"message": "`+message+`", "type": "success"}}`)
+	c.Set("HX-Trigger", `{"closeModal": true, "refreshPermissions": true, "showNotification": {"message": "`+message+`", "status": "success"}}`)
 	return c.SendStatus(200)
 }
 
