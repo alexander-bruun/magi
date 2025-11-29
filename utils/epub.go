@@ -565,6 +565,12 @@ func GetBookContentWithValidity(epubPath, mangaSlug, chapterSlug string, validit
 
 	var content strings.Builder
 	for i, chapter := range chapters {
+		// Skip table of contents chapters
+		if strings.Contains(strings.ToLower(chapter.Path), "toc") ||
+		   strings.Contains(strings.ToLower(chapter.Href), "toc") {
+			continue
+		}
+
 		// Find the chapter file
 		var chapterFile *zip.File
 		for _, f := range r.File {
