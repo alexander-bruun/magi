@@ -150,26 +150,29 @@ for series in $(echo "$series_response" | jq -c '.data[]'); do
       
       for image_url in $all_urls; do
         file_name=$(basename "${image_url}")
+        ext="${file_name##*.}"
         if [[ "${image_url}" != "${thumbnail}" ]]; then
           url_encoded="${file_name//+/ }"
           url_decoded=$(printf '%b' "${url_encoded//%/\\x}")
           encoded_image_url=${image_url// /%20}
+          padded_name=$(printf "%03d" $img_counter)
           if [ "$dry_run" = false ]; then
             printf "  [%03d/%03d] %-50s " "$img_counter" "$total_images" "$encoded_image_url"
-            if curl "$encoded_image_url" -so "${directory}/${url_decoded}"; then
+            if curl "$encoded_image_url" -so "${directory}/${padded_name}.${ext}"; then
               echo -e "\033[1;32mSuccess\033[0m"
+              
+              # Convert image to PNG if enabled
+              if [ "$convert_to_png" = true ]; then
+                convert_to_png "${directory}/${padded_name}.${ext}"
+              fi
+              
+              ((img_counter++))
             else
               echo -e "\033[1;31mFailed\033[0m"
               error "Failed to download ${encoded_image_url}"
             fi
-            
-            # Convert image to PNG if enabled
-            if [ "$convert_to_png" = true ]; then
-              convert_to_png "${directory}/${url_decoded}"
-            fi
           fi
         fi
-        ((img_counter++))
       done
 
       if [ "$dry_run" = false ]; then
