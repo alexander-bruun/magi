@@ -119,7 +119,34 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	}
 
 	if existingMedia != nil && existingMedia.LibrarySlug != librarySlug {
-		log.Warnf("Media with slug '%s' already exists in a different library ('%s'), skipping indexing for library '%s'", slug, existingMedia.LibrarySlug, librarySlug)
+		// Record cross-library duplicate
+		fp1, fp2 := existingMedia.Path, absolutePath
+		if fp1 > fp2 {
+			fp1, fp2 = fp2, fp1
+		}
+
+		// Check if we've already recorded this duplicate; if so, skip logging/creating
+		existingDup, err := models.GetMediaDuplicateByFolders(slug, fp1, fp2)
+		if err != nil {
+			log.Errorf("Failed to check existing media duplicate for '%s': %v", slug, err)
+		}
+
+		if existingDup == nil {
+			// This is a new duplicate: log and record it
+			log.Warnf("Detected cross-library duplicate for media '%s': library '%s' folder='%s', library '%s' folder='%s'",
+				slug, existingMedia.LibrarySlug, existingMedia.Path, librarySlug, absolutePath)
+
+			duplicate := models.MediaDuplicate{
+				MediaSlug:   slug,
+				LibrarySlug: librarySlug,
+				FolderPath1: fp1,
+				FolderPath2: fp2,
+			}
+
+			if err := models.CreateMediaDuplicate(duplicate); err != nil {
+				log.Errorf("Failed to record media duplicate for '%s': %v", slug, err)
+			}
+		}
 		return "", nil
 	}
 
