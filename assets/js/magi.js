@@ -639,7 +639,14 @@
         containerId: 'console-logs-container',
         outputId: 'console-logs-output',
         maxEntries: 1000,
-        reconnectInterval: 3000
+        reconnectInterval: 3000,
+        colorMap: {
+          error: '#ff6b6b',
+          stderr: '#ff6b6b',
+          success: 'rgb(var(--success))',
+          info: 'white',
+          default: 'white'
+        }
       });
     }
 

@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	websocket "github.com/gofiber/websocket/v2"
@@ -69,10 +68,8 @@ func (lw *logWriter) Write(p []byte) (n int, err error) {
 	message = strings.TrimRight(message, "\n")
 	
 	if message != "" {
-		// Store in buffer
-		timestamp := time.Now().Format("2006-01-02 15:04:05")
-		entry := fmt.Sprintf("[%s] %s", timestamp, message)
-		lw.manager.buffer.Add(entry)
+		// Store in buffer (message already contains timestamp from logger)
+		lw.manager.buffer.Add(message)
 		
 		// Broadcast to connected clients
 		lw.manager.broadcastLog("info", message)
