@@ -177,6 +177,11 @@ templ ConfigForm() {
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for users with admin role. Higher values = better quality but larger files.</p>
             </div>
+        </div>
+        
+        <!-- Image Processing Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Image Processing Settings</span></h4>
             <div class="uk-margin">
                 <label class="block mb-2">Processed image quality</label>
                 <div class="flex items-center space-x-4">
@@ -190,6 +195,11 @@ templ ConfigForm() {
                 <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
                 <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid. Tokens are consumed after first use.</p>
             </div>
+        </div>
+        
+        <!-- Premium Features Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Premium Features</span></h4>
             <div class="uk-margin">
                 <label class="block mb-1">Premium early access duration (seconds)</label>
                 <input type="number" min="0" class="uk-input" name="premium_early_access_duration" value={ fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration) } />
