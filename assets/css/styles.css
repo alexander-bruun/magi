@@ -1977,3 +1977,12 @@ textarea.code-editor-hidden {
 .hoverable-label:not(.uk-text-muted):hover {
   background-color: #f0f0f0 !important;
 }
+
+/* ============================================
+   CUSTOM NOTIFICATION STYLES
+   ============================================ */
+.uk-notification-message-success {
+  background-color: #d1fae5 !important; /* pastel green background */
+  border-color: #a7f3d0 !important; /* lighter green border */
+  color: #065f46 !important; /* dark green text */
+}
