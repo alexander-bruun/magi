@@ -24,7 +24,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 
 			if canEdit {
 				<div class="flex space-x-2 ml-4">
-					<a href={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } class="uk-btn uk-btn-default uk-btn-small" hx-get={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#content" hx-push-url="true">
+					<a href={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } class="uk-btn uk-btn-default uk-btn-small">
 						<uk-icon icon="pencil"></uk-icon>
 						Edit
 					</a>
@@ -55,7 +55,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, media := range collection.Media {
 					<div class="relative group">
-						<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block" hx-get={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } hx-target="#content" hx-push-url="true">
+						<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block">
 							@MediaCard(media, 150, 200, true, true, "title")
 						</a>
 

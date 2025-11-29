@@ -54,7 +54,7 @@ templ BreadcrumbHome(current string) {
     <nav aria-label="Breadcrumb">
         <ul class="uk-breadcrumb">
             <li>
-                <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
+                <a href="/">Home</a>
             </li>
             <li><span>{ current }</span></li>
         </ul>
@@ -343,7 +343,7 @@ templ Showcase(media []models.EnrichedMedia) {
                                     <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ media.Name }</h3>
                                     <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
                                         if media.LatestChapterSlug != "" {
-                                            <a href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)) } hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug) } hx-target="#content" hx-push-url="true" onclick="event.stopPropagation()" class="flex-1 text-left truncate text-sm text-gray-400">{ media.LatestChapterName }</a>
+                                            <a href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)) } onclick="event.stopPropagation()" class="flex-1 text-left truncate text-sm text-gray-400">{ media.LatestChapterName }</a>
                                         } else {
                                             <span class="flex-1 text-left truncate text-sm text-gray-400">No chapters</span>
                                         }

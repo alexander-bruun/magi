@@ -22,7 +22,7 @@ templ EditCollection(collection models.Collection) {
 				</div>
 
 				<div class="flex justify-end space-x-3">
-					<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="uk-btn uk-btn-default" hx-get={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } hx-target="#content" hx-push-url="true">Cancel</a>
+					<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="uk-btn uk-btn-default">Cancel</a>
 					<button type="submit" class="uk-btn uk-btn-primary">
 						<uk-icon icon="save"></uk-icon>
 						Update Collection

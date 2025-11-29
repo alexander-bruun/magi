@@ -34,7 +34,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"site-header uk-navbar uk-navbar-container p-3 bg-surface\" role=\"banner\"><div class=\"nav-inner\"><div class=\"uk-navbar-left\"><button id=\"sidebar-toggle\" class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Toggle sidebar\" aria-controls=\"sidebar\" aria-expanded=\"true\" type=\"button\"><uk-icon icon=\"menu\"></uk-icon></button> <a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\" class=\"flex items-center\" aria-label=\"Magi home\"><img src=\"/assets/img/icon.png\" alt=\"Magi logo\" class=\"h-8 w-auto\"><h1 class=\"uk-hero-lg ml-2 font-semibold brand-title\"><span class=\"uk-text-background brand-gradient\">Magi</span></h1></a></div><div class=\"uk-navbar-right\"><div class=\"uk-navbar-item\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" uk-toggle=\"target: #search-modal\" aria-label=\"Search\"><uk-icon icon=\"Search\" ratio=\"0.9\"></uk-icon></button></div><div id=\"search-modal\" uk-modal role=\"dialog\" aria-labelledby=\"search-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog modal-body-transparent\" style=\"max-width: 100%; width: 100%; max-height: 100vh;\"><form hx-get=\"/series/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\" role=\"search\"><div class=\"mx-auto mt-8 mb-4\" style=\"width: 100%; max-width: 800px;\"><input id=\"searchInput\" class=\"uk-input w-full input-bg\" type=\"search\" name=\"search\" placeholder=\"Search for media by title...\" autocomplete=\"off\" aria-label=\"Search for media by title\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4 input-bg overflow-y-auto\" style=\"max-height: calc(100vh - 200px);\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"site-header uk-navbar uk-navbar-container p-3 bg-surface\" role=\"banner\"><div class=\"nav-inner\"><div class=\"uk-navbar-left\"><button id=\"sidebar-toggle\" class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Toggle sidebar\" aria-controls=\"sidebar\" aria-expanded=\"true\" type=\"button\"><uk-icon icon=\"menu\"></uk-icon></button> <a href=\"/\" class=\"flex items-center\" aria-label=\"Magi home\"><img src=\"/assets/img/icon.png\" alt=\"Magi logo\" class=\"h-8 w-auto\"><h1 class=\"uk-hero-lg ml-2 font-semibold brand-title\"><span class=\"uk-text-background brand-gradient\">Magi</span></h1></a></div><div class=\"uk-navbar-right\"><div class=\"uk-navbar-item\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" uk-toggle=\"target: #search-modal\" aria-label=\"Search\"><uk-icon icon=\"Search\" ratio=\"0.9\"></uk-icon></button></div><div id=\"search-modal\" uk-modal role=\"dialog\" aria-labelledby=\"search-modal-title\" aria-modal=\"true\"><div class=\"uk-modal-body uk-modal-dialog modal-body-transparent\" style=\"max-width: 100%; width: 100%; max-height: 100vh;\"><form hx-get=\"/series/search\" hx-target=\"#search-modal-content\" hx-trigger=\"input delay:200ms, submit\" hx-swap=\"innerHTML\" role=\"search\"><div class=\"mx-auto mt-8 mb-4\" style=\"width: 100%; max-width: 800px;\"><input id=\"searchInput\" class=\"uk-input w-full input-bg\" type=\"search\" name=\"search\" placeholder=\"Search for media by title...\" autocomplete=\"off\" aria-label=\"Search for media by title\"></div></form><div id=\"search-modal-content\" class=\"px-4 uk-margin my-2 uk-card py-4 input-bg overflow-y-auto\" style=\"max-height: calc(100vh - 200px);\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -57,19 +57,19 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if userRole != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a href=\"/account\" hx-get=\"/account\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"User\" class=\"icon-pad\"></uk-icon>Account</a></li><li><a href=\"/account/favorites\" hx-get=\"/account/favorites\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Star\" class=\"icon-pad\"></uk-icon>Favorites</a></li><li><a href=\"/account/reading\" hx-get=\"/account/reading\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Bookmark\" class=\"icon-pad\"></uk-icon>Reading lists</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a href=\"/account\"><uk-icon icon=\"User\" class=\"icon-pad\"></uk-icon>Account</a></li><li><a href=\"/account/favorites\"><uk-icon icon=\"Star\" class=\"icon-pad\"></uk-icon>Favorites</a></li><li><a href=\"/account/reading\"><uk-icon icon=\"Bookmark\" class=\"icon-pad\"></uk-icon>Reading lists</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/admin/users\" hx-get=\"/admin/users\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Users\" class=\"icon-pad\"></uk-icon>Users</a></li><li><a href=\"/admin/permissions\" hx-get=\"/admin/permissions\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Shield\" class=\"icon-pad\"></uk-icon>Permissions</a></li><li><a href=\"/admin/duplicates\" hx-get=\"/admin/duplicates\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"WandSparkles\" class=\"icon-pad\"></uk-icon>Better</a></li><li><a href=\"/admin/scraper\" hx-get=\"/admin/scraper\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Zap\" class=\"icon-pad\"></uk-icon>Scraper</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/admin/users\"><uk-icon icon=\"Users\" class=\"icon-pad\"></uk-icon>Users</a></li><li><a href=\"/admin/permissions\"><uk-icon icon=\"Shield\" class=\"icon-pad\"></uk-icon>Permissions</a></li><li><a href=\"/admin/duplicates\"><uk-icon icon=\"WandSparkles\" class=\"icon-pad\"></uk-icon>Better</a></li><li><a href=\"/admin/scraper\"><uk-icon icon=\"Zap\" class=\"icon-pad\"></uk-icon>Scraper</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\" hx-get=\"/admin/libraries\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\" hx-get=\"/admin/config\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/banned-ips\" hx-get=\"/admin/banned-ips\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li><li><a href=\"/admin/backups\" hx-get=\"/admin/backups\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/banned-ips\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li><li><a href=\"/admin/backups\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -79,7 +79,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if userRole == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<li><a href=\"/auth/login\" hx-get=\"/auth/login\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"LogIn\" class=\"icon-pad\"></uk-icon>Login</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<li><a href=\"/auth/login\"><uk-icon icon=\"LogIn\" class=\"icon-pad\"></uk-icon>Login</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -177,46 +177,33 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><uk-icon icon=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(path)
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(icon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 183, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 184, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" hx-target=\"#content\" hx-push-url=\"true\"><uk-icon icon=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"></uk-icon> <span class=\"nav-text\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(icon)
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 184, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 185, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"></uk-icon> <span class=\"nav-text\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 185, Col: 33}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</span></a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span></a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -240,56 +227,43 @@ func SearchMedias(media []models.Media) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var9 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var9 == nil {
-			templ_7745c5c3_Var9 = templ.NopComponent
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, m := range media {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var10 templ.SafeURL
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", m.Slug)))
+			var templ_7745c5c3_Var9 templ.SafeURL
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", m.Slug)))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 57}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" class=\"block uk-modal-close\" aria-label=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("View %s", m.Name))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 132}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" class=\"block uk-modal-close\" hx-get=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(templ.URL(fmt.Sprintf("/series/%s", m.Slug)))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 142}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" hx-target=\"#content\" hx-push-url=\"true\" aria-label=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("View %s", m.Name))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 228}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"><div class=\"uk-card uk-card-default uk-card-body p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow\"><div class=\"uk-card-media-top flex justify-center items-center mb-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\"><div class=\"uk-card uk-card-default uk-card-body p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow\"><div class=\"uk-card-media-top flex justify-center items-center mb-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -297,51 +271,51 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div><h3 class=\"uk-card-title uk-h4 mb-2 text-center truncate-header\" title=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><h3 class=\"uk-card-title uk-h4 mb-2 text-center truncate-header\" title=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 string
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 84}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var12 string
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 95}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</h3><div class=\"text-center text-sm text-gray-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters", m.FileCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 200, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var14 string
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 95}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</h3><div class=\"text-center text-sm text-gray-500\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var15 string
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters", m.FileCount))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 200, Col: 47}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div></div></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</div></div></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -365,12 +339,12 @@ func OneDoesNotSimplySearch() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var16 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var16 == nil {
-			templ_7745c5c3_Var16 = templ.NopComponent
+		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var14 == nil {
+			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium text-gray-600 mb-2\">Search for media</p><p class=\"text-sm text-gray-500\">Start typing to find your favorite series</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium text-gray-600 mb-2\">Search for media</p><p class=\"text-sm text-gray-500\">Start typing to find your favorite series</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -394,12 +368,12 @@ func NoResultsSearch() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var17 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var17 == nil {
-			templ_7745c5c3_Var17 = templ.NopComponent
+		templ_7745c5c3_Var15 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var15 == nil {
+			templ_7745c5c3_Var15 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium text-gray-600 mb-2\">No results found</p><p class=\"text-sm text-gray-500\">Try adjusting your search terms</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium text-gray-600 mb-2\">No results found</p><p class=\"text-sm text-gray-500\">Try adjusting your search terms</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

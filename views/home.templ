@@ -86,7 +86,7 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 		<ul class="top-media-list">
 			for i, m := range media {
 				<li>
-					<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="flex items-center gap-3 py-2">
+					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 py-2">
 						<div class="w-10 h-14 overflow-hidden rounded-sm">
 							@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
 						</div>
@@ -120,9 +120,9 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 				</div>
 				<div class="flex-1 min-w-0">
 					<div class="flex items-center gap-2 mb-1">
-						<a href={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } hx-get={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } hx-target="#content" hx-push-url="true" class="font-medium text-sm truncate">{ chapter.MediaName }</a>
+						<a href={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } class="font-medium text-sm truncate">{ chapter.MediaName }</a>
 					</div>
-					<a href={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } hx-get={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } hx-target="#content" hx-push-url="true" class="text-sm text-gray-600 truncate block">{ chapter.Name }</a>
+					<a href={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } class="text-sm text-gray-600 truncate block">{ chapter.Name }</a>
 					<div class="text-xs text-gray-400 mt-1">
 						if chapter.IsPremium {
 							<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
@@ -205,12 +205,12 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 										{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
 										<li class="flex items-center gap-3 py-2">
 											<div class="w-10 h-14 overflow-hidden rounded-sm">
-												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true">
+												<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
 													@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
 												</a>
 											</div>
 											<div class="flex-1">
-												<a href={ fmt.Sprintf("/series/%s", m.Slug) } hx-get={ fmt.Sprintf("/series/%s", m.Slug) } hx-target="#content" hx-push-url="true" class="font-medium">{ m.Name }</a>
+												<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="font-medium">{ m.Name }</a>
 												<div class="text-xs uk-text-muted">{ m.Author }</div>
 											</div>
 											<div class="flex flex-col items-center">
@@ -280,7 +280,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 			<div class="uk-card uk-card-default uk-card-body p-3 hover:shadow-lg transition-shadow">
 				<div class="flex items-start gap-3">
 					<div class="flex-shrink-0 relative">
-						<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) } hx-get={ fmt.Sprintf("/series/%s", item.Media.Slug) } hx-target="#content" hx-push-url="true">
+						<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>
 							<div class="w-24 h-32 overflow-hidden rounded">
 								@MediaCover(item.Media.CoverArtURL, item.Media.Name, 180, 240, true)
 							</div>
@@ -288,7 +288,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 					</div>
 					<div class="flex-1 min-w-0 overflow-hidden">
 						<h3 class="font-bold text-base mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight">
-							<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) } hx-get={ fmt.Sprintf("/series/%s", item.Media.Slug) } hx-target="#content" hx-push-url="true">{ item.Media.Name }</a>
+							<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>{ item.Media.Name }</a>
 						</h3>
 						<div class="space-y-1">
 							for i, chapter := range item.Chapters {
@@ -298,7 +298,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 								<div class="flex items-center justify-between gap-1">
 									<div class="flex items-center gap-2">
 										<span class="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0"></span>
-										<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } hx-get={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } hx-target="#content" hx-push-url="true" onclick="event.stopPropagation()" class="text-sm text-gray-600 hover:text-blue-600 transition-colors truncate leading-tight">{ chapter.Name }</a>
+										<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } onclick="event.stopPropagation()" class="text-sm text-gray-600 hover:text-blue-600 transition-colors truncate leading-tight">{ chapter.Name }</a>
 									</div>
 									<span class="text-sm text-gray-500 flex-shrink-0 whitespace-nowrap">
 										if chapter.IsPremium {

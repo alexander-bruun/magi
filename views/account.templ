@@ -74,7 +74,7 @@ templ Account(userName string) {
     <div class="uk-container mt-6">
         <div class="flex items-center justify-between mt-4">
             <h3 class="uk-h4 mb-2">Upvoted</h3>
-            <a href={ templ.URL("/account/upvoted") } hx-get={ templ.URL("/account/upvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
+            <a href={ templ.URL("/account/upvoted") } class="uk-button uk-button-text">View all</a>
         </div>
 
         if len(liked) == 0 {
@@ -85,7 +85,7 @@ templ Account(userName string) {
 
         <div class="flex items-center justify-between mt-6">
             <h3 class="uk-h4 mb-2">Downvoted</h3>
-            <a href={ templ.URL("/account/downvoted") } hx-get={ templ.URL("/account/downvoted") } hx-target="#content" hx-push-url="true" class="uk-button uk-button-text">View all</a>
+            <a href={ templ.URL("/account/downvoted") } class="uk-button uk-button-text">View all</a>
         </div>
         if len(downvoted) == 0 {
             <p class="role-reader">You have not downvoted any media yet.</p>

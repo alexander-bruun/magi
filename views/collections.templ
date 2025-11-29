@@ -9,7 +9,7 @@ templ Collections(collections []models.Collection) {
 	<div class="container mx-auto px-4 py-8">
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="text-3xl font-bold">Collections</h1>
-			<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+			<a href="/collections/create" class="uk-btn uk-btn-primary">
 				<uk-icon icon="plus"></uk-icon>
 				Create Collection
 			</a>
@@ -20,7 +20,7 @@ templ Collections(collections []models.Collection) {
 				<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
 				<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
 				<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
-				<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
+				<a href="/collections/create" class="uk-btn uk-btn-primary">
 					Create Collection
 				</a>
 			</div>
@@ -30,7 +30,7 @@ templ Collections(collections []models.Collection) {
 					<div class="uk-card uk-card-default uk-card-body hover:shadow-lg transition-shadow">
 						<div class="flex items-start justify-between mb-3">
 							<h3 class="uk-card-title text-lg font-semibold truncate">
-								<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="hover:text-blue-600" hx-get={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } hx-target="#content" hx-push-url="true">
+								<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="hover:text-blue-600">
 									{ collection.Name }
 								</a>
 							</h3>

@@ -739,9 +739,6 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 					<a
 						class="uk-accordion-title flex-1 min-w-0 pr-2 truncate"
 						href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-						hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug) }
-						hx-target="#content"
-						hx-push-url="true"
 					>
 						{ chapter.Name }
 						<span
@@ -827,9 +824,6 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 		if lastReadChapterSlug != "" {
 			<a
 				href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
-				hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug) }
-				hx-target="#content"
-				hx-push-url="true"
 				class="uk-btn uk-btn-primary"
 				title="Resume reading from where you left off"
 			>
@@ -982,85 +976,72 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
 templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
 	<div class="flex items-center justify-between p-4">
-		<button
-			type="button"
+		<a
 			class="uk-btn uk-btn-default"
 			href={ fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter) }
-			hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter) }
-			hx-target="#content"
-			hx-push-url="true"
 			if previousChapter == "" {
 				disabled
 			}
 			onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveLeft"></uk-icon>
-		</button>
+		</a>
 		if chapters != nil && len(chapters) > 0 {
-			<div class="flex items-center gap-2">
-				<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary btn-circular" title="Back to series">
-					<uk-icon icon="library" ratio="0.8"></uk-icon>
-				</a>
-				<div class="uk-inline">
-					<button id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-btn uk-btn-default" type="button" aria-expanded="false">
-						<span class="hidden sm:inline">{ chapter.Name }</span>
-						<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
-					</button>
-					<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-						<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;padding-right: 5px;">
-							for _, ch := range chapters {
-								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
-									<a
-										class="flex justify-between items-center w-full"
-										href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)) }
-										hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug) }
-										hx-target="#content"
-										hx-push-url="true"
-									>
-										<span>{ ch.Name }</span>
-										if ch.IsPremium {
-											<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
-										}
-									</a>
-								</li>
-							}
-						</ul>
+			<div class="flex flex-col gap-2">
+				<div class="flex items-center gap-2">
+					<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary btn-circular" title="Back to series">
+						<uk-icon icon="library" ratio="0.8"></uk-icon>
+					</a>
+					<div class="uk-inline">
+						<button id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-btn uk-btn-default" type="button" aria-expanded="false">
+							<span class="hidden sm:inline">{ chapter.Name }</span>
+							<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
+						</button>
+						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+							<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;padding-right: 5px;">
+								for _, ch := range chapters {
+									<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
+										<a
+											class="flex justify-between items-center w-full"
+											href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)) }
+										>
+											<span>{ ch.Name }</span>
+											if ch.IsPremium {
+												<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
+											}
+										</a>
+									</li>
+								}
+							</ul>
+						</div>
 					</div>
 				</div>
-			</div>
-		} else {
-			<div class="reader-mode-selector">
-				<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary mr-2 btn-circular">
-					<uk-icon icon="library" ratio="0.8"></uk-icon>
-				</a>
-				<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="webtoon">
-					<uk-icon icon="menu" ratio="0.8"></uk-icon>
-					<span class="ml-1">Webtoon</span>
-				</button>
-				<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="single">
-					<uk-icon icon="file-text" ratio="0.8"></uk-icon>
-					<span class="ml-1">Single Page</span>
-				</button>
-				<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="side-by-side">
-					<uk-icon icon="columns" ratio="0.8"></uk-icon>
-					<span class="ml-1">Side by Side</span>
-				</button>
+				<div class="reader-mode-selector">
+					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="webtoon">
+						<uk-icon icon="menu" ratio="0.8"></uk-icon>
+						<span class="ml-1">Webtoon</span>
+					</button>
+					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="single">
+						<uk-icon icon="file-text" ratio="0.8"></uk-icon>
+						<span class="ml-1">Single Page</span>
+					</button>
+					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="side-by-side">
+						<uk-icon icon="columns" ratio="0.8"></uk-icon>
+						<span class="ml-1">Side by Side</span>
+					</button>
+				</div>
 			</div>
 		}
-		<button
-			type="button"
+		<a
 			class="uk-btn uk-btn-default"
 			href={ fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter) }
-			hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter) }
-			hx-target="#content"
-			hx-push-url="true"
 			if nextChapter == "" {
 				disabled
 			}
 			onclick="scrollToTopInstant()"
 		>
 			<uk-icon icon="MoveRight"></uk-icon>
-		</button>
+		</a>
 	</div>
 }
 
@@ -1826,7 +1807,6 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 				class="space-y-4"
 			>
 				<div>
-					<label class="block text-sm font-medium mb-2">Rating</label>
 					<div class="flex space-x-1 star-rating">
 						for i := 1; i <= 10; i++ {
 							<button type="button" class="star bg-transparent border-none p-0 text-2xl cursor-pointer transition-colors" data-rating={ i }>★</button>
@@ -2021,7 +2001,6 @@ templ ChapterCommentsSection(media models.Media, chapter models.Chapter, comment
 				class="space-y-4"
 			>
 				<div>
-					<label for="comment-content" class="block text-sm font-medium mb-2">Comment</label>
 					<textarea
 						id="comment-content"
 						name="content"

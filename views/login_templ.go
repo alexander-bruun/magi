@@ -60,7 +60,7 @@ func Login(target string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" hx-get=\"/auth/register\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></fieldset></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></fieldset></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

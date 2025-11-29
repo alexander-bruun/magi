@@ -12,7 +12,7 @@ templ Navbar(userRole string, currentPath string) {
 				<button id="sidebar-toggle" class="uk-btn uk-btn-default uk-btn-icon" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true" type="button">
 					<uk-icon icon="menu"></uk-icon>
 				</button>
-				<a href="/" hx-get="/" hx-target="#content" hx-push-url="true" class="flex items-center" aria-label="Magi home">
+				<a href="/" class="flex items-center" aria-label="Magi home">
 					<img src="/assets/img/icon.png" alt="Magi logo" class="h-8 w-auto"/>
 					<h1 class="uk-hero-lg ml-2 font-semibold brand-title">
 						<span class="uk-text-background brand-gradient">Magi</span>
@@ -121,27 +121,27 @@ templ Navbar(userRole string, currentPath string) {
 					<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm" role="menu">
 						<ul class="uk-dropdown-nav uk-nav" role="none">
 							if userRole != "" {
-								<li><a href="/account" hx-get="/account" hx-target="#content" hx-push-url="true"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
-								<li><a href="/account/favorites" hx-get="/account/favorites" hx-target="#content" hx-push-url="true"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
-								<li><a href="/account/reading" hx-get="/account/reading" hx-target="#content" hx-push-url="true"><uk-icon icon="Bookmark" class="icon-pad"></uk-icon>Reading lists</a></li>
+								<li><a href="/account"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
+								<li><a href="/account/favorites"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
+								<li><a href="/account/reading"><uk-icon icon="Bookmark" class="icon-pad"></uk-icon>Reading lists</a></li>
 							}
 						if userRole == "moderator" || userRole == "admin" {
 							<li class="uk-nav-header">Moderator</li>
-							<li><a href="/admin/users" hx-get="/admin/users" hx-target="#content" hx-push-url="true"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
-							<li><a href="/admin/permissions" hx-get="/admin/permissions" hx-target="#content" hx-push-url="true"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
-							<li><a href="/admin/duplicates" hx-get="/admin/duplicates" hx-target="#content" hx-push-url="true"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
-							<li><a href="/admin/scraper" hx-get="/admin/scraper" hx-target="#content" hx-push-url="true"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
+							<li><a href="/admin/users"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
+							<li><a href="/admin/permissions"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
+							<li><a href="/admin/duplicates"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
+							<li><a href="/admin/scraper"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
 						}
 							if userRole == "admin" {
 								<li class="uk-nav-header">Admin</li>
-								<li><a href="/admin/libraries" hx-get="/admin/libraries" hx-target="#content" hx-push-url="true"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
-								<li><a href="/admin/config" hx-get="/admin/config" hx-target="#content" hx-push-url="true"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
-								<li><a href="/admin/banned-ips" hx-get="/admin/banned-ips" hx-target="#content" hx-push-url="true"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
-								<li><a href="/admin/backups" hx-get="/admin/backups" hx-target="#content" hx-push-url="true"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
+								<li><a href="/admin/libraries"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
+								<li><a href="/admin/config"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
+								<li><a href="/admin/banned-ips"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
+								<li><a href="/admin/backups"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
 							}
 							<li class="uk-nav-divider"></li>
 							if userRole == "" {
-								<li><a href="/auth/login" hx-get="/auth/login" hx-target="#content" hx-push-url="true"><uk-icon icon="LogIn" class="icon-pad"></uk-icon>Login</a></li>
+								<li><a href="/auth/login"><uk-icon icon="LogIn" class="icon-pad"></uk-icon>Login</a></li>
 							} else {
 								<li><a href="/" hx-post="/auth/logout"><uk-icon icon="LogOut" class="icon-pad"></uk-icon> Logout</a></li>
 							}
@@ -180,7 +180,7 @@ templ Navbar(userRole string, currentPath string) {
 templ NavItem(path string, icon string, label string, currentPath string) {
 	{{ isActive := currentPath == path || (path != "/" && len(currentPath) >= len(path) && currentPath[:len(path)] == path) }}
 	<li class={ templ.KV("uk-active", isActive) }>
-		<a href={ templ.URL(path) } hx-get={ path } hx-target="#content" hx-push-url="true">
+		<a href={ templ.URL(path) }>
 			<uk-icon icon={ icon }></uk-icon>
 			<span class="nav-text">{ label }</span>
 		</a>
@@ -190,7 +190,7 @@ templ NavItem(path string, icon string, label string, currentPath string) {
 templ SearchMedias(media []models.Media) {
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
 		for _, m := range media {
-			<a href={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } class="block uk-modal-close" hx-get={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } hx-target="#content" hx-push-url="true" aria-label={ fmt.Sprintf("View %s", m.Name) }>
+			<a href={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } class="block uk-modal-close" aria-label={ fmt.Sprintf("View %s", m.Name) }>
 				<div class="uk-card uk-card-default uk-card-body p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
 					<div class="uk-card-media-top flex justify-center items-center mb-3">
 						@MediaCover(m.CoverArtURL, m.Name, 150, 200, true)
