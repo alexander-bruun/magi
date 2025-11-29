@@ -1390,12 +1390,13 @@ body.sidebar-collapsed #reader-pagination-bottom {
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: calc(100vh - 200px); /* Account for header/footer space */
+  min-height: calc(100vh - 200px); /* Account for header/footer space */
+  height: auto;
   max-width: 1800px;
   padding: var(--space-xl);
 }
 
-.reader-single-page .reader-page-image {
+.reader-single-page .reader-image {
   max-width: 100%;
   max-height: 100%;
   width: auto;
@@ -1424,7 +1425,8 @@ body.sidebar-collapsed #reader-pagination-bottom {
   align-items: center;
   gap: 0;
   width: 100%;
-  height: calc(100vh - 200px); /* Account for header/footer space */
+  min-height: calc(100vh - 200px); /* Account for header/footer space */
+  height: auto;
   max-width: 1800px;
   padding: var(--space-xl);
 }
@@ -1434,20 +1436,18 @@ body.sidebar-collapsed #reader-pagination-bottom {
   flex: 1 1 50%;
   display: flex;
   justify-content: flex-end;
-  align-items: center;
+  align-items: flex-start;
   min-width: 0;
   width: 50%;
-  height: 100%;
+  height: auto;
 }
 
 .reader-page-right {
   justify-content: flex-start;
 }
 
-.reader-side-by-side .reader-page-image {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
+.reader-side-by-side .reader-image {
+  width: 100%;
   height: auto;
   object-fit: contain;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1471,6 +1471,54 @@ body.sidebar-collapsed #reader-pagination-bottom {
 
 .reader-nav-hint.show {
   opacity: 1;
+}
+
+/* Webtoon mode */
+.reader-webtoon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .reader-webtoon-container {
+    padding: 1rem;
+  }
+}
+
+.webtoon-image-wrapper {
+  text-align: center;
+}
+
+/* Side-by-side mode */
+.reader-side-by-side.two {
+  justify-content: space-between !important;
+}
+
+.reader-side-by-side.single {
+  justify-content: center !important;
+}
+
+.reader-side-by-side.single .reader-page-left {
+  width: 100%;
+  flex: 1 1 100%;
+  justify-content: center;
+}
+
+/* Single page mode wrapper */
+.single-page-wrapper {
+  text-align: center;
+}
+
+.reader-single-image {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
 /* Reader responsive adjustments */
