@@ -6,6 +6,14 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
+// getDisplayStyle returns "block" if condition is true, "none" otherwise
+func getDisplayStyle(condition bool) string {
+	if condition {
+		return "block"
+	}
+	return "none"
+}
+
 // VariableInputs renders the variable management section
 templ VariableInputs(variables map[string]string) {
 	<div id="variables-container">
@@ -89,6 +97,14 @@ func getScriptPlaceholder(language string) string {
 		return "# Python script\n# Enter your python script here\nprint('Hello from scraper')"
 	}
 	return "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
+}
+
+// Helper function to get shared script content
+func getSharedScriptContent(sharedScript *string) string {
+	if sharedScript != nil {
+		return *sharedScript
+	}
+	return ""
 }
 
 // Scraper renders the main scraper page with tabs
@@ -203,7 +219,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			hx-put={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
 		}
 		hx-target="#scraper-editor-container"
-		hx-swap="innerHTML"
+		hx-swap="none"
 		class="space-y-4"
 	>
 		<!-- Script Name -->
@@ -259,7 +275,25 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 					required
 				>{ script.Script }</textarea>
 			</div>
-		</div>		<!-- Script Variables -->
+		</div>
+
+		<!-- Shared Script (Bash only) -->
+		<div id="shared-script-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.ID == 0 || script.Language == "bash")) }>
+			<label for="shared-script-content" class="uk-form-label">Shared Script (optional)</label>
+			<p class="text-xs text-muted-foreground mb-3">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p>
+			<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
+				<textarea 
+					id="shared-script-content"
+					name="shared_script"
+					data-code-editor="shell"
+					data-code-editor-height="200px"
+					class="w-full h-48 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+					placeholder="#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script"
+				>{ getSharedScriptContent(script.SharedScript) }</textarea>
+			</div>
+		</div>
+
+		<!-- Script Variables -->
 		<div>
 			<label class="uk-form-label">Script Variables (optional)</label>
 			<p class="text-xs text-muted-foreground mb-3">Define variables that will be passed to your script. For bash scripts, these become environment variables.</p>
@@ -267,7 +301,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 		</div>
 
 		<!-- Python Packages -->
-		<div id="packages-section" style="display: none">
+		<div id="packages-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.Language == "python")) }>
 			<label class="uk-form-label">Python Packages (optional)</label>
 			<p class="text-xs text-muted-foreground mb-3">Specify Python packages to install in the virtual environment before running the script.</p>
 			@PackageInputs(script.Packages)
@@ -286,7 +320,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 							class="uk-btn uk-btn-secondary"
 							hx-post={ fmt.Sprintf("/admin/scraper/%d/run", script.ID) }
 							hx-target="#scraper-editor-container"
-							hx-swap="innerHTML"
+							hx-swap="none"
 							id="run-btn"
 						>
 							<uk-icon icon="Play" ratio="0.8"></uk-icon>
@@ -308,7 +342,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 								class="uk-btn uk-btn-default"
 								hx-post={ fmt.Sprintf("/admin/scraper/%d/toggle", script.ID) }
 								hx-target="#scraper-editor-container"
-								hx-swap="innerHTML"
+								hx-swap="none"
 							>
 								Disable
 							</button>
@@ -319,7 +353,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 								class="uk-btn uk-btn-secondary"
 								hx-post={ fmt.Sprintf("/admin/scraper/%d/toggle", script.ID) }
 								hx-target="#scraper-editor-container"
-								hx-swap="innerHTML"
+								hx-swap="none"
 							>
 								Enable
 							</button>
@@ -396,14 +430,15 @@ templ ScraperScriptForm(script *models.ScraperScript) {
 	</div>
 }
 
-// ScraperLogsPanel renders a list of execution logs with real-time streaming
-templ ScraperLogsPanel(logs []models.ScraperExecutionLog) {
+// ScraperLogsPanelWithPagination renders a list of execution logs with pagination
+templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, pagination map[string]interface{}) {
 	<div class="uk-card uk-card-body p-4">
 		<div class="flex justify-between items-center mb-4">
 			<h4 class="font-semibold text-lg">Execution Logs</h4>
 			if len(logs) > 0 {
 				<div class="text-sm text-muted-foreground">
-					Showing last { fmt.Sprintf("%d", len(logs)) } executions
+					Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) } 
+					({ fmt.Sprintf("%v", pagination["total_count"]) } total executions)
 				</div>
 			}
 		</div>
@@ -421,14 +456,49 @@ templ ScraperLogsPanel(logs []models.ScraperExecutionLog) {
 				}
 			</div>
 		}
+
+		// Pagination controls
+		if pagination["total_pages"].(int) > 1 {
+			<div class="flex justify-center items-center gap-2 mt-6">
+				if pagination["has_prev"].(bool) {
+					<button 
+						class="uk-btn uk-btn-default uk-btn-small"
+						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["prev_page"]) }
+						hx-target="#scraper-logs-container"
+						hx-swap="innerHTML"
+					>
+						Previous
+					</button>
+				} else {
+					<button class="uk-btn uk-btn-default uk-btn-small" disabled>Previous</button>
+				}
+
+				<span class="text-sm text-muted-foreground px-4">
+					Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) }
+				</span>
+
+				if pagination["has_next"].(bool) {
+					<button 
+						class="uk-btn uk-btn-default uk-btn-small"
+						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["next_page"]) }
+						hx-target="#scraper-logs-container"
+						hx-swap="innerHTML"
+					>
+						Next
+					</button>
+				} else {
+					<button class="uk-btn uk-btn-default uk-btn-small" disabled>Next</button>
+				}
+			</div>
+		}
 	</div>
 }
 
 // ScraperLogEntry renders a single log entry
 templ ScraperLogEntry(log *models.ScraperExecutionLog) {
-	<div class="flex justify-between items-start p-3 rounded border border-border hover:bg-accent/50">
-		<div class="flex-1">
-			<div class="flex items-center gap-2 mb-1">
+	<div class="relative p-3 rounded border border-border hover:bg-accent/50">
+		<div class="flex items-center justify-between mb-2">
+			<div class="flex items-center gap-2">
 			if log.Status == "success" {
 				<span class="inline-block w-2 h-2 rounded-full bg-success"></span>
 			} else if log.Status == "error" {
@@ -443,27 +513,41 @@ templ ScraperLogEntry(log *models.ScraperExecutionLog) {
 				<span class="font-mono text-sm">{ log.FormatStartTime() }</span>
 				<span class="text-xs text-muted-foreground">({ log.FormatDuration() })</span>
 			</div>
-			if log.Output != nil && *log.Output != "" {
-				<div class="text-xs text-muted-foreground mt-1 bg-background p-2 rounded max-h-24 overflow-y-auto">
-					{ *log.Output }
-				</div>
+			<div class="flex items-center gap-2">
+				<button 
+					class="text-xs px-2 py-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors"
+					hx-delete={ fmt.Sprintf("/admin/scraper/%d/logs/%d", log.ScriptID, log.ID) }
+					hx-target="closest div"
+					hx-swap="outerHTML"
+					hx-confirm="Are you sure you want to delete this log entry?"
+					title="Delete log entry"
+				>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+					</svg>
+				</button>
+			if log.Status == "success" {
+				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-success/20 text-success">{ log.Status }</span>
+			} else if log.Status == "error" {
+				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-destructive/20 text-destructive">{ log.Status }</span>
+			} else if log.Status == "running" {
+				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-yellow-500/20 text-yellow-500">{ log.Status }</span>
+			} else if log.Status == "aborted" {
+				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-gray-500/20 text-gray-500">{ log.Status }</span>
+			} else {
+				<span class="text-xs px-2 py-1 rounded whitespace-nowrap">{ log.Status }</span>
 			}
-			if log.ErrorMessage != nil && *log.ErrorMessage != "" {
-				<div class="text-xs text-destructive mt-1 bg-destructive/10 p-2 rounded max-h-24 overflow-y-auto">
-					{ *log.ErrorMessage }
-				</div>
-			}
+			</div>
 		</div>
-		if log.Status == "success" {
-			<span class="text-xs px-2 py-1 rounded whitespace-nowrap ml-2 bg-success/20 text-success">{ log.Status }</span>
-		} else if log.Status == "error" {
-			<span class="text-xs px-2 py-1 rounded whitespace-nowrap ml-2 bg-destructive/20 text-destructive">{ log.Status }</span>
-		} else if log.Status == "running" {
-			<span class="text-xs px-2 py-1 rounded whitespace-nowrap ml-2 bg-yellow-500/20 text-yellow-500">{ log.Status }</span>
-		} else if log.Status == "aborted" {
-			<span class="text-xs px-2 py-1 rounded whitespace-nowrap ml-2 bg-gray-500/20 text-gray-500">{ log.Status }</span>
-		} else {
-			<span class="text-xs px-2 py-1 rounded whitespace-nowrap ml-2">{ log.Status }</span>
+		if log.Output != nil && *log.Output != "" {
+			<div class="text-xs text-muted-foreground bg-background p-2 rounded max-h-24 overflow-y-auto log-output">
+				{ *log.Output }
+			</div>
+		}
+		if log.ErrorMessage != nil && *log.ErrorMessage != "" {
+			<div class="text-xs text-destructive bg-destructive/10 p-2 rounded max-h-24 overflow-y-auto log-output">
+				{ *log.ErrorMessage }
+			</div>
 		}
 	</div>
 }

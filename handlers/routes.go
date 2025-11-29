@@ -367,6 +367,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	scraper.Get("/:id/logs/view", HandleScraperLogs)
 	scraper.Put("/:id", HandleScraperScriptUpdate)
 	scraper.Delete("/:id", HandleScraperScriptDelete)
+	scraper.Delete("/:id/logs/:logId", HandleScraperLogDelete)
 	scraper.Post("/:id/run", HandleScraperScriptRun)
 	scraper.Post("/:id/toggle", HandleScraperScriptToggle)
 	scraper.Post("/:id/cancel", HandleScraperScriptCancel)

@@ -4,6 +4,7 @@ import (
     "bufio"
     "bytes"
     "context"
+    "encoding/json"
     "fmt"
     "os"
     "os/exec"
@@ -14,8 +15,14 @@ import (
     "github.com/gofiber/fiber/v2/log"
     websocket "github.com/gofiber/websocket/v2"
 
-    "github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/models"
 )
+
+// WebSocketMessage represents a log message sent over WebSocket
+type WebSocketMessage struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
 
 // Callback functions for job status notifications (set by handlers package)
 var (
@@ -86,14 +93,16 @@ func BroadcastLog(scriptID int64, logType string, message string) {
     copy(conns, connections)
     logStreamManager.mu.RUnlock()
 
-    // Simple JSON construction to avoid additional imports
-    // marshal manually
-    b := bytes.Buffer{}
-    b.WriteString("{")
-    b.WriteString(fmt.Sprintf("\"type\":\"%s\",", strings.ReplaceAll(logType, "\"", "\\\"")))
-    b.WriteString(fmt.Sprintf("\"message\":\"%s\"", strings.ReplaceAll(message, "\"", "\\\"")))
-    b.WriteString("}")
-    payloadBytes := b.Bytes()
+    // Create WebSocket message and marshal to JSON
+    wsMessage := WebSocketMessage{
+        Type:    logType,
+        Message: message,
+    }
+    payloadBytes, err := json.Marshal(wsMessage)
+    if err != nil {
+        log.Errorf("[WEBSOCKET] Failed to marshal WebSocket message: %v", err)
+        return
+    }
 
     log.Debugf("[WEBSOCKET] Broadcasting to %d clients for script %d: %s", len(conns), scriptID, string(payloadBytes))
     
@@ -200,7 +209,34 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                 errMsg = fmt.Sprintf("Failed to create temporary script file: %v", err)
             } else {
                 defer os.Remove(tmpFile.Name())
-                if _, err := tmpFile.WriteString(s.Script); err != nil {
+                
+                // If shared script exists, create it and source it
+                var sharedScriptPath string
+                if s.SharedScript != nil && *s.SharedScript != "" {
+                    sharedTmpFile, err := os.CreateTemp("", "shared_*.sh")
+                    if err != nil {
+                        errMsg = fmt.Sprintf("Failed to create temporary shared script file: %v", err)
+                    } else {
+                        defer os.Remove(sharedTmpFile.Name())
+                        if _, err := sharedTmpFile.WriteString(*s.SharedScript); err != nil {
+                            errMsg = fmt.Sprintf("Failed to write shared script content: %v", err)
+                        }
+                        sharedTmpFile.Close()
+                        if err := os.Chmod(sharedTmpFile.Name(), 0755); err != nil {
+                            errMsg = fmt.Sprintf("Failed to make shared script executable: %v", err)
+                        } else {
+                            sharedScriptPath = sharedTmpFile.Name()
+                        }
+                    }
+                }
+                
+                // Write the main script, sourcing the shared script if it exists
+                scriptContent := s.Script
+                if sharedScriptPath != "" {
+                    scriptContent = fmt.Sprintf("source %s\n%s", sharedScriptPath, s.Script)
+                }
+                
+                if _, err := tmpFile.WriteString(scriptContent); err != nil {
                     errMsg = fmt.Sprintf("Failed to write script content: %v", err)
                 }
                 tmpFile.Close()

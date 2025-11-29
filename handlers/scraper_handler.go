@@ -89,6 +89,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	scriptContent := c.FormValue("script")
 	language := c.FormValue("language")
 	schedule := strings.TrimSpace(c.FormValue("schedule"))
+	sharedScriptContent := c.FormValue("shared_script")
 
 	// Validate input
 	if name == "" {
@@ -109,7 +110,13 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	// Extract packages from form
 	packages := extractPackagesFromForm(c)
 
-	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, packages)
+	// Handle shared script
+	var sharedScript *string
+	if sharedScriptContent != "" {
+		sharedScript = &sharedScriptContent
+	}
+
+	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, packages, sharedScript)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -129,6 +136,7 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	scriptContent := c.FormValue("script")
 	language := c.FormValue("language")
 	schedule := strings.TrimSpace(c.FormValue("schedule"))
+	sharedScriptContent := c.FormValue("shared_script")
 
 	// Validate input
 	if name == "" {
@@ -149,9 +157,21 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	// Extract packages from form
 	packages := extractPackagesFromForm(c)
 
-	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, packages)
+	// Handle shared script
+	var sharedScript *string
+	if sharedScriptContent != "" {
+		sharedScript = &sharedScriptContent
+	}
+
+	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, packages, sharedScript)
 	if err != nil {
 		return handleError(c, err)
+	}
+
+	// For HTMX requests, return a simple success response instead of re-rendering the form
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Trigger", `{"showNotification": {"message": "Script saved successfully", "status": "success"}}`)
+		return c.SendStatus(fiber.StatusOK)
 	}
 
 	return HandleView(c, views.ScraperScriptEditor(script))
@@ -204,6 +224,17 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// For HTMX requests, return a simple success response instead of re-rendering the form
+	if c.Get("HX-Request") == "true" {
+		newState := !script.Enabled
+		message := "Script disabled"
+		if newState {
+			message = "Script enabled"
+		}
+		c.Set("HX-Trigger", fmt.Sprintf(`{"showNotification": {"message": "%s", "status": "success"}}`, message))
+		return c.SendStatus(fiber.StatusOK)
+	}
+
 	// Return updated script
 	updated, err := models.GetScraperScript(id)
 	if err != nil {
@@ -245,6 +276,12 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
+	// For HTMX requests, return a simple success response instead of re-rendering the form
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Trigger", `{"showNotification": {"message": "Script execution started", "status": "success"}}`)
+		return c.SendStatus(fiber.StatusOK)
+	}
+
 	// Return updated script with output
 	updated, err := models.GetScraperScript(id)
 	if err != nil {
@@ -269,7 +306,18 @@ func HandleScraperScriptsList(c *fiber.Ctx) error {
 
 // HandleScraperNewForm returns the form for creating a new script
 func HandleScraperNewForm(c *fiber.Ctx) error {
-	return HandleView(c, views.ScraperScriptForm(nil))
+	// Create an empty script for the form
+	emptyScript := &models.ScraperScript{
+		ID:       0,
+		Name:     "",
+		Script:   "",
+		Language: "bash", // Default to bash for new scripts
+		Schedule: "0 0 * * *",
+		Variables: make(map[string]string),
+		Packages:  []string{},
+		Enabled:   true,
+	}
+	return HandleView(c, views.ScraperScriptEditor(emptyScript))
 }
 
 // HandleScraperLogs returns the logs view for a script
@@ -279,12 +327,46 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
 
-	logs, err := models.ListScraperLogs(id, 50)
+	// Get pagination parameters
+	pageStr := c.Query("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	perPage := 5
+	offset := (page - 1) * perPage
+
+	// Get logs for current page
+	logs, err := models.ListScraperLogs(id, perPage, offset)
 	if err != nil {
 		return handleError(c, err)
 	}
 
-	return HandleView(c, views.ScraperLogsPanel(logs))
+	// Get total count for pagination
+	totalCount, err := models.CountScraperLogs(id)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	// Calculate pagination info
+	totalPages := (totalCount + perPage - 1) / perPage // Ceiling division
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	pagination := map[string]interface{}{
+		"current_page": page,
+		"total_pages":  totalPages,
+		"per_page":     perPage,
+		"total_count":  totalCount,
+		"has_prev":     page > 1,
+		"has_next":     page < totalPages,
+		"prev_page":    page - 1,
+		"next_page":    page + 1,
+		"script_id":    id,
+	}
+
+	return HandleView(c, views.ScraperLogsPanelWithPagination(logs, pagination))
 }
 
 // HandleScraperVariableAdd returns an empty variable input row for HTMX inserts
@@ -325,4 +407,32 @@ func HandleScraperPackageRemove(c *fiber.Ctx) error {
 	}
 
 	return c.SendString("")
+}
+
+// HandleScraperLogDelete deletes a specific execution log
+func HandleScraperLogDelete(c *fiber.Ctx) error {
+	logID, err := strconv.ParseInt(c.Params("logId"), 10, 64)
+	if err != nil {
+		return handleErrorWithStatus(c, fmt.Errorf("invalid log id"), fiber.StatusBadRequest)
+	}
+
+	// Get the log to verify it exists and get the script ID
+	logEntry, err := models.GetScraperLog(logID)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	// Delete the log
+	if err := models.DeleteScraperLog(logID); err != nil {
+		return handleError(c, err)
+	}
+
+	// If this is an HTMX request, return a success notification
+	if IsHTMXRequest(c) {
+		c.Set("HX-Trigger", `{"showNotification": {"message": "Log deleted successfully", "status": "success"}}`)
+		return c.SendString("")
+	}
+
+	// Otherwise, redirect back to the logs page
+	return c.Redirect(fmt.Sprintf("/admin/scraper/%d/logs", logEntry.ScriptID))
 }

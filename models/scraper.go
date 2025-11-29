@@ -19,6 +19,7 @@ type ScraperScript struct {
 	Schedule        string // Cron format (e.g., "0 0 * * *")
 	Variables       map[string]string // Key-value pairs for script variables
 	Packages        []string // Python packages to install for python scripts
+	SharedScript    *string // Shared bash script that can be sourced by scraper scripts
 	LastRun         *int64 // Unix timestamp
 	LastRunOutput   *string
 	LastRunError    *string
@@ -28,7 +29,7 @@ type ScraperScript struct {
 }
 
 // CreateScraperScript creates a new scraper script in the database
-func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string) (*ScraperScript, error) {
+func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 	
 	// Serialize variables to JSON
@@ -52,10 +53,10 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 	}
 	
 	query := `
-		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, created_at, updated_at, enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, shared_script, created_at, updated_at, enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 	`
-	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, now, now)
+	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scraper script: %w", err)
 	}
@@ -66,23 +67,24 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 	}
 
 	return &ScraperScript{
-		ID:        id,
-		Name:      name,
-		Script:    script,
-		Language:  language,
-		Schedule:  schedule,
-		Variables: variables,
-		Packages:  packages,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Enabled:   true,
+		ID:           id,
+		Name:         name,
+		Script:       script,
+		Language:     language,
+		Schedule:     schedule,
+		Variables:    variables,
+		Packages:     packages,
+		SharedScript: sharedScript,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		Enabled:      true,
 	}, nil
 }
 
 // GetScraperScript retrieves a script by ID
 func GetScraperScript(id int64) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
 		FROM scraper_scripts
 		WHERE id = ?
 	`
@@ -93,7 +95,7 @@ func GetScraperScript(id int64) (*ScraperScript, error) {
 // GetScraperScriptByName retrieves a script by name
 func GetScraperScriptByName(name string) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
 		FROM scraper_scripts
 		WHERE name = ?
 	`
@@ -104,7 +106,7 @@ func GetScraperScriptByName(name string) (*ScraperScript, error) {
 // ListScraperScripts retrieves all scraper scripts, optionally filtered by enabled status
 func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
 		FROM scraper_scripts
 	`
 	args := []interface{}{}
@@ -134,7 +136,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 }
 
 // UpdateScraperScript updates a scraper script
-func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string) (*ScraperScript, error) {
+func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 	
 	// Serialize variables to JSON
@@ -159,10 +161,10 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 	
 	query := `
 		UPDATE scraper_scripts
-		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, updated_at = ?
+		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, shared_script = ?, updated_at = ?
 		WHERE id = ?
 	`
-	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, now, id)
+	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, now, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update scraper script: %w", err)
 	}
@@ -226,9 +228,10 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 		enabled       bool
 		variablesJSON sql.NullString
 		packagesJSON  sql.NullString
+		sharedScript  sql.NullString
 	)
 
-	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON)
+	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON, &sharedScript)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("scraper script not found")
@@ -269,6 +272,9 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 		Enabled:   enabled,
 	}
 
+	if sharedScript.Valid {
+		ss.SharedScript = &sharedScript.String
+	}
 	if lastRun.Valid {
 		ss.LastRun = &lastRun.Int64
 	}
@@ -352,13 +358,21 @@ func CreateScraperLog(scriptID int64, status string) (*ScraperExecutionLog, erro
 		return nil, fmt.Errorf("failed to get last insert id: %w", err)
 	}
 
-	return &ScraperExecutionLog{
+	logEntry := &ScraperExecutionLog{
 		ID:        id,
 		ScriptID:  scriptID,
 		Status:    status,
 		StartTime: now,
 		CreatedAt: now,
-	}, nil
+	}
+
+	// Cleanup old logs after creating a new one
+	if err := CleanupOldScraperLogs(scriptID); err != nil {
+		log.Warnf("Failed to cleanup old logs for script %d: %v", scriptID, err)
+		// Don't fail the creation if cleanup fails
+	}
+
+	return logEntry, nil
 }
 
 // GetScraperLog retrieves a specific execution log
@@ -372,19 +386,22 @@ func GetScraperLog(id int64) (*ScraperExecutionLog, error) {
 	return scanScraperLog(row)
 }
 
-// ListScraperLogs retrieves all execution logs for a script, ordered by most recent
-func ListScraperLogs(scriptID int64, limit int) ([]ScraperExecutionLog, error) {
+// ListScraperLogs retrieves execution logs for a script with pagination, ordered by most recent
+func ListScraperLogs(scriptID int64, limit int, offset int) ([]ScraperExecutionLog, error) {
 	if limit <= 0 {
 		limit = 50 // Default limit
+	}
+	if offset < 0 {
+		offset = 0
 	}
 	query := `
 		SELECT id, script_id, status, output, error_message, start_time, end_time, duration_ms, created_at
 		FROM scraper_execution_logs
 		WHERE script_id = ?
 		ORDER BY start_time DESC
-		LIMIT ?
+		LIMIT ? OFFSET ?
 	`
-	rows, err := db.Query(query, scriptID, limit)
+	rows, err := db.Query(query, scriptID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query execution logs: %w", err)
 	}
@@ -400,6 +417,78 @@ func ListScraperLogs(scriptID int64, limit int) ([]ScraperExecutionLog, error) {
 	}
 
 	return logs, rows.Err()
+}
+
+// DeleteScraperLog deletes a specific execution log
+func DeleteScraperLog(id int64) error {
+	query := `DELETE FROM scraper_execution_logs WHERE id = ?`
+	result, err := db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete execution log: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	
+	if rowsAffected == 0 {
+		return fmt.Errorf("execution log with id %d not found", id)
+	}
+	
+	return nil
+}
+
+// CleanupOldScraperLogs deletes old logs for a script, keeping only the most recent 15
+func CleanupOldScraperLogs(scriptID int64) error {
+	// First, count how many logs exist for this script
+	count, err := CountScraperLogs(scriptID)
+	if err != nil {
+		return fmt.Errorf("failed to count logs: %w", err)
+	}
+	
+	// If we have 15 or fewer logs, no cleanup needed
+	if count <= 15 {
+		return nil
+	}
+	
+	// Delete logs beyond the most recent 15
+	// We need to keep the 15 most recent, so delete everything older than the 15th most recent
+	query := `
+		DELETE FROM scraper_execution_logs 
+		WHERE script_id = ? 
+		AND id NOT IN (
+			SELECT id FROM (
+				SELECT id FROM scraper_execution_logs 
+				WHERE script_id = ? 
+				ORDER BY start_time DESC 
+				LIMIT 15
+			) AS recent_logs
+		)
+	`
+	
+	result, err := db.Exec(query, scriptID, scriptID)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup old logs: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err == nil && rowsAffected > 0 {
+		log.Infof("Cleaned up %d old log(s) for script %d", rowsAffected, scriptID)
+	}
+	
+	return nil
+}
+
+// CountScraperLogs returns the total number of execution logs for a script
+func CountScraperLogs(scriptID int64) (int, error) {
+	query := `SELECT COUNT(*) FROM scraper_execution_logs WHERE script_id = ?`
+	var count int
+	err := db.QueryRow(query, scriptID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count execution logs: %w", err)
+	}
+	return count, nil
 }
 
 // UpdateScraperLog updates an execution log with final results

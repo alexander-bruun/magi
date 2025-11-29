@@ -313,6 +313,112 @@
   }
 
   // ============================================================================
+  // ANSI COLOR UTILITIES
+  // ============================================================================
+
+  /**
+   * Parse ANSI color codes in text and convert to HTML with inline styles
+   * @param {string} text - Text containing ANSI escape sequences
+   * @returns {string} HTML string with styled spans
+   */
+  function parseAnsiColors(text) {
+    if (!text) return '';
+
+    // ANSI escape sequence regex: \x1b[...m
+    const ansiRegex = /\x1b\[([0-9;]*)m/g;
+    let result = '';
+    let lastIndex = 0;
+    let currentStyles = [];
+
+    text.replace(ansiRegex, (match, codes, offset) => {
+      // Add text before this escape sequence
+      if (offset > lastIndex) {
+        const plainText = text.substring(lastIndex, offset);
+        result += applyAnsiStyles(plainText, currentStyles);
+      }
+
+      // Parse the codes
+      const codeArray = codes.split(';').filter(code => code !== '');
+
+      if (codeArray.length === 0 || codeArray[0] === '0') {
+        // Reset all styles
+        currentStyles = [];
+      } else {
+        // Apply new styles
+        codeArray.forEach(code => {
+          const codeNum = parseInt(code);
+          if (codeNum === 1) currentStyles.push('bold');
+          else if (codeNum === 4) currentStyles.push('underline');
+          else if (codeNum >= 30 && codeNum <= 37) currentStyles.push(`color-${codeNum - 30}`);
+          else if (codeNum >= 40 && codeNum <= 47) currentStyles.push(`bg-${codeNum - 40}`);
+          else if (codeNum >= 90 && codeNum <= 97) currentStyles.push(`bright-color-${codeNum - 90}`);
+          else if (codeNum >= 100 && codeNum <= 107) currentStyles.push(`bright-bg-${codeNum - 100}`);
+        });
+      }
+
+      lastIndex = offset + match.length;
+      return match;
+    });
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      const remainingText = text.substring(lastIndex);
+      result += applyAnsiStyles(remainingText, currentStyles);
+    }
+
+    return result;
+  }
+
+  /**
+   * Apply CSS styles to text based on ANSI codes
+   * @param {string} text - Plain text to style
+   * @param {Array} styles - Array of style names
+   * @returns {string} HTML span with applied styles
+   */
+  function applyAnsiStyles(text, styles) {
+    if (styles.length === 0) {
+      return escapeHtml(text);
+    }
+
+    let cssStyles = styles.map(style => {
+      switch (style) {
+        case 'bold': return 'font-weight: bold;';
+        case 'underline': return 'text-decoration: underline;';
+        case 'color-0': return 'color: #000000;'; // Black
+        case 'color-1': return 'color: #cd0000;'; // Red
+        case 'color-2': return 'color: #00cd00;'; // Green
+        case 'color-3': return 'color: #cdcd00;'; // Yellow
+        case 'color-4': return 'color: #0000cd;'; // Blue
+        case 'color-5': return 'color: #cd00cd;'; // Magenta
+        case 'color-6': return 'color: #00cdcd;'; // Cyan
+        case 'color-7': return 'color: #e5e5e5;'; // White
+        case 'bright-color-0': return 'color: #666666;'; // Bright Black
+        case 'bright-color-1': return 'color: #ff0000;'; // Bright Red
+        case 'bright-color-2': return 'color: #00ff00;'; // Bright Green
+        case 'bright-color-3': return 'color: #ffff00;'; // Bright Yellow
+        case 'bright-color-4': return 'color: #0000ff;'; // Bright Blue
+        case 'bright-color-5': return 'color: #ff00ff;'; // Bright Magenta
+        case 'bright-color-6': return 'color: #00ffff;'; // Bright Cyan
+        case 'bright-color-7': return 'color: #ffffff;'; // Bright White
+        default: return '';
+      }
+    }).filter(style => style !== '').join(' ');
+
+    return `<span style="${cssStyles}">${escapeHtml(text)}</span>`;
+  }
+
+  /**
+   * Escape HTML entities
+   * @param {string} text - Text to escape
+   * @returns {string} Escaped HTML
+   */
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ============================================================================
   // LOG VIEWER
   // ============================================================================
 
@@ -331,6 +437,7 @@
       // Log formatting
       this.colorMap = options.colorMap || this.getDefaultColorMap();
       this.formatMessage = options.formatMessage || this.defaultFormatMessage.bind(this);
+      this.enableAnsiColors = options.enableAnsiColors !== false; // Default to true
       
       // Get DOM elements
       this.container = document.getElementById(this.containerId);
@@ -368,16 +475,56 @@
       return data.message;
     }
     
+    /**
+     * Parse ANSI escape sequences and convert to HTML spans with CSS styling
+     * @param {string} text - Text containing ANSI escape sequences
+     * @returns {string} HTML string with styled spans
+     */
+    parseAnsiColors(text) {
+      if (!this.enableAnsiColors || !text) {
+        return escapeHtml(text);
+      }
+      
+      return parseAnsiColors(text);
+    }
+    
+    /**
+     * Apply CSS styles to text based on ANSI codes
+     * @param {string} text - Plain text to style
+     * @param {Array} styles - Array of style names
+     * @returns {string} HTML span with applied styles
+     */
+    applyStyles(text, styles) {
+      return applyAnsiStyles(text, styles);
+    }
+    
+    /**
+     * Escape HTML entities
+     * @param {string} text - Text to escape
+     * @returns {string} HTML-escaped text
+     */
+    escapeHtml(text) {
+      return escapeHtml(text);
+    }
+    
     addLogEntry(data) {
       const logEntry = document.createElement('div');
       logEntry.className = 'log-entry';
       
-      // Determine color based on type or message content
-      const color = this.getLogColor(data);
-      logEntry.style.color = color;
+      // Check if message contains ANSI escape sequences
+      const message = this.formatMessage(data);
+      const hasAnsiCodes = /\x1b\[([0-9;]*)m/.test(message);
       
-      // Format and set the message
-      logEntry.textContent = this.formatMessage(data);
+      if (hasAnsiCodes && this.enableAnsiColors) {
+        // Parse ANSI colors and render as HTML
+        // Don't apply global color when ANSI codes are present
+        logEntry.innerHTML = this.parseAnsiColors(message);
+      } else {
+        // Regular text rendering with global color
+        const color = this.getLogColor(data);
+        logEntry.style.color = color;
+        logEntry.textContent = message;
+      }
       
       // Add to output
       this.output.appendChild(logEntry);
@@ -506,15 +653,7 @@
    * Manages scraper script UI interactions
    */
   const ScraperManager = (function() {
-    function togglePackagesSection(languageSelect, packagesSection) {
-      if (languageSelect && packagesSection) {
-        if (languageSelect.value === 'python') {
-          packagesSection.style.display = 'block';
-        } else {
-          packagesSection.style.display = 'none';
-        }
-      }
-      
+    function updateCodeEditor(languageSelect) {
       // Update code editor language
       const codeEditor = document.getElementById('script-content');
       if (codeEditor) {
@@ -537,20 +676,17 @@
     }
 
     function init() {
-      // Handle language change for packages section
+      // Handle language change for code editor updates
       document.addEventListener('change', function(e) {
         if (e.target.id === 'script-language') {
-          const languageSelect = e.target;
-          const packagesSection = document.getElementById('packages-section');
-          togglePackagesSection(languageSelect, packagesSection);
+          updateCodeEditor(e.target);
         }
       });
 
-      // Initial toggle
+      // Initial code editor setup
       const languageSelect = document.getElementById('script-language');
-      const packagesSection = document.getElementById('packages-section');
-      if (languageSelect && packagesSection) {
-        togglePackagesSection(languageSelect, packagesSection);
+      if (languageSelect) {
+        updateCodeEditor(languageSelect);
       }
 
       // Handle run/cancel button visibility
@@ -610,7 +746,13 @@
           maxEntries: 500,
           reconnectInterval: 1000,
           maxReconnectAttempts: 5,
+          enableAnsiColors: true,
           formatMessage: function(data) {
+            // If message contains ANSI colors, it's already formatted - don't add prefix
+            if (/\x1b\[([0-9;]*)m/.test(data.message)) {
+              return data.message;
+            }
+            // Otherwise, add the type prefix for plain messages
             return '[' + data.type.toUpperCase() + '] ' + data.message;
           },
           colorMap: {
@@ -625,8 +767,7 @@
     }
 
     return {
-      init: init,
-      togglePackagesSection: togglePackagesSection
+      init: init
     };
   })();
 
@@ -1184,7 +1325,6 @@
       },
 
       mountEditors(root) {
-        if (typeof window.CodeMirror === 'undefined') return;
         const scope = root instanceof Element ? root : document;
         scope.querySelectorAll('textarea[data-code-editor]:not([data-code-editor-init])')
           .forEach((ta) => this.createEditor(ta));
@@ -1239,16 +1379,39 @@
       },
 
       init() {
-        const ready = () => this.mountEditors(document.body);
+        const ready = () => {
+          // Wait for CodeMirror to be available
+          const waitForCodeMirror = () => {
+            if (typeof window.CodeMirror !== 'undefined') {
+              this.mountEditors(document.body);
+            } else {
+              setTimeout(waitForCodeMirror, 50);
+            }
+          };
+          waitForCodeMirror();
+        };
+        
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', ready);
         } else {
           ready();
         }
+        
         document.addEventListener('htmx:afterSwap', (event) => {
           const target = event.detail?.target || event.target;
-          if (target) this.mountEditors(target);
+          if (target) {
+            // Wait for CodeMirror to be available after HTMX swap
+            const waitForCodeMirror = () => {
+              if (typeof window.CodeMirror !== 'undefined') {
+                this.mountEditors(target);
+              } else {
+                setTimeout(waitForCodeMirror, 50);
+              }
+            };
+            waitForCodeMirror();
+          }
         });
+        
         this.observeTheme();
       }
     };
@@ -1392,6 +1555,19 @@
         // Reapply theme on HTMX swaps (for history navigation)
         document.addEventListener('htmx:afterSwap', () => {
           this.applyTheme();
+        });
+
+        // Parse ANSI colors in log outputs after HTMX swaps
+        document.addEventListener('htmx:afterSwap', function() {
+          document.querySelectorAll('.log-output').forEach(function(element) {
+            if (!element.dataset.ansiParsed) {
+              const originalText = element.textContent;
+              if (originalText && /\x1b\[([0-9;]*)m/.test(originalText)) {
+                element.innerHTML = window.Magi.parseAnsiColors(originalText);
+                element.dataset.ansiParsed = 'true';
+              }
+            }
+          });
         });
         
         // Set initial active states
@@ -1656,6 +1832,9 @@
     CropperManager: CropperManager,
     ScraperManager: ScraperManager,
     ConfigManager: ConfigManager,
+    parseAnsiColors: parseAnsiColors,
+    applyAnsiStyles: applyAnsiStyles,
+    escapeHtml: escapeHtml,
     version: '1.0.0'
   };
 

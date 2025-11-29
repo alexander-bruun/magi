@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS scraper_scripts (
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     enabled BOOLEAN DEFAULT 1,
     variables TEXT DEFAULT '{}',
-    packages TEXT DEFAULT '[]'
+    packages TEXT DEFAULT '[]',
+    shared_script TEXT DEFAULT NULL
 );
 
 CREATE INDEX idx_scraper_scripts_name ON scraper_scripts(name);
