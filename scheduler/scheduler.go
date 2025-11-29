@@ -1,4 +1,4 @@
-package indexer
+package scheduler
 
 import (
 	"fmt"
@@ -11,11 +11,163 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
+
 	cron "github.com/robfig/cron/v3"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/executor"
 )
+
+// Job represents a scheduled job that can be executed
+type Job interface {
+	Execute() error
+	Name() string
+}
+
+// CronScheduler manages cron jobs
+type CronScheduler struct {
+	cron   *cron.Cron
+	jobs   map[string]cron.EntryID
+	mutex  sync.RWMutex
+	running bool
+}
+
+// NewCronScheduler creates a new cron scheduler
+func NewCronScheduler() *CronScheduler {
+	return &CronScheduler{
+		cron: cron.New(),
+		jobs: make(map[string]cron.EntryID),
+	}
+}
+
+// AddJob adds a job with the given schedule
+func (s *CronScheduler) AddJob(name string, schedule string, job Job) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.jobs[name] != 0 {
+		// Job already exists, remove it first
+		s.cron.Remove(s.jobs[name])
+	}
+
+	entryID, err := s.cron.AddFunc(schedule, func() {
+		if err := job.Execute(); err != nil {
+			// Log error - in a real implementation, you'd want proper logging
+			// For now, we'll assume the job handles its own error logging
+		}
+	})
+	if err != nil {
+		return err
+	}
+
+	s.jobs[name] = entryID
+	return nil
+}
+
+// RemoveJob removes a job by name
+func (s *CronScheduler) RemoveJob(name string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if entryID, exists := s.jobs[name]; exists {
+		s.cron.Remove(entryID)
+		delete(s.jobs, name)
+	}
+}
+
+// Start starts the scheduler
+func (s *CronScheduler) Start() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if !s.running {
+		s.cron.Start()
+		s.running = true
+	}
+}
+
+// Stop stops the scheduler
+func (s *CronScheduler) Stop() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.running {
+		s.cron.Stop()
+		s.running = false
+	}
+}
+
+// IsRunning returns whether the scheduler is running
+func (s *CronScheduler) IsRunning() bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return s.running
+}
+
+// Reload stops and restarts the scheduler (useful for reloading jobs)
+func (s *CronScheduler) Reload() {
+	s.Stop()
+	s.Start()
+}
+
+// ScraperExecuteFunc is the function signature for executing a scraper script
+type ScraperExecuteFunc func(script *models.ScraperScript) error
+
+// ScraperJob represents a scraper script job
+type ScraperJob struct {
+	Script      *models.ScraperScript
+	ExecuteFunc ScraperExecuteFunc
+}
+
+// Name returns the job name
+func (j *ScraperJob) Name() string {
+	return fmt.Sprintf("scraper-%s", j.Script.Name)
+}
+
+// Execute runs the scraper script
+func (j *ScraperJob) Execute() error {
+	if j.ExecuteFunc != nil {
+		return j.ExecuteFunc(j.Script)
+	}
+	return fmt.Errorf("no execute function provided")
+}
+
+var (
+	scraperScheduler *CronScheduler
+	scraperMutex     sync.Mutex
+	scraperExecuteFunc ScraperExecuteFunc
+)
+
+// RegisterScraperScript registers a single scraper script with the scheduler
+func RegisterScraperScript(script *models.ScraperScript) error {
+	if scraperScheduler == nil {
+		return fmt.Errorf("scraper scheduler not initialized")
+	}
+
+	job := &ScraperJob{Script: script, ExecuteFunc: scraperExecuteFunc}
+	return scraperScheduler.AddJob(job.Name(), script.Schedule, job)
+}
+
+// IndexingExecuteFunc is the function signature for executing indexing
+type IndexingExecuteFunc func(library *models.Library) error
+
+// IndexingJob represents an indexing job for a library
+type IndexingJob struct {
+	Library     *models.Library
+	ExecuteFunc IndexingExecuteFunc
+}
+
+// Name returns the job name
+func (j *IndexingJob) Name() string {
+	return fmt.Sprintf("indexer-%s", j.Library.Slug)
+}
+
+// Execute runs the indexing for the library
+func (j *IndexingJob) Execute() error {
+	if j.ExecuteFunc != nil {
+		return j.ExecuteFunc(j.Library)
+	}
+	return fmt.Errorf("no execute function provided")
+}
 
 type ContentType int
 
@@ -35,37 +187,34 @@ var (
 )
 
 var (
-	cacheDataDirectory = ""
+	CacheDataDirectory = ""
 	cacheDirMutex      sync.RWMutex
 	activeIndexers     sync.Map
 	scannedPathCount   int
 	scanMutex          sync.Mutex
 	indexingRunning   sync.Map
+	IndexMediaFunc    func(path, librarySlug string) (string, error)
 )
 
 // Indexer represents the state of an indexer
 type Indexer struct {
-	Library     models.Library
-	Cron        *cron.Cron
-	CronJobID   cron.EntryID
-	CronRunning bool
-	JobRunning  bool
-	stop        chan struct{}
-	stopOnce    sync.Once
+	Library         models.Library
+	Scheduler       *CronScheduler
+	SchedulerRunning bool
+	JobRunning      bool
+	stop            chan struct{}
+	stopOnce        sync.Once
 }
 
-// Initialize sets up indexers and notifications
-func Initialize(cacheDirectory string, libraries []models.Library) {
-	cacheDataDirectory = cacheDirectory
+// InitializeIndexer sets up indexers and notifications
+func InitializeIndexer(cacheDirectory string, libraries []models.Library) {
+	CacheDataDirectory = cacheDirectory
 	log.Info("Initializing Indexer and Scheduler")
 
 	for _, library := range libraries {
 		indexer := NewIndexer(library)
 		go indexer.Start()
 	}
-
-	// Initialize scraper scheduler
-	executor.InitializeScraperScheduler()
 
 	// Register NotificationListener
 	models.AddListener(&NotificationListener{
@@ -96,15 +245,21 @@ func NewIndexer(library models.Library) *Indexer {
 
 // Start initializes and starts the Indexer
 func (idx *Indexer) Start() {
-	idx.Cron = cron.New()
-	var err error
-	idx.CronJobID, err = idx.Cron.AddFunc(idx.Library.Cron, func() { idx.runIndexingJob() })
+	idx.Scheduler = NewCronScheduler()
+	job := &IndexingJob{
+		Library: &idx.Library,
+		ExecuteFunc: func(library *models.Library) error {
+			idx.runIndexingJob()
+			return nil
+		},
+	}
+	err := idx.Scheduler.AddJob(job.Name(), idx.Library.Cron, job)
 	if err != nil {
 		log.Errorf("Error adding cron job: %s", err)
 		return
 	}
-	idx.Cron.Start()
-	idx.CronRunning = true
+	idx.Scheduler.Start()
+	idx.SchedulerRunning = true
 
 	activeIndexers.Store(idx.Library.Slug, idx)
 
@@ -114,17 +269,12 @@ func (idx *Indexer) Start() {
 	// Listen for stop signal
 	<-idx.stop
 	idx.Stop()
-}
-
-// Stop stops the indexer and cleans up
+}// Stop stops the indexer and cleans up
 func (idx *Indexer) Stop() {
 	idx.stopOnce.Do(func() {
-		if idx.CronRunning {
-			if idx.Cron != nil {
-				idx.Cron.Remove(idx.CronJobID)
-			}
-			idx.Cron.Stop()
-			idx.CronRunning = false
+		if idx.SchedulerRunning {
+			idx.Scheduler.Stop()
+			idx.SchedulerRunning = false
 			log.Infof("Stopped indexer for library: '%s'", idx.Library.Name)
 		}
 		activeIndexers.Delete(idx.Library.Slug)
@@ -364,7 +514,7 @@ func (idx *Indexer) processFolder(folder string) error {
 					NotifyIndexerProgress(idx.Library.Slug, entryName, fmt.Sprintf("%d scanned", currentCount))
 				}
 
-				_, err := IndexMedia(path, idx.Library.Slug)
+				_, err := IndexMediaFunc(path, idx.Library.Slug)
 				results <- err
 			}
 		}()
@@ -492,8 +642,8 @@ func determineContentType(path string, isDir bool) ContentType {
 	return Skip
 }
 
-// containsEPUBFiles checks if a directory contains any .epub files
-func containsEPUBFiles(dirPath string) bool {
+// ContainsEPUBFiles checks if a directory contains any .epub files
+func ContainsEPUBFiles(dirPath string) bool {
 	fileInfo, err := os.Stat(dirPath)
 	if err != nil {
 		return false

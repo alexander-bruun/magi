@@ -5,8 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/executor"
-	"github.com/alexander-bruun/magi/indexer"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -47,11 +46,11 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// ========================================
 	// Set up job status notification callbacks
 	// ========================================
-	executor.NotifyScraperStarted = NotifyScraperStarted
-	executor.NotifyScraperFinished = NotifyScraperFinished
-	indexer.NotifyIndexerStarted = NotifyIndexerStarted
-	indexer.NotifyIndexerProgress = NotifyIndexerProgress
-	indexer.NotifyIndexerFinished = NotifyIndexerFinished
+	scheduler.NotifyScraperStarted = NotifyScraperStarted
+	scheduler.NotifyScraperFinished = NotifyScraperFinished
+	scheduler.NotifyIndexerStarted = NotifyIndexerStarted
+	scheduler.NotifyIndexerProgress = NotifyIndexerProgress
+	scheduler.NotifyIndexerFinished = NotifyIndexerFinished
 
 	// ========================================
 	// Start token cleanup goroutine

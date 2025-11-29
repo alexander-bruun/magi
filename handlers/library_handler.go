@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -220,7 +220,7 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 
 	// Create a temporary Indexer for this library and run the job so we
 	// preserve the same logging and lifecycle as scheduled jobs.
-	idx := indexer.NewIndexer(*library)
+	idx := scheduler.NewIndexer(*library)
 	// RunIndexingJob will process all folders for the library.
 	if ran := idx.RunIndexingJob(); !ran {
 		c.Set("HX-Trigger", `{"showNotification": {"message": "Indexing already in progress for this library", "type": "warning"}}`)

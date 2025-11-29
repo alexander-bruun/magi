@@ -1,4 +1,4 @@
-package executor
+package scheduler
 
 import (
     "bufio"
@@ -460,4 +460,60 @@ func CancelScriptExecution(scriptID int64) error {
     cancel()
     BroadcastLog(scriptID, "info", "Script execution cancelled by user")
     return nil
+}
+
+// InitializeScraperScheduler initializes the scraper scheduler
+func InitializeScraperScheduler() {
+	scraperExecuteFunc = func(script *models.ScraperScript) error {
+		log.Infof("Starting scheduled script '%s' (ID=%d)", script.Name, script.ID)
+		if _, err := StartScriptExecution(script, script.Variables, true); err != nil {
+			log.Infof("Scheduled run skipped: script '%s' (ID=%d) is already running: %v", script.Name, script.ID, err)
+			return nil
+		}
+		return nil
+	}
+	scraperMutex.Lock()
+	defer scraperMutex.Unlock()
+
+	if scraperScheduler != nil {
+		scraperScheduler.Stop()
+	}
+
+	scraperScheduler = NewCronScheduler()
+	scraperScheduler.Start()
+
+	// Load and register all enabled scraper scripts
+	scripts, err := models.ListScraperScripts(true)
+	if err != nil {
+		log.Errorf("Failed to load scraper scripts: %v", err)
+		return
+	}
+
+	for _, script := range scripts {
+		// create a local copy to avoid closing over the loop variable's address
+		s := script
+		if err := RegisterScraperScript(&s); err != nil {
+			log.Errorf("Failed to register scraper script '%s': %v", script.Name, err)
+		}
+	}
+
+	log.Debugf("Scraper scheduler initialized with %d scripts", len(scripts))
+}
+
+// ReloadScraperScheduler reloads the scraper scheduler
+func ReloadScraperScheduler() {
+	log.Info("Reloading scraper scheduler")
+	InitializeScraperScheduler()
+}
+
+// StopScraperScheduler stops the scraper scheduler
+func StopScraperScheduler() {
+	scraperMutex.Lock()
+	defer scraperMutex.Unlock()
+
+	if scraperScheduler != nil {
+		log.Info("Stopping scraper scheduler")
+		scraperScheduler.Stop()
+		scraperScheduler = nil
+	}
 }

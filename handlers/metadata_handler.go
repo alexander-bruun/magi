@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/indexer"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
@@ -81,11 +81,11 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	coverURL := provider.GetCoverImageURL(meta)
 	var cachedImageURL string
 	if coverURL != "" {
-		cachedImageURL, err = indexer.DownloadAndCacheImage(existingMedia.Slug, coverURL)
+		cachedImageURL, err = scheduler.DownloadAndCacheImage(existingMedia.Slug, coverURL)
 		if err != nil {
 			log.Warnf("Failed to download cover art: %v", err)
 			// Try local images as fallback
-			cachedImageURL, _ = indexer.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
+			cachedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
 		}
 	}
 
@@ -94,7 +94,7 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	metadata.UpdateMedia(existingMedia, meta, cachedImageURL)
 
 	// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
-	detectedType := indexer.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
+	detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
 	if detectedType != "" {
 		if originalType == "media" && detectedType == "webtoon" {
 			log.Infof("Overriding media type from 'media' to 'webtoon' for '%s' based on image aspect ratio", existingMedia.Slug)
@@ -184,7 +184,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 
 	// Process cover art URL (download and cache)
 	if coverURL != "" {
-		cachedImageURL, err := indexer.DownloadAndCacheImage(existingMedia.Slug, coverURL)
+		cachedImageURL, err := scheduler.DownloadAndCacheImage(existingMedia.Slug, coverURL)
 		if err != nil {
 			return handleError(c, fmt.Errorf("failed to download and cache cover art: %w", err))
 		}
@@ -244,17 +244,17 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		var cachedImageURL string
 		if coverURL != "" {
 			log.Debugf("Attempting to download cover art from provider for media '%s': %s", mangaSlug, coverURL)
-			cachedImageURL, err = indexer.DownloadAndCacheImage(mangaSlug, coverURL)
+			cachedImageURL, err = scheduler.DownloadAndCacheImage(mangaSlug, coverURL)
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
 				log.Debugf("Falling back to local images for poster generation for media '%s'", mangaSlug)
-				cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingMedia.Path)
+				cachedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
 			}
 		} else {
 			// No cover URL from provider, try local images
 			log.Debugf("No cover URL from provider for media '%s', trying local images", mangaSlug)
-			cachedImageURL, _ = indexer.HandleLocalImages(mangaSlug, existingMedia.Path)
+			cachedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
 		}
 
 		if cachedImageURL != "" {
@@ -269,7 +269,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		metadata.UpdateMedia(existingMedia, meta, existingMedia.CoverArtURL)
 
 		// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
-		detectedType := indexer.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
+		detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
 		if detectedType != "" {
 			if originalType == "media" && detectedType == "webtoon" {
 				log.Infof("Overriding media type from 'media' to 'webtoon' for '%s' based on image aspect ratio", existingMedia.Slug)
@@ -300,13 +300,13 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 		
 		// Detect type from images
-		detectedType := indexer.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
+		detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
 		if detectedType != "" {
 			existingMedia.SetType(detectedType)
 		}
 		
 		// Try to set poster from local images
-		cachedImageURL, _ := indexer.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
+		cachedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
 		if cachedImageURL != "" {
 			existingMedia.CoverArtURL = cachedImageURL
 		}
@@ -318,7 +318,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
-	added, deleted, newChapterSlugs, _, err := indexer.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
+	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
 	if err != nil {
 		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
 	}

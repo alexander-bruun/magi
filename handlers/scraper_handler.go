@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/executor"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -199,7 +199,7 @@ func HandleScraperScriptCancel(c *fiber.Ctx) error {
 	if err != nil {
 		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
 	}
-	if err := executor.CancelScriptExecution(id); err != nil {
+	if err := scheduler.CancelScriptExecution(id); err != nil {
 		return handleError(c, err)
 	}
 	return c.SendStatus(fiber.StatusOK)
@@ -272,7 +272,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 	}
 
 	// Start execution via shared executor (creates DB log and streams logs)
-	if _, err := executor.StartScriptExecution(script, variables, true); err != nil {
+	if _, err := scheduler.StartScriptExecution(script, variables, true); err != nil {
 		return handleError(c, err)
 	}
 

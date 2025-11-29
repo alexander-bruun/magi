@@ -11,10 +11,9 @@ import (
 	"net/http"
 
 	"github.com/alexander-bruun/magi/cmd"
-	"github.com/alexander-bruun/magi/executor"
 	"github.com/alexander-bruun/magi/handlers"
-	"github.com/alexander-bruun/magi/indexer"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 
 	fiber "github.com/gofiber/fiber/v2"
@@ -153,7 +152,8 @@ func main() {
 				log.Warnf("Failed to get libraries: %v", err)
 				return
 			}
-			go indexer.Initialize(cacheDirectory, libraries)
+			go scheduler.InitializeIndexer(cacheDirectory, libraries)
+			go scheduler.InitializeScraperScheduler()
 
 			// Set up signal handling for graceful shutdown
 			sigChan := make(chan os.Signal, 1)
@@ -170,9 +170,9 @@ func main() {
 			}
 
 			// Stop all background services
-			indexer.StopAllIndexers()
+			scheduler.StopAllIndexers()
 			handlers.StopTokenCleanup()
-			executor.StopScraperScheduler()
+			scheduler.StopScraperScheduler()
 
 			log.Info("Shutdown complete.")
 		},

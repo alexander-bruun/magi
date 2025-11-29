@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alexander-bruun/magi/executor"
+	"github.com/alexander-bruun/magi/scheduler"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	websocket "github.com/gofiber/websocket/v2"
@@ -293,7 +293,7 @@ func HandleScraperLogsWebSocketUpgrade(c *fiber.Ctx) error {
 
 		// Upgrade to WebSocket with the extracted script ID
 		return websocket.New(func(conn *websocket.Conn) {
-			executor.HandleLogsWebSocket(conn, id)
+			scheduler.HandleLogsWebSocket(conn, id)
 		})(c)
 	}
 	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
