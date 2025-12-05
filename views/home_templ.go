@@ -64,24 +64,7 @@ func getRelativeTime(createdAt time.Time) string {
 // getCountdownText returns the countdown text for premium chapters
 func getCountdownText(createdAt time.Time, premiumDuration int) string {
 	releaseTime := createdAt.Add(time.Duration(premiumDuration) * time.Second)
-
-	if time.Now().After(releaseTime) {
-		return "Available now!"
-	}
-
-	duration := time.Until(releaseTime)
-	if duration.Hours() >= 24 {
-		days := int(duration.Hours() / 24)
-		return fmt.Sprintf("%dd", days)
-	} else if duration.Hours() >= 1 {
-		hours := int(duration.Hours())
-		minutes := int(duration.Minutes()) % 60
-		return fmt.Sprintf("%dh %dm", hours, minutes)
-	} else {
-		minutes := int(duration.Minutes())
-		seconds := int(duration.Seconds()) % 60
-		return fmt.Sprintf("%dm %ds", minutes, seconds)
-	}
+	return models.CalculateCountdownText(releaseTime)
 }
 
 func TopReadList(media []models.Media, emptyMessage string, title string) templ.Component {
@@ -113,7 +96,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 81, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 64, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -142,7 +125,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				var templ_7745c5c3_Var3 templ.SafeURL
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", m.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 89, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 72, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -163,7 +146,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 94, Col: 41}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 77, Col: 41}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -176,7 +159,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(m.Author)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 95, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 78, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -189,7 +172,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 98, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 81, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -202,7 +185,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d reads", m.ReadCount))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 100, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 83, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -292,7 +275,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 			var templ_7745c5c3_Var10 templ.SafeURL
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", chapter.MediaSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 123, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 106, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -305,7 +288,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.MediaName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 123, Col: 119}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 106, Col: 119}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -318,7 +301,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 			var templ_7745c5c3_Var12 templ.SafeURL
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 125, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 108, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -331,7 +314,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 125, Col: 138}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 108, Col: 138}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -349,7 +332,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.PremiumCountdown)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 132, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 115, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -363,7 +346,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(getRelativeTime(chapter.CreatedAt))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 135, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 118, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -536,7 +519,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var18 templ.SafeURL
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", m.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 208, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 191, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -557,7 +540,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var19 templ.SafeURL
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", m.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 213, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 196, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -570,7 +553,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 213, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 196, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -583,7 +566,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(m.Author)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 214, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 197, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -596,7 +579,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 217, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 200, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -609,7 +592,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 219, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 202, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
@@ -633,7 +616,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div><div class=\"text-center mt-4\"><a href=\"/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at\" class=\"uk-btn uk-btn-primary\">View More</a></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center mt-6\"><span>Statistics</span></h2><div id=\"statistics-content\" hx-get=\"/statistics\" hx-trigger=\"intersect, every 30s\"></div><div class=\"text-center mt-2\"><small class=\"text-gray-500\">Green badges show chapters read today</small></div></div><script>\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t// Handle subnav\n\t\t\tconst subnav = document.getElementById('most-read-subnav');\n\t\t\tif (subnav) {\n\t\t\t\tsubnav.addEventListener('click', function(e) {\n\t\t\t\t\tif (e.target.tagName === 'A') {\n\t\t\t\t\t\t// Update active\n\t\t\t\t\t\tsubnav.querySelectorAll('li').forEach(li => li.classList.remove('uk-active'));\n\t\t\t\t\t\te.target.parentElement.classList.add('uk-active');\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div><div class=\"text-center mt-4\"><a href=\"/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at\" class=\"uk-btn uk-btn-primary\">View More</a></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center mt-6\"><span>Statistics</span></h2><div id=\"statistics-content\" hx-get=\"/statistics\" hx-trigger=\"intersect, every 30s\"></div><div class=\"text-center mt-2\"><small class=\"text-gray-500\">Green badges show change in the last 24 hours</small></div></div><script>\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t// Handle subnav\n\t\t\tconst subnav = document.getElementById('most-read-subnav');\n\t\t\tif (subnav) {\n\t\t\t\tsubnav.addEventListener('click', function(e) {\n\t\t\t\t\tif (e.target.tagName === 'A') {\n\t\t\t\t\t\t// Update active\n\t\t\t\t\t\tsubnav.querySelectorAll('li').forEach(li => li.classList.remove('uk-active'));\n\t\t\t\t\t\te.target.parentElement.classList.add('uk-active');\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -674,7 +657,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var25 templ.SafeURL
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", item.Media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 283, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 266, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -695,7 +678,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var26 templ.SafeURL
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", item.Media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 291, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 274, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -708,7 +691,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(item.Media.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 291, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 274, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -732,7 +715,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 				var templ_7745c5c3_Var28 templ.SafeURL
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 301, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 284, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -745,7 +728,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 301, Col: 221}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 284, Col: 221}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -763,7 +746,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					var templ_7745c5c3_Var30 string
 					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.PremiumCountdown)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 309, Col: 38}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 292, Col: 38}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 					if templ_7745c5c3_Err != nil {
@@ -777,7 +760,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					var templ_7745c5c3_Var31 string
 					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(getRelativeTime(chapter.CreatedAt))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 312, Col: 47}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 295, Col: 47}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 					if templ_7745c5c3_Err != nil {
