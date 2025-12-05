@@ -3,9 +3,61 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
+
+// SeriesData represents a series with its count/value
+type SeriesData struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// SystemStats holds system resource statistics
+type SystemStats struct {
+	CPUUsagePercent    float64 `json:"cpu_usage_percent"`
+	CPUFrequencyGHz    float64 `json:"cpu_frequency_ghz"`
+	MemoryUsagePercent float64 `json:"memory_usage_percent"`
+	MemoryUsedMB       float64 `json:"memory_used_mb"`
+	MemoryTotalMB      float64 `json:"memory_total_mb"`
+}
+
+// DiskStats holds disk usage statistics for a single disk
+type DiskStats struct {
+	Path              string  `json:"path"`
+	UsedGB            float64 `json:"used_gb"`
+	TotalGB           float64 `json:"total_gb"`
+	UsagePercent      float64 `json:"usage_percent"`
+	AvailableGB       float64 `json:"available_gb"`
+}
+
+// MonitoringData holds all monitoring dashboard data
+type MonitoringData struct {
+	UserData                 string
+	TagData                  string
+	RoleData                 string
+	ReadingData              string
+	PopularReads             string
+	PopularFavorites         string
+	PopularVotes             string
+	CommentsActivity         string
+	ReviewsActivity          string
+	TopCommented             string
+	TopReviewed              string
+	VoteDistribution         string
+	ControversialSeries      string
+	ChaptersDistribution     string
+	MostActiveReaders        string
+	ActivityByMediaType      string
+	NewMediaOverTime         string
+	NewChaptersOverTime      string
+	MediaGrowthByType        string
+	SystemStats              string
+	DiskStats                string
+}
 
 // Simple DB-backed counters for homepage statistics
 func GetTotalMedias() (int, error) {
@@ -357,4 +409,816 @@ func GetUserFavoriteGenres(userName string) ([]string, error) {
 	}
 
 	return genres, nil
+}
+
+// GetReadingActivityOverTime returns daily reading activity for the last N days
+func GetReadingActivityOverTime(days int) (map[string]int, error) {
+	query := `
+		SELECT DATE(created_at) as date, COUNT(*) as count
+		FROM reading_states
+		WHERE created_at >= datetime('now', '-' || ? || ' days')
+		GROUP BY DATE(created_at)
+		ORDER BY DATE(created_at)
+	`
+
+	rows, err := db.Query(query, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	activity := make(map[string]int)
+	for rows.Next() {
+		var date sql.NullString
+		var count int
+		if err := rows.Scan(&date, &count); err != nil {
+			return nil, err
+		}
+		if date.Valid {
+			activity[date.String] = count
+		}
+	}
+	return activity, nil
+}
+
+// GetTopPopularSeriesByReads returns the top N series by total chapters read
+func GetTopPopularSeriesByReads(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name, COUNT(rs.id) as read_count
+		FROM media m
+		INNER JOIN reading_states rs ON m.slug = rs.media_slug
+		GROUP BY m.slug, m.name
+		ORDER BY read_count DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetTopPopularSeriesByFavorites returns the top N series by favorite count
+func GetTopPopularSeriesByFavorites(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name, COUNT(f.id) as favorite_count
+		FROM media m
+		INNER JOIN favorites f ON m.slug = f.media_slug
+		GROUP BY m.slug, m.name
+		ORDER BY favorite_count DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetTopPopularSeriesByVotes returns the top N series by vote score
+func GetTopPopularSeriesByVotes(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name,
+			   COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) - 
+			   COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0) as vote_score
+		FROM media m
+		LEFT JOIN votes v ON m.slug = v.media_slug
+		GROUP BY m.slug, m.name
+		HAVING vote_score > 0
+		ORDER BY vote_score DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetCommentsActivityOverTime returns daily comment activity for the last N days
+// GetCommentsActivityOverTime returns daily comment activity for the last N days
+func GetCommentsActivityOverTime(days int) (map[string]int, error) {
+	query := `
+		SELECT DATE(datetime(created_at, 'unixepoch')) as date, COUNT(*) as count
+		FROM comments
+		WHERE created_at >= strftime('%s', 'now', '-' || ? || ' days')
+		GROUP BY DATE(datetime(created_at, 'unixepoch'))
+		ORDER BY DATE(datetime(created_at, 'unixepoch'))
+	`
+
+	rows, err := db.Query(query, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	activity := make(map[string]int)
+	for rows.Next() {
+		var date string
+		var count int
+		if err := rows.Scan(&date, &count); err != nil {
+			return nil, err
+		}
+		activity[date] = count
+	}
+	return activity, nil
+}
+
+// GetReviewsActivityOverTime returns daily review activity for the last N days
+// GetReviewsActivityOverTime returns daily review activity for the last N days
+func GetReviewsActivityOverTime(days int) (map[string]int, error) {
+	query := `
+		SELECT DATE(datetime(created_at, 'unixepoch')) as date, COUNT(*) as count
+		FROM reviews
+		WHERE created_at >= strftime('%s', 'now', '-' || ? || ' days')
+		GROUP BY DATE(datetime(created_at, 'unixepoch'))
+		ORDER BY DATE(datetime(created_at, 'unixepoch'))
+	`
+
+	rows, err := db.Query(query, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	activity := make(map[string]int)
+	for rows.Next() {
+		var date string
+		var count int
+		if err := rows.Scan(&date, &count); err != nil {
+			return nil, err
+		}
+		activity[date] = count
+	}
+	return activity, nil
+}
+
+// GetTopSeriesByComments returns the top N series by comment count
+func GetTopSeriesByComments(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name, COUNT(c.id) as comment_count
+		FROM media m
+		INNER JOIN comments c ON m.slug = c.media_slug
+		GROUP BY m.slug, m.name
+		ORDER BY comment_count DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetTopSeriesByReviews returns the top N series by review count
+func GetTopSeriesByReviews(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name, COUNT(r.id) as review_count
+		FROM media m
+		INNER JOIN reviews r ON m.slug = r.media_slug
+		GROUP BY m.slug, m.name
+		ORDER BY review_count DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetVoteDistribution returns total upvotes and downvotes across all content
+func GetVoteDistribution() (upvotes int, downvotes int, err error) {
+	query := `
+		SELECT 
+			COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END), 0) as upvotes,
+			COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END), 0) as downvotes
+		FROM votes
+	`
+	row := db.QueryRow(query)
+	if err := row.Scan(&upvotes, &downvotes); err != nil {
+		return 0, 0, err
+	}
+	return upvotes, downvotes, nil
+}
+
+// GetMostControversialSeries returns series with high vote variance (close to 50/50 split)
+// Only includes series with at least 5 total votes
+func GetMostControversialSeries(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT m.name,
+			   (COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) + 
+			    COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0)) as total_votes,
+			   ABS(COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) - 
+			   	   COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0)) as vote_diff
+		FROM media m
+		LEFT JOIN votes v ON m.slug = v.media_slug
+		GROUP BY m.slug, m.name
+		HAVING total_votes >= 5
+		ORDER BY (vote_diff * 1.0 / total_votes) ASC, total_votes DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var series []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		var totalVotes, voteDiff int
+		if err := rows.Scan(&data.Name, &totalVotes, &voteDiff); err != nil {
+			return nil, err
+		}
+		// Use the controversy score (lower diff/total means more controversial)
+		data.Count = int((float64(voteDiff) / float64(totalVotes)) * 100) // percentage difference
+		series = append(series, data)
+	}
+	return series, nil
+}
+
+// GetChaptersReadPerUserDistribution returns distribution of chapters read per user
+// Returns data suitable for a histogram showing how many users read X chapters
+func GetChaptersReadPerUserDistribution() (map[string]int, error) {
+	query := `
+		SELECT 
+			CASE
+				WHEN chapter_count = 0 THEN '0'
+				WHEN chapter_count BETWEEN 1 AND 5 THEN '1-5'
+				WHEN chapter_count BETWEEN 6 AND 10 THEN '6-10'
+				WHEN chapter_count BETWEEN 11 AND 20 THEN '11-20'
+				WHEN chapter_count BETWEEN 21 AND 50 THEN '21-50'
+				WHEN chapter_count BETWEEN 51 AND 100 THEN '51-100'
+				ELSE '100+'
+			END as range_bucket,
+			COUNT(*) as user_count
+		FROM (
+			SELECT user_name, COUNT(*) as chapter_count
+			FROM reading_states
+			GROUP BY user_name
+		)
+		GROUP BY range_bucket
+		ORDER BY CASE 
+			WHEN range_bucket = '0' THEN 0
+			WHEN range_bucket = '1-5' THEN 1
+			WHEN range_bucket = '6-10' THEN 2
+			WHEN range_bucket = '11-20' THEN 3
+			WHEN range_bucket = '21-50' THEN 4
+			WHEN range_bucket = '51-100' THEN 5
+			ELSE 6
+		END
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	distribution := make(map[string]int)
+	for rows.Next() {
+		var rangeBucket string
+		var count int
+		if err := rows.Scan(&rangeBucket, &count); err != nil {
+			return nil, err
+		}
+		distribution[rangeBucket] = count
+	}
+	return distribution, nil
+}
+
+// GetMostActiveReaders returns the top N most active readers
+func GetMostActiveReaders(limit int) ([]SeriesData, error) {
+	query := `
+		SELECT user_name, COUNT(*) as chapter_count
+		FROM reading_states
+		GROUP BY user_name
+		ORDER BY chapter_count DESC
+		LIMIT ?
+	`
+
+	rows, err := db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var readers []SeriesData
+	for rows.Next() {
+		var data SeriesData
+		if err := rows.Scan(&data.Name, &data.Count); err != nil {
+			return nil, err
+		}
+		readers = append(readers, data)
+	}
+	return readers, nil
+}
+
+// GetAverageChaptersReadPerUser returns the average chapters read per user
+func GetAverageChaptersReadPerUser() (float64, error) {
+	query := `
+		SELECT AVG(chapter_count)
+		FROM (
+			SELECT user_name, COUNT(*) as chapter_count
+			FROM reading_states
+			GROUP BY user_name
+		)
+	`
+
+	row := db.QueryRow(query)
+	var avg sql.NullFloat64
+	if err := row.Scan(&avg); err != nil {
+		return 0, err
+	}
+	if avg.Valid {
+		return avg.Float64, nil
+	}
+	return 0, nil
+}
+
+// GetUserActivityByMediaType returns chapter reads grouped by media type
+func GetUserActivityByMediaType() (map[string]int, error) {
+	query := `
+		SELECT m.type, COUNT(*) as read_count
+		FROM reading_states rs
+		INNER JOIN media m ON rs.media_slug = m.slug
+		WHERE m.type IS NOT NULL AND TRIM(m.type) != ''
+		GROUP BY m.type
+		ORDER BY read_count DESC
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	activityByType := make(map[string]int)
+	for rows.Next() {
+		var mediaType string
+		var count int
+		if err := rows.Scan(&mediaType, &count); err != nil {
+			return nil, err
+		}
+		activityByType[mediaType] = count
+	}
+	return activityByType, nil
+}
+
+// GetNewMediaOverTime returns daily new media added for the last N days
+func GetNewMediaOverTime(days int) (map[string]int, error) {
+	query := `
+		SELECT DATE(datetime(created_at, 'unixepoch')) as date, COUNT(*) as count
+		FROM media
+		WHERE created_at >= strftime('%s', 'now', '-' || ? || ' days')
+		GROUP BY DATE(datetime(created_at, 'unixepoch'))
+		ORDER BY DATE(datetime(created_at, 'unixepoch'))
+	`
+
+	rows, err := db.Query(query, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	newMedia := make(map[string]int)
+	for rows.Next() {
+		var date string
+		var count int
+		if err := rows.Scan(&date, &count); err != nil {
+			return nil, err
+		}
+		newMedia[date] = count
+	}
+	return newMedia, nil
+}
+
+// GetNewChaptersOverTime returns daily new chapters added for the last N days
+func GetNewChaptersOverTime(days int) (map[string]int, error) {
+	query := `
+		SELECT DATE(datetime(created_at, 'unixepoch')) as date, COUNT(*) as count
+		FROM chapters
+		WHERE created_at >= strftime('%s', 'now', '-' || ? || ' days')
+		GROUP BY DATE(datetime(created_at, 'unixepoch'))
+		ORDER BY DATE(datetime(created_at, 'unixepoch'))
+	`
+
+	rows, err := db.Query(query, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	newChapters := make(map[string]int)
+	for rows.Next() {
+		var date string
+		var count int
+		if err := rows.Scan(&date, &count); err != nil {
+			return nil, err
+		}
+		newChapters[date] = count
+	}
+	return newChapters, nil
+}
+
+// GetMediaGrowthByType returns the count of media grouped by type
+func GetMediaGrowthByType() ([]SeriesData, error) {
+	query := `
+		SELECT type, COUNT(*) as count
+		FROM media
+		WHERE type IS NOT NULL AND TRIM(type) != ''
+		GROUP BY type
+		ORDER BY count DESC
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []SeriesData
+	for rows.Next() {
+		var mediaType string
+		var count int
+		if err := rows.Scan(&mediaType, &count); err != nil {
+			return nil, err
+		}
+		result = append(result, SeriesData{Name: mediaType, Count: count})
+	}
+	return result, nil
+}
+
+// GetSystemStats retrieves CPU and memory usage statistics
+func GetSystemStats() (*SystemStats, error) {
+	stats := &SystemStats{}
+
+	// Get memory statistics
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	// Convert bytes to MB
+	stats.MemoryUsedMB = float64(m.Alloc) / 1024 / 1024
+	stats.MemoryTotalMB = float64(m.TotalAlloc) / 1024 / 1024
+
+	// Try to get system memory info from /proc/meminfo on Linux
+	if runtime.GOOS == "linux" {
+		if data, err := os.ReadFile("/proc/meminfo"); err == nil {
+			var memTotal, memAvailable uint64
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "MemTotal:") {
+					fmt.Sscanf(line, "MemTotal: %d", &memTotal)
+				}
+				if strings.HasPrefix(line, "MemAvailable:") {
+					fmt.Sscanf(line, "MemAvailable: %d", &memAvailable)
+				}
+			}
+			if memTotal > 0 {
+				memTotalMB := float64(memTotal) / 1024
+				memAvailableMB := float64(memAvailable) / 1024
+				memUsedMB := memTotalMB - memAvailableMB
+
+				stats.MemoryUsedMB = memUsedMB
+				stats.MemoryTotalMB = memTotalMB
+				stats.MemoryUsagePercent = (memUsedMB / memTotalMB) * 100
+			}
+		}
+
+		// Try to get CPU usage from /proc/stat
+		if cpuPercent, err := getCPUUsage(); err == nil {
+			stats.CPUUsagePercent = cpuPercent
+		}
+
+		// Try to get CPU frequency from /proc/cpuinfo
+		if cpuFreqGHz, err := getCPUFrequency(); err == nil {
+			stats.CPUFrequencyGHz = cpuFreqGHz
+		}
+	} else if runtime.GOOS == "darwin" {
+		// macOS specific memory info
+		// macOS typically has more memory, using Go's runtime stats
+		stats.MemoryUsagePercent = float64(m.Alloc) / float64(m.Sys) * 100
+		if stats.MemoryUsagePercent > 100 {
+			stats.MemoryUsagePercent = 100
+		}
+	} else {
+		// Fallback: use Go runtime stats
+		stats.MemoryUsagePercent = float64(m.Alloc) / float64(m.Sys) * 100
+		if stats.MemoryUsagePercent > 100 {
+			stats.MemoryUsagePercent = 100
+		}
+	}
+
+	return stats, nil
+}
+
+// getCPUUsage reads CPU usage from /proc/stat
+func getCPUUsage() (float64, error) {
+	// Read first snapshot
+	stat1, err := readCPUStats()
+	if err != nil {
+		return 0, err
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Read second snapshot
+	stat2, err := readCPUStats()
+	if err != nil {
+		return 0, err
+	}
+
+	// Calculate CPU usage
+	totalDiff := stat2.Total - stat1.Total
+	idleDiff := stat2.Idle - stat1.Idle
+
+	if totalDiff == 0 {
+		return 0, nil
+	}
+
+	cpuUsage := float64(totalDiff-idleDiff) / float64(totalDiff) * 100
+	if cpuUsage < 0 {
+		cpuUsage = 0
+	}
+	if cpuUsage > 100 {
+		cpuUsage = 100
+	}
+
+	return cpuUsage, nil
+}
+
+type cpuStats struct {
+	Total uint64
+	Idle  uint64
+}
+
+func readCPUStats() (*cpuStats, error) {
+	data, err := os.ReadFile("/proc/stat")
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("no cpu info found")
+	}
+
+	var user, nice, system, idle, iowait, irq, softirq uint64
+	cpuLine := lines[0]
+
+	_, err = fmt.Sscanf(cpuLine, "cpu %d %d %d %d %d %d %d",
+		&user, &nice, &system, &idle, &iowait, &irq, &softirq)
+
+	if err != nil {
+		return nil, err
+	}
+
+	total := user + nice + system + idle + iowait + irq + softirq
+
+	return &cpuStats{
+		Total: total,
+		Idle:  idle,
+	}, nil
+}
+
+// getCPUFrequency reads CPU frequency in GHz from /proc/cpuinfo
+func getCPUFrequency() (float64, error) {
+	data, err := os.ReadFile("/proc/cpuinfo")
+	if err != nil {
+		return 0, err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "cpu MHz") {
+			// Parse the MHz value
+			var cpuMHz float64
+			_, err := fmt.Sscanf(line, "cpu MHz : %f", &cpuMHz)
+			if err == nil && cpuMHz > 0 {
+				// Convert MHz to GHz
+				return cpuMHz / 1000.0, nil
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("CPU frequency not found")
+}
+
+// GetDiskStats retrieves disk usage statistics for main logical disks (not mount points)
+func GetDiskStats() ([]DiskStats, error) {
+	var disks []DiskStats
+
+	if runtime.GOOS == "linux" {
+		// Read mount points from /proc/mounts
+		data, err := os.ReadFile("/proc/mounts")
+		if err != nil {
+			return nil, err
+		}
+
+		lines := strings.Split(string(data), "\n")
+		seenDevices := make(map[string]bool)
+
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) < 2 {
+				continue
+			}
+
+			device := fields[0]
+			mountPoint := fields[1]
+
+			// Skip if we've already processed this device
+			if seenDevices[device] {
+				continue
+			}
+
+			// Skip pseudo filesystems and non-main mount points
+			if strings.HasPrefix(device, "tmpfs") || 
+				strings.HasPrefix(device, "devtmpfs") ||
+				strings.HasPrefix(device, "none") ||
+				strings.HasPrefix(device, "proc") ||
+				strings.HasPrefix(device, "sysfs") ||
+				strings.HasPrefix(device, "cgroup") ||
+				strings.HasPrefix(device, "sunrpc") {
+				continue
+			}
+
+			// Skip certain mount points
+			if strings.HasPrefix(mountPoint, "/sys") || 
+				strings.HasPrefix(mountPoint, "/proc") || 
+				strings.HasPrefix(mountPoint, "/dev") ||
+				strings.HasPrefix(mountPoint, "/run") ||
+				strings.HasPrefix(mountPoint, "/boot/efi") ||
+				strings.HasPrefix(mountPoint, "/snap") {
+				continue
+			}
+
+			seenDevices[device] = true
+
+			// Get disk stats using syscall.Statfs
+			var statfs syscall.Statfs_t
+			if err := syscall.Statfs(mountPoint, &statfs); err == nil {
+				// Calculate disk statistics
+				blockSize := uint64(statfs.Bsize)
+				totalBlocks := statfs.Blocks
+				availableBlocks := statfs.Bavail
+				usedBlocks := totalBlocks - availableBlocks
+
+				totalGB := float64(totalBlocks*blockSize) / (1024 * 1024 * 1024)
+				usedGB := float64(usedBlocks*blockSize) / (1024 * 1024 * 1024)
+				availableGB := float64(availableBlocks*blockSize) / (1024 * 1024 * 1024)
+
+				usagePercent := 0.0
+				if totalBlocks > 0 {
+					usagePercent = (float64(usedBlocks) / float64(totalBlocks)) * 100
+				}
+
+				// Use device name for display if available
+				displayName := device
+				if !strings.HasPrefix(device, "/dev/") {
+					displayName = mountPoint
+				}
+
+				disk := DiskStats{
+					Path:         displayName,
+					UsedGB:       usedGB,
+					TotalGB:      totalGB,
+					AvailableGB:  availableGB,
+					UsagePercent: usagePercent,
+				}
+				disks = append(disks, disk)
+			}
+		}
+	} else if runtime.GOOS == "darwin" {
+		// macOS support
+		if stat, err := getDiskUsageMacOS("/"); err == nil {
+			disks = append(disks, stat)
+		}
+	} else {
+		// Other Unix-like systems
+		if stat, err := getDiskUsageUnix("/"); err == nil {
+			disks = append(disks, stat)
+		}
+	}
+
+	return disks, nil
+}
+
+// getDiskUsageMacOS retrieves disk usage for macOS
+func getDiskUsageMacOS(path string) (DiskStats, error) {
+	stats := DiskStats{Path: path}
+	
+	var statfs syscall.Statfs_t
+	if err := syscall.Statfs(path, &statfs); err != nil {
+		return stats, err
+	}
+
+	blockSize := uint64(statfs.Bsize)
+	totalBlocks := statfs.Blocks
+	availableBlocks := statfs.Bavail
+	usedBlocks := totalBlocks - availableBlocks
+
+	totalGB := float64(totalBlocks*blockSize) / (1024 * 1024 * 1024)
+	usedGB := float64(usedBlocks*blockSize) / (1024 * 1024 * 1024)
+	availableGB := float64(availableBlocks*blockSize) / (1024 * 1024 * 1024)
+
+	usagePercent := 0.0
+	if totalBlocks > 0 {
+		usagePercent = (float64(usedBlocks) / float64(totalBlocks)) * 100
+	}
+
+	stats.UsedGB = usedGB
+	stats.TotalGB = totalGB
+	stats.AvailableGB = availableGB
+	stats.UsagePercent = usagePercent
+
+	return stats, nil
+}
+
+// getDiskUsageUnix is a fallback for other Unix-like systems
+func getDiskUsageUnix(path string) (DiskStats, error) {
+	stats := DiskStats{Path: path}
+
+	var statfs syscall.Statfs_t
+	if err := syscall.Statfs(path, &statfs); err != nil {
+		return stats, err
+	}
+
+	blockSize := uint64(statfs.Bsize)
+	totalBlocks := statfs.Blocks
+	availableBlocks := statfs.Bavail
+	usedBlocks := totalBlocks - availableBlocks
+
+	totalGB := float64(totalBlocks*blockSize) / (1024 * 1024 * 1024)
+	usedGB := float64(usedBlocks*blockSize) / (1024 * 1024 * 1024)
+	availableGB := float64(availableBlocks*blockSize) / (1024 * 1024 * 1024)
+
+	usagePercent := 0.0
+	if totalBlocks > 0 {
+		usagePercent = (float64(usedBlocks) / float64(totalBlocks)) * 100
+	}
+
+	stats.UsedGB = usedGB
+	stats.TotalGB = totalGB
+	stats.AvailableGB = availableGB
+	stats.UsagePercent = usagePercent
+
+	return stats, nil
 }

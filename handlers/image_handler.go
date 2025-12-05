@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
@@ -59,6 +60,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 	}
 
 	// Load the image
+	start := time.Now()
 	file, err := os.Open(fullPath)
 	if err != nil {
 		// If loading fails, serve original file
@@ -96,6 +98,14 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		return c.SendFile(fullPath)
 	}
+
+	// Record load time
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
+	if ext == "" {
+		ext = "unknown"
+	}
+	log.Debugf("Recording image load time for %s: %v", ext, time.Since(start).Seconds())
+	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
 	// Encode all images as JPEG for better performance and consistent compression
 	var buf bytes.Buffer
@@ -181,6 +191,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 	}
 
 	// Load the image
+	start := time.Now()
 	file, err := os.Open(fullPath)
 	if err != nil {
 		// If loading fails, serve original file
@@ -218,6 +229,14 @@ func handleImageRequest(c *fiber.Ctx) error {
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		return c.SendFile(fullPath)
 	}
+
+	// Record load time
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
+	if ext == "" {
+		ext = "unknown"
+	}
+	log.Debugf("Recording image load time for %s: %v", ext, time.Since(start).Seconds())
+	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
 	// Encode all images as JPEG for better performance and consistent compression
 	var buf bytes.Buffer
@@ -257,6 +276,7 @@ func ImageHandler(c *fiber.Ctx) error {
 	// log.Infof("ImageHandler: request from IP %s, User-Agent: %s, Referer: %s", c.IP(), c.Get("User-Agent"), c.Get("Referer"))
 	
 	token := c.Query("token")
+	log.Debugf("ImageHandler: received token %s", token)
 	
 	if token == "" {
 		log.Errorf("ImageHandler: token parameter is required")
@@ -372,6 +392,7 @@ func ImageHandler(c *fiber.Ctx) error {
 
 // serveComicPage serves a comic page image
 func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, page int) error {
+	start := time.Now()
 	// log.Infof("serveComicPage: serving page %d for media %s chapter %s", page, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	// For single-file media (cbz/cbr), media.Path is the file itself
@@ -388,6 +409,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 
 	// If the path is a directory, serve images from within it
 	if fileInfo.IsDir() {
+		imageLoadDuration.WithLabelValues("dir").Observe(time.Since(start).Seconds())
 		return serveImageFromDirectoryImageHandler(c, filePath, page)
 	}
 
@@ -398,8 +420,11 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".jpeg"),
 		strings.HasSuffix(lowerFileName, ".png"), strings.HasSuffix(lowerFileName, ".webp"),
 		strings.HasSuffix(lowerFileName, ".gif"):
+		ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(filePath), "."))
+		imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 		return c.SendFile(filePath)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
+		imageLoadDuration.WithLabelValues("cbr").Observe(time.Since(start).Seconds())
 		imageBytes, err := ServeComicArchiveFromRAR(filePath, page, 95) // Default quality
 		if err != nil {
 			return handleErrorWithStatus(c, fmt.Errorf("failed to serve archive: %w", err), fiber.StatusInternalServerError)
@@ -407,6 +432,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		c.Set("Content-Type", "image/jpeg")
 		return c.Send(imageBytes)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
+		imageLoadDuration.WithLabelValues("cbz").Observe(time.Since(start).Seconds())
 		imageBytes, err := ServeComicArchiveFromZIP(filePath, page, 95) // Default quality
 		if err != nil {
 			return handleErrorWithStatus(c, fmt.Errorf("failed to serve archive: %w", err), fiber.StatusInternalServerError)
@@ -420,6 +446,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 
 // serveLightNovelAsset serves a light novel asset from an EPUB file
 func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, assetPath string) error {
+	start := time.Now()
 	log.Infof("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	chapterFilePath := media.Path
@@ -503,11 +530,14 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 		log.Errorf("Error writing asset %s to response: %v", assetPath, err)
 		return handleErrorWithStatus(c, fmt.Errorf("error writing asset: %w", err), fiber.StatusInternalServerError)
 	}
+	metricExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(assetPath), "."))
+	imageLoadDuration.WithLabelValues(metricExt).Observe(time.Since(start).Seconds())
 	return nil
 }
 
 // serveImageFromDirectoryImageHandler handles serving individual image files from a chapter directory.
 func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int) error {
+	start := time.Now()
 	imagePath, err := GetImagesFromDirectory(dirPath, page)
 	if err != nil {
 		return handleErrorWithStatus(c, fmt.Errorf("image not found: %w", err), fiber.StatusNotFound)
@@ -520,9 +550,14 @@ func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int)
 	// Process image for serving
 	imageBytes, err := ProcessImageForServing(imagePath, quality)
 	c.Set("Content-Type", "image/jpeg")
+	var ext string
 	if err != nil {
 		// If encoding fails, serve original
+		ext = strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
+		imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 		return c.SendFile(imagePath)
 	}
+	ext = strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), ".")) // Use original file extension for metrics
+	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 	return c.Send(imageBytes)
 }
