@@ -287,7 +287,7 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 			}
 		}
 		
-		log.Infof("Indexed series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+		log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
 		return slug, nil
 	}
 
@@ -536,7 +536,7 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 				if err := models.UpdateMedia(existingMedia); err != nil {
 					log.Errorf("Failed to update media timestamp for '%s': %s", slug, err)
 				}
-				log.Infof("Indexed series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+				log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
 			}
 			return slug, nil
 		} else {
