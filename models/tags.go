@@ -221,3 +221,26 @@ func GetTagsForUserDownvoted(username string) ([]string, error) {
     }
     return tags, nil
 }
+
+// GetTagUsageStats returns a map of tag names to their usage count across all media
+func GetTagUsageStats() (map[string]int, error) {
+    query := `SELECT tag, COUNT(*) as count FROM media_tags GROUP BY tag ORDER BY count DESC`
+    rows, err := db.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    stats := make(map[string]int)
+    for rows.Next() {
+        var tag string
+        var count int
+        if err := rows.Scan(&tag, &count); err != nil {
+            return nil, err
+        }
+        if tag != "" {
+            stats[tag] = count
+        }
+    }
+    return stats, nil
+}
