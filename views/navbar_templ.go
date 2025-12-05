@@ -69,7 +69,7 @@ func Navbar(userRole string, currentPath string) templ.Component {
 			}
 		}
 		if userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/banned-ips\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li><li><a href=\"/admin/backups\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/config\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/banned-ips\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li><li><a href=\"/admin/monitoring\"><uk-icon icon=\"Binoculars\" class=\"icon-pad\"></uk-icon>Monitoring</a></li><li><a href=\"/admin/backups\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -171,7 +171,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(path))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 183, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 184, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(icon)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 184, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 185, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -197,7 +197,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 185, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 186, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -244,7 +244,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			var templ_7745c5c3_Var9 templ.SafeURL
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", m.Slug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 194, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -257,7 +257,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("View %s", m.Name))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 193, Col: 132}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 194, Col: 132}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -278,7 +278,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 199, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -291,7 +291,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(m.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 198, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 199, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -304,7 +304,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters", m.FileCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 200, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/navbar.templ`, Line: 201, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
