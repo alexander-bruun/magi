@@ -39,7 +39,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 			return templ_7745c5c3_Err
 		}
 		if len(userCollections) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-8\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"text-gray-400 mb-4\"></uk-icon><h2 class=\"text-xl font-semibold mb-2\">No collections yet</h2><p class=\"text-gray-600 mb-4\">Create your first collection to organize your favorite series.</p><a href=\"/collections/create\" class=\"uk-btn uk-btn-primary\" hx-get=\"/collections/create\" hx-target=\"#content\" hx-push-url=\"true\">Create Collection</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-8\"><div class=\"flex items-center justify-center mb-4\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"text-gray-400 mr-4\"></uk-icon><h2 class=\"text-xl font-semibold\">No collections yet</h2></div><p class=\"text-gray-600 mb-4\">Create your first collection to organize your favorite series.</p><a href=\"/collections/create\" class=\"uk-btn uk-btn-primary\" hx-get=\"/collections/create\" hx-target=\"#content\" hx-push-url=\"true\">Create Collection</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -65,7 +65,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(collection.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 37, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 39, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
@@ -83,7 +83,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					var templ_7745c5c3_Var3 string
 					templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(collection.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 39, Col: 71}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 41, Col: 71}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 					if templ_7745c5c3_Err != nil {
@@ -101,7 +101,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(collection.MediaCount)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 41, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 43, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -119,7 +119,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/collections/remove", mediaSlug))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 45, Col: 79}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 47, Col: 79}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -132,13 +132,13 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", collection.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 46, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 48, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-danger uk-btn-small\"><uk-icon icon=\"x\"></uk-icon> Remove</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-destructive uk-btn-small\"><uk-icon icon=\"x\"></uk-icon> Remove</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -150,7 +150,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/collections/add", mediaSlug))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 53, Col: 76}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 55, Col: 76}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -163,7 +163,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					var templ_7745c5c3_Var8 string
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", collection.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 54, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/media_collections.templ`, Line: 56, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {

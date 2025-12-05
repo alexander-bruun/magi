@@ -12,8 +12,10 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 
 			if len(userCollections) == 0 {
 				<div class="text-center py-8">
-					<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
-					<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
+					<div class="flex items-center justify-center mb-4">
+						<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+						<h2 class="text-xl font-semibold">No collections yet</h2>
+					</div>
 					<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
 					<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
 						Create Collection
@@ -44,7 +46,7 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 							if inCollection {
 								<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
 									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
-									<button type="submit" class="uk-btn uk-btn-danger uk-btn-small">
+									<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small">
 										<uk-icon icon="x"></uk-icon>
 										Remove
 									</button>
