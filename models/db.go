@@ -44,15 +44,29 @@ func InitializeWithMigration(cacheDirectory string, applyMigrationsFlag bool) er
 		return err
 	}
 
-	// Enable WAL mode for better concurrency
+	// Configure connection pool for 10k concurrent users
+	// MaxOpenConns: Scale to handle peak load with room for background tasks
+	// MaxIdleConns: Keep warm connections ready for new requests
+	db.SetMaxOpenConns(100)      // Scale for ~10k concurrent users
+	db.SetMaxIdleConns(25)       // Keep warm connections ready
+	db.SetConnMaxLifetime(30 * time.Minute) // Recycle connections periodically
+
+	// Enable WAL mode for better concurrency and performance
 	if _, err = db.Exec("PRAGMA journal_mode = WAL"); err != nil {
 		return fmt.Errorf("failed to enable WAL mode: %w", err)
 	}
 	if _, err = db.Exec("PRAGMA synchronous = NORMAL"); err != nil {
 		return fmt.Errorf("failed to set synchronous mode: %w", err)
 	}
-	if _, err = db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+	if _, err = db.Exec("PRAGMA busy_timeout = 10000"); err != nil {
 		return fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+	// Additional optimizations for concurrent access
+	if _, err = db.Exec("PRAGMA temp_store = MEMORY"); err != nil {
+		return fmt.Errorf("failed to set temp store: %w", err)
+	}
+	if _, err = db.Exec("PRAGMA query_only = FALSE"); err != nil {
+		return fmt.Errorf("failed to disable query_only: %w", err)
 	}
 
 	// Initialize schema_migrations table if it doesn't exist

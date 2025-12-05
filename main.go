@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 	"embed"
 	"net/http"
 
@@ -129,21 +130,27 @@ func main() {
 				log.Warnf("Failed to abort orphaned running logs: %v", err)
 			}
 
-			// Create a new engine
-			engine := html.NewFileSystem(http.FS(viewsfs), ".html")
+		// Create a new engine
+		engine := html.NewFileSystem(http.FS(viewsfs), ".html")
 
-			// Custom config
-			app := fiber.New(fiber.Config{
-				Prefork:       false,
-				CaseSensitive: true,
-				StrictRouting: true,
-				ServerHeader:  "Magi",
-				AppName:       fmt.Sprintf("Magi %s", Version),
-				Views:         engine,
-				ViewsLayout:   "base",
-			})
-
-			// Start API in its own goroutine
+		// Custom config optimized for 10k concurrent users
+		app := fiber.New(fiber.Config{
+			Prefork:            false, // Use single process (no prefork with SQLite)
+			CaseSensitive:      true,
+			StrictRouting:      true,
+			ServerHeader:       "Magi",
+			AppName:            fmt.Sprintf("Magi %s", Version),
+			Views:              engine,
+			ViewsLayout:        "base",
+			BodyLimit:          50 * 1024 * 1024,
+			Concurrency:        262144,
+			ReadBufferSize:     16 * 1024,
+			WriteBufferSize:    16 * 1024,
+			ReadTimeout:        30 * time.Second,
+			WriteTimeout:       30 * time.Second,
+			IdleTimeout:        5 * time.Minute,
+			DisableKeepalive:   false,
+		})			// Start API in its own goroutine
 			go handlers.Initialize(app, cacheDirectory, backupDirectory, port)
 
 			// Start Indexer in its own goroutine

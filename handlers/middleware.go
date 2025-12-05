@@ -30,10 +30,18 @@ const (
 	cleanupInterval     = 300 // Cleanup old entries every 5 minutes
 )
 
-// Rate limiting tracking
+// Rate limiting tracking with memory management
+// Using fixed-size ring buffer per IP to prevent unbounded memory growth
+type RateLimitTracker struct {
+	Requests [10]time.Time // Fixed-size ring buffer (last 10 requests)
+	Index    int            // Current write position
+	Count    int            // Actual number of requests tracked
+}
+
 var (
-	requestCounts = make(map[string][]time.Time)
+	requestCounts = make(map[string]*RateLimitTracker)
 	requestsMu    sync.RWMutex
+	requestCleanupTicker *time.Ticker
 )
 
 // IPTracker tracks access patterns for an IP
@@ -46,7 +54,111 @@ type IPTracker struct {
 var (
 	ipTrackers = make(map[string]*IPTracker)
 	trackersMu sync.RWMutex
+	trackerCleanupTicker *time.Ticker
+	maxTrackedIPs = 50000 // Prevent unbounded memory growth
 )
+
+func init() {
+	// Start periodic cleanup of old rate limit entries to prevent memory bloat
+	requestCleanupTicker = time.NewTicker(1 * time.Minute)
+	trackerCleanupTicker = time.NewTicker(5 * time.Minute)
+	
+	go func() {
+		for range requestCleanupTicker.C {
+			cleanupOldRequestCounts()
+		}
+	}()
+	
+	go func() {
+		for range trackerCleanupTicker.C {
+			cleanupOldIPTrackers()
+		}
+	}()
+}
+
+// cleanupOldRequestCounts removes expired rate limit entries (now simple with ring buffers)
+func cleanupOldRequestCounts() {
+	requestsMu.Lock()
+	defer requestsMu.Unlock()
+	
+	now := time.Now()
+	inactiveThreshold := now.Add(-10 * time.Minute) // Remove trackers inactive for 10 minutes
+	
+	for ip, tracker := range requestCounts {
+		// Check if any requests are recent
+		hasRecentRequest := false
+		for i := 0; i < tracker.Count; i++ {
+			if tracker.Requests[i].After(inactiveThreshold) {
+				hasRecentRequest = true
+				break
+			}
+		}
+		
+		// Remove tracker if completely inactive
+		if !hasRecentRequest {
+			delete(requestCounts, ip)
+		}
+	}
+}
+
+// cleanupOldIPTrackers removes stale bot detection entries and prevents unbounded memory growth
+func cleanupOldIPTrackers() {
+	trackersMu.Lock()
+	defer trackersMu.Unlock()
+	
+	now := time.Now()
+	cleanupThreshold := now.Add(-30 * time.Minute) // Remove trackers inactive for 30+ minutes
+	
+	for ip, tracker := range ipTrackers {
+		// Clean old accesses from this tracker
+		var validSeriesAccesses []time.Time
+		for _, t := range tracker.SeriesAccesses {
+			if t.After(cleanupThreshold) {
+				validSeriesAccesses = append(validSeriesAccesses, t)
+			}
+		}
+		
+		var validChapterAccesses []time.Time
+		for _, t := range tracker.ChapterAccesses {
+			if t.After(cleanupThreshold) {
+				validChapterAccesses = append(validChapterAccesses, t)
+			}
+		}
+		
+		// Remove tracker if no recent activity
+		if len(validSeriesAccesses) == 0 && len(validChapterAccesses) == 0 {
+			delete(ipTrackers, ip)
+		} else {
+			ipTrackers[ip].SeriesAccesses = validSeriesAccesses
+			ipTrackers[ip].ChapterAccesses = validChapterAccesses
+			ipTrackers[ip].LastCleanup = now
+		}
+	}
+	
+	// If still too many trackers, clean most aggressively
+	if len(ipTrackers) > maxTrackedIPs {
+		// Force aggressive cleanup: remove oldest 20% of trackers
+		type trackerAge struct {
+			ip       string
+			lastSeen time.Time
+		}
+		var ages []trackerAge
+		for ip, tracker := range ipTrackers {
+			ages = append(ages, trackerAge{ip, tracker.LastCleanup})
+		}
+		// Simple cleanup: remove IPs with oldest cleanup time
+		for i := 0; i < len(ipTrackers)/5; i++ {
+			oldestIdx := 0
+			for j := 1; j < len(ages); j++ {
+				if ages[j].lastSeen.Before(ages[oldestIdx].lastSeen) {
+					oldestIdx = j
+				}
+			}
+			delete(ipTrackers, ages[oldestIdx].ip)
+			ages = append(ages[:oldestIdx], ages[oldestIdx+1:]...)
+		}
+	}
+}
 
 // AuthMiddleware handles session token validation
 func AuthMiddleware(requiredRole string) fiber.Handler {
@@ -166,39 +278,32 @@ func RateLimitingMiddleware() fiber.Handler {
 		now := time.Now()
 		
 		requestsMu.Lock()
-		times, exists := requestCounts[ip]
+		tracker, exists := requestCounts[ip]
 		if !exists {
-			times = []time.Time{}
+			tracker = &RateLimitTracker{}
+			requestCounts[ip] = tracker
 		}
 		
-		// Clean old requests outside the window
+		// Count valid requests within the window (using ring buffer)
 		windowStart := now.Add(-time.Duration(cfg.RateLimitWindow) * time.Second)
-		var validTimes []time.Time
-		for _, t := range times {
-			if t.After(windowStart) {
-				validTimes = append(validTimes, t)
+		validCount := 0
+		oldestValid := now
+		
+		for i := 0; i < tracker.Count; i++ {
+			if tracker.Requests[i].After(windowStart) {
+				validCount++
+				if tracker.Requests[i].Before(oldestValid) {
+					oldestValid = tracker.Requests[i]
+				}
 			}
 		}
 		
 		// Check if limit exceeded
-		if len(validTimes) >= cfg.RateLimitRequests {
+		if validCount >= cfg.RateLimitRequests {
 			requestsMu.Unlock()
 			log.Infof("Rate limit exceeded for IP: %s", ip)
 			
-			// Calculate time until reset
-			var resetTime time.Time
-			if len(validTimes) > 0 {
-				// Find the oldest request
-				oldest := validTimes[0]
-				for _, t := range validTimes {
-					if t.Before(oldest) {
-						oldest = t
-					}
-				}
-				resetTime = oldest.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
-			} else {
-				resetTime = now.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
-			}
+			resetTime := oldestValid.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
 			timeRemaining := resetTime.Sub(now)
 			seconds := int(timeRemaining.Seconds())
 			if seconds < 0 {
@@ -209,11 +314,14 @@ func RateLimitingMiddleware() fiber.Handler {
 			return HandleView(c, views.RateLimit(seconds))
 		}
 		
-		// Add current request
-		validTimes = append(validTimes, now)
-		requestCounts[ip] = validTimes
-		requestsMu.Unlock()
+		// Add current request to ring buffer (fixed size)
+		tracker.Requests[tracker.Index] = now
+		tracker.Index = (tracker.Index + 1) % len(tracker.Requests)
+		if tracker.Count < len(tracker.Requests) {
+			tracker.Count++
+		}
 		
+		requestsMu.Unlock()
 		return c.Next()
 	}
 }
