@@ -130,7 +130,7 @@ func ErrorWithStatus(statusCode int, message string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</p><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\" class=\"inline-flex text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-primary-900 my-4\">Back to Homepage</a></div></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</p><a href=\"/\" hx-get=\"/\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-primary uk-btn-lg\">Back to Homepage</a></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
