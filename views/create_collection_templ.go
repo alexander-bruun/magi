@@ -37,4 +37,33 @@ func CreateCollection() templ.Component {
 	})
 }
 
+func CreateCollectionModal() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var2 == nil {
+			templ_7745c5c3_Var2 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"uk-modal-header\"><h2 class=\"uk-modal-title\">Create New Collection</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><form hx-post=\"/collections/create\" hx-target=\"#create-collection-modal\" hx-swap=\"none\" class=\"uk-modal-body\"><div class=\"mb-4\"><label for=\"modal-name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"modal-name\" name=\"name\" class=\"uk-input w-full\" placeholder=\"e.g., Batman Universe, Shonen Jump\" required></div><div class=\"mb-6\"><label for=\"modal-description\" class=\"block text-sm font-medium text-gray-700 mb-2\">Description</label> <textarea id=\"modal-description\" name=\"description\" rows=\"4\" class=\"uk-textarea w-full\" placeholder=\"Describe what this collection is about...\"></textarea></div><div class=\"flex justify-end space-x-3\"><button type=\"button\" class=\"uk-btn uk-btn-default\" uk-toggle=\"target: #create-collection-modal; mode: hide\">Cancel</button> <button type=\"submit\" class=\"uk-btn uk-btn-primary\"><uk-icon icon=\"plus\"></uk-icon> Create Collection</button></div></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
 var _ = templruntime.GeneratedTemplate
