@@ -9,25 +9,47 @@ templ Collections(collections []models.Collection) {
 	<div class="container mx-auto px-4 py-8">
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="text-3xl font-bold">Collections</h1>
-			<a href="/collections/create" class="uk-btn uk-btn-primary">
+			<button type="button" class="uk-btn uk-btn-primary" uk-toggle="target: #create-collection-modal" hx-get="/collections/create/modal" hx-target="#create-collection-modal-content" hx-swap="innerHTML">
 				<uk-icon icon="plus"></uk-icon>
 				Create Collection
-			</a>
+			</button>
 		</div>
 
 		if len(collections) == 0 {
 			<div class="text-center py-12">
-				<uk-icon icon="folder" ratio="3" class="text-gray-400 mb-4"></uk-icon>
-				<h2 class="text-xl font-semibold mb-2">No collections yet</h2>
+				<div class="flex items-center justify-center mb-4">
+					<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+					<h2 class="text-xl font-semibold">No collections yet</h2>
+				</div>
 				<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
-				<a href="/collections/create" class="uk-btn uk-btn-primary">
+				<button type="button" class="uk-btn uk-btn-primary" uk-toggle="target: #create-collection-modal" hx-get="/collections/create/modal" hx-target="#create-collection-modal-content" hx-swap="innerHTML">
 					Create Collection
-				</a>
+				</button>
 			</div>
 		} else {
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 				for _, collection := range collections {
 					<div class="uk-card uk-card-default uk-card-body hover:shadow-lg transition-shadow">
+						<!-- Top 4 Media Posters Grid (2x2) -->
+						if len(collection.TopMedia) > 0 {
+							<div class="mb-3">
+								<div class="grid grid-cols-2 gap-0 mb-3">
+									for i, media := range collection.TopMedia {
+										if i < 4 {
+											<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="block">
+												<img
+													src={ media.CoverArtURL + "?size=small" }
+													alt={ media.Name }
+													class="w-full h-auto block"
+												/>
+											</a>
+										}
+									}
+								</div>
+							</div>
+						}
+
+						<!-- Collection Header -->
 						<div class="flex items-start justify-between mb-3">
 							<h3 class="uk-card-title text-lg font-semibold truncate">
 								<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="hover:text-blue-600">
@@ -53,4 +75,30 @@ templ Collections(collections []models.Collection) {
 			</div>
 		}
 	</div>
+
+	<!-- Create Collection Modal -->
+	<div id="create-collection-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<div id="create-collection-modal-content"></div>
+		</div>
+	</div>
+
+	<script>
+		// Handle collection creation success
+		document.addEventListener('collectionCreated', function(evt) {
+			// Show notification
+			if (typeof showNotification === 'function') {
+				showNotification(evt.detail.message, evt.detail.status);
+			}
+
+			// Close modal
+			const modal = document.getElementById('create-collection-modal');
+			if (modal && typeof UIkit !== 'undefined') {
+				UIkit.modal(modal).hide();
+			}
+
+			// Refresh the page to show the new collection
+			window.location.reload();
+		});
+	</script>
 }

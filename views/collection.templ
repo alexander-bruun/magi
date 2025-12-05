@@ -24,10 +24,10 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 
 			if canEdit {
 				<div class="flex space-x-2 ml-4">
-					<a href={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } class="uk-btn uk-btn-default uk-btn-small">
+					<button type="button" class="uk-btn uk-btn-default uk-btn-small" uk-toggle="target: #edit-collection-modal" hx-get={ templ.URL(fmt.Sprintf("/collections/%d/edit/modal", collection.ID)) } hx-target="#edit-collection-modal-content" hx-swap="innerHTML">
 						<uk-icon icon="pencil"></uk-icon>
 						Edit
-					</a>
+					</button>
 					<button class="uk-btn uk-btn-destructive uk-btn-small" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/delete", collection.ID)) } hx-confirm="Are you sure you want to delete this collection? This action cannot be undone." hx-target="#content" hx-push-url="true">
 						<uk-icon icon="trash"></uk-icon>
 						Delete
@@ -38,35 +38,65 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 
 		if len(collection.Media) == 0 {
 			<div class="text-center py-12">
-				<uk-icon icon="book" ratio="3" class="text-gray-400 mb-4"></uk-icon>
-				<h2 class="text-xl font-semibold mb-2">No series in this collection</h2>
+				<div class="flex items-center justify-center mb-4">
+					<uk-icon icon="book" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+					<h2 class="text-xl font-semibold">No series in this collection</h2>
+				</div>
 				if canEdit {
 					<p class="text-gray-600 mb-4">Add some series to get started.</p>
 					<p class="text-sm text-gray-500">Series can be added from individual series pages.</p>
 				}
 			</div>
 		} else {
-			if canEdit {
-				<div class="mb-6">
-					<p class="text-sm text-gray-600">Remove series by clicking the X button on each card.</p>
-				</div>
-			}
-
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, media := range collection.Media {
-					<div class="relative group">
-						<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block">
-							@MediaCard(media, 150, 200, true, true, "title")
-						</a>
-
-						if canEdit {
-							<button class="absolute top-2 right-2 uk-btn uk-btn-destructive uk-btn-small opacity-0 group-hover:opacity-100 transition-opacity" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/remove-media/%s", collection.ID, media.Slug)) } hx-target="closest .relative" hx-swap="outerHTML">
-								<uk-icon icon="x"></uk-icon>
-							</button>
-						}
+					<div class="uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full">
+						<div class="flex-1 overflow-hidden uk-position-relative" style="aspect-ratio: 150/200;">
+							<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block w-full h-full">
+								<img src={ media.CoverArtURL + "?size=small" } alt={ media.Name } class="w-full h-full object-cover rounded-t-lg"/>
+							</a>
+						</div>
+						<div class="p-3">
+							if canEdit {
+								<button class="absolute -top-2 -right-2 uk-btn uk-btn-destructive btn-circular" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/remove-media/%s", collection.ID, media.Slug)) } hx-target="closest .uk-card" hx-swap="outerHTML" title="Remove from collection">
+									<uk-icon icon="x" ratio="0.8"></uk-icon>
+								</button>
+							}
+							<h4 class="uk-card-title uk-text-center uk-text-small uk-margin-remove" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+								<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="uk-link-text">
+									{ media.Name }
+								</a>
+							</h4>
+						</div>
 					</div>
 				}
 			</div>
 		}
 	</div>
+
+	<!-- Edit Collection Modal -->
+	<div id="edit-collection-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<div id="edit-collection-modal-content"></div>
+		</div>
+	</div>
+
+	<script>
+		// Handle collection update success
+		document.addEventListener('collectionUpdated', function(evt) {
+			// Show notification
+			if (typeof showNotification === 'function') {
+				showNotification(evt.detail.message, evt.detail.status);
+			}
+
+			// Close modal
+			const modal = document.getElementById('edit-collection-modal');
+			if (modal && typeof UIkit !== 'undefined') {
+				UIkit.modal(modal).hide();
+			}
+
+			// Refresh the page to show the updated collection
+			window.location.reload();
+		});
+	</script>
 }

@@ -16,6 +16,7 @@ type Collection struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	MediaCount  int       `json:"media_count,omitempty"`
+	TopMedia    []Media   `json:"top_media,omitempty"`
 }
 
 // CollectionWithMedia represents a collection with its associated media
@@ -122,6 +123,14 @@ func GetCollectionsByUser(username string) ([]Collection, error) {
 
 		collection.CreatedAt = time.Unix(createdAt, 0)
 		collection.UpdatedAt = time.Unix(updatedAt, 0)
+
+		// Get top 4 media for poster display
+		topMedia, err := GetTopMediaInCollection(collection.ID)
+		if err != nil {
+			log.Debugf("Failed to get top media for collection %d: %v", collection.ID, err)
+		}
+		collection.TopMedia = topMedia
+
 		collections = append(collections, collection)
 	}
 
@@ -163,6 +172,14 @@ func GetAllCollections() ([]Collection, error) {
 
 		collection.CreatedAt = time.Unix(createdAt, 0)
 		collection.UpdatedAt = time.Unix(updatedAt, 0)
+
+		// Get top 4 media for poster display
+		topMedia, err := GetTopMediaInCollection(collection.ID)
+		if err != nil {
+			log.Debugf("Failed to get top media for collection %d: %v", collection.ID, err)
+		}
+		collection.TopMedia = topMedia
+
 		collections = append(collections, collection)
 	}
 
@@ -282,6 +299,62 @@ func GetCollectionMedia(collectionID int) ([]Media, error) {
 	return media, nil
 }
 
+// GetTopMediaInCollection retrieves the top 4 most popular media in a collection (by vote score)
+func GetTopMediaInCollection(collectionID int) ([]Media, error) {
+	query := `
+		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count,
+			COALESCE(read_counts.read_count, 0) as read_count,
+			COALESCE(vote_scores.score, 0) as vote_score,
+			m.created_at, m.updated_at
+		FROM media m
+		INNER JOIN collection_media cm ON m.slug = cm.media_slug
+		LEFT JOIN (
+			SELECT media_slug, COUNT(*) as read_count
+			FROM reading_states
+			GROUP BY media_slug
+		) read_counts ON m.slug = read_counts.media_slug
+		LEFT JOIN (
+			SELECT media_slug,
+				CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0
+				THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10)
+				ELSE 0 END as score
+			FROM votes
+			GROUP BY media_slug
+		) vote_scores ON m.slug = vote_scores.media_slug
+		WHERE cm.collection_id = ?
+		ORDER BY vote_scores.score DESC, cm.added_at DESC
+		LIMIT 4`
+
+	rows, err := db.Query(query, collectionID)
+	if err != nil {
+		log.Error("Failed to get top media in collection:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var media []Media
+	for rows.Next() {
+		var m Media
+		var createdAt, updatedAt int64
+		var voteScore int
+		err := rows.Scan(
+			&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage,
+			&m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL,
+			&m.Path, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
+		if err != nil {
+			log.Error("Failed to scan media:", err)
+			return nil, err
+		}
+
+		m.CreatedAt = time.Unix(createdAt, 0)
+		m.UpdatedAt = time.Unix(updatedAt, 0)
+		m.VoteScore = voteScore
+		media = append(media, m)
+	}
+
+	return media, nil
+}
+
 // IsMediaInCollection checks if media is in a collection
 func IsMediaInCollection(collectionID int, mediaSlug string) (bool, error) {
 	var count int
@@ -295,4 +368,59 @@ func IsMediaInCollection(collectionID int, mediaSlug string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+// BatchCheckMediaInCollections checks if a media is in multiple collections (batch operation)
+// Returns a map of collection IDs that contain the media
+func BatchCheckMediaInCollections(collectionIDs []int, mediaSlug string) (map[int]bool, error) {
+	result := make(map[int]bool)
+	
+	if len(collectionIDs) == 0 {
+		return result, nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := ""
+	for i := range collectionIDs {
+		if i > 0 {
+			placeholders += ","
+		}
+		placeholders += "?"
+	}
+
+	// Convert collection IDs to interface slice for query
+	args := make([]interface{}, len(collectionIDs)+1)
+	for i, id := range collectionIDs {
+		args[i] = id
+	}
+	args[len(collectionIDs)] = mediaSlug
+
+	// Initialize all collection IDs as false
+	for _, id := range collectionIDs {
+		result[id] = false
+	}
+
+	// Query all matching collection_media in one go
+	query := `
+		SELECT DISTINCT collection_id FROM collection_media
+		WHERE collection_id IN (` + placeholders + `) AND media_slug = ?`
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Error("Failed to batch check media in collections:", err)
+		return result, err
+	}
+	defer rows.Close()
+
+	// Mark collections that contain this media
+	for rows.Next() {
+		var collectionID int
+		if err := rows.Scan(&collectionID); err != nil {
+			log.Error("Failed to scan collection ID:", err)
+			continue
+		}
+		result[collectionID] = true
+	}
+
+	return result, nil
 }

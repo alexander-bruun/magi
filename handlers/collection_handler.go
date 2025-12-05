@@ -71,6 +71,11 @@ func HandleCreateCollectionForm(c *fiber.Ctx) error {
 	return HandleView(c, views.CreateCollection())
 }
 
+// HandleCreateCollectionModal displays the create collection form as a modal
+func HandleCreateCollectionModal(c *fiber.Ctx) error {
+	return HandleView(c, views.CreateCollectionModal())
+}
+
 // HandleCreateCollection processes collection creation
 func HandleCreateCollection(c *fiber.Ctx) error {
 	userName := GetUserContext(c)
@@ -88,6 +93,12 @@ func HandleCreateCollection(c *fiber.Ctx) error {
 	collection, err := models.CreateCollection(name, description, userName)
 	if err != nil {
 		return handleError(c, err)
+	}
+
+	// Return success response for HTMX (modal submissions)
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Trigger", `{"collectionCreated": {"message": "Collection created successfully", "status": "success"}}`)
+		return c.SendString("")
 	}
 
 	return c.Redirect("/collections/" + strconv.Itoa(collection.ID))
@@ -115,6 +126,30 @@ func HandleEditCollectionForm(c *fiber.Ctx) error {
 	}
 
 	return HandleView(c, views.EditCollection(*collection))
+}
+
+// HandleEditCollectionModal displays the edit collection form as a modal
+func HandleEditCollectionModal(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(400).SendString("Invalid collection ID")
+	}
+
+	collection, err := models.GetCollectionByID(id)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if collection == nil {
+		return c.Status(404).SendString("Collection not found")
+	}
+
+	userName := GetUserContext(c)
+	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
+		return fiber.ErrForbidden
+	}
+
+	return HandleView(c, views.EditCollectionModal(*collection))
 }
 
 // HandleUpdateCollection processes collection updates
@@ -148,6 +183,12 @@ func HandleUpdateCollection(c *fiber.Ctx) error {
 	err = models.UpdateCollection(id, name, description)
 	if err != nil {
 		return handleError(c, err)
+	}
+
+	// Return success response for HTMX (modal submissions)
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Trigger", `{"collectionUpdated": {"message": "Collection updated successfully", "status": "success"}}`)
+		return c.SendString("")
 	}
 
 	return c.Redirect("/collections/" + strconv.Itoa(id))
@@ -247,7 +288,7 @@ func HandleRemoveMediaFromCollection(c *fiber.Ctx) error {
 		return handleError(c, err)
 	}
 
-	return c.SendString("Media removed from collection")
+	return c.SendString("")
 }
 
 // HandleGetMediaCollections gets collections that contain a specific media

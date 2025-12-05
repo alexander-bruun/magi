@@ -1209,7 +1209,6 @@ main.site-main::-webkit-scrollbar-thumb:hover {
   gap: 0.25rem;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
   background: hsl(var(--background));
   border: 1px solid hsl(var(--border) / 0.3);
   border-radius: 9999px;
