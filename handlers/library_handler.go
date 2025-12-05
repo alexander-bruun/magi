@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
@@ -416,5 +417,37 @@ func getSubdirectories(path string) ([]string, error) {
 	}
 
 	return subdirs, nil
+}
+
+// FileEntry represents a file or directory entry
+type FileEntry struct {
+	Name  string
+	IsDir bool
+	Path  string
+}
+
+// HandleBrowseDirectory returns a list of files and directories for the file explorer
+func HandleBrowseDirectory(c *fiber.Ctx) error {
+	path := c.Query("path", "/")
+	if path == "" {
+		path = "/"
+	}
+
+	// For security, we might want to restrict to certain directories, but for now allow all
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var fileEntries []FileEntry
+	for _, entry := range entries {
+		fileEntries = append(fileEntries, FileEntry{
+			Name:  entry.Name(),
+			IsDir: entry.IsDir(),
+			Path:  filepath.Join(path, entry.Name()),
+		})
+	}
+
+	return c.JSON(fileEntries)
 }
 
