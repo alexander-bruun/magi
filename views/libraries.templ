@@ -127,7 +127,7 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 				hx-post="/admin/libraries"
 				hx-target="#libraries-table"
 				hx-trigger="submit"
-				hx-on:htmx:after-request="this.reset()"
+				hx-on:htmx:afterRequest="event.detail.xhr.status === 200 && this.reset()"
 			>
 				@FormContent(library, editing)
 			</form>
@@ -226,7 +226,7 @@ templ FolderInputs(folders []string, editing bool) {
 templ FolderRow(folderValue string, isFirst bool, canRemove bool, index int) {
 	<div class="folder-row mb-4 flex items-center">
 		<input id={ fmt.Sprintf("folder-input-%d", index) } class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
-		<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn" data-target-input={ fmt.Sprintf("folder-input-%d", index) } onclick="openFileExplorer(this)">
+		<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn" onclick="openFileExplorer(this.previousElementSibling)">
 			<uk-icon icon="FolderOpen"></uk-icon>
 		</button>
 		if isFirst {

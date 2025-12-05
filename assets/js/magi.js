@@ -1853,13 +1853,17 @@
   // ============================================================================
   // FILE EXPLORER MODULE
   // ============================================================================
+  
+  // Global variable to track the current target input for file explorer
+  window.currentFileExplorerTarget = null;
 
   /**
    * Opens the file explorer modal for selecting a folder path
-   * @param {HTMLElement} button - The browse button that was clicked
+   * @param {HTMLElement} inputElement - The input element to update with the selected path
    */
-  window.openFileExplorer = function(button) {
-    const targetInputID = button.getAttribute('data-target-input');
+  window.openFileExplorer = function(inputElement) {
+    // Store the target input element directly
+    window.currentFileExplorerTarget = inputElement;
     
     // Hide the select button initially
     const selectBtn = document.getElementById('select-folder-btn');
@@ -1881,7 +1885,7 @@
         
         entries.forEach(entry => {
           if (entry.IsDir) {
-            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
+            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
           } else {
             html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
           }
@@ -1894,7 +1898,7 @@
         // Update the select button
         const selectBtn = document.getElementById('select-folder-btn');
         selectBtn.style.display = 'block';
-        selectBtn.onclick = () => selectFolder('/', targetInputID);
+        selectBtn.onclick = () => selectFolder('/');
         
         // Show the modal
         UIkit.modal(modal).show();
@@ -1907,9 +1911,8 @@
   /**
    * Navigates to a folder in the file explorer
    * @param {string} path - The path to navigate to
-   * @param {string} targetInputID - The ID of the input to update
    */
-  window.navigateToFolder = function(path, targetInputID) {
+  window.navigateToFolder = function(path) {
     fetch('/admin/libraries/helpers/browse?path=' + encodeURIComponent(path))
       .then(response => response.json())
       .then(entries => {
@@ -1921,14 +1924,14 @@
         // Add parent directory link if not at root
         if (path !== '/') {
           const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-          html += `<li><a href="#" onclick="navigateToFolder('${parentPath}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="ArrowLeft"></uk-icon> ..</span></a></li>`;
+          html += `<li><a href="#" onclick="navigateToFolder('${parentPath}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="ArrowLeft"></uk-icon> ..</span></a></li>`;
         }
         
         html += `<li class="uk-text-muted">Current path: ${path}</li>`;
         
         entries.forEach(entry => {
           if (entry.IsDir) {
-            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
+            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
           } else {
             html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
           }
@@ -1941,7 +1944,7 @@
         // Update the select button
         const selectBtn = document.getElementById('select-folder-btn');
         selectBtn.style.display = 'block';
-        selectBtn.onclick = () => selectFolder(path, targetInputID);
+        selectBtn.onclick = () => selectFolder(path);
       })
       .catch(error => {
         console.error('Error loading directory:', error);
@@ -1951,13 +1954,15 @@
   /**
    * Selects the current folder and closes the modal
    * @param {string} path - The selected path
-   * @param {string} targetInputID - The ID of the input to update
    */
-  window.selectFolder = function(path, targetInputID) {
-    const input = document.getElementById(targetInputID);
-    if (input) {
-      input.value = path;
+  window.selectFolder = function(path) {
+    const inputElement = window.currentFileExplorerTarget;
+    if (inputElement) {
+      inputElement.value = path;
     }
+    
+    // Clear the global target
+    window.currentFileExplorerTarget = null;
     
     // Hide the select button
     const selectBtn = document.getElementById('select-folder-btn');

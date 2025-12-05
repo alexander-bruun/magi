@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
+	"github.com/robfig/cron/v3"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -24,6 +26,50 @@ type LibraryFormData struct {
 	Folders          []string `form:"folders"`
 	MetadataProvider string   `form:"metadata_provider"`
 }
+
+// validateLibraryFormData validates the parsed library form data
+func validateLibraryFormData(formData LibraryFormData) error {
+	// Validate cron expression
+	if formData.Cron != "" {
+		_, err := cron.ParseStandard(formData.Cron)
+		if err != nil {
+			return fmt.Errorf("Invalid cron expression (must be 5 fields: minute hour day month weekday)")
+		}
+	}
+
+	// Validate folders exist
+	for _, folder := range formData.Folders {
+		if folder == "" {
+			continue // Skip empty folders
+		}
+		info, err := os.Stat(folder)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("Folder does not exist: %s", folder)
+			}
+			return fmt.Errorf("Cannot access folder %s: %v", folder, err)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("Path is not a directory: %s", folder)
+		}
+	}
+
+	return nil
+}
+
+// sendValidationError sends a validation error via HX-Trigger with showNotification
+func sendValidationError(c *fiber.Ctx, message string) error {
+	errorResponse := map[string]interface{}{
+		"showNotification": map[string]string{
+			"message": message,
+			"status":  "destructive",
+		},
+	}
+	jsonBytes, _ := json.Marshal(errorResponse)
+	c.Set("HX-Trigger", string(jsonBytes))
+	return c.Status(fiber.StatusUnprocessableEntity).SendString("")
+}
+
 
 // CreateLibrary creates a new library and returns all libraries
 func CreateLibrary(library models.Library) ([]models.Library, error) {
@@ -68,6 +114,11 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	var formData LibraryFormData
 	if err := c.BodyParser(&formData); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	// Validate the form data
+	if err := validateLibraryFormData(formData); err != nil {
+		return sendValidationError(c, err.Error())
 	}
 
 	// Convert form data to Library model
@@ -141,6 +192,11 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	var formData LibraryFormData
 	if err := c.BodyParser(&formData); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	// Validate the form data
+	if err := validateLibraryFormData(formData); err != nil {
+		return sendValidationError(c, err.Error())
 	}
 
 	// Convert form data to Library model

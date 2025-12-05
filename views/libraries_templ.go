@@ -246,7 +246,7 @@ func LibraryForm(library models.Library, action string, editing bool) templ.Comp
 		}
 		ctx = templ.ClearChildren(ctx)
 		if action == "post" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div id=\"library-form\"><form id=\"library-form\" hx-post=\"/admin/libraries\" hx-target=\"#libraries-table\" hx-trigger=\"submit\" hx-on:htmx:after-request=\"this.reset()\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div id=\"library-form\"><form id=\"library-form\" hx-post=\"/admin/libraries\" hx-target=\"#libraries-table\" hx-trigger=\"submit\" hx-on:htmx:afterRequest=\"event.detail.xhr.status === 200 && this.reset()\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -541,35 +541,22 @@ func FolderRow(folderValue string, isFirst bool, canRemove bool, index int) temp
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\"> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn\" data-target-input=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("folder-input-%d", index))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 229, Col: 137}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" onclick=\"openFileExplorer(this)\"><uk-icon icon=\"FolderOpen\"></uk-icon></button> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\"> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn\" onclick=\"openFileExplorer(this.previousElementSibling)\"><uk-icon icon=\"FolderOpen\"></uk-icon></button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isFirst {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10\" hx-get=\"/admin/libraries/helpers/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><uk-icon icon=\"Plus\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10\" hx-get=\"/admin/libraries/helpers/add-folder\" hx-target=\"#folders-container\" hx-swap=\"beforeend\"><uk-icon icon=\"Plus\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if canRemove {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<button type=\"button\" class=\"uk-btn uk-btn-destructive ml-2 h-10 w-10\" hx-get=\"/admin/libraries/helpers/remove-folder\" hx-target=\"closest .folder-row\" hx-swap=\"outerHTML\"><uk-icon icon=\"X\"></uk-icon></button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<button type=\"button\" class=\"uk-btn uk-btn-destructive ml-2 h-10 w-10\" hx-get=\"/admin/libraries/helpers/remove-folder\" hx-target=\"closest .folder-row\" hx-swap=\"outerHTML\"><uk-icon icon=\"X\"></uk-icon></button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -594,9 +581,9 @@ func Folder(folderValue string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var22 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var22 == nil {
-			templ_7745c5c3_Var22 = templ.NopComponent
+		templ_7745c5c3_Var21 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var21 == nil {
+			templ_7745c5c3_Var21 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = FolderRow(folderValue, false, true, 0).Render(ctx, templ_7745c5c3_Buffer)
