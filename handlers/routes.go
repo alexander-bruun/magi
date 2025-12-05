@@ -85,7 +85,8 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// ========================================
 	app.Get("/ready", HandleReady)
 	app.Get("/health", HandleHealth)
-	app.Get("/metrics", HandleMetrics)
+	app.Get("/metrics", AuthMiddleware("admin"), HandleMetrics)
+	app.Get("/api/metrics/json", AuthMiddleware("admin"), HandleMetricsJSON)
 
 	app.Options("/*", func(c *fiber.Ctx) error {
 		c.Set("Access-Control-Allow-Origin", "*")
@@ -167,6 +168,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// ========================================
 	app.Get("/collections", HandleCollections)
 	app.Get("/collections/create", AuthMiddleware("reader"), HandleCreateCollectionForm)
+	app.Get("/collections/create/modal", AuthMiddleware("reader"), HandleCreateCollectionModal)
 	app.Post("/collections/create", AuthMiddleware("reader"), HandleCreateCollection)
 
 	collections := app.Group("/collections/:id", func(c *fiber.Ctx) error {
@@ -179,6 +181,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 
 	collections.Get("", HandleCollection)
 	collections.Get("/edit", AuthMiddleware("reader"), HandleEditCollectionForm)
+	collections.Get("/edit/modal", AuthMiddleware("reader"), HandleEditCollectionModal)
 	collections.Post("/edit", AuthMiddleware("reader"), HandleUpdateCollection)
 	collections.Post("/delete", AuthMiddleware("reader"), HandleDeleteCollection)
 	collections.Post("/add-media", AuthMiddleware("reader"), HandleAddMediaToCollection)
@@ -242,6 +245,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	media.Get("/:media/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
 	media.Post("/:media/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
 	media.Post("/:media/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
+	media.Post("/:media/metadata/reindex", AuthMiddleware("moderator"), HandleReindexChapters)
 	media.Post("/:media/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataMedia)
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("moderator"), HandleDeleteMedia)
 
@@ -317,6 +321,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	// Permissions UI
 	// ========================================
 	app.Get("/admin/permissions", AuthMiddleware("moderator"), HandlePermissionsManagement)
+	app.Get("/admin/monitoring", AuthMiddleware("moderator"), HandleMonitoring)
 
 	// ========================================
 	// Permission Management API
@@ -354,6 +359,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	libraries.Get("/helpers/add-folder", HandleAddFolder)
 	libraries.Get("/helpers/remove-folder", HandleRemoveFolder)
 	libraries.Get("/helpers/cancel-edit", HandleCancelEdit)
+	libraries.Get("/helpers/browse", HandleBrowseDirectory)
 
 	// ========================================
 	// Scraper Routes
