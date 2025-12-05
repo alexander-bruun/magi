@@ -1850,4 +1850,186 @@
   window.LogViewer = LogViewer;
   window.smoothScroll = SmoothScroll;
 
+  // ============================================================================
+  // FILE EXPLORER MODULE
+  // ============================================================================
+
+  /**
+   * Opens the file explorer modal for selecting a folder path
+   * @param {HTMLElement} button - The browse button that was clicked
+   */
+  window.openFileExplorer = function(button) {
+    const targetInputID = button.getAttribute('data-target-input');
+    
+    // Hide the select button initially
+    const selectBtn = document.getElementById('select-folder-btn');
+    if (selectBtn) {
+      selectBtn.style.display = 'none';
+    }
+    
+    // Load initial directory listing
+    fetch('/admin/libraries/helpers/browse?path=/')
+      .then(response => response.json())
+      .then(entries => {
+        // Update the modal content
+        const modal = document.getElementById('file-explorer-modal');
+        const content = modal.querySelector('#file-explorer-content');
+        
+        // Create the content HTML
+        let html = '<ul class="uk-list uk-list-divider">';
+        html += '<li class="uk-text-muted">Current path: /</li>';
+        
+        entries.forEach(entry => {
+          if (entry.IsDir) {
+            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
+          } else {
+            html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
+          }
+        });
+        
+        html += '</ul>';
+        
+        content.innerHTML = html;
+        
+        // Update the select button
+        const selectBtn = document.getElementById('select-folder-btn');
+        selectBtn.style.display = 'block';
+        selectBtn.onclick = () => selectFolder('/', targetInputID);
+        
+        // Show the modal
+        UIkit.modal(modal).show();
+      })
+      .catch(error => {
+        console.error('Error loading directory:', error);
+      });
+  };
+
+  /**
+   * Navigates to a folder in the file explorer
+   * @param {string} path - The path to navigate to
+   * @param {string} targetInputID - The ID of the input to update
+   */
+  window.navigateToFolder = function(path, targetInputID) {
+    fetch('/admin/libraries/helpers/browse?path=' + encodeURIComponent(path))
+      .then(response => response.json())
+      .then(entries => {
+        const modal = document.getElementById('file-explorer-modal');
+        const content = modal.querySelector('#file-explorer-content');
+        
+        let html = '<ul class="uk-list uk-list-divider">';
+        
+        // Add parent directory link if not at root
+        if (path !== '/') {
+          const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+          html += `<li><a href="#" onclick="navigateToFolder('${parentPath}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="ArrowLeft"></uk-icon> ..</span></a></li>`;
+        }
+        
+        html += `<li class="uk-text-muted">Current path: ${path}</li>`;
+        
+        entries.forEach(entry => {
+          if (entry.IsDir) {
+            html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}', '${targetInputID}')" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
+          } else {
+            html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
+          }
+        });
+        
+        html += '</ul>';
+        
+        content.innerHTML = html;
+        
+        // Update the select button
+        const selectBtn = document.getElementById('select-folder-btn');
+        selectBtn.style.display = 'block';
+        selectBtn.onclick = () => selectFolder(path, targetInputID);
+      })
+      .catch(error => {
+        console.error('Error loading directory:', error);
+      });
+  };
+
+  /**
+   * Selects the current folder and closes the modal
+   * @param {string} path - The selected path
+   * @param {string} targetInputID - The ID of the input to update
+   */
+  window.selectFolder = function(path, targetInputID) {
+    const input = document.getElementById(targetInputID);
+    if (input) {
+      input.value = path;
+    }
+    
+    // Hide the select button
+    const selectBtn = document.getElementById('select-folder-btn');
+    if (selectBtn) {
+      selectBtn.style.display = 'none';
+    }
+    
+    // Close the modal
+    UIkit.modal(document.getElementById('file-explorer-modal')).hide();
+  };
+
+  // ============================================================================
+  // SLIDER DRAG PREVENTION MODULE
+  // ============================================================================
+  
+  /**
+   * Prevents clicks on slider items when they were dragged instead of clicked.
+   * This fixes the issue where dragging the slider navigates to unintended series.
+   */
+  const SliderDragPrevention = (function() {
+    let isDragging = false;
+    let dragThreshold = 5; // pixels
+    let startX, startY;
+    
+    function init() {
+      // Track mousedown on slider
+      document.addEventListener('mousedown', function(e) {
+        if (e.target.closest('[uk-slider]')) {
+          startX = e.clientX;
+          startY = e.clientY;
+          isDragging = false;
+        }
+      });
+      
+      // Track mousemove to detect drag
+      document.addEventListener('mousemove', function(e) {
+        if (startX !== undefined && !isDragging) {
+          const deltaX = Math.abs(e.clientX - startX);
+          const deltaY = Math.abs(e.clientY - startY);
+          if (deltaX > dragThreshold || deltaY > dragThreshold) {
+            isDragging = true;
+          }
+        }
+      });
+      
+      // Reset on mouseup
+      document.addEventListener('mouseup', function() {
+        startX = undefined;
+        startY = undefined;
+        // Keep isDragging true briefly to prevent the click
+        setTimeout(function() {
+          isDragging = false;
+        }, 50); // Increased timeout
+      });
+      
+      // Prevent clicks on slider items if we detected a drag
+      document.addEventListener('click', function(e) {
+        if (isDragging && e.target.closest('[uk-slider] a')) {
+          e.preventDefault();
+          e.stopPropagation();
+          isDragging = false;
+          return false;
+        }
+      }, true); // Use capture phase
+    }
+    
+    return {
+      init: init
+    };
+  })();
+  
+  // Initialize slider drag prevention
+  SliderDragPrevention.init();
+
 })(window);

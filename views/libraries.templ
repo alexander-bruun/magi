@@ -29,6 +29,7 @@ templ Libraries() {
 			</div>
 		</div>
 	</div>
+	@FileExplorer()
 }
 
 templ LibraryTable(libraries []models.Library) {
@@ -202,10 +203,10 @@ templ FormContent(library models.Library, editing bool) {
 templ FolderInputs(folders []string, editing bool) {
 	<div id="folders-container">
 		if len(folders) == 0 {
-			@FolderRow("", true, false)
+			@FolderRow("", true, false, 0)
 		} else {
 			for index, folder := range folders {
-				@FolderRow(folder, index == 0, true)
+				@FolderRow(folder, index == 0, true, index)
 			}
 		}
 	</div>
@@ -222,9 +223,12 @@ templ FolderInputs(folders []string, editing bool) {
 }
 
 // FolderRow renders a single folder input row with add/remove button
-templ FolderRow(folderValue string, isFirst bool, canRemove bool) {
+templ FolderRow(folderValue string, isFirst bool, canRemove bool, index int) {
 	<div class="folder-row mb-4 flex items-center">
-		<input class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
+		<input id={ fmt.Sprintf("folder-input-%d", index) } class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
+		<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn" data-target-input={ fmt.Sprintf("folder-input-%d", index) } onclick="openFileExplorer(this)">
+			<uk-icon icon="FolderOpen"></uk-icon>
+		</button>
 		if isFirst {
 			<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" hx-get="/admin/libraries/helpers/add-folder" hx-target="#folders-container" hx-swap="beforeend">
 				<uk-icon icon="Plus"></uk-icon>
@@ -239,5 +243,5 @@ templ FolderRow(folderValue string, isFirst bool, canRemove bool) {
 
 // Folder component kept for backward compatibility with HTMX responses
 templ Folder(folderValue string) {
-	@FolderRow(folderValue, false, true)
+	@FolderRow(folderValue, false, true, 0)
 }

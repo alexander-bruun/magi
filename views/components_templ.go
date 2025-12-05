@@ -1532,4 +1532,41 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 	})
 }
 
+// FileEntry represents a file or directory entry for the file explorer
+type FileEntry struct {
+	Name  string
+	IsDir bool
+	Path  string
+}
+
+// FileExplorer renders a modal file browser for selecting directories
+func FileExplorer() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var73 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var73 == nil {
+			templ_7745c5c3_Var73 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" style=\"max-height: 400px; overflow-y: auto;\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex uk-flex-between uk-margin-top\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary\" type=\"button\" style=\"display: none;\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
 var _ = templruntime.GeneratedTemplate
