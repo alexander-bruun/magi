@@ -13,11 +13,12 @@ import (
 
 // User represents the user table schema
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
-	Banned   bool   `json:"banned"`
-	Avatar   string `json:"avatar,omitempty"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
+	Role      string    `json:"role"`
+	Banned    bool      `json:"banned"`
+	Avatar    string    `json:"avatar,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // BannedIP represents a banned IP address
@@ -31,10 +32,31 @@ type BannedIP struct {
 // roleHierarchy defines the order of roles from lowest to highest.
 var roleHierarchy = []string{"reader", "premium", "moderator", "admin"}
 
+// GetUserRoleDistribution returns a map of role names to user counts
+func GetUserRoleDistribution() (map[string]int, error) {
+	query := `SELECT role, COUNT(*) as count FROM users GROUP BY role ORDER BY count DESC`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	distribution := make(map[string]int)
+	for rows.Next() {
+		var role string
+		var count int
+		if err := rows.Scan(&role, &count); err != nil {
+			return nil, err
+		}
+		distribution[role] = count
+	}
+	return distribution, nil
+}
+
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
 	query := `
-	SELECT username, password, role, banned, avatar
+	SELECT username, password, role, banned, avatar, created_at
 	FROM users
 	`
 
@@ -47,7 +69,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar); err != nil {
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
