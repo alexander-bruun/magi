@@ -329,21 +329,21 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 			newMedia.Type = "webtoon"
 			log.Debugf("Detected webtoon for '%s' based on image aspect ratio", slug)
 		} else {
-			newMedia.Type = "media"
-			log.Debugf("Defaulting to media type for '%s' (no metadata type and not detected as webtoon)", slug)
+			newMedia.Type = "manga"
+			log.Debugf("Defaulting to manga type for '%s' (no metadata type and not detected as webtoon)", slug)
 		}
 	}
 
 	if err := models.CreateMedia(newMedia); err != nil {
 
-		log.Errorf("Failed to create media: %s (%s)", slug, err.Error())
+		log.Errorf("Failed to create series: %s (%s)", slug, err.Error())
 		return "", err
 	}
 
-	// Start async image processing after media is created
+	// Start async image processing after series is created
 	go func() {
 		var finalImageURL string
-		log.Debugf("Starting async image processing for media '%s'", slug)
+		log.Debugf("Starting async image processing for series '%s'", slug)
 		if meta != nil {
 			coverURL := provider.GetCoverImageURL(meta)
 			if coverURL != "" {
@@ -423,6 +423,22 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 				log.Errorf("Media '%s' exists but not found", slug)
 				return "", err
 			}
+
+			// Regenerate posters if missing
+			if existingMedia.CoverArtURL != "" {
+				postersDir := filepath.Join(CacheDataDirectory, "posters")
+				smallPath := filepath.Join(postersDir, fmt.Sprintf("%s_small.jpg", slug))
+				if _, err := os.Stat(smallPath); os.IsNotExist(err) {
+					log.Debugf("Poster files missing for existing media '%s', regenerating from cover_art_url", slug)
+					if url, err := DownloadAndCacheImage(slug, existingMedia.CoverArtURL); err == nil {
+						existingMedia.CoverArtURL = url
+						if err := models.UpdateMedia(existingMedia); err != nil {
+							log.Errorf("Failed to update cover URL for existing media '%s': %s", slug, err)
+						}
+					}
+				}
+			}
+
 			// Handle as existing: update path if needed, etc.
 			// Detect if this is a different folder being added to an existing media
 			if existingMedia.Path != "" && existingMedia.Path != absolutePath {
@@ -771,6 +787,27 @@ func IndexChapters(slug, path string, dryRun bool) (int, int, []string, int, err
 		for _, c := range existing {
 			existingByFile[c.File] = c
 		}
+
+		// If the media path doesn't exist, delete all chapters
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			log.Warnf("Media path '%s' does not exist, deleting all chapters for media '%s'", path, slug)
+			tx, txErr := models.BeginTx()
+			if txErr != nil {
+				return 0, 0, nil, 0, fmt.Errorf("failed to begin transaction: %w", txErr)
+			}
+			defer tx.Rollback()
+			for _, chapter := range existing {
+				if delErr := models.DeleteChapterTx(tx, slug, chapter.Slug); delErr != nil {
+					log.Errorf("Failed to delete chapter '%s' for missing media '%s': %v", chapter.Slug, slug, delErr)
+				} else {
+					deletedCount++
+				}
+			}
+			if commitErr := tx.Commit(); commitErr != nil {
+				return 0, 0, nil, 0, fmt.Errorf("failed to commit transaction: %w", commitErr)
+			}
+			return 0, deletedCount, nil, 0, nil
+		}
 	}
 
 	// Check if path is a single file (for .cbz/.cbr files)
@@ -792,32 +829,21 @@ func IndexChapters(slug, path string, dryRun bool) (int, int, []string, int, err
 		chapterSlug := utils.Sluggify(chapterName)
 		presentMap[chapterSlug] = presentInfo{Rel: fileName, Name: chapterName}
 	} else {
-		// Build map of files currently present (slug -> relPath). This is a
-		// full scan but cheaper than many DB ops; we only do it when file_count
-		// mismatch was observed.
-		err = filepath.WalkDir(path, func(p string, d fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			if d.IsDir() {
-				return nil
-			}
-			name := d.Name()
+		// Read the top-level entries (files and directories)
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return 0, 0, nil, 0, fmt.Errorf("failed to read directory '%s': %w", path, err)
+		}
+
+		for _, entry := range entries {
+			name := entry.Name()
 			cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
 			if !containsNumber(cleanedName) {
-				return nil
+				continue
 			}
 			chapterName := utils.ExtractChapterName(name)
 			chapterSlug := utils.Sluggify(chapterName)
-			relPath, err := filepath.Rel(path, p)
-			if err != nil {
-				relPath = name
-			}
-			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(relPath), Name: chapterName}
-			return nil
-		});
-		if err != nil {
-			return 0, 0, nil, 0, err
+			presentMap[chapterSlug] = presentInfo{Rel: filepath.ToSlash(name), Name: chapterName}
 		}
 	}
 
