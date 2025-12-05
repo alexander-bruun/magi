@@ -488,79 +488,6 @@
         updateModeButtons();
     };
 
-    const renderWebtoonMode = () => {
-        if (!containerElement) return;
-        containerElement.className = 'reader-webtoon-container';
-        containerElement.innerHTML = '';
-        images.forEach(src => {
-            const img = document.createElement('img');
-            img.setAttribute('data-src', src);
-            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
-            img.className = 'reader-image lazy';
-            img.setAttribute('loading', 'lazy');
-            img.alt = 'Manga page';
-            const wrapper = document.createElement('div');
-            wrapper.className = 'webtoon-image-wrapper';
-            wrapper.appendChild(img);
-            containerElement.appendChild(wrapper);
-        });
-        attachImageListeners();
-        observeLazyImages();
-    };
-
-    const renderSinglePageMode = () => {
-        if (!containerElement) return;
-        containerElement.className = 'reader-single-page-container';
-        containerElement.innerHTML = '';
-        if (images[currentPage]) {
-            const img = document.createElement('img');
-            img.setAttribute('data-src', images[currentPage]);
-            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
-            img.className = 'reader-image lazy reader-single-image';
-            img.setAttribute('loading', 'lazy');
-            img.alt = 'Manga page';
-            const wrapper = document.createElement('div');
-            wrapper.className = 'single-page-wrapper';
-            wrapper.appendChild(img);
-            containerElement.appendChild(wrapper);
-        }
-        attachImageListeners();
-        observeLazyImages();
-    };
-
-    const renderSideBySideMode = () => {
-        if (!containerElement) return;
-        const hasTwo = images[currentPage * 2] && images[currentPage * 2 + 1];
-        containerElement.className = 'reader-side-by-side ' + (hasTwo ? 'two' : 'single');
-        containerElement.innerHTML = '';
-        if (images[currentPage * 2]) {
-            const div = document.createElement('div');
-            div.className = 'reader-page-left';
-            const img = document.createElement('img');
-            img.setAttribute('data-src', images[currentPage * 2]);
-            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
-            img.className = 'reader-image lazy';
-            img.setAttribute('loading', 'lazy');
-            img.alt = 'Manga page';
-            div.appendChild(img);
-            containerElement.appendChild(div);
-        }
-        if (images[currentPage * 2 + 1]) {
-            const div = document.createElement('div');
-            div.className = 'reader-page-right';
-            const img = document.createElement('img');
-            img.setAttribute('data-src', images[currentPage * 2 + 1]);
-            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // transparent placeholder
-            img.className = 'reader-image lazy';
-            img.setAttribute('loading', 'lazy');
-            img.alt = 'Manga page';
-            div.appendChild(img);
-            containerElement.appendChild(div);
-        }
-        attachImageListeners();
-        observeLazyImages();
-    };
-
     const updatePageCounter = () => {
         const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
         const counter = (currentPage + 1) + ' / ' + maxPages;
@@ -572,12 +499,59 @@
 
     const updateModeVisibility = () => {
         if (isLightNovel) return;
+        const allImgs = containerElement.querySelectorAll('.reader-image');
+        const wrappers = containerElement.querySelectorAll('.webtoon-image-wrapper');
+        allImgs.forEach(img => {
+            img.style.display = 'none';
+            img.style.maxWidth = '';
+            img.style.height = '';
+            img.style.width = '';
+        });
+        wrappers.forEach(wrapper => wrapper.style.display = 'none');
         if (currentMode === MODES.WEBTOON) {
-            renderWebtoonMode();
+            containerElement.className = 'flex flex-col items-center justify-center p-0 sm:p-4 w-full mx-auto';
+            containerElement.style.maxWidth = '1200px';
+            containerElement.style.display = '';
+            containerElement.style.justifyContent = '';
+            containerElement.style.alignItems = '';
+            containerElement.style.gap = '';
+            wrappers.forEach(wrapper => wrapper.style.display = 'block');
+            allImgs.forEach(img => {
+                img.style.display = 'block';
+                img.style.maxWidth = '';
+                img.style.height = 'auto';
+                img.style.width = '';
+            });
         } else if (currentMode === MODES.SINGLE) {
-            renderSinglePageMode();
+            containerElement.className = 'reader-single-page-container';
+            containerElement.style.display = '';
+            containerElement.style.justifyContent = '';
+            containerElement.style.alignItems = '';
+            containerElement.style.gap = '';
+            containerElement.style.maxWidth = '';
+            allImgs.forEach((img, index) => {
+                if (index === currentPage) {
+                    img.style.display = 'block';
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    img.style.width = '';
+                }
+            });
         } else if (currentMode === MODES.SIDE_BY_SIDE) {
-            renderSideBySideMode();
+            containerElement.className = '';
+            containerElement.style.display = 'flex';
+            containerElement.style.justifyContent = 'space-between';
+            containerElement.style.alignItems = 'flex-start';
+            containerElement.style.gap = '0';
+            containerElement.style.maxWidth = '';
+            allImgs.forEach((img, index) => {
+                if (index === currentPage * 2 || index === currentPage * 2 + 1) {
+                    img.style.display = 'block';
+                    img.style.maxWidth = '50%';
+                    img.style.height = 'auto';
+                    img.style.width = '';
+                }
+            });
         }
         attachImageListeners();
         updatePageCounter();
