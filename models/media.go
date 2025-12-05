@@ -1184,6 +1184,13 @@ func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
 	chapterFilePath := media.Path
 	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
 		chapterFilePath = filepath.Join(media.Path, chapter.File)
+	} else if err != nil {
+		return nil, fmt.Errorf("media path '%s' does not exist: %w", media.Path, err)
+	}
+
+	// Check if chapter file path exists
+	if _, err := os.Stat(chapterFilePath); err != nil {
+		return nil, fmt.Errorf("chapter file path '%s' does not exist: %w", chapterFilePath, err)
 	}
 
 	pageCount, err := utils.CountImageFiles(chapterFilePath)
