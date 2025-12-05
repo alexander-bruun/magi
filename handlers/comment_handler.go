@@ -25,7 +25,17 @@ func HandleGetComments(c *fiber.Ctx) error {
 		targetSlug = mediaSlug
 	}
 
-	comments, err := models.GetCommentsByTarget(targetType, targetSlug)
+	var comments []models.Comment
+	var err error
+	
+	if targetType == "chapter" {
+		// For chapter comments, filter by media_slug too
+		comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
+	} else {
+		// For media comments, just use target
+		comments, err = models.GetCommentsByTarget(targetType, targetSlug)
+	}
+	
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve comments",
@@ -84,6 +94,7 @@ func HandleCreateComment(c *fiber.Ctx) error {
 		UserUsername: user.Username,
 		TargetType:   targetType,
 		TargetSlug:   targetSlug,
+		MediaSlug:    mediaSlug,
 		Content:      req.Content,
 	}
 
@@ -97,7 +108,17 @@ func HandleCreateComment(c *fiber.Ctx) error {
 	// If HTMX request, return updated comments section
 	if c.Get("HX-Request") == "true" {
 		// Fetch updated comments
-		comments, err := models.GetCommentsByTarget(targetType, targetSlug)
+		var comments []models.Comment
+		var err error
+		
+		if targetType == "chapter" {
+			// For chapter comments, filter by media_slug too
+			comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
+		} else {
+			// For media comments, just use target
+			comments, err = models.GetCommentsByTarget(targetType, targetSlug)
+		}
+		
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error loading comments")
 		}

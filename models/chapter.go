@@ -11,7 +11,29 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/gofiber/fiber/v2/log"
 )
+
+// CalculateCountdownText calculates the countdown text for a premium chapter
+func CalculateCountdownText(releaseTime time.Time) string {
+	if time.Now().After(releaseTime) {
+		return "Available now!"
+	}
+	
+	duration := time.Until(releaseTime)
+	if duration.Hours() >= 24 {
+		days := int(duration.Hours() / 24)
+		return fmt.Sprintf("%dd", days)
+	} else if duration.Hours() >= 1 {
+		hours := int(duration.Hours())
+		minutes := int(duration.Minutes()) % 60
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	} else {
+		minutes := int(duration.Minutes())
+		seconds := int(duration.Seconds()) % 60
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+}
 
 // Chapter represents the chapter table schema
 type Chapter struct {
@@ -234,6 +256,11 @@ func DeleteChapterTx(tx *sql.Tx, mangaSlug, chapterSlug string) error {
 	return DeleteRecordTx(tx, `DELETE FROM chapters WHERE media_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
+// DeleteChapter removes a specific chapter
+func DeleteChapter(mangaSlug, chapterSlug string) error {
+	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
+}
+
 // DeleteChaptersByMediaSlug removes all chapters for a specific manga
 func DeleteChaptersByMediaSlug(mangaSlug string) error {
 	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ?`, mangaSlug)
@@ -244,23 +271,64 @@ func ChapterExists(chapterSlug, mangaSlug string) (bool, error) {
 	return ExistsChecker(`SELECT 1 FROM chapters WHERE media_slug = ? AND slug = ?`, mangaSlug, chapterSlug)
 }
 
-// GetAdjacentChapters finds the previous and next chapters based on the current chapter slug
-func GetAdjacentChapters(chapterSlug, mangaSlug string) (prevSlug, nextSlug string, err error) {
-	chapters, err := GetChapters(mangaSlug)
-	if err != nil {
-		return "", "", err
+// isChapterAccessibleForUser checks if a chapter is accessible to the user
+func isChapterAccessibleForUser(chapter *Chapter, userName string) bool {
+	// If released_at is set, it's released
+	if chapter.ReleasedAt != nil {
+		return true
 	}
 
-	currentIndex := indexOfChapter(chapters, chapterSlug)
+	if userName == "" {
+		// Anonymous user
+		if !chapter.IsPremium {
+			// Non-premium chapters are accessible to everyone
+			return true
+		}
+
+		// For premium chapters, check if anonymous role has premium chapter access
+		hasAccess, err := RoleHasAccess("anonymous")
+		if err != nil {
+			log.Errorf("Failed to check premium chapter access for anonymous role: %v", err)
+			return false
+		}
+		return hasAccess
+	}
+
+	// For logged-in users
+	if !chapter.IsPremium {
+		// Non-premium chapters are accessible to everyone
+		return true
+	}
+
+	// For premium chapters, check if user has premium chapter access via permissions
+	hasAccess, err := UserHasPremiumChapterAccess(userName)
+	if err != nil {
+		log.Errorf("Failed to check premium chapter access for user %s: %v", userName, err)
+		return false
+	}
+	return hasAccess
+}
+
+// GetAdjacentChapters finds the previous and next chapters based on the current chapter slug
+func GetAdjacentChapters(chapters []Chapter, chapterSlug, userName string) (prevSlug, nextSlug string, err error) {
+	// Filter chapters to only include accessible ones
+	var accessibleChapters []Chapter
+	for _, chapter := range chapters {
+		if isChapterAccessibleForUser(&chapter, userName) {
+			accessibleChapters = append(accessibleChapters, chapter)
+		}
+	}
+
+	currentIndex := indexOfChapter(accessibleChapters, chapterSlug)
 	if currentIndex == -1 {
 		return "", "", errors.New("chapter not found")
 	}
 
 	if currentIndex > 0 {
-		prevSlug = chapters[currentIndex-1].Slug
+		prevSlug = accessibleChapters[currentIndex-1].Slug
 	}
-	if currentIndex < len(chapters)-1 {
-		nextSlug = chapters[currentIndex+1].Slug
+	if currentIndex < len(accessibleChapters)-1 {
+		nextSlug = accessibleChapters[currentIndex+1].Slug
 	}
 
 	return prevSlug, nextSlug, nil
@@ -332,26 +400,23 @@ func GetRecentChapters(limit int) ([]ChapterWithMedia, error) {
 
 // HasPremiumChapters checks if a media has any chapters that are still in the premium early access period
 func HasPremiumChapters(mediaSlug string, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) (bool, string, error) {
-	chapters, err := GetChaptersByMediaSlug(mediaSlug, maxPremiumChapters, maxPremiumChapters, premiumDuration, scalingEnabled)
+	chapters, err := GetChaptersByMediaSlug(mediaSlug, 1000, maxPremiumChapters, premiumDuration, scalingEnabled)
 	if err != nil {
 		return false, "", err
 	}
 
+	// Count total premium chapters
+	premiumCount := 0
+	for _, ch := range chapters {
+		if ch.IsPremium {
+			premiumCount++
+		}
+	}
+
 	for _, chapter := range chapters {
 		if chapter.IsPremium {
-			// Find the position of this chapter among premium chapters
-			premiumPosition := 0
-			for j := 0; j < len(chapters); j++ {
-				if chapters[j].IsPremium {
-					if chapters[j].Slug == chapter.Slug {
-						break
-					}
-					premiumPosition++
-				}
-			}
-			
-			// Calculate scaled duration for this chapter's position
-			multiplier := premiumPosition + 1
+			// Use the same multiplier as GetChaptersByMediaSlug for the first premium chapter
+			multiplier := premiumCount
 			if !scalingEnabled {
 				multiplier = 1
 			}
@@ -359,20 +424,7 @@ func HasPremiumChapters(mediaSlug string, maxPremiumChapters int, premiumDuratio
 			
 			// Calculate countdown for this chapter
 			releaseTime := chapter.CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
-			duration := time.Until(releaseTime)
-			var countdown string
-			if duration.Hours() >= 24 {
-				days := int(duration.Hours() / 24)
-				countdown = fmt.Sprintf("%dd", days)
-			} else if duration.Hours() >= 1 {
-				hours := int(duration.Hours())
-				minutes := int(duration.Minutes()) % 60
-				countdown = fmt.Sprintf("%dh %dm", hours, minutes)
-			} else {
-				minutes := int(duration.Minutes())
-				seconds := int(duration.Seconds()) % 60
-				countdown = fmt.Sprintf("%dm %ds", minutes, seconds)
-			}
+			countdown := CalculateCountdownText(releaseTime)
 			return true, countdown, nil
 		}
 	}
@@ -484,19 +536,7 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 		
 		// Calculate countdown for premium chapters
 		if chapters[chapterIndex].IsPremium {
-			duration := time.Until(releaseTime)
-			if duration.Hours() >= 24 {
-				days := int(duration.Hours() / 24)
-				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dd", days)
-			} else if duration.Hours() >= 1 {
-				hours := int(duration.Hours())
-				minutes := int(duration.Minutes()) % 60
-				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dh %dm", hours, minutes)
-			} else {
-				minutes := int(duration.Minutes())
-				seconds := int(duration.Seconds()) % 60
-				chapters[chapterIndex].PremiumCountdown = fmt.Sprintf("%dm %ds", minutes, seconds)
-			}
+			chapters[chapterIndex].PremiumCountdown = CalculateCountdownText(releaseTime)
 		}
 	}
 
@@ -517,13 +557,11 @@ type MediaWithRecentChapters struct {
 // GetRecentSeriesWithChapters returns the most recently updated series with their 3 highest numbered chapters
 func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]MediaWithRecentChapters, error) {
 	query := `
-		SELECT DISTINCT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
+		SELECT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
 		FROM media m
-		WHERE EXISTS (
-			SELECT 1 FROM chapters c 
-			WHERE c.media_slug = m.slug
-		)
-		ORDER BY m.updated_at DESC
+		INNER JOIN chapters c ON c.media_slug = m.slug
+		GROUP BY m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
+		ORDER BY MAX(c.created_at) DESC
 		LIMIT ?
 	`
 
@@ -585,4 +623,154 @@ func extractChapterNumber(name string) int {
 		return num
 	}
 	return -1
+}
+
+// MediaEnrichmentData contains preloaded data for a media item
+type MediaEnrichmentData struct {
+	MediaSlug           string
+	HasPremium          bool
+	PremiumCountdown    string
+	LatestChapterSlug   string
+	LatestChapterName   string
+	AverageRating       float64
+	ReviewCount         int
+}
+
+// BatchEnrichMediaData fetches enrichment data for multiple media items in bulk
+// This reduces N+1 queries by batch loading all chapters and ratings at once
+func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) (map[string]MediaEnrichmentData, error) {
+	if len(mediaSlugs) == 0 {
+		return make(map[string]MediaEnrichmentData), nil
+	}
+
+	result := make(map[string]MediaEnrichmentData)
+	
+	// Initialize result map for all slugs
+	for _, slug := range mediaSlugs {
+		result[slug] = MediaEnrichmentData{MediaSlug: slug}
+	}
+
+	// Batch fetch all chapters in one query
+	placeholders := strings.Repeat("?,", len(mediaSlugs)-1) + "?"
+	query := fmt.Sprintf(`
+		SELECT c.media_slug, c.slug, c.name, c.created_at, c.type,
+		       COALESCE(read_counts.read_count, 0) as read_count
+		FROM chapters c
+		LEFT JOIN (
+			SELECT chapter_slug, COUNT(*) as read_count
+			FROM reading_states
+			GROUP BY chapter_slug
+		) read_counts ON c.slug = read_counts.chapter_slug
+		WHERE c.media_slug IN (%s)
+		ORDER BY c.media_slug, c.created_at DESC
+	`, placeholders)
+
+	args := make([]interface{}, len(mediaSlugs))
+	for i, slug := range mediaSlugs {
+		args[i] = slug
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+
+	// Group chapters by media slug
+	chaptersByMedia := make(map[string][]Chapter)
+	for rows.Next() {
+		var mediaSlug, slug, name, chType string
+		var createdAt int64
+		var readCount int
+		if err := rows.Scan(&mediaSlug, &slug, &name, &createdAt, &chType, &readCount); err != nil {
+			return result, err
+		}
+		ch := Chapter{
+			Slug:      slug,
+			Name:      name,
+			Type:      chType,
+			MediaSlug: mediaSlug,
+			ReadCount: readCount,
+			CreatedAt: time.Unix(createdAt, 0),
+			IsPremium: chType == "premium",
+		}
+		chaptersByMedia[mediaSlug] = append(chaptersByMedia[mediaSlug], ch)
+	}
+
+	// Batch fetch all ratings in one query
+	ratingQuery := fmt.Sprintf(`
+		SELECT media_slug, COALESCE(AVG(rating), 0), COUNT(*)
+		FROM reviews
+		WHERE media_slug IN (%s)
+		GROUP BY media_slug
+	`, placeholders)
+
+	ratingsRows, err := db.Query(ratingQuery, args...)
+	if err != nil {
+		return result, err
+	}
+	defer ratingsRows.Close()
+
+	ratingsByMedia := make(map[string][2]interface{})
+	for ratingsRows.Next() {
+		var mediaSlug string
+		var avg float64
+		var count int
+		if err := ratingsRows.Scan(&mediaSlug, &avg, &count); err != nil {
+			return result, err
+		}
+		ratingsByMedia[mediaSlug] = [2]interface{}{avg, count}
+	}
+
+	// Process each media slug
+	for _, mediaSlug := range mediaSlugs {
+		enrichData := result[mediaSlug]
+		enrichData.MediaSlug = mediaSlug
+
+		// Calculate premium status and countdown
+		chapters := chaptersByMedia[mediaSlug]
+		if len(chapters) > 0 {
+			premiumCount := 0
+			for _, ch := range chapters {
+				if ch.IsPremium {
+					premiumCount++
+				}
+			}
+
+			for _, chapter := range chapters {
+				if chapter.IsPremium {
+					enrichData.HasPremium = true
+					multiplier := premiumCount
+					if !scalingEnabled {
+						multiplier = 1
+					}
+					scaledDuration := premiumDuration * multiplier
+					releaseTime := chapter.CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
+					enrichData.PremiumCountdown = CalculateCountdownText(releaseTime)
+					break
+				}
+			}
+
+			// Get latest chapter
+			maxNum := -1
+			for _, ch := range chapters {
+				num := extractChapterNumber(ch.Name)
+				if num > maxNum {
+					maxNum = num
+					enrichData.LatestChapterSlug = ch.Slug
+					enrichData.LatestChapterName = ch.Name
+				}
+			}
+		}
+
+		// Add rating data
+		if ratingData, exists := ratingsByMedia[mediaSlug]; exists {
+			enrichData.AverageRating = ratingData[0].(float64)
+			enrichData.ReviewCount = ratingData[1].(int)
+		}
+
+		result[mediaSlug] = enrichData
+	}
+
+	return result, nil
 }

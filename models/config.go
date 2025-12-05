@@ -3,6 +3,7 @@ package models
 import (
     "database/sql"
     "sync"
+    "time"
 )
 
 // AppConfig holds global application settings (single-row table app_config id=1)
@@ -63,6 +64,8 @@ var (
     cachedConfig AppConfig
     configOnce   sync.Once
     configMu     sync.RWMutex
+    configCacheTime time.Time
+    configCacheTTL = 5 * time.Minute // Cache config for 5 minutes to reduce lock contention
 )
 
 // loadConfigFromDB loads the config row (id=1) from the database.
@@ -174,22 +177,29 @@ func loadConfigFromDB() (AppConfig, error) {
     }, nil
 }
 
-// GetAppConfig returns the cached configuration, loading it from the DB once or when forced refresh.
+// GetAppConfig returns the cached configuration with TTL-based refresh
+// Cache is valid for 5 minutes to balance freshness with performance (reduces lock contention)
 func GetAppConfig() (AppConfig, error) {
-    var err error
-    configOnce.Do(func() {
-        var cfg AppConfig
-        cfg, err = loadConfigFromDB()
-        if err == nil {
-            cachedConfig = cfg
-        }
-    })
+    configMu.RLock()
+    // Check if cache is still valid (fast path - read lock only)
+    if !configCacheTime.IsZero() && time.Since(configCacheTime) < configCacheTTL {
+        cfg := cachedConfig
+        configMu.RUnlock()
+        return cfg, nil
+    }
+    configMu.RUnlock()
+
+    // Cache expired or not yet loaded - refresh it
+    cfg, err := loadConfigFromDB()
     if err != nil {
         return AppConfig{}, err
     }
-    configMu.RLock()
-    cfg := cachedConfig
-    configMu.RUnlock()
+
+    configMu.Lock()
+    cachedConfig = cfg
+    configCacheTime = time.Now()
+    configMu.Unlock()
+
     return cfg, nil
 }
 

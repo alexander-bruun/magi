@@ -12,12 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2/log"
+
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/sync"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 )
 
 // isChapterAccessible checks if a chapter is accessible to the user
@@ -124,7 +125,7 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 	}
 
 	// Get adjacent chapters
-	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapter.Slug, mediaSlug)
+	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapters, chapter.Slug, userName)
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +155,22 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 		validityMinutes := models.GetImageTokenValidityMinutes()
 		data.Content = utils.GetBookContentWithValidity(chapterFilePath, mediaSlug, chapterSlug, validityMinutes)
 	} else {
+		// Determine the chapter file path for comics
+		chapterFilePath := media.Path
+		if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
+			chapterFilePath = filepath.Join(media.Path, chapter.File)
+		}
+
+		// Check if chapter file path exists
+		if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
+			// Chapter file missing, delete the chapter
+			log.Warnf("Chapter file '%s' for media '%s' chapter '%s' does not exist, deleting chapter", chapterFilePath, mediaSlug, chapterSlug)
+			if delErr := models.DeleteChapter(mediaSlug, chapterSlug); delErr != nil {
+				log.Errorf("Failed to delete missing chapter '%s' for media '%s': %v", chapterSlug, mediaSlug, delErr)
+			}
+			return nil, fmt.Errorf("chapter_not_found")
+		}
+
 		// Get images for comic
 		images, err := models.GetChapterImages(media, chapter)
 		if err != nil {
@@ -243,6 +260,14 @@ func HandleChapter(c *fiber.Ctx) error {
 				return c.Redirect(fmt.Sprintf("/series/%s", mangaSlug), fiber.StatusSeeOther)
 			}
 		}
+		if err.Error() == "chapter_not_found" {
+			if IsHTMXRequest(c) {
+				c.Set("HX-Trigger", `{"showNotification": {"message": "This chapter is no longer available and has been removed.", "status": "warning"}}`)
+				c.Set("HX-Redirect", fmt.Sprintf("/series/%s", mangaSlug))
+				return c.SendString("")
+			}
+			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+		}
 		return handleError(c, err)
 	}
 	if data == nil {
@@ -255,7 +280,7 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 
 	// Fetch comments for the chapter
-	comments, err := models.GetCommentsByTarget("chapter", chapterSlug)
+	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapterSlug, mangaSlug)
 	if err != nil {
 		log.Errorf("Failed to fetch comments for chapter %s: %v", chapterSlug, err)
 		comments = []models.Comment{} // Initialize empty slice on error

@@ -191,16 +191,27 @@ func (m *JobStatusManager) broadcastJobUpdate() {
 		return
 	}
 
-	for _, conn := range clients {
-		m.writeMu.Lock()
-		err := conn.WriteMessage(websocket.TextMessage, data)
-		m.writeMu.Unlock()
+	// Batch writes to reduce lock contention: collect failed connections first
+	var failedConns []*websocket.Conn
+	m.writeMu.Lock()
+	defer m.writeMu.Unlock()
 
+	for _, conn := range clients {
+		err := conn.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
 			log.Debugf("Failed to send job status update: %v", err)
-			conn.Close() // Close the connection to signal the read loop to exit
-			m.unregisterClient(conn)
+			failedConns = append(failedConns, conn)
 		}
+	}
+
+	// Clean up failed connections outside of the write lock
+	if len(failedConns) > 0 {
+		m.mu.Lock()
+		for _, conn := range failedConns {
+			conn.Close()
+			delete(m.clients, conn)
+		}
+		m.mu.Unlock()
 	}
 }
 

@@ -38,59 +38,64 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 func HandleHome(c *fiber.Ctx) error {
 	// Fetch data for the home page
 	recentlyAdded, _, _ := models.SearchMedias("", 1, 20, "created_at", "desc", "", "")
-	recentlyUpdated, _, _ := models.SearchMedias("", 1, 20, "updated_at", "desc", "", "")
 	cfg, err := models.GetAppConfig()
 	if err != nil {
 		log.Errorf("Failed to get app config: %v", err)
 	}
 
-	// Enrich recently added media with premium countdowns
+	// Fetch latest updates data
+	latestUpdates, err := models.GetRecentSeriesWithChapters(21, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
+	if err != nil {
+		log.Errorf("Failed to get latest updates: %v", err)
+		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error
+	}
+
+	// Use the same media for recently updated, ordered by latest chapter
+	var recentlyUpdated []models.Media
+	for _, mwc := range latestUpdates {
+		recentlyUpdated = append(recentlyUpdated, mwc.Media)
+	}
+
+	// Batch enrich recently added and updated media (reduces 60 queries to 2)
+	allSlugs := make([]string, 0, len(recentlyAdded)+len(recentlyUpdated))
+	for _, m := range recentlyAdded {
+		allSlugs = append(allSlugs, m.Slug)
+	}
+	for _, m := range recentlyUpdated {
+		allSlugs = append(allSlugs, m.Slug)
+	}
+
+	enrichmentData, err := models.BatchEnrichMediaData(allSlugs, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
+	if err != nil {
+		log.Errorf("Error enriching media data: %v", err)
+		enrichmentData = make(map[string]models.MediaEnrichmentData) // Empty map if error
+	}
+
+	// Enrich recently added media
 	enrichedRecentlyAdded := make([]models.EnrichedMedia, len(recentlyAdded))
 	for i, m := range recentlyAdded {
-		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
-		if err != nil {
-			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
-		}
-		latestSlug, latestName, err := models.GetLatestChapter(m.Slug)
-		if err != nil {
-			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
-		}
-		avgRating, reviewCount, err := models.GetAverageRating(m.Slug)
-		if err != nil {
-			log.Errorf("Error getting average rating for %s: %v", m.Slug, err)
-		}
+		enrichData := enrichmentData[m.Slug]
 		enrichedRecentlyAdded[i] = models.EnrichedMedia{
 			Media:              m,
-			PremiumCountdown:   countdown,
-			LatestChapterSlug:  latestSlug,
-			LatestChapterName:  latestName,
-			AverageRating:      avgRating,
-			ReviewCount:        reviewCount,
+			PremiumCountdown:   enrichData.PremiumCountdown,
+			LatestChapterSlug:  enrichData.LatestChapterSlug,
+			LatestChapterName:  enrichData.LatestChapterName,
+			AverageRating:      enrichData.AverageRating,
+			ReviewCount:        enrichData.ReviewCount,
 		}
 	}
 
-	// Enrich recently updated media with premium countdowns
+	// Enrich recently updated media
 	enrichedRecentlyUpdated := make([]models.EnrichedMedia, len(recentlyUpdated))
 	for i, m := range recentlyUpdated {
-		_, countdown, err := models.HasPremiumChapters(m.Slug, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
-		if err != nil {
-			log.Errorf("Error checking premium chapters for %s: %v", m.Slug, err)
-		}
-		latestSlug, latestName, err := models.GetLatestChapter(m.Slug)
-		if err != nil {
-			log.Errorf("Error getting latest chapter for %s: %v", m.Slug, err)
-		}
-		avgRating, reviewCount, err := models.GetAverageRating(m.Slug)
-		if err != nil {
-			log.Errorf("Error getting average rating for %s: %v", m.Slug, err)
-		}
+		enrichData := enrichmentData[m.Slug]
 		enrichedRecentlyUpdated[i] = models.EnrichedMedia{
 			Media:              m,
-			PremiumCountdown:   countdown,
-			LatestChapterSlug:  latestSlug,
-			LatestChapterName:  latestName,
-			AverageRating:      avgRating,
-			ReviewCount:        reviewCount,
+			PremiumCountdown:   enrichData.PremiumCountdown,
+			LatestChapterSlug:  enrichData.LatestChapterSlug,
+			LatestChapterName:  enrichData.LatestChapterName,
+			AverageRating:      enrichData.AverageRating,
+			ReviewCount:        enrichData.ReviewCount,
 		}
 	}
 
@@ -100,13 +105,6 @@ func HandleHome(c *fiber.Ctx) error {
 	topReadMonth, _ := models.GetTopReadMedias("month", 10)
 	topReadYear, _ := models.GetTopReadMedias("year", 10)
 	topReadAll, _ := models.GetTopReadMedias("all", 10)
-
-	// Fetch latest updates data
-	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
-	if err != nil {
-		log.Errorf("Failed to get latest updates: %v", err)
-		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error
-	}
 
 	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates))
 }

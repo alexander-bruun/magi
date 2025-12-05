@@ -202,6 +202,46 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+// HandleReindexChapters re-indexes chapters without fetching external metadata
+func HandleReindexChapters(c *fiber.Ctx) error {
+	mangaSlug := c.Params("media")
+	if mangaSlug == "" {
+		return handleError(c, fmt.Errorf("media slug can't be empty"))
+	}
+
+	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
+	if err != nil {
+		return handleError(c, err)
+	}
+	if existingMedia == nil {
+		return handleErrorWithStatus(c, fmt.Errorf("media not found"), fiber.StatusNotFound)
+	}
+
+	// Re-index chapters (this will detect new/removed chapters without deleting the media)
+	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
+	if err != nil {
+		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
+	}
+
+	// If new chapters were added, notify users
+	if added > 0 && len(newChapterSlugs) > 0 {
+		if err := models.NotifyUsersOfNewChapters(existingMedia.Slug, newChapterSlugs); err != nil {
+			log.Errorf("Failed to create notifications for new chapters in media '%s': %s", existingMedia.Slug, err)
+		}
+	}
+
+	if added > 0 || deleted > 0 {
+		log.Infof("Re-indexed chapters for media '%s' (added: %d, deleted: %d)", mangaSlug, added, deleted)
+	} else {
+		log.Infof("Chapter re-index complete for media '%s' (no changes)", mangaSlug)
+	}
+
+	// Return success response for HTMX
+	redirectURL := fmt.Sprintf("/series/%s", existingMedia.Slug)
+	c.Set("HX-Redirect", redirectURL)
+	return c.SendStatus(fiber.StatusOK)
+}
+
 // HandleRefreshMetadata refreshes media metadata and chapters without resetting creation date
 func HandleRefreshMetadata(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")

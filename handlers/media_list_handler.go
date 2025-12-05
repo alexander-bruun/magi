@@ -229,11 +229,19 @@ func HandleMedia(c *fiber.Ctx) error {
 			log.Errorf("Error getting user collections: %v", err)
 			userCollections = []models.Collection{}
 		}
-		// Check which collections contain this media
-		for _, collection := range userCollections {
-			isIn, err := models.IsMediaInCollection(collection.ID, slug)
-			if err == nil && isIn {
-				mediaCollections = append(mediaCollections, collection)
+		// Check which collections contain this media (batch operation)
+		if len(userCollections) > 0 {
+			collectionIDs := make([]int, len(userCollections))
+			for i, c := range userCollections {
+				collectionIDs[i] = c.ID
+			}
+			mediaInCollections, err := models.BatchCheckMediaInCollections(collectionIDs, slug)
+			if err == nil {
+				for _, collection := range userCollections {
+					if mediaInCollections[collection.ID] {
+						mediaCollections = append(mediaCollections, collection)
+					}
+				}
 			}
 		}
 	}
