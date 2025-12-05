@@ -500,27 +500,27 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p></div></div><!-- Image Access Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Image Access Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 195, Col: 163}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 200, Col: 163}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Premium Features</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Premium Features</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 205, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 210, Col: 156}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -533,7 +533,7 @@ func ConfigForm() templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxPremiumChapters))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 210, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 215, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {

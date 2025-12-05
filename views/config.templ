@@ -190,10 +190,15 @@ templ ConfigForm() {
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">JPEG quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p>
             </div>
+        </div>
+        
+        <!-- Image Access Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Image Access Settings</span></h4>
             <div class="uk-margin">
                 <label class="block mb-1">Image token validity (minutes)</label>
                 <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
-                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid. Tokens are consumed after first use.</p>
+                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
             </div>
         </div>
         
