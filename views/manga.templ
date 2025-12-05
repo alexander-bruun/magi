@@ -795,10 +795,6 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 					<a
 						class="uk-accordion-title flex-1 min-w-0 pr-2 truncate"
 						href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-						hx-get={ fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug) }
-						hx-target="body"
-						hx-swap="innerHTML"
-						hx-push-url="true"
 					>
 						{ chapter.Name }
 						<span
