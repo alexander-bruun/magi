@@ -15,7 +15,7 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
-	"github.com/nwaples/rardecode"
+	"github.com/nwaples/rardecode/v2"
 )
 
 // ImageServeData holds data needed for serving images
@@ -180,7 +180,7 @@ func ServeComicArchiveFromZIP(filePath string, page int, quality int) ([]byte, e
 
 // ServeComicArchiveFromRAR serves an image from a RAR archive
 func ServeComicArchiveFromRAR(filePath string, page int, quality int) ([]byte, error) {
-	r, err := rardecode.OpenReader(filePath, "")
+	r, err := rardecode.OpenReader(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func ServeComicArchiveFromRAR(filePath string, page int, quality int) ([]byte, e
 	}
 
 	// Skip to the desired file
-	r, err = rardecode.OpenReader(filePath, "")
+	r, err = rardecode.OpenReader(filePath)
 	if err != nil {
 		return nil, err
 	}

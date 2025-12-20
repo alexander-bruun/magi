@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/nwaples/rardecode"
+	"github.com/nwaples/rardecode/v2"
 )
 
 // isSafeArchivePath checks whether the provided path is safe for extraction (no directory traversal, not absolute).
@@ -132,7 +132,7 @@ func countImageFilesInRar(rarFilePath string) (int, error) {
 	}
 	defer rarFile.Close()
 
-	rarReader, err := rardecode.NewReader(rarFile, "")
+	rarReader, err := rardecode.NewReader(rarFile)
 	if err != nil {
 		return 0, err
 	}
@@ -202,7 +202,7 @@ func extractFirstImageFromRar(rarPath, outputFolder string) error {
 	}
 	defer file.Close()
 
-	reader, err := rardecode.NewReader(file, "")
+	reader, err := rardecode.NewReader(file)
 	if err != nil {
 		return fmt.Errorf("invalid or corrupt rar file: %w", err)
 	}
@@ -463,7 +463,7 @@ func listImagesInRar(rarPath string) ([]string, error) {
 	}
 	defer file.Close()
 
-	reader, err := rardecode.NewReader(file, "")
+	reader, err := rardecode.NewReader(file)
 	if err != nil {
 		return nil, err
 	}
@@ -649,7 +649,7 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 	}
 	defer file.Close()
 
-	reader, err := rardecode.NewReader(file, "")
+	reader, err := rardecode.NewReader(file)
 	if err != nil {
 		return "", err
 	}
@@ -795,7 +795,7 @@ func extractImageFromRarToPath(rarPath, outputDir string, imageIndex int) (strin
 	}
 	defer file.Close()
 
-	reader, err := rardecode.NewReader(file, "")
+	reader, err := rardecode.NewReader(file)
 	if err != nil {
 		return "", err
 	}

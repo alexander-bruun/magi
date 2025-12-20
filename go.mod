@@ -16,7 +16,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/ncruces/go-sqlite3 v0.30.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/nwaples/rardecode v1.1.3
+	github.com/nwaples/rardecode/v2 v2.2.2
 	github.com/pkg/sftp v1.13.10
 	github.com/prometheus/client_golang v1.23.2
 	github.com/robfig/cron/v3 v3.0.1
