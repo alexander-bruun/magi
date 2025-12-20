@@ -20,6 +20,7 @@ type CacheConfig struct {
 	SFTPUsername string
 	SFTPPassword string
 	SFTPKeyFile  string
+	SFTPHostKey  string
 	SFTPBasePath string
 
 	// S3 backend config
@@ -52,6 +53,7 @@ func ParseCacheConfigFromEnv() (*CacheConfig, error) {
 		config.SFTPUsername = getEnvOrDefault("MAGI_CACHE_SFTP_USERNAME", "")
 		config.SFTPPassword = getEnvOrDefault("MAGI_CACHE_SFTP_PASSWORD", "")
 		config.SFTPKeyFile = getEnvOrDefault("MAGI_CACHE_SFTP_KEY_FILE", "")
+		config.SFTPHostKey = getEnvOrDefault("MAGI_CACHE_SFTP_HOST_KEY", "")
 		config.SFTPBasePath = getEnvOrDefault("MAGI_CACHE_SFTP_BASE_PATH", "")
 	case "s3":
 		config.S3Bucket = getEnvOrDefault("MAGI_CACHE_S3_BUCKET", "")
@@ -107,6 +109,7 @@ func (c *CacheConfig) CreateBackend() (CacheBackend, error) {
 			Username: c.SFTPUsername,
 			Password: c.SFTPPassword,
 			KeyFile:  c.SFTPKeyFile,
+			HostKey:  c.SFTPHostKey,
 			BasePath: c.SFTPBasePath,
 		}
 		return NewSFTPAdapter(sftpConfig)

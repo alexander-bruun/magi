@@ -80,6 +80,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 		cacheConfig.SFTPUsername = config["username"]
 		cacheConfig.SFTPPassword = config["password"]
 		cacheConfig.SFTPKeyFile = config["key_file"]
+		cacheConfig.SFTPHostKey = config["host_key"]
 		cacheConfig.SFTPBasePath = config["base_path"]
 
 		if err := cacheConfig.Validate(); err != nil {
@@ -91,6 +92,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 			Username: cacheConfig.SFTPUsername,
 			Password: cacheConfig.SFTPPassword,
 			KeyFile:  cacheConfig.SFTPKeyFile,
+			HostKey:  cacheConfig.SFTPHostKey,
 			BasePath: cacheConfig.SFTPBasePath,
 		})
 

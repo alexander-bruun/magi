@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // SFTPAdapter implements CacheBackend for SFTP storage
@@ -24,6 +25,7 @@ type SFTPConfig struct {
 	Username string
 	Password string // or use KeyFile
 	KeyFile  string
+	HostKey  string // SSH host public key for verification
 	BasePath string
 }
 
@@ -47,10 +49,27 @@ func NewSFTPAdapter(config SFTPConfig) (*SFTPAdapter, error) {
 		return nil, fmt.Errorf("either password or key file must be provided")
 	}
 
+	var hostKeyCallback ssh.HostKeyCallback
+	var err error
+	if config.HostKey != "" {
+		// Parse the provided host key for pinning
+		hostKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(config.HostKey))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse host key: %w", err)
+		}
+		hostKeyCallback = ssh.FixedHostKey(hostKey)
+	} else {
+		// Fall back to checking system's known_hosts file
+		hostKeyCallback, err = knownhosts.New(os.ExpandEnv("$HOME/.ssh/known_hosts"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load known_hosts: %w", err)
+		}
+	}
+
 	sshConfig := &ssh.ClientConfig{
 		User:            config.Username,
 		Auth:            auth,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: Use proper host key verification
+		HostKeyCallback: hostKeyCallback,
 	}
 
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
