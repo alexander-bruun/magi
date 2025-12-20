@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"strings"
@@ -113,15 +113,7 @@ func HandleConsoleLogsWebSocket(c *websocket.Conn) {
 
 	log.Debug("WebSocket client connected for console logs")
 
-	// Send buffered logs to new client
-	bufferedLogs := consoleLogManager.buffer.GetAll()
-	for _, entry := range bufferedLogs {
-		payload := createLogPayload("info", entry)
-		if err := c.WriteMessage(websocket.TextMessage, payload); err != nil {
-			log.Errorf("Failed to send buffered log: %v", err)
-			break
-		}
-	}
+	// Only stream new logs, do not send buffered logs
 
 	// Keep connection alive and wait for close
 	for {
@@ -157,13 +149,15 @@ func (clm *ConsoleLogManager) broadcastLog(logType string, message string) {
 }
 
 func createLogPayload(logType string, message string) []byte {
-	// Simple JSON construction
-	b := bytes.Buffer{}
-	b.WriteString("{")
-	b.WriteString(fmt.Sprintf("\"type\":\"%s\",", escapeJSON(logType)))
-	b.WriteString(fmt.Sprintf("\"message\":\"%s\"", escapeJSON(message)))
-	b.WriteString("}")
-	return b.Bytes()
+	// Create HTML for HTMX WebSocket extension
+	// Send content that will be appended to #console-logs-output
+	// Using a wrapper with hx-swap-oob to ensure HTMX processes it correctly
+	escapedMessage := html.EscapeString(message)
+	// Replace newlines with <br> tags to preserve line breaks in HTML
+	escapedMessage = strings.ReplaceAll(escapedMessage, "\n", "<br>")
+	// Send a template fragment that HTMX can parse and inject
+	html := fmt.Sprintf(`<div id="log-entry" hx-swap-oob="beforeend:#console-logs-output"><div style="white-space:pre-wrap; word-break:break-word; min-height:1.2em;">%s</div></div>`, escapedMessage)
+	return []byte(html)
 }
 
 func escapeJSON(s string) string {

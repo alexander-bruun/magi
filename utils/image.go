@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -20,8 +21,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alexander-bruun/magi/cache"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/nfnt/resize"
+	_ "golang.org/x/image/bmp"   // Register BMP format
+	_ "golang.org/x/image/tiff" // Register TIFF format
 	_ "golang.org/x/image/webp" // Register WebP format
 )
 
@@ -37,10 +41,7 @@ const (
 )
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string, quality int) error {
-	if err := ensureDirExists(downloadDir); err != nil {
-		return err
-	}
+func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend cache.CacheBackend, quality int) error {
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
@@ -52,29 +53,45 @@ func DownloadImageWithThumbnails(downloadDir, fileName, fileUrl string, quality 
 	}
 
 	// Save original (unprocessed) for potential future use
-	originalFilePath := filepath.Join(downloadDir, baseName+"_original"+filepath.Ext(fileNameWithExtension))
-	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
+	originalPath := fmt.Sprintf("posters/%s_original%s", baseName, filepath.Ext(fileNameWithExtension))
+	originalData, err := EncodeImageToBytes(img, format, quality)
+	if err != nil {
+		return err
+	}
+	if err := cacheBackend.Save(originalPath, originalData); err != nil {
 		return err
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullFilePath := filepath.Join(downloadDir, fileNameWithExtension)
-	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	fullPath := fmt.Sprintf("posters/%s", fileNameWithExtension)
+	fullData, err := EncodeImageToBytes(fullImg, "jpeg", quality)
+	if err != nil {
+		return err
+	}
+	if err := cacheBackend.Save(fullPath, fullData); err != nil {
 		return err
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbFilePath := filepath.Join(downloadDir, baseName+"_thumb.jpg")
-	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	thumbPath := fmt.Sprintf("posters/%s_thumb.jpg", baseName)
+	thumbData, err := EncodeImageToBytes(thumbImg, "jpeg", quality)
+	if err != nil {
+		return err
+	}
+	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
 		return err
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallFilePath := filepath.Join(downloadDir, baseName+"_small.jpg")
-	return SaveImage(smallFilePath, smallImg, "jpeg", quality)
+	smallPath := fmt.Sprintf("posters/%s_small.jpg", baseName)
+	smallData, err := EncodeImageToBytes(smallImg, "jpeg", quality)
+	if err != nil {
+		return err
+	}
+	return cacheBackend.Save(smallPath, smallData)
 }
 
 // ensureDirExists ensures the directory exists, creating it if necessary.
@@ -128,13 +145,18 @@ func fetchImage(url string) (image.Image, string, error) {
 
 // saveImage encodes and saves an image to the specified path.
 // SaveImage saves an image to the given path with the specified format and quality
+// SaveImage saves an image to a file path with the specified format and quality
 func SaveImage(filePath string, img image.Image, format string, quality int) error {
-	file, err := os.Create(filePath)
+	data, err := EncodeImageToBytes(img, format, quality)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
+		return err
 	}
-	defer file.Close()
+	return os.WriteFile(filePath, data, 0644)
+}
 
+// EncodeImageToBytes encodes an image to bytes in the specified format
+func EncodeImageToBytes(img image.Image, format string, quality int) ([]byte, error) {
+	var buf bytes.Buffer
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
 		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
@@ -142,19 +164,28 @@ func SaveImage(filePath string, img image.Image, format string, quality int) err
 		if jpegQuality < 1 {
 			jpegQuality = 1
 		}
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
+		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality}); err != nil {
+			return nil, err
+		}
 	case "png":
-		return png.Encode(file, img)
+		if err := png.Encode(&buf, img); err != nil {
+			return nil, err
+		}
 	case "gif":
-		return gif.Encode(file, img, nil)
+		if err := gif.Encode(&buf, img, nil); err != nil {
+			return nil, err
+		}
 	default:
 		// Unknown format - save as progressive JPEG
 		jpegQuality := quality
 		if jpegQuality < 1 {
 			jpegQuality = 1
 		}
-		return jpeg.Encode(file, img, &jpeg.Options{Quality: jpegQuality})
+		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality}); err != nil {
+			return nil, err
+		}
 	}
+	return buf.Bytes(), nil
 }
 
 // resizeAndCrop resizes and crops an image to the target dimensions.
@@ -529,10 +560,7 @@ func CleanupExpiredTokens() {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
-func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, error) {
-	if err := ensureDirExists(cacheDir); err != nil {
-		return "", err
-	}
+func ExtractPosterImage(filePath, slug string, cacheBackend cache.CacheBackend, quality int) (string, error) {
 
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
@@ -633,29 +661,45 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 	}
 
 	// Save original (unprocessed) for potential future use
-	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
-	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
+	originalPath := fmt.Sprintf("posters/%s_original.jpg", slug)
+	originalData, err := EncodeImageToBytes(img, format, quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode original image: %w", err)
+	}
+	if err := cacheBackend.Save(originalPath, originalData); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
-	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	fullPath := fmt.Sprintf("posters/%s.jpg", slug)
+	fullData, err := EncodeImageToBytes(fullImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode full-size image: %w", err)
+	}
+	if err := cacheBackend.Save(fullPath, fullData); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
-	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	thumbPath := fmt.Sprintf("posters/%s_thumb.jpg", slug)
+	thumbData, err := EncodeImageToBytes(thumbImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
+	}
+	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
-	if err := SaveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+	smallPath := fmt.Sprintf("posters/%s_small.jpg", slug)
+	smallData, err := EncodeImageToBytes(smallImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to save small image: %w", err)
+	}
+	if err := cacheBackend.Save(smallPath, smallData); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
@@ -666,10 +710,7 @@ func ExtractPosterImage(filePath, slug, cacheDir string, quality int) (string, e
 // ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality int) (string, error) {
-	if err := ensureDirExists(cacheDir); err != nil {
-		return "", err
-	}
+func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend cache.CacheBackend, quality int) (string, error) {
 
 	// Load the image
 	img, err := OpenImage(imagePath)
@@ -694,29 +735,45 @@ func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality i
 	}
 
 	// Save original (unprocessed) for potential future use
-	originalFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
-	if err := SaveImage(originalFilePath, img, format, quality); err != nil {
+	originalPath := fmt.Sprintf("posters/%s_original.jpg", slug)
+	originalData, err := EncodeImageToBytes(img, format, quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode original image: %w", err)
+	}
+	if err := cacheBackend.Save(originalPath, originalData); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
-	if err := SaveImage(fullFilePath, fullImg, "jpeg", quality); err != nil {
+	fullPath := fmt.Sprintf("posters/%s.jpg", slug)
+	fullData, err := EncodeImageToBytes(fullImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode full-size image: %w", err)
+	}
+	if err := cacheBackend.Save(fullPath, fullData); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
-	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
+	thumbPath := fmt.Sprintf("posters/%s_thumb.jpg", slug)
+	thumbData, err := EncodeImageToBytes(thumbImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
+	}
+	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
-	if err := SaveImage(smallFilePath, smallImg, "jpeg", quality); err != nil {
+	smallPath := fmt.Sprintf("posters/%s_small.jpg", slug)
+	smallData, err := EncodeImageToBytes(smallImg, "jpeg", quality)
+	if err != nil {
+		return "", fmt.Errorf("failed to save small image: %w", err)
+	}
+	if err := cacheBackend.Save(smallPath, smallData); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
@@ -724,22 +781,37 @@ func ProcessLocalImageWithThumbnails(imagePath, slug, cacheDir string, quality i
 }
 
 // GenerateThumbnails generates thumbnail and small versions from a cached full-size image
-func GenerateThumbnails(fullImagePath, slug, cacheDir string, quality int) error {
-	// Load the full-size image
-	img, err := OpenImage(fullImagePath)
+func GenerateThumbnails(fullImagePath, slug string, cacheBackend cache.CacheBackend, quality int) error {
+	// Load the full-size image from cache
+	data, err := cacheBackend.Load(fullImagePath)
 	if err != nil {
-		return fmt.Errorf("failed to open image: %w", err)
+		return fmt.Errorf("failed to load image from cache: %w", err)
+	}
+
+	// Decode the image
+	reader := bytes.NewReader(data)
+	img, _, err := image.Decode(reader)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_thumb.jpg", slug))
-	if err := SaveImage(thumbFilePath, thumbImg, "jpeg", quality); err != nil {
-		return fmt.Errorf("failed to save thumbnail image: %w", err)
+	thumbPath := fmt.Sprintf("posters/%s_thumb.jpg", slug)
+	thumbData, err := EncodeImageToBytes(thumbImg, "jpeg", quality)
+	if err != nil {
+		return fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
+		return fmt.Errorf("failed to save thumbnail: %w", err)
 	}
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallFilePath := filepath.Join(cacheDir, fmt.Sprintf("%s_small.jpg", slug))
-	return SaveImage(smallFilePath, smallImg, "jpeg", quality)
+	smallPath := fmt.Sprintf("posters/%s_small.jpg", slug)
+	smallData, err := EncodeImageToBytes(smallImg, "jpeg", quality)
+	if err != nil {
+		return fmt.Errorf("failed to encode small image: %w", err)
+	}
+	return cacheBackend.Save(smallPath, smallData)
 }
