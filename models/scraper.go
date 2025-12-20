@@ -586,6 +586,30 @@ func (l *ScraperExecutionLog) FormatDuration() string {
 	return fmt.Sprintf("%.2fs", seconds)
 }
 
+// FormatOutputHTML converts ANSI escape codes in the output to HTML spans for colored display
+func (l *ScraperExecutionLog) FormatOutputHTML() string {
+	if l.Output == nil {
+		return ""
+	}
+	output := *l.Output
+	
+	// Replace ANSI escape codes with HTML spans
+	// Common ANSI codes: \x1b[1;34m (bold blue), \x1b[1;32m (bold green), \x1b[1;33m (bold yellow), \x1b[1;31m (bold red), \x1b[0m (reset)
+	
+	// Bold blue for INFO
+	output = strings.ReplaceAll(output, "\x1b[1;34m", `<span style="color: #3b82f6; font-weight: bold;">`)
+	// Bold green for SUCCESS
+	output = strings.ReplaceAll(output, "\x1b[1;32m", `<span style="color: #10b981; font-weight: bold;">`)
+	// Bold yellow for WARNING
+	output = strings.ReplaceAll(output, "\x1b[1;33m", `<span style="color: #f59e0b; font-weight: bold;">`)
+	// Bold red for ERROR
+	output = strings.ReplaceAll(output, "\x1b[1;31m", `<span style="color: #ef4444; font-weight: bold;">`)
+	// Reset
+	output = strings.ReplaceAll(output, "\x1b[0m", `</span>`)
+	
+	return output
+}
+
 // AbortOrphanedRunningLogs marks all "running" logs as "aborted" that were left
 // in that state due to application shutdown or crash. This should be called on startup.
 func AbortOrphanedRunningLogs() error {

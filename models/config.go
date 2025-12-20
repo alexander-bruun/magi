@@ -8,39 +8,46 @@ import (
 
 // AppConfig holds global application settings (single-row table app_config id=1)
 type AppConfig struct {
-    AllowRegistration  bool
-    MaxUsers           int64  // 0 means unlimited
-    ContentRatingLimit int    // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-    MetadataProvider   string // mangadex, mal, anilist, jikan, mangaupdates, kitsu
-    MALApiToken        string // MyAnimeList API token
-    AniListApiToken    string // AniList API token (optional)
+    AllowRegistration  bool   `json:"allow_registration"`
+    MaxUsers           int64  `json:"max_users"` // 0 means unlimited
+    ContentRatingLimit int    `json:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    MetadataProvider   string `json:"metadata_provider"` // mangadex, mal, anilist, jikan, mangaupdates, kitsu
+    MALApiToken        string `json:"mal_api_token"` // MyAnimeList API token
+    AniListApiToken    string `json:"anilist_api_token"` // AniList API token (optional)
     
     // Rate limiting settings
-    RateLimitEnabled     bool
-    RateLimitRequests    int  // requests per window
-    RateLimitWindow      int  // window in seconds
+    RateLimitEnabled     bool `json:"rate_limit_enabled"`
+    RateLimitRequests    int  `json:"rate_limit_requests"` // requests per window
+    RateLimitWindow      int  `json:"rate_limit_window"` // window in seconds
     
     // Bot detection settings
-    BotDetectionEnabled      bool
-    BotSeriesThreshold       int  // max series accesses per time window
-    BotChapterThreshold      int  // max chapter accesses per time window
-    BotDetectionWindow       int  // time window in seconds for bot detection
+    BotDetectionEnabled      bool `json:"bot_detection_enabled"`
+    BotSeriesThreshold       int  `json:"bot_series_threshold"` // max series accesses per time window
+    BotChapterThreshold      int  `json:"bot_chapter_threshold"` // max chapter accesses per time window
+    BotDetectionWindow       int  `json:"bot_detection_window"` // time window in seconds for bot detection
     
     // Compression quality settings per role
-    ReaderCompressionQuality    int // JPEG quality for reader role (0-100)
-    ModeratorCompressionQuality int // JPEG quality for moderator role (0-100)
-    AdminCompressionQuality     int // JPEG quality for admin role (0-100)
-    PremiumCompressionQuality   int // JPEG quality for premium role (0-100)
-    AnonymousCompressionQuality int // JPEG quality for anonymous users (0-100)
-    ProcessedImageQuality       int // JPEG quality for processed images (thumbnails, covers) (0-100)
+    ReaderCompressionQuality    int `json:"reader_compression_quality"` // JPEG quality for reader role (0-100)
+    ModeratorCompressionQuality int `json:"moderator_compression_quality"` // JPEG quality for moderator role (0-100)
+    AdminCompressionQuality     int `json:"admin_compression_quality"` // JPEG quality for admin role (0-100)
+    PremiumCompressionQuality   int `json:"premium_compression_quality"` // JPEG quality for premium role (0-100)
+    AnonymousCompressionQuality int `json:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
+    ProcessedImageQuality       int `json:"processed_image_quality"` // JPEG quality for processed images (thumbnails, covers) (0-100)
     
     // Image token settings
-    ImageTokenValidityMinutes int // validity time for image access tokens in minutes
+    ImageTokenValidityMinutes int `json:"image_token_validity_minutes"` // validity time for image access tokens in minutes
     
     // Premium early access settings
-    PremiumEarlyAccessDuration int // duration in seconds that premium users can access chapters early
-    MaxPremiumChapters         int // maximum number of chapters that can be premium (latest chapters)
-    PremiumCooldownScalingEnabled bool // whether to scale cooldown based on chapter position
+    PremiumEarlyAccessDuration int  `json:"premium_early_access_duration"` // duration in seconds that premium users can access chapters early
+    MaxPremiumChapters         int  `json:"max_premium_chapters"` // maximum number of chapters that can be premium (latest chapters)
+    PremiumCooldownScalingEnabled bool `json:"premium_cooldown_scaling_enabled"` // whether to scale cooldown based on chapter position
+    
+    // Maintenance mode settings
+    MaintenanceEnabled bool   `json:"maintenance_enabled"` // whether maintenance mode is active
+    MaintenanceMessage string `json:"maintenance_message"` // custom message to display during maintenance
+    
+    // New media badge settings
+    NewBadgeDuration int `json:"new_badge_duration"` // duration in hours that media is marked as NEW after update
 }
 
 // Implement metadata.ConfigProvider interface
@@ -90,7 +97,10 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(image_token_validity_minutes, 5),
         COALESCE(premium_early_access_duration, 3600),
         COALESCE(max_premium_chapters, 3),
-        COALESCE(premium_cooldown_scaling_enabled, 0)
+        COALESCE(premium_cooldown_scaling_enabled, 0),
+        COALESCE(maintenance_enabled, 0),
+        COALESCE(maintenance_message, 'We are currently performing maintenance. Please check back later.'),
+        COALESCE(new_badge_duration, 48)
         FROM app_config WHERE id = 1`)
     var allowInt int
     var maxUsers int64
@@ -115,10 +125,13 @@ func loadConfigFromDB() (AppConfig, error) {
     var premiumEarlyAccessDuration int
     var maxPremiumChapters int
     var premiumCooldownScalingEnabled int
+    var maintenanceEnabled int
+    var maintenanceMessage string
+    var newBadgeDuration int
     
     if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, 
         &rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled); err != nil {
+        &readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
         if err == sql.ErrNoRows {
             // Fallback defaults if row missing.
             return AppConfig{
@@ -145,6 +158,9 @@ func loadConfigFromDB() (AppConfig, error) {
                 PremiumEarlyAccessDuration:  3600,
                 MaxPremiumChapters:         3,
                 PremiumCooldownScalingEnabled: false,
+                MaintenanceEnabled: false,
+                MaintenanceMessage: "We are currently performing maintenance. Please check back later.",
+                NewBadgeDuration:   48,
             }, nil
         }
         return AppConfig{}, err
@@ -174,6 +190,9 @@ func loadConfigFromDB() (AppConfig, error) {
         PremiumEarlyAccessDuration:  premiumEarlyAccessDuration,
         MaxPremiumChapters:         maxPremiumChapters,
         PremiumCooldownScalingEnabled: premiumCooldownScalingEnabled == 1,
+        MaintenanceEnabled: maintenanceEnabled == 1,
+        MaintenanceMessage: maintenanceMessage,
+        NewBadgeDuration:   newBadgeDuration,
     }, nil
 }
 
@@ -388,6 +407,19 @@ func UpdateImageTokenConfig(validityMinutes int) (AppConfig, error) {
     return RefreshAppConfig()
 }
 
+// UpdateNewBadgeDurationConfig updates the duration in hours that media is marked as NEW after update
+func UpdateNewBadgeDurationConfig(hours int) (AppConfig, error) {
+    // Ensure hours is at least 1
+    if hours < 1 {
+        hours = 1
+    }
+    _, err := db.Exec(`UPDATE app_config SET new_badge_duration = ? WHERE id = 1`, hours)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    return RefreshAppConfig()
+}
+
 // ContentRatingToInt converts a content rating string to its integer level
 // 0=safe, 1=suggestive, 2=erotica, 3=pornographic
 // https://api.mangadex.org/docs/3-enumerations/#manga-content-rating
@@ -463,4 +495,34 @@ func GetProcessedImageQuality() int {
         return 85
     }
     return cfg.ProcessedImageQuality
+}
+
+// UpdateMaintenanceConfig updates the maintenance mode settings
+func UpdateMaintenanceConfig(enabled bool, message string) (AppConfig, error) {
+    enabledInt := 0
+    if enabled {
+        enabledInt = 1
+    }
+    _, err := db.Exec(`UPDATE app_config SET maintenance_enabled = ?, maintenance_message = ? WHERE id = 1`,
+        enabledInt, message)
+    if err != nil {
+        return AppConfig{}, err
+    }
+    
+    // Invalidate cache to force reload
+    configMu.Lock()
+    cachedConfig = AppConfig{}
+    configCacheTime = time.Time{}
+    configMu.Unlock()
+    
+    return GetAppConfig()
+}
+
+// GetMaintenanceStatus returns whether maintenance mode is active and the message
+func GetMaintenanceStatus() (enabled bool, message string, err error) {
+    cfg, err := GetAppConfig()
+    if err != nil {
+        return false, "", err
+    }
+    return cfg.MaintenanceEnabled, cfg.MaintenanceMessage, nil
 }

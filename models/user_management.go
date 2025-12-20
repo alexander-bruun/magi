@@ -192,7 +192,7 @@ func assignDefaultPermissionToUser(username string) error {
 }
 
 // FindUserByUsername retrieves a user by their username.
-func FindUserByUsername(username string) (*User, error) {
+var FindUserByUsername = func(username string) (*User, error) {
 	query := `
 	SELECT username, password, role, banned, avatar
 	FROM users

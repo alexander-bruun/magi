@@ -206,11 +206,7 @@ func GetChapter(mangaSlug, chapterSlug string) (*Chapter, error) {
 
 // UpdateChapter modifies an existing chapter
 func UpdateChapter(chapter *Chapter) error {
-	query := `
-	UPDATE chapters
-	SET name = ?, type = ?, file = ?, chapter_cover_url = ?
-	WHERE media_slug = ? AND slug = ?
-	`
+	query := `UPDATE chapters SET name = ?, type = ?, file = ?, chapter_cover_url = ? WHERE media_slug = ? AND slug = ?`
 
 	_, err := db.Exec(query, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, chapter.Slug)
 	if err != nil {
