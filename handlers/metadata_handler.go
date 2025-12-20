@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -18,16 +17,16 @@ import (
 
 // MetadataFormData represents form data for editing media metadata
 type MetadataFormData struct {
-	Name             string `json:"name"`
-	Author           string `json:"author"`
-	Description      string `json:"description"`
-	Year             string `json:"year"`
-	OriginalLanguage string `json:"original_language"`
-	Type             string `json:"manga_type"`
-	Status           string `json:"status"`
-	ContentRating    string `json:"content_rating"`
-	Tags             string `json:"tags"`
-	CoverURL         string `json:"cover_url"`
+	Name             string `json:"name" form:"name"`
+	Author           string `json:"author" form:"author"`
+	Description      string `json:"description" form:"description"`
+	Year             int    `json:"year" form:"year"`
+	OriginalLanguage string `json:"original_language" form:"original_language"`
+	Type             string `json:"manga_type" form:"manga_type"`
+	Status           string `json:"status" form:"status"`
+	ContentRating    string `json:"content_rating" form:"content_rating"`
+	Tags             string `json:"tags" form:"tags"`
+	CoverURL         string `json:"cover_url" form:"cover_url"`
 }
 
 // HandleUpdateMetadataMedia displays search results for updating a local media's metadata.
@@ -154,6 +153,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	// Parse form data
 	var formData MetadataFormData
 	if err := c.BodyParser(&formData); err != nil {
+		log.Errorf("Failed to parse metadata form data: %v", err)
 		return sendBadRequestError(c, ErrBadRequest)
 	}
 
@@ -161,13 +161,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	existingMedia.Name = formData.Name
 	existingMedia.Author = formData.Author
 	existingMedia.Description = formData.Description
-	if formData.Year != "" {
-		if yearInt, err := strconv.Atoi(formData.Year); err == nil {
-			existingMedia.Year = yearInt
-		}
-	} else {
-		existingMedia.Year = 0
-	}
+	existingMedia.Year = formData.Year
 	existingMedia.OriginalLanguage = formData.OriginalLanguage
 	if formData.Type != "" {
 		existingMedia.Type = formData.Type
@@ -294,7 +288,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	if meta != nil {
 		// Get the cover art URL from the provider
 		coverURL := provider.GetCoverImageURL(meta)
-		
+
 		// Download and cache the new cover art if available
 		var cachedImageURL string
 		if coverURL != "" {
@@ -346,26 +340,26 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	} else {
 		// No metadata match - update with local metadata
 		log.Debugf("No metadata match found for '%s' from %s. Updating with local metadata.", existingMedia.Name, provider.Name())
-		
+
 		// Update name from path
 		baseName := filepath.Base(existingMedia.Path)
 		cleanedName := utils.RemovePatterns(baseName)
 		if cleanedName != "" {
 			existingMedia.Name = cleanedName
 		}
-		
+
 		// Detect type from images
 		detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
 		if detectedType != "" {
 			existingMedia.SetType(detectedType)
 		}
-		
+
 		// Try to set poster from local images
 		cachedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
 		if cachedImageURL != "" {
 			existingMedia.CoverArtURL = cachedImageURL
 		}
-		
+
 		// Update media metadata without changing created_at
 		if err := models.UpdateMediaMetadata(existingMedia); err != nil {
 			return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
