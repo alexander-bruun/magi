@@ -4,10 +4,11 @@ import (
     "bufio"
     "bytes"
     "context"
-    "encoding/json"
     "fmt"
+    "html"
     "os"
     "os/exec"
+    "strconv"
     "strings"
     "sync"
     "time"
@@ -18,12 +19,6 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-// WebSocketMessage represents a log message sent over WebSocket
-type WebSocketMessage struct {
-	Type    string `json:"type"`
-	Message string `json:"message"`
-}
-
 // Callback functions for job status notifications (set by handlers package)
 var (
     NotifyScraperStarted  func(scriptID int64, scriptName string)
@@ -32,12 +27,12 @@ var (
 
 // LogStreamManager manages WebSocket connections for log streaming
 type LogStreamManager struct {
-    clients map[int64][]*websocket.Conn // scriptID -> list of connections
+    clients map[string][]*websocket.Conn // key -> list of connections
     mu      sync.RWMutex
 }
 
 var logStreamManager = &LogStreamManager{
-    clients: make(map[int64][]*websocket.Conn),
+    clients: make(map[string][]*websocket.Conn),
 }
 
 // Execution contexts for running scripts (to allow cancellation)
@@ -49,19 +44,19 @@ var execContexts = struct {
 }
 
 // HandleLogsWebSocket establishes a WebSocket connection for streaming logs
-func HandleLogsWebSocket(c *websocket.Conn, scriptID int64) {
+func HandleLogsWebSocket(c *websocket.Conn, key string) {
     // Register the connection
-    registerClient(scriptID, c)
+    registerClient(key, c)
     defer func() {
-        unregisterClient(scriptID, c)
-        log.Debugf("WebSocket client disconnected for script %d", scriptID)
+        unregisterClient(key, c)
+        log.Debugf("WebSocket client disconnected for key %s", key)
     }()
 
-    log.Debugf("WebSocket client connected for script %d", scriptID)
+    log.Debugf("WebSocket client connected for key %s", key)
 
     // Set up pong handler to detect connection health
     c.SetPongHandler(func(string) error {
-        log.Debugf("Received pong from client for script %d", scriptID)
+        log.Debugf("Received pong from client for key %s", key)
         return nil
     })
 
@@ -70,86 +65,107 @@ func HandleLogsWebSocket(c *websocket.Conn, scriptID int64) {
         _, _, err := c.ReadMessage()
         if err != nil {
             if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNormalClosure) {
-                log.Debugf("WebSocket closed for script %d: %v", scriptID, err)
+                log.Debugf("WebSocket closed for key %s: %v", key, err)
             }
             break
         }
     }
 }
 
-// BroadcastLog sends a log message to all connected clients for a script
-func BroadcastLog(scriptID int64, logType string, message string) {
+// ansiToHTML converts ANSI escape codes in a string to HTML font tags for colored display
+func ansiToHTML(input string) string {
+	// Replace ANSI escape codes with HTML font tags
+	// Common ANSI codes: \x1b[1;34m (blue), \x1b[1;32m (green), \x1b[1;33m (yellow), \x1b[1;31m (red), \x1b[0m (reset)
+	
+	// Blue for INFO
+	input = strings.ReplaceAll(input, "\x1b[1;34m", `<font style="color: #3b82f6; display: inline;">`)
+	// Green for SUCCESS
+	input = strings.ReplaceAll(input, "\x1b[1;32m", `<font style="color: #10b981; display: inline;">`)
+	// Yellow for WARNING
+	input = strings.ReplaceAll(input, "\x1b[1;33m", `<font style="color: #f59e0b; display: inline;">`)
+	// Red for ERROR
+	input = strings.ReplaceAll(input, "\x1b[1;31m", `<font style="color: #ef4444; display: inline;">`)
+	// Reset
+	input = strings.ReplaceAll(input, "\x1b[0m", `</font>`)
+	
+	return input
+}
+
+// BroadcastLog sends a log message to all connected clients for a key
+func BroadcastLog(key string, logType string, message string) {
+    // Trim whitespace from the message to avoid extra newlines
+    message = strings.TrimSpace(message)
     // Console log to verify we're getting logs
-    log.Debugf("[BROADCAST] Script %d [%s]: %s", scriptID, logType, message)
+    log.Debugf("[BROADCAST] Key %s [%s]: %s", key, logType, message)
     
     logStreamManager.mu.RLock()
-    connections, exists := logStreamManager.clients[scriptID]
+    connections, exists := logStreamManager.clients[key]
     if !exists || len(connections) == 0 {
         logStreamManager.mu.RUnlock()
-        log.Debugf("No active WebSocket connections for script %d", scriptID)
+        log.Debugf("No active WebSocket connections for key %s", key)
         return
     }
     conns := make([]*websocket.Conn, len(connections))
     copy(conns, connections)
     logStreamManager.mu.RUnlock()
 
-    // Create WebSocket message and marshal to JSON
-    wsMessage := WebSocketMessage{
-        Type:    logType,
-        Message: message,
-    }
-    payloadBytes, err := json.Marshal(wsMessage)
-    if err != nil {
-        log.Errorf("[WEBSOCKET] Failed to marshal WebSocket message: %v", err)
-        return
-    }
+    // Create HTML for HTMX WebSocket extension
+    // Send content that will be appended to #log-output-container
+    // Using a wrapper with hx-swap-oob to ensure HTMX processes it correctly
+    // HTML-escape the message first (ANSI codes don't contain HTML chars so they're unchanged)
+    escapedMessage := html.EscapeString(message)
+    // Then convert ANSI codes to HTML spans
+    ansiConverted := ansiToHTML(escapedMessage)
+    // Send a template fragment that HTMX can parse and inject
+    htmlPayload := fmt.Sprintf(`<div hx-swap-oob="beforeend:#log-output-container" style="margin: 0; padding: 0;"><span style="white-space: nowrap;">%s</span></div>`, ansiConverted)
+    payloadBytes := []byte(htmlPayload)
 
-    log.Debugf("[WEBSOCKET] Broadcasting to %d clients for script %d: %s", len(conns), scriptID, string(payloadBytes))
+    log.Debugf("[WEBSOCKET] Broadcasting to %d clients for key %s: %s", len(conns), key, htmlPayload)
     
     // Track failed connections to clean up
     var failedConns []*websocket.Conn
     
     for i, conn := range conns {
         if err := conn.WriteMessage(websocket.TextMessage, payloadBytes); err != nil {
-            log.Debugf("[WEBSOCKET] Failed to write to client %d for script %d: %v (will clean up)", i, scriptID, err)
+            log.Debugf("[WEBSOCKET] Failed to write to client %d for key %s: %v (will clean up)", i, key, err)
             failedConns = append(failedConns, conn)
         } else {
-            log.Debugf("[WEBSOCKET] Successfully sent message to client %d for script %d", i, scriptID)
+            log.Debugf("[WEBSOCKET] Successfully sent message to client %d for key %s", i, key)
         }
     }
     
     // Clean up failed connections
     if len(failedConns) > 0 {
         for _, failedConn := range failedConns {
-            unregisterClient(scriptID, failedConn)
+            unregisterClient(key, failedConn)
         }
     }
 }
 
-func registerClient(scriptID int64, conn *websocket.Conn) {
+func registerClient(key string, conn *websocket.Conn) {
     logStreamManager.mu.Lock()
     defer logStreamManager.mu.Unlock()
 
-    if logStreamManager.clients[scriptID] == nil {
-        logStreamManager.clients[scriptID] = make([]*websocket.Conn, 0)
+    if logStreamManager.clients[key] == nil {
+        logStreamManager.clients[key] = make([]*websocket.Conn, 0)
     }
-    logStreamManager.clients[scriptID] = append(logStreamManager.clients[scriptID], conn)
+    logStreamManager.clients[key] = append(logStreamManager.clients[key], conn)
 }
 
-func unregisterClient(scriptID int64, conn *websocket.Conn) {
+func unregisterClient(key string, conn *websocket.Conn) {
     logStreamManager.mu.Lock()
     defer logStreamManager.mu.Unlock()
 
-    if connections, exists := logStreamManager.clients[scriptID]; exists {
+    if connections, exists := logStreamManager.clients[key]; exists {
         for i, c := range connections {
             if c == conn {
-                logStreamManager.clients[scriptID] = append(connections[:i], connections[i+1:]...)
+                logStreamManager.clients[key] = append(connections[:i], connections[i+1:]...)
                 conn.Close() // Close the connection
                 break
             }
         }
-        if len(logStreamManager.clients[scriptID]) == 0 {
-            delete(logStreamManager.clients, scriptID)
+        if len(logStreamManager.clients[key]) == 0 {
+            delete(logStreamManager.clients, key)
         }
     }
 }
@@ -198,7 +214,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
         }()
 
         start := time.Now()
-        BroadcastLog(s.ID, "info", fmt.Sprintf("Script '%s' started executing...", s.Name))
+        BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Script '%s' started executing...", s.Name))
 
         outputBuf := bytes.Buffer{}
         errMsg := ""
@@ -249,14 +265,13 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                         cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
                     }
 
+                    // Combine stdout and stderr
                     stdoutPipe, err := cmd.StdoutPipe()
                     if err != nil {
                         errMsg = fmt.Sprintf("Failed to create stdout pipe: %v", err)
                     } else {
-                        stderrPipe, err := cmd.StderrPipe()
-                        if err != nil {
-                            errMsg = fmt.Sprintf("Failed to create stderr pipe: %v", err)
-                        } else if err := cmd.Start(); err != nil {
+                        cmd.Stderr = cmd.Stdout // Redirect stderr to stdout
+                        if err := cmd.Start(); err != nil {
                             errMsg = fmt.Sprintf("Failed to start script: %v", err)
                         } else {
                             log.Debugf("Started bash script execution for script ID %d", s.ID)
@@ -265,35 +280,20 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                             go func() {
                                 defer wg.Done()
                                 scanner := bufio.NewScanner(stdoutPipe)
-                                log.Debugf("[STDOUT] Starting to read stdout for script ID %d", s.ID)
+                                log.Debugf("[STDOUT] Starting to read combined output for script ID %d", s.ID)
                                 for scanner.Scan() {
                                     line := scanner.Text()
                                     log.Debugf("[STDOUT] Script %d: %s", s.ID, line)
                                     outputBuf.WriteString(line + "\n")
-                                    BroadcastLog(s.ID, "info", line)
+                                    BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", line)
                                 }
                                 if err := scanner.Err(); err != nil {
-                                    log.Errorf("[STDOUT] Scanner error for script %d: %v", s.ID, err)
+                                    log.Errorf("[STDOUT] Scanner error for script ID %d: %v", s.ID, err)
                                 }
-                                log.Debugf("[STDOUT] Finished reading stdout for script ID %d", s.ID)
+                                log.Debugf("[STDOUT] Finished reading combined output for script ID %d", s.ID)
                             }()
 
-                            wg.Add(1)
-                            go func() {
-                                defer wg.Done()
-                                scanner := bufio.NewScanner(stderrPipe)
-                                log.Debugf("[STDERR] Starting to read stderr for script ID %d", s.ID)
-                                for scanner.Scan() {
-                                    line := scanner.Text()
-                                    log.Debugf("[STDERR] Script %d: %s", s.ID, line)
-                                    outputBuf.WriteString(line + "\n")
-                                    BroadcastLog(s.ID, "error", line)
-                                }
-                                if err := scanner.Err(); err != nil {
-                                    log.Errorf("[STDERR] Scanner error for script %d: %v", s.ID, err)
-                                }
-                                log.Debugf("[STDERR] Finished reading stderr for script ID %d", s.ID)
-                            }()
+                            // Combined stdout and stderr, no separate stderr goroutine needed
 
                             // Wait for command to complete
                             if err := cmd.Wait(); err != nil {
@@ -321,13 +321,13 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                 venvPath := fmt.Sprintf("%s/venv", tmpDir)
                 
                 // Create virtual environment
-                BroadcastLog(s.ID, "info", "Creating Python virtual environment...")
+                BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", "Creating Python virtual environment...")
                 if err := exec.CommandContext(ctx, "python3", "-m", "venv", venvPath).Run(); err != nil {
                     errMsg = fmt.Sprintf("Failed to create virtual environment: %v", err)
                 } else {
                     // Install packages if any
                     if len(s.Packages) > 0 {
-                        BroadcastLog(s.ID, "info", fmt.Sprintf("Installing packages: %s", strings.Join(s.Packages, ", ")))
+                        BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Installing packages: %s", strings.Join(s.Packages, ", ")))
                         pipCmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/pip", venvPath), "install")
                         pipCmd.Args = append(pipCmd.Args, s.Packages...)
                         pipCmd.Env = os.Environ()
@@ -338,7 +338,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                         if output, err := pipCmd.CombinedOutput(); err != nil {
                             errMsg = fmt.Sprintf("Failed to install packages: %v\nOutput: %s", err, string(output))
                         } else {
-                            BroadcastLog(s.ID, "info", "Packages installed successfully")
+                            BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", "Packages installed successfully")
                         }
                     }
                     
@@ -356,14 +356,13 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                             }
                             cmd.Dir = tmpDir // Set working directory to temp dir
 
+                            // Combine stdout and stderr
                             stdoutPipe, err := cmd.StdoutPipe()
                             if err != nil {
                                 errMsg = fmt.Sprintf("Failed to create stdout pipe: %v", err)
                             } else {
-                                stderrPipe, err := cmd.StderrPipe()
-                                if err != nil {
-                                    errMsg = fmt.Sprintf("Failed to create stderr pipe: %v", err)
-                                } else if err := cmd.Start(); err != nil {
+                                cmd.Stderr = cmd.Stdout // Redirect stderr to stdout
+                                if err := cmd.Start(); err != nil {
                                     errMsg = fmt.Sprintf("Failed to start script: %v", err)
                                 } else {
                                     log.Debugf("Started python script execution for script ID %d", s.ID)
@@ -372,36 +371,18 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
                                     go func() {
                                         defer wg.Done()
                                         scanner := bufio.NewScanner(stdoutPipe)
-                                        log.Debugf("[STDOUT] Starting to read stdout for script ID %d", s.ID)
+                                        log.Debugf("[STDOUT] Starting to read combined output for script ID %d", s.ID)
                                         for scanner.Scan() {
                                             line := scanner.Text()
                                             log.Debugf("[STDOUT] Script %d: %s", s.ID, line)
                                             outputBuf.WriteString(line + "\n")
-                                            BroadcastLog(s.ID, "info", line)
+                                            BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", line)
                                         }
                                         if err := scanner.Err(); err != nil {
                                             log.Errorf("[STDOUT] Scanner error for script %d: %v", s.ID, err)
                                         }
                                         log.Debugf("[STDOUT] Finished reading stdout for script ID %d", s.ID)
                                     }()
-
-                                    wg.Add(1)
-                                    go func() {
-                                        defer wg.Done()
-                                        scanner := bufio.NewScanner(stderrPipe)
-                                        log.Debugf("[STDERR] Starting to read stderr for script ID %d", s.ID)
-                                        for scanner.Scan() {
-                                            line := scanner.Text()
-                                            log.Debugf("[STDERR] Script %d: %s", s.ID, line)
-                                            outputBuf.WriteString(line + "\n")
-                                            BroadcastLog(s.ID, "error", line)
-                                        }
-                                        if err := scanner.Err(); err != nil {
-                                            log.Errorf("[STDERR] Scanner error for script %d: %v", s.ID, err)
-                                        }
-                                        log.Debugf("[STDERR] Finished reading stderr for script ID %d", s.ID)
-                                    }()
-
                                     // Wait for command to complete
                                     if err := cmd.Wait(); err != nil {
                                         if outputBuf.Len() == 0 {
@@ -427,7 +408,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
         status := "success"
         if errMsg != "" {
             status = "error"
-            BroadcastLog(s.ID, "error", errMsg)
+            BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "error", errMsg)
         }
 
         if l != nil {
@@ -442,7 +423,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
             log.Errorf("Failed to update script last run: %v", err)
         }
 
-        BroadcastLog(s.ID, "info", fmt.Sprintf("Script execution completed in %s", duration.String()))
+        BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Script execution completed in %s", duration.String()))
         log.Infof("Script '%s' (ID=%d) finished with status: %s", s.Name, s.ID, status)
     }(script, execLog, variables)
 
@@ -458,7 +439,7 @@ func CancelScriptExecution(scriptID int64) error {
         return fmt.Errorf("no running script with id %d", scriptID)
     }
     cancel()
-    BroadcastLog(scriptID, "info", "Script execution cancelled by user")
+    BroadcastLog("scraper_"+strconv.FormatInt(scriptID, 10), "info", "Script execution cancelled by user")
     return nil
 }
 

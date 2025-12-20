@@ -14,6 +14,7 @@ import (
 
 	cron "github.com/robfig/cron/v3"
 
+	"github.com/alexander-bruun/magi/cache"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -193,7 +194,8 @@ var (
 	scannedPathCount   int
 	scanMutex          sync.Mutex
 	indexingRunning   sync.Map
-	IndexMediaFunc    func(path, librarySlug string) (string, error)
+	IndexMediaFunc    func(path, librarySlug string, cacheBackend cache.CacheBackend) (string, error)
+	cacheBackend      cache.CacheBackend
 )
 
 // Indexer represents the state of an indexer
@@ -207,8 +209,9 @@ type Indexer struct {
 }
 
 // InitializeIndexer sets up indexers and notifications
-func InitializeIndexer(cacheDirectory string, libraries []models.Library) {
+func InitializeIndexer(cacheDirectory string, libraries []models.Library, cb cache.CacheBackend) {
 	CacheDataDirectory = cacheDirectory
+	cacheBackend = cb
 	log.Info("Initializing Indexer and Scheduler")
 
 	for _, library := range libraries {
@@ -323,6 +326,7 @@ func (idx *Indexer) runIndexingJob() bool {
 	}
 
 	log.Debugf("Starting scheduled indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName)
+	BroadcastLog("indexer_"+idx.Library.Slug, "info", fmt.Sprintf("Starting indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName))
 	start := time.Now()
 
 	for _, folder := range idx.Library.Folders {
@@ -338,14 +342,16 @@ func (idx *Indexer) runIndexingJob() bool {
 			continue
 		}
 		
-		log.Debugf("Processing folder '%s' for library '%s'", absFolder, idx.Library.Name)
+		// Processing folder - don't log to avoid spam
 		if err := idx.processFolder(absFolder); err != nil {
 			log.Errorf("Error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
+			BroadcastLog("indexer_"+idx.Library.Slug, "error", fmt.Sprintf("Error processing folder '%s': %s", absFolder, err))
 		}
 
 		select {
 		case <-idx.stop:
 			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
+			BroadcastLog("indexer_"+idx.Library.Slug, "info", "Indexing interrupted")
 			return true
 		default:
 		}
@@ -363,6 +369,7 @@ func (idx *Indexer) runIndexingJob() bool {
 		seconds,
 		totalScanned,
 	)
+	BroadcastLog("indexer_"+idx.Library.Slug, "info", fmt.Sprintf("Indexing completed in %.1fs (scanned %d content paths)", seconds, totalScanned))
 
 	go func(library models.Library) {
 		mangas, err := models.GetMediasByLibrarySlug(library.Slug)
@@ -480,7 +487,7 @@ func (idx *Indexer) processFolder(folder string) error {
 		case MediaDirectory, SingleMediaFile:
 			mediaPaths = append(mediaPaths, path)
 		default:
-			log.Debugf("Skipping: %s", entry.Name())
+			// Skipping non-media files - don't log to avoid spam
 		}
 	}
 
@@ -503,18 +510,11 @@ func (idx *Indexer) processFolder(folder string) error {
 				// Increment the global scan counter
 				scanMutex.Lock()
 				scannedPathCount++
-				currentCount := scannedPathCount
 				scanMutex.Unlock()
 
-				entryName := filepath.Base(path)
-				log.Debugf("Scanning media [%d]: %s", currentCount, path)
+				// Scanning media - don't log to avoid spam
 
-				// Notify progress
-				if NotifyIndexerProgress != nil {
-					NotifyIndexerProgress(idx.Library.Slug, entryName, fmt.Sprintf("%d scanned", currentCount))
-				}
-
-				_, err := IndexMediaFunc(path, idx.Library.Slug)
+				_, err := IndexMediaFunc(path, idx.Library.Slug, cacheBackend)
 				results <- err
 			}
 		}()

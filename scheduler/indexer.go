@@ -16,6 +16,7 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 
+	"github.com/alexander-bruun/magi/cache"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
@@ -75,7 +76,7 @@ type OPF struct {
 }
 
 // IndexMedia inspects a media directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
-func IndexMedia(absolutePath, librarySlug string) (string, error) {
+func IndexMedia(absolutePath, librarySlug string, cacheBackend cache.CacheBackend) (string, error) {
 	defer utils.LogDuration("IndexMedia", time.Now(), absolutePath)
 
 	// Check if this is a file (single-chapter media)
@@ -198,6 +199,8 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 				existingMedia.Path = absolutePath
 				if err := models.UpdateMedia(existingMedia); err != nil {
 					log.Errorf("Failed to update media path for '%s': %s", slug, err)
+				} else {
+					BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' - switched to better source with %d chapters", cleanedName, newCandidateCount))
 				}
 			}
 
@@ -271,7 +274,15 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 			log.Debugf("Updated type to novel (was '%s') for existing media '%s' based on presence of EPUB files", originalType, slug)
 			if err := models.UpdateMedia(existingMedia); err != nil {
 				log.Errorf("Failed to update media type for '%s': %s", slug, err)
+			} else {
+				BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' - detected as novel (contains EPUB files)", cleanedName))
 			}
+		}
+
+		// Skip indexing if the directory hasn't been modified since last update
+		if !fileInfo.ModTime().After(existingMedia.UpdatedAt) {
+			log.Debugf("Skipping indexing for unchanged media '%s'", slug)
+			return slug, nil
 		}
 
 		// Index chapters recursively; returns added and deleted counts.
@@ -287,7 +298,10 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 			}
 		}
 		
-		log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+		if added > 0 || deleted > 0 {
+			log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+			BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' (added: %d chapters, deleted: %d)", cleanedName, added, deleted))
+		}
 		return slug, nil
 	}
 
@@ -337,8 +351,11 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 	if err := models.CreateMedia(newMedia); err != nil {
 
 		log.Errorf("Failed to create series: %s (%s)", slug, err.Error())
+		BroadcastLog("indexer_"+librarySlug, "error", fmt.Sprintf("Failed to create series '%s': %s", cleanedName, err.Error()))
 		return "", err
 	}
+
+	BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Created new series: %s", cleanedName))
 
 	// Start async image processing after series is created
 	go func() {
@@ -537,6 +554,7 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 					log.Errorf("Failed to update media timestamp for '%s': %s", slug, err)
 				}
 				log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+				BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' (added: %d chapters, deleted: %d)", cleanedName, added, deleted))
 			}
 			return slug, nil
 		} else {
@@ -570,9 +588,9 @@ func IndexMedia(absolutePath, librarySlug string) (string, error) {
 
 	if added > 0 || deleted > 0 {
 		if meta == nil {
-			log.Infof("Indexed series: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
+			log.Infof("Created series: '%s' (added=%d deleted=%d, fetched from local metadata)", cleanedName, added, deleted)
 		} else {
-			log.Infof("Indexed series: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
+			log.Infof("Created series: '%s' (added=%d deleted=%d)", cleanedName, added, deleted)
 		}
 	}
 	return slug, nil
@@ -631,7 +649,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") ||
 			strings.HasSuffix(lowerPath, ".epub") {
 			log.Debugf("Extracting poster from single archive file '%s' for media '%s'", absolutePath, slug)
-			return utils.ExtractPosterImage(absolutePath, slug, filepath.Join(CacheDataDirectory, "posters"), models.GetProcessedImageQuality())
+			return utils.ExtractPosterImage(absolutePath, slug, cacheBackend, models.GetProcessedImageQuality())
 		} else {
 			log.Debugf("Path '%s' is a file but not a supported archive format", absolutePath)
 		}
@@ -655,7 +673,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 					strings.HasSuffix(lowerName, ".epub") {
 					archivePath := filepath.Join(absolutePath, entry.Name())
 					log.Debugf("Extracting poster from archive '%s' in directory for media '%s'", entry.Name(), slug)
-					return utils.ExtractPosterImage(archivePath, slug, filepath.Join(CacheDataDirectory, "posters"), models.GetProcessedImageQuality())
+					return utils.ExtractPosterImage(archivePath, slug, cacheBackend, models.GetProcessedImageQuality())
 				}
 			}
 		}
@@ -723,7 +741,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 }
 
 func processLocalImage(slug, imagePath string) (string, error) {
-	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, filepath.Join(CacheDataDirectory, "posters"), models.GetProcessedImageQuality())
+	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, cacheBackend, models.GetProcessedImageQuality())
 }
 
 func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
@@ -741,7 +759,7 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	// Retry logic for downloading images
 	maxRetries := 3
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		if err := utils.DownloadImageWithThumbnails(filepath.Join(CacheDataDirectory, "posters"), slug, coverArtURL, models.GetProcessedImageQuality()); err != nil {
+		if err := utils.DownloadImageWithThumbnails(slug, coverArtURL, cacheBackend, models.GetProcessedImageQuality()); err != nil {
 			log.Warnf("Error downloading file from %s (attempt %d/%d): %s", coverArtURL, attempt, maxRetries, err)
 			if attempt < maxRetries {
 				// Wait before retrying (exponential backoff)
