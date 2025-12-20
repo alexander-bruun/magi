@@ -6,9 +6,6 @@
 (function() {
     'use strict';
 
-    const POLL_INTERVAL = 30000; // Poll every 30 seconds
-    let pollTimer = null;
-
     /**
      * Fetch unread notification count
      */
@@ -20,8 +17,7 @@
             
             if (!response.ok) {
                 if (response.status === 401) {
-                    // User not authenticated, stop polling
-                    stopPolling();
+                    // User not authenticated
                     return 0;
                 }
                 throw new Error('Failed to fetch notification count');
@@ -233,27 +229,11 @@
     }
 
     /**
-     * Start polling for notifications
+     * Load initial notification count on page load
      */
-    function startPolling() {
-        // Initial fetch
-        refreshNotifications();
-        
-        // Poll every 30 seconds
-        pollTimer = setInterval(async () => {
-            const count = await fetchUnreadCount();
-            updateBadge(count);
-        }, POLL_INTERVAL);
-    }
-
-    /**
-     * Stop polling
-     */
-    function stopPolling() {
-        if (pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-        }
+    function loadInitialNotifications() {
+        // Single fetch of unread count on page load only
+        fetchUnreadCount().then(count => updateBadge(count));
     }
 
     /**
@@ -268,10 +248,7 @@
 
         setupDropdownListener();
         setupMarkAllButton();
-        startPolling();
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', stopPolling);
+        loadInitialNotifications();
     }
 
     // Initialize when DOM is ready

@@ -150,169 +150,6 @@
   })();
 
   // ============================================================================
-  // WEBSOCKET HANDLER
-  // ============================================================================
-
-  /**
-   * Generic WebSocket Handler
-   * A reusable WebSocket client with automatic reconnection and lifecycle management
-   */
-  class WebSocketHandler {
-    constructor(options) {
-      // Required options
-      this.wsUrl = options.wsUrl;
-      
-      // Connection options
-      this.reconnectInterval = options.reconnectInterval || 3000;
-      this.maxReconnectAttempts = options.maxReconnectAttempts || Infinity;
-      this.autoConnect = options.autoConnect !== false;
-      
-      // Callbacks
-      this.onOpen = options.onOpen || (() => {});
-      this.onMessage = options.onMessage || (() => {});
-      this.onError = options.onError || ((error) => console.error('WebSocket error:', error));
-      this.onClose = options.onClose || (() => {});
-      
-      // Message parsing
-      this.parseMessage = options.parseMessage || this.defaultParseMessage.bind(this);
-      
-      // Internal state
-      this.ws = null;
-      this.reconnectAttempts = 0;
-      this.reconnectTimer = null;
-      this.isManualClose = false;
-      
-      // Auto-connect if enabled
-      if (this.autoConnect) {
-        this.connect();
-      }
-      
-      // Setup cleanup on page unload
-      this.setupCleanup();
-    }
-    
-    defaultParseMessage(event) {
-      try {
-        return JSON.parse(event.data);
-      } catch (e) {
-        console.error('Failed to parse WebSocket message:', e);
-        return null;
-      }
-    }
-    
-    connect() {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        return;
-      }
-      
-      this.isManualClose = false;
-      
-      try {
-        this.ws = new WebSocket(this.wsUrl);
-        
-        this.ws.onopen = (event) => {
-          this.reconnectAttempts = 0;
-          
-          if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
-          }
-          
-          this.onOpen(event);
-        };
-        
-        this.ws.onmessage = (event) => {
-          const data = this.parseMessage(event);
-          if (data !== null) {
-            this.onMessage(data, event);
-          }
-        };
-        
-        this.ws.onerror = (error) => {
-          this.onError(error);
-        };
-        
-        this.ws.onclose = (event) => {
-          this.onClose(event);
-          
-          if (!this.isManualClose) {
-            this.handleReconnect();
-          }
-        };
-      } catch (e) {
-        console.error('Failed to connect WebSocket:', e);
-        this.onError(e);
-        
-        if (!this.isManualClose) {
-          this.handleReconnect();
-        }
-      }
-    }
-    
-    handleReconnect() {
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.warn('Max reconnect attempts reached');
-        return;
-      }
-      
-      this.reconnectAttempts++;
-      
-      this.reconnectTimer = setTimeout(() => {
-        this.connect();
-      }, this.reconnectInterval);
-    }
-    
-    send(data) {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        const message = typeof data === 'string' ? data : JSON.stringify(data);
-        this.ws.send(message);
-        return true;
-      } else {
-        console.warn('WebSocket is not connected. Cannot send message.');
-        return false;
-      }
-    }
-    
-    disconnect() {
-      this.isManualClose = true;
-      
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-      
-      if (this.ws) {
-        this.ws.close();
-        this.ws = null;
-      }
-    }
-    
-    reconnect() {
-      this.disconnect();
-      this.reconnectAttempts = 0;
-      this.connect();
-    }
-    
-    getState() {
-      if (!this.ws) return 'CLOSED';
-      
-      switch (this.ws.readyState) {
-        case WebSocket.CONNECTING: return 'CONNECTING';
-        case WebSocket.OPEN: return 'OPEN';
-        case WebSocket.CLOSING: return 'CLOSING';
-        case WebSocket.CLOSED: return 'CLOSED';
-        default: return 'UNKNOWN';
-      }
-    }
-    
-    setupCleanup() {
-      window.addEventListener('beforeunload', () => {
-        this.disconnect();
-      });
-    }
-  }
-
-  // ============================================================================
   // ANSI COLOR UTILITIES
   // ============================================================================
 
@@ -419,164 +256,6 @@
   }
 
   // ============================================================================
-  // LOG VIEWER
-  // ============================================================================
-
-  /**
-   * WebSocket Log Viewer
-   * Reusable component for streaming logs via WebSocket
-   * Built on top of the generic WebSocketHandler
-   */
-  class LogViewer {
-    constructor(options) {
-      // UI elements
-      this.containerId = options.containerId;
-      this.outputId = options.outputId;
-      this.maxEntries = options.maxEntries || 1000;
-      
-      // Log formatting
-      this.colorMap = options.colorMap || this.getDefaultColorMap();
-      this.formatMessage = options.formatMessage || this.defaultFormatMessage.bind(this);
-      this.enableAnsiColors = options.enableAnsiColors !== false; // Default to true
-      
-      // Get DOM elements
-      this.container = document.getElementById(this.containerId);
-      this.output = document.getElementById(this.outputId);
-      
-      if (!this.container || !this.output) {
-        console.error('LogViewer: Container or output element not found');
-        return;
-      }
-      
-      // Create WebSocket handler with log-specific callbacks
-      this.wsHandler = new WebSocketHandler({
-        wsUrl: options.wsUrl,
-        reconnectInterval: options.reconnectInterval || 3000,
-        maxReconnectAttempts: options.maxReconnectAttempts || Infinity,
-        onMessage: (data) => this.addLogEntry(data),
-        onError: (error) => console.error('LogViewer: WebSocket error:', error)
-      });
-    }
-    
-    getDefaultColorMap() {
-      return {
-        error: '#ff6b6b',
-        stderr: '#ff6b6b',
-        fatal: '#ff6b6b',
-        warn: '#ffd93d',
-        warning: '#ffd93d',
-        success: '#6bcf7f',
-        info: '#6bcf7f',
-        default: '#6bcf7f'
-      };
-    }
-    
-    defaultFormatMessage(data) {
-      return data.message;
-    }
-    
-    /**
-     * Parse ANSI escape sequences and convert to HTML spans with CSS styling
-     * @param {string} text - Text containing ANSI escape sequences
-     * @returns {string} HTML string with styled spans
-     */
-    parseAnsiColors(text) {
-      if (!this.enableAnsiColors || !text) {
-        return escapeHtml(text);
-      }
-      
-      return parseAnsiColors(text);
-    }
-    
-    /**
-     * Apply CSS styles to text based on ANSI codes
-     * @param {string} text - Plain text to style
-     * @param {Array} styles - Array of style names
-     * @returns {string} HTML span with applied styles
-     */
-    applyStyles(text, styles) {
-      return applyAnsiStyles(text, styles);
-    }
-    
-    /**
-     * Escape HTML entities
-     * @param {string} text - Text to escape
-     * @returns {string} HTML-escaped text
-     */
-    escapeHtml(text) {
-      return escapeHtml(text);
-    }
-    
-    addLogEntry(data) {
-      const logEntry = document.createElement('div');
-      logEntry.className = 'log-entry';
-      
-      // Check if message contains ANSI escape sequences
-      const message = this.formatMessage(data);
-      const hasAnsiCodes = /\x1b\[([0-9;]*)m/.test(message);
-      
-      if (hasAnsiCodes && this.enableAnsiColors) {
-        // Parse ANSI colors and render as HTML
-        // Don't apply global color when ANSI codes are present
-        logEntry.innerHTML = this.parseAnsiColors(message);
-      } else {
-        // Regular text rendering with global color
-        const color = this.getLogColor(data);
-        logEntry.style.color = color;
-        logEntry.textContent = message;
-      }
-      
-      // Add to output
-      this.output.appendChild(logEntry);
-      
-      // Limit entries for performance
-      const entries = this.output.children;
-      if (entries.length > this.maxEntries) {
-        this.output.removeChild(entries[0]);
-      }
-      
-      // Auto-scroll to bottom
-      this.container.scrollTop = this.container.scrollHeight;
-    }
-    
-    getLogColor(data) {
-      const type = (data.type || '').toLowerCase();
-      const message = (data.message || '').toLowerCase();
-      
-      // Check type first
-      if (this.colorMap[type]) {
-        return this.colorMap[type];
-      }
-      
-      // Check message content for keywords
-      for (const keyword in this.colorMap) {
-        if (message.includes(keyword)) {
-          return this.colorMap[keyword];
-        }
-      }
-      
-      return this.colorMap.default;
-    }
-    
-    // Public API methods
-    disconnect() {
-      if (this.wsHandler) {
-        this.wsHandler.disconnect();
-      }
-    }
-    
-    reconnect() {
-      if (this.wsHandler) {
-        this.wsHandler.reconnect();
-      }
-    }
-    
-    getState() {
-      return this.wsHandler ? this.wsHandler.getState() : 'CLOSED';
-    }
-  }
-
-  // ============================================================================
   // CONFIG MANAGER MODULE
   // ============================================================================
 
@@ -625,156 +304,44 @@
     }
 
     function initConsoleLogs() {
-      const container = document.getElementById('console-logs-container');
-      const output = document.getElementById('console-logs-output');
-      if (!container || !output || container.dataset.initialized) return;
-
-      container.dataset.initialized = 'true';
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = protocol + '//' + window.location.host + '/admin/config/logs';
+      // Console logs now use HTMX WebSocket extension
+      // Add autoscroll functionality for log outputs
       
-      new LogViewer({
-        wsUrl: wsUrl,
-        containerId: 'console-logs-container',
-        outputId: 'console-logs-output',
-        maxEntries: 1000,
-        reconnectInterval: 3000,
-        colorMap: {
-          error: '#ff6b6b',
-          stderr: '#ff6b6b',
-          success: 'rgb(var(--success))',
-          info: 'white',
-          default: 'white'
-        }
-      });
+      // Initial scroll to bottom for existing logs
+      const consoleContainer = document.getElementById('console-logs-container');
+      if (consoleContainer) {
+        consoleContainer.scrollTop = consoleContainer.scrollHeight;
+      }
+      const scraperContainer = document.getElementById('scraper-log-viewer');
+      if (scraperContainer) {
+        scraperContainer.scrollTop = scraperContainer.scrollHeight;
+      }
+      
+      // Add autoscroll on new websocket messages (only once)
+      if (!window.logAutoscrollInitialized) {
+        document.addEventListener('htmx:wsAfterMessage', function(event) {
+          const target = event.detail.elt;
+          if (target) {
+            // Check for console logs (config page) - ws-connect is on outer div, scroll inner container
+            if (target.querySelector('#console-logs-container')) {
+              const container = target.querySelector('#console-logs-container');
+              if (container) {
+                container.scrollTop = container.scrollHeight;
+              }
+            }
+            // Check for scraper logs - ws-connect is on the scrollable container itself
+            if (target.id === 'scraper-log-viewer') {
+              target.scrollTop = target.scrollHeight;
+            }
+          }
+        });
+        window.logAutoscrollInitialized = true;
+      }
     }
 
     return {
       init: init,
       updateTokenFields: updateTokenFields
-    };
-  })();
-
-  /**
-   * Manages scraper script UI interactions
-   */
-  const ScraperManager = (function() {
-    function updateCodeEditor(languageSelect) {
-      // Update code editor language
-      const codeEditor = document.getElementById('script-content');
-      if (codeEditor) {
-        let newMode;
-        if (languageSelect.value === 'python') {
-          codeEditor.setAttribute('data-code-editor', 'python');
-          codeEditor.placeholder = "# Python script\n# Enter your python script here\nprint('Hello from scraper')";
-          newMode = 'python';
-        } else {
-          codeEditor.setAttribute('data-code-editor', 'shell');
-          codeEditor.placeholder = "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'";
-          newMode = 'shell';
-        }
-        
-        // Update CodeMirror editor mode if it exists
-        if (window.CodeEditorManager) {
-          window.CodeEditorManager.updateEditorMode(codeEditor, newMode);
-        }
-      }
-    }
-
-    function init() {
-      // Handle language change for code editor updates
-      document.addEventListener('change', function(e) {
-        if (e.target.id === 'script-language') {
-          updateCodeEditor(e.target);
-        }
-      });
-
-      // Initial code editor setup
-      const languageSelect = document.getElementById('script-language');
-      if (languageSelect) {
-        updateCodeEditor(languageSelect);
-      }
-
-      // Handle run/cancel button visibility
-      const runBtn = document.getElementById('run-btn');
-      const cancelBtn = document.getElementById('cancel-btn');
-
-      if (runBtn && cancelBtn) {
-        document.addEventListener('htmx:beforeRequest', function(evt) {
-          if (evt.detail.verb === 'POST' && evt.detail.path.includes('/run')) {
-            runBtn.style.display = 'none';
-            cancelBtn.style.display = 'inline-block';
-          }
-        });
-
-        document.addEventListener('htmx:afterRequest', function(evt) {
-          if (evt.detail.verb === 'POST' && (evt.detail.path.includes('/run') || evt.detail.path.includes('/cancel'))) {
-            runBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'none';
-          }
-        });
-      }
-
-      // Initialize first tab as active
-      document.addEventListener('DOMContentLoaded', function() {
-        const firstTab = document.querySelector('[data-script-id]');
-        if (firstTab) {
-          firstTab.classList.add('uk-active');
-        }
-
-        // Auto-initialize scraper log viewers
-        initScraperLogViewers();
-      });
-
-      // Reinitialize after HTMX swaps
-      document.addEventListener('htmx:afterSwap', function() {
-        initScraperLogViewers();
-      });
-    }
-
-    function initScraperLogViewers() {
-      document.querySelectorAll('[data-script-id]').forEach(function(viewer) {
-        if (viewer.dataset.logViewerInitialized) return;
-        viewer.dataset.logViewerInitialized = 'true';
-
-        const scriptId = viewer.getAttribute('data-script-id');
-        const container = viewer;
-        const output = viewer.querySelector('#log-output-container');
-        if (!output) return;
-
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = protocol + '//' + window.location.host + '/admin/scraper/' + scriptId + '/logs';
-        
-        new LogViewer({
-          wsUrl: wsUrl,
-          containerId: viewer.id,
-          outputId: output.id,
-          maxEntries: 500,
-          reconnectInterval: 1000,
-          maxReconnectAttempts: 5,
-          enableAnsiColors: true,
-          formatMessage: function(data) {
-            // If message contains ANSI colors, it's already formatted - don't add prefix
-            if (/\x1b\[([0-9;]*)m/.test(data.message)) {
-              return data.message;
-            }
-            // Otherwise, add the type prefix for plain messages
-            return '[' + data.type.toUpperCase() + '] ' + data.message;
-          },
-          colorMap: {
-            error: '#ff6b6b',
-            stderr: '#ff6b6b',
-            success: 'rgb(var(--success))',
-            info: 'white',
-            default: 'white'
-          }
-        });
-      });
-    }
-
-    return {
-      init: init
     };
   })();
 
@@ -1356,10 +923,7 @@
           });
           editor.setSize('100%', height);
           ta.classList.add('code-editor-hidden');
-          const form = ta.closest('form');
-          if (form) {
-            form.addEventListener('submit', () => editor.save());
-          }
+          // Note: Content syncing is handled globally by htmx:beforeRequest listener
           // Store reference to editor on textarea for easy access
           ta._codeMirrorEditor = editor;
           this.editors.add(editor);
@@ -1386,6 +950,12 @@
       },
 
       init() {
+        this.observeTheme();
+        // Sync all code editors before HTMX requests
+        document.addEventListener('htmx:beforeRequest', () => {
+          this.editors.forEach((editor) => editor.save());
+        });
+
         const ready = () => {
           // Wait for CodeMirror to be available
           const waitForCodeMirror = () => {
@@ -1418,8 +988,6 @@
             waitForCodeMirror();
           }
         });
-        
-        this.observeTheme();
       }
     };
 
@@ -1619,7 +1187,6 @@
       safeExecute(() => ThemeManager.init(), 'Theme manager');
       safeExecute(() => SearchModalManager.init(), 'Search modal focus');
       safeExecute(() => CropperManager.init(), 'Cropper manager');
-      safeExecute(() => ScraperManager.init(), 'Scraper manager');
       safeExecute(() => ConfigManager.init(), 'Config manager');
       safeExecute(() => JobStatusManager.init(), 'Job status manager');
     }
@@ -1833,11 +1400,8 @@
   // Export to window
   window.Magi = {
     SmoothScroll: SmoothScroll,
-    WebSocketHandler: WebSocketHandler,
-    LogViewer: LogViewer,
     JobStatusManager: JobStatusManager,
     CropperManager: CropperManager,
-    ScraperManager: ScraperManager,
     ConfigManager: ConfigManager,
     parseAnsiColors: parseAnsiColors,
     applyAnsiStyles: applyAnsiStyles,
@@ -1846,8 +1410,6 @@
   };
 
   // Maintain backward compatibility
-  window.WebSocketHandler = WebSocketHandler;
-  window.LogViewer = LogViewer;
   window.smoothScroll = SmoothScroll;
 
   // ============================================================================
@@ -1974,67 +1536,6 @@
     UIkit.modal(document.getElementById('file-explorer-modal')).hide();
   };
 
-  // ============================================================================
-  // SLIDER DRAG PREVENTION MODULE
-  // ============================================================================
-  
-  /**
-   * Prevents clicks on slider items when they were dragged instead of clicked.
-   * This fixes the issue where dragging the slider navigates to unintended series.
-   */
-  const SliderDragPrevention = (function() {
-    let isDragging = false;
-    let dragThreshold = 5; // pixels
-    let startX, startY;
-    
-    function init() {
-      // Track mousedown on slider
-      document.addEventListener('mousedown', function(e) {
-        if (e.target.closest('[uk-slider]')) {
-          startX = e.clientX;
-          startY = e.clientY;
-          isDragging = false;
-        }
-      });
-      
-      // Track mousemove to detect drag
-      document.addEventListener('mousemove', function(e) {
-        if (startX !== undefined && !isDragging) {
-          const deltaX = Math.abs(e.clientX - startX);
-          const deltaY = Math.abs(e.clientY - startY);
-          if (deltaX > dragThreshold || deltaY > dragThreshold) {
-            isDragging = true;
-          }
-        }
-      });
-      
-      // Reset on mouseup
-      document.addEventListener('mouseup', function() {
-        startX = undefined;
-        startY = undefined;
-        // Keep isDragging true briefly to prevent the click
-        setTimeout(function() {
-          isDragging = false;
-        }, 50); // Increased timeout
-      });
-      
-      // Prevent clicks on slider items if we detected a drag
-      document.addEventListener('click', function(e) {
-        if (isDragging && e.target.closest('[uk-slider] a')) {
-          e.preventDefault();
-          e.stopPropagation();
-          isDragging = false;
-          return false;
-        }
-      }, true); // Use capture phase
-    }
-    
-    return {
-      init: init
-    };
-  })();
-  
-  // Initialize slider drag prevention
-  SliderDragPrevention.init();
+
 
 })(window);
