@@ -10,3 +10,6 @@ magi.db-shm
 magi.db-wal
 node_modules/
 scripts/scrapers/**
+*.out
+.env
+minio-data/
