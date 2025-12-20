@@ -8,7 +8,11 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Layout(content templ.Component, userRole string, currentPath string) templ.Component {
+import (
+	"github.com/alexander-bruun/magi/models"
+)
+
+func Layout(content templ.Component, userRole string, currentPath string, unreadCount int, notifications []models.UserNotification) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,15 +33,25 @@ func Layout(content templ.Component, userRole string, currentPath string) templ.
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dim\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"description\" content=\"Magi - Your media library management system\"><link rel=\"icon\" type=\"image/x-icon\" href=\"/assets/img/icon.png\"><title>Magi</title><!-- Critical CSS --><link rel=\"stylesheet\" href=\"/assets/css/vendor/core.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/vendor/utilities.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/styles.css\"><!-- Non-critical CSS - defer loading --><noscript></noscript><!-- Theme initialization - must run before body renders --><script>\n\t\t\t\tconst htmlElement = document.documentElement;\n\n\t\t\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(\"__FRANKEN__\") || \"{}\");\n\n\t\t\t\tif (\n\t\t\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t\t\t) {\n\t\t\t\t\thtmlElement.classList.add(\"dark\");\n\t\t\t\t} else {\n\t\t\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t\t\t}\n\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.theme || \"uk-theme-zinc\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.radii || \"uk-radii-md\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.shadows || \"uk-shadows-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.font || \"uk-font-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.chart || \"uk-chart-default\");\n\t\t\t</script><!-- Core UI - async for non-blocking --><script src=\"/assets/js/vendor/core.iife.js\"></script><script src=\"/assets/js/vendor/icon.iife.js\"></script><!-- Global utilities - load immediately --><script>\n\t\t\t\twindow.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };\n\t\t\t</script><!-- Application scripts - defer for optimal loading --><script src=\"/assets/js/vendor/htmx.min.js\" defer></script><script src=\"/assets/js/vendor/htmx-ext-ws.js\" defer></script><script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script><script src=\"/assets/js/notifications.js\" defer></script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dim\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"description\" content=\"Magi - Your media library management system\"><link rel=\"icon\" type=\"image/webp\" href=\"/assets/img/icon.webp\"><title>Magi</title><link rel=\"stylesheet\" href=\"/assets/css/vendor/core.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/vendor/utilities.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/styles.css\"><!-- Theme initialization - must run before body renders --><script>\n\t\t\t\tconst htmlElement = document.documentElement;\n\n\t\t\t\tconst __FRANKEN__ = JSON.parse(localStorage.getItem(\"__FRANKEN__\") || \"{}\");\n\n\t\t\t\tif (\n\t\t\t\t\t__FRANKEN__.mode === \"dark\" ||\n\t\t\t\t\t(!__FRANKEN__.mode &&\n\t\t\t\t\twindow.matchMedia(\"(prefers-color-scheme: dark)\").matches)\n\t\t\t\t) {\n\t\t\t\t\thtmlElement.classList.add(\"dark\");\n\t\t\t\t} else {\n\t\t\t\t\thtmlElement.classList.remove(\"dark\");\n\t\t\t\t}\n\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.theme || \"uk-theme-zinc\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.radii || \"uk-radii-md\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.shadows || \"uk-shadows-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.font || \"uk-font-sm\");\n\t\t\t\thtmlElement.classList.add(__FRANKEN__.chart || \"uk-chart-default\");\n\t\t\t</script><!-- Core UI - async for non-blocking --><script src=\"/assets/js/vendor/core.iife.js\"></script><script src=\"/assets/js/vendor/icon.iife.js\"></script><!-- Global utilities - load immediately --><script>\n\t\t\t\twindow.titleHandler = window.titleHandler || function(title){ try { document.title = title; } catch(e){} };\n\t\t\t</script><!-- Application scripts - defer for optimal loading --><script src=\"/assets/js/vendor/htmx.min.js\" defer></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Navbar(userRole, currentPath).Render(ctx, templ_7745c5c3_Buffer)
+		if userRole == "admin" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<script src=\"/assets/js/vendor/htmx-ext-ws.js\" defer></script>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script><script src=\"/assets/js/reader.js\" defer></script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<main id=\"main-content\" class=\"site-main\" role=\"main\"><div id=\"content\" class=\"uk-container uk-container-xl\">")
+		templ_7745c5c3_Err = Navbar(userRole, currentPath, unreadCount, notifications).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<main id=\"main-content\" class=\"site-main\" role=\"main\"><div id=\"content\" class=\"uk-container uk-container-xl\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +59,7 @@ func Layout(content templ.Component, userRole string, currentPath string) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"uk-container uk-mx-auto my-8\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div class=\"uk-container uk-mx-auto my-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -53,7 +67,7 @@ func Layout(content templ.Component, userRole string, currentPath string) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></main></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></main></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

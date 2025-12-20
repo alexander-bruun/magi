@@ -6,8 +6,6 @@ platforms=(
     "windows/arm64"
     "linux/amd64"
     "linux/arm64"
-    "darwin/amd64"
-    "darwin/arm64"
 )
 
 # Output directory
@@ -28,6 +26,16 @@ build_for_platform() {
     local arch=$2
     local version=$3
 
+    # Determine Zig target
+    local zig_target
+    case "$os/$arch" in
+        "linux/amd64") zig_target="x86_64-linux-musl" ;;
+        "linux/arm64") zig_target="aarch64-linux-musl" ;;
+        "windows/amd64") zig_target="x86_64-windows-gnu" ;;
+        "windows/arm64") zig_target="aarch64-windows-gnu" ;;
+        *) echo "Unsupported platform: $os/$arch" && exit 1 ;;
+    esac
+
     # Set the output file name
     output_name="magi-$os-$arch"
 
@@ -37,8 +45,8 @@ build_for_platform() {
     fi
 
     # Build the project
-    echo "Building for $os/$arch (${version})..."
-    env GOOS=$os GOARCH=$arch go build -ldflags="-X 'main.Version=${version}'" -o "$output_dir/$output_name"
+    echo "Building for $os/$arch (${version}) with Zig target $zig_target..."
+    env CGO_ENABLED=1 CC="zig cc -target $zig_target" GOOS=$os GOARCH=$arch go build -ldflags="-X 'main.Version=${version}'" -o "$output_dir/$output_name"
 
     if [ $? -ne 0 ]; then
         echo "An error has occurred! Aborting the script execution..."
@@ -56,11 +64,6 @@ build_for_platform() {
             zip -j "$output_dir/${output_name}.zip" "$output_dir/$output_name"
             rm "$output_dir/$output_name"
             create_checksum "$output_dir/${output_name}.zip"
-            ;;
-        darwin|freebsd|openbsd|netbsd|aix)
-            tar -czvf "$output_dir/${output_name}.tar.gz" -C "$output_dir" "$output_name"
-            rm "$output_dir/$output_name"
-            create_checksum "$output_dir/${output_name}.tar.gz"
             ;;
         *)
             echo "Unsupported OS: $os"

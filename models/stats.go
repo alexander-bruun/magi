@@ -26,189 +26,189 @@ type SystemStats struct {
 
 // DiskStats holds disk usage statistics for a single disk
 type DiskStats struct {
-	Path              string  `json:"path"`
-	UsedGB            float64 `json:"used_gb"`
-	TotalGB           float64 `json:"total_gb"`
-	UsagePercent      float64 `json:"usage_percent"`
-	AvailableGB       float64 `json:"available_gb"`
+	Path         string  `json:"path"`
+	UsedGB       float64 `json:"used_gb"`
+	TotalGB      float64 `json:"total_gb"`
+	UsagePercent float64 `json:"usage_percent"`
+	AvailableGB  float64 `json:"available_gb"`
 }
 
 // MonitoringData holds all monitoring dashboard data
 type MonitoringData struct {
-	UserData                 string
-	TagData                  string
-	RoleData                 string
-	ReadingData              string
-	PopularReads             string
-	PopularFavorites         string
-	PopularVotes             string
-	CommentsActivity         string
-	ReviewsActivity          string
-	TopCommented             string
-	TopReviewed              string
-	VoteDistribution         string
-	ControversialSeries      string
-	ChaptersDistribution     string
-	MostActiveReaders        string
-	ActivityByMediaType      string
-	NewMediaOverTime         string
-	NewChaptersOverTime      string
-	MediaGrowthByType        string
-	SystemStats              string
-	DiskStats                string
+	UserData             string
+	TagData              string
+	RoleData             string
+	ReadingData          string
+	PopularReads         string
+	PopularFavorites     string
+	PopularVotes         string
+	CommentsActivity     string
+	ReviewsActivity      string
+	TopCommented         string
+	TopReviewed          string
+	VoteDistribution     string
+	ControversialSeries  string
+	ChaptersDistribution string
+	MostActiveReaders    string
+	ActivityByMediaType  string
+	NewMediaOverTime     string
+	NewChaptersOverTime  string
+	MediaGrowthByType    string
+	SystemStats          string
+	DiskStats            string
 }
 
 // Simple DB-backed counters for homepage statistics
 func GetTotalMedias() (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM media`)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM media`)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func GetTotalChapters() (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM chapters`)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM chapters`)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func GetTotalChaptersRead() (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM reading_states`)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM reading_states`)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func GetTotalMediasByType(mediaType string) (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM media WHERE LOWER(TRIM(type)) = LOWER(TRIM(?))`, mediaType)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM media WHERE LOWER(TRIM(type)) = LOWER(TRIM(?))`, mediaType)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func GetTotalChaptersByType(mediaType string) (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE LOWER(TRIM(m.type)) = LOWER(TRIM(?))`, mediaType)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE LOWER(TRIM(m.type)) = LOWER(TRIM(?))`, mediaType)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func GetTotalChaptersReadByType(mediaType string) (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE LOWER(TRIM(m.type)) = LOWER(TRIM(?))`, mediaType)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE LOWER(TRIM(m.type)) = LOWER(TRIM(?))`, mediaType)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // GetChaptersReadCount returns the number of reading_state records for a given manga
 func GetChaptersReadCount(mangaSlug string) (int, error) {
-    var count int
-    row := db.QueryRow(`SELECT COUNT(*) FROM reading_states WHERE media_slug = ?`, mangaSlug)
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+	var count int
+	row := db.QueryRow(`SELECT COUNT(*) FROM reading_states WHERE media_slug = ?`, mangaSlug)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func RecordDailyStatistics() error {
-    today := time.Now().Format("2006-01-02")
-    
-    totalMedias, err := GetTotalMedias()
-    if err != nil {
-        return err
-    }
-    totalChapters, err := GetTotalChapters()
-    if err != nil {
-        return err
-    }
-    totalChaptersRead, err := GetTotalChaptersRead()
-    if err != nil {
-        return err
-    }
+	today := time.Now().Format("2006-01-02")
 
-    query := `
+	totalMedias, err := GetTotalMedias()
+	if err != nil {
+		return err
+	}
+	totalChapters, err := GetTotalChapters()
+	if err != nil {
+		return err
+	}
+	totalChaptersRead, err := GetTotalChaptersRead()
+	if err != nil {
+		return err
+	}
+
+	query := `
         INSERT OR REPLACE INTO daily_statistics 
         (date, total_media, total_chapters, total_chapters_read)
         VALUES (?, ?, ?, ?)
     `
-    _, err = db.Exec(query, today, totalMedias, totalChapters, totalChaptersRead)
-    return err
+	_, err = db.Exec(query, today, totalMedias, totalChapters, totalChaptersRead)
+	return err
 }
 
 func GetDailyChange(statType string) (int, error) {
-    today := time.Now().Format("2006-01-02")
-    
-    var query string
-    switch statType {
-    case "media":
-        // For media, count distinct media that have chapters read today
-        query = `SELECT COUNT(DISTINCT media_slug) FROM reading_states WHERE DATE(created_at) = ?`
-    case "chapters":
-        // For chapters, count total chapters read today
-        query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
-    case "chapters_read":
-        // This is the same as chapters for reading_states
-        query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
-    default:
-        return 0, fmt.Errorf("unknown stat type: %s", statType)
-    }
-    
-    row := db.QueryRow(query, today)
-    var change int
-    err := row.Scan(&change)
-    return change, err
+	today := time.Now().Format("2006-01-02")
+
+	var query string
+	switch statType {
+	case "media":
+		// For media, count distinct media that have chapters read today
+		query = `SELECT COUNT(DISTINCT media_slug) FROM reading_states WHERE DATE(created_at) = ?`
+	case "chapters":
+		// For chapters, count total chapters read today
+		query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
+	case "chapters_read":
+		// This is the same as chapters for reading_states
+		query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
+	default:
+		return 0, fmt.Errorf("unknown stat type: %s", statType)
+	}
+
+	row := db.QueryRow(query, today)
+	var change int
+	err := row.Scan(&change)
+	return change, err
 }
 
 func GetDailyChangeByType(statType string, mediaType string) (int, error) {
-    today := time.Now().Format("2006-01-02")
-    yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-    
-    var query string
-    switch statType {
-    case "media":
-        query = `
+	today := time.Now().Format("2006-01-02")
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+
+	var query string
+	switch statType {
+	case "media":
+		query = `
             SELECT 
                 (SELECT COUNT(*) FROM media WHERE DATE(created_at) = ? AND LOWER(TRIM(type)) = LOWER(TRIM(?))) - 
                 (SELECT COUNT(*) FROM media WHERE DATE(created_at) = ? AND LOWER(TRIM(type)) = LOWER(TRIM(?)))
         `
-    case "chapters":
-        query = `
+	case "chapters":
+		query = `
             SELECT 
                 (SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE DATE(c.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))) - 
                 (SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE DATE(c.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?)))
         `
-    case "chapters_read":
-        query = `
+	case "chapters_read":
+		query = `
             SELECT 
                 (SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE DATE(rs.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))) - 
                 (SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE DATE(rs.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?)))
         `
-    default:
-        return 0, fmt.Errorf("unknown stat type: %s", statType)
-    }
-    
-    row := db.QueryRow(query, today, mediaType, yesterday, mediaType)
-    var change int
-    err := row.Scan(&change)
-    return change, err
+	default:
+		return 0, fmt.Errorf("unknown stat type: %s", statType)
+	}
+
+	row := db.QueryRow(query, today, mediaType, yesterday, mediaType)
+	var change int
+	err := row.Scan(&change)
+	return change, err
 }
 
 func ensureTodaysStatsRecorded(today string) error {
-    // Always record today's statistics to keep them up to date
-    return RecordDailyStatistics()
+	// Always record today's statistics to keep them up to date
+	return RecordDailyStatistics()
 }
 
 // GetTopReadMedias returns the top media by reading activity for the given period
@@ -950,13 +950,6 @@ func GetSystemStats() (*SystemStats, error) {
 		if cpuFreqGHz, err := getCPUFrequency(); err == nil {
 			stats.CPUFrequencyGHz = cpuFreqGHz
 		}
-	} else if runtime.GOOS == "darwin" {
-		// macOS specific memory info
-		// macOS typically has more memory, using Go's runtime stats
-		stats.MemoryUsagePercent = float64(m.Alloc) / float64(m.Sys) * 100
-		if stats.MemoryUsagePercent > 100 {
-			stats.MemoryUsagePercent = 100
-		}
 	} else {
 		// Fallback: use Go runtime stats
 		stats.MemoryUsagePercent = float64(m.Alloc) / float64(m.Sys) * 100
@@ -1067,21 +1060,9 @@ func GetDiskStats() ([]DiskStats, error) {
 	if runtime.GOOS == "windows" {
 		// Windows disk stats not implemented yet
 		return disks, nil
-	}
-
-	if runtime.GOOS == "linux" {
+	} else if runtime.GOOS == "linux" {
 		return getDiskUsageLinux()
-	} else if runtime.GOOS == "darwin" {
-		// macOS support
-		if stat, err := getDiskUsageMacOS("/"); err == nil {
-			disks = append(disks, stat)
-		}
 	} else {
-		// Other Unix-like systems
-		if stat, err := getDiskUsageUnix("/"); err == nil {
-			disks = append(disks, stat)
-		}
+		return disks, nil
 	}
-
-	return disks, nil
 }

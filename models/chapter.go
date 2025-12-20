@@ -16,7 +16,7 @@ import (
 
 // CalculateCountdownText calculates the countdown text for a premium chapter
 func CalculateCountdownText(releaseTime time.Time) string {
-	if time.Now().After(releaseTime) {
+	if time.Now().After(releaseTime) || time.Now().Equal(releaseTime) {
 		return "Available now!"
 	}
 	
@@ -27,11 +27,23 @@ func CalculateCountdownText(releaseTime time.Time) string {
 	} else if duration.Hours() >= 1 {
 		hours := int(duration.Hours())
 		minutes := int(duration.Minutes()) % 60
-		return fmt.Sprintf("%dh %dm", hours, minutes)
+		result := fmt.Sprintf("%dh", hours)
+		if minutes > 0 {
+			result += fmt.Sprintf(" %dm", minutes)
+		}
+		return result
 	} else {
 		minutes := int(duration.Minutes())
 		seconds := int(duration.Seconds()) % 60
-		return fmt.Sprintf("%dm %ds", minutes, seconds)
+		if minutes > 0 {
+			result := fmt.Sprintf("%dm", minutes)
+			if seconds > 0 {
+				result += fmt.Sprintf(" %ds", seconds)
+			}
+			return result
+		} else {
+			return fmt.Sprintf("%ds", seconds)
+		}
 	}
 }
 
@@ -531,9 +543,7 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 		chapters[chapterIndex].IsPremium = now.Before(releaseTime)
 		
 		// Calculate countdown for premium chapters
-		if chapters[chapterIndex].IsPremium {
-			chapters[chapterIndex].PremiumCountdown = CalculateCountdownText(releaseTime)
-		}
+		chapters[chapterIndex].PremiumCountdown = CalculateCountdownText(releaseTime)
 	}
 
 	// Return only the top 'limit' chapters

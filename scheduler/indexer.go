@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -593,14 +592,7 @@ func processLocalImage(slug, imagePath string) (string, error) {
 func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 	log.Debugf("Attempting to download cover image for '%s' from URL: %s", slug, coverArtURL)
 
-	u, err := url.Parse(coverArtURL)
-	if err != nil {
-		log.Errorf("Error parsing URL: %s", err)
-		return coverArtURL, nil
-	}
-
-	fileExt := filepath.Ext(u.Path)[1:]
-	cachedImageURL := fmt.Sprintf("%s/%s.%s", localServerBaseURL, slug, fileExt)
+	cachedImageURL := fmt.Sprintf("%s/%s.webp", localServerBaseURL, slug)
 
 	// Retry logic for downloading images
 	maxRetries := 3

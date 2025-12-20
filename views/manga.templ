@@ -166,16 +166,12 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 									</button>
 								</form>
 							} else {
-								<button
-									type="button"
-									class="uk-btn uk-btn-primary uk-btn-small"
-									uk-toggle="target: #add-highlight-modal"
-									title="Add to highlights"
-									aria-label="Add to highlights"
-								>
-									<uk-icon icon="Star"></uk-icon>
-									<span class="hidden md:inline ml-1">Add to Highlights</span>
-								</button>
+								<form hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-container" hx-swap="outerHTML" class="inline">
+									<button type="submit" class="uk-btn uk-btn-primary uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+										<uk-icon icon="Star"></uk-icon>
+										<span class="hidden md:inline ml-1">Add to Highlights</span>
+									</button>
+								</form>
 							}
 						</div>
 					</div>
@@ -566,7 +562,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				</div>
 				<div class="mb-5">
 					<label class="uk-form-label mb-2 block font-semibold" for="cover_url">Cover Art URL</label>
-					<input class="uk-input" type="url" id="cover_url" name="cover_url" placeholder="https://example.com/cover.jpg"/>
+					<input class="uk-input" type="url" id="cover_url" name="cover_url"/>
 					<small class="uk-text-muted block mt-2">Enter a URL to download and cache a new cover image</small>
 				</div>
 				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4" style="border-top: 1px solid #e5e5e5;">
@@ -746,37 +742,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			<div id="collections-modal-content"></div>
 		</div>
 	</div>
-	<!-- Add Highlight Modal -->
-	<div id="add-highlight-modal" uk-modal>
-		<div class="uk-modal-dialog uk-modal-body">
-			<h2 class="uk-modal-title">Add to Highlights</h2>
-			<form hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#add-highlight-modal" hx-swap="none" enctype="multipart/form-data">
-				<div class="uk-margin">
-					<label class="uk-form-label" for="highlight-background-url">Background Image URL</label>
-					<input class="uk-input" type="url" id="highlight-background-url" name="background_image_url" placeholder="https://example.com/banner.jpg"/>
-					<p class="uk-text-small uk-text-muted">URL to an image that will be used as the background for this highlight</p>
-				</div>
-				<div class="uk-margin">
-					<label class="uk-form-label" for="highlight-background-file">Or Upload Image</label>
-					<input class="uk-input" type="file" id="highlight-background-file" name="background_image" accept="image/*"/>
-					<p class="uk-text-small uk-text-muted">Upload an image file to use as the background</p>
-				</div>
-				<div class="uk-margin">
-					<label class="uk-form-label" for="highlight-description">Description (Optional)</label>
-					<textarea class="uk-textarea" id="highlight-description" name="description" rows="3" placeholder="A brief description of why this series is highlighted"></textarea>
-				</div>
-				<div class="uk-margin">
-					<label class="uk-form-label" for="highlight-display-order">Display Order</label>
-					<input class="uk-input" type="number" id="highlight-display-order" name="display_order" value="0" min="0"/>
-					<p class="uk-text-small uk-text-muted">Lower numbers appear first in the highlight carousel</p>
-				</div>
-				<div class="uk-margin uk-text-right">
-					<button type="button" class="uk-btn uk-btn-default uk-modal-close">Cancel</button>
-					<button type="submit" class="uk-btn uk-btn-primary">Add to Highlights</button>
-				</div>
-			</form>
-		</div>
-	</div>
+
 }
 
 // Favorite fragment for a media. Returned by HTMX when toggling favorite state.
@@ -1021,7 +987,6 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
 	})
-	<script src="/assets/js/reader.js"></script>
 	<style>
 		.scroll-to-top {
 			position: fixed;

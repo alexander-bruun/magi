@@ -2,18 +2,12 @@ package handlers
 
 import (
 	"fmt"
-	"image"
-	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
-	"time"
+	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/nfnt/resize"
 	fiber "github.com/gofiber/fiber/v2"
 )
 
@@ -194,13 +188,9 @@ func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
 	return HandleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
 }
 
-// HandleAddHighlight handles adding a media to highlights via HTMX modal form.
-// Expected form values: "background_image_url", "background_image" (file), "description", "display_order"
+// HandleAddHighlight handles adding a media to highlights via HTMX.
+// Uses the media's cover art as background and generates a default description.
 func HandleAddHighlight(c *fiber.Ctx) error {
-	if cacheManager == nil {
-		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
-	}
-
 	mediaSlug := c.Params("media")
 
 	// Verify media exists
@@ -219,125 +209,34 @@ func HandleAddHighlight(c *fiber.Ctx) error {
 		return c.SendString("")
 	}
 
-	// Parse multipart form
-	form, err := c.MultipartForm()
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+	// Use media cover art as background
+	backgroundImageURL := media.CoverArtURL
+
+	// Generate default description from media info
+	description := fmt.Sprintf("%s - %s", media.Name, strings.ToUpper(media.Type))
+	if media.Author != "" {
+		description += fmt.Sprintf(" by %s", media.Author)
 	}
 
-	// Get form values
-	description := ""
-	if desc := form.Value["description"]; len(desc) > 0 {
-		description = desc[0]
-	}
-	displayOrderStr := ""
-	if order := form.Value["display_order"]; len(order) > 0 {
-		displayOrderStr = order[0]
-	}
-	backgroundImageURL := ""
-	if url := form.Value["background_image_url"]; len(url) > 0 {
-		backgroundImageURL = url[0]
-	}
-
+	// Get next display order
 	displayOrder := 0
-	if displayOrderStr != "" {
-		if order, err := strconv.Atoi(displayOrderStr); err == nil {
-			displayOrder = order
+	existingHighlights, err := models.GetHighlights()
+	if err == nil {
+		for _, h := range existingHighlights {
+			if h.Highlight.DisplayOrder >= displayOrder {
+				displayOrder = h.Highlight.DisplayOrder + 1
+			}
 		}
-	}
-
-	// Handle image
-	var finalImageURL string
-	cacheDir := utils.GetCacheDirectory()
-	imagesDir := filepath.Join(cacheDir, "images")
-
-	// Check for uploaded file
-	if files := form.File["background_image"]; len(files) > 0 {
-		file := files[0]
-		// Handle upload
-		if err := os.MkdirAll(imagesDir, 0755); err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Save uploaded file temporarily
-		tempPath := filepath.Join(imagesDir, fmt.Sprintf("temp_highlight_%s_%d", mediaSlug, time.Now().Unix()))
-		if err := c.SaveFile(file, tempPath); err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-		defer os.Remove(tempPath) // Clean up temp file
-
-	// Load and convert to JPG
-	img, err := utils.OpenImage(tempPath)
-	if err != nil {
-		triggerNotification(c, "Invalid image file: "+err.Error(), "destructive")
-		return c.SendString("")
-	}
-
-	// Resize to banner dimensions (1200x400)
-	resizedImg := resize.Resize(1200, 400, img, resize.Lanczos3)
-
-	imageData, err := utils.EncodeImageToBytes(resizedImg, "jpeg", models.GetProcessedImageQuality())
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	cachePath := fmt.Sprintf("images/highlights_%s.jpg", mediaSlug)
-	if err := cacheManager.Save(cachePath, imageData); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	finalImageURL = fmt.Sprintf("/api/images/highlights_%s.jpg", mediaSlug)
-	} else if backgroundImageURL != "" {
-		// Download from URL
-		if err := os.MkdirAll(imagesDir, 0755); err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Download and resize to banner dimensions
-		req, err := http.NewRequest("GET", backgroundImageURL, nil)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-		req.Header.Set("User-Agent", "Magi/1.0")
-		client := &http.Client{Timeout: 30 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("failed to download image: %s", resp.Status))
-		}
-	downloadedImg, _, err := image.Decode(resp.Body)
-	if err != nil {
-		triggerNotification(c, "Invalid image from URL: "+err.Error(), "destructive")
-		return c.SendString("")
-	}
-
-	// Resize to banner dimensions (1200x400)
-	bannerImg := resize.Resize(1200, 400, downloadedImg, resize.Lanczos3)
-
-	imageData, err := utils.EncodeImageToBytes(bannerImg, "jpeg", models.GetProcessedImageQuality())
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	cachePath := fmt.Sprintf("images/highlights_%s.jpg", mediaSlug)
-	if err := cacheManager.Save(cachePath, imageData); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	finalImageURL = fmt.Sprintf("/api/images/highlights_%s.jpg", mediaSlug)
-	} else {
-		return c.Status(fiber.StatusBadRequest).SendString("Either upload an image or provide a URL")
 	}
 
 	// Create highlight
-	_, err = models.CreateHighlight(mediaSlug, finalImageURL, description, displayOrder)
+	_, err = models.CreateHighlight(mediaSlug, backgroundImageURL, description, displayOrder)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	triggerNotification(c, "Series added to highlights successfully", "success")
-	return c.SendString(`<script>UIkit.modal('#add-highlight-modal').hide();</script>`)
+	return c.SendString("")
 }
 
 // HandleRemoveHighlight handles removing a media from highlights via HTMX.

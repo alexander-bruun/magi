@@ -40,6 +40,24 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
 	}
 
+	// Check for size parameter and modify path accordingly
+	size := c.Query("size")
+	if size != "" {
+		// Remove extension and add size suffix
+		ext := filepath.Ext(imagePath)
+		base := strings.TrimSuffix(imagePath, ext)
+		switch size {
+		case "small":
+			imagePath = base + "_small" + ext
+		case "thumb":
+			imagePath = base + "_thumb" + ext
+		case "tiny":
+			imagePath = base + "_tiny" + ext
+		case "display":
+			imagePath = base + "_display" + ext
+		}
+	}
+
 	// Check if the file exists in cache
 	exists, err := cacheManager.Exists(imagePath)
 	if err != nil {
@@ -69,16 +87,16 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 	if err != nil {
 		// If loading fails, try to serve without compression
 		switch strings.ToLower(filepath.Ext(imagePath)) {
-			case ".jpg", ".jpeg":
-				c.Set("Content-Type", "image/jpeg")
-			case ".png":
-				c.Set("Content-Type", "image/png")
-			case ".gif":
-				c.Set("Content-Type", "image/gif")
-			case ".webp":
-				c.Set("Content-Type", "image/webp")
-			default:
-				c.Set("Content-Type", "application/octet-stream")
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		data, err := cacheManager.Load(imagePath)
@@ -92,16 +110,16 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
-			case ".jpg", ".jpeg":
-				c.Set("Content-Type", "image/jpeg")
-			case ".png":
-				c.Set("Content-Type", "image/png")
-			case ".gif":
-				c.Set("Content-Type", "image/gif")
-			case ".webp":
-				c.Set("Content-Type", "image/webp")
-			default:
-				c.Set("Content-Type", "application/octet-stream")
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		data, err := cacheManager.Load(imagePath)
@@ -170,7 +188,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
 		imagePath = filepath.Join("avatars", strings.TrimPrefix(c.Path(), "/api/avatars/"))
 	}
-	
+
 	if imagePath == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
 	}
@@ -204,16 +222,16 @@ func handleImageRequest(c *fiber.Ctx) error {
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
-			case ".jpg", ".jpeg":
-				c.Set("Content-Type", "image/jpeg")
-			case ".png":
-				c.Set("Content-Type", "image/png")
-			case ".gif":
-				c.Set("Content-Type", "image/gif")
-			case ".webp":
-				c.Set("Content-Type", "image/webp")
-			default:
-				c.Set("Content-Type", "application/octet-stream")
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		data, err := cacheManager.Load(imagePath)
@@ -227,16 +245,16 @@ func handleImageRequest(c *fiber.Ctx) error {
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
-			case ".jpg", ".jpeg":
-				c.Set("Content-Type", "image/jpeg")
-			case ".png":
-				c.Set("Content-Type", "image/png")
-			case ".gif":
-				c.Set("Content-Type", "image/gif")
-			case ".webp":
-				c.Set("Content-Type", "image/webp")
-			default:
-				c.Set("Content-Type", "application/octet-stream")
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		data, err := cacheManager.Load(imagePath)
@@ -294,10 +312,10 @@ func handleImageRequest(c *fiber.Ctx) error {
 func ImageHandler(c *fiber.Ctx) error {
 	// log.Infof("ImageHandler called with token: %s", c.Query("token"))
 	// log.Infof("ImageHandler: request from IP %s, User-Agent: %s, Referer: %s", c.IP(), c.Get("User-Agent"), c.Get("Referer"))
-	
+
 	token := c.Query("token")
 	log.Debugf("ImageHandler: received token %s", token)
-	
+
 	if token == "" {
 		log.Errorf("ImageHandler: token parameter is required")
 		return sendBadRequestError(c, ErrImageTokenRequired)
@@ -333,10 +351,10 @@ func ImageHandler(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrImageNotFound)
 	}
 	// log.Infof("ImageHandler: Media found: %s", media.Slug)
-	
+
 	var chapter *models.Chapter
 	if tokenInfo.AssetPath != "" {
-		log.Infof("ImageHandler: Handling light novel asset: %s", tokenInfo.AssetPath)
+		log.Debugf("ImageHandler: Handling light novel asset: %s", tokenInfo.AssetPath)
 		// Light novel asset: chapterSlug may be 0 or empty, but should be valid for asset lookup
 		chapterSlug := tokenInfo.ChapterSlug
 		if chapterSlug == "" || strings.ContainsAny(chapterSlug, "./ ") {
@@ -469,7 +487,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 // serveLightNovelAsset serves a light novel asset from an EPUB file
 func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, assetPath string) error {
 	start := time.Now()
-	log.Infof("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
+	log.Debugf("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	chapterFilePath := media.Path
 	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
@@ -506,7 +524,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	// Find the asset
 	assetFullPath := filepath.Join(opfDir, assetPath)
 	log.Debugf("Looking for asset at: %s", assetFullPath)
-	
+
 	var file *zip.File
 	for _, f := range r.File {
 		log.Debugf("EPUB file: %s", f.Name)

@@ -76,6 +76,11 @@ func HandleMarkAllNotificationsRead(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
+	if c.Get("HX-Request") == "true" {
+		// Return HTML for empty notification list
+		return c.SendString(`<p class="uk-text-muted uk-text-center py-4">No new notifications</p>`)
+	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
 	})

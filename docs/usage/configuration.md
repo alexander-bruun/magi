@@ -61,7 +61,6 @@ Configure Magi's behavior with environment variables set before starting the app
 **Default**: OS-specific:
 - Linux: `~/.local/share/magi`
 - Windows: `%APPDATA%\magi`
-- macOS: `~/Library/Application Support/magi`
 
 **Example:**
 ```bash
@@ -184,7 +183,7 @@ Optional field for notes about the library.
 
 List of absolute paths to scan for manga, one per line.
 
-**Linux/macOS:**
+**Linux:**
 ```
 /home/user/manga
 /mnt/nas/manga

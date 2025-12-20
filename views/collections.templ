@@ -38,7 +38,7 @@ templ Collections(collections []models.Collection) {
 										if i < 4 {
 											<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="block">
 												<img
-													src={ media.CoverArtURL + "?size=small" }
+													src={ media.CoverArtURL + "?size=tiny" }
 													alt={ media.Name }
 													class="w-full h-auto block"
 												/>

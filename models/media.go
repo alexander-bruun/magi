@@ -42,10 +42,10 @@ type Media struct {
 type EnrichedMedia struct {
 	Media
 	PremiumCountdown  string
-	LatestChapterSlug  string
-	LatestChapterName  string
-	AverageRating      float64
-	ReviewCount        int
+	LatestChapterSlug string
+	LatestChapterName string
+	AverageRating     float64
+	ReviewCount       int
 }
 
 // CreateMedia adds a new media to the database
@@ -112,7 +112,7 @@ func getMedia(slug string, applyContentFilter bool) (*Media, error) {
 
 	m.CreatedAt = time.Unix(createdAt, 0)
 	m.UpdatedAt = time.Unix(updatedAt, 0)
-	
+
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
 		cfg, err := GetAppConfig()
@@ -123,7 +123,7 @@ func getMedia(slug string, applyContentFilter bool) (*Media, error) {
 			return nil, nil // Return nil to indicate media not found/accessible
 		}
 	}
-	
+
 	// Load tags for this media if any
 	if tags, err := GetTagsForMedia(m.Slug); err == nil {
 		m.Tags = tags
@@ -152,7 +152,7 @@ func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool)
 
 	m.CreatedAt = time.Unix(createdAt, 0)
 	m.UpdatedAt = time.Unix(updatedAt, 0)
-	
+
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
 		cfg, err := GetAppConfig()
@@ -163,7 +163,7 @@ func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool)
 			return nil, nil // Return nil to indicate media not found/accessible
 		}
 	}
-	
+
 	// Load tags for this media if any
 	if tags, err := GetTagsForMedia(m.Slug); err == nil {
 		m.Tags = tags
@@ -172,14 +172,14 @@ func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool)
 }
 
 // Setter methods to implement metadata.MediaUpdater interface
-func (m *Media) SetName(name string)                   { m.Name = name }
-func (m *Media) SetDescription(desc string)            { m.Description = desc }
-func (m *Media) SetYear(year int)                      { m.Year = year }
-func (m *Media) SetOriginalLanguage(lang string)       { m.OriginalLanguage = lang }
-func (m *Media) SetStatus(status string)               { m.Status = status }
-func (m *Media) SetContentRating(rating string)        { m.ContentRating = rating }
-func (m *Media) SetType(mangaType string)              { m.Type = mangaType }
-func (m *Media) SetCoverArtURL(url string)             { m.CoverArtURL = url }
+func (m *Media) SetName(name string)             { m.Name = name }
+func (m *Media) SetDescription(desc string)      { m.Description = desc }
+func (m *Media) SetYear(year int)                { m.Year = year }
+func (m *Media) SetOriginalLanguage(lang string) { m.OriginalLanguage = lang }
+func (m *Media) SetStatus(status string)         { m.Status = status }
+func (m *Media) SetContentRating(rating string)  { m.ContentRating = rating }
+func (m *Media) SetType(mangaType string)        { m.Type = mangaType }
+func (m *Media) SetCoverArtURL(url string)       { m.CoverArtURL = url }
 
 // UpdateMedia modifies an existing media and always updates the updated_at timestamp to the current time
 func UpdateMedia(media *Media) error {
@@ -241,25 +241,25 @@ func deletePosterImages(slug string) {
 	postersDir := filepath.Join(cacheDir, "posters")
 
 	// Delete main poster image
-	mainPath := filepath.Join(postersDir, fmt.Sprintf("%s.jpg", slug))
+	mainPath := filepath.Join(postersDir, fmt.Sprintf("%s.webp", slug))
 	if err := os.Remove(mainPath); err != nil && !os.IsNotExist(err) {
 		log.Warnf("Failed to delete poster image %s: %v", mainPath, err)
 	}
 
 	// Delete original image
-	originalPath := filepath.Join(postersDir, fmt.Sprintf("%s_original.jpg", slug))
+	originalPath := filepath.Join(postersDir, fmt.Sprintf("%s_original.webp", slug))
 	if err := os.Remove(originalPath); err != nil && !os.IsNotExist(err) {
 		log.Warnf("Failed to delete poster original image %s: %v", originalPath, err)
 	}
 
 	// Delete thumbnail
-	thumbPath := filepath.Join(postersDir, fmt.Sprintf("%s_thumb.jpg", slug))
+	thumbPath := filepath.Join(postersDir, fmt.Sprintf("%s_thumb.webp", slug))
 	if err := os.Remove(thumbPath); err != nil && !os.IsNotExist(err) {
 		log.Warnf("Failed to delete poster thumbnail %s: %v", thumbPath, err)
 	}
 
 	// Delete small image
-	smallPath := filepath.Join(postersDir, fmt.Sprintf("%s_small.jpg", slug))
+	smallPath := filepath.Join(postersDir, fmt.Sprintf("%s_small.webp", slug))
 	if err := os.Remove(smallPath); err != nil && !os.IsNotExist(err) {
 		log.Warnf("Failed to delete poster small image %s: %v", smallPath, err)
 	}
@@ -463,7 +463,7 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
-		
+
 		// Filter based on content rating limit
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
 			mediaList = append(mediaList, m)
@@ -612,7 +612,7 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
 		m.VoteScore = voteScore
-		
+
 		// Filter based on content rating limit
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
 			*media = append(*media, m)
@@ -1224,18 +1224,18 @@ func GetFirstAndLastChapterSlugs(chapters []Chapter) (firstSlug, lastSlug string
 
 // SearchOptions defines parameters for media searches
 type SearchOptions struct {
-	Filter             string
-	Page               int
-	PageSize           int
-	SortBy             string
-	SortOrder          string
-	FilterBy           string
-	LibrarySlug        string
-	Tags               []string
-	TagMode            string // "all" or "any"
-	Types              []string // filter by media types (any match)
+	Filter              string
+	Page                int
+	PageSize            int
+	SortBy              string
+	SortOrder           string
+	FilterBy            string
+	LibrarySlug         string
+	Tags                []string
+	TagMode             string   // "all" or "any"
+	Types               []string // filter by media types (any match)
 	AccessibleLibraries []string // filter by accessible libraries for permission system
-	ContentRatingLimit int // filter by content rating
+	ContentRatingLimit  int      // filter by content rating
 }
 
 // SearchMediasWithOptions performs a flexible media search using options
@@ -1303,13 +1303,13 @@ func filterByAccessibleLibraries(mangas []Media, accessibleLibraries []string) [
 	if len(accessibleLibraries) == 0 {
 		return []Media{} // No accessible libraries means no media
 	}
-	
+
 	// Create a set for O(1) lookup
 	librarySet := make(map[string]struct{}, len(accessibleLibraries))
 	for _, slug := range accessibleLibraries {
 		librarySet[slug] = struct{}{}
 	}
-	
+
 	filtered := make([]Media, 0, len(mangas))
 	for _, m := range mangas {
 		if _, ok := librarySet[m.LibrarySlug]; ok {
@@ -1334,7 +1334,7 @@ func filterByLibrarySlug(mangas []Media, librarySlug string) []Media {
 func filterByAllTags(mangas []Media, selectedTags []string, tagMap map[string][]string) []Media {
 	selectedSet := normalizeTagSet(selectedTags)
 	filtered := make([]Media, 0, len(mangas))
-	
+
 	for _, m := range mangas {
 		if hasAllTags(tagMap[m.Slug], selectedSet) {
 			filtered = append(filtered, m)
@@ -1347,7 +1347,7 @@ func filterByAllTags(mangas []Media, selectedTags []string, tagMap map[string][]
 func filterByAnyTag(mangas []Media, selectedTags []string, tagMap map[string][]string) []Media {
 	selectedSet := normalizeTagSet(selectedTags)
 	filtered := make([]Media, 0, len(mangas))
-	
+
 	for _, m := range mangas {
 		if hasAnyTag(tagMap[m.Slug], selectedSet) {
 			filtered = append(filtered, m)
@@ -1388,7 +1388,7 @@ func hasAllTags(tags []string, required map[string]struct{}) bool {
 	if len(tags) == 0 {
 		return false
 	}
-	
+
 	present := normalizeTagSet(tags)
 	for t := range required {
 		if _, ok := present[t]; !ok {
@@ -1403,7 +1403,7 @@ func hasAnyTag(tags []string, anySet map[string]struct{}) bool {
 	if len(anySet) == 0 {
 		return true
 	}
-	
+
 	for _, t := range tags {
 		lt := strings.TrimSpace(strings.ToLower(t))
 		if lt == "" {

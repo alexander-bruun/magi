@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.94.0
+	github.com/chai2010/webp v1.4.0
 	github.com/dchest/captcha v1.1.0
 	github.com/gofiber/adaptor/v2 v2.2.1
 	github.com/gofiber/fiber/v2 v2.52.10
@@ -16,6 +17,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/ncruces/go-sqlite3 v0.30.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nwaples/rardecode v1.1.3
 	github.com/nwaples/rardecode/v2 v2.2.2
 	github.com/pkg/sftp v1.13.10
 	github.com/prometheus/client_golang v1.23.2

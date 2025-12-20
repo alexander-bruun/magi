@@ -23,14 +23,6 @@ sudo apt update
 sudo apt install podman
 ```
 
-### macOS
-
-```bash
-brew install podman
-podman machine init
-podman machine start
-```
-
 ### Windows
 
 Download from [Podman Desktop](https://podman-desktop.io/) or use:

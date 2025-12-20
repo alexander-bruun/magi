@@ -77,7 +77,6 @@ Magi builds to a single portable binary for:
 | Platform | Architectures |
 |----------|---------------|
 | Linux    | amd64, arm64  |
-| macOS    | amd64, arm64  |
 | Windows  | amd64, arm64  |
 
 Docker images are available for `linux/amd64` and `linux/arm64`.

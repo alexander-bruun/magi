@@ -65,11 +65,10 @@
 
 Magi compiles to a single portable binary for:
 
-| OS | Architectures |
-|---|---|
-| **Linux** | `amd64`, `arm64` |
-| **macOS** | `amd64`, `arm64` |
-| **Windows** | `amd64`, `arm64` |
+| OS | Architectures | Build Status |
+|---|---|---|
+| **Linux** | `amd64`, `arm64` | ✅ Available |
+| **Windows** | `amd64`, `arm64` | ✅ Available |
 
 Docker images are available for `linux/amd64` and `linux/arm64` on [Docker Hub](https://hub.docker.com/r/alexbruun/magi).
 
@@ -190,6 +189,26 @@ The application will be available at:
 
 - `http://localhost:3000` - Main application
 - `http://localhost:3001` - Auto-reloading proxy (development only)
+
+## 🔨 Building from Source
+
+Magi requires [Zig](https://ziglang.org/) for CGO compilation. Install Zig 0.11+ before building.
+
+### Build Release Binaries
+
+```bash
+./scripts/build-release.sh all <version>
+```
+
+This builds binaries for all supported platforms using Zig as the C compiler.
+
+### Build Docker Image
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t magi .
+```
+
+The build uses Zig for cross-compilation and includes WebP support.
 
 ## 🤝 Contributing
 

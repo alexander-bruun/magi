@@ -53,7 +53,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full">
 						<div class="flex-1 overflow-hidden uk-position-relative" style="aspect-ratio: 150/200;">
 							<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block w-full h-full">
-								<img src={ media.CoverArtURL + "?size=small" } alt={ media.Name } class="w-full h-full object-cover rounded-t-lg"/>
+								<img src={ media.CoverArtURL + "?size=tiny" } alt={ media.Name } class="w-full h-full object-cover rounded-t-lg"/>
 							</a>
 						</div>
 						<div class="p-3">

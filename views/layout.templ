@@ -1,21 +1,21 @@
 package views
 
-templ Layout(content templ.Component, userRole string, currentPath string) {
+import (
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ Layout(content templ.Component, userRole string, currentPath string, unreadCount int, notifications []models.UserNotification) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dim">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<meta name="description" content="Magi - Your media library management system"/>
-			<link rel="icon" type="image/x-icon" href="/assets/img/icon.png"/>
+			<link rel="icon" type="image/webp" href="/assets/img/icon.webp"/>
 			<title>Magi</title>
-			<!-- Critical CSS -->
 			<link rel="stylesheet" href="/assets/css/vendor/core.min.css"/>
 			<link rel="stylesheet" href="/assets/css/vendor/utilities.min.css"/>
 			<link rel="stylesheet" href="/assets/css/styles.css"/>
-			<!-- Non-critical CSS - defer loading -->
-			<noscript>
-			</noscript>
 			<!-- Theme initialization - must run before body renders -->
 			<script>
 				const htmlElement = document.documentElement;
@@ -47,14 +47,16 @@ templ Layout(content templ.Component, userRole string, currentPath string) {
 			</script>
 			<!-- Application scripts - defer for optimal loading -->
 			<script src="/assets/js/vendor/htmx.min.js" defer></script>
-			<script src="/assets/js/vendor/htmx-ext-ws.js" defer></script>
+			if userRole == "admin" {
+				<script src="/assets/js/vendor/htmx-ext-ws.js" defer></script>
+			}
 			<script src="/assets/js/vendor/htmx-ext-form-json.js" defer></script>
 			<script src="/assets/js/magi.js" defer></script>
-			<script src="/assets/js/notifications.js" defer></script>
+			<script src="/assets/js/reader.js" defer></script>
 		</head>
 		<body class="bg-background text-foreground">
 			<div id="app">
-				@Navbar(userRole, currentPath)
+				@Navbar(userRole, currentPath, unreadCount, notifications)
 			<main id="main-content" class="site-main" role="main">
 				<div id="content" class="uk-container uk-container-xl">
 						@content

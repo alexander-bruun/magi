@@ -117,7 +117,7 @@ docker compose down
 
 ### Mounting Your Manga Collection
 
-**Linux/macOS:**
+**Linux:**
 ```bash
 -v /home/user/manga:/data/manga:ro
 ```
@@ -259,7 +259,7 @@ If Magi can't read your manga files:
 # Check directory permissions
 ls -la /path/to/manga
 
-# Fix permissions (Linux/macOS)
+# Fix permissions (Linux)
 chmod -R 755 /path/to/manga
 ```
 

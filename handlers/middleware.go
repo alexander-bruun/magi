@@ -177,6 +177,16 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			}
 		}
 
+		// Calculate target URL, adjusting for series sub-pages
+		originalURL := c.OriginalURL()
+		target := originalURL
+		if strings.HasPrefix(originalURL, "/series/") {
+			parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
+			if len(parts) > 1 {
+				target = "/series/" + parts[0]
+			}
+		}
+
 		if IsHTMXRequest(c) {
 			// For unauthenticated HTMX requests, we might want to redirect to login
 			// But if we want to avoid redirecting, we can show a notification
@@ -188,12 +198,11 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			// But let's check if we should return 204 for unauthenticated too if it's an action?
 			// If it's a navigation, we should redirect.
 			// Let's keep redirect for unauthenticated for now, as the user focused on "premium" (permission).
-			c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(c.OriginalURL()))
+			c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(target))
 			return c.Status(fiber.StatusUnauthorized).SendString("")
 		}
 
-		originalURL := c.OriginalURL()
-		return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
+		return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
 	}
 }
 
@@ -549,7 +558,14 @@ func ConditionalAuthMiddleware() fiber.Handler {
 		// If anonymous has no permissions, require authentication
 		if len(libraries) == 0 {
 			originalURL := c.OriginalURL()
-			return c.Redirect("/auth/login?target="+url.QueryEscape(originalURL), fiber.StatusSeeOther)
+			target := originalURL
+			if strings.HasPrefix(originalURL, "/series/") {
+				parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
+				if len(parts) > 1 {
+					target = "/series/" + parts[0]
+				}
+			}
+			return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
 		}
 
 		// Anonymous has permissions, allow access

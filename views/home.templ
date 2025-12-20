@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
@@ -59,6 +60,20 @@ func getCountdownText(createdAt time.Time, premiumDuration int) string {
 	return models.CalculateCountdownText(releaseTime)
 }
 
+// truncateText truncates a string to the specified length and adds ellipsis
+func truncateText(text string, maxLength int) string {
+	if len(text) <= maxLength {
+		return text
+	}
+	// Try to break at a word boundary
+	truncated := text[:maxLength]
+	lastSpace := strings.LastIndex(truncated, " ")
+	if lastSpace > maxLength-30 {
+		truncated = truncated[:lastSpace]
+	}
+	return truncated + "..."
+}
+
 templ TopReadList(media []models.Media, emptyMessage string, title string) {
 	if title != "" {
 		<h3 class="text-lg font-semibold mb-2">{ title }</h3>
@@ -71,7 +86,7 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 				<li>
 					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 py-2">
 						<div class="w-10 h-14 overflow-hidden rounded-sm">
-							@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
+							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
 						</div>
 						<div class="flex-1">
 							<span class="font-medium">{ m.Name }</span>
@@ -125,60 +140,84 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 }
 
 templ HighlightBanner(highlights []models.HighlightWithMedia) {
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Highlighted</span></h2>
-	<div class="slider-wrapper axis-horizontal">
-		<ul class="slider animated" id="highlight-slider">
-			for _, highlight := range highlights {
-				{{ score, _, _, _ := models.GetMediaVotes(highlight.Media.Slug) }}
-				<li class="slide" class="m-2">
-					<div class="rounded-lg border bg-card text-card-foreground shadow-sm w-full">
-						<div class="h-[200px] relative select-none">
-							<div>
-								<img alt="poster" fetchpriority="high" loading="eager" decoding="async" class="blur-lg" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;object-fit:cover;color:transparent" src={ highlight.Media.CoverArtURL } />
+	<div class="highlight-banner">
+		<h2 class="uk-heading-line uk-h2 uk-text-center"><span>Featured Series</span></h2>
+		
+		<div class="highlight-slider-container mt-4">
+			<!-- Slider Content Area -->
+			<div class="highlight-slider-content">
+				<ul class="highlight-slider" id="highlight-slider">
+					for _, highlight := range highlights {
+						{{ score, _, _, _ := models.GetMediaVotes(highlight.Media.Slug) }}
+						<li class="highlight-slide">
+							<!-- Background Image -->
+							<div class="highlight-bg">
+								<img alt="" fetchpriority="high" loading="eager" decoding="async" src={ strings.Replace(highlight.Media.CoverArtURL, ".webp", "_small.webp", 1) } />
 							</div>
-							<div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent"></div>
-							<div class="relative grid grid-cols-12 slide-content" style="backdrop-filter: blur(4px); background: rgba(0,0,0,0.2);">
-								<div class="col-span-9 sm:col-span-9 text-white pr-3.5 sm:pr-5">
-									<div class="info-left">
-										<div class="rating">
-											<div class="vote">
-												<div class="site-vote">
-													<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="#f3d872" class="w-4 h-4">
-														<path d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"></path>
-													</svg>
-													<span class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs italic text-[#0a0a0a]">{ fmt.Sprintf("%.1f", float64(score)/10.0) }</span>
-												</div>
-											</div>
-										</div>
-										<div class="ellipsis">
-											<span>
-												<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="hover:text-[#f3d872]">{ highlight.Media.Name }</a>
-											</span>
-											<br>
-											<span class="release-year">Manhwa</span>
-										</div>
-									</div>
-									<span class="block uppercase mt-2 title"><strong>summary</strong></span>
-									<div class="text-left hidden sm:block mt-1 summary justify-between">{ highlight.Highlight.Description }</div>
-									<div class="text-left sm:hidden mt-1 summary justify-between">{ highlight.Highlight.Description }</div>
-									<span class="block text-[13px] mt-1">Status: Ongoing <br></span>
+							
+							<!-- Content Grid -->
+							<div class="highlight-content">
+								<!-- Poster (Left on desktop, top on mobile) -->
+								<div class="highlight-poster">
+									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="highlight-poster-link">
+										<img alt={ highlight.Media.Name } loading="lazy" src={ highlight.Media.CoverArtURL + "?size=display" } />
+									</a>
 								</div>
-								<div class="col-span-3">
-									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) }>
-										<div class="hidden xs:flex poster relative">
-											<img alt="poster" loading="lazy" width="0" height="0" decoding="async" class="rounded-[4px]" style="color:transparent;width:100%;max-height:180px;object-fit:contain;object-position:100% 15%" src={ highlight.Media.CoverArtURL } />
-										</div>
-										<div class="xs:hidden relative">
-											<img alt="poster" loading="lazy" width="0" height="0" decoding="async" class="rounded-[4px]" style="color:transparent;width:100%;max-height:125px;object-fit:cover;object-position:100% 15%" src={ highlight.Media.CoverArtURL } />
-										</div>
+								
+								<!-- Info Card -->
+								<div class="highlight-info">
+									<!-- Meta badges -->
+									<div class="highlight-meta">
+										<span class="highlight-rating">
+											<uk-icon icon="star" class="uk-icon"></uk-icon>
+											{ fmt.Sprintf("%.1f", float64(score)/20.0) }
+										</span>
+										<span class="uk-badge uk-background-primary">{ strings.ToUpper(highlight.Media.Type) }</span>
+										<span class="uk-badge uk-background-secondary">{ strings.ToUpper(highlight.Media.Status) }</span>
+									</div>
+									
+									<!-- Title -->
+									<h3 class="highlight-title">
+										<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) }>
+											{ highlight.Media.Name }
+										</a>
+									</h3>
+									
+									<!-- Description -->
+									<p class="highlight-description">
+										{ truncateText(highlight.Media.Description, 200) }
+									</p>
+									
+									<!-- CTA Button -->
+									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="uk-btn uk-btn-primary uk-border-rounded">
+										<span>📖</span> Read Now
 									</a>
 								</div>
 							</div>
-						</div>
-					</div>
-				</li>
-			}
-		</ul>
+						</li>
+					}
+				</ul>
+				
+				<!-- Navigation Arrows (positioned relative to content area) -->
+				<button type="button" class="highlight-nav highlight-nav-prev" onclick="prevSlide();" aria-label="Previous slide">
+					<uk-icon icon="chevron-left" class="uk-icon"></uk-icon>
+				</button>
+				<button type="button" class="highlight-nav highlight-nav-next" onclick="nextSlide();" aria-label="Next slide">
+					<uk-icon icon="chevron-right" class="uk-icon"></uk-icon>
+				</button>
+			</div>
+			
+			<!-- Navigation Dots (outside content area) -->
+			<div class="highlight-dots-wrapper">
+				<ul class="highlight-dots" id="highlight-dots">
+					for i := range highlights {
+						<li class={ templ.KV("active", i == 0) }>
+							<button type="button" onclick={ templ.JSFuncCall("goToSlide", i) } aria-label={ fmt.Sprintf("Go to slide %d", i+1) }></button>
+						</li>
+					}
+				</ul>
+			</div>
+		</div>
 	</div>
 }
 
@@ -205,7 +244,7 @@ templ StatisticsFragment() {
 	</div>
 }
 
-templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia) {
+templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, unreadCount int, notifications []models.UserNotification) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -251,7 +290,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 										<li class="flex items-center gap-3 py-2">
 											<div class="w-10 h-14 overflow-hidden rounded-sm">
 												<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
-													@MediaCover(m.CoverArtURL, m.Name, 80, 112, true)
+													@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
 												</a>
 											</div>
 											<div class="flex-1">
@@ -318,37 +357,76 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 		});
 	</script>
 
-	<style>
-		.slider-wrapper {
-			overflow: hidden;
-			position: relative;
-		}
-		.slider {
-			display: flex;
-			transition: transform 0.35s ease;
-		}
-		.slide {
-			min-width: 100%;
-			flex-shrink: 0;
-		}
-	</style>
-
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			let currentIndex = 0;
 			const slider = document.getElementById('highlight-slider');
+			const dots = document.getElementById('highlight-dots');
+			
 			if (slider) {
 				const slides = slider.children;
 				const totalSlides = slides.length;
-				function updateSlider() {
-					const translateX = -currentIndex * 100;
-					slider.style.transform = `translate3d(${translateX}%, 0px, 0px)`;
+				const sliderContent = slider.parentElement;
+				let containerWidth = sliderContent.offsetWidth;
+				
+				function setWidths() {
+					containerWidth = sliderContent.offsetWidth;
+					Array.from(slides).forEach(slide => {
+						slide.style.width = `${containerWidth}px`;
+					});
+					slider.style.width = `${totalSlides * containerWidth}px`;
 				}
+				
+				setWidths();
+				
+				// Update widths on resize
+				window.addEventListener('resize', setWidths);
+				
+				function updateSlider() {
+					const translateX = -currentIndex * containerWidth;
+					slider.style.transform = `translate3d(${translateX}px, 0px, 0px)`;
+					
+					// Update dots
+					if (dots) {
+						const dotItems = dots.querySelectorAll('li');
+						dotItems.forEach((dot, index) => {
+							dot.classList.toggle('active', index === currentIndex);
+						});
+					}
+				}
+				
 				function nextSlide() {
 					currentIndex = (currentIndex + 1) % totalSlides;
 					updateSlider();
 				}
-				setInterval(nextSlide, 5000);
+				
+				function prevSlide() {
+					currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+					updateSlider();
+				}
+				
+				function goToSlide(index) {
+					currentIndex = index;
+					updateSlider();
+				}
+				
+				// Auto slide
+				let autoSlideInterval = setInterval(nextSlide, 6000);
+				
+				// Pause on hover
+				const hoverContainer = slider.closest('.highlight-slider-container');
+				if (hoverContainer) {
+					hoverContainer.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
+					hoverContainer.addEventListener('mouseleave', () => {
+						autoSlideInterval = setInterval(nextSlide, 6000);
+					});
+				}
+				
+				// Make functions global
+				window.nextSlide = nextSlide;
+				window.prevSlide = prevSlide;
+				window.goToSlide = goToSlide;
+				
 				updateSlider();
 			}
 		});
@@ -363,7 +441,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 					<div class="flex-shrink-0 relative">
 									<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>
 							<div class="w-24 h-32 overflow-hidden rounded">
-								@MediaCover(item.Media.CoverArtURL, item.Media.Name, 180, 240, true)
+								@MediaCover(item.Media.CoverArtURL, item.Media.Name, 96, 128, true)
 							</div>
 						</a>
 					</div>

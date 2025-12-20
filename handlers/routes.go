@@ -10,9 +10,9 @@ import (
 	"github.com/alexander-bruun/magi/utils"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
-	
 )
 
 // savedCacheDirectory stores the cache directory path for image downloads
@@ -51,6 +51,27 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 	cacheManager = filestore.NewCacheManager(cacheBackend)
 
 	// ========================================
+	// Initialize CSS Parser for dynamic CSS injection
+	// ========================================
+	if err := InitCSSParser("./assets/css"); err != nil {
+		log.Warnf("Failed to initialize CSS parser: %v - falling back to static CSS", err)
+	}
+
+	// ========================================
+	// Initialize JS Cache for dynamic JS inlining
+	// ========================================
+	if err := InitJSCache("./assets"); err != nil {
+		log.Warnf("Failed to initialize JS cache: %v - falling back to static JS", err)
+	}
+
+	// ========================================
+	// Initialize Image Cache for inlining icons
+	// ========================================
+	if err := InitImgCache("./assets"); err != nil {
+		log.Warnf("Failed to initialize image cache: %v - falling back to static images", err)
+	}
+
+	// ========================================
 	// Initialize console logger for WebSocket streaming
 	// ========================================
 	utils.InitializeConsoleLogger()
@@ -83,6 +104,9 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 	// ========================================
 	// Middleware Configuration
 	// ========================================
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed, // Fast compression for better performance
+	}))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
@@ -92,6 +116,15 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 	app.Use(OptionalAuthMiddleware())
 	app.Use(MaintenanceModeMiddleware())
 	app.Use(healthcheck.New())
+
+	// CSS Middleware - dynamically injects only required CSS
+	app.Use(CSSMiddleware())
+
+	// JS Middleware - dynamically injects only required JS
+	app.Use(JSMiddleware())
+
+	// Image Middleware - inlines icon.webp as data URI
+	app.Use(ImgMiddleware())
 
 	// ========================================
 	// Health and Metrics Endpoints
@@ -130,8 +163,17 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 		return handleAvatarRequest(c)
 	})
 
-	// Static assets (must be early)
-	app.Static("/assets/", "./assets/")
+	// Static assets (CSS and JS are handled by their respective middlewares)
+	app.Use("/assets/", func(c *fiber.Ctx) error {
+		// Set cache headers for static assets (1 year for JS/CSS, 1 day for images)
+		if strings.HasSuffix(c.Path(), ".js") || strings.HasSuffix(c.Path(), ".css") {
+			c.Set("Cache-Control", "public, max-age=31536000") // 1 year
+		} else if strings.HasPrefix(c.Path(), "/assets/img/") {
+			c.Set("Cache-Control", "public, max-age=86400") // 1 day
+		}
+		return c.Next()
+	})
+	app.Static("/assets/img/", "./assets/img/")
 
 	// ========================================
 	// API Endpoints
@@ -449,4 +491,3 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 func StopTokenCleanup() {
 	close(tokenCleanupStop)
 }
-

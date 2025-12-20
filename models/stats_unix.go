@@ -36,7 +36,7 @@ func getDiskUsageLinux() ([]DiskStats, error) {
 		}
 
 		// Skip pseudo filesystems and non-main mount points
-		if strings.HasPrefix(device, "tmpfs") || 
+		if strings.HasPrefix(device, "tmpfs") ||
 			strings.HasPrefix(device, "devtmpfs") ||
 			strings.HasPrefix(device, "none") ||
 			strings.HasPrefix(device, "proc") ||
@@ -47,8 +47,8 @@ func getDiskUsageLinux() ([]DiskStats, error) {
 		}
 
 		// Skip certain mount points
-		if strings.HasPrefix(mountPoint, "/sys") || 
-			strings.HasPrefix(mountPoint, "/proc") || 
+		if strings.HasPrefix(mountPoint, "/sys") ||
+			strings.HasPrefix(mountPoint, "/proc") ||
 			strings.HasPrefix(mountPoint, "/dev") ||
 			strings.HasPrefix(mountPoint, "/run") ||
 			strings.HasPrefix(mountPoint, "/boot/efi") ||
@@ -94,66 +94,4 @@ func getDiskUsageLinux() ([]DiskStats, error) {
 	}
 
 	return disks, nil
-}
-
-// getDiskUsageMacOS retrieves disk usage for macOS
-func getDiskUsageMacOS(path string) (DiskStats, error) {
-	stats := DiskStats{Path: path}
-	
-	var statfs syscall.Statfs_t
-	if err := syscall.Statfs(path, &statfs); err != nil {
-		return stats, err
-	}
-
-	blockSize := uint64(statfs.Bsize)
-	totalBlocks := statfs.Blocks
-	availableBlocks := statfs.Bavail
-	usedBlocks := totalBlocks - availableBlocks
-
-	totalGB := float64(totalBlocks*blockSize) / (1024 * 1024 * 1024)
-	usedGB := float64(usedBlocks*blockSize) / (1024 * 1024 * 1024)
-	availableGB := float64(availableBlocks*blockSize) / (1024 * 1024 * 1024)
-
-	usagePercent := 0.0
-	if totalBlocks > 0 {
-		usagePercent = (float64(usedBlocks) / float64(totalBlocks)) * 100
-	}
-
-	stats.UsedGB = usedGB
-	stats.TotalGB = totalGB
-	stats.AvailableGB = availableGB
-	stats.UsagePercent = usagePercent
-
-	return stats, nil
-}
-
-// getDiskUsageUnix is a fallback for other Unix-like systems
-func getDiskUsageUnix(path string) (DiskStats, error) {
-	stats := DiskStats{Path: path}
-
-	var statfs syscall.Statfs_t
-	if err := syscall.Statfs(path, &statfs); err != nil {
-		return stats, err
-	}
-
-	blockSize := uint64(statfs.Bsize)
-	totalBlocks := statfs.Blocks
-	availableBlocks := statfs.Bavail
-	usedBlocks := totalBlocks - availableBlocks
-
-	totalGB := float64(totalBlocks*blockSize) / (1024 * 1024 * 1024)
-	usedGB := float64(usedBlocks*blockSize) / (1024 * 1024 * 1024)
-	availableGB := float64(availableBlocks*blockSize) / (1024 * 1024 * 1024)
-
-	usagePercent := 0.0
-	if totalBlocks > 0 {
-		usagePercent = (float64(usedBlocks) / float64(totalBlocks)) * 100
-	}
-
-	stats.UsedGB = usedGB
-	stats.TotalGB = totalGB
-	stats.AvailableGB = availableGB
-	stats.UsagePercent = usagePercent
-
-	return stats, nil
 }

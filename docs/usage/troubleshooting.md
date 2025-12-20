@@ -39,7 +39,7 @@ ls -la magi
 
 **Find what's using the port:**
 ```bash
-# Linux/macOS
+# Linux
 sudo lsof -i :3000
 sudo ss -tulpn | grep 3000
 
@@ -464,7 +464,7 @@ New-NetFirewallRule -DisplayName "Magi" -Direction Inbound -Protocol TCP -LocalP
 
 **Find correct IP:**
 ```bash
-# Linux/macOS
+# Linux
 ip addr show
 ifconfig
 
@@ -557,7 +557,7 @@ sqlite3 ~/magi/magi.db "SELECT username, banned FROM users WHERE username='yourn
 
 ### Enable Debug Logging
 
-**Linux/macOS:**
+**Linux:**
 ```bash
 # Not currently configurable
 # Check implementation for log level options

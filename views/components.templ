@@ -198,11 +198,13 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 // MediaCover renders the media cover image with proper sizing
 templ MediaCover(coverURL string, altText string, width int, height int, fixed bool) {
     {{ imageURL := coverURL }}
-    // Use small thumbnail for compact views (e.g., top 10 lists)
-    if width <= 100 && height <= 150 {
-        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_small.jpg" }}
+    // Use tiny thumbnail for very small displays
+    if width <= 60 && height <= 90 {
+        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_tiny.webp" }}
+    } else if width <= 100 && height <= 150 {
+        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_small.webp" }}
     } else if width == 200 && height == 300 {
-        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_thumb.jpg" }}
+        {{ imageURL = strings.TrimSuffix(coverURL, filepath.Ext(coverURL)) + "_thumb.webp" }}
     }
     
     if fixed {

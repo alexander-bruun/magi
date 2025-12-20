@@ -16,7 +16,7 @@ const (
 )
 
 // HandleView wraps a page component with the layout unless the request is an HTMX fragment.
-func HandleView(c *fiber.Ctx, content templ.Component) error {
+func HandleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotifications ...interface{}) error {
 	// Return partial content if HTMX request
 	if IsHTMXRequest(c) {
 		return renderComponent(c, content)
@@ -29,8 +29,17 @@ func HandleView(c *fiber.Ctx, content templ.Component) error {
 		log.Errorf("Error getting user role: %v", err)
 	}
 
+	unreadCount := 0
+	notifications := []models.UserNotification{}
+	if len(unreadCountAndNotifications) > 0 {
+		unreadCount = unreadCountAndNotifications[0].(int)
+	}
+	if len(unreadCountAndNotifications) > 1 {
+		notifications = unreadCountAndNotifications[1].([]models.UserNotification)
+	}
+
 	// pass current request path so templates can mark active nav items
-	base := views.Layout(content, userRole, c.Path())
+	base := views.Layout(content, userRole, c.Path(), unreadCount, notifications)
 	return renderComponent(c, base)
 }
 
@@ -76,12 +85,12 @@ func HandleHome(c *fiber.Ctx) error {
 	for i, m := range recentlyAdded {
 		enrichData := enrichmentData[m.Slug]
 		enrichedRecentlyAdded[i] = models.EnrichedMedia{
-			Media:              m,
-			PremiumCountdown:   enrichData.PremiumCountdown,
-			LatestChapterSlug:  enrichData.LatestChapterSlug,
-			LatestChapterName:  enrichData.LatestChapterName,
-			AverageRating:      enrichData.AverageRating,
-			ReviewCount:        enrichData.ReviewCount,
+			Media:             m,
+			PremiumCountdown:  enrichData.PremiumCountdown,
+			LatestChapterSlug: enrichData.LatestChapterSlug,
+			LatestChapterName: enrichData.LatestChapterName,
+			AverageRating:     enrichData.AverageRating,
+			ReviewCount:       enrichData.ReviewCount,
 		}
 	}
 
@@ -90,12 +99,12 @@ func HandleHome(c *fiber.Ctx) error {
 	for i, m := range recentlyUpdated {
 		enrichData := enrichmentData[m.Slug]
 		enrichedRecentlyUpdated[i] = models.EnrichedMedia{
-			Media:              m,
-			PremiumCountdown:   enrichData.PremiumCountdown,
-			LatestChapterSlug:  enrichData.LatestChapterSlug,
-			LatestChapterName:  enrichData.LatestChapterName,
-			AverageRating:      enrichData.AverageRating,
-			ReviewCount:        enrichData.ReviewCount,
+			Media:             m,
+			PremiumCountdown:  enrichData.PremiumCountdown,
+			LatestChapterSlug: enrichData.LatestChapterSlug,
+			LatestChapterName: enrichData.LatestChapterName,
+			AverageRating:     enrichData.AverageRating,
+			ReviewCount:       enrichData.ReviewCount,
 		}
 	}
 
@@ -108,6 +117,7 @@ func HandleHome(c *fiber.Ctx) error {
 
 	// Mark chapters as read for logged-in users
 	userName := GetUserContext(c)
+	unreadCount := 0
 	if userName != "" {
 		for i := range latestUpdates {
 			readMap, err := models.GetReadChaptersForUser(userName, latestUpdates[i].Media.Slug)
@@ -116,6 +126,11 @@ func HandleHome(c *fiber.Ctx) error {
 					latestUpdates[i].Chapters[j].Read = readMap[latestUpdates[i].Chapters[j].Slug]
 				}
 			}
+		}
+
+		// Fetch unread notification count for logged-in users
+		if count, err := models.GetUnreadNotificationCount(userName); err == nil {
+			unreadCount = count
 		}
 	}
 
@@ -126,7 +141,15 @@ func HandleHome(c *fiber.Ctx) error {
 		highlights = []models.HighlightWithMedia{} // Empty slice if error
 	}
 
-	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights))
+	// Fetch notifications for logged-in users
+	var notifications []models.UserNotification
+	if userName != "" {
+		if notifs, err := models.GetUserNotifications(userName, true); err == nil {
+			notifications = notifs
+		}
+	}
+
+	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights, unreadCount, notifications), unreadCount, notifications)
 }
 
 // HandleTopReadPeriod renders the top read list for a specific period via HTMX
@@ -202,10 +225,10 @@ func renderComponent(c *fiber.Ctx, component templ.Component) error {
 	if statusCode == 0 {
 		statusCode = fiber.StatusOK
 	}
-	
+
 	handler := adaptor.HTTPHandler(templ.Handler(component))
 	err := handler(c)
-	
+
 	// Restore the status code after rendering
 	c.Status(statusCode)
 	return err

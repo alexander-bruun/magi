@@ -188,9 +188,9 @@ func Collection(collection models.CollectionWithMedia, canEdit bool) templ.Compo
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(media.CoverArtURL + "?size=small")
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(media.CoverArtURL + "?size=tiny")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collection.templ`, Line: 56, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collection.templ`, Line: 56, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -203,7 +203,7 @@ func Collection(collection models.CollectionWithMedia, canEdit bool) templ.Compo
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collection.templ`, Line: 56, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collection.templ`, Line: 56, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {

@@ -5,7 +5,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-templ Navbar(userRole string, currentPath string) {
+templ Navbar(userRole string, currentPath string, unreadCount int, notifications []models.UserNotification) {
 	<header class="site-header uk-navbar uk-navbar-container p-3 bg-surface" role="banner">
 		<div class="nav-inner">
 			<div class="uk-navbar-left">
@@ -13,7 +13,7 @@ templ Navbar(userRole string, currentPath string) {
 					<uk-icon icon="menu"></uk-icon>
 				</button>
 				<a href="/" class="flex items-center" aria-label="Magi home">
-					<img src="/assets/img/icon.png" alt="Magi logo" class="h-8 w-auto"/>
+					<img src="/assets/img/icon.webp" alt="Magi logo" class="h-8 w-auto" width="32" height="32"/>
 					<h1 class="uk-hero-lg ml-2 font-semibold brand-title">
 						<span class="uk-text-background brand-gradient">Magi</span>
 					</h1>
@@ -42,15 +42,42 @@ templ Navbar(userRole string, currentPath string) {
 						<div class="uk-inline">
 							<button id="notification-bell" class="uk-btn uk-btn-default uk-btn-icon relative" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
 								<uk-icon icon="Bell"></uk-icon>
-								<span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+								if unreadCount > 0 {
+									<span id="notification-badge" class="notification-badge">{ unreadCount }</span>
+								} else {
+									<span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+								}
 							</button>
 							<div class="uk-card uk-card-body uk-drop" style="min-width: 350px; max-width: 400px;" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
 								<div class="flex justify-between items-center mb-3">
 									<h3 class="uk-h4 mb-0">Notifications</h3>
-									<button id="mark-all-read" class="uk-btn uk-btn-text uk-btn-small" style="display: none;">Mark all read</button>
+									if len(notifications) > 0 {
+										<button id="mark-all-read" class="uk-btn uk-btn-secondary uk-btn-small" hx-post="/api/notifications/mark-all-read" hx-target="#notification-list" hx-swap="innerHTML" hx-on:htmx:after-request="fetch('/api/notifications/unread-count').then(r => r.json()).then(d => { const badge = document.getElementById('notification-badge'); if (badge) { if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; } } if (d.count == 0) { const btn = document.getElementById('mark-all-read'); if (btn) btn.style.display = 'none'; } })">Mark all read</button>
+									}
 								</div>
 								<div id="notification-list" class="notification-list" style="max-height: 400px; overflow-y: auto;">
-									<p class="uk-text-muted uk-text-center">Loading...</p>
+									if len(notifications) == 0 {
+										<p class="uk-text-muted uk-text-center py-4">No new notifications</p>
+									} else {
+										for _, notification := range notifications {
+											<div class="notification-item uk-card uk-card-small uk-card-body mb-2 unread" data-id="{ notification.ID }">
+												<div class="flex gap-2">
+													<div class="flex-1">
+														<a href="/series/{ notification.MediaSlug }/{ notification.ChapterSlug }" 
+														   hx-get="/series/{ notification.MediaSlug }/{ notification.ChapterSlug }" 
+														   hx-target="#content" 
+														   class="block text-inherit no-underline hover:text-primary">
+															<p class="uk-text-small uk-margin-small">{ notification.Message }</p>
+															<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
+														</a>
+													</div>
+													<button class="uk-btn uk-btn-secondary btn-circular" hx-post={ templ.SafeURL(fmt.Sprintf("/api/notifications/%d/read", notification.ID)) } hx-target="closest .notification-item" hx-swap="delete" hx-on:htmx:after-request="fetch('/api/notifications/unread-count').then(r => r.json()).then(d => { const badge = document.getElementById('notification-badge'); if (badge) { if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; } } if (d.count == 0) { const btn = document.getElementById('mark-all-read'); if (btn) btn.style.display = 'none'; } })" title="Mark as read">
+														<uk-icon icon="X" class="w-4 h-4"></uk-icon>
+													</button>
+												</div>
+											</div>
+										}
+									}
 								</div>
 							</div>
 						</div>

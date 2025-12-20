@@ -1,7 +1,9 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -9,11 +11,9 @@ import (
 	"strconv"
 	"syscall"
 	"time"
-	"embed"
-	"net/http"
 
-	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/cmd"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
@@ -64,14 +64,7 @@ func main() {
 		switch runtime.GOOS {
 		case "windows":
 			defaultDataDirectory = filepath.Join(os.Getenv("LOCALAPPDATA"), "magi")
-		case "darwin":
-			// macOS
-			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "magi")
-		case "linux", "freebsd", "openbsd", "netbsd", "dragonfly":
-			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
-		case "plan9":
-			defaultDataDirectory = filepath.Join(os.Getenv("home"), "magi")
-		case "solaris":
+		case "linux":
 			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
 		default:
 			// Fallback for unknown OS
@@ -188,21 +181,21 @@ func main() {
 
 			// Custom config optimized for 10k concurrent users
 			app := fiber.New(fiber.Config{
-				Prefork:            false, // Use single process (no prefork with SQLite)
-				CaseSensitive:      true,
-				StrictRouting:      true,
-				ServerHeader:       "Magi",
-				AppName:            fmt.Sprintf("Magi %s", Version),
-				Views:              engine,
-				ViewsLayout:        "base",
-				BodyLimit:          50 * 1024 * 1024,
-				Concurrency:        262144,
-				ReadBufferSize:     16 * 1024,
-				WriteBufferSize:    16 * 1024,
-				ReadTimeout:        30 * time.Second,
-				WriteTimeout:       30 * time.Second,
-				IdleTimeout:        5 * time.Minute,
-				DisableKeepalive:   false,
+				Prefork:          false, // Use single process (no prefork with SQLite)
+				CaseSensitive:    true,
+				StrictRouting:    true,
+				ServerHeader:     "Magi",
+				AppName:          fmt.Sprintf("Magi %s", Version),
+				Views:            engine,
+				ViewsLayout:      "base",
+				BodyLimit:        50 * 1024 * 1024,
+				Concurrency:      262144,
+				ReadBufferSize:   16 * 1024,
+				WriteBufferSize:  16 * 1024,
+				ReadTimeout:      30 * time.Second,
+				WriteTimeout:     30 * time.Second,
+				IdleTimeout:      5 * time.Minute,
+				DisableKeepalive: false,
 			})
 
 			// Start API in its own goroutine

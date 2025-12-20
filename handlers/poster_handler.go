@@ -57,7 +57,7 @@ func getFirstChapterFilePath(media *models.Media) (string, error) {
 // HandlePosterChapterSelect renders a list of chapters to select from
 func HandlePosterChapterSelect(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
-	
+
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
 		return sendNotFoundError(c, ErrMediaNotFound)
@@ -76,7 +76,7 @@ func HandlePosterChapterSelect(c *fiber.Ctx) error {
 func HandlePosterSelector(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Query("chapter", "")
-	
+
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
 		return sendNotFoundError(c, ErrMediaNotFound)
@@ -144,7 +144,7 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Query("chapter", "")
 	imageIndexStr := c.Query("index", "0")
-	
+
 	imageIndex := 0
 	if idx, err := strconv.Atoi(imageIndexStr); err == nil {
 		imageIndex = idx
@@ -242,17 +242,17 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		}
 		defer os.Remove(tempPath) // Clean up temp file
 
-		// Load and convert to JPG
+		// Load and convert to WebP
 		img, err := utils.OpenImage(tempPath)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
-		imageData, err := utils.EncodeImageToBytes(img, "jpeg", models.GetProcessedImageQuality())
+		imageData, err := utils.EncodeImageToBytes(img, "webp", models.GetProcessedImageQuality())
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
-		cachePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
+		cachePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
 		if err := cacheManager.Save(cachePath, imageData); err != nil {
 			return sendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
