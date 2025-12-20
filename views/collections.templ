@@ -21,7 +21,7 @@ templ Collections(collections []models.Collection) {
 					<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
 					<h2 class="text-xl font-semibold">No collections yet</h2>
 				</div>
-				<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+				<p class=" mb-4">Create your first collection to organize your favorite series.</p>
 				<button type="button" class="uk-btn uk-btn-primary" uk-toggle="target: #create-collection-modal" hx-get="/collections/create/modal" hx-target="#create-collection-modal-content" hx-swap="innerHTML">
 					Create Collection
 				</button>
@@ -59,7 +59,7 @@ templ Collections(collections []models.Collection) {
 						</div>
 
 						if collection.Description != "" {
-							<p class="text-sm text-gray-600 mb-3 line-clamp-2">{ collection.Description }</p>
+							<p class="text-sm mb-3 line-clamp-2">{ collection.Description }</p>
 						}
 
 						<div class="flex items-center justify-between text-sm text-gray-500">

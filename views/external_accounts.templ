@@ -24,7 +24,7 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                 {{ for _, account := range accounts { if account.ServiceName == "mal" { malAccount = account } } }}
                 if malAccount.ServiceName == "" {
                     <p class="mb-4">Connect your MyAnimeList account to sync reading progress.</p>
-                    <form hx-post="/account/external/mal/connect" hx-target="#content" hx-swap="innerHTML">
+                    <form hx-post="/account/external/mal/connect" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json">
                         <div class="uk-margin">
                             <label class="uk-form-label" for="client_id">Client ID <button type="button" uk-tooltip="title: 1. Go to MAL API Config<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">
@@ -65,7 +65,7 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                 {{ for _, account := range accounts { if account.ServiceName == "anilist" { anilistAccount = account } } }}
                 if anilistAccount.ServiceName == "" {
                     <p class="mb-4">Connect your AniList account to sync reading progress.</p>
-                    <form hx-post="/account/external/anilist/connect" hx-target="#content" hx-swap="innerHTML">
+                    <form hx-post="/account/external/anilist/connect" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json">
                         <div class="uk-margin">
                             <label class="uk-form-label" for="client_id">Client ID <button type="button" uk-tooltip="title: 1. Go to AniList Developer Settings<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">

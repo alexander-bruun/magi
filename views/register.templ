@@ -5,7 +5,7 @@ templ Register() {
 	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/auth/register" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Register</span></h2>
 	<div class="grid place-content-center my-4">
-		<form hx-post="/auth/register" hx-redirect="/auth/login" aria-label="Registration form">
+		<form hx-post="/auth/register" hx-redirect="/auth/login" hx-ext="form-json" aria-label="Registration form">
 			<fieldset>
 				<div class="mb-2">
 					<label for="register-username" class="uk-form-label block mb-1">Username</label>

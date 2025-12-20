@@ -16,13 +16,13 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 						<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
 						<h2 class="text-xl font-semibold">No collections yet</h2>
 					</div>
-					<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+					<p class=" mb-4">Create your first collection to organize your favorite series.</p>
 					<a href="/collections/create" class="uk-btn uk-btn-primary" hx-get="/collections/create" hx-target="#content" hx-push-url="true">
 						Create Collection
 					</a>
 				</div>
 			} else {
-				<p class="text-gray-600 mb-6">Select which of your collections this series should be added to or removed from.</p>
+				<p class=" mb-6">Select which of your collections this series should be added to or removed from.</p>
 
 				<div class="space-y-3">
 					for _, collection := range userCollections {
@@ -38,13 +38,13 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 							<div class="flex-1">
 								<h3 class="font-semibold">{ collection.Name }</h3>
 								if collection.Description != "" {
-									<p class="text-sm text-gray-600 mt-1">{ collection.Description }</p>
+									<p class="text-sm mt-1">{ collection.Description }</p>
 								}
 								<p class="text-xs text-gray-500 mt-1">{ collection.MediaCount } series</p>
 							</div>
 
 							if inCollection {
-								<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+								<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" hx-ext="form-json" class="ml-4">
 									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
 									<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small">
 										<uk-icon icon="x"></uk-icon>
@@ -52,7 +52,7 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 									</button>
 								</form>
 							} else {
-								<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
+								<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" hx-ext="form-json" class="ml-4">
 									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
 									<button type="submit" class="uk-btn uk-btn-primary uk-btn-small">
 										<uk-icon icon="plus"></uk-icon>

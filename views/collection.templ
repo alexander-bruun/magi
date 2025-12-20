@@ -11,7 +11,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 			<div class="flex-1">
 				<h1 class="text-3xl font-bold mb-2">{ collection.Name }</h1>
 				if collection.Description != "" {
-					<p class="text-lg text-gray-600 mb-4">{ collection.Description }</p>
+					<p class="text-lg mb-4">{ collection.Description }</p>
 				}
 				<div class="flex items-center text-sm text-gray-500 space-x-4">
 					<span>Created by { collection.CreatedBy }</span>
@@ -43,7 +43,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 					<h2 class="text-xl font-semibold">No series in this collection</h2>
 				</div>
 				if canEdit {
-					<p class="text-gray-600 mb-4">Add some series to get started.</p>
+					<p class=" mb-4">Add some series to get started.</p>
 					<p class="text-sm text-gray-500">Series can be added from individual series pages.</p>
 				}
 			</div>

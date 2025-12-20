@@ -139,6 +139,7 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 				hx-put={ fmt.Sprintf("/admin/libraries/%s", library.Slug) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
+				hx-on:htmx:afterRequest="event.detail.xhr.status === 200 && this.reset()"
 			>
 				@FormContent(library, editing)
 			</form>

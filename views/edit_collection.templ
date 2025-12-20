@@ -10,7 +10,7 @@ templ EditCollection(collection models.Collection) {
 		<div class="uk-card uk-card-default uk-card-body">
 			<h1 class="text-2xl font-bold mb-6">Edit Collection</h1>
 
-			<form hx-post={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#content" hx-swap="innerHTML">
+			<form hx-post={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#content" hx-swap="innerHTML" hx-ext="form-json">
 				<div class="mb-4">
 					<label for="name" class="block text-sm font-medium text-gray-700 mb-2">Collection Name *</label>
 					<input type="text" id="name" name="name" class="uk-input w-full" value={ collection.Name } placeholder="e.g., Batman Universe, Shonen Jump" required>
@@ -34,12 +34,12 @@ templ EditCollection(collection models.Collection) {
 }
 
 templ EditCollectionModal(collection models.Collection) {
-	<div class="uk-modal-header">
+	<div class="uk-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
 		<h2 class="uk-modal-title">Edit Collection</h2>
 		<button class="uk-modal-close" type="button" uk-close></button>
 	</div>
 
-	<form hx-post={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#edit-collection-modal" hx-swap="none" class="uk-modal-body">
+	<form hx-post={ templ.URL(fmt.Sprintf("/collections/%d/edit", collection.ID)) } hx-target="#edit-collection-modal" hx-swap="none" hx-ext="form-json" class="uk-modal-body">
 		<div class="mb-4">
 			<label for="modal-name" class="block text-sm font-medium text-gray-700 mb-2">Collection Name *</label>
 			<input type="text" id="modal-name" name="name" class="uk-input w-full" value={ collection.Name } placeholder="e.g., Batman Universe, Shonen Jump" required>

@@ -39,7 +39,7 @@ func Collections(collections []models.Collection) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(collections) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-12\"><div class=\"flex items-center justify-center mb-4\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"text-gray-400 mr-4\"></uk-icon><h2 class=\"text-xl font-semibold\">No collections yet</h2></div><p class=\"text-gray-600 mb-4\">Create your first collection to organize your favorite series.</p><button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #create-collection-modal\" hx-get=\"/collections/create/modal\" hx-target=\"#create-collection-modal-content\" hx-swap=\"innerHTML\">Create Collection</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-12\"><div class=\"flex items-center justify-center mb-4\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"text-gray-400 mr-4\"></uk-icon><h2 class=\"text-xl font-semibold\">No collections yet</h2></div><p class=\" mb-4\">Create your first collection to organize your favorite series.</p><button type=\"button\" class=\"uk-btn uk-btn-primary\" uk-toggle=\"target: #create-collection-modal\" hx-get=\"/collections/create/modal\" hx-target=\"#create-collection-modal-content\" hx-swap=\"innerHTML\">Create Collection</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -141,14 +141,14 @@ func Collections(collections []models.Collection) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if collection.Description != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-sm text-gray-600 mb-3 line-clamp-2\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<p class=\"text-sm mb-3 line-clamp-2\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(collection.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collections.templ`, Line: 62, Col: 82}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/collections.templ`, Line: 62, Col: 68}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {

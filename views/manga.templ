@@ -15,7 +15,7 @@ templ MediaCollectionItem(mediaSlug string, collection models.Collection, inColl
 		<div class="flex-1">
 			<h3 class="font-semibold">{ collection.Name }</h3>
 			if collection.Description != "" {
-				<p class="text-sm text-gray-600 mt-1">{ collection.Description }</p>
+				<p class="text-sm mt-1">{ collection.Description }</p>
 			}
 			<p class="text-xs text-gray-500 mt-1">{ collection.MediaCount } series</p>
 		</div>
@@ -52,13 +52,13 @@ templ MediaCollectionsModal(mediaSlug string, userCollections []models.Collectio
 				<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
 				<h2 class="text-xl font-semibold">No collections yet</h2>
 			</div>
-			<p class="text-gray-600 mb-4">Create your first collection to organize your favorite series.</p>
+			<p class=" mb-4">Create your first collection to organize your favorite series.</p>
 			<a href="/collections/create" class="uk-btn uk-btn-primary" onclick="UIkit.modal('#collections-modal').hide(); window.location.href='/collections/create'">
 				Create Collection
 			</a>
 		</div>
 	} else {
-		<p class="text-gray-600 mb-6">Select which of your collections this series should be added to or removed from.</p>
+		<p class=" mb-6">Select which of your collections this series should be added to or removed from.</p>
 
 		<div class="space-y-3">
 			for _, collection := range userCollections {
@@ -76,7 +76,7 @@ templ MediaCollectionsModal(mediaSlug string, userCollections []models.Collectio
 	}
 }
 
-templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection) {
+templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool) {
 	{{ _ = userCollections }}
 	{{ _ = mediaCollections }}
 	@PageTitle(media.Name)
@@ -157,6 +157,27 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 						>
 							<uk-icon icon="Trash"></uk-icon>
 						</button>
+						<div id="highlight-btn-container">
+							if isHighlighted {
+								<form hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-container" hx-swap="outerHTML" class="inline">
+									<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+										<uk-icon icon="StarOff"></uk-icon>
+										<span class="hidden md:inline ml-1">Remove from Highlights</span>
+									</button>
+								</form>
+							} else {
+								<button
+									type="button"
+									class="uk-btn uk-btn-primary uk-btn-small"
+									uk-toggle="target: #add-highlight-modal"
+									title="Add to highlights"
+									aria-label="Add to highlights"
+								>
+									<uk-icon icon="Star"></uk-icon>
+									<span class="hidden md:inline ml-1">Add to Highlights</span>
+								</button>
+							}
+						</div>
 					</div>
 				</div>
 			}
@@ -174,6 +195,9 @@ templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon
 		<a
 			class="uk-btn uk-btn-default"
 			href={ href }
+			hx-get={ href }
+			hx-target="#content"
+			hx-push-url="true"
 			onclick="scrollToTopInstant()"
 			aria-label={ label }
 		>
@@ -465,6 +489,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			</p>
 			<form
 				hx-post={ fmt.Sprintf("/series/%s/metadata/manual", media.Slug) }
+				hx-ext="form-json"
 				class="space-y-6"
 			>
 				<div class="mb-5">
@@ -721,12 +746,43 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			<div id="collections-modal-content"></div>
 		</div>
 	</div>
+	<!-- Add Highlight Modal -->
+	<div id="add-highlight-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<h2 class="uk-modal-title">Add to Highlights</h2>
+			<form hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#add-highlight-modal" hx-swap="none" enctype="multipart/form-data">
+				<div class="uk-margin">
+					<label class="uk-form-label" for="highlight-background-url">Background Image URL</label>
+					<input class="uk-input" type="url" id="highlight-background-url" name="background_image_url" placeholder="https://example.com/banner.jpg"/>
+					<p class="uk-text-small uk-text-muted">URL to an image that will be used as the background for this highlight</p>
+				</div>
+				<div class="uk-margin">
+					<label class="uk-form-label" for="highlight-background-file">Or Upload Image</label>
+					<input class="uk-input" type="file" id="highlight-background-file" name="background_image" accept="image/*"/>
+					<p class="uk-text-small uk-text-muted">Upload an image file to use as the background</p>
+				</div>
+				<div class="uk-margin">
+					<label class="uk-form-label" for="highlight-description">Description (Optional)</label>
+					<textarea class="uk-textarea" id="highlight-description" name="description" rows="3" placeholder="A brief description of why this series is highlighted"></textarea>
+				</div>
+				<div class="uk-margin">
+					<label class="uk-form-label" for="highlight-display-order">Display Order</label>
+					<input class="uk-input" type="number" id="highlight-display-order" name="display_order" value="0" min="0"/>
+					<p class="uk-text-small uk-text-muted">Lower numbers appear first in the highlight carousel</p>
+				</div>
+				<div class="uk-margin uk-text-right">
+					<button type="button" class="uk-btn uk-btn-default uk-modal-close">Cancel</button>
+					<button type="submit" class="uk-btn uk-btn-primary">Add to Highlights</button>
+				</div>
+			</form>
+		</div>
+	</div>
 }
 
 // Favorite fragment for a media. Returned by HTMX when toggling favorite state.
 templ MediaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
 	<div id="media-favorite" class="media-favorite-fragment inline-flex items-center">
-		<form hx-post={ fmt.Sprintf("/series/%s/favorite", mangaSlug) } hx-target="#media-favorite" hx-swap="outerHTML" class="inline-flex items-center">
+		<form hx-post={ fmt.Sprintf("/series/%s/favorite", mangaSlug) } hx-target="#media-favorite" hx-swap="outerHTML" hx-ext="form-json" class="inline-flex items-center">
 			if isFavorite {
 				<input type="hidden" name="value" value="0"/>
 				<button type="submit" class="uk-btn uk-btn-default favorite-btn active btn-circular" title="Remove favorite" aria-label="Remove favorite">
@@ -750,7 +806,7 @@ templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int,
 		<!-- Constrained group keeps buttons next to stats and centered overall -->
 		<div class="flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto">
 			<!-- Upvote: to the left of the score -->
-			<form hx-post={ fmt.Sprintf("/series/%s/vote", mangaSlug) } hx-target="#media-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
+			<form hx-post={ fmt.Sprintf("/series/%s/vote", mangaSlug) } hx-target="#media-vote" hx-swap="outerHTML" hx-ext="form-json" class="inline-flex items-center flex-shrink-0">
 				if userVote == 1 {
 					<input type="hidden" name="value" value="0"/>
 					<button type="submit" class="uk-btn uk-btn-default vote-btn up active btn-circular" title="Remove upvote" aria-label="Remove upvote">
@@ -769,7 +825,7 @@ templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int,
 				<div class="vote-small">{ fmt.Sprint(upvotes) } ↑ · { fmt.Sprint(downvotes) } ↓</div>
 			</div>
 			<!-- Downvote: to the right of the score -->
-			<form hx-post={ fmt.Sprintf("/series/%s/vote", mangaSlug) } hx-target="#media-vote" hx-swap="outerHTML" class="inline-flex items-center flex-shrink-0">
+			<form hx-post={ fmt.Sprintf("/series/%s/vote", mangaSlug) } hx-target="#media-vote" hx-swap="outerHTML" hx-ext="form-json" class="inline-flex items-center flex-shrink-0">
 				if userVote == -1 {
 					<input type="hidden" name="value" value="0"/>
 					<button type="submit" class="uk-btn uk-btn-default vote-btn down active btn-circular" title="Remove downvote" aria-label="Remove downvote">
@@ -792,16 +848,26 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 			<li class="uk-closed">
 				<!-- Row layout: left = link/title, right = optional icon -->
 				<div class="flex items-center justify-between w-full">
-					<a
-						class="uk-accordion-title flex-1 min-w-0 pr-2 truncate"
-						href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-					>
-						{ chapter.Name }
-						<span
-							class="uk-accordion-icon"
-							uk-icon="icon: chevron-down; ratio: 0.8"
-						></span>
-					</a>
+					<div class="flex items-center flex-1 min-w-0">
+						<a
+							class={ "uk-accordion-title pr-2 truncate", templ.KV("brand-gradient", chapter.Read) }
+							href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+							hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+							hx-target="#content"
+							hx-push-url="true"
+						>
+							{ chapter.Name }
+							<span
+								class="uk-accordion-icon"
+								uk-icon="icon: chevron-down; ratio: 0.8"
+							></span>
+						</a>
+						if isNewUpdate(chapter.CreatedAt) {
+							<span class="uk-badge ml-2" style="background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.125rem 0.25rem; animation: pulse 1.5s ease-in-out infinite;">
+								NEW
+							</span>
+						}
+					</div>
 					<div class="flex items-center">
 						if chapter.Read {
 							<div class="mr-3" title="Read">
@@ -881,6 +947,9 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<a
 				href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
 				class="uk-btn uk-btn-primary"
+				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				hx-target="#content"
+				hx-push-url="true"
 				title="Resume reading from where you left off"
 			>
 				<uk-icon icon="Play"></uk-icon>
@@ -909,12 +978,12 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 						{ result.Title }
 					</h3>
 					if result.Year > 0 {
-						<div class="text-sm text-gray-600 mb-2 text-center">
+						<div class="text-sm mb-2 text-center">
 							{ fmt.Sprintf("Year: %d", result.Year) }
 						</div>
 					}
 					if result.SimilarityScore > 0 {
-						<div class="text-sm text-green-600 mb-2 font-medium text-center">
+						<div class="text-sm brand-gradient mb-2 font-medium text-center">
 							{ fmt.Sprintf("Match: %.1f%%", result.SimilarityScore*100) }
 						</div>
 					}
@@ -1696,7 +1765,7 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
 									<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug) }>{ ch.Name }</a>
 									if ch.Read {
-										<span class="ml-2 text-green-600 inline-flex items-center" title="Read">
+										<span class="ml-2 brand-gradient inline-flex items-center" title="Read">
 											<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
 										</span>
 									}
@@ -1725,7 +1794,7 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 			<div class="flex flex-wrap justify-center items-center gap-4">
 				<!-- Font Size Controls -->
 				<div class="flex items-center gap-1">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Font Size:</span>
+					<span class="text-sm dark:text-gray-400">Font Size:</span>
 					<button class="uk-btn uk-btn-small uk-btn-default font-size-btn" data-action="decrease" title="Decrease font size">
 						<uk-icon icon="minus" ratio="0.7"></uk-icon>
 					</button>
@@ -1736,16 +1805,16 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 				</div>
 				<!-- Font Color and Background Controls -->
 				<div class="flex items-center gap-2">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Text:</span>
+					<span class="text-sm dark:text-gray-400">Text:</span>
 					<input type="color" id="font-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Font color"/>
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Background:</span>
+					<span class="text-sm dark:text-gray-400">Background:</span>
 					<input type="color" id="bg-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Background color"/>
 				</div>
 				<!-- Text Alignment Controls -->
 				<div class="flex items-center gap-2">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Alignment:</span>
+					<span class="text-sm dark:text-gray-400">Alignment:</span>
 					<div class="flex gap-1">
 						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="left" title="Align left">
 							<uk-icon icon="align-left" ratio="0.7"></uk-icon>
@@ -1763,7 +1832,7 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 				</div>
 				<!-- Margin Controls -->
 				<div class="flex items-center gap-1">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Margins:</span>
+					<span class="text-sm dark:text-gray-400">Margins:</span>
 					<button class="uk-btn uk-btn-small uk-btn-default margin-btn" data-action="decrease" title="Decrease margins">
 						<uk-icon icon="minus" ratio="0.7"></uk-icon>
 					</button>
@@ -1808,7 +1877,7 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 			<div class="p-8">
 				<div class="text-center mb-6">
 					<h2 class="text-xl font-semibold text-gray-800 mb-2">{ media.Name }</h2>
-					<p class="text-gray-600">{ chapter.Name }</p>
+					<p class="">{ chapter.Name }</p>
 				</div>
 				<!-- Countdown timer -->
 				<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -1824,7 +1893,7 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 				</div>
 				<!-- Call to action -->
 				<div class="text-center">
-					<p class="text-gray-600 mb-4">Upgrade to premium to access this chapter early!</p>
+					<p class=" mb-4">Upgrade to premium to access this chapter early!</p>
 					<a href="/settings" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-medium rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg">
 						<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
 							<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
@@ -1903,15 +1972,10 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 	</div>
 	<script>
 		function updateStars() {
-			console.log('updateStars called');
 			var stars = document.querySelectorAll('.star-rating .star');
-			console.log('stars found:', stars.length);
 			var ratingInput = document.querySelector('input[name="rating"]');
-			console.log('ratingInput:', ratingInput);
 			var rating = parseInt(ratingInput.value) || 0;
-			console.log('current rating:', rating);
 			stars.forEach((star, index) => {
-				console.log('star', index, 'setting color');
 				if (index < rating) {
 					star.style.color = '#fbbf24'; // yellow-400
 				} else {
@@ -1920,21 +1984,16 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 			});
 		}
 		function setRating(rating) {
-			console.log('setRating called with:', rating);
 			var ratingInput = document.querySelector('input[name="rating"]');
 			ratingInput.value = rating;
-			console.log('set ratingInput.value to:', rating);
 			updateStars();
 		}
 		function editReview(id, rating) {
-			console.log('editReview called with:', id, rating);
 			var reviewDiv = document.querySelector(`[data-review-id="${id}"]`);
 			if (!reviewDiv) {
-				console.log('reviewDiv not found for id:', id);
 				return;
 			}
 			var content = reviewDiv.dataset.reviewContent;
-			console.log('content:', content);
 			document.querySelector('input[name="reviewId"]').value = id;
 			setRating(rating);
 			document.querySelector('textarea[name="content"]').value = content;
@@ -1945,22 +2004,18 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 		stars.forEach(star => {
 			star.addEventListener('click', () => {
 				var rating = parseInt(star.dataset.rating);
-				console.log('star clicked, rating:', rating);
 				setRating(rating);
 			});
 		});
 		var editButtons = document.querySelectorAll('.edit-review-btn');
 		editButtons.forEach(btn => {
 			btn.addEventListener('click', () => {
-				console.log('edit button clicked, btn.dataset:', btn.dataset);
 				var id = parseInt(btn.dataset.reviewId);
 				var rating = parseInt(btn.dataset.reviewRating);
-				console.log('parsed id:', id, 'rating:', rating);
 				editReview(id, rating);
 			});
 		});
 		// Initial update
-		console.log('initial updateStars');
 		updateStars();
 	</script>
 }

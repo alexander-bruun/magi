@@ -37,14 +37,14 @@ templ Monitoring(data *models.MonitoringData) {
 					<div>
 						<div class="flex justify-between mb-2">
 							<span class="font-semibold">Mem:</span>
-							<span class="font-semibold text-green-600" id="memoryPercentage">--</span>
+							<span class="font-semibold brand-gradient" id="memoryPercentage">--</span>
 						</div>
 						<div style="display: flex; height: 32px; gap: 0; overflow: hidden; border-radius: 4px; border: 1px solid #e5e7eb; padding: 0;">
 							<div style="width: 0%; background-color: #10b981; min-width: 0;" id="memUsedBar" title="Used Memory"></div>
 							<div style="width: 0%; background-color: #eab308; min-width: 0;" id="memCachedBar" title="Cached Memory"></div>
 							<div style="width: 100%; background-color: #d1d5db; min-width: 0;" id="memFreeBar" title="Free Memory"></div>
 						</div>
-						<div class="text-xs text-gray-600 mt-2 grid grid-cols-3 gap-2 text-center" id="memoryDetails">
+						<div class="text-xs mt-2 grid grid-cols-3 gap-2 text-center" id="memoryDetails">
 							<div><span class="inline-block w-2 h-2 bg-green-600 rounded-sm mr-1"></span>Used: --</div>
 							<div><span class="inline-block w-2 h-2 bg-yellow-500 rounded-sm mr-1"></span>Cached: --</div>
 							<div><span class="inline-block w-2 h-2 bg-gray-300 rounded-sm mr-1"></span>Free: --</div>
@@ -267,7 +267,7 @@ templ Monitoring(data *models.MonitoringData) {
 				
 				// Determine color based on usage percentage
 				let barColor = '#10b981'; // green
-				let textColor = 'text-green-600';
+				let textColor = 'brand-gradient';
 				
 				if (percentage > 80) {
 					barColor = '#ef4444'; // red
@@ -299,7 +299,7 @@ templ Monitoring(data *models.MonitoringData) {
 						</div>
 						
 						<!-- Details -->
-						<div class="text-xs text-gray-600 flex justify-between">
+						<div class="text-xs flex justify-between">
 							<div class="text-center">
 								<div class="text-gray-500">Used</div>
 								<div class="font-semibold">${disk.used_gb.toFixed(1)} GB</div>
@@ -330,31 +330,31 @@ templ Monitoring(data *models.MonitoringData) {
 				<div class="flex-1 min-w-max">
 					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
 						<div class="text-2xl font-bold text-blue-600">${data.totals.medias}</div>
-						<div class="text-sm text-gray-600">Medias</div>
+						<div class="text-sm">Medias</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
 					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
-						<div class="text-2xl font-bold text-green-600">${data.totals.chapters}</div>
-						<div class="text-sm text-gray-600">Chapters</div>
+						<div class="text-2xl font-bold brand-gradient">${data.totals.chapters}</div>
+						<div class="text-sm">Chapters</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
 					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
 						<div class="text-2xl font-bold text-purple-600">${data.totals.chapters_read}</div>
-						<div class="text-sm text-gray-600">Chapters Read</div>
+						<div class="text-sm">Chapters Read</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
 					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
 						<div class="text-2xl font-bold text-orange-600">${data.totals.users}</div>
-						<div class="text-sm text-gray-600">Users</div>
+						<div class="text-sm">Users</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
 					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
 						<div class="text-2xl font-bold text-red-600">${data.totals.libraries}</div>
-						<div class="text-sm text-gray-600">Libraries</div>
+						<div class="text-sm">Libraries</div>
 					</div>
 				</div>
 			`;				// Prepare data for charts

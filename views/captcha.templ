@@ -28,7 +28,7 @@ templ Captcha(errorMsg string, captchaID string) {
 					</div>
 				}
 
-				<form method="post" action="/captcha/verify">
+				<form method="post" action="/captcha/verify" hx-ext="form-json">
 					<input type="hidden" name="id" value={ captchaID }/>
 
 					<div class="mb-4">

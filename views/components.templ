@@ -4,11 +4,23 @@ import (
     "fmt"
     "strings"
     "path/filepath"
+    "time"
     "github.com/alexander-bruun/magi/metadata"
     "github.com/alexander-bruun/magi/models"
 )
 
-// PageTitle sets the document title via the global JS handler
+// isNewUpdate checks if the media was updated within the configured NEW badge duration (in hours)
+func isNewUpdate(updatedAt time.Time) bool {
+	now := time.Now()
+	duration := now.Sub(updatedAt)
+	// Get config to determine duration, default to 48 hours if config fails
+	config, err := models.GetAppConfig()
+	hours := 48
+	if err == nil {
+		hours = config.NewBadgeDuration
+	}
+	return duration < time.Duration(hours)*time.Hour
+}// PageTitle sets the document title via the global JS handler
 templ PageTitle(title string) {
     @templ.JSFuncCall("titleHandler", title)
 }
@@ -76,6 +88,11 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 			</h3>
 			<div class="uk-card-media-top flex justify-center items-center relative">
 				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed)
+				if isNewUpdate(media.UpdatedAt) {
+					<span class="uk-badge absolute top-2 right-2" style="background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.25rem 0.375rem; animation: pulse 1.5s ease-in-out infinite;">
+						NEW
+					</span>
+				}
 				if media.PremiumCountdown != "" {
 					<span class="uk-badge absolute top-2 left-2" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
 						<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
@@ -257,7 +274,7 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                 if user.Avatar != "" {
                     <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 object-cover border-2 border-gray-300 avatar-image transition-opacity duration-300"/>
                 } else {
-                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold text-gray-600 border-2 border-gray-300 avatar-image transition-opacity duration-300">
+                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold border-2 border-gray-300 avatar-image transition-opacity duration-300">
                         { string(user.Username[0]) }
                     </div>
                 }
@@ -287,26 +304,26 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                     <!-- Stats -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-blue-600">{ totalChaptersRead }</div>
-                            <div class="text-sm text-gray-600">Chapters Read</div>
+                            <div class="text-2xl font-bold brand-gradient">{ totalChaptersRead }</div>
+                            <div class="text-sm">Chapters Read</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600">{ totalMediaRead }</div>
-                            <div class="text-sm text-gray-600">Series Read</div>
+                            <div class="text-2xl font-bold brand-gradient">{ totalMediaRead }</div>
+                            <div class="text-sm">Series Read</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-orange-600">{ readingStreak }</div>
-                            <div class="text-sm text-gray-600">Day Streak</div>
+                            <div class="text-2xl font-bold brand-gradient">{ readingStreak }</div>
+                            <div class="text-sm">Day Streak</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-lg font-bold text-purple-600">{ len(favoriteGenres) }</div>
-                            <div class="text-sm text-gray-600">Fav Genres</div>
+                            <div class="text-2xl font-bold brand-gradient">{ len(favoriteGenres) }</div>
+                            <div class="text-sm">Fav Genres</div>
                         </div>
                     </div>
                     
                     if len(favoriteGenres) > 0 {
                         <div class="mb-4">
-                            <span class="text-sm text-gray-600">Favorite genres: </span>
+                            <span class="text-sm">Favorite genres: </span>
                             for i, genre := range favoriteGenres {
                                 <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">{ genre }</span>
                                 if i < len(favoriteGenres)-1 {
@@ -338,7 +355,7 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                                 <svg class="mx-auto h-6 w-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
-                                <span id="file-text" class="text-sm text-gray-600">Choose an image file...</span>
+                                <span id="file-text" class="text-sm">Choose an image file...</span>
                             </div>
                         </div>
                     </div>
@@ -355,12 +372,12 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                     const fileText = document.getElementById('file-text');
                     if (file) {
                         fileText.textContent = file.name;
-                        fileText.classList.remove('text-gray-600');
+                        fileText.classList.remove('');
                         fileText.classList.add('text-blue-600', 'font-medium');
                     } else {
                         fileText.textContent = 'Choose an image file...';
                         fileText.classList.remove('text-blue-600', 'font-medium');
-                        fileText.classList.add('text-gray-600');
+                        fileText.classList.add('');
                     }
                 });
 
@@ -432,7 +449,7 @@ templ Showcase(media []models.EnrichedMedia) {
                     for _, media := range media {
                         {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
                         <li>
-                            <a href={ fmt.Sprintf("/series/%s", media.Slug) } hx-get={ fmt.Sprintf("/series/%s", media.Slug) } hx-target="#content" hx-push-url="true" class="block">
+                            <a href={ fmt.Sprintf("/series/%s", media.Slug) } class="block">
                                 <div class="uk-card uk-card-default uk-card-body p-2" style="width:200px;">
                                     <div class="uk-card-media-top relative">
                                         @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
@@ -510,7 +527,7 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                                             <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
                                                 { activity.Media.Name }
                                             </a>
-                                            <p class="text-xs text-gray-600">
+                                            <p class="text-xs">
                                                 { activity.ReadingState.CreatedAt.Format("Jan 2") }
                                             </p>
                                         </div>
@@ -530,7 +547,7 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                                             <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
                                                 { activity.Media.Name }
                                             </a>
-                                            <p class="text-xs text-gray-600">
+                                            <p class="text-xs">
                                                 { activity.ReadingState.CreatedAt.Format("Jan 2") }
                                             </p>
                                         </div>

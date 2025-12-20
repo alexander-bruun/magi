@@ -108,7 +108,7 @@ func getSharedScriptContent(sharedScript *string) string {
 }
 
 // Scraper renders the main scraper page with tabs
-templ Scraper(scripts []models.ScraperScript) {
+templ Scraper(scripts []models.ScraperScript, activeID int64) {
 	@PageTitle("Scraper")
 	<div class="mt-4">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
@@ -119,9 +119,7 @@ templ Scraper(scripts []models.ScraperScript) {
 			<div class="flex items-center gap-1 overflow-x-auto pb-2">
 				<!-- Existing Script Tabs -->
 				<div id="script-tabs" class="flex items-center gap-1">
-					for _, script := range scripts {
-						@ScraperTab(&script)
-					}
+					@ScraperTabs(scripts, activeID)
 				</div>
 				
 				<!-- Plus Button for New Script -->
@@ -139,7 +137,7 @@ templ Scraper(scripts []models.ScraperScript) {
 		</div>
 
 		<!-- Editor Container -->
-		<div id="scraper-editor-container" class="uk-card uk-card-body p-4">
+		<div id="scraper-editor-container" class="uk-card uk-card-body p-4" if len(scripts) > 0 { data-active-script={ fmt.Sprintf("%d", scripts[0].ID) } }>
 			if len(scripts) > 0 {
 				@ScraperScriptEditor(&scripts[0])
 			} else {
@@ -151,11 +149,35 @@ templ Scraper(scripts []models.ScraperScript) {
 	</div>
 }
 
+// ScraperTabs renders all script tabs (for HTMX updates after creating a new script)
+templ ScraperTabs(scripts []models.ScraperScript, activeID int64) {
+	for _, script := range scripts {
+		@ScraperTab(&script, activeID)
+	}
+}
+
+// ScraperEditorWithUpdatedTabs renders the editor and updated tabs (OOB swap)
+templ ScraperEditorWithUpdatedTabs(script *models.ScraperScript, scripts []models.ScraperScript) {
+	<div id="script-tabs" hx-swap-oob="innerHTML">
+		@ScraperTabs(scripts, script.ID)
+	</div>
+	@ScraperScriptEditor(script)
+}
+
+// Helper function to get tab class
+func getTabClass(isActive bool) string {
+	base := "uk-tab px-3 py-2 rounded-t border-t border-l border-r border-border hover:bg-accent whitespace-nowrap text-sm flex items-center gap-2 transition-colors duration-200"
+	if isActive {
+		return base + " active"
+	}
+	return base
+}
+
 // ScraperTab renders a single script tab
-templ ScraperTab(script *models.ScraperScript) {
+templ ScraperTab(script *models.ScraperScript, activeID int64) {
 	<div 
 		data-script-id={ fmt.Sprintf("%d", script.ID) }
-		class="uk-tab px-3 py-2 rounded-t border border-border border-b-0 hover:bg-accent whitespace-nowrap text-sm flex items-center gap-2"
+		class={ "scraper-tab " + getTabClass(script.ID == activeID) }
 	>
 		<button
 			type="button"
@@ -219,7 +241,10 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			hx-put={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
 		}
 		hx-target="#scraper-editor-container"
-		hx-swap="none"
+		hx-swap="innerHTML"
+		hx-ext="form-json"
+		hx-indicator="#scraper-form-indicator"
+		novalidate
 		class="space-y-4"
 	>
 		<!-- Script Name -->
@@ -240,7 +265,16 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<label for="script-language" class="uk-form-label">Language</label>
-					<select id="script-language" name="language" class="uk-select" required>
+					<select 
+						id="script-language" 
+						name="language" 
+						class="uk-select" 
+						required
+						hx-get="/admin/scraper/helpers/update-language"
+						hx-target="#language-dependent-sections"
+						hx-include="[name='language']"
+						hx-swap="innerHTML"
+					>
 						<option value="bash" selected?={ script.Language == "bash" }>Bash</option>
 						<option value="python" selected?={ script.Language == "python" }>Python</option>
 					</select>
@@ -261,37 +295,8 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				</div>
 			</div>
 
-		<!-- Code Editor -->
-		<div>
-			<label for="script-content" class="uk-form-label">Script Content</label>
-			<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
-				<textarea 
-					id="script-content"
-					name="script"
-					data-code-editor={ getCodeEditorLanguage(script.Language) }
-					data-code-editor-height="384px"
-					class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
-					placeholder={ getScriptPlaceholder(script.Language) }
-					required
-				>{ script.Script }</textarea>
-			</div>
-		</div>
-
-		<!-- Shared Script (Bash only) -->
-		<div id="shared-script-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.ID == 0 || script.Language == "bash")) }>
-			<label for="shared-script-content" class="uk-form-label">Shared Script (optional)</label>
-			<p class="text-xs text-muted-foreground mb-3">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p>
-			<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
-				<textarea 
-					id="shared-script-content"
-					name="shared_script"
-					data-code-editor="shell"
-					data-code-editor-height="200px"
-					class="w-full h-48 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
-					placeholder="#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script"
-				>{ getSharedScriptContent(script.SharedScript) }</textarea>
-			</div>
-		</div>
+		<!-- Language-dependent sections -->
+		@LanguageDependentSections(script)
 
 		<!-- Script Variables -->
 		<div>
@@ -311,10 +316,16 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			<div class="flex gap-2 justify-between flex-wrap">
 				<div class="flex gap-2">
 					if script.ID == 0 {
-						<button type="submit" class="uk-btn uk-btn-default">Create</button>
+						<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
+							<uk-icon icon="Plus" ratio="0.9"></uk-icon>
+							Create Script
+						</button>
 					}
 					if script.ID != 0 {
-						<button type="submit" class="uk-btn uk-btn-default">Save</button>
+						<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
+							<uk-icon icon="Save" ratio="0.9"></uk-icon>
+							Save Changes
+						</button>
 						<button 
 							type="button"
 							class="uk-btn uk-btn-secondary"
@@ -339,7 +350,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 						if script.Enabled {
 							<button 
 								type="button"
-								class="uk-btn uk-btn-default"
+								class="uk-btn uk-btn-destructive"
 								hx-post={ fmt.Sprintf("/admin/scraper/%d/toggle", script.ID) }
 								hx-target="#scraper-editor-container"
 								hx-swap="none"
@@ -372,10 +383,12 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 
 // ScraperLogsTabContent renders the logs tab content
 templ ScraperLogsTabContent(script *models.ScraperScript) {
-	<!-- WebSocket script for live log streaming -->
-	<div id="scraper-log-viewer" class="mb-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto" data-script-id={ fmt.Sprint(script.ID) }>
+	<!-- HTMX WebSocket extension for live log streaming -->
+	<div id="scraper-log-viewer" class="mb-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto" 
+		hx-ext="ws" 
+		ws-connect={ fmt.Sprintf("/admin/scraper/%d/logs", script.ID) }>
 		<div class="text-muted-foreground mb-2">Live Output</div>
-		<div id="log-output-container" class="space-y-1"></div>
+		<div id="log-output-container" style="display:flex; flex-direction:column; gap:2px;"></div>
 	</div>
 
 	<div id="scraper-logs-container" hx-get={ fmt.Sprintf("/admin/scraper/%d/logs/view", script.ID) } hx-trigger="load" hx-swap="innerHTML">
@@ -541,7 +554,7 @@ templ ScraperLogEntry(log *models.ScraperExecutionLog) {
 		</div>
 		if log.Output != nil && *log.Output != "" {
 			<div class="text-xs text-muted-foreground bg-background p-2 rounded max-h-24 overflow-y-auto log-output">
-				{ *log.Output }
+				@templ.Raw(log.FormatOutputHTML())
 			</div>
 		}
 		if log.ErrorMessage != nil && *log.ErrorMessage != "" {
@@ -557,5 +570,39 @@ templ ScraperLogViewer(scriptID int64) {
 	<div id="scraper-log-viewer" class="mt-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto">
 		<div class="text-muted-foreground mb-2">Live Output</div>
 		<div id="log-output-container" class="space-y-1"></div>
+	</div>
+}
+
+// LanguageDependentSections renders the code editor and shared script sections that change based on language
+templ LanguageDependentSections(script *models.ScraperScript) {
+	<!-- Code Editor -->
+	<div>
+		<label for="script-content" class="uk-form-label">Script Content</label>
+		<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
+			<textarea
+				id="script-content"
+				name="script"
+				data-code-editor={ getCodeEditorLanguage(script.Language) }
+				data-code-editor-height="384px"
+				class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+				placeholder={ getScriptPlaceholder(script.Language) }
+			>{ script.Script }</textarea>
+		</div>
+	</div>
+
+	<!-- Shared Script (Bash only) -->
+	<div id="shared-script-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.ID == 0 || script.Language == "bash")) }>
+		<label for="shared-script-content" class="uk-form-label">Shared Script (optional)</label>
+		<p class="text-xs text-muted-foreground mb-3">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p>
+		<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
+			<textarea
+				id="shared-script-content"
+				name="shared_script"
+				data-code-editor="shell"
+				data-code-editor-height="200px"
+				class="w-full h-48 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+				placeholder="#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script"
+			>{ getSharedScriptContent(script.SharedScript) }</textarea>
+		</div>
 	</div>
 }

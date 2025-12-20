@@ -47,7 +47,7 @@ func EditCollection(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"#content\" hx-swap=\"innerHTML\"><div class=\"mb-4\"><label for=\"name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"name\" name=\"name\" class=\"uk-input w-full\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\"><div class=\"mb-4\"><label for=\"name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"name\" name=\"name\" class=\"uk-input w-full\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -115,7 +115,7 @@ func EditCollectionModal(collection models.Collection) templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-modal-header\"><h2 class=\"uk-modal-title\">Edit Collection</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-modal-header\" style=\"display: flex; justify-content: space-between; align-items: center;\"><h2 class=\"uk-modal-title\">Edit Collection</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,7 +128,7 @@ func EditCollectionModal(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#edit-collection-modal\" hx-swap=\"none\" class=\"uk-modal-body\"><div class=\"mb-4\"><label for=\"modal-name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"modal-name\" name=\"name\" class=\"uk-input w-full\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#edit-collection-modal\" hx-swap=\"none\" hx-ext=\"form-json\" class=\"uk-modal-body\"><div class=\"mb-4\"><label for=\"modal-name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"modal-name\" name=\"name\" class=\"uk-input w-full\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

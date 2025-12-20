@@ -20,7 +20,7 @@ templ PermissionsManagement() {
 					<div class="flex items-center justify-between">
 						<div>
 							<h1 class="text-3xl font-bold text-gray-900">Permissions Management</h1>
-							<p class="mt-2 text-sm text-gray-600">Manage access permissions and user roles for your libraries</p>
+							<p class="mt-2 text-sm">Manage access permissions and user roles for your libraries</p>
 						</div>
 						<div class="flex items-center space-x-3">
 							<div class="bg-blue-50 px-3 py-2 rounded-lg">
@@ -260,7 +260,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 										}
 									</div>
 
-									<p class="text-sm text-gray-600 mb-4">
+									<p class="text-sm mb-4">
 										if perm.Description != "" {
 											{ perm.Description }
 										} else {
@@ -356,6 +356,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 		<form 
 			id="permission-form"
 			class="uk-form-stacked"
+			hx-ext="form-json"
 			if permission != nil {
 				hx-put={ fmt.Sprintf("/api/permissions/%d", permission.ID) }
 			} else {
@@ -652,13 +653,14 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 			if availableCount == 0 {
 				<div class="text-center py-4">
 					<uk-icon icon="check-circle" ratio="1.5" class="text-green-500"></uk-icon>
-					<p class="mt-2 text-sm text-gray-600">All available permissions are already assigned to this role</p>
+					<p class="mt-2 text-sm">All available permissions are already assigned to this role</p>
 				</div>
 			} else {
 				<form
 					hx-post="/api/roles/permissions/assign"
 					hx-target="#role-permissions-list"
 					hx-swap="innerHTML"
+					hx-ext="form-json"
 					class="space-y-4"
 				>
 					<input type="hidden" name="role" value={ role } />
@@ -797,13 +799,14 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 			if availableCount == 0 {
 				<div class="text-center py-4">
 					<uk-icon icon="check-circle" ratio="1.5" class="text-green-500"></uk-icon>
-					<p class="mt-2 text-sm text-gray-600">All available permissions are already assigned to this user</p>
+					<p class="mt-2 text-sm">All available permissions are already assigned to this user</p>
 				</div>
 			} else {
 				<form
 					hx-post="/api/users/permissions/assign"
 					hx-target="#user-permissions-list"
 					hx-swap="innerHTML"
+					hx-ext="form-json"
 					class="space-y-4"
 				>
 					<input type="hidden" name="username" value={ username } />
