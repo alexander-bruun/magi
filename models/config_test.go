@@ -99,14 +99,14 @@ func TestLoadConfigFromDB(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 100, 2, "mangadex", "mal-token", "anilist-token",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 
 	config, err := loadConfigFromDB()
@@ -206,13 +206,13 @@ func TestGetAppConfig_CacheMiss(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			0, 50, 1, "mal", "mal-token", "anilist-token",
 			0, 200, 120, 0, 10,
 			20, 120, 80, 90,
 			100, 95, 75, 90,
-			10, 7200, 5, 1, 0, `We are currently performing maintenance. Please check back later.`))
+			10, 7200, 5, 1, 0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := GetAppConfig()
 	assert.NoError(t, err)
@@ -285,14 +285,14 @@ func TestRefreshAppConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 75, 2, "anilist", "mal-token-2", "anilist-token-2",
 			1, 150, 90, 1, 8,
 			15, 90, 75, 88,
 			100, 92, 72, 88,
 			8, 5400, 4, 1,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := RefreshAppConfig()
 	assert.NoError(t, err)
@@ -326,14 +326,14 @@ func TestUpdateAppConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 200, 1, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateAppConfig(true, 200, 1)
 	assert.NoError(t, err)
@@ -365,14 +365,14 @@ func TestUpdateAppConfig_ContentRatingBounds(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			0, 0, 0, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateAppConfig(false, 0, -1) // Should be clamped to 0
 	assert.NoError(t, err)
@@ -389,14 +389,14 @@ func TestUpdateAppConfig_ContentRatingBounds(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			0, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateAppConfig(false, 0, 5) // Should be clamped to 3
 	assert.NoError(t, err)
@@ -426,14 +426,14 @@ func TestUpdateRateLimitConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			0, 250, 180, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateRateLimitConfig(false, 250, 180)
 	assert.NoError(t, err)
@@ -466,14 +466,14 @@ func TestUpdateCompressionConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 75, 88,
 			100, 95, 72, 90,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateCompressionConfig(75, 88, 100, 95, 72, 90)
 	assert.NoError(t, err)
@@ -508,14 +508,14 @@ func TestUpdateCompressionConfig_Bounds(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 0, 0,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateCompressionConfig(-10, -5, 150, 120, -1, 110) // Should be clamped to valid ranges
 	assert.NoError(t, err)
@@ -545,14 +545,14 @@ func TestUpdatePremiumEarlyAccessConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 7200, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdatePremiumEarlyAccessConfig(7200)
 	assert.NoError(t, err)
@@ -582,14 +582,14 @@ func TestUpdatePremiumEarlyAccessConfig_Negative(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 0, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdatePremiumEarlyAccessConfig(-100) // Should be clamped to 0
 	assert.NoError(t, err)
@@ -619,14 +619,14 @@ func TestUpdateMaxPremiumChaptersConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 10, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 	config, err := UpdateMaxPremiumChaptersConfig(10)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, config.MaxPremiumChapters)
@@ -655,14 +655,14 @@ func TestUpdateMaxPremiumChaptersConfig_Negative(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 0, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 	_, err = UpdateMaxPremiumChaptersConfig(-5) // Should be clamped to 0
 	assert.NoError(t, err)
 
@@ -691,14 +691,14 @@ func TestUpdatePremiumCooldownScalingConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 1,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdatePremiumCooldownScalingConfig(true)
 	assert.NoError(t, err)
@@ -729,14 +729,14 @@ func TestUpdateMetadataConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mal", "new-mal-token", "new-anilist-token",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateMetadataConfig("mal", "new-mal-token", "new-anilist-token")
 	assert.NoError(t, err)
@@ -768,14 +768,14 @@ func TestUpdateMetadataConfig_InvalidProvider(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "token", "token2",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateMetadataConfig("invalid-provider", "token", "token2") // Should default to mangadex
 	assert.NoError(t, err)
@@ -805,14 +805,14 @@ func TestUpdateBotDetectionConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 0, 15,
 			25, 120, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateBotDetectionConfig(false, 15, 25, 120)
 	assert.NoError(t, err)
@@ -846,14 +846,14 @@ func TestUpdateImageTokenConfig(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			30, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := UpdateImageTokenConfig(30)
 	assert.NoError(t, err)
@@ -883,14 +883,14 @@ func TestUpdateImageTokenConfig_Bounds(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			1, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateImageTokenConfig(0) // Should be clamped to 1
 	assert.NoError(t, err)
@@ -907,14 +907,14 @@ func TestUpdateImageTokenConfig_Bounds(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			60, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	_, err = UpdateImageTokenConfig(70) // Should be clamped to 60
 	assert.NoError(t, err)
@@ -942,14 +942,14 @@ func TestGetCompressionQualityForRole(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 75, 88,
 			95, 92, 78, 87,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	tests := []struct {
 		role     string
@@ -1032,14 +1032,14 @@ func TestGetImageTokenValidityMinutes(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			15, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	result := GetImageTokenValidityMinutes()
 	assert.Equal(t, 15, result)
@@ -1090,14 +1090,14 @@ func TestGetProcessedImageQuality(t *testing.T) {
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message",
+			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, 0, 3, "mangadex", "", "",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 88,
 			5, 3600, 3, 0,
-			0, `We are currently performing maintenance. Please check back later.`))
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	result := GetProcessedImageQuality()
 	assert.Equal(t, 88, result)

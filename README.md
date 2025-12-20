@@ -171,7 +171,7 @@ The first user to register automatically receives admin privileges.
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.25+
 - [Air](https://github.com/cosmtrek/air) (for live reload)
 - [Templ](https://templ.guide/) (for template compilation)
 

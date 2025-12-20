@@ -178,7 +178,7 @@ func TestGetAllowedMediaSortOptions(t *testing.T) {
 		{
 			name:             "content rating filtered (limit < 3)",
 			contentRatingLimit: 2,
-			expectedKeys:     []string{"name", "type", "year", "status", "created_at", "updated_at", "read_count", "popularity"},
+			expectedKeys:     []string{"name", "type", "year", "status", "content_rating", "created_at", "updated_at", "read_count", "popularity"},
 		},
 	}
 
@@ -195,22 +195,23 @@ func TestGetAllowedMediaSortOptions(t *testing.T) {
 
 			// Clear cache
 			configCacheTime = time.Time{}
+			cachedConfig = AppConfig{}
 
 			// Mock the config query
-			mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
+			mock.ExpectQuery(`(?s).*SELECT allow_registration, max_users, content_rating_limit.*FROM app_config WHERE id = 1`).
 				WillReturnRows(sqlmock.NewRows([]string{
 					"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
 					"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 					"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 					"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 					"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-					"maintenance_enabled", "maintenance_message",
+					"new_badge_duration", "maintenance_enabled", "maintenance_message",
 				}).AddRow(
 					0, 50, tt.contentRatingLimit, "mal", "mal-token", "anilist-token",
 					0, 200, 120, 0, 10,
 					20, 120, 80, 90,
 					100, 95, 75, 90,
-					10, 7200, 5, 1, 0, "We are currently performing maintenance. Please check back later.",
+					10, 7200, 5, 1, 48, 0, "We are currently performing maintenance. Please check back later.",
 				))
 
 			options := GetAllowedMediaSortOptions()

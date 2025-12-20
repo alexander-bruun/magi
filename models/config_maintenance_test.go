@@ -99,10 +99,10 @@ func TestUpdateMaintenanceConfig(t *testing.T) {
 					"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 					"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 					"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
-					"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
+					"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 				}).AddRow(
 					1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
-					70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, enabledInt, tt.message,
+					70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, enabledInt, tt.message, 48,
 				))
 
 			// Update maintenance config
@@ -145,10 +145,10 @@ func TestGetMaintenanceStatus(t *testing.T) {
 			"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 			"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
-			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
+			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
 			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
-			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "Test maintenance message",
+			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "Test maintenance message", 48,
 		))
 
 	// Get status
@@ -185,9 +185,10 @@ func TestGetMaintenanceStatusDisabled(t *testing.T) {
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 			"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
+			"new_badge_duration",
 		}).AddRow(
 			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
-			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 0, "Default message",
+			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 0, "Default message", 48,
 		))
 
 	// Get status
@@ -228,9 +229,10 @@ func TestMaintenanceMessageWithSpecialChars(t *testing.T) {
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 			"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
+			"new_badge_duration",
 		}).AddRow(
 			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
-			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, testMessage,
+			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, testMessage, 48,
 		))
 
 	cfg, err := UpdateMaintenanceConfig(true, testMessage)
@@ -266,9 +268,10 @@ func TestMaintenanceMessageEmpty(t *testing.T) {
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 			"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
+			"new_badge_duration",
 		}).AddRow(
 			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
-			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "",
+			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "", 48,
 		))
 
 	// Set empty message
