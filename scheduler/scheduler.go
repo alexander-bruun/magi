@@ -14,7 +14,7 @@ import (
 
 	cron "github.com/robfig/cron/v3"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -194,8 +194,8 @@ var (
 	scannedPathCount   int
 	scanMutex          sync.Mutex
 	indexingRunning   sync.Map
-	IndexMediaFunc    func(path, librarySlug string, cacheBackend cache.CacheBackend) (string, error)
-	cacheBackend      cache.CacheBackend
+	IndexMediaFunc    func(path, librarySlug string, cacheBackend filestore.CacheBackend) (string, error)
+	cacheBackend      filestore.CacheBackend
 )
 
 // Indexer represents the state of an indexer
@@ -209,7 +209,7 @@ type Indexer struct {
 }
 
 // InitializeIndexer sets up indexers and notifications
-func InitializeIndexer(cacheDirectory string, libraries []models.Library, cb cache.CacheBackend) {
+func InitializeIndexer(cacheDirectory string, libraries []models.Library, cb filestore.CacheBackend) {
 	CacheDataDirectory = cacheDirectory
 	cacheBackend = cb
 	log.Info("Initializing Indexer and Scheduler")

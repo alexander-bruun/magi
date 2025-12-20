@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/bmp"   // Register BMP format
@@ -41,7 +41,7 @@ const (
 )
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend cache.CacheBackend, quality int) error {
+func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestore.CacheBackend, quality int) error {
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
@@ -560,7 +560,7 @@ func CleanupExpiredTokens() {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
-func ExtractPosterImage(filePath, slug string, cacheBackend cache.CacheBackend, quality int) (string, error) {
+func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBackend, quality int) (string, error) {
 
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
@@ -710,7 +710,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend cache.CacheBackend, 
 // ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend cache.CacheBackend, quality int) (string, error) {
+func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filestore.CacheBackend, quality int) (string, error) {
 
 	// Load the image
 	img, err := OpenImage(imagePath)
@@ -781,7 +781,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend cache.
 }
 
 // GenerateThumbnails generates thumbnail and small versions from a cached full-size image
-func GenerateThumbnails(fullImagePath, slug string, cacheBackend cache.CacheBackend, quality int) error {
+func GenerateThumbnails(fullImagePath, slug string, cacheBackend filestore.CacheBackend, quality int) error {
 	// Load the full-size image from cache
 	data, err := cacheBackend.Load(fullImagePath)
 	if err != nil {

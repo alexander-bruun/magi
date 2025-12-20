@@ -85,6 +85,7 @@ jobs:
   test-status:
     name: Test Status Check
     runs-on: ubuntu-latest
+    permissions: {}
     needs: test
     if: always()
     steps:

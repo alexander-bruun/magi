@@ -16,7 +16,7 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
@@ -76,7 +76,7 @@ type OPF struct {
 }
 
 // IndexMedia inspects a media directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
-func IndexMedia(absolutePath, librarySlug string, cacheBackend cache.CacheBackend) (string, error) {
+func IndexMedia(absolutePath, librarySlug string, cacheBackend filestore.CacheBackend) (string, error) {
 	defer utils.LogDuration("IndexMedia", time.Now(), absolutePath)
 
 	// Check if this is a file (single-chapter media)

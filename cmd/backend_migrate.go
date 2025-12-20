@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/spf13/cobra"
 )
 
@@ -58,8 +58,8 @@ func NewBackendMigrateCmd(dataDirectory *string) *cobra.Command {
 	return cmd
 }
 
-func createBackend(backendType string, config map[string]string, dataDir string) (cache.CacheBackend, error) {
-	cacheConfig := &cache.CacheConfig{BackendType: backendType}
+func createBackend(backendType string, config map[string]string, dataDir string) (filestore.CacheBackend, error) {
+	cacheConfig := &filestore.CacheConfig{BackendType: backendType}
 
 	switch backendType {
 	case "local":
@@ -67,7 +67,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 		if path == "" {
 			path = filepath.Join(dataDir, "cache")
 		}
-		return cache.NewLocalFileSystemAdapter(path), nil
+		return filestore.NewLocalFileSystemAdapter(path), nil
 
 	case "sftp":
 		cacheConfig.SFTPHost = config["host"]
@@ -85,7 +85,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 		if err := cacheConfig.Validate(); err != nil {
 			return nil, err
 		}
-		return cache.NewSFTPAdapter(cache.SFTPConfig{
+		return filestore.NewSFTPAdapter(filestore.SFTPConfig{
 			Host:     cacheConfig.SFTPHost,
 			Port:     cacheConfig.SFTPPort,
 			Username: cacheConfig.SFTPUsername,
@@ -103,7 +103,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 		if err := cacheConfig.Validate(); err != nil {
 			return nil, err
 		}
-		return cache.NewS3Adapter(cache.S3Config{
+		return filestore.NewS3Adapter(filestore.S3Config{
 			Bucket:   cacheConfig.S3Bucket,
 			BasePath: cacheConfig.S3BasePath,
 			Region:   cacheConfig.S3Region,
@@ -115,7 +115,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 	}
 }
 
-func migrateBackends(source, dest cache.CacheBackend, cmd *cobra.Command) error {
+func migrateBackends(source, dest filestore.CacheBackend, cmd *cobra.Command) error {
 	// List all files in source backend recursively
 	files, err := listAllFiles(source, "")
 	if err != nil {
@@ -149,7 +149,7 @@ func migrateBackends(source, dest cache.CacheBackend, cmd *cobra.Command) error 
 	return nil
 }
 
-func listAllFiles(backend cache.CacheBackend, prefix string) ([]string, error) {
+func listAllFiles(backend filestore.CacheBackend, prefix string) ([]string, error) {
 	var files []string
 
 	dirs := []string{""}

@@ -12,7 +12,7 @@ import (
 	"embed"
 	"net/http"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/cmd"
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/models"
@@ -122,7 +122,7 @@ func main() {
 			}
 
 			// Configure cache backend with priority hierarchy: CLI flags > Env vars > Default
-			cacheConfig := &cache.CacheConfig{
+			cacheConfig := &filestore.CacheConfig{
 				BackendType: getConfigValue(backend, os.Getenv("MAGI_CACHE_BACKEND"), "local"),
 			}
 

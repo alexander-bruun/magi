@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/cache"
+	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	fiber "github.com/gofiber/fiber/v2"
@@ -22,10 +22,10 @@ var savedCacheDirectory string
 var savedBackupDirectory string
 
 // cacheManager manages cache operations
-var cacheManager *cache.CacheManager
+var cacheManager *filestore.CacheManager
 
 // GetCacheBackend returns the current cache backend
-func GetCacheBackend() cache.CacheBackend {
+func GetCacheBackend() filestore.CacheBackend {
 	if cacheManager == nil {
 		return nil
 	}
@@ -44,11 +44,11 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, cacheBackend cache.CacheBackend, backupDirectory string, port string) {
+func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirectory string, port string) {
 	log.Info("Initializing application routes and middleware")
 
 	// Initialize cache manager with provided backend
-	cacheManager = cache.NewCacheManager(cacheBackend)
+	cacheManager = filestore.NewCacheManager(cacheBackend)
 
 	// ========================================
 	// Initialize console logger for WebSocket streaming
