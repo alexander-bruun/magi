@@ -232,7 +232,7 @@ func HandleChapter(c *fiber.Ctx) error {
 
 	// Validate media slug to prevent malformed URLs
 	if strings.ContainsAny(mangaSlug, "/,") {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid media slug"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidMediaSlug)
 	}
 
 	userName := GetUserContext(c)
@@ -251,7 +251,7 @@ func HandleChapter(c *fiber.Ctx) error {
 	if err != nil {
 		if err.Error() == "premium_required" {
 			// Show notification
-			c.Set("HX-Trigger", `{"showNotification": {"message": "This chapter is in premium early access. Please wait for it to be released or upgrade your account.", "status": "destructive"}}`)
+			triggerNotification(c, "This chapter is in premium early access. Please wait for it to be released or upgrade your account.", "destructive")
 			if IsHTMXRequest(c) {
 				// For HTMX requests, just show notification without modifying the page
 				return c.Status(fiber.StatusNoContent).SendString("")
@@ -262,21 +262,21 @@ func HandleChapter(c *fiber.Ctx) error {
 		}
 		if err.Error() == "chapter_not_found" {
 			if IsHTMXRequest(c) {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "This chapter is no longer available and has been removed.", "status": "warning"}}`)
-				c.Set("HX-Redirect", fmt.Sprintf("/series/%s", mangaSlug))
-				return c.SendString("")
+				triggerNotification(c, "This chapter is no longer available and has been removed.", "warning")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterRemoved)
 		}
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if data == nil {
 		if IsHTMXRequest(c) {
-			c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
-			c.Set("HX-Redirect", fmt.Sprintf("/series/%s", mangaSlug))
-			return c.SendString("")
+			triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
+			// Return 204 No Content to prevent navigation/swap but show notification
+			return c.Status(fiber.StatusNoContent).SendString("")
 		}
-		return handleErrorWithStatus(c, fmt.Errorf("chapter not found or access denied"), fiber.StatusNotFound)
+		return sendForbiddenError(c, ErrChapterAccessDenied)
 	}
 
 	// Fetch comments for the chapter
@@ -323,20 +323,20 @@ func HandleMediaChapterTOC(c *fiber.Ctx) error {
 	// Check library access permission
 	hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if !hasAccess {
 		if IsHTMXRequest(c) {
-			c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
+			triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
 			return c.Status(fiber.StatusForbidden).SendString("")
 		}
-		return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this chapter"), fiber.StatusForbidden)
+		return sendForbiddenError(c, ErrChapterAccessDenied)
 	}
 
 	// Get media to construct full path
 	media, err := models.GetMedia(mangaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if media == nil {
 		return c.Status(fiber.StatusNotFound).SendString("Media not found")
@@ -397,13 +397,13 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 	token := c.Query("token")
 	
 	if token == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, "Token parameter is required")
 	}
 
 	// Validate the token
 	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
+		return sendForbiddenError(c, "Invalid or expired token")
 	}
 
 	// Consume the token after the response is sent
@@ -417,7 +417,7 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 
 	// Verify token matches the requested resource
 	if tokenInfo.MediaSlug != mangaSlug || tokenInfo.ChapterSlug != chapterSlug {
-		return handleErrorWithStatus(c, fmt.Errorf("token does not match requested resource"), fiber.StatusForbidden)
+		return sendForbiddenError(c, "Token does not match requested resource")
 	}
 
 	userName := GetUserContext(c)
@@ -570,7 +570,7 @@ func HandleMarkRead(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 	if err := models.MarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	sync.SyncReadingProgressForUser(userName, mangaSlug, chapterSlug)
 	// Return the inline eye toggle fragment so HTMX will swap the icon in-place.
@@ -586,7 +586,7 @@ func HandleMarkUnread(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 	if err := models.UnmarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	// Return the inline eye toggle fragment with read=false so HTMX swaps to the closed-eye.
 	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
@@ -601,15 +601,15 @@ func HandleUnmarkChapterPremium(c *fiber.Ctx) error {
 	// Get the chapter to check if it exists
 	chapter, err := models.GetChapter(mediaSlug, chapterSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if chapter == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrChapterNotFound)
 	}
 
 	// Set released_at to now to mark as released
 	if err := models.UpdateChapterReleasedAt(mediaSlug, chapterSlug, time.Now()); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrChapterReleaseFailed, err)
 	}
 
 	// Redirect back to the media page to refresh the chapters list

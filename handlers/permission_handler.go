@@ -10,6 +10,28 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// PermissionFormData represents form data for creating/updating permissions
+type PermissionFormData struct {
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	IsWildcard            bool     `json:"is_wildcard"`
+	PremiumChapterAccess  bool     `json:"premium_chapter_access"`
+	IsEnabled             bool     `json:"is_enabled"`
+	Libraries             []string `json:"libraries"`
+}
+
+// AssignPermissionToUserFormData represents form data for assigning permissions to users
+type AssignPermissionToUserFormData struct {
+	Username     string `json:"username"`
+	PermissionID string `json:"permission_id"`
+}
+
+// AssignPermissionToRoleFormData represents form data for assigning permissions to roles
+type AssignPermissionToRoleFormData struct {
+	Role         string `json:"role"`
+	PermissionID string `json:"permission_id"`
+}
+
 // HandleGetPermissions retrieves all permissions and renders the fragment
 func HandleGetPermissions(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
@@ -20,7 +42,7 @@ func HandleGetPermissions(c *fiber.Ctx) error {
 	permissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
 		log.Errorf("Failed to get permissions: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.PermissionsList(permissions))
@@ -37,7 +59,7 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 	
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 	
 	// If ID is "new", render create form
@@ -48,17 +70,17 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 	// Otherwise, load existing permission for editing
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	permission, err := models.GetPermissionWithLibraries(id)
 	if err != nil {
 		log.Errorf("Failed to get permission: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	if permission == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("permission not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrPermissionNotFound)
 	}
 
 	return HandleView(c, views.PermissionForm(permission, libraries))
@@ -66,29 +88,31 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 
 // HandleCreatePermission creates a new permission
 func HandleCreatePermission(c *fiber.Ctx) error {
-	name := c.FormValue("name")
-	description := c.FormValue("description")
-	isWildcard := c.FormValue("is_wildcard") == "on"
-	premiumChapterAccess := c.FormValue("premium_chapter_access") == "on"
+	var formData PermissionFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	name := formData.Name
+	description := formData.Description
+	isWildcard := formData.IsWildcard
+	premiumChapterAccess := formData.PremiumChapterAccess
 	
 	if name == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("permission name is required"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionNameRequired)
 	}
 
 	// Get selected libraries
 	var libraries []string
 	if !isWildcard {
-		libraryValues := c.Request().PostArgs().PeekMulti("libraries[]")
-		for _, lib := range libraryValues {
-			libraries = append(libraries, string(lib))
-		}
+		libraries = formData.Libraries
 	}
 
 	// Create the permission
 	permission, err := models.CreatePermission(name, description, isWildcard, premiumChapterAccess)
 	if err != nil {
 		log.Errorf("Failed to create permission: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Bind to libraries if specified and not wildcard
@@ -96,7 +120,7 @@ func HandleCreatePermission(c *fiber.Ctx) error {
 		err = models.SetLibrariesForPermission(permission.ID, libraries)
 		if err != nil {
 			log.Errorf("Failed to bind libraries to permission: %v", err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 		}
 	}
 
@@ -110,33 +134,35 @@ func HandleUpdatePermission(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
-	name := c.FormValue("name")
-	description := c.FormValue("description")
-	isWildcard := c.FormValue("is_wildcard") == "on"
-	isEnabled := c.FormValue("is_enabled") == "on"
-	premiumChapterAccess := c.FormValue("premium_chapter_access") == "on"
+	var formData PermissionFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	name := formData.Name
+	description := formData.Description
+	isWildcard := formData.IsWildcard
+	isEnabled := formData.IsEnabled
+	premiumChapterAccess := formData.PremiumChapterAccess
 	
 	if name == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("permission name is required"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionNameRequired)
 	}
 
 	// Get selected libraries
 	var libraries []string
 	if !isWildcard {
-		libraryValues := c.Request().PostArgs().PeekMulti("libraries[]")
-		for _, lib := range libraryValues {
-			libraries = append(libraries, string(lib))
-		}
+		libraries = formData.Libraries
 	}
 
 	// Update the permission
 	err = models.UpdatePermission(id, name, description, isWildcard, isEnabled, premiumChapterAccess)
 	if err != nil {
 		log.Errorf("Failed to update permission: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Update library bindings if not wildcard
@@ -144,7 +170,7 @@ func HandleUpdatePermission(c *fiber.Ctx) error {
 		err = models.SetLibrariesForPermission(id, libraries)
 		if err != nil {
 			log.Errorf("Failed to update library bindings: %v", err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 		}
 	} else {
 		// If it's wildcard, clear all library bindings
@@ -164,19 +190,19 @@ func HandleDeletePermission(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	err = models.DeletePermission(id)
 	if err != nil {
 		log.Errorf("Failed to delete permission: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Reload and return updated permissions list
 	permissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.PermissionsList(permissions))
@@ -184,48 +210,50 @@ func HandleDeletePermission(c *fiber.Ctx) error {
 
 // HandleAssignPermissionToUser assigns a permission to a user
 func HandleAssignPermissionToUser(c *fiber.Ctx) error {
-	username := c.FormValue("username")
-	permissionIDStr := c.FormValue("permission_id")
+	var formData AssignPermissionToUserFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
 	
-	if username == "" || permissionIDStr == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("username and permission are required"), fiber.StatusBadRequest)
+	if formData.Username == "" || formData.PermissionID == "" {
+		return sendBadRequestError(c, ErrPermissionUserRequired)
 	}
 
-	permissionID, err := strconv.ParseInt(permissionIDStr, 10, 64)
+	permissionID, err := strconv.ParseInt(formData.PermissionID, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	// Verify user exists
-	user, err := models.FindUserByUsername(username)
+	user, err := models.FindUserByUsername(formData.Username)
 	if err != nil || user == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("user not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrUserNotFound)
 	}
 
 	// Verify permission exists
 	permission, err := models.GetPermission(permissionID)
 	if err != nil || permission == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("permission not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrPermissionNotFound)
 	}
 
-	err = models.AssignPermissionToUser(username, permissionID)
+	err = models.AssignPermissionToUser(formData.Username, permissionID)
 	if err != nil {
 		log.Errorf("Failed to assign permission to user: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Return updated user permissions list
-	permissions, err := models.GetUserPermissionDetails(username)
+	permissions, err := models.GetUserPermissionDetails(formData.Username)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.UserPermissionsList(username, permissions, allPermissions))
+	return HandleView(c, views.UserPermissionsList(formData.Username, permissions, allPermissions))
 }
 
 // HandleRevokePermissionFromUser removes a permission from a user
@@ -235,24 +263,24 @@ func HandleRevokePermissionFromUser(c *fiber.Ctx) error {
 
 	permissionID, err := strconv.ParseInt(permissionIDStr, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	err = models.RevokePermissionFromUser(username, permissionID)
 	if err != nil {
 		log.Errorf("Failed to revoke permission from user: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Return updated user permissions list
 	permissions, err := models.GetUserPermissionDetails(username)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.UserPermissionsList(username, permissions, allPermissions))
@@ -273,18 +301,18 @@ func HandleGetUserPermissions(c *fiber.Ctx) error {
 	// Verify user exists
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("user not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrUserNotFound)
 	}
 
 	permissions, err := models.GetUserPermissionDetails(username)
 	if err != nil {
 		log.Errorf("Failed to get user permissions: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.UserPermissionsList(username, permissions, allPermissions))
@@ -299,24 +327,24 @@ func HandleGetBulkAssignForm(c *fiber.Ctx) error {
 
 	permissionID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	permission, err := models.GetPermissionWithLibraries(permissionID)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Get all users
 	users, err := models.GetUsers()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Get users who already have this permission
 	usersWithPerm, err := models.GetUsersWithPermission(permissionID)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.BulkAssignForm(permission, users, usersWithPerm))
@@ -326,19 +354,25 @@ func HandleGetBulkAssignForm(c *fiber.Ctx) error {
 func HandleBulkAssignPermission(c *fiber.Ctx) error {
 	permissionID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Get array of usernames from form
 	form, err := c.MultipartForm()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	selectedUsernames := form.Value["usernames[]"]
 	if len(selectedUsernames) == 0 {
 		// No users selected, just close modal
-		c.Set("HX-Trigger", `{"closeModal": true, "showNotification": {"message": "No users selected", "status": "destructive"}}`)
+		triggerCustomNotification(c, "", map[string]interface{}{
+			"closeModal": true,
+			"showNotification": map[string]string{
+				"message": "No users selected",
+				"status":  "destructive",
+			},
+		})
 		return c.SendStatus(200)
 	}
 
@@ -361,7 +395,14 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 		message += fmt.Sprintf(" (%d failed)", failCount)
 	}
 
-	c.Set("HX-Trigger", `{"closeModal": true, "refreshPermissions": true, "showNotification": {"message": "`+message+`", "status": "success"}}`)
+	triggerCustomNotification(c, "", map[string]interface{}{
+		"closeModal":        true,
+		"refreshPermissions": true,
+		"showNotification": map[string]string{
+			"message": message,
+			"status":  "success",
+		},
+	})
 	return c.SendStatus(200)
 }
 
@@ -380,12 +421,12 @@ func HandleGetRolePermissions(c *fiber.Ctx) error {
 	permissions, err := models.GetRolePermissionDetails(role)
 	if err != nil {
 		log.Errorf("Failed to get role permissions: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.RolePermissionsList(role, permissions, allPermissions))
@@ -393,42 +434,44 @@ func HandleGetRolePermissions(c *fiber.Ctx) error {
 
 // HandleAssignPermissionToRole assigns a permission to a role
 func HandleAssignPermissionToRole(c *fiber.Ctx) error {
-	role := c.FormValue("role")
-	permissionIDStr := c.FormValue("permission_id")
-
-	if role == "" || permissionIDStr == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("role and permission are required"), fiber.StatusBadRequest)
+	var formData AssignPermissionToRoleFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
-	permissionID, err := strconv.ParseInt(permissionIDStr, 10, 64)
+	if formData.Role == "" || formData.PermissionID == "" {
+		return sendBadRequestError(c, ErrPermissionRoleRequired)
+	}
+
+	permissionID, err := strconv.ParseInt(formData.PermissionID, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	// Verify permission exists
 	permission, err := models.GetPermission(permissionID)
 	if err != nil || permission == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("permission not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrPermissionNotFound)
 	}
 
-	err = models.AssignPermissionToRole(role, permissionID)
+	err = models.AssignPermissionToRole(formData.Role, permissionID)
 	if err != nil {
 		log.Errorf("Failed to assign permission to role: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Return updated role permissions list
-	permissions, err := models.GetRolePermissionDetails(role)
+	permissions, err := models.GetRolePermissionDetails(formData.Role)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.RolePermissionsList(role, permissions, allPermissions))
+	return HandleView(c, views.RolePermissionsList(formData.Role, permissions, allPermissions))
 }
 
 // HandleRevokePermissionFromRole removes a permission from a role
@@ -438,24 +481,24 @@ func HandleRevokePermissionFromRole(c *fiber.Ctx) error {
 
 	permissionID, err := strconv.ParseInt(permissionIDStr, 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid permission ID"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrPermissionInvalidID)
 	}
 
 	err = models.RevokePermissionFromRole(role, permissionID)
 	if err != nil {
 		log.Errorf("Failed to revoke permission from role: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	// Return updated role permissions list
 	permissions, err := models.GetRolePermissionDetails(role)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	allPermissions, err := models.GetAllPermissionsWithLibraries()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
 	return HandleView(c, views.RolePermissionsList(role, permissions, allPermissions))

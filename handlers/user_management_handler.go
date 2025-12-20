@@ -19,6 +19,12 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// ExternalAccountFormData represents form data for connecting external accounts
+type ExternalAccountFormData struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
 // AccountListType represents the type of account list
 type AccountListType string
 
@@ -194,7 +200,7 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 
 		data, err := GetAccountListData(listType, params, userName)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 		}
 
 		// HTMX fragment support
@@ -249,7 +255,7 @@ func HandleUsers(c *fiber.Ctx) error {
 		PageSize: 10,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersWithData(users, 1, 10, total, ""))
@@ -279,7 +285,7 @@ func HandleUsersTable(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
@@ -295,7 +301,7 @@ func HandleUserBan(c *fiber.Ctx) error {
 	username := c.Params("username")
 
 	if err := models.BanUserWithDemotion(username); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	page := 1
@@ -320,7 +326,7 @@ func HandleUserBan(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
@@ -354,7 +360,7 @@ func HandleUserUnban(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
@@ -390,11 +396,11 @@ func HandleUserPromote(c *fiber.Ctx) error {
 				PageSize: pageSize,
 			})
 			if err != nil {
-				return handleError(c, err)
+				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 			}
 			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	page := 1
@@ -419,7 +425,7 @@ func HandleUserPromote(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
@@ -455,11 +461,11 @@ func HandleUserDemote(c *fiber.Ctx) error {
 				PageSize: pageSize,
 			})
 			if err != nil {
-				return handleError(c, err)
+				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 			}
 			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	page := 1
@@ -484,7 +490,7 @@ func HandleUserDemote(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
@@ -519,7 +525,7 @@ func HandleUnbanIP(c *fiber.Ctx) error {
 
 	bannedIPs, err := models.GetBannedIPs()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.BannedIPsTable(bannedIPs))
@@ -535,7 +541,7 @@ func HandleExternalAccounts(c *fiber.Ctx) error {
 	// Get user's external accounts
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -548,10 +554,15 @@ func HandleConnectMAL(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	clientID := c.FormValue("client_id")
-	clientSecret := c.FormValue("client_secret")
+	var formData ExternalAccountFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	clientID := formData.ClientID
+	clientSecret := formData.ClientSecret
 	if clientID == "" || clientSecret == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID and Secret required"))
+		return sendBadRequestError(c, ErrOAuthCredentialsRequired)
 	}
 
 	// Save the account with client_id and client_secret
@@ -563,13 +574,13 @@ func HandleConnectMAL(c *fiber.Ctx) error {
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -585,7 +596,7 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 	// Get the stored credentials
 	account, err := models.GetUserExternalAccount(userName, "mal")
 	if err != nil {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No MAL credentials found"))
+		return sendBadRequestError(c, ErrOAuthNoCredentials)
 	}
 
 	clientID := account.ExternalUserID
@@ -596,7 +607,7 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 		}
 	}
 	if clientID == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID not set"))
+		return sendBadRequestError(c, ErrOAuthClientNotConfigured)
 	}
 
 	// Generate PKCE code verifier and challenge
@@ -615,7 +626,7 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 	account.AccessToken = codeVerifier + "|" + state
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return c.Redirect(authURL)
@@ -628,10 +639,15 @@ func HandleConnectAniList(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	clientID := c.FormValue("client_id")
-	clientSecret := c.FormValue("client_secret")
+	var formData ExternalAccountFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	clientID := formData.ClientID
+	clientSecret := formData.ClientSecret
 	if clientID == "" || clientSecret == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID and Secret required"))
+		return sendBadRequestError(c, ErrOAuthCredentialsRequired)
 	}
 
 	// Save the account with client_id and client_secret
@@ -643,13 +659,13 @@ func HandleConnectAniList(c *fiber.Ctx) error {
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -665,7 +681,7 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 	// Get the stored credentials
 	account, err := models.GetUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No AniList credentials found"))
+		return sendBadRequestError(c, ErrOAuthNoCredentials)
 	}
 
 	clientID := account.ExternalUserID
@@ -676,7 +692,7 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 		}
 	}
 	if clientID == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Client ID not set"))
+		return sendBadRequestError(c, ErrOAuthClientNotConfigured)
 	}
 
 	// Generate state for security
@@ -691,7 +707,7 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 	account.AccessToken = state
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return c.Redirect(authURL)
@@ -706,13 +722,13 @@ func HandleDisconnectAniList(c *fiber.Ctx) error {
 
 	err := models.DeleteUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -728,13 +744,13 @@ func HandleDisconnectMAL(c *fiber.Ctx) error {
 
 	err := models.DeleteUserExternalAccount(userName, "mal")
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -746,29 +762,29 @@ func HandleMALCallback(c *fiber.Ctx) error {
 	state := c.Query("state")
 
 	if code == "" || state == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Missing code or state"))
+		return sendBadRequestError(c, ErrOAuthMissingCodeOrState)
 	}
 
 	// Parse state: userName|suffix
 	parts := strings.Split(state, "|")
 	if len(parts) != 2 {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid state"))
+		return sendBadRequestError(c, ErrOAuthInvalidState)
 	}
 	userName := parts[0]
 
 	// Get MAL account
 	account, err := models.GetUserExternalAccount(userName, "mal")
 	if err != nil {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No MAL account found"))
+		return sendBadRequestError(c, ErrOAuthNoAccountFound)
 	}
 
 	storedParts := strings.Split(account.AccessToken, "|")
 	if len(storedParts) < 2 {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid stored state"))
+		return sendBadRequestError(c, ErrOAuthInvalidStoredState)
 	}
 	reconstructedState := strings.Join(storedParts[len(storedParts)-2:], "|")
 	if reconstructedState != state {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "State mismatch"))
+		return sendBadRequestError(c, ErrOAuthStateMismatch)
 	}
 	codeVerifier := storedParts[0]
 
@@ -781,29 +797,29 @@ func HandleAniListCallback(c *fiber.Ctx) error {
 	state := c.Query("state")
 
 	if code == "" || state == "" {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Missing code or state"))
+		return sendBadRequestError(c, ErrOAuthMissingCodeOrState)
 	}
 
 	// Parse state: userName|suffix
 	parts := strings.Split(state, "|")
 	if len(parts) != 2 {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid state"))
+		return sendBadRequestError(c, ErrOAuthInvalidState)
 	}
 	userName := parts[0]
 
 	// Get AniList account
 	account, err := models.GetUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "No AniList account found"))
+		return sendBadRequestError(c, ErrOAuthNoAccountFound)
 	}
 
 	storedParts := strings.Split(account.AccessToken, "|")
 	if len(storedParts) < 2 {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "Invalid stored state"))
+		return sendBadRequestError(c, ErrOAuthInvalidStoredState)
 	}
 	reconstructedState := strings.Join(storedParts[len(storedParts)-2:], "|")
 	if reconstructedState != state {
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, "State mismatch"))
+		return sendBadRequestError(c, ErrOAuthStateMismatch)
 	}
 
 	return exchangeAniListToken(c, account, code)
@@ -824,13 +840,13 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 
 	resp, err := http.PostForm("https://myanimelist.net/v1/oauth2/token", data)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Failed to exchange token: %s", string(body))))
+		return sendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
 	}
 
 	var tokenResp struct {
@@ -841,7 +857,7 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update account with tokens
@@ -852,13 +868,13 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(account.UserName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -878,13 +894,13 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 
 	resp, err := http.PostForm("https://anilist.co/api/v2/oauth/token", data)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return handleError(c, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Failed to exchange token: %s", string(body))))
+		return sendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
 	}
 
 	var tokenResp struct {
@@ -894,7 +910,7 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update account with token
@@ -903,13 +919,13 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(account.UserName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
@@ -925,7 +941,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	// Get current user to check for existing avatar
 	currentUser, err := models.FindUserByUsername(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	if currentUser == nil {
 		return fiber.ErrUnauthorized
@@ -971,12 +987,12 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 
 	// Ensure avatars directory exists
 	if err := os.MkdirAll("./cache/avatars", 0755); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Save the file
 	if err := c.SaveFile(file, filepath); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update user avatar in database
@@ -984,12 +1000,15 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	if err := models.UpdateUserAvatar(userName, avatarURL); err != nil {
 		// Clean up file if DB update fails
 		os.Remove(filepath)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Return success response for HTMX
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Trigger", `{"avatarUpdated": {"message": "Avatar updated successfully", "status": "success"}}`)
+		triggerCustomNotification(c, "avatarUpdated", map[string]interface{}{
+			"message": "Avatar updated successfully",
+			"status":  "success",
+		})
 		return c.SendString("")
 	}
 

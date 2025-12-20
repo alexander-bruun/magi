@@ -106,7 +106,27 @@ func HandleHome(c *fiber.Ctx) error {
 	topReadYear, _ := models.GetTopReadMedias("year", 10)
 	topReadAll, _ := models.GetTopReadMedias("all", 10)
 
-	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates))
+	// Mark chapters as read for logged-in users
+	userName := GetUserContext(c)
+	if userName != "" {
+		for i := range latestUpdates {
+			readMap, err := models.GetReadChaptersForUser(userName, latestUpdates[i].Media.Slug)
+			if err == nil {
+				for j := range latestUpdates[i].Chapters {
+					latestUpdates[i].Chapters[j].Read = readMap[latestUpdates[i].Chapters[j].Slug]
+				}
+			}
+		}
+	}
+
+	// Fetch highlights for the banner
+	highlights, err := models.GetHighlights()
+	if err != nil {
+		log.Errorf("Failed to get highlights: %v", err)
+		highlights = []models.HighlightWithMedia{} // Empty slice if error
+	}
+
+	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights))
 }
 
 // HandleTopReadPeriod renders the top read list for a specific period via HTMX

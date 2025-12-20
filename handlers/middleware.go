@@ -171,9 +171,25 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 				return c.Next()
 			}
 			if IsHTMXRequest(c) && err == fiber.ErrForbidden {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied", "status": "destructive"}}`)
-				return c.Status(fiber.StatusForbidden).SendString("")
+				triggerNotification(c, "You don't have permission to access this resource.", "destructive")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
+		}
+
+		if IsHTMXRequest(c) {
+			// For unauthenticated HTMX requests, we might want to redirect to login
+			// But if we want to avoid redirecting, we can show a notification
+			// However, usually unauthenticated access should redirect to login.
+			// If the user wants to avoid redirecting "at all", maybe for permission errors?
+			// The user said "if im already on the series page and we know the chapter is premium".
+			// That implies authenticated but no permission.
+			// For unauthenticated, redirecting to login is standard.
+			// But let's check if we should return 204 for unauthenticated too if it's an action?
+			// If it's a navigation, we should redirect.
+			// Let's keep redirect for unauthenticated for now, as the user focused on "premium" (permission).
+			c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(c.OriginalURL()))
+			return c.Status(fiber.StatusUnauthorized).SendString("")
 		}
 
 		originalURL := c.OriginalURL()
@@ -310,7 +326,14 @@ func RateLimitingMiddleware() fiber.Handler {
 				seconds = 0
 			}
 			
-			// Return rate limit error page
+			// For HTMX requests, return rate limit notification
+			if IsHTMXRequest(c) {
+				message := "Too many requests. Please wait before trying again."
+				triggerNotification(c, message, "warning")
+				return c.Status(fiber.StatusTooManyRequests).SendString("")
+			}
+			
+			// Return rate limit error page for regular requests
 			return HandleView(c, views.RateLimit(seconds))
 		}
 		
@@ -387,10 +410,11 @@ func BotDetectionMiddleware() fiber.Handler {
 		} else if banned {
 			log.Infof("Blocking banned IP: %s", ip)
 			if IsHTMXRequest(c) {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied", "status": "destructive"}}`)
-				return c.Status(fiber.StatusForbidden).SendString("")
+				triggerNotification(c, "Access denied: Your IP address has been blocked.", "destructive")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
-			return c.Status(fiber.StatusForbidden).SendString("Access denied")
+			return c.Status(fiber.StatusForbidden).SendString("Access denied: Your IP address has been blocked.")
 		}
 
 		// Track access if it's a media or chapter request
@@ -601,7 +625,6 @@ func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 }
 
 // ImageProtectionMiddleware provides advanced protection for image endpoints
-// Uses scoring system to detect bots and requires captcha for high-risk requests
 func ImageProtectionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		score := calculateBotScore(c)
@@ -627,8 +650,9 @@ func ImageProtectionMiddleware() fiber.Handler {
 		if score >= 80 {
 			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
 			if IsHTMXRequest(c) {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: suspicious activity detected", "status": "destructive"}}`)
-				return c.Status(fiber.StatusForbidden).SendString("")
+				triggerNotification(c, "Access denied: suspicious activity detected", "destructive")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
 			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
 		}

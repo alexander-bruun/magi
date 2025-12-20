@@ -17,9 +17,7 @@ func HandleGetReviews(c *fiber.Ctx) error {
 
 	reviews, err := models.GetReviewsByMedia(mediaSlug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve reviews",
-		})
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return c.JSON(reviews)
@@ -31,16 +29,12 @@ func HandleCreateReview(c *fiber.Ctx) error {
 
 	userName, ok := c.Locals("user_name").(string)
 	if !ok || userName == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	var req struct {
@@ -50,37 +44,24 @@ func HandleCreateReview(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
 	if req.Rating < 1 || req.Rating > 10 {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Trigger", `{"showNotification": {"message": "Please select a star rating between 1 and 10", "status": "warning"}}`)
-		}
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Rating must be between 1 and 10",
-		})
+		return sendValidationError(c, ErrInvalidRating)
 	}
 
 	if req.ReviewId != 0 {
 		// Update existing review
 		existingReview, err := models.GetReviewByID(req.ReviewId)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to retrieve review",
-			})
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if existingReview == nil {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Review not found",
-			})
+			return sendNotFoundError(c, ErrReviewNotFound)
 		}
 		if existingReview.UserUsername != user.Username && user.Role != "admin" && user.Role != "moderator" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Forbidden",
-			})
+			return sendForbiddenError(c, ErrForbidden)
 		}
 		err = models.UpdateReviewByID(req.ReviewId, req.Rating, req.Content)
 	} else {
@@ -95,35 +76,34 @@ func HandleCreateReview(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save review",
-		})
+		return sendInternalServerError(c, ErrReviewCreateFailed, err)
 	}
 
-	// If HTMX request, return updated reviews section
+	// Add success notification for HTMX requests
+	triggerNotification(c, "Review saved successfully", "success")
 	if c.Get("HX-Request") == "true" {
 		// Fetch updated reviews and user review
 		reviews, err := models.GetReviewsByMedia(mediaSlug)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading reviews")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		
 		userReview, err := models.GetReviewByUserAndMedia(user.Username, mediaSlug)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading user review")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Get media for the template
 		media, err := models.GetMedia(mediaSlug)
 		if err != nil || media == nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading media")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Render the component to HTML
 		var buf bytes.Buffer
 		err = views.MediaReviewsSection(*media, reviews, userReview, user.Role, user.Username).Render(context.Background(), &buf)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error rendering reviews section")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		html := buf.String()
 		wrapped := fmt.Sprintf(`<div id="reviews-section" class="mt-8">%s</div>`, html)
@@ -141,23 +121,17 @@ func HandleGetUserReview(c *fiber.Ctx) error {
 
 	userName, ok := c.Locals("user_name").(string)
 	if !ok || userName == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	review, err := models.GetReviewByUserAndMedia(user.Username, mediaSlug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve review",
-		})
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if review == nil {
@@ -174,25 +148,19 @@ func HandleDeleteReview(c *fiber.Ctx) error {
 
 	userName, ok := c.Locals("user_name").(string)
 	if !ok || userName == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	if reviewIdStr != "" {
 		// Delete by ID, check if mod
 		reviewId, err := strconv.Atoi(reviewIdStr)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid review ID",
-			})
+			return sendBadRequestError(c, ErrInvalidReviewID)
 		}
 		if user.Role != "admin" && user.Role != "moderator" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
@@ -207,27 +175,24 @@ func HandleDeleteReview(c *fiber.Ctx) error {
 
 	if err != nil {
 		if err.Error() == "review not found" {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Review not found",
-			})
+			return sendNotFoundError(c, ErrReviewNotFound)
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete review",
-		})
+		return sendInternalServerError(c, ErrReviewDeleteFailed, err)
 	}
 
-	// If HTMX request, return updated reviews section
+	// Add success notification for HTMX requests
+	triggerNotification(c, "Review deleted successfully", "success")
 	if c.Get("HX-Request") == "true" {
 		// Fetch updated reviews and user review (should be nil now)
 		reviews, err := models.GetReviewsByMedia(mediaSlug)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading reviews")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Get media for the template
 		media, err := models.GetMedia(mediaSlug)
 		if err != nil || media == nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading media")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		return HandleView(c, views.MediaReviewsSection(*media, reviews, nil, user.Role, user.Username))

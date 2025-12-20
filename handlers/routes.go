@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexander-bruun/magi/cache"
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	fiber "github.com/gofiber/fiber/v2"
@@ -20,6 +21,17 @@ var savedCacheDirectory string
 // savedBackupDirectory stores the backup directory path
 var savedBackupDirectory string
 
+// cacheManager manages cache operations
+var cacheManager *cache.CacheManager
+
+// GetCacheBackend returns the current cache backend
+func GetCacheBackend() cache.CacheBackend {
+	if cacheManager == nil {
+		return nil
+	}
+	return cacheManager.Backend()
+}
+
 // shutdownChan is used to trigger application shutdown
 var shutdownChan = make(chan struct{})
 
@@ -32,11 +44,11 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, port string) {
+func Initialize(app *fiber.App, cacheBackend cache.CacheBackend, backupDirectory string, port string) {
 	log.Info("Initializing application routes and middleware")
 
-	savedCacheDirectory = cacheDirectory
-	savedBackupDirectory = backupDirectory
+	// Initialize cache manager with provided backend
+	cacheManager = cache.NewCacheManager(cacheBackend)
 
 	// ========================================
 	// Initialize console logger for WebSocket streaming
@@ -78,6 +90,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	}))
 
 	app.Use(OptionalAuthMiddleware())
+	app.Use(MaintenanceModeMiddleware())
 	app.Use(healthcheck.New())
 
 	// ========================================
@@ -255,6 +268,10 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
 	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 
+	// Highlight management
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", AuthMiddleware("moderator"), HandleRemoveHighlight)
+
 	// Chapter routes (slug restricted)
 	chapters := media.Group("/:media<[A-Za-z0-9_-]+>")
 
@@ -356,6 +373,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	libraries.Put("/:slug", HandleUpdateLibrary)
 	libraries.Delete("/:slug", HandleDeleteLibrary)
 	libraries.Post("/:slug/scan", HandleScanLibrary)
+	libraries.Get("/:slug/logs", HandleIndexerLogsWebSocketUpgrade)
 	libraries.Get("/helpers/add-folder", HandleAddFolder)
 	libraries.Get("/helpers/remove-folder", HandleRemoveFolder)
 	libraries.Get("/helpers/cancel-edit", HandleCancelEdit)
@@ -383,6 +401,7 @@ func Initialize(app *fiber.App, cacheDirectory string, backupDirectory string, p
 	scraperHelpers.Get("/remove-variable", HandleScraperVariableRemove)
 	scraperHelpers.Get("/add-package", HandleScraperPackageAdd)
 	scraperHelpers.Get("/remove-package", HandleScraperPackageRemove)
+	scraperHelpers.Get("/update-language", HandleScraperUpdateLanguage)
 
 	// ========================================
 	// Duplicate Detection

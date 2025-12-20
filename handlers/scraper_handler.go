@@ -11,16 +11,50 @@ import (
 	fiber "github.com/gofiber/fiber/v2"
 )
 
-// (execution/cancel tracking moved to `executor` package)
+// ScraperFormData represents form data for creating/updating scraper scripts
+type ScraperFormData struct {
+	Name         string      `json:"name" form:"name"`
+	Script       string      `json:"script" form:"script"`
+	Language     string      `json:"language" form:"language"`
+	Schedule     string      `json:"schedule" form:"schedule"`
+	SharedScript string      `json:"shared_script" form:"shared_script"`
+	VariableName interface{} `json:"variable_name" form:"variable_name"`
+	VariableValue interface{} `json:"variable_value" form:"variable_value"`
+	Package      interface{} `json:"package" form:"package"`
+}
+
+// normalizeToStringSlice converts interface{} to []string, handling both single values and arrays
+func normalizeToStringSlice(data interface{}) []string {
+	if data == nil {
+		return []string{}
+	}
+	
+	switch v := data.(type) {
+	case []interface{}:
+		result := make([]string, len(v))
+		for i, item := range v {
+			if str, ok := item.(string); ok {
+				result[i] = str
+			}
+		}
+		return result
+	case []string:
+		return v
+	case string:
+		return []string{v}
+	default:
+		return []string{}
+	}
+}
 
 // extractVariablesFromForm extracts variable key-value pairs from form data
 // Variables should be submitted as: variable_name=<key> and variable_value=<value> (paired in order)
-func extractVariablesFromForm(c *fiber.Ctx) map[string]string {
+func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 	variables := make(map[string]string)
 	
-	// Get all variable names and values
-	names := c.Request().PostArgs().PeekMulti("variable_name")
-	values := c.Request().PostArgs().PeekMulti("variable_value")
+	// Normalize the interface{} fields to []string
+	names := normalizeToStringSlice(formData.VariableName)
+	values := normalizeToStringSlice(formData.VariableValue)
 	
 	// Pair them up
 	for i := 0; i < len(names); i++ {
@@ -40,11 +74,11 @@ func extractVariablesFromForm(c *fiber.Ctx) map[string]string {
 
 // extractPackagesFromForm extracts package list from form data
 // Packages should be submitted as: package=<package_name> (multiple)
-func extractPackagesFromForm(c *fiber.Ctx) []string {
+func extractPackagesFromForm(formData ScraperFormData) []string {
 	var packages []string
 	
-	// Get all package names
-	pkgNames := c.Request().PostArgs().PeekMulti("package")
+	// Normalize the interface{} field to []string
+	pkgNames := normalizeToStringSlice(formData.Package)
 	
 	for _, pkg := range pkgNames {
 		pkgName := strings.TrimSpace(string(pkg))
@@ -60,44 +94,99 @@ func extractPackagesFromForm(c *fiber.Ctx) []string {
 func HandleScraper(c *fiber.Ctx) error {
 	scripts, err := models.ListScraperScripts(false)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
-	return HandleView(c, views.Scraper(scripts))
+	activeID := int64(0)
+	if len(scripts) > 0 {
+		activeID = scripts[0].ID
+	}
+	return HandleView(c, views.Scraper(scripts, activeID))
 }
 
 // HandleScraperScriptDetail renders a specific script for editing
 func HandleScraperScriptDetail(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if script == nil {
-		return handleError(c, fmt.Errorf("script not found"))
+		return sendNotFoundError(c, ErrScraperScriptNotFound)
 	}
 
-	return HandleView(c, views.ScraperScriptEditor(script))
+	scripts, err := models.ListScraperScripts(false)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	return HandleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
 }
 
 // HandleScraperScriptCreate creates a new script
 func HandleScraperScriptCreate(c *fiber.Ctx) error {
-	name := strings.TrimSpace(c.FormValue("name"))
-	scriptContent := c.FormValue("script")
-	language := c.FormValue("language")
-	schedule := strings.TrimSpace(c.FormValue("schedule"))
-	sharedScriptContent := c.FormValue("shared_script")
+	var formData ScraperFormData
+	
+	// Check if this is a JSON request (HTMX form-json)
+	contentType := c.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") {
+		// Parse as JSON first
+		if err := c.BodyParser(&formData); err != nil {
+			return sendBadRequestError(c, ErrBadRequest)
+		}
+	} else {
+		// Parse as traditional form data
+		formData.Name = c.FormValue("name")
+		formData.Script = c.FormValue("script")
+		formData.Language = c.FormValue("language")
+		formData.Schedule = c.FormValue("schedule")
+		formData.SharedScript = c.FormValue("shared_script")
+		
+		// For traditional form data, we need to manually collect arrays
+		varNames := c.Request().PostArgs().PeekMulti("variable_name")
+		if len(varNames) > 0 {
+			names := make([]string, len(varNames))
+			for i, v := range varNames {
+				names[i] = string(v)
+			}
+			formData.VariableName = names
+		}
+		
+		varValues := c.Request().PostArgs().PeekMulti("variable_value")
+		if len(varValues) > 0 {
+			values := make([]string, len(varValues))
+			for i, v := range varValues {
+				values[i] = string(v)
+			}
+			formData.VariableValue = values
+		}
+		
+		packages := c.Request().PostArgs().PeekMulti("package")
+		if len(packages) > 0 {
+			pkgs := make([]string, len(packages))
+			for i, v := range packages {
+				pkgs[i] = string(v)
+			}
+			formData.Package = pkgs
+		}
+	}
+
+	name := strings.TrimSpace(formData.Name)
+	scriptContent := formData.Script
+	language := formData.Language
+	schedule := strings.TrimSpace(formData.Schedule)
+	sharedScriptContent := formData.SharedScript
 
 	// Validate input
 	if name == "" {
-		return handleError(c, fmt.Errorf("script name is required"))
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	if err := models.ValidateScript(scriptContent, language); err != nil {
-		return handleError(c, err)
+		return sendValidationError(c, ErrScraperScriptInvalid)
 	}
 
 	if schedule == "" {
@@ -105,10 +194,10 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	}
 
 	// Extract variables from form
-	variables := extractVariablesFromForm(c)
+	variables := extractVariablesFromForm(formData)
 
 	// Extract packages from form
-	packages := extractPackagesFromForm(c)
+	extractedPackages := extractPackagesFromForm(formData)
 
 	// Handle shared script
 	var sharedScript *string
@@ -116,35 +205,88 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 		sharedScript = &sharedScriptContent
 	}
 
-	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, packages, sharedScript)
+	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, extractedPackages, sharedScript)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// Return the new script in editor view
-	return HandleView(c, views.ScraperScriptEditor(script))
+	// Get all scripts to update the tabs
+	scripts, err := models.ListScraperScripts(false)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	// Return the new script in editor view with updated tabs
+	return HandleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
 }
 
 // HandleScraperScriptUpdate updates an existing script
 func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
-	name := strings.TrimSpace(c.FormValue("name"))
-	scriptContent := c.FormValue("script")
-	language := c.FormValue("language")
-	schedule := strings.TrimSpace(c.FormValue("schedule"))
-	sharedScriptContent := c.FormValue("shared_script")
+	var formData ScraperFormData
+	
+	// Check if this is a JSON request (HTMX form-json)
+	contentType := c.Get("Content-Type")
+	
+	if strings.Contains(contentType, "application/json") {
+		// Parse as JSON first
+		if err := c.BodyParser(&formData); err != nil {
+			return sendBadRequestError(c, ErrBadRequest)
+		}
+	} else {
+		// Parse as traditional form data
+		formData.Name = c.FormValue("name")
+		formData.Script = c.FormValue("script")
+		formData.Language = c.FormValue("language")
+		formData.Schedule = c.FormValue("schedule")
+		formData.SharedScript = c.FormValue("shared_script")
+		
+	// For traditional form data, we need to manually collect arrays
+	varNames := c.Request().PostArgs().PeekMulti("variable_name")
+	if len(varNames) > 0 {
+		names := make([]string, len(varNames))
+		for i, v := range varNames {
+			names[i] = string(v)
+		}
+		formData.VariableName = names
+	}
+	
+	varValues := c.Request().PostArgs().PeekMulti("variable_value")
+	if len(varValues) > 0 {
+		values := make([]string, len(varValues))
+		for i, v := range varValues {
+			values[i] = string(v)
+		}
+		formData.VariableValue = values
+	}
+	
+		packages := c.Request().PostArgs().PeekMulti("package")
+		if len(packages) > 0 {
+			pkgs := make([]string, len(packages))
+			for i, v := range packages {
+				pkgs[i] = string(v)
+			}
+			formData.Package = pkgs
+		}
+	}
+
+	name := strings.TrimSpace(formData.Name)
+	scriptContent := formData.Script
+	language := formData.Language
+	schedule := strings.TrimSpace(formData.Schedule)
+	sharedScriptContent := formData.SharedScript
 
 	// Validate input
 	if name == "" {
-		return handleError(c, fmt.Errorf("script name is required"))
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	if err := models.ValidateScript(scriptContent, language); err != nil {
-		return handleError(c, err)
+		return sendValidationError(c, ErrScraperScriptInvalid)
 	}
 
 	if schedule == "" {
@@ -152,10 +294,10 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	}
 
 	// Extract variables from form
-	variables := extractVariablesFromForm(c)
+	variables := extractVariablesFromForm(formData)
 
 	// Extract packages from form
-	packages := extractPackagesFromForm(c)
+	extractedPackages := extractPackagesFromForm(formData)
 
 	// Handle shared script
 	var sharedScript *string
@@ -163,14 +305,14 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 		sharedScript = &sharedScriptContent
 	}
 
-	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, packages, sharedScript)
+	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, extractedPackages, sharedScript)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// For HTMX requests, return a simple success response instead of re-rendering the form
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Trigger", `{"showNotification": {"message": "Script saved successfully", "status": "success"}}`)
+		triggerNotification(c, "Script saved successfully", "success")
 		return c.SendStatus(fiber.StatusOK)
 	}
 
@@ -181,11 +323,11 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 func HandleScraperScriptDelete(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
 	if err := models.DeleteScraperScript(id); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Redirect to scraper page to refresh the entire page
@@ -197,10 +339,10 @@ func HandleScraperScriptDelete(c *fiber.Ctx) error {
 func HandleScraperScriptCancel(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 	if err := scheduler.CancelScriptExecution(id); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	return c.SendStatus(fiber.StatusOK)
 }
@@ -209,19 +351,19 @@ func HandleScraperScriptCancel(c *fiber.Ctx) error {
 func HandleScraperScriptToggle(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if script == nil {
-		return handleError(c, fmt.Errorf("script not found"))
+		return sendNotFoundError(c, ErrScraperScriptNotFound)
 	}
 
 	if err := models.EnableScraperScript(id, !script.Enabled); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// For HTMX requests, return a simple success response instead of re-rendering the form
@@ -231,14 +373,14 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 		if newState {
 			message = "Script enabled"
 		}
-		c.Set("HX-Trigger", fmt.Sprintf(`{"showNotification": {"message": "%s", "status": "success"}}`, message))
+		triggerNotification(c, message, "success")
 		return c.SendStatus(fiber.StatusOK)
 	}
 
 	// Return updated script
 	updated, err := models.GetScraperScript(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return HandleView(c, views.ScraperScriptRow(updated))
@@ -248,15 +390,45 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 func HandleScraperScriptRun(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
 	script, err := models.GetScraperScript(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if script == nil {
-		return handleError(c, fmt.Errorf("script not found"))
+		return sendNotFoundError(c, ErrScraperScriptNotFound)
+	}
+
+	// Parse form data to get variable overrides
+	var formData ScraperFormData
+	
+	// Try to parse as form data first
+	varNames := c.Request().PostArgs().PeekMulti("variable_name")
+	if len(varNames) > 0 {
+		names := make([]string, len(varNames))
+		for i, v := range varNames {
+			names[i] = string(v)
+		}
+		formData.VariableName = names
+	}
+	
+	varValues := c.Request().PostArgs().PeekMulti("variable_value")
+	if len(varValues) > 0 {
+		values := make([]string, len(varValues))
+		for i, v := range varValues {
+			values[i] = string(v)
+		}
+		formData.VariableValue = values
+	}
+	
+	// If no variables found, try JSON parsing
+	namesSlice := normalizeToStringSlice(formData.VariableName)
+	if len(namesSlice) == 0 {
+		if err := c.BodyParser(&formData); err == nil {
+			// JSON parsing worked, use it
+		}
 	}
 
 	// Start with stored variables, then override with form values
@@ -266,26 +438,26 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 	}
 	
 	// Override with form values if provided
-	formVariables := extractVariablesFromForm(c)
+	formVariables := extractVariablesFromForm(formData)
 	for k, v := range formVariables {
 		variables[k] = v
 	}
 
 	// Start execution via shared executor (creates DB log and streams logs)
 	if _, err := scheduler.StartScriptExecution(script, variables, true); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrScraperExecutionFailed, err)
 	}
 
 	// For HTMX requests, return a simple success response instead of re-rendering the form
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Trigger", `{"showNotification": {"message": "Script execution started", "status": "success"}}`)
+		triggerNotification(c, "Script execution started", "success")
 		return c.SendStatus(fiber.StatusOK)
 	}
 
 	// Return updated script with output
 	updated, err := models.GetScraperScript(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return HandleView(c, views.ScraperScriptEditor(updated))
@@ -299,7 +471,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 func HandleScraperScriptsList(c *fiber.Ctx) error {
 	scripts, err := models.ListScraperScripts(false)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	return HandleView(c, views.ScraperScriptsList(scripts))
 }
@@ -324,7 +496,7 @@ func HandleScraperNewForm(c *fiber.Ctx) error {
 func HandleScraperLogs(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid script id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidScriptID)
 	}
 
 	// Get pagination parameters
@@ -339,13 +511,13 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 	// Get logs for current page
 	logs, err := models.ListScraperLogs(id, perPage, offset)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Get total count for pagination
 	totalCount, err := models.CountScraperLogs(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Calculate pagination info
@@ -409,27 +581,49 @@ func HandleScraperPackageRemove(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+// HandleScraperUpdateLanguage returns updated language-dependent sections for HTMX requests
+func HandleScraperUpdateLanguage(c *fiber.Ctx) error {
+	// If not an HTMX request, redirect to the scraper page
+	if !IsHTMXRequest(c) {
+		return c.Redirect("/admin/scraper")
+	}
+
+	// Get the language from the request
+	language := c.Query("language", "python")
+	if language == "" {
+		language = "python"
+	}
+
+	// Create a mock script object with the selected language
+	script := &models.ScraperScript{
+		Language: language,
+	}
+
+	// Return the updated language-dependent sections
+	return HandleView(c, views.LanguageDependentSections(script))
+}
+
 // HandleScraperLogDelete deletes a specific execution log
 func HandleScraperLogDelete(c *fiber.Ctx) error {
 	logID, err := strconv.ParseInt(c.Params("logId"), 10, 64)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid log id"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrInvalidLogID)
 	}
 
 	// Get the log to verify it exists and get the script ID
 	logEntry, err := models.GetScraperLog(logID)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Delete the log
 	if err := models.DeleteScraperLog(logID); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If this is an HTMX request, return a success notification
 	if IsHTMXRequest(c) {
-		c.Set("HX-Trigger", `{"showNotification": {"message": "Log deleted successfully", "status": "success"}}`)
+		triggerNotification(c, "Log deleted successfully", "success")
 		return c.SendString("")
 	}
 

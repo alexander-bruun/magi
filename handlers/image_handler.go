@@ -3,7 +3,6 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
@@ -30,6 +29,10 @@ func handlePosterRequest(c *fiber.Ctx) error {
 
 // handleCachedImageRequest serves cached images with quality based on user role
 func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
+	if cacheManager == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Cache not initialized")
+	}
+
 	// Get the requested path (remove /api/{subDir}/ prefix)
 	imagePath := filepath.Join(subDir, strings.TrimPrefix(c.Path(), "/api/"+subDir+"/"))
 
@@ -37,11 +40,12 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
 	}
 
-	// Construct full file path
-	fullPath := filepath.Join(savedCacheDirectory, imagePath)
-
-	// Check if the original file exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+	// Check if the file exists in cache
+	exists, err := cacheManager.Exists(imagePath)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
+	}
+	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
 	}
 
@@ -61,9 +65,9 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 
 	// Load the image
 	start := time.Now()
-	file, err := os.Open(fullPath)
+	reader, err := cacheManager.LoadReader(imagePath)
 	if err != nil {
-		// If loading fails, serve original file
+		// If loading fails, try to serve without compression
 		switch strings.ToLower(filepath.Ext(imagePath)) {
 			case ".jpg", ".jpeg":
 				c.Set("Content-Type", "image/jpeg")
@@ -77,10 +81,14 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 				c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
+	defer reader.Close()
+	img, _, err := image.Decode(reader)
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -96,7 +104,11 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 				c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
 
 	// Record load time
@@ -132,7 +144,11 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
 
 	c.Set("Cache-Control", "public, max-age=31536000, immutable")
@@ -141,23 +157,14 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 
 // handleImageRequest serves images with quality based on user role
 func handleImageRequest(c *fiber.Ctx) error {
-	// Determine cache directory based on route
-	var cacheDir string
-	if strings.HasPrefix(c.Path(), "/api/posters/") {
-		cacheDir = savedCacheDirectory
-	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
-		cacheDir = savedCacheDirectory
-	} else if strings.HasPrefix(c.Path(), "/api/images/") {
-		// /api/images/* should not serve cached images
-		return c.Status(fiber.StatusNotFound).SendString("Image not found")
-	} else {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid route")
+	if cacheManager == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Cache not initialized")
 	}
-	
+
 	// Get the requested path (remove /api/images/ or /api/posters/ prefix)
 	imagePath := ""
 	if strings.HasPrefix(c.Path(), "/api/images/") {
-		imagePath = strings.TrimPrefix(c.Path(), "/api/images/")
+		imagePath = filepath.Join("images", strings.TrimPrefix(c.Path(), "/api/images/"))
 	} else if strings.HasPrefix(c.Path(), "/api/posters/") {
 		imagePath = filepath.Join("posters", strings.TrimPrefix(c.Path(), "/api/posters/"))
 	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
@@ -168,11 +175,12 @@ func handleImageRequest(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
 	}
 
-	// Construct full file path
-	fullPath := filepath.Join(cacheDir, imagePath)
-
-	// Check if the original file exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+	// Check if the file exists in cache
+	exists, err := cacheManager.Exists(imagePath)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
+	}
+	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
 	}
 
@@ -192,7 +200,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 
 	// Load the image
 	start := time.Now()
-	file, err := os.Open(fullPath)
+	reader, err := cacheManager.LoadReader(imagePath)
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -208,10 +216,14 @@ func handleImageRequest(c *fiber.Ctx) error {
 				c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
+	defer reader.Close()
+	img, _, err := image.Decode(reader)
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -227,7 +239,11 @@ func handleImageRequest(c *fiber.Ctx) error {
 				c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
 
 	// Record load time
@@ -263,7 +279,11 @@ func handleImageRequest(c *fiber.Ctx) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		return c.SendFile(fullPath)
+		data, err := cacheManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
 	}
 
 	c.Set("Cache-Control", "public, max-age=31536000, immutable")
@@ -280,7 +300,7 @@ func ImageHandler(c *fiber.Ctx) error {
 	
 	if token == "" {
 		log.Errorf("ImageHandler: token parameter is required")
-		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrImageTokenRequired)
 	}
 
 	// log.Infof("ImageHandler: validating token %s", token)
@@ -288,7 +308,7 @@ func ImageHandler(c *fiber.Ctx) error {
 	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
 		log.Errorf("ImageHandler: Token validation failed for token %s: %v", token, err)
-		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
+		return sendForbiddenError(c, ErrImageTokenInvalid)
 	}
 
 	// log.Infof("ImageHandler: token %s validated successfully, consuming", token)
@@ -299,18 +319,18 @@ func ImageHandler(c *fiber.Ctx) error {
 	// Validate MediaSlug to prevent malformed tokens
 	if strings.ContainsAny(tokenInfo.MediaSlug, "/,") {
 		log.Errorf("ImageHandler: Invalid MediaSlug in token: %s", tokenInfo.MediaSlug)
-		return handleErrorWithStatus(c, fmt.Errorf("invalid token"), fiber.StatusForbidden)
+		return sendForbiddenError(c, ErrImageTokenInvalid)
 	}
 	// log.Infof("ImageHandler: MediaSlug validated: %s", tokenInfo.MediaSlug)
 
 	media, err := models.GetMedia(tokenInfo.MediaSlug)
 	if err != nil {
 		log.Errorf("ImageHandler: Failed to get media %s: %v", tokenInfo.MediaSlug, err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if media == nil {
 		log.Errorf("ImageHandler: Media not found for slug: %s", tokenInfo.MediaSlug)
-		return handleErrorWithStatus(c, fmt.Errorf("media not found or access restricted based on content rating settings"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrImageNotFound)
 	}
 	// log.Infof("ImageHandler: Media found: %s", media.Slug)
 	
@@ -337,25 +357,26 @@ func ImageHandler(c *fiber.Ctx) error {
 		chapter, err = models.GetChapter(tokenInfo.MediaSlug, chapterSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, chapterSlug, err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if chapter == nil {
 			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, chapterSlug)
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		// log.Infof("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Error checking access: %v", err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if !hasAccess {
 			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
 			if IsHTMXRequest(c) {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
-				return c.Status(fiber.StatusForbidden).SendString("")
+				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
-			return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this chapter"), fiber.StatusForbidden)
+			return sendForbiddenError(c, ErrImageAccessDenied)
 		}
 		// log.Infof("ImageHandler: Access granted, serving light novel asset")
 		return serveLightNovelAsset(c, media, chapter, tokenInfo.AssetPath)
@@ -365,25 +386,26 @@ func ImageHandler(c *fiber.Ctx) error {
 		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if chapter == nil {
 			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		// log.Debugf("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Error checking access: %v", err)
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if !hasAccess {
 			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
 			if IsHTMXRequest(c) {
-				c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this chapter", "status": "destructive"}}`)
-				return c.Status(fiber.StatusForbidden).SendString("")
+				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
+				// Return 204 No Content to prevent navigation/swap but show notification
+				return c.Status(fiber.StatusNoContent).SendString("")
 			}
-			return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this chapter"), fiber.StatusForbidden)
+			return sendForbiddenError(c, ErrImageAccessDenied)
 		}
 		// log.Debugf("ImageHandler: Access granted, serving comic page")
 		return serveComicPage(c, media, chapter, tokenInfo.Page)
@@ -404,7 +426,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("file not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// If the path is a directory, serve images from within it
@@ -427,7 +449,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		imageLoadDuration.WithLabelValues("cbr").Observe(time.Since(start).Seconds())
 		imageBytes, err := ServeComicArchiveFromRAR(filePath, page, 95) // Default quality
 		if err != nil {
-			return handleErrorWithStatus(c, fmt.Errorf("failed to serve archive: %w", err), fiber.StatusInternalServerError)
+			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
 		c.Set("Content-Type", "image/jpeg")
 		return c.Send(imageBytes)
@@ -435,12 +457,12 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		imageLoadDuration.WithLabelValues("cbz").Observe(time.Since(start).Seconds())
 		imageBytes, err := ServeComicArchiveFromZIP(filePath, page, 95) // Default quality
 		if err != nil {
-			return handleErrorWithStatus(c, fmt.Errorf("failed to serve archive: %w", err), fiber.StatusInternalServerError)
+			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
 		c.Set("Content-Type", "image/jpeg")
 		return c.Send(imageBytes)
 	default:
-		return handleErrorWithStatus(c, fmt.Errorf("unsupported file type"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrImageUnsupportedType)
 	}
 }
 
@@ -461,14 +483,14 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	// Check if the file exists
 	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 		log.Errorf("EPUB file not found: %s", chapterFilePath)
-		return handleErrorWithStatus(c, fmt.Errorf("EPUB file not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// Open the EPUB file
 	r, err := zip.OpenReader(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error opening EPUB %s: %v", chapterFilePath, err)
-		return handleErrorWithStatus(c, fmt.Errorf("error opening EPUB: %w", err), fiber.StatusInternalServerError)
+		return sendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	defer r.Close()
 
@@ -476,7 +498,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	opfDir, err := utils.GetOPFDir(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error getting OPF dir for %s: %v", chapterFilePath, err)
-		return handleErrorWithStatus(c, fmt.Errorf("error parsing EPUB: %w", err), fiber.StatusInternalServerError)
+		return sendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 
 	log.Debugf("OPF dir: %s, requested asset: %s", opfDir, assetPath)
@@ -495,7 +517,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	}
 	if file == nil {
 		log.Errorf("Asset not found in EPUB: %s (looked for %s)", assetPath, assetFullPath)
-		return handleErrorWithStatus(c, fmt.Errorf("asset not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
 	log.Debugf("Asset found in EPUB: %s", assetFullPath)
@@ -503,7 +525,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	rc, err := file.Open()
 	if err != nil {
 		log.Errorf("Error opening asset %s: %v", assetPath, err)
-		return handleErrorWithStatus(c, fmt.Errorf("error opening asset: %w", err), fiber.StatusInternalServerError)
+		return sendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	defer rc.Close()
 
@@ -528,7 +550,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 
 	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
 		log.Errorf("Error writing asset %s to response: %v", assetPath, err)
-		return handleErrorWithStatus(c, fmt.Errorf("error writing asset: %w", err), fiber.StatusInternalServerError)
+		return sendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	metricExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(assetPath), "."))
 	imageLoadDuration.WithLabelValues(metricExt).Observe(time.Since(start).Seconds())
@@ -540,7 +562,7 @@ func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int)
 	start := time.Now()
 	imagePath, err := GetImagesFromDirectory(dirPath, page)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("image not found: %w", err), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// Get user role for compression quality

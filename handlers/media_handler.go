@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/alexander-bruun/magi/models"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -26,15 +24,18 @@ func DeleteMedia(mediaSlug string) error {
 func HandleDeleteMedia(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return handleError(c, fmt.Errorf("media slug can't be empty"))
+		return sendBadRequestError(c, "Media slug cannot be empty")
 	}
 
 	if err := DeleteMedia(mangaSlug); err != nil {
 		log.Errorf("Failed to delete media '%s': %v", mangaSlug, err)
-		return handleError(c, fmt.Errorf("failed to delete media: %w", err))
+		return sendInternalServerError(c, ErrMediaDeleteFailed, err)
 	}
 
 	log.Infof("Successfully deleted media '%s'", mangaSlug)
+
+	// Add success notification for HTMX requests
+	triggerNotification(c, "Media deleted successfully", "success")
 
 	// Redirect to media list
 	c.Set("HX-Redirect", "/series")

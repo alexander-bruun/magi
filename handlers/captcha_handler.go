@@ -6,6 +6,12 @@ import (
 	fiber "github.com/gofiber/fiber/v2"
 )
 
+// CaptchaFormData represents form data for captcha verification
+type CaptchaFormData struct {
+	ID     string `json:"id"`
+	Answer string `json:"answer"`
+}
+
 // HandleCaptchaPage serves the captcha verification page
 func HandleCaptchaPage(c *fiber.Ctx) error {
 	id := captcha.NewLen(6)
@@ -32,8 +38,13 @@ func HandleCaptchaNew(c *fiber.Ctx) error {
 
 // HandleCaptchaVerify verifies captcha answers
 func HandleCaptchaVerify(c *fiber.Ctx) error {
-	id := c.FormValue("id")
-	answer := c.FormValue("answer")
+	var formData CaptchaFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	id := formData.ID
+	answer := formData.Answer
 	if captcha.VerifyString(id, answer) {
 		c.Cookie(&fiber.Cookie{
 			Name:     "captcha_solved",

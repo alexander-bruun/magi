@@ -9,11 +9,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// CollectionMediaFormData represents form data for adding/removing media from collections
+type CollectionMediaFormData struct {
+	MediaSlug    string `json:"media_slug"`
+	CollectionID string `json:"collection_id"`
+}
+
 // HandleCollections displays all collections
 func HandleCollections(c *fiber.Ctx) error {
 	collections, err := models.GetAllCollections()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return HandleView(c, views.Collections(collections))
@@ -23,12 +29,12 @@ func HandleCollections(c *fiber.Ctx) error {
 func HandleUserCollections(c *fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	collections, err := models.GetCollectionsByUser(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return HandleView(c, views.Collections(collections))
@@ -39,20 +45,20 @@ func HandleCollection(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	media, err := models.GetCollectionMedia(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	collectionWithMedia := models.CollectionWithMedia{
@@ -80,24 +86,32 @@ func HandleCreateCollectionModal(c *fiber.Ctx) error {
 func HandleCreateCollection(c *fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
-	name := strings.TrimSpace(c.FormValue("name"))
-	description := strings.TrimSpace(c.FormValue("description"))
+	var formData models.Collection
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	name := strings.TrimSpace(formData.Name)
+	description := strings.TrimSpace(formData.Description)
 
 	if name == "" {
-		return c.Status(400).SendString("Collection name is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	collection, err := models.CreateCollection(name, description, userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrCollectionCreateFailed, err)
 	}
 
 	// Return success response for HTMX (modal submissions)
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Trigger", `{"collectionCreated": {"message": "Collection created successfully", "status": "success"}}`)
+		triggerCustomNotification(c, "collectionCreated", map[string]interface{}{
+			"message": "Collection created successfully",
+			"status":  "success",
+		})
 		return c.SendString("")
 	}
 
@@ -109,20 +123,20 @@ func HandleEditCollectionForm(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	return HandleView(c, views.EditCollection(*collection))
@@ -133,20 +147,20 @@ func HandleEditCollectionModal(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	return HandleView(c, views.EditCollectionModal(*collection))
@@ -157,37 +171,45 @@ func HandleUpdateCollection(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
-	name := strings.TrimSpace(c.FormValue("name"))
-	description := strings.TrimSpace(c.FormValue("description"))
+	var formData models.Collection
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	name := strings.TrimSpace(formData.Name)
+	description := strings.TrimSpace(formData.Description)
 
 	if name == "" {
-		return c.Status(400).SendString("Collection name is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	err = models.UpdateCollection(id, name, description)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrCollectionUpdateFailed, err)
 	}
 
 	// Return success response for HTMX (modal submissions)
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Trigger", `{"collectionUpdated": {"message": "Collection updated successfully", "status": "success"}}`)
+		triggerCustomNotification(c, "collectionUpdated", map[string]interface{}{
+			"message": "Collection updated successfully",
+			"status":  "success",
+		})
 		return c.SendString("")
 	}
 
@@ -199,25 +221,25 @@ func HandleDeleteCollection(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	err = models.DeleteCollection(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrCollectionDeleteFailed, err)
 	}
 
 	return c.Redirect("/collections")
@@ -228,30 +250,35 @@ func HandleAddMediaToCollection(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
-	mediaSlug := c.FormValue("media_slug")
+	var formData CollectionMediaFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	mediaSlug := formData.MediaSlug
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	err = models.AddMediaToCollection(id, mediaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return c.SendString("Media added to collection")
@@ -262,30 +289,30 @@ func HandleRemoveMediaFromCollection(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	collection, err := models.GetCollectionByID(id)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil {
-		return c.Status(404).SendString("Collection not found")
+		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" || (userName != collection.CreatedBy && userName != "admin" && userName != "moderator") {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	mediaSlug := c.Params("mediaSlug")
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	err = models.RemoveMediaFromCollection(id, mediaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return c.SendString("")
@@ -295,18 +322,18 @@ func HandleRemoveMediaFromCollection(c *fiber.Ctx) error {
 func HandleGetMediaCollections(c *fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	// Get user's collections
 	collections, err := models.GetCollectionsByUser(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Check which collections contain this media
@@ -328,18 +355,18 @@ func HandleGetMediaCollections(c *fiber.Ctx) error {
 func HandleGetMediaCollectionsModal(c *fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	// Get user's collections
 	collections, err := models.GetCollectionsByUser(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Check which collections contain this media
@@ -361,39 +388,43 @@ func HandleGetMediaCollectionsModal(c *fiber.Ctx) error {
 func HandleAddMediaToCollectionFromMedia(c *fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
-	collectionIDStr := c.FormValue("collection_id")
-	collectionID, err := strconv.Atoi(collectionIDStr)
+	var formData CollectionMediaFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	collectionID, err := strconv.Atoi(formData.CollectionID)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	// Verify the collection belongs to the user
 	collection, err := models.GetCollectionByID(collectionID)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil || collection.CreatedBy != userName {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	// Check if media is already in collection
 	alreadyInCollection, err := models.IsMediaInCollection(collectionID, mediaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if !alreadyInCollection {
 		err = models.AddMediaToCollection(collectionID, mediaSlug)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 	}
 
@@ -404,39 +435,43 @@ func HandleAddMediaToCollectionFromMedia(c *fiber.Ctx) error {
 func HandleRemoveMediaFromCollectionFromMedia(c *fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 	if mediaSlug == "" {
-		return c.Status(400).SendString("Media slug is required")
+		return sendValidationError(c, ErrRequiredField)
 	}
 
 	userName := GetUserContext(c)
 	if userName == "" {
-		return fiber.ErrUnauthorized
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
-	collectionIDStr := c.FormValue("collection_id")
-	collectionID, err := strconv.Atoi(collectionIDStr)
+	var formData CollectionMediaFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
+
+	collectionID, err := strconv.Atoi(formData.CollectionID)
 	if err != nil {
-		return c.Status(400).SendString("Invalid collection ID")
+		return sendBadRequestError(c, ErrInvalidCollectionID)
 	}
 
 	// Verify the collection belongs to the user
 	collection, err := models.GetCollectionByID(collectionID)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if collection == nil || collection.CreatedBy != userName {
-		return fiber.ErrForbidden
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	// Check if media is in collection
 	isInCollection, err := models.IsMediaInCollection(collectionID, mediaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if isInCollection {
 		err = models.RemoveMediaFromCollection(collectionID, mediaSlug)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 	}
 

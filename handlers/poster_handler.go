@@ -60,7 +60,7 @@ func HandlePosterChapterSelect(c *fiber.Ctx) error {
 	
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return handleError(c, fmt.Errorf("media not found"))
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Get all chapters
@@ -79,7 +79,7 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 	
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return handleError(c, fmt.Errorf("media not found"))
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	chapters, err := models.GetChapters(mangaSlug)
@@ -109,10 +109,10 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
 			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter file not found")))
@@ -152,12 +152,12 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return handleError(c, fmt.Errorf("media not found"))
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil {
-		return handleError(c, fmt.Errorf("error getting chapters: %v", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	var chapterPage int
@@ -180,13 +180,13 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
-			return handleErrorWithStatus(c, fmt.Errorf("chapter file not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterFileReadFailed)
 		}
 		chapterPath = filepath.Join(media.Path, chapter.File)
 	} else {
@@ -194,19 +194,19 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		var err error
 		chapterPath, err = getFirstChapterFilePath(media)
 		if err != nil {
-			return handleError(c, fmt.Errorf("error: %v", err))
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 	}
 
 	// Extract and get the image data URI
 	imageDataURI, err := utils.GetImageDataURIByIndex(chapterPath, imageIndex)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to load image: %w", err))
+		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	imageCount, err := utils.CountImageFiles(chapterPath)
 	if err != nil {
-		return handleError(c, fmt.Errorf("error counting images: %v", err))
+		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	return HandleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, imageIndex, imageDataURI, chapterPage))
@@ -214,11 +214,15 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 
 // HandlePosterSet sets a custom poster image based on user selection or upload
 func HandlePosterSet(c *fiber.Ctx) error {
+	if cacheManager == nil {
+		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
+	}
+
 	mangaSlug := c.Params("media")
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return handleError(c, fmt.Errorf("media not found"))
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	cacheDir := utils.GetCacheDirectory()
@@ -228,29 +232,34 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	if file, err := c.FormFile("poster"); err == nil {
 		// Handle upload
 		if err := os.MkdirAll(postersDir, 0755); err != nil {
-			return handleError(c, fmt.Errorf("failed to create posters directory: %w", err))
+			return sendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Save uploaded file temporarily
 		tempPath := filepath.Join(postersDir, fmt.Sprintf("temp_%s_%d", mangaSlug, time.Now().Unix()))
 		if err := c.SaveFile(file, tempPath); err != nil {
-			return handleError(c, fmt.Errorf("failed to save uploaded file: %w", err))
+			return sendInternalServerError(c, ErrPosterUploadFailed, err)
 		}
 		defer os.Remove(tempPath) // Clean up temp file
 
 		// Load and convert to JPG
 		img, err := utils.OpenImage(tempPath)
 		if err != nil {
-			return handleError(c, fmt.Errorf("failed to load uploaded image: %w", err))
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
-		cachedPath := filepath.Join(postersDir, fmt.Sprintf("%s.jpg", mangaSlug))
-		if err := utils.SaveImage(cachedPath, img, "jpeg", models.GetProcessedImageQuality()); err != nil {
-			return handleError(c, fmt.Errorf("failed to save poster image: %w", err))
+		imageData, err := utils.EncodeImageToBytes(img, "jpeg", models.GetProcessedImageQuality())
+		if err != nil {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+		}
+		cachePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
+		if err := cacheManager.Save(cachePath, imageData); err != nil {
+			return sendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Generate thumbnails
-		if err := utils.GenerateThumbnails(cachedPath, mangaSlug, postersDir, models.GetProcessedImageQuality()); err != nil {
+		fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
+		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, cacheManager.Backend(), models.GetProcessedImageQuality()); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
@@ -260,7 +269,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		// Update media with new cover art URL
 		media.CoverArtURL = cachedImageURL
 		if err := models.UpdateMedia(media); err != nil {
-			return handleError(c, fmt.Errorf("failed to update media: %w", err))
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Return success message
@@ -284,13 +293,13 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
 		if err != nil {
-			return handleError(c, err)
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return handleErrorWithStatus(c, fmt.Errorf("chapter not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
-			return handleErrorWithStatus(c, fmt.Errorf("chapter file not found"), fiber.StatusNotFound)
+			return sendNotFoundError(c, ErrChapterFileReadFailed)
 		}
 		chapterPath = filepath.Join(media.Path, chapter.File)
 	} else {
@@ -298,7 +307,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		var err error
 		chapterPath, err = getFirstChapterFilePath(media)
 		if err != nil {
-			return handleError(c, fmt.Errorf("error: %v", err))
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 	}
 
@@ -311,12 +320,12 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Extract crop from image and cache it
 	cachedImageURL, err := utils.ExtractAndCacheImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, models.GetProcessedImageQuality())
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to extract and cache image: %w", err))
+		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
-	cachedPath := filepath.Join(postersDir, fmt.Sprintf("%s.jpg", mangaSlug))
-	if err := utils.GenerateThumbnails(cachedPath, mangaSlug, postersDir, models.GetProcessedImageQuality()); err != nil {
+	fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
+	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, cacheManager.Backend(), models.GetProcessedImageQuality()); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 	}
@@ -324,7 +333,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Update media with new cover art URL
 	media.CoverArtURL = cachedImageURL
 	if err := models.UpdateMedia(media); err != nil {
-		return handleError(c, fmt.Errorf("failed to update media: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Return success message

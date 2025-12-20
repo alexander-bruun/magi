@@ -27,7 +27,7 @@ func HandleBackups(c *fiber.Ctx) error {
 	backups, err := getBackupList()
 	if err != nil {
 		log.Errorf("Failed to get backup list: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrBackupListFailed, err)
 	}
 
 	return HandleView(c, views.Backups(backups))
@@ -38,7 +38,7 @@ func HandleCreateBackup(c *fiber.Ctx) error {
 	backupPath, err := createBackup()
 	if err != nil {
 		log.Errorf("Failed to create backup: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrBackupCreateFailed, err)
 	}
 
 	log.Infof("Backup created successfully: %s", backupPath)
@@ -47,7 +47,7 @@ func HandleCreateBackup(c *fiber.Ctx) error {
 	backups, err := getBackupList()
 	if err != nil {
 		log.Errorf("Failed to get updated backup list: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrBackupListFailed, err)
 	}
 
 	// Return the updated backup list
@@ -76,7 +76,7 @@ func HandleRestoreBackup(c *fiber.Ctx) error {
 	err := restoreBackup(backupPath)
 	if err != nil {
 		log.Errorf("Failed to restore backup: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrBackupRestoreFailed, err)
 	}
 
 	log.Infof("Backup restored successfully from: %s", backupPath)

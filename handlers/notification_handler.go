@@ -18,7 +18,7 @@ func HandleGetNotifications(c *fiber.Ctx) error {
 
 	notifications, err := models.GetUserNotifications(userName, unreadOnly)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -35,7 +35,7 @@ func HandleGetUnreadCount(c *fiber.Ctx) error {
 
 	count, err := models.GetUnreadNotificationCount(userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -57,7 +57,7 @@ func HandleMarkNotificationRead(c *fiber.Ctx) error {
 	}
 
 	if err := models.MarkNotificationAsRead(notificationID, userName); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -73,7 +73,7 @@ func HandleMarkAllNotificationsRead(c *fiber.Ctx) error {
 	}
 
 	if err := models.MarkAllNotificationsAsRead(userName); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -95,7 +95,7 @@ func HandleDeleteNotification(c *fiber.Ctx) error {
 	}
 
 	if err := models.DeleteNotification(notificationID, userName); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -111,7 +111,7 @@ func HandleClearReadNotifications(c *fiber.Ctx) error {
 	}
 
 	if err := models.ClearReadNotifications(userName); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{

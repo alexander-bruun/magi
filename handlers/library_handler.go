@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -57,20 +56,6 @@ func validateLibraryFormData(formData LibraryFormData) error {
 	return nil
 }
 
-// sendValidationError sends a validation error via HX-Trigger with showNotification
-func sendValidationError(c *fiber.Ctx, message string) error {
-	errorResponse := map[string]interface{}{
-		"showNotification": map[string]string{
-			"message": message,
-			"status":  "destructive",
-		},
-	}
-	jsonBytes, _ := json.Marshal(errorResponse)
-	c.Set("HX-Trigger", string(jsonBytes))
-	return c.Status(fiber.StatusUnprocessableEntity).SendString("")
-}
-
-
 // CreateLibrary creates a new library and returns all libraries
 func CreateLibrary(library models.Library) ([]models.Library, error) {
 	if err := models.CreateLibrary(library); err != nil {
@@ -105,7 +90,7 @@ func renderLibraryTable(libraries []models.Library) (string, error) {
 }
 
 func setCommonHeaders(c *fiber.Ctx) {
-	c.Response().Header.Set("HX-Trigger", "reset-form")
+	triggerCustomNotification(c, "reset-form", map[string]interface{}{})
 	c.Response().Header.Set("Content-Type", "text/html")
 }
 
@@ -113,7 +98,7 @@ func setCommonHeaders(c *fiber.Ctx) {
 func HandleCreateLibrary(c *fiber.Ctx) error {
 	var formData LibraryFormData
 	if err := c.BodyParser(&formData); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Validate the form data
@@ -138,14 +123,15 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 
 	libraries, err := CreateLibrary(library)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrLibraryCreateFailed, err)
 	}
 
 	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
+	triggerNotification(c, "Library created successfully", "success")
 	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
@@ -167,7 +153,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	// Immediately return the updated table without the deleted library
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Filter out the library being deleted from the response
@@ -180,9 +166,10 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 
 	tableContent, err := renderLibraryTable(filteredLibraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
+	triggerNotification(c, "Library deleted successfully", "success")
 	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
@@ -191,7 +178,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 func HandleUpdateLibrary(c *fiber.Ctx) error {
 	var formData LibraryFormData
 	if err := c.BodyParser(&formData); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Validate the form data
@@ -218,19 +205,23 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	log.Infof("Updating library: %s", library.Slug)
 
 	if err := models.UpdateLibrary(&library); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrLibraryUpdateFailed, err)
 	}
 
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
+	triggerCustomNotification(c, "showNotification", map[string]interface{}{
+		"message": "Library updated successfully",
+		"status":  "success",
+	})
 	setCommonHeaders(c)
 	return c.SendString(tableContent)
 }
@@ -239,15 +230,15 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 func HandleEditLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
+		return sendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return c.Status(fiber.StatusNotFound).SendString("Library not found")
+		return sendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	var buf bytes.Buffer
@@ -264,15 +255,15 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 func HandleScanLibrary(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
+		return sendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return c.Status(fiber.StatusNotFound).SendString("Library not found")
+		return sendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	// Create a temporary Indexer for this library and run the job so we
@@ -280,7 +271,7 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	idx := scheduler.NewIndexer(*library)
 	// RunIndexingJob will process all folders for the library.
 	if ran := idx.RunIndexingJob(); !ran {
-		c.Set("HX-Trigger", `{"showNotification": {"message": "Indexing already in progress for this library", "status": "destructive"}}`)
+		triggerNotification(c, "Indexing already in progress for this library", "warning")
 		return c.SendString("")
 	}
 

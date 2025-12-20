@@ -304,7 +304,25 @@ func HandleScraperLogsWebSocketUpgrade(c *fiber.Ctx) error {
 
 		// Upgrade to WebSocket with the extracted script ID
 		return websocket.New(func(conn *websocket.Conn) {
-			scheduler.HandleLogsWebSocket(conn, id)
+			scheduler.HandleLogsWebSocket(conn, "scraper_"+strconv.FormatInt(id, 10))
+		})(c)
+	}
+	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
+}
+
+// HandleIndexerLogsWebSocketUpgrade upgrades the connection to WebSocket and extracts the library slug
+func HandleIndexerLogsWebSocketUpgrade(c *fiber.Ctx) error {
+	// Check if this is a WebSocket upgrade request
+	if websocket.IsWebSocketUpgrade(c) {
+		// Extract library slug from route parameter
+		librarySlug := c.Params("slug")
+		if librarySlug == "" {
+			return c.Status(fiber.StatusBadRequest).SendString("library slug is required")
+		}
+
+		// Upgrade to WebSocket with the extracted library slug
+		return websocket.New(func(conn *websocket.Conn) {
+			scheduler.HandleLogsWebSocket(conn, "indexer_"+librarySlug)
 		})(c)
 	}
 	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")

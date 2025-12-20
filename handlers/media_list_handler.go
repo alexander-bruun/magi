@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/url"
 	"slices"
@@ -108,7 +107,7 @@ func HandleMedias(c *fiber.Ctx) error {
 
 	data, err := GetMediaListData(params, userName)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If HTMX request targeting the listing results container, render just the listing fragment
@@ -156,24 +155,24 @@ func HandleMedia(c *fiber.Ctx) error {
 	slug := c.Params("media")
 	media, err := models.GetMedia(slug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if media == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("media not found or access restricted based on content rating settings"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Check library access permission
 	hasAccess, err := UserHasLibraryAccess(c, media.LibrarySlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if !hasAccess {
 		if IsHTMXRequest(c) {
-			c.Set("HX-Trigger", `{"showNotification": {"message": "Access denied: you don't have permission to view this media", "status": "destructive"}}`)
-			c.Set("HX-Redirect", "/")
-			return c.SendString("")
+			triggerNotification(c, "Access denied: you don't have permission to view this media", "destructive")
+			// Return 204 No Content to prevent navigation/swap but show notification
+			return c.Status(fiber.StatusNoContent).SendString("")
 		}
-		return handleErrorWithStatus(c, fmt.Errorf("access denied: you don't have permission to view this media"), fiber.StatusForbidden)
+		return sendForbiddenError(c, ErrForbidden)
 	}
 
 	cfg, err := models.GetAppConfig()
@@ -183,7 +182,7 @@ func HandleMedia(c *fiber.Ctx) error {
 
 	chapters, err := models.GetChaptersByMediaSlug(slug, 1000, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Precompute first/last chapter slugs before reversing
@@ -253,15 +252,22 @@ func HandleMedia(c *fiber.Ctx) error {
 		reviews = []models.Review{} // Initialize empty slice on error
 	}
 	
+	// Check if media is highlighted
+	isHighlighted, err := models.IsMediaHighlighted(slug)
+	if err != nil {
+		log.Errorf("Error checking if media %s is highlighted: %v", slug, err)
+		isHighlighted = false
+	}
+	
 	if IsHTMXRequest(c) && c.Query("reverse") != "" {
 		return HandleView(c, views.MediaChaptersSection(*media, chapters, reverse, lastReadChapterSlug, cfg.PremiumEarlyAccessDuration, userRole))
 	}
 	
 	if IsHTMXRequest(c) {
-		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections))
+		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
 	}
 	
-	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections))
+	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
 }// HandleMediaSearch returns search results for the quick-search panel.
 func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")
@@ -273,7 +279,7 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 	// Get accessible libraries for the current user
 	accessibleLibraries, err := GetUserAccessibleLibraries(c)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	opts := models.SearchOptions{
@@ -286,7 +292,7 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 	}
 	media, _, err := models.SearchMediasWithOptions(opts)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if len(media) == 0 {
@@ -309,7 +315,7 @@ func HandleTags(c *fiber.Ctx) error {
 func HandleTagsFragment(c *fiber.Ctx) error {
 	tags, err := models.GetAllTags()
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Determine currently selected tags from the query (support repeated and comma-separated)

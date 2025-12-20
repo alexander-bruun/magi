@@ -246,13 +246,13 @@ func ComicHandler(c *fiber.Ctx) error {
 	token := c.Query("token")
 	
 	if token == "" {
-		return handleErrorWithStatus(c, fmt.Errorf("token parameter is required"), fiber.StatusBadRequest)
+		return sendBadRequestError(c, ErrComicTokenRequired)
 	}
 
 	// Validate the token
 	tokenInfo, err := utils.ValidateImageToken(token)
 	if err != nil {
-		return handleErrorWithStatus(c, fmt.Errorf("invalid or expired token: %w", err), fiber.StatusForbidden)
+		return sendForbiddenError(c, ErrComicTokenInvalid)
 	}
 
 	// Consume the token after the response is sent
@@ -261,10 +261,10 @@ func ComicHandler(c *fiber.Ctx) error {
 	// Get image serve data from service
 	imageData, err := GetImageServeData(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if imageData == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("media or chapter not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrComicNotFound)
 	}
 
 	// If the path is a directory, serve images from within it

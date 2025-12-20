@@ -16,6 +16,20 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
+// MetadataFormData represents form data for editing media metadata
+type MetadataFormData struct {
+	Name             string `json:"name"`
+	Author           string `json:"author"`
+	Description      string `json:"description"`
+	Year             string `json:"year"`
+	OriginalLanguage string `json:"original_language"`
+	Type             string `json:"manga_type"`
+	Status           string `json:"status"`
+	ContentRating    string `json:"content_rating"`
+	Tags             string `json:"tags"`
+	CoverURL         string `json:"cover_url"`
+}
+
 // HandleUpdateMetadataMedia displays search results for updating a local media's metadata.
 func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
@@ -24,17 +38,17 @@ func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
 	// Get the configured metadata provider
 	config, err := models.GetAppConfig()
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to get app config: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	provider, err := metadata.GetProviderFromConfig(&config)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to get metadata provider: %w", err))
+		return sendInternalServerError(c, ErrMetadataProviderError, err)
 	}
 
 	// Search using the provider
 	results, err := provider.Search(search)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrMetadataSearchFailed, err)
 	}
 
 	// Sort results by similarity score (highest first)
@@ -50,31 +64,31 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	metadataID := c.Query("id")
 	mangaSlug := c.Query("slug")
 	if mangaSlug == "" {
-		return handleError(c, fmt.Errorf("media slug can't be empty"))
+		return sendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMedia(mangaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("media not found or access restricted"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Get the configured metadata provider
 	config, err := models.GetAppConfig()
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to get app config: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	provider, err := metadata.GetProviderFromConfig(&config)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to get metadata provider: %w", err))
+		return sendInternalServerError(c, ErrMetadataProviderError, err)
 	}
 
 	// Fetch metadata using the provider
 	meta, err := provider.GetMetadata(metadataID)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to fetch metadata: %w", err))
+		return sendInternalServerError(c, ErrMetadataSyncFailed, err)
 	}
 
 	// Get cover URL and download/cache it
@@ -113,9 +127,10 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	}
 
 	if err := models.UpdateMedia(existingMedia); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
 	}
 
+	triggerNotification(c, "Metadata updated successfully", "success")
 	redirectURL := fmt.Sprintf("/series/%s", existingMedia.Slug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)
@@ -125,78 +140,73 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 func HandleManualEditMetadata(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return handleError(c, fmt.Errorf("media slug can't be empty"))
+		return sendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return handleError(c, fmt.Errorf("media not found"))
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
-	// Parse form values
-	name := c.FormValue("name")
-	author := c.FormValue("author")
-	description := c.FormValue("description")
-	year := c.FormValue("year")
-	originalLanguage := c.FormValue("original_language")
-	mangaType := c.FormValue("manga_type")
-	status := c.FormValue("status")
-	contentRating := c.FormValue("content_rating")
-	tagsInput := c.FormValue("tags")
-	coverURL := c.FormValue("cover_url")
+	// Parse form data
+	var formData MetadataFormData
+	if err := c.BodyParser(&formData); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
 
 	// Update fields
-	existingMedia.Name = name
-	existingMedia.Author = author
-	existingMedia.Description = description
-	if year != "" {
-		if yearInt, err := strconv.Atoi(year); err == nil {
+	existingMedia.Name = formData.Name
+	existingMedia.Author = formData.Author
+	existingMedia.Description = formData.Description
+	if formData.Year != "" {
+		if yearInt, err := strconv.Atoi(formData.Year); err == nil {
 			existingMedia.Year = yearInt
 		}
 	} else {
 		existingMedia.Year = 0
 	}
-	existingMedia.OriginalLanguage = originalLanguage
-	if mangaType != "" {
-		existingMedia.Type = mangaType
+	existingMedia.OriginalLanguage = formData.OriginalLanguage
+	if formData.Type != "" {
+		existingMedia.Type = formData.Type
 	}
-	if status != "" {
-		existingMedia.Status = status
+	if formData.Status != "" {
+		existingMedia.Status = formData.Status
 	}
-	if contentRating != "" {
-		existingMedia.ContentRating = contentRating
+	if formData.ContentRating != "" {
+		existingMedia.ContentRating = formData.ContentRating
 	}
 
 	// Process tags (comma-separated list)
 	var tags []string
-	for _, tag := range strings.Split(tagsInput, ",") {
+	for _, tag := range strings.Split(formData.Tags, ",") {
 		trimmed := strings.TrimSpace(tag)
 		if trimmed != "" {
 			tags = append(tags, trimmed)
 		}
 	}
 	if err := models.SetTagsForMedia(existingMedia.Slug, tags); err != nil {
-		return handleError(c, fmt.Errorf("failed to update tags: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Process cover art URL (download and cache)
-	if coverURL != "" {
-		cachedImageURL, err := scheduler.DownloadAndCacheImage(existingMedia.Slug, coverURL)
+	if formData.CoverURL != "" {
+		cachedImageURL, err := scheduler.DownloadAndCacheImage(existingMedia.Slug, formData.CoverURL)
 		if err != nil {
-			return handleError(c, fmt.Errorf("failed to download and cache cover art: %w", err))
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		existingMedia.CoverArtURL = cachedImageURL
 	}
 
 	// Update media in database
 	if err := models.UpdateMedia(existingMedia); err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
 	}
 
 	// Return success response for HTMX
+	triggerNotification(c, "Metadata updated successfully", "success")
 	redirectURL := fmt.Sprintf("/series/%s", existingMedia.Slug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)
@@ -206,21 +216,21 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 func HandleReindexChapters(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return handleError(c, fmt.Errorf("media slug can't be empty"))
+		return sendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("media not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
 	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If new chapters were added, notify users
@@ -237,6 +247,11 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 	}
 
 	// Return success response for HTMX
+	message := "Chapters re-indexed successfully"
+	if added > 0 || deleted > 0 {
+		message = fmt.Sprintf("Chapters re-indexed: %d added, %d removed", added, deleted)
+	}
+	triggerNotification(c, message, "success")
 	redirectURL := fmt.Sprintf("/series/%s", existingMedia.Slug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)
@@ -246,27 +261,27 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 func HandleRefreshMetadata(c *fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return handleError(c, fmt.Errorf("media slug can't be empty"))
+		return sendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return handleErrorWithStatus(c, fmt.Errorf("media not found"), fiber.StatusNotFound)
+		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Get the configured metadata provider
 	config, err := models.GetAppConfig()
 	if err != nil {
 		log.Warnf("Failed to get app config: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	provider, err := metadata.GetProviderFromConfig(&config)
 	if err != nil {
 		log.Warnf("Failed to get metadata provider: %v", err)
-		return handleError(c, err)
+		return sendInternalServerError(c, ErrMetadataProviderError, err)
 	}
 
 	// Fetch fresh metadata from the configured provider
@@ -326,7 +341,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 
 		// Update media metadata without changing created_at
 		if err := models.UpdateMediaMetadata(existingMedia); err != nil {
-			return handleError(c, fmt.Errorf("failed to update media metadata: %w", err))
+			return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
 		}
 	} else {
 		// No metadata match - update with local metadata
@@ -353,14 +368,14 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		
 		// Update media metadata without changing created_at
 		if err := models.UpdateMediaMetadata(existingMedia); err != nil {
-			return handleError(c, fmt.Errorf("failed to update media metadata: %w", err))
+			return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
 		}
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
 	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
 	if err != nil {
-		return handleError(c, fmt.Errorf("failed to index chapters: %w", err))
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If new chapters were added, notify users
@@ -377,6 +392,11 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 	}
 
 	// Return success response for HTMX
+	message := "Metadata refreshed successfully"
+	if added > 0 || deleted > 0 {
+		message = fmt.Sprintf("Metadata refreshed: %d chapters added, %d removed", added, deleted)
+	}
+	triggerNotification(c, message, "success")
 	redirectURL := fmt.Sprintf("/series/%s", existingMedia.Slug)
 	c.Set("HX-Redirect", redirectURL)
 	return c.SendStatus(fiber.StatusOK)

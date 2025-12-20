@@ -37,9 +37,7 @@ func HandleGetComments(c *fiber.Ctx) error {
 	}
 	
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve comments",
-		})
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return c.JSON(comments)
@@ -62,16 +60,12 @@ func HandleCreateComment(c *fiber.Ctx) error {
 	// Get user from context (set by auth middleware)
 	userName, ok := c.Locals("user_name").(string)
 	if !ok || userName == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	var req struct {
@@ -79,15 +73,11 @@ func HandleCreateComment(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
 	if req.Content == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Content is required",
-		})
+		return sendBadRequestError(c, ErrEmptyComment)
 	}
 
 	comment := models.Comment{
@@ -100,9 +90,7 @@ func HandleCreateComment(c *fiber.Ctx) error {
 
 	err = models.CreateComment(comment)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create comment",
-		})
+		return sendInternalServerError(c, ErrCommentCreateFailed, err)
 	}
 
 	// If HTMX request, return updated comments section
@@ -120,7 +108,7 @@ func HandleCreateComment(c *fiber.Ctx) error {
 		}
 		
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error loading comments")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Get media and chapter for the template
@@ -130,17 +118,17 @@ func HandleCreateComment(c *fiber.Ctx) error {
 			// For chapter comments, get both media and chapter
 			chapter, err = models.GetChapter(mediaSlug, targetSlug)
 			if err != nil || chapter == nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Error loading chapter")
+				return sendInternalServerError(c, ErrInternalServerError, err)
 			}
 			media, err = models.GetMedia(mediaSlug)
 			if err != nil || media == nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Error loading media")
+				return sendInternalServerError(c, ErrInternalServerError, err)
 			}
 		} else {
 			// For media comments, get media
 			media, err = models.GetMedia(targetSlug)
 			if err != nil || media == nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Error loading media")
+				return sendInternalServerError(c, ErrInternalServerError, err)
 			}
 			chapter = &models.Chapter{} // Empty chapter for media comments
 		}
@@ -149,10 +137,14 @@ func HandleCreateComment(c *fiber.Ctx) error {
 		var buf bytes.Buffer
 		err = views.ChapterCommentsSection(*media, *chapter, comments, user.Role, user.Username).Render(context.Background(), &buf)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error rendering comments section")
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 		html := buf.String()
 		wrapped := fmt.Sprintf(`<div id="comments-section" class="mt-8">%s</div>`, html)
+		
+		// Add success notification for HTMX requests
+		triggerNotification(c, "Comment posted successfully", "success")
+		
 		return c.SendString(wrapped)
 	}
 
@@ -166,35 +158,25 @@ func HandleDeleteComment(c *fiber.Ctx) error {
 	commentIDStr := c.Params("id")
 	commentID, err := strconv.Atoi(commentIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid comment ID",
-		})
+		return sendBadRequestError(c, "Invalid comment ID")
 	}
 
 	userName, ok := c.Locals("user_name").(string)
 	if !ok || userName == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
-		})
+		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
 	err = models.DeleteComment(commentID, user.Username)
 	if err != nil {
 		if err.Error() == "comment not found or not authorized" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Not authorized to delete this comment",
-			})
+			return sendForbiddenError(c, "You don't have permission to delete this comment")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete comment",
-		})
+		return sendInternalServerError(c, ErrCommentDeleteFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
