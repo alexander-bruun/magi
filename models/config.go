@@ -8,46 +8,47 @@ import (
 
 // AppConfig holds global application settings (single-row table app_config id=1)
 type AppConfig struct {
-    AllowRegistration  bool   `json:"allow_registration"`
-    MaxUsers           int64  `json:"max_users"` // 0 means unlimited
-    ContentRatingLimit int    `json:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-    MetadataProvider   string `json:"metadata_provider"` // mangadex, mal, anilist, jikan, mangaupdates, kitsu
-    MALApiToken        string `json:"mal_api_token"` // MyAnimeList API token
-    AniListApiToken    string `json:"anilist_api_token"` // AniList API token (optional)
+    AllowRegistration  bool   `json:"allow_registration" form:"allow_registration"`
+    MaxUsers           int64  `json:"max_users" form:"max_users"` // 0 means unlimited
+    ContentRatingLimit int    `json:"content_rating_limit" form:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    MetadataProvider   string `json:"metadata_provider" form:"metadata_provider"` // mangadex, mal, anilist, jikan, mangaupdates, kitsu
+    MALApiToken        string `json:"mal_api_token" form:"mal_api_token"` // MyAnimeList API token
+    AniListApiToken    string `json:"anilist_api_token" form:"anilist_api_token"` // AniList API token (optional)
+    ImageAccessSecret  string `json:"image_access_secret" form:"image_access_secret"`
     
     // Rate limiting settings
-    RateLimitEnabled     bool `json:"rate_limit_enabled"`
-    RateLimitRequests    int  `json:"rate_limit_requests"` // requests per window
-    RateLimitWindow      int  `json:"rate_limit_window"` // window in seconds
+    RateLimitEnabled     bool `json:"rate_limit_enabled" form:"rate_limit_enabled"`
+    RateLimitRequests    int  `json:"rate_limit_requests" form:"rate_limit_requests"` // requests per window
+    RateLimitWindow      int  `json:"rate_limit_window" form:"rate_limit_window"` // window in seconds
     
     // Bot detection settings
-    BotDetectionEnabled      bool `json:"bot_detection_enabled"`
-    BotSeriesThreshold       int  `json:"bot_series_threshold"` // max series accesses per time window
-    BotChapterThreshold      int  `json:"bot_chapter_threshold"` // max chapter accesses per time window
-    BotDetectionWindow       int  `json:"bot_detection_window"` // time window in seconds for bot detection
+    BotDetectionEnabled      bool `json:"bot_detection_enabled" form:"bot_detection_enabled"`
+    BotSeriesThreshold       int  `json:"bot_series_threshold" form:"bot_series_threshold"` // max series accesses per time window
+    BotChapterThreshold      int  `json:"bot_chapter_threshold" form:"bot_chapter_threshold"` // max chapter accesses per time window
+    BotDetectionWindow       int  `json:"bot_detection_window" form:"bot_detection_window"` // time window in seconds for bot detection
     
     // Compression quality settings per role
-    ReaderCompressionQuality    int `json:"reader_compression_quality"` // JPEG quality for reader role (0-100)
-    ModeratorCompressionQuality int `json:"moderator_compression_quality"` // JPEG quality for moderator role (0-100)
-    AdminCompressionQuality     int `json:"admin_compression_quality"` // JPEG quality for admin role (0-100)
-    PremiumCompressionQuality   int `json:"premium_compression_quality"` // JPEG quality for premium role (0-100)
-    AnonymousCompressionQuality int `json:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
-    ProcessedImageQuality       int `json:"processed_image_quality"` // JPEG quality for processed images (thumbnails, covers) (0-100)
+    ReaderCompressionQuality    int `json:"reader_compression_quality" form:"reader_compression_quality"` // JPEG quality for reader role (0-100)
+    ModeratorCompressionQuality int `json:"moderator_compression_quality" form:"moderator_compression_quality"` // JPEG quality for moderator role (0-100)
+    AdminCompressionQuality     int `json:"admin_compression_quality" form:"admin_compression_quality"` // JPEG quality for admin role (0-100)
+    PremiumCompressionQuality   int `json:"premium_compression_quality" form:"premium_compression_quality"` // JPEG quality for premium role (0-100)
+    AnonymousCompressionQuality int `json:"anonymous_compression_quality" form:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
+    ProcessedImageQuality       int `json:"processed_image_quality" form:"processed_image_quality"` // JPEG quality for processed images (thumbnails, covers) (0-100)
     
     // Image token settings
-    ImageTokenValidityMinutes int `json:"image_token_validity_minutes"` // validity time for image access tokens in minutes
+    ImageTokenValidityMinutes int `json:"image_token_validity_minutes" form:"image_token_validity_minutes"` // validity time for image access tokens in minutes
     
     // Premium early access settings
-    PremiumEarlyAccessDuration int  `json:"premium_early_access_duration"` // duration in seconds that premium users can access chapters early
-    MaxPremiumChapters         int  `json:"max_premium_chapters"` // maximum number of chapters that can be premium (latest chapters)
-    PremiumCooldownScalingEnabled bool `json:"premium_cooldown_scaling_enabled"` // whether to scale cooldown based on chapter position
+    PremiumEarlyAccessDuration int  `json:"premium_early_access_duration" form:"premium_early_access_duration"` // duration in seconds that premium users can access chapters early
+    MaxPremiumChapters         int  `json:"max_premium_chapters" form:"max_premium_chapters"` // maximum number of chapters that can be premium (latest chapters)
+    PremiumCooldownScalingEnabled bool `json:"premium_cooldown_scaling_enabled" form:"premium_cooldown_scaling_enabled"` // whether to scale cooldown based on chapter position
     
     // Maintenance mode settings
-    MaintenanceEnabled bool   `json:"maintenance_enabled"` // whether maintenance mode is active
-    MaintenanceMessage string `json:"maintenance_message"` // custom message to display during maintenance
+    MaintenanceEnabled bool   `json:"maintenance_enabled" form:"maintenance_enabled"` // whether maintenance mode is active
+    MaintenanceMessage string `json:"maintenance_message" form:"maintenance_message"` // custom message to display during maintenance
     
     // New media badge settings
-    NewBadgeDuration int `json:"new_badge_duration"` // duration in hours that media is marked as NEW after update
+    NewBadgeDuration int `json:"new_badge_duration" form:"new_badge_duration"` // duration in hours that media is marked as NEW after update
 }
 
 // Implement metadata.ConfigProvider interface

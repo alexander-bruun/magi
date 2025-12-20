@@ -25,7 +25,7 @@ templ Config(cfg models.AppConfig) {
 
 templ ConfigForm() {
     {{ cfg, _ := models.GetAppConfig() }}
-    <form hx-post="/admin/config" hx-target="this" hx-trigger="submit" hx-swap="outerHTML" hx-ext="form-json" class="space-y-6">
+    <form hx-post="/admin/config" hx-target="this" hx-trigger="submit" hx-swap="outerHTML" class="space-y-6">
         <!-- General Settings Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-4"><span>General Settings</span></h4>

@@ -92,7 +92,7 @@ func ConfigForm() templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		cfg, _ := models.GetAppConfig()
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form hx-post=\"/admin/config\" hx-target=\"this\" hx-trigger=\"submit\" hx-swap=\"outerHTML\" hx-ext=\"form-json\" class=\"space-y-6\"><!-- General Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>General Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form hx-post=\"/admin/config\" hx-target=\"this\" hx-trigger=\"submit\" hx-swap=\"outerHTML\" class=\"space-y-6\"><!-- General Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>General Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"allow_registration\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
