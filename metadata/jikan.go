@@ -16,11 +16,17 @@ const jikanBaseURL = "https://api.jikan.moe/v4"
 type JikanProvider struct {
 	apiToken string // Not used, but kept for interface compatibility
 	config   ConfigProvider
+	client   *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL  string       // Base URL for API calls (configurable for testing)
 }
 
 // NewJikanProvider creates a new Jikan API metadata provider
 func NewJikanProvider(apiToken string) Provider {
-	return &JikanProvider{apiToken: apiToken}
+	return &JikanProvider{
+		apiToken: apiToken,
+		client:   &http.Client{},
+		baseURL:  jikanBaseURL,
+	}
 }
 
 func init() {
@@ -53,9 +59,9 @@ func (j *JikanProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 
 func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&order_by=popularity", jikanBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&order_by=popularity", j.baseURL, titleEncoded)
 
-	resp, err := http.Get(searchURL)
+	resp, err := j.client.Get(searchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search Jikan: %w", err)
 	}
@@ -124,9 +130,9 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/series/%s/full", jikanBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/series/%s/full", j.baseURL, id)
 
-	resp, err := http.Get(fetchURL)
+	resp, err := j.client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Jikan metadata: %w", err)
 	}

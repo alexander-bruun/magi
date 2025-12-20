@@ -18,11 +18,17 @@ const kitsuBaseURL = "https://kitsu.io/api/edge"
 type KitsuProvider struct {
 	apiToken string
 	config   ConfigProvider
+	client   *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL  string       // Base URL for API calls (configurable for testing)
 }
 
 // NewKitsuProvider creates a new Kitsu metadata provider
 func NewKitsuProvider(apiToken string) Provider {
-	return &KitsuProvider{apiToken: apiToken}
+	return &KitsuProvider{
+		apiToken: apiToken,
+		client:   &http.Client{},
+		baseURL:  kitsuBaseURL,
+	}
 }
 
 func init() {
@@ -55,9 +61,9 @@ func (k *KitsuProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 
 func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/manga?filter[text]=%s&page[limit]=50", kitsuBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/manga?filter[text]=%s&page[limit]=50", k.baseURL, titleEncoded)
 
-	resp, err := http.Get(searchURL)
+	resp, err := k.client.Get(searchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search Kitsu: %w", err)
 	}
@@ -120,9 +126,9 @@ func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (k *KitsuProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s", kitsuBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/manga/%s", k.baseURL, id)
 
-	resp, err := http.Get(fetchURL)
+	resp, err := k.client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Kitsu metadata: %w", err)
 	}

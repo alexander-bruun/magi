@@ -17,11 +17,13 @@ const anilistBaseURL = "https://graphql.anilist.co"
 type AniListProvider struct {
 	apiToken string
 	config   ConfigProvider
+	client   *http.Client
+	baseURL  string
 }
 
 // NewAniListProvider creates a new AniList metadata provider
 func NewAniListProvider(apiToken string) Provider {
-	return &AniListProvider{apiToken: apiToken}
+	return &AniListProvider{apiToken: apiToken, baseURL: anilistBaseURL}
 }
 
 func init() {
@@ -254,7 +256,7 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]interf
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", anilistBaseURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", a.baseURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AniList request: %w", err)
 	}
@@ -266,7 +268,10 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]interf
 		req.Header.Set("Authorization", "Bearer "+a.apiToken)
 	}
 
-	client := &http.Client{}
+	client := a.client
+	if client == nil {
+		client = &http.Client{}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query AniList: %w", err)

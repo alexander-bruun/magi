@@ -17,11 +17,17 @@ const mangaupdatesBaseURL = "https://api.mangaupdates.com/v1"
 type MangaUpdatesProvider struct {
 	apiToken string
 	config   ConfigProvider
+	client   *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL  string       // Base URL for API calls (configurable for testing)
 }
 
 // NewMangaUpdatesProvider creates a new MangaUpdates metadata provider
 func NewMangaUpdatesProvider(apiToken string) Provider {
-	return &MangaUpdatesProvider{apiToken: apiToken}
+	return &MangaUpdatesProvider{
+		apiToken: apiToken,
+		client:   &http.Client{},
+		baseURL:  mangaupdatesBaseURL,
+	}
 }
 
 func init() {
@@ -53,7 +59,7 @@ func (m *MangaUpdatesProvider) GetCoverImageURL(metadata *MediaMetadata) string 
 }
 
 func (m *MangaUpdatesProvider) Search(title string) ([]SearchResult, error) {
-	searchURL := fmt.Sprintf("%s/series/search", mangaupdatesBaseURL)
+	searchURL := fmt.Sprintf("%s/series/search", m.baseURL)
 
 	searchBody := map[string]interface{}{
 		"search":  title,
@@ -72,8 +78,7 @@ func (m *MangaUpdatesProvider) Search(title string) ([]SearchResult, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := m.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search MangaUpdates: %w", err)
 	}
@@ -139,9 +144,9 @@ func (m *MangaUpdatesProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (m *MangaUpdatesProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/series/%s", mangaupdatesBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/series/%s", m.baseURL, id)
 
-	resp, err := http.Get(fetchURL)
+	resp, err := m.client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch MangaUpdates metadata: %w", err)
 	}

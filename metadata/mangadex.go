@@ -17,11 +17,17 @@ const mangadexBaseURL = "https://api.mangadex.org"
 type MangaDexProvider struct {
 	apiToken string
 	config   ConfigProvider
+	client   *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL  string       // Base URL for API calls (configurable for testing)
 }
 
 // NewMangaDexProvider creates a new MangaDex metadata provider
 func NewMangaDexProvider(apiToken string) Provider {
-	return &MangaDexProvider{apiToken: apiToken}
+	return &MangaDexProvider{
+		apiToken: apiToken,
+		client:   &http.Client{},
+		baseURL:  mangadexBaseURL,
+	}
 }
 
 func init() {
@@ -82,9 +88,9 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 	}
 	
 	contentRatingQuery := strings.Join(contentRatingParams, "&")
-	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", mangadexBaseURL, titleEncoded, contentRatingQuery)
+	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", m.baseURL, titleEncoded, contentRatingQuery)
 
-	resp, err := http.Get(searchURL)
+	resp, err := m.client.Get(searchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search MangaDex: %w", err)
 	}
@@ -153,9 +159,9 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (m *MangaDexProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", mangadexBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", m.baseURL, id)
 
-	resp, err := http.Get(fetchURL)
+	resp, err := m.client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch MangaDex metadata: %w", err)
 	}

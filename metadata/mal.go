@@ -16,11 +16,17 @@ const malBaseURL = "https://api.myanimelist.net/v2"
 type MALProvider struct {
 	apiToken string
 	config   ConfigProvider
+	client   *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL  string       // Base URL for API calls (configurable for testing)
 }
 
 // NewMALProvider creates a new MyAnimeList metadata provider
 func NewMALProvider(apiToken string) Provider {
-	return &MALProvider{apiToken: apiToken}
+	return &MALProvider{
+		apiToken: apiToken,
+		client:   &http.Client{},
+		baseURL:  malBaseURL,
+	}
 }
 
 func init() {
@@ -57,7 +63,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles,genres", malBaseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles,genres", m.baseURL, titleEncoded)
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
@@ -66,8 +72,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 
 	req.Header.Set("X-MAL-CLIENT-ID", m.apiToken)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := m.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search MAL: %w", err)
 	}
@@ -137,7 +142,7 @@ func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
 		return nil, ErrAuthRequired
 	}
 
-	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters", malBaseURL, id)
+	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters", m.baseURL, id)
 
 	req, err := http.NewRequest("GET", fetchURL, nil)
 	if err != nil {
@@ -146,8 +151,7 @@ func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
 
 	req.Header.Set("X-MAL-CLIENT-ID", m.apiToken)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := m.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch MAL metadata: %w", err)
 	}
