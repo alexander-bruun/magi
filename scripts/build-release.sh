@@ -86,7 +86,6 @@ if [ "$version" != "develop" ]; then
     if command -v node &> /dev/null && command -v npm &> /dev/null; then
         mkdir -p assets/js/obfuscated
         npx --yes javascript-obfuscator assets/js/magi.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/magi.js || echo "Failed to obfuscate magi.js"
-        npx --yes javascript-obfuscator assets/js/notifications.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/notifications.js || echo "Failed to obfuscate notifications.js"
         npx --yes javascript-obfuscator assets/js/reader.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/reader.js || echo "Failed to obfuscate reader.js"
         mv assets/js/obfuscated/* assets/js/ 2>/dev/null || true
         rm -rf assets/js/obfuscated

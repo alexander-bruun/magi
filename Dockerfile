@@ -48,7 +48,7 @@ RUN case "$TARGETPLATFORM" in \
 
 # Build the Go app
 RUN . /tmp/zig_target && \
-    CGO_ENABLED=1 CC="zig cc -target $ZIG_TARGET" go build --tags extended -ldflags="-X 'main.Version=${VERSION}'" -o magi ./main.go
+    CGO_ENABLED=1 CC="zig cc -target $ZIG_TARGET" GOARCH=$TARGETARCH GOOS=$TARGETOS go build --tags extended -ldflags="-X 'main.Version=${VERSION}'" -o magi ./main.go
 
 # Start a new stage from scratch
 FROM --platform=$BUILDPLATFORM alpine:3.23.2
