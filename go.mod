@@ -7,7 +7,7 @@ require (
 	github.com/a-h/templ v0.3.960
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.94.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
 	github.com/chai2010/webp v1.4.0
 	github.com/dchest/captcha v1.1.0
 	github.com/gofiber/adaptor/v2 v2.2.1
