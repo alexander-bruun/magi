@@ -1,5 +1,5 @@
-//go:build extended
-// +build extended
+//go:build !extended
+// +build !extended
 
 package utils
 
@@ -10,11 +10,10 @@ import (
 	"image/jpeg"
 	"image/png"
 	"strings"
-
-	"github.com/chai2010/webp"
 )
 
 // EncodeImageToBytes encodes an image to bytes in the specified format
+// This is the base version without WebP support
 func EncodeImageToBytes(img image.Image, format string, quality int) ([]byte, error) {
 	var buf bytes.Buffer
 	switch strings.ToLower(format) {
@@ -36,27 +35,13 @@ func EncodeImageToBytes(img image.Image, format string, quality int) ([]byte, er
 			return nil, err
 		}
 	case "webp":
-		// WebP quality is 0-100, lossy
-		webpQuality := float32(quality)
-		if webpQuality < 0 {
-			webpQuality = 0
-		}
-		if webpQuality > 100 {
-			webpQuality = 100
-		}
-		if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
+		// Fallback to PNG for WebP format when WebP is not available
+		if err := png.Encode(&buf, img); err != nil {
 			return nil, err
 		}
 	default:
-		// Unknown format - save as WebP
-		webpQuality := float32(quality)
-		if webpQuality < 0 {
-			webpQuality = 0
-		}
-		if webpQuality > 100 {
-			webpQuality = 100
-		}
-		if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
+		// Unknown format - save as PNG
+		if err := png.Encode(&buf, img); err != nil {
 			return nil, err
 		}
 	}
