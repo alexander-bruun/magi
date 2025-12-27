@@ -1,11 +1,16 @@
 #!/bin/bash
 
+# Exit on any error
+set -e
+
 # List of OS/ARCH combinations to build
 platforms=(
     "windows/amd64"
     "windows/arm64"
     "linux/amd64"
     "linux/arm64"
+    "darwin/amd64"
+    "darwin/arm64"
 )
 
 # Output directory
@@ -29,10 +34,15 @@ build_for_platform() {
     # Determine Zig target
     local zig_target
     case "$os/$arch" in
-        "linux/amd64") zig_target="x86_64-linux-musl" ;;
-        "linux/arm64") zig_target="aarch64-linux-musl" ;;
-        "windows/amd64") zig_target="x86_64-windows-gnu" ;;
-        "windows/arm64") zig_target="aarch64-windows-gnu" ;;
+        linux/amd64) zig_target="x86_64-linux-gnu" ;;
+        linux/arm64) zig_target="aarch64-linux-gnu" ;;
+        windows/amd64) zig_target="x86_64-windows-gnu" ;;
+        windows/arm64) zig_target="aarch64-windows-gnu" ;;
+        darwin/amd64) zig_target="x86_64-macos-none" ;;
+        darwin/arm64) zig_target="aarch64nu" ;;
+        windows/arm64) zig_target="aarch64-windows-gnu" ;;
+        darwin/amd64) zig_target="x86_64-macos-none" ;;
+        darwin/arm64) zig_target="aarch64-macos-none" ;;
         *) echo "Unsupported platform: $os/$arch" && exit 1 ;;
     esac
 
@@ -45,17 +55,18 @@ build_for_platform() {
     fi
 
     # Build the project
-    echo "Building for $os/$arch (${version}) with Zig target $zig_target..."
-    env CGO_ENABLED=1 CC="zig cc -target $zig_target" GOOS=$os GOARCH=$arch go build -ldflags="-X 'main.Version=${version}'" -o "$output_dir/$output_name"
-
-    if [ $? -ne 0 ]; then
-        echo "An error has occurred! Aborting the script execution..."
-        exit 1
+    echo "Building for $os/$arch (${version})..."
+    if [ "$os" == "darwin" ]; then
+        # macOS builds without extended tags (PNG fallback for WebP)
+        env CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -ldflags="-X 'main.Version=${version}'" -o "$output_dir/$output_name"
+    else
+        # Use Zig for cross-compilation with CGO and extended tags for WebP support
+        env CGO_ENABLED=1 CC="zig cc -target $zig_target" GOOS=$os GOARCH=$arch go build --tags extended -ldflags="-X 'main.Version=${version}'" -o "$output_dir/$output_name"
     fi
 
     # Compress and create checksum based on OS
     case "$os" in
-        linux)
+        linux|darwin)
             tar -czvf "$output_dir/${output_name}.tar.gz" -C "$output_dir" "$output_name"
             rm "$output_dir/$output_name"
             create_checksum "$output_dir/${output_name}.tar.gz"
@@ -100,6 +111,7 @@ if [ "$param" == "all" ]; then
         IFS="/" read -r -a split <<< "$platform"
         os="${split[0]}"
         arch="${split[1]}"
+
         build_for_platform "$os" "$arch" "$version"
     done
 else
