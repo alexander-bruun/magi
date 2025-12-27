@@ -222,7 +222,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libwebp-dev
 
       - name: Build binaries
-        run: make go-build PLATFORM="all" VERSION="v${{ needs.semantic.outputs.version }}"
+        run: make build-binaries VERSION="v${{ needs.semantic.outputs.version }}"
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v6
