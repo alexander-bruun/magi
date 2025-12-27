@@ -9,16 +9,8 @@ repo_url: https://github.com/alexander-bruun/magi
 
 nav:
   - Home: index.md
-  - Usage:
-    - Getting Started: usage/getting_started.md
-    - Configuration: usage/configuration.md
-    - Troubleshooting: usage/troubleshooting.md
-  - Installation:
-    - Windows: installation/windows.md
-    - Linux: installation/linux.md
-    - Docker: installation/docker.md
-    - Podman: installation/podman.md
-    - Kubernetes: installation/kubernetes.md
+  - Installation: installation.md
+  - Usage: usage.md
 
 theme:
   name: material
