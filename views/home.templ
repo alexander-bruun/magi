@@ -106,7 +106,115 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 }
 
 templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
-	@TopReadList(media, emptyMessage, title)
+	<div style="overflow-x: auto;">
+		<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap;">
+			<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" style="cursor: pointer;">Today</a></li>
+			<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" style="cursor: pointer;">Week</a></li>
+			<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" style="cursor: pointer;">Month</a></li>
+			<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" style="cursor: pointer;">Year</a></li>
+			<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" style="cursor: pointer;">All Time</a></li>
+		</ul>
+	</div>
+	<div id="top-read-content">
+		@TopReadList(media, emptyMessage, title)
+	</div>
+}
+
+templ TopPopularList(media []models.Media) {
+	if len(media) == 0 {
+		@EmptyState("No media have been indexed yet.")
+	} else {
+		<ul class="top-media-list">
+			for i, m := range media {
+				{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
+				<li class="flex items-center gap-3 py-2">
+					<div class="w-10 h-14 overflow-hidden rounded-sm">
+						<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
+							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
+						</a>
+					</div>
+					<div class="flex-1">
+						<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="font-medium">{ m.Name }</a>
+						<div class="text-xs uk-text-muted">{ m.Author }</div>
+					</div>
+					<div class="flex flex-col items-center">
+						<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+						<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
+							<span class="flex items-center gap-1"><uk-icon icon="Star" stroke-width="2"></uk-icon> { fmt.Sprint(score) }</span>
+						</div>
+					</div>
+				</li>
+			}
+		</ul>
+	}
+}
+
+templ TopPopularFragment(media []models.Media) {
+	@TopPopularList(media)
+}
+
+templ TopPopularFullFragment(media []models.Media, activePeriod string) {
+	<div style="overflow-x: auto;">
+		<ul class="uk-tab" id="top-popular-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;">
+			<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-popular-full?period=today" hx-target="#top-popular-full" style="cursor: pointer;">Today</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-popular-full?period=week" hx-target="#top-popular-full" style="cursor: pointer;">Week</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-popular-full?period=month" hx-target="#top-popular-full" style="cursor: pointer;">Month</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-popular-full?period=year" hx-target="#top-popular-full" style="cursor: pointer;">Year</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-popular-full?period=all" hx-target="#top-popular-full" style="cursor: pointer;">All Time</a></li>
+		</ul>
+	</div>
+	<div id="top-popular-content">
+		@TopPopularList(media)
+	</div>
+}
+
+templ Top10Card(topMedias []models.Media, topReadToday []models.Media) {
+	<div id="top-10-card" class="uk-card uk-card-default uk-card-body mt-6">
+		<div class="flex justify-center gap-8 mb-4">
+			<button class="px-4 py-2 text-blue-600 font-medium cursor-pointer active-tab border-b-2 border-blue-500" hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
+			<button class="px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer border-b-2 border-transparent" hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
+		</div>
+		<div id="top-content">
+			<div id="top-popular-full">
+				@TopPopularFullFragment(topMedias, "all")
+			</div>
+		</div>
+	</div>
+}
+
+templ Top10CardContent(activeTab string, activePeriod string, topMedias []models.Media, topReadMedias []models.Media) {
+	<div class="flex justify-center gap-8 mb-4">
+		<button class={templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "popular"), templ.KV("text-gray-500 hover:text-gray-700 border-transparent", activeTab != "popular")} hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
+		<button class={templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "read"), templ.KV("text-gray-500 hover:text-gray-700 border-transparent", activeTab != "read")} hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
+	</div>
+	<div id="top-content">
+		if activeTab == "popular" {
+			<div id="top-popular-full">
+				@TopPopularFullFragment(topMedias, activePeriod)
+			</div>
+		} else {
+			<div id="top-read-full">
+				@TopReadFullWrapper(topReadMedias, activePeriod)
+			</div>
+		}
+	</div>
+}
+
+templ TopReadFullWrapper(media []models.Media, activePeriod string) {
+	<div id="top-read-full">
+		<div style="overflow-x: auto;">
+			<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;">
+				<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-read-full?period=today" hx-target="#top-read-full" style="cursor: pointer;">Today</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-read-full?period=week" hx-target="#top-read-full" style="cursor: pointer;">Week</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-read-full?period=month" hx-target="#top-read-full" style="cursor: pointer;">Month</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-read-full?period=year" hx-target="#top-read-full" style="cursor: pointer;">Year</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-read-full?period=all" hx-target="#top-read-full" style="cursor: pointer;">All Time</a></li>
+			</ul>
+		</div>
+		<div id="top-read-content">
+			@TopReadList(media, "No reads today", "")
+		</div>
+	</div>
 }
 
 templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int) {
@@ -274,54 +382,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 
 			<div class="md:col-span-1 lg:col-span-1">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Top 10</span></h2>
-				<div class="uk-card uk-card-default uk-card-body mt-6">
-					<ul class="uk-tab" id="main-tab" uk-tab>
-						<li class="uk-active"><a href="#popular-tab">Popular</a></li>
-						<li><a href="#most-read-tab">Most Read</a></li>
-					</ul>
-					<ul class="uk-switcher uk-margin">
-						<li id="popular-tab" class="uk-active">
-							if len(topMedias) == 0 {
-								@EmptyState("No media have been indexed yet.")
-							} else {
-								<ul class="top-media-list">
-									for i, m := range topMedias {
-										{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
-										<li class="flex items-center gap-3 py-2">
-											<div class="w-10 h-14 overflow-hidden rounded-sm">
-												<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
-													@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
-												</a>
-											</div>
-											<div class="flex-1">
-												<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="font-medium">{ m.Name }</a>
-												<div class="text-xs uk-text-muted">{ m.Author }</div>
-											</div>
-											<div class="flex flex-col items-center">
-												<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
-												<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
-													<span class="flex items-center gap-1"><uk-icon icon="Star" stroke-width="2"></uk-icon> { fmt.Sprint(score) }</span>
-												</div>
-											</div>
-										</li>
-									}
-								</ul>
-							}
-						</li>
-						<li id="most-read-tab">
-							<div style="overflow-x: auto;">
-								<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap;">
-									<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" style="cursor: pointer;">Today</a></li>
-									<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" style="cursor: pointer;">Week</a></li>
-									<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" style="cursor: pointer;">Month</a></li>
-									<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" style="cursor: pointer;">Year</a></li>
-									<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" style="cursor: pointer;">All Time</a></li>
-								</ul>
-							</div>
-							<div id="top-read-content" hx-get="/top-read?period=today" hx-trigger="intersect, every 30s"></div>
-						</li>
-					</ul>
-				</div>
+				<div id="top-10-content" hx-get="/top-10" hx-trigger="load"></div>
 			</div>
 		</div>
 
@@ -340,22 +401,6 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 			<small class="text-gray-500">Green badges show change in the last 24 hours</small>
 		</div>
 	</div>
-
-	<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			// Handle subnav
-			const subnav = document.getElementById('most-read-subnav');
-			if (subnav) {
-				subnav.addEventListener('click', function(e) {
-					if (e.target.tagName === 'A') {
-						// Update active
-						subnav.querySelectorAll('li').forEach(li => li.classList.remove('uk-active'));
-						e.target.parentElement.classList.add('uk-active');
-					}
-				});
-			}
-		});
-	</script>
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
