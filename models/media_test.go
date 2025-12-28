@@ -122,8 +122,8 @@ func TestHasAllTags(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:  "has all required tags",
-			tags:  []string{"tag1", "tag2", "tag3"},
+			name: "has all required tags",
+			tags: []string{"tag1", "tag2", "tag3"},
 			required: map[string]struct{}{
 				"tag1": {},
 				"tag2": {},
@@ -131,8 +131,8 @@ func TestHasAllTags(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:  "missing one required tag",
-			tags:  []string{"tag1", "tag3"},
+			name: "missing one required tag",
+			tags: []string{"tag1", "tag3"},
 			required: map[string]struct{}{
 				"tag1": {},
 				"tag2": {},
@@ -140,8 +140,8 @@ func TestHasAllTags(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:  "case insensitive matching",
-			tags:  []string{"Tag1", "TAG2"},
+			name: "case insensitive matching",
+			tags: []string{"Tag1", "TAG2"},
 			required: map[string]struct{}{
 				"tag1": {},
 				"tag2": {},
@@ -149,8 +149,8 @@ func TestHasAllTags(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:  "ignores whitespace in tags",
-			tags:  []string{" tag1 ", " tag2 "},
+			name: "ignores whitespace in tags",
+			tags: []string{" tag1 ", " tag2 "},
 			required: map[string]struct{}{
 				"tag1": {},
 				"tag2": {},
@@ -181,33 +181,33 @@ func TestHasAnyTag(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:   "has at least one matching tag",
-			tags:   []string{"tag1", "tag2", "tag3"},
-			anySet: map[string]struct{}{"tag2": {}, "tag4": {}},
+			name:     "has at least one matching tag",
+			tags:     []string{"tag1", "tag2", "tag3"},
+			anySet:   map[string]struct{}{"tag2": {}, "tag4": {}},
 			expected: true,
 		},
 		{
-			name:   "no matching tags",
-			tags:   []string{"tag1", "tag2"},
-			anySet: map[string]struct{}{"tag3": {}, "tag4": {}},
+			name:     "no matching tags",
+			tags:     []string{"tag1", "tag2"},
+			anySet:   map[string]struct{}{"tag3": {}, "tag4": {}},
 			expected: false,
 		},
 		{
-			name:   "case insensitive matching",
-			tags:   []string{"Tag1", "TAG2"},
-			anySet: map[string]struct{}{"tag1": {}, "tag3": {}},
+			name:     "case insensitive matching",
+			tags:     []string{"Tag1", "TAG2"},
+			anySet:   map[string]struct{}{"tag1": {}, "tag3": {}},
 			expected: true,
 		},
 		{
-			name:   "ignores whitespace in tags",
-			tags:   []string{" tag1 ", " tag2 "},
-			anySet: map[string]struct{}{"tag1": {}, "tag3": {}},
+			name:     "ignores whitespace in tags",
+			tags:     []string{" tag1 ", " tag2 "},
+			anySet:   map[string]struct{}{"tag1": {}, "tag3": {}},
 			expected: true,
 		},
 		{
-			name:   "ignores empty strings",
-			tags:   []string{"", "  ", "tag1"},
-			anySet: map[string]struct{}{"tag1": {}},
+			name:     "ignores empty strings",
+			tags:     []string{"", "  ", "tag1"},
+			anySet:   map[string]struct{}{"tag1": {}},
 			expected: true,
 		},
 	}
@@ -305,7 +305,7 @@ func TestGetMedia(t *testing.T) {
 	cachedConfig = AppConfig{}
 
 	// Mock the media query
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs("test-manga").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
@@ -342,7 +342,7 @@ func TestGetMediaNotFound(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the media query - no rows returned
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs("nonexistent").
 		WillReturnError(sql.ErrNoRows)
 
@@ -434,7 +434,7 @@ func TestGetMediaUnfiltered(t *testing.T) {
 
 	slug := "test-manga"
 
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs(slug).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
@@ -482,7 +482,7 @@ func TestGetMediaBySlugAndLibrary(t *testing.T) {
 	slug := "test-manga"
 	librarySlug := "test-lib"
 
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \? AND library_slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND m\.library_slug = \? AND l\.enabled = 1`).
 		WithArgs(slug, librarySlug).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
@@ -521,7 +521,7 @@ func TestGetMediaBySlugAndLibraryFiltered(t *testing.T) {
 	librarySlug := "test-lib"
 
 	// Mock the media query (called first)
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \? AND library_slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND m\.library_slug = \? AND l\.enabled = 1`).
 		WithArgs(slug, librarySlug).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
@@ -775,8 +775,8 @@ func TestGetTopMedias(t *testing.T) {
 		))
 
 	// Mock the complex query with IN clause for content ratings
-	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m LEFT JOIN \( SELECT media_slug, CASE WHEN COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \+ COALESCE\(SUM\(CASE WHEN value = -1 THEN 1 ELSE 0 END\),0\) > 0 THEN ROUND\(\(COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \* 1\.0 / \(COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \+ COALESCE\(SUM\(CASE WHEN value = -1 THEN 1 ELSE 0 END\),0\)\)\) \* 10\) ELSE 0 END as score FROM votes GROUP BY media_slug \) v ON v\.media_slug = m\.slug WHERE m\.content_rating IN \(\?\,\?\) ORDER BY v\.score DESC LIMIT \?`).
-		WithArgs("safe", "suggestive", limit).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m LEFT JOIN \( SELECT media_slug, CASE WHEN COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \+ COALESCE\(SUM\(CASE WHEN value = -1 THEN 1 ELSE 0 END\),0\) > 0 THEN ROUND\(\(COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \* 1\.0 / \(COALESCE\(SUM\(CASE WHEN value = 1 THEN 1 ELSE 0 END\),0\) \+ COALESCE\(SUM\(CASE WHEN value = -1 THEN 1 ELSE 0 END\),0\)\)\) \* 10\) ELSE 0 END as score FROM votes WHERE 1=1  GROUP BY media_slug \) v ON v\.media_slug = m\.slug WHERE m\.content_rating IN \(\?\,\?\) AND m\.library_slug IN \(\?\) ORDER BY v\.score DESC LIMIT \?`).
+		WithArgs("safe", "suggestive", "lib1", limit).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
 		}).AddRow(
@@ -791,7 +791,7 @@ func TestGetTopMedias(t *testing.T) {
 			AddRow("top-manga1", "action").
 			AddRow("top-manga2", "romance"))
 
-	result, err := GetTopMedias(limit)
+	result, err := GetTopMedias(limit, []string{"lib1"})
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, "top-manga1", result[0].Slug)
@@ -1819,7 +1819,7 @@ func TestGetMediaAndChapters(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock GetMedia query
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs("test-manga").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at",
@@ -1866,15 +1866,14 @@ func TestGetMediaAndChapters_MediaNotFound(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock GetMedia query returning no rows
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs("nonexistent").
 		WillReturnRows(sqlmock.NewRows([]string{}))
 
 	media, chapters, err := GetMediaAndChapters("nonexistent")
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, media)
 	assert.Nil(t, chapters)
-	assert.Contains(t, err.Error(), "media not found")
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -1933,8 +1932,8 @@ func TestGetChapterImages(t *testing.T) {
 	}
 
 	chapter := &Chapter{
-		Slug:  "chapter-1",
-		File:  "chapter1.cbz",
+		Slug: "chapter-1",
+		File: "chapter1.cbz",
 		Name: "Chapter 1",
 	}
 
@@ -1974,8 +1973,8 @@ func TestGetChapterImages_SingleFileMedia(t *testing.T) {
 	}
 
 	chapter := &Chapter{
-		Slug:  "chapter-1",
-		File:  "", // No separate file for single-file media
+		Slug: "chapter-1",
+		File: "", // No separate file for single-file media
 		Name: "Chapter 1",
 	}
 
@@ -1996,8 +1995,8 @@ func TestGetChapterImages_MediaPathNotExist(t *testing.T) {
 	}
 
 	chapter := &Chapter{
-		Slug:  "chapter-1",
-		File:  "chapter1.cbz",
+		Slug: "chapter-1",
+		File: "chapter1.cbz",
 		Name: "Chapter 1",
 	}
 
@@ -2019,8 +2018,8 @@ func TestGetChapterImages_ChapterFileNotExist(t *testing.T) {
 	}
 
 	chapter := &Chapter{
-		Slug:  "chapter-1",
-		File:  "nonexistent.cbz",
+		Slug: "chapter-1",
+		File: "nonexistent.cbz",
 		Name: "Chapter 1",
 	}
 
@@ -2048,8 +2047,8 @@ func TestGetChapterImages_NoImages(t *testing.T) {
 	}
 
 	chapter := &Chapter{
-		Slug:  "chapter-1",
-		File:  "chapter1.cbz",
+		Slug: "chapter-1",
+		File: "chapter1.cbz",
 		Name: "Chapter 1",
 	}
 
@@ -2057,51 +2056,52 @@ func TestGetChapterImages_NoImages(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, images, 0)
 }
+
 // Tests for Media setter methods
 func TestMediaSetName(t *testing.T) {
-media := &Media{}
-media.SetName("New Title")
-assert.Equal(t, "New Title", media.Name)
+	media := &Media{}
+	media.SetName("New Title")
+	assert.Equal(t, "New Title", media.Name)
 }
 
 func TestMediaSetDescription(t *testing.T) {
-media := &Media{}
-media.SetDescription("A new description")
-assert.Equal(t, "A new description", media.Description)
+	media := &Media{}
+	media.SetDescription("A new description")
+	assert.Equal(t, "A new description", media.Description)
 }
 
 func TestMediaSetYear(t *testing.T) {
-media := &Media{}
-media.SetYear(2023)
-assert.Equal(t, 2023, media.Year)
+	media := &Media{}
+	media.SetYear(2023)
+	assert.Equal(t, 2023, media.Year)
 }
 
 func TestMediaSetOriginalLanguage(t *testing.T) {
-media := &Media{}
-media.SetOriginalLanguage("ja")
-assert.Equal(t, "ja", media.OriginalLanguage)
+	media := &Media{}
+	media.SetOriginalLanguage("ja")
+	assert.Equal(t, "ja", media.OriginalLanguage)
 }
 
 func TestMediaSetStatus(t *testing.T) {
-media := &Media{}
-media.SetStatus("ongoing")
-assert.Equal(t, "ongoing", media.Status)
+	media := &Media{}
+	media.SetStatus("ongoing")
+	assert.Equal(t, "ongoing", media.Status)
 }
 
 func TestMediaSetContentRating(t *testing.T) {
-media := &Media{}
-media.SetContentRating("safe")
-assert.Equal(t, "safe", media.ContentRating)
+	media := &Media{}
+	media.SetContentRating("safe")
+	assert.Equal(t, "safe", media.ContentRating)
 }
 
 func TestMediaSetType(t *testing.T) {
-media := &Media{}
-media.SetType("manga")
-assert.Equal(t, "manga", media.Type)
+	media := &Media{}
+	media.SetType("manga")
+	assert.Equal(t, "manga", media.Type)
 }
 
 func TestMediaSetCoverArtURL(t *testing.T) {
-media := &Media{}
-media.SetCoverArtURL("https://example.com/cover.jpg")
-assert.Equal(t, "https://example.com/cover.jpg", media.CoverArtURL)
+	media := &Media{}
+	media.SetCoverArtURL("https://example.com/cover.jpg")
+	assert.Equal(t, "https://example.com/cover.jpg", media.CoverArtURL)
 }

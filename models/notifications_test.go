@@ -180,7 +180,7 @@ func TestNotifyUsersOfNewChapters(t *testing.T) {
 	// Mock GetMediaUnfiltered query
 	mediaRows := sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at"}).
 		AddRow("manga1", "Manga One", "Author", "Description", 2023, "en", "manga", "ongoing", "safe", "lib1", "cover.jpg", "/path", 10, 1234567890, 1234567890)
-	mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
 		WithArgs("manga1").
 		WillReturnRows(mediaRows)
 

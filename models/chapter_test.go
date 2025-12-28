@@ -67,33 +67,33 @@ func TestCalculateCountdownText(t *testing.T) {
 	baseTime := time.Now()
 
 	tests := []struct {
-		name        string
-		releaseTime time.Time
+		name            string
+		releaseTime     time.Time
 		expectedPattern string // Simple pattern to match
 	}{
 		{
-			name:        "past release time",
-			releaseTime: baseTime.Add(-time.Hour),
+			name:            "past release time",
+			releaseTime:     baseTime.Add(-time.Hour),
 			expectedPattern: "Available now!",
 		},
 		{
-			name:        "more than 24 hours",
-			releaseTime: baseTime.Add(60 * time.Hour), // 2.5 days
+			name:            "more than 24 hours",
+			releaseTime:     baseTime.Add(60 * time.Hour), // 2.5 days
 			expectedPattern: "2d",
 		},
 		{
-			name:        "between 24-48 hours",
-			releaseTime: baseTime.Add(30 * time.Hour),
+			name:            "between 24-48 hours",
+			releaseTime:     baseTime.Add(30 * time.Hour),
 			expectedPattern: "1d",
 		},
 		{
-			name:        "more than 1 hour",
-			releaseTime: baseTime.Add(2*time.Hour + 30*time.Minute),
+			name:            "more than 1 hour",
+			releaseTime:     baseTime.Add(2*time.Hour + 30*time.Minute),
 			expectedPattern: "2h",
 		},
 		{
-			name:        "less than 1 hour",
-			releaseTime: baseTime.Add(45 * time.Minute),
+			name:            "less than 1 hour",
+			releaseTime:     baseTime.Add(45 * time.Minute),
 			expectedPattern: "m", // Should contain minutes
 		},
 	}
@@ -116,11 +116,11 @@ func TestCreateChapter(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	chapter := Chapter{
-		Name:             "Chapter 1",
-		Type:             "chapter",
-		File:             "/path/to/chapter1.zip",
-		ChapterCoverURL:  "/covers/chapter1.jpg",
-		MediaSlug:        "test-manga",
+		Name:            "Chapter 1",
+		Type:            "chapter",
+		File:            "/path/to/chapter1.zip",
+		ChapterCoverURL: "/covers/chapter1.jpg",
+		MediaSlug:       "test-manga",
 	}
 
 	// Mock ChapterExists check - chapter doesn't exist
@@ -175,11 +175,11 @@ func TestCreateChapterTx(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	chapter := Chapter{
-		Name:             "Chapter 1",
-		Type:             "chapter",
-		File:             "/path/to/chapter1.zip",
-		ChapterCoverURL:  "/covers/chapter1.jpg",
-		MediaSlug:        "test-manga",
+		Name:            "Chapter 1",
+		Type:            "chapter",
+		File:            "/path/to/chapter1.zip",
+		ChapterCoverURL: "/covers/chapter1.jpg",
+		MediaSlug:       "test-manga",
 	}
 
 	// Begin transaction
@@ -272,12 +272,12 @@ func TestUpdateChapter(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	chapter := &Chapter{
-		Slug:             "chapter-1",
-		Name:             "Updated Chapter 1",
-		Type:             "chapter",
-		File:             "/path/to/updated.zip",
-		ChapterCoverURL:  "/covers/updated.jpg",
-		MediaSlug:        "test-manga",
+		Slug:            "chapter-1",
+		Name:            "Updated Chapter 1",
+		Type:            "chapter",
+		File:            "/path/to/updated.zip",
+		ChapterCoverURL: "/covers/updated.jpg",
+		MediaSlug:       "test-manga",
 	}
 
 	// Mock the UPDATE query
@@ -301,12 +301,12 @@ func TestUpdateChapter_Error(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	chapter := &Chapter{
-		Slug:             "chapter-1",
-		Name:             "Updated Chapter 1",
-		Type:             "chapter",
-		File:             "/path/to/updated.zip",
-		ChapterCoverURL:  "/covers/updated.jpg",
-		MediaSlug:        "test-manga",
+		Slug:            "chapter-1",
+		Name:            "Updated Chapter 1",
+		Type:            "chapter",
+		File:            "/path/to/updated.zip",
+		ChapterCoverURL: "/covers/updated.jpg",
+		MediaSlug:       "test-manga",
 	}
 
 	// Mock the UPDATE query to return an error
@@ -761,11 +761,11 @@ func TestGetRecentSeriesWithChapters(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the SELECT query for recent media
-	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.created_at, m\.updated_at FROM media m INNER JOIN chapters c ON c\.media_slug = m\.slug GROUP BY m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.created_at, m\.updated_at ORDER BY MAX\(c\.created_at\) DESC LIMIT \?`).
-		WithArgs(2).
-		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "type", "status", "cover_art_url", "created_at", "updated_at"}).
-			AddRow("manga1", "Manga One", "Author One", "Description One", "manga", "ongoing", "/covers/manga1.jpg", 1640995200, 1640995200).
-			AddRow("manga2", "Manga Two", "Author Two", "Description Two", "manhwa", "completed", "/covers/manga2.jpg", 1641081600, 1641081600))
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at FROM media m INNER JOIN chapters c ON c\.media_slug = m\.slug WHERE m\.library_slug IN \(\?\) GROUP BY m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at ORDER BY MAX\(c\.created_at\) DESC LIMIT \?`).
+		WithArgs("library1", 2).
+		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "type", "status", "cover_art_url", "library_slug", "created_at", "updated_at"}).
+			AddRow("manga1", "Manga One", "Author One", "Description One", "manga", "ongoing", "/covers/manga1.jpg", "library1", 1640995200, 1640995200).
+			AddRow("manga2", "Manga Two", "Author Two", "Description Two", "manhwa", "completed", "/covers/manga2.jpg", "library1", 1641081600, 1641081600))
 
 	// Mock GetChaptersByMediaSlug for manga1
 	mock.ExpectQuery(`SELECT c\.slug, c\.name, c\.type, c\.file, c\.chapter_cover_url, c\.media_slug, c\.created_at, c\.released_at, COALESCE\(rs\.read_count, 0\) as read_count FROM chapters c LEFT JOIN \( SELECT chapter_slug, COUNT\(\*\) as read_count FROM reading_states WHERE media_slug = \? GROUP BY chapter_slug \) rs ON c\.slug = rs\.chapter_slug WHERE c\.media_slug = \?`).
@@ -779,7 +779,7 @@ func TestGetRecentSeriesWithChapters(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "type", "file", "chapter_cover_url", "media_slug", "created_at", "released_at", "read_count"}).
 			AddRow("chapter-2", "Chapter 2", "chapter", "/path/ch2.zip", "/covers/ch2.jpg", "manga2", 1641081600, 1641081600, 0))
 
-	result, err := GetRecentSeriesWithChapters(2, 3, 3600, false)
+	result, err := GetRecentSeriesWithChapters(2, 3, 3600, false, []string{"library1"})
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, "manga1", result[0].Media.Slug)

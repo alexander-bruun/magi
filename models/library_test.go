@@ -47,10 +47,10 @@ func TestLibrary_GetFolderNames(t *testing.T) {
 
 func TestLibrary_Validate(t *testing.T) {
 	tests := []struct {
-		name        string
-		library     Library
-		expectError bool
-		errorMsg    string
+		name         string
+		library      Library
+		expectError  bool
+		errorMsg     string
 		expectedSlug string
 	}{
 		{
@@ -147,7 +147,7 @@ func TestCreateLibrary(t *testing.T) {
 	mock.ExpectExec(`INSERT INTO libraries`).
 		WithArgs(
 			"test-library", "Test Library", "A test library", "0 0 * * *",
-			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), true, sqlmock.AnyArg(), sqlmock.AnyArg(),
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -194,15 +194,15 @@ func TestGetLibraries(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the SELECT query
-	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries`).
+	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"slug", "name", "description", "cron", "folders", "metadata_provider", "created_at", "updated_at",
+			"slug", "name", "description", "cron", "folders", "metadata_provider", "enabled", "created_at", "updated_at",
 		}).AddRow(
 			"test-library", "Test Library", "A test library", "0 0 * * *",
-			`["/path/to/folder1","/path/to/folder2"]`, "mangadex", 1609459200, 1704067200,
+			`["/path/to/folder1","/path/to/folder2"]`, "mangadex", true, 1609459200, 1704067200,
 		).AddRow(
 			"another-library", "Another Library", "Another test library", "0 0 * * *",
-			`["/path/to/folder3"]`, nil, 1609459200, 1704067200,
+			`["/path/to/folder3"]`, nil, true, 1609459200, 1704067200,
 		))
 
 	libraries, err := GetLibraries()
@@ -229,13 +229,13 @@ func TestGetLibrary(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the SELECT query
-	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries WHERE slug = \?`).
 		WithArgs("test-library").
 		WillReturnRows(sqlmock.NewRows([]string{
-			"slug", "name", "description", "cron", "folders", "metadata_provider", "created_at", "updated_at",
+			"slug", "name", "description", "cron", "folders", "metadata_provider", "enabled", "created_at", "updated_at",
 		}).AddRow(
 			"test-library", "Test Library", "A test library", "0 0 * * *",
-			`["/path/to/folder1","/path/to/folder2"]`, "mangadex", 1609459200, 1704067200,
+			`["/path/to/folder1","/path/to/folder2"]`, "mangadex", true, 1609459200, 1704067200,
 		))
 
 	library, err := GetLibrary("test-library")
@@ -259,7 +259,7 @@ func TestGetLibraryNotFound(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the SELECT query - no rows returned
-	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries WHERE slug = \?`).
 		WithArgs("nonexistent").
 		WillReturnError(sql.ErrNoRows)
 
@@ -287,13 +287,14 @@ func TestUpdateLibrary(t *testing.T) {
 		Cron:             "0 0 * * *",
 		Folders:          []string{"/path/to/updated/folder"},
 		MetadataProvider: sql.NullString{String: "anilist", Valid: true},
+		Enabled:          true,
 	}
 
 	// Mock the UPDATE query
 	mock.ExpectExec(`UPDATE libraries`).
 		WithArgs(
 			"Test Library", "An updated test library", "0 0 * * *",
-			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "test-library",
+			sqlmock.AnyArg(), sqlmock.AnyArg(), true, sqlmock.AnyArg(), "test-library",
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
@@ -313,10 +314,10 @@ func TestDeleteLibrary(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock GetLibrary query
-	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries WHERE slug = \?`).
 		WithArgs("test-library").
-		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "description", "cron", "folders", "metadata_provider", "created_at", "updated_at"}).
-			AddRow("test-library", "Test Library", "A test library", "0 0 * * *", "[]", nil, 1672531200, 1672531200))
+		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "description", "cron", "folders", "metadata_provider", "enabled", "created_at", "updated_at"}).
+			AddRow("test-library", "Test Library", "A test library", "0 0 * * *", "[]", nil, true, 1672531200, 1672531200))
 
 	// Mock DELETE from libraries
 	mock.ExpectExec(`DELETE FROM libraries WHERE slug = \?`).
@@ -344,9 +345,9 @@ func TestDeleteLibraryNotFound(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock GetLibrary query returning no rows
-	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries WHERE slug = \?`).
+	mock.ExpectQuery(`SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries WHERE slug = \?`).
 		WithArgs("nonexistent-library").
-		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "description", "cron", "folders", "metadata_provider", "created_at", "updated_at"}))
+		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "description", "cron", "folders", "metadata_provider", "enabled", "created_at", "updated_at"}))
 
 	err = DeleteLibrary("nonexistent-library")
 	assert.Error(t, err)

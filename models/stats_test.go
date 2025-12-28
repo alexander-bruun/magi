@@ -433,19 +433,19 @@ func TestGetTopReadMedias(t *testing.T) {
 
 	// Mock the main query for "week" period with limit 5
 	// The query should filter by content ratings: safe, suggestive, erotica, pornographic (limit 3)
-	expectedQuery := `SELECT m\.slug.*FROM media m.*INNER JOIN.*SELECT media_slug.*COUNT.*as read_count.*FROM reading_states rs.*WHERE.*GROUP BY media_slug.*ORDER BY read_count DESC.*LIMIT.*top_reads ON m\.slug.*WHERE m\.content_rating IN.*ORDER BY top_reads\.read_count DESC`
+	expectedQuery := `SELECT m\.slug.*FROM media m.*LEFT JOIN.*SELECT media_slug.*COUNT.*as read_count.*FROM reading_states rs.*WHERE.*GROUP BY media_slug.*top_reads ON m\.slug.*LEFT JOIN.*SELECT media_slug.*CASE WHEN.*score FROM votes.*v ON v\.media_slug.*WHERE m\.content_rating IN.*AND m\.library_slug IN.*ORDER BY COALESCE.*DESC.*LIMIT`
 
 	mock.ExpectQuery(expectedQuery).
-		WithArgs(5, "safe", "suggestive", "erotica", "pornographic").
+		WithArgs("safe", "suggestive", "erotica", "pornographic", "lib1", 5).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "read_count", "created_at", "updated_at",
 		}).AddRow(
-			"one-piece", "One Piece", "Eiichiro Oda", "A pirate adventure", 1997, "ja", "manga", "ongoing", "safe", "manga-lib", "/covers/one-piece.jpg", "/path/to/one-piece", 1000, 150, 1609459200, 1704067200,
+			"one-piece", "One Piece", "Eiichiro Oda", "A pirate adventure", 1997, "ja", "manga", "ongoing", "safe", "lib1", "/covers/one-piece.jpg", "/path/to/one-piece", 1000, 150, 1609459200, 1704067200,
 		).AddRow(
-			"naruto", "Naruto", "Masashi Kishimoto", "A ninja story", 1999, "ja", "manga", "completed", "safe", "manga-lib", "/covers/naruto.jpg", "/path/to/naruto", 700, 120, 1577836800, 1704067200,
+			"naruto", "Naruto", "Masashi Kishimoto", "A ninja story", 1999, "ja", "manga", "completed", "safe", "lib1", "/covers/naruto.jpg", "/path/to/naruto", 700, 120, 1577836800, 1704067200,
 		))
 
-	media, err := GetTopReadMedias("week", 5)
+	media, err := GetTopReadMedias("week", 5, []string{"lib1"})
 	assert.NoError(t, err)
 	assert.Len(t, media, 2)
 	assert.Equal(t, "one-piece", media[0].Slug)

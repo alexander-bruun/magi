@@ -460,47 +460,47 @@ func TestGetDuplicateFolderInfo(t *testing.T) {
 	assert.Equal(t, "manga1", result.MediaSlug)
 	assert.Equal(t, "Manga One", result.MediaName)
 	assert.Equal(t, "/path/to/folder1", result.Folder1.Path)
-        assert.Equal(t, "/path/to/folder2", result.Folder2.Path)
+	assert.Equal(t, "/path/to/folder2", result.Folder2.Path)
 
-        assert.NoError(t, mock.ExpectationsWereMet())
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestDeleteDuplicateFolder(t *testing.T) {
-        // Create mock DB
-        mockDB, mock, err := sqlmock.New()
-        assert.NoError(t, err)
-        defer mockDB.Close()
+	// Create mock DB
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
 
-        // Replace global db
-        originalDB := db
-        db = mockDB
-        defer func() { db = originalDB }()
+	// Replace global db
+	originalDB := db
+	db = mockDB
+	defer func() { db = originalDB }()
 
-        // Create a temporary directory for testing
-        tempDir, err := os.MkdirTemp("", "test_duplicate_*")
-        assert.NoError(t, err)
-        defer os.RemoveAll(tempDir) // Clean up
+	// Create a temporary directory for testing
+	tempDir, err := os.MkdirTemp("", "test_duplicate_*")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDir) // Clean up
 
-        folderPath := filepath.Join(tempDir, "folder1")
+	folderPath := filepath.Join(tempDir, "folder1")
 
-        // Mock the SELECT query to get duplicate info
-        mock.ExpectQuery(`SELECT folder_path_1, folder_path_2, media_slug FROM media_duplicates WHERE id = \?`).
-                WithArgs(int64(1)).
-                WillReturnRows(sqlmock.NewRows([]string{"folder_path_1", "folder_path_2", "media_slug"}).
-                        AddRow(folderPath, "/path/to/folder2", "test-manga"))
+	// Mock the SELECT query to get duplicate info
+	mock.ExpectQuery(`SELECT folder_path_1, folder_path_2, media_slug FROM media_duplicates WHERE id = \?`).
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"folder_path_1", "folder_path_2", "media_slug"}).
+			AddRow(folderPath, "/path/to/folder2", "test-manga"))
 
-        // Mock DeleteMediaDuplicateByID
-        mock.ExpectExec(`DELETE FROM media_duplicates WHERE id = \?`).
-                WithArgs(int64(1)).
-                WillReturnResult(sqlmock.NewResult(0, 1))
+	// Mock DeleteMediaDuplicateByID
+	mock.ExpectExec(`DELETE FROM media_duplicates WHERE id = \?`).
+		WithArgs(int64(1)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-        // Mock GetMediaUnfiltered - return no rows since path doesn't match
-        mock.ExpectQuery(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = \?`).
-                WithArgs("test-manga").
-                WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at"}))
+	// Mock GetMediaUnfiltered - return no rows since path doesn't match
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
+		WithArgs("test-manga").
+		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at"}))
 
-        err = DeleteDuplicateFolder(1, folderPath)
-        assert.NoError(t, err)
+	err = DeleteDuplicateFolder(1, folderPath)
+	assert.NoError(t, err)
 
-        assert.NoError(t, mock.ExpectationsWereMet())
+	assert.NoError(t, mock.ExpectationsWereMet())
 }

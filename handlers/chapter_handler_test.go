@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,10 +53,10 @@ func TestMain(m *testing.M) {
 func TestIsChapterAccessible(t *testing.T) {
 	// Test cases
 	tests := []struct {
-		name       string
-		chapter    *models.Chapter
-		userName   string
-		expected   bool
+		name     string
+		chapter  *models.Chapter
+		userName string
+		expected bool
 	}{
 		{
 			name: "released chapter accessible to everyone",
@@ -162,12 +162,12 @@ func TestHandleChapter(t *testing.T) {
 		{
 			name:           "valid chapter request",
 			url:            "/chapter/manga1/chapter1",
-			expectedStatus: 500, // DB error expected
+			expectedStatus: 404, // Media not found
 		},
 		{
 			name:           "chapter with special characters",
 			url:            "/chapter/manga-1/chapter-001",
-			expectedStatus: 500, // DB error expected
+			expectedStatus: 404, // Media not found
 		},
 		{
 			name:           "empty media slug",
