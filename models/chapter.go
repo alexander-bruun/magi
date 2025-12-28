@@ -19,7 +19,7 @@ func CalculateCountdownText(releaseTime time.Time) string {
 	if time.Now().After(releaseTime) || time.Now().Equal(releaseTime) {
 		return "Available now!"
 	}
-	
+
 	duration := time.Until(releaseTime)
 	if duration.Hours() >= 24 {
 		days := int(duration.Hours() / 24)
@@ -49,18 +49,18 @@ func CalculateCountdownText(releaseTime time.Time) string {
 
 // Chapter represents the chapter table schema
 type Chapter struct {
-	Slug            string `json:"slug"`
-	Name            string `json:"name"`
-	Type            string `json:"type"`
-	File            string `json:"file"`
-	ChapterCoverURL string `json:"chapter_cover_url"`
-	MediaSlug       string `json:"media_slug"`
-	Read            bool   `json:"read"`
-	ReadCount       int    `json:"read_count"`
-	CreatedAt       time.Time `json:"created_at"`
-	ReleasedAt      *time.Time `json:"released_at,omitempty"`
-	IsPremium       bool   `json:"is_premium"`
-	PremiumCountdown string `json:"premium_countdown,omitempty"`
+	Slug             string     `json:"slug"`
+	Name             string     `json:"name"`
+	Type             string     `json:"type"`
+	File             string     `json:"file"`
+	ChapterCoverURL  string     `json:"chapter_cover_url"`
+	MediaSlug        string     `json:"media_slug"`
+	Read             bool       `json:"read"`
+	ReadCount        int        `json:"read_count"`
+	CreatedAt        time.Time  `json:"created_at"`
+	ReleasedAt       *time.Time `json:"released_at,omitempty"`
+	IsPremium        bool       `json:"is_premium"`
+	PremiumCountdown string     `json:"premium_countdown,omitempty"`
 }
 
 // CreateChapter adds a new chapter if it does not already exist
@@ -429,7 +429,7 @@ func HasPremiumChapters(mediaSlug string, maxPremiumChapters int, premiumDuratio
 				multiplier = 1
 			}
 			scaledDuration := premiumDuration * multiplier
-			
+
 			// Calculate countdown for this chapter
 			releaseTime := chapter.CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
 			countdown := CalculateCountdownText(releaseTime)
@@ -528,7 +528,7 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 			chapters[i].IsPremium = false
 		}
 	}
-	
+
 	// Second pass: calculate scaled durations for premium chapters
 	// Newest premium chapter gets highest multiplier, oldest gets 1x
 	for position, chapterIndex := range premiumChapters {
@@ -538,10 +538,10 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 		}
 		scaledDuration := premiumDuration * multiplier
 		releaseTime := chapters[chapterIndex].CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
-		
+
 		// Recalculate IsPremium with scaled duration (in case it changed)
 		chapters[chapterIndex].IsPremium = now.Before(releaseTime)
-		
+
 		// Calculate countdown for premium chapters
 		chapters[chapterIndex].PremiumCountdown = CalculateCountdownText(releaseTime)
 	}
@@ -556,22 +556,41 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 
 // MediaWithRecentChapters represents a media with its 3 most recent chapters
 type MediaWithRecentChapters struct {
-	Media    Media   `json:"media"`
+	Media    Media     `json:"media"`
 	Chapters []Chapter `json:"chapters"`
 }
 
 // GetRecentSeriesWithChapters returns the most recently updated series with their 3 highest numbered chapters
-func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]MediaWithRecentChapters, error) {
-	query := `
-		SELECT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
-		FROM media m
-		INNER JOIN chapters c ON c.media_slug = m.slug
-		GROUP BY m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.created_at, m.updated_at
-		ORDER BY MAX(c.created_at) DESC
-		LIMIT ?
-	`
+func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDuration int, scalingEnabled bool, accessibleLibraries []string) ([]MediaWithRecentChapters, error) {
+	var query string
+	var args []interface{}
 
-	rows, err := db.Query(query, limit)
+	if len(accessibleLibraries) > 0 {
+		// Build query with library filtering
+		placeholders := strings.Repeat("?,", len(accessibleLibraries))
+		placeholders = placeholders[:len(placeholders)-1] // Remove trailing comma
+
+		query = fmt.Sprintf(`
+			SELECT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.library_slug, m.created_at, m.updated_at
+			FROM media m
+			INNER JOIN chapters c ON c.media_slug = m.slug
+			WHERE m.library_slug IN (%s)
+			GROUP BY m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.library_slug, m.created_at, m.updated_at
+			ORDER BY MAX(c.created_at) DESC
+			LIMIT ?
+		`, placeholders)
+
+		// Add accessible libraries to args
+		for _, lib := range accessibleLibraries {
+			args = append(args, lib)
+		}
+		args = append(args, limit)
+	} else {
+		// No accessible libraries - return empty result
+		return []MediaWithRecentChapters{}, nil
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -583,14 +602,14 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Type, &m.Status, &m.CoverArtURL, &createdAt, &updatedAt)
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Type, &m.Status, &m.CoverArtURL, &m.LibrarySlug, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
 		m.Tags = []string{} // Initialize empty tags since we're not fetching them
-		
+
 		if _, exists := mediaMap[m.Slug]; !exists {
 			mediaMap[m.Slug] = m
 			mediaSlugs = append(mediaSlugs, m.Slug)
@@ -604,7 +623,7 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 		if err != nil {
 			return nil, err
 		}
-		
+
 		result = append(result, MediaWithRecentChapters{
 			Media:    mediaMap[slug],
 			Chapters: chapters,
@@ -633,13 +652,13 @@ func extractChapterNumber(name string) int {
 
 // MediaEnrichmentData contains preloaded data for a media item
 type MediaEnrichmentData struct {
-	MediaSlug           string
-	HasPremium          bool
-	PremiumCountdown    string
-	LatestChapterSlug   string
-	LatestChapterName   string
-	AverageRating       float64
-	ReviewCount         int
+	MediaSlug         string
+	HasPremium        bool
+	PremiumCountdown  string
+	LatestChapterSlug string
+	LatestChapterName string
+	AverageRating     float64
+	ReviewCount       int
 }
 
 // BatchEnrichMediaData fetches enrichment data for multiple media items in bulk
@@ -650,7 +669,7 @@ func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDu
 	}
 
 	result := make(map[string]MediaEnrichmentData)
-	
+
 	// Initialize result map for all slugs
 	for _, slug := range mediaSlugs {
 		result[slug] = MediaEnrichmentData{MediaSlug: slug}

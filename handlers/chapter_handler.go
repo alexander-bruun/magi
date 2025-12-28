@@ -62,15 +62,15 @@ func isChapterAccessible(chapter *models.Chapter, userName string) bool {
 
 // ChapterData holds all data needed to render a chapter view
 type ChapterData struct {
-	Media     *models.Media
-	Chapter   *models.Chapter
-	Chapters  []models.Chapter
-	PrevSlug  string
-	NextSlug  string
-	Images    []string
-	TOC       string
-	Content   string
-	IsNovel   bool
+	Media    *models.Media
+	Chapter  *models.Chapter
+	Chapters []models.Chapter
+	PrevSlug string
+	NextSlug string
+	Images   []string
+	TOC      string
+	Content  string
+	IsNovel  bool
 }
 
 // GetChapterData retrieves all data needed for displaying a chapter
@@ -274,11 +274,11 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 	if data == nil {
 		if IsHTMXRequest(c) {
-			triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
+			triggerNotification(c, "Chapter or media not found.", "warning")
 			// Return 204 No Content to prevent navigation/swap but show notification
 			return c.Status(fiber.StatusNoContent).SendString("")
 		}
-		return sendForbiddenError(c, ErrChapterAccessDenied)
+		return sendNotFoundError(c, "Chapter or media not found.")
 	}
 
 	// Fetch comments for the chapter
@@ -397,7 +397,7 @@ func HandleMediaChapterContent(c *fiber.Ctx) error {
 // HandleMediaChapterAsset handles asset requests from EPUB files with token validation
 func HandleMediaChapterAsset(c *fiber.Ctx) error {
 	token := c.Query("token")
-	
+
 	if token == "" {
 		return sendBadRequestError(c, "Token parameter is required")
 	}
