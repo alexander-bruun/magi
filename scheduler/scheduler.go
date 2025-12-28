@@ -26,9 +26,9 @@ type Job interface {
 
 // CronScheduler manages cron jobs
 type CronScheduler struct {
-	cron   *cron.Cron
-	jobs   map[string]cron.EntryID
-	mutex  sync.RWMutex
+	cron    *cron.Cron
+	jobs    map[string]cron.EntryID
+	mutex   sync.RWMutex
 	running bool
 }
 
@@ -133,8 +133,8 @@ func (j *ScraperJob) Execute() error {
 }
 
 var (
-	scraperScheduler *CronScheduler
-	scraperMutex     sync.Mutex
+	scraperScheduler   *CronScheduler
+	scraperMutex       sync.Mutex
 	scraperExecuteFunc ScraperExecuteFunc
 )
 
@@ -188,30 +188,30 @@ var (
 )
 
 var (
-	CacheDataDirectory = ""
-	cacheDirMutex      sync.RWMutex
-	activeIndexers     sync.Map
-	scannedPathCount   int
-	scanMutex          sync.Mutex
-	indexingRunning   sync.Map
-	IndexMediaFunc    func(path, librarySlug string, cacheBackend filestore.CacheBackend) (string, error)
-	cacheBackend      filestore.CacheBackend
+	DataDirectory    = ""
+	dataDirMutex     sync.RWMutex
+	activeIndexers   sync.Map
+	scannedPathCount int
+	scanMutex        sync.Mutex
+	indexingRunning  sync.Map
+	IndexMediaFunc   func(path, librarySlug string, dataBackend filestore.DataBackend) (string, error)
+	dataBackend     filestore.DataBackend
 )
 
 // Indexer represents the state of an indexer
 type Indexer struct {
-	Library         models.Library
-	Scheduler       *CronScheduler
+	Library          models.Library
+	Scheduler        *CronScheduler
 	SchedulerRunning bool
-	JobRunning      bool
-	stop            chan struct{}
-	stopOnce        sync.Once
+	JobRunning       bool
+	stop             chan struct{}
+	stopOnce         sync.Once
 }
 
 // InitializeIndexer sets up indexers and notifications
-func InitializeIndexer(cacheDirectory string, libraries []models.Library, cb filestore.CacheBackend) {
-	CacheDataDirectory = cacheDirectory
-	cacheBackend = cb
+func InitializeIndexer(dataDirectory string, libraries []models.Library, cb filestore.DataBackend) {
+	DataDirectory = dataDirectory
+	dataBackend = cb
 	log.Info("Initializing Indexer and Scheduler")
 
 	for _, library := range libraries {
@@ -232,14 +232,14 @@ func NewIndexer(library models.Library) *Indexer {
 	for i, f := range library.Folders {
 		foldersCopy[i] = string([]byte(f))
 	}
-	
+
 	libraryCopy := library
 	libraryCopy.Folders = foldersCopy
 	libraryCopy.Slug = string([]byte(library.Slug))
 	libraryCopy.Name = string([]byte(library.Name))
 	libraryCopy.Description = string([]byte(library.Description))
 	libraryCopy.Cron = string([]byte(library.Cron))
-	
+
 	return &Indexer{
 		Library: libraryCopy,
 		stop:    make(chan struct{}),
@@ -272,7 +272,7 @@ func (idx *Indexer) Start() {
 	// Listen for stop signal
 	<-idx.stop
 	idx.Stop()
-}// Stop stops the indexer and cleans up
+} // Stop stops the indexer and cleans up
 func (idx *Indexer) Stop() {
 	idx.stopOnce.Do(func() {
 		if idx.SchedulerRunning {
@@ -335,13 +335,13 @@ func (idx *Indexer) runIndexingJob() bool {
 			log.Warnf("Library '%s' has relative folder path '%s', skipping", idx.Library.Name, folder)
 			continue
 		}
-		
+
 		absFolder, err := filepath.Abs(folder)
 		if err != nil {
 			log.Errorf("Failed to resolve folder path '%s' for library '%s': %s", folder, idx.Library.Name, err)
 			continue
 		}
-		
+
 		// Processing folder - don't log to avoid spam
 		if err := idx.processFolder(absFolder); err != nil {
 			log.Errorf("Error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
@@ -362,7 +362,7 @@ func (idx *Indexer) runIndexingJob() bool {
 	scanMutex.Lock()
 	totalScanned := scannedPathCount
 	scanMutex.Unlock()
-	
+
 	log.Debugf(
 		"Scheduled indexing for library '%s' completed in %.1fs (scanned %d content paths)",
 		idx.Library.Name,
@@ -382,7 +382,7 @@ func (idx *Indexer) runIndexingJob() bool {
 			if m.Path == "" {
 				continue
 			}
-			
+
 			// Check if the path no longer exists on disk
 			if _, err := os.Stat(m.Path); os.IsNotExist(err) {
 				log.Infof("Media path missing on disk, deleting media '%s' (slug=%s)", m.Name, m.Slug)
@@ -391,7 +391,7 @@ func (idx *Indexer) runIndexingJob() bool {
 				}
 				continue
 			}
-			
+
 			// Check if the path is still within one of the library's configured folders
 			pathInLibrary := false
 			for _, folder := range library.Folders {
@@ -405,14 +405,14 @@ func (idx *Indexer) runIndexingJob() bool {
 					log.Warnf("Failed to get absolute path for media '%s': %s", m.Path, err)
 					continue
 				}
-				
+
 				relPath, err := filepath.Rel(absFolder, absMediaPath)
 				if err == nil && !strings.HasPrefix(relPath, "..") {
 					pathInLibrary = true
 					break
 				}
 			}
-			
+
 			if !pathInLibrary {
 				log.Infof("Media path '%s' no longer in library folders, deleting media '%s' (slug=%s)", m.Path, m.Name, m.Slug)
 				if err := models.DeleteMedia(m.Slug); err != nil {
@@ -439,7 +439,7 @@ func (idx *Indexer) processFolder(folder string) error {
 	if !filepath.IsAbs(folder) {
 		return fmt.Errorf("folder path must be absolute: %s", folder)
 	}
-	
+
 	// Check if this folder is actually configured for this library
 	folderConfigured := false
 	for _, configuredFolder := range idx.Library.Folders {
@@ -448,13 +448,13 @@ func (idx *Indexer) processFolder(folder string) error {
 			break
 		}
 	}
-	
+
 	if !folderConfigured {
-		log.Warnf("Library '%s' trying to process folder '%s' which is not in its configured folders: %v", 
+		log.Warnf("Library '%s' trying to process folder '%s' which is not in its configured folders: %v",
 			idx.Library.Name, folder, idx.Library.Folders)
 		return fmt.Errorf("folder not configured for this library: %s", folder)
 	}
-	
+
 	dir, err := os.Open(folder)
 	if err != nil {
 		return err
@@ -514,7 +514,7 @@ func (idx *Indexer) processFolder(folder string) error {
 
 				// Scanning media - don't log to avoid spam
 
-				_, err := IndexMediaFunc(path, idx.Library.Slug, cacheBackend)
+				_, err := IndexMediaFunc(path, idx.Library.Slug, dataBackend)
 				results <- err
 			}
 		}()

@@ -145,8 +145,8 @@ func TestIndexingJob_Execute(t *testing.T) {
 
 func TestNewIndexer(t *testing.T) {
 	library := models.Library{
-		Name:   "Test Library",
-		Slug:   "test-library",
+		Name:    "Test Library",
+		Slug:    "test-library",
 		Folders: []string{"/tmp/test"},
 	}
 
@@ -158,10 +158,10 @@ func TestNewIndexer(t *testing.T) {
 
 func TestIndexer_Start(t *testing.T) {
 	library := models.Library{
-		Name:   "Test Library",
-		Slug:   "test-library",
+		Name:    "Test Library",
+		Slug:    "test-library",
 		Folders: []string{"/tmp/test"},
-		Cron:   "0 0 * * *",
+		Cron:    "0 0 * * *",
 	}
 
 	indexer := NewIndexer(library)
@@ -191,10 +191,10 @@ func TestIndexer_Start(t *testing.T) {
 
 func TestIndexer_Stop(t *testing.T) {
 	library := models.Library{
-		Name:   "Test Library",
-		Slug:   "test-library",
+		Name:    "Test Library",
+		Slug:    "test-library",
 		Folders: []string{"/tmp/test"},
-		Cron:   "0 0 * * *",
+		Cron:    "0 0 * * *",
 	}
 
 	indexer := NewIndexer(library)
@@ -248,21 +248,21 @@ func TestInitializeIndexer(t *testing.T) {
 	// Create test libraries with proper cron schedules
 	libraries := []models.Library{
 		{
-			Name:   "Test Library 1",
-			Slug:   "test-library-1",
+			Name:    "Test Library 1",
+			Slug:    "test-library-1",
 			Folders: []string{"/tmp/test1"},
-			Cron:   "0 0 * * *",
+			Cron:    "0 0 * * *",
 		},
 		{
-			Name:   "Test Library 2",
-			Slug:   "test-library-2",
+			Name:    "Test Library 2",
+			Slug:    "test-library-2",
 			Folders: []string{"/tmp/test2"},
-			Cron:   "0 0 * * *",
+			Cron:    "0 0 * * *",
 		},
 	}
 
 	// Initialize indexer
-	InitializeIndexer("/tmp/cache", libraries, nil)
+	InitializeIndexer("/tmp/data", libraries, nil)
 
 	// Check that indexers were created (this is hard to test without accessing global state)
 	// For now, just ensure it doesn't panic

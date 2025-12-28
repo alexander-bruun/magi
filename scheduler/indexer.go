@@ -75,7 +75,7 @@ type OPF struct {
 }
 
 // IndexMedia inspects a media directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
-func IndexMedia(absolutePath, librarySlug string, cacheBackend filestore.CacheBackend) (string, error) {
+func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBackend) (string, error) {
 	defer utils.LogDuration("IndexMedia", time.Now(), absolutePath)
 
 	// Check if this is a file (single-chapter media)
@@ -323,10 +323,10 @@ func IndexMedia(absolutePath, librarySlug string, cacheBackend filestore.CacheBa
 		}
 	}
 
-	var cachedImageURL string
+	var storedImageURL string
 	// Note: async image processing will be started after media creation
 
-	newMedia := createMediaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, cachedImageURL)
+	newMedia := createMediaFromMetadata(meta, cleanedName, slug, librarySlug, absolutePath, storedImageURL)
 
 	// Check if directory contains EPUB files, if so, set type to novel
 	if ContainsEPUBFiles(absolutePath) {
@@ -374,7 +374,7 @@ func IndexMedia(absolutePath, librarySlug string, cacheBackend filestore.CacheBa
 			coverURL := provider.GetCoverImageURL(meta)
 			if coverURL != "" {
 				log.Debugf("Found metadata cover URL for '%s': %s", slug, coverURL)
-				if url, err := DownloadAndCacheImage(slug, coverURL); err == nil {
+				if url, err := DownloadAndStoreImage(slug, coverURL); err == nil {
 					finalImageURL = url
 					log.Debugf("Successfully downloaded cover for '%s': %s", slug, finalImageURL)
 				} else {
@@ -494,7 +494,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 			strings.HasSuffix(lowerPath, ".zip") || strings.HasSuffix(lowerPath, ".rar") ||
 			strings.HasSuffix(lowerPath, ".epub") {
 			log.Debugf("Extracting poster from single archive file '%s' for media '%s'", absolutePath, slug)
-			return utils.ExtractPosterImage(absolutePath, slug, cacheBackend, models.GetProcessedImageQuality())
+			return utils.ExtractPosterImage(absolutePath, slug, dataBackend, models.GetProcessedImageQuality())
 		} else {
 			log.Debugf("Path '%s' is a file but not a supported archive format", absolutePath)
 		}
@@ -518,7 +518,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 					strings.HasSuffix(lowerName, ".epub") {
 					archivePath := filepath.Join(absolutePath, entry.Name())
 					log.Debugf("Extracting poster from archive '%s' in directory for media '%s'", entry.Name(), slug)
-					return utils.ExtractPosterImage(archivePath, slug, cacheBackend, models.GetProcessedImageQuality())
+					return utils.ExtractPosterImage(archivePath, slug, dataBackend, models.GetProcessedImageQuality())
 				}
 			}
 		}
@@ -586,18 +586,18 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 }
 
 func processLocalImage(slug, imagePath string) (string, error) {
-	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, cacheBackend, models.GetProcessedImageQuality())
+	return utils.ProcessLocalImageWithThumbnails(imagePath, slug, dataBackend, models.GetProcessedImageQuality())
 }
 
-func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
+func DownloadAndStoreImage(slug, coverArtURL string) (string, error) {
 	log.Debugf("Attempting to download cover image for '%s' from URL: %s", slug, coverArtURL)
 
-	cachedImageURL := fmt.Sprintf("%s/%s.webp", localServerBaseURL, slug)
+	storedImageURL := fmt.Sprintf("%s/%s.webp", localServerBaseURL, slug)
 
 	// Retry logic for downloading images
 	maxRetries := 3
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		if err := utils.DownloadImageWithThumbnails(slug, coverArtURL, cacheBackend, models.GetProcessedImageQuality()); err != nil {
+		if err := utils.DownloadImageWithThumbnails(slug, coverArtURL, dataBackend, models.GetProcessedImageQuality()); err != nil {
 			log.Warnf("Error downloading file from %s (attempt %d/%d): %s", coverArtURL, attempt, maxRetries, err)
 			if attempt < maxRetries {
 				// Wait before retrying (exponential backoff)
@@ -610,13 +610,8 @@ func DownloadAndCacheImage(slug, coverArtURL string) (string, error) {
 		break
 	}
 
-	log.Debugf("Successfully downloaded and cached cover image for '%s'", slug)
-	return cachedImageURL, nil
-}
-
-// Deprecated: Use DownloadAndCacheImage instead
-func downloadAndCacheImage(slug, coverArtURL string) (string, error) {
-	return DownloadAndCacheImage(slug, coverArtURL)
+	log.Debugf("Successfully downloaded and stored cover image for '%s'", slug)
+	return storedImageURL, nil
 }
 
 // IndexChapters reconciles chapter files on disk with the stored chapter records.
@@ -928,7 +923,7 @@ func extractEPUBMetadata(epubPath string) (*EPUBMetadata, error) {
 
 		// Validate coverPath before extraction
 		if isSafeZipPath(coverPath) {
-			// Extract and cache the cover image
+			// Extract and store the cover image
 			if cachedURL, err := extractAndCacheEPUBImage(reader, coverPath, epubPath); err == nil {
 				metadata.CoverArtURL = cachedURL
 			} else {
@@ -994,13 +989,13 @@ func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string
 		ext = ".jpg" // default
 	}
 
-	// Cache the image
-	cachePath := filepath.Join(CacheDataDirectory, "posters", fmt.Sprintf("%s%s", slug, ext))
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
-		return "", fmt.Errorf("failed to create cache directory: %w", err)
+	// Store the image
+	dataPath := filepath.Join(DataDirectory, "posters", fmt.Sprintf("%s%s", slug, ext))
+	if err := os.MkdirAll(filepath.Dir(dataPath), 0755); err != nil {
+		return "", fmt.Errorf("failed to create data directory: %w", err)
 	}
-	if err := os.WriteFile(cachePath, imageData, 0644); err != nil {
-		return "", fmt.Errorf("failed to cache image: %w", err)
+	if err := os.WriteFile(dataPath, imageData, 0644); err != nil {
+		return "", fmt.Errorf("failed to store image: %w", err)
 	}
 
 	return fmt.Sprintf("/api/posters/%s%s?v=%s", slug, ext, utils.GenerateRandomString(8)), nil
