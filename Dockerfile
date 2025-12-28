@@ -9,14 +9,20 @@ RUN apk add --no-cache libwebp-dev gcc musl-dev
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy the source code into the container
-COPY . .
+# Copy go mod and sum files first for better caching
+COPY go.mod go.sum ./
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
 
 # Install Node.js and npm for JavaScript obfuscation
 RUN apk add --no-cache nodejs npm
 
 # Install `templ` using Go
 RUN go install github.com/a-h/templ/cmd/templ@latest
+
+# Copy the source code into the container (after dependencies are downloaded)
+COPY . .
 
 # Generate necessary files using `templ`
 RUN templ generate

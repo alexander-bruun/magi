@@ -27,7 +27,10 @@
 
 ## 📦 Supported Platforms
 
-Magi compiles to a single portable binary for Linux and Windows (amd64, arm64). Docker images available on [Docker Hub](https://hub.docker.com/r/alexbruun/magi).
+Magi compiles to a single portable binary for Linux, Windows, and macOS (amd64, arm64). Docker images available on [Docker Hub](https://hub.docker.com/r/alexbruun/magi).
+
+> [!NOTE]
+> macOS builds do not include WebP image support due to platform limitations.
 
 ## 🚀 Quick Start
 

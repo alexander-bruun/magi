@@ -73,10 +73,10 @@ start-minio:
 		-v $(PWD)/minio-data:/data \
 		minio/minio server /data --console-address ":9001"
 	@echo "MinIO started. Creating .env file with credentials..."
-	@echo "MAGI_CACHE_BACKEND=s3" > .env
-	@echo "MAGI_CACHE_S3_BUCKET=magi-test" >> .env
-	@echo "MAGI_CACHE_S3_REGION=us-east-1" >> .env
-	@echo "MAGI_CACHE_S3_ENDPOINT=http://localhost:9000" >> .env
+	@echo "MAGI_DATA_BACKEND=s3" > .env
+	@echo "MAGI_DATA_S3_BUCKET=magi-test" >> .env
+	@echo "MAGI_DATA_S3_REGION=us-east-1" >> .env
+	@echo "MAGI_DATA_S3_ENDPOINT=http://localhost:9000" >> .env
 	@echo "AWS_ACCESS_KEY_ID=magiaccesskey" >> .env
 	@echo "AWS_SECRET_ACCESS_KEY=magisecretkey" >> .env
 	@echo "Credentials saved to .env file"
