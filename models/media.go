@@ -72,15 +72,15 @@ func CreateMedia(media Media) error {
 	return err
 }
 
-// GetMedia retrieves a single media by slug
+// GetMedia retrieves a single media by slug from enabled libraries
 func GetMedia(slug string) (*Media, error) {
-	return getMedia(slug, true)
+	return getMedia(slug, true, true)
 }
 
 // GetMediaUnfiltered retrieves a single media by slug without content rating filtering.
 // This should only be used for internal operations like indexing, updates, etc.
 func GetMediaUnfiltered(slug string) (*Media, error) {
-	return getMedia(slug, false)
+	return getMedia(slug, false, true)
 }
 
 // GetMediaBySlugAndLibrary retrieves a single media by slug and library slug without content rating filtering.
@@ -94,9 +94,17 @@ func GetMediaBySlugAndLibraryFiltered(slug, librarySlug string) (*Media, error) 
 	return getMediaBySlugAndLibrary(slug, librarySlug, true)
 }
 
-// getMedia is the internal implementation that optionally applies content rating filtering
-func getMedia(slug string, applyContentFilter bool) (*Media, error) {
-	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = ?`
+// getMedia is the internal implementation that optionally applies content rating filtering and library enabled check
+func getMedia(slug string, applyContentFilter bool, checkLibraryEnabled bool) (*Media, error) {
+	var query string
+	if checkLibraryEnabled {
+		query = `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at 
+		         FROM media m 
+		         JOIN libraries l ON m.library_slug = l.slug 
+		         WHERE m.slug = ? AND l.enabled = 1`
+	} else {
+		query = `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = ?`
+	}
 
 	row := db.QueryRow(query, slug)
 
@@ -136,7 +144,10 @@ func getMedia(slug string, applyContentFilter bool) (*Media, error) {
 
 // getMediaBySlugAndLibrary is the internal implementation for getting media by slug and library
 func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool) (*Media, error) {
-	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = ? AND library_slug = ?`
+	query := `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at 
+	          FROM media m 
+	          JOIN libraries l ON m.library_slug = l.slug 
+	          WHERE m.slug = ? AND m.library_slug = ? AND l.enabled = 1`
 
 	row := db.QueryRow(query, slug, librarySlug)
 
@@ -477,7 +488,11 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 
 // GetTopMedias returns the top media ordered by vote score (descending).
 // It joins the media table with aggregated votes and respects content rating limits.
-func GetTopMedias(limit int) ([]Media, error) {
+func GetTopMedias(limit int, accessibleLibraries []string) ([]Media, error) {
+	return GetTopMediasByPeriod("all", limit, accessibleLibraries)
+}
+
+func GetTopMediasByPeriod(period string, limit int, accessibleLibraries []string) ([]Media, error) {
 	cfg, err := GetAppConfig()
 	if err != nil {
 		// If we can't get config, default to showing all content
@@ -499,6 +514,34 @@ func GetTopMedias(limit int) ([]Media, error) {
 	placeholders := strings.Repeat("?,", len(allowedRatings))
 	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
 
+	var dateFilter string
+	switch period {
+	case "today":
+		dateFilter = "AND votes.created_at >= strftime('%s', datetime('now', 'start of day'))"
+	case "week":
+		dateFilter = "AND votes.created_at >= strftime('%s', datetime('now', '-7 days', 'start of day'))"
+	case "month":
+		dateFilter = "AND votes.created_at >= strftime('%s', datetime('now', '-1 month', 'start of day'))"
+	case "year":
+		dateFilter = "AND votes.created_at >= strftime('%s', datetime('now', '-1 year', 'start of day'))"
+	case "all":
+		dateFilter = ""
+	default:
+		return nil, fmt.Errorf("invalid period: %s", period)
+	}
+
+	var libraryFilter string
+	var args []interface{}
+
+	if len(accessibleLibraries) > 0 {
+		libraryPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
+		libraryPlaceholders = libraryPlaceholders[:len(libraryPlaceholders)-1] // remove trailing comma
+		libraryFilter = fmt.Sprintf("AND m.library_slug IN (%s)", libraryPlaceholders)
+	} else {
+		// No accessible libraries - return empty result
+		return []Media{}, nil
+	}
+
 	query := fmt.Sprintf(`
 	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
 	FROM media m
@@ -508,18 +551,24 @@ func GetTopMedias(limit int) ([]Media, error) {
 			THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
 			ELSE 0 END as score
 		FROM votes
+		WHERE 1=1 %s
 		GROUP BY media_slug
 	) v ON v.media_slug = m.slug
-	WHERE m.content_rating IN (%s)
+	WHERE m.content_rating IN (%s) %s
 	ORDER BY v.score DESC
 	LIMIT ?
-	`, placeholders)
+	`, dateFilter, placeholders, libraryFilter)
 
-	args := make([]interface{}, len(allowedRatings)+1)
-	for i, rating := range allowedRatings {
-		args[i] = rating
+	// Add content rating args first
+	for _, rating := range allowedRatings {
+		args = append(args, rating)
 	}
-	args[len(allowedRatings)] = limit
+	// Then library args
+	for _, lib := range accessibleLibraries {
+		args = append(args, lib)
+	}
+	// Then limit
+	args = append(args, limit)
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
@@ -1165,7 +1214,7 @@ func GetMediaAndChapters(mangaSlug string) (*Media, []Chapter, error) {
 		return nil, nil, err
 	}
 	if media == nil {
-		return nil, nil, fmt.Errorf("media not found or access restricted")
+		return nil, nil, nil // Media not found or access restricted
 	}
 
 	chapters, err := GetChapters(mangaSlug)
