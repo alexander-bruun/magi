@@ -1266,7 +1266,6 @@
       activeJobs = jobs;
       
       if (!indicator) {
-        console.warn('[JobStatus] Indicator not available for update');
         return;
       }
 
@@ -1308,7 +1307,6 @@
     function init() {
       indicator = document.getElementById('job-status-indicator');
       if (!indicator) {
-        console.warn('[JobStatus] Job status indicator element not found');
         return;
       }
       
