@@ -15,8 +15,8 @@ import (
 func NewBackendMigrateCmd(dataDirectory *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "backend-migrate",
-		Short: "Migrate cache data between different backends",
-		Long:  `Migrate all cache data from one backend to another. Supported backends: local, sftp, s3`,
+		Short: "Migrate data between different backends",
+		Long:  `Migrate all data from one backend to another. Supported backends: local, sftp, s3`,
 	}
 
 	var sourceBackend string
@@ -58,58 +58,58 @@ func NewBackendMigrateCmd(dataDirectory *string) *cobra.Command {
 	return cmd
 }
 
-func createBackend(backendType string, config map[string]string, dataDir string) (filestore.CacheBackend, error) {
-	cacheConfig := &filestore.CacheConfig{BackendType: backendType}
+func createBackend(backendType string, config map[string]string, dataDir string) (filestore.DataBackend, error) {
+	dataConfig := &filestore.DataConfig{BackendType: backendType}
 
 	switch backendType {
 	case "local":
 		path := config["path"]
 		if path == "" {
-			path = filepath.Join(dataDir, "cache")
+			path = dataDir
 		}
 		return filestore.NewLocalFileSystemAdapter(path), nil
 
 	case "sftp":
-		cacheConfig.SFTPHost = config["host"]
-		cacheConfig.SFTPPort = 22
+		dataConfig.SFTPHost = config["host"]
+		dataConfig.SFTPPort = 22
 		if port := config["port"]; port != "" {
 			if p, err := strconv.Atoi(port); err == nil {
-				cacheConfig.SFTPPort = p
+				dataConfig.SFTPPort = p
 			}
 		}
-		cacheConfig.SFTPUsername = config["username"]
-		cacheConfig.SFTPPassword = config["password"]
-		cacheConfig.SFTPKeyFile = config["key_file"]
-		cacheConfig.SFTPHostKey = config["host_key"]
-		cacheConfig.SFTPBasePath = config["base_path"]
+		dataConfig.SFTPUsername = config["username"]
+		dataConfig.SFTPPassword = config["password"]
+		dataConfig.SFTPKeyFile = config["key_file"]
+		dataConfig.SFTPHostKey = config["host_key"]
+		dataConfig.SFTPBasePath = config["base_path"]
 
-		if err := cacheConfig.Validate(); err != nil {
+		if err := dataConfig.Validate(); err != nil {
 			return nil, err
 		}
 		return filestore.NewSFTPAdapter(filestore.SFTPConfig{
-			Host:     cacheConfig.SFTPHost,
-			Port:     cacheConfig.SFTPPort,
-			Username: cacheConfig.SFTPUsername,
-			Password: cacheConfig.SFTPPassword,
-			KeyFile:  cacheConfig.SFTPKeyFile,
-			HostKey:  cacheConfig.SFTPHostKey,
-			BasePath: cacheConfig.SFTPBasePath,
+			Host:     dataConfig.SFTPHost,
+			Port:     dataConfig.SFTPPort,
+			Username: dataConfig.SFTPUsername,
+			Password: dataConfig.SFTPPassword,
+			KeyFile:  dataConfig.SFTPKeyFile,
+			HostKey:  dataConfig.SFTPHostKey,
+			BasePath: dataConfig.SFTPBasePath,
 		})
 
 	case "s3":
-		cacheConfig.S3Bucket = config["bucket"]
-		cacheConfig.S3Region = config["region"]
-		cacheConfig.S3Endpoint = config["endpoint"]
-		cacheConfig.S3BasePath = config["base_path"]
+		dataConfig.S3Bucket = config["bucket"]
+		dataConfig.S3Region = config["region"]
+		dataConfig.S3Endpoint = config["endpoint"]
+		dataConfig.S3BasePath = config["base_path"]
 
-		if err := cacheConfig.Validate(); err != nil {
+		if err := dataConfig.Validate(); err != nil {
 			return nil, err
 		}
 		return filestore.NewS3Adapter(filestore.S3Config{
-			Bucket:   cacheConfig.S3Bucket,
-			BasePath: cacheConfig.S3BasePath,
-			Region:   cacheConfig.S3Region,
-			Endpoint: cacheConfig.S3Endpoint,
+			Bucket:   dataConfig.S3Bucket,
+			BasePath: dataConfig.S3BasePath,
+			Region:   dataConfig.S3Region,
+			Endpoint: dataConfig.S3Endpoint,
 		})
 
 	default:
@@ -117,7 +117,7 @@ func createBackend(backendType string, config map[string]string, dataDir string)
 	}
 }
 
-func migrateBackends(source, dest filestore.CacheBackend, cmd *cobra.Command) error {
+func migrateBackends(source, dest filestore.DataBackend, cmd *cobra.Command) error {
 	// List all files in source backend recursively
 	files, err := listAllFiles(source, "")
 	if err != nil {
@@ -151,7 +151,7 @@ func migrateBackends(source, dest filestore.CacheBackend, cmd *cobra.Command) er
 	return nil
 }
 
-func listAllFiles(backend filestore.CacheBackend, prefix string) ([]string, error) {
+func listAllFiles(backend filestore.DataBackend, prefix string) ([]string, error) {
 	var files []string
 
 	dirs := []string{""}

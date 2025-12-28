@@ -23,7 +23,7 @@ func NewBackupCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 	cmd.AddCommand(
 		newBackupCreateCmd(dataDirectory, backupDirectory),
 		newBackupRestoreCmd(dataDirectory, backupDirectory),
-		newBackupListCmd(backupDirectory),
+		newBackupListCmd(dataDirectory, backupDirectory),
 	)
 
 	return cmd
@@ -106,14 +106,14 @@ func newBackupRestoreCmd(dataDirectory, backupDirectory *string) *cobra.Command 
 	}
 }
 
-func newBackupListCmd(backupDirectory *string) *cobra.Command {
+func newBackupListCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List available backup files",
 		Run: func(cmd *cobra.Command, args []string) {
 			backupDir := *backupDirectory
 			if backupDir == "" {
-				backupDir = filepath.Join(os.Getenv("HOME"), "magi", "backups") // fallback
+				backupDir = filepath.Join(*dataDirectory, "backups")
 			}
 
 			backups, err := listBackupsCLI(backupDir)
