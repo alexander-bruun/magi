@@ -218,6 +218,22 @@ html {
   background: var(--ui-bg-subtle);
 }
 
+.btn-success {
+  background-color: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+.btn-favorite {
+  background-color: #fbbf24;
+  color: #000;
+  border-color: #fbbf24;
+}
+
+.btn-favorite uk-icon {
+  color: white;
+}
+
 /* Circular button style */
 .btn-circular {
   border-radius: 50%;
