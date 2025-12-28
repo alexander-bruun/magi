@@ -107,76 +107,8 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
 			<div id="chapters-section">
-				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug, premiumDuration, userRole)
+				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug, premiumDuration, userRole, isHighlighted)
 			</div>
-			if userRole == "moderator" || userRole == "admin" {
-				<div class="uk-card mt-4 p-2 mb-4 uk-width-auto uk-align-center">
-					<div class="flex justify-around gap-2">
-						<button
-							type="button"
-							class="uk-btn uk-btn-secondary"
-							uk-toggle="target: #metadata-modal"
-							title="Search for Metadata"
-							aria-label="Search for Metadata"
-						>
-							<uk-icon icon="Search"></uk-icon>
-						</button>
-						<button
-							type="button"
-							class="uk-btn uk-btn-primary"
-							uk-toggle="target: #edit-metadata-modal"
-							title="Edit Metadata"
-							aria-label="Edit Metadata"
-						>
-							<uk-icon icon="Pencil"></uk-icon>
-						</button>
-						<button
-							type="button"
-							class="uk-btn uk-btn-primary"
-							uk-toggle="target: #refresh-metadata-modal"
-							title="Refresh Metadata"
-							aria-label="Refresh Metadata"
-						>
-							<uk-icon icon="FolderSync"></uk-icon>
-						</button>
-						<button
-							type="button"
-							class="uk-btn uk-btn-primary"
-							uk-toggle="target: #reindex-chapters-modal"
-							title="Re-index chapters"
-							aria-label="Re-index chapters"
-						>
-							<uk-icon icon="RotateCcw"></uk-icon>
-						</button>
-						<button
-							type="button"
-							class="uk-btn uk-btn-destructive"
-							uk-toggle="target: #delete-media-modal"
-							title="Delete series"
-							aria-label="Delete series"
-						>
-							<uk-icon icon="Trash"></uk-icon>
-						</button>
-						<div id="highlight-btn-container">
-							if isHighlighted {
-								<form hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-container" hx-swap="outerHTML" class="inline">
-									<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
-										<uk-icon icon="StarOff"></uk-icon>
-										<span class="hidden md:inline ml-1">Remove from Highlights</span>
-									</button>
-								</form>
-							} else {
-								<form hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-container" hx-swap="outerHTML" class="inline">
-									<button type="submit" class="uk-btn uk-btn-primary uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
-										<uk-icon icon="Star"></uk-icon>
-										<span class="hidden md:inline ml-1">Add to Highlights</span>
-									</button>
-								</form>
-							}
-						</div>
-					</div>
-				</div>
-			}
 			<div id="reviews-section" class="mt-8">
 				@MediaReviewsSection(media, reviews, userReview, userRole, userName)
 			</div>
@@ -331,55 +263,55 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	<!-- Improved metadata grid with modern styling -->
 	<div class="mt-3 space-y-1.5">
 		if media.Year != 0 {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="calendar"></uk-icon>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Year</strong>
 					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(media.Year) }</span>
 				</div>
 			</div>
 		}
 		if media.OriginalLanguage != "" {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="globe"></uk-icon>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Language</strong>
 					<span class="text-sm text-gray-800 break-words">{ media.OriginalLanguage }</span>
 				</div>
 			</div>
 		}
 		if media.Type != "" {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="book"></uk-icon>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Type</strong>
 					<span class="text-sm text-gray-800 break-words">{ media.Type }</span>
 				</div>
 			</div>
 		}
 		if media.ContentRating != "" {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="star"></uk-icon>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Rating</strong>
 					<span class="text-sm text-gray-800 break-words">{ media.ContentRating }</span>
 				</div>
 			</div>
 		}
 		if media.FileCount != 0 {
-			<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="file-text"></uk-icon>
 				</div>
-				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">{ strings.Title(unit) + "s" }</strong>
 					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(media.FileCount) }</span>
 				</div>
@@ -387,22 +319,22 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 		}
 		if userRole == "moderator" || userRole == "admin" {
 			if !media.CreatedAt.IsZero() {
-				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 					<div class="shrink-0 mt-0.5">
 						<uk-icon icon="plus-circle"></uk-icon>
 					</div>
-					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Added</strong>
 						<span class="text-sm text-gray-800 break-words">{ media.CreatedAt.Format("2006-01-02") }</span>
 					</div>
 				</div>
 			}
 			if !media.UpdatedAt.IsZero() {
-				<div class="flex items-start gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
 					<div class="shrink-0 mt-0.5">
 						<uk-icon icon="calendar-clock"></uk-icon>
 					</div>
-					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0">
+					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Updated</strong>
 						<span class="text-sm text-gray-800 break-words">{ media.UpdatedAt.Format("2006-01-02") }</span>
 					</div>
@@ -768,6 +700,19 @@ templ MediaFavoriteFragmentAnonymous(mangaSlug string, favCount int) {
 	</div>
 }
 
+// Highlight fragment for a media. Returned by HTMX when toggling highlight state.
+templ MediaHighlightFragment(mediaSlug string, isHighlighted bool) {
+	if isHighlighted {
+		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+			<uk-icon icon="StarOff"></uk-icon>
+		</button>
+	} else {
+		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+			<uk-icon icon="Star"></uk-icon>
+		</button>
+	}
+}
+
 // Vote fragment for a media. This small fragment is returned by HTMX when voting
 // so the UI can be updated in-place.
 templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
@@ -899,7 +844,7 @@ templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse b
 	@Chapters(media, chapters, premiumDuration, userRole)
 }
 
-templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterSlug string, premiumDuration int, userRole string) {
+templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterSlug string, premiumDuration int, userRole string, isHighlighted bool) {
 	{{ toggleURL := fmt.Sprintf("/series/%s", media.Slug) }}
 	{{ buttonText := "" }}
 	{{ buttonIcon := "" }}
@@ -927,19 +872,79 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<uk-icon icon={ buttonIcon }></uk-icon>
 			<span class="ml-1">{ buttonText }</span>
 		</button>
-		if lastReadChapterSlug != "" {
-			<a
-				href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
-				class="uk-btn uk-btn-primary"
-				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
-				hx-target="#content"
-				hx-push-url="true"
-				title="Resume reading from where you left off"
-			>
-				<uk-icon icon="Play"></uk-icon>
-				<span class="ml-1">Resume</span>
-			</a>
-		}
+		<div class="flex items-center gap-2">
+			if lastReadChapterSlug != "" {
+				<a
+					href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+					class="uk-btn uk-btn-primary"
+					hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+					hx-target="#content"
+					hx-push-url="true"
+					title="Resume reading from where you left off"
+				>
+					<uk-icon icon="Play"></uk-icon>
+					<span class="ml-1">Resume</span>
+				</a>
+			}
+			if userRole == "moderator" || userRole == "admin" {
+				<div class="uk-btn-group">
+					<button
+						type="button"
+						class="uk-btn uk-btn-primary uk-btn-small"
+						uk-toggle="target: #metadata-modal"
+						title="Search for Metadata"
+						aria-label="Search for Metadata"
+					>
+						<uk-icon icon="Search"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #edit-metadata-modal"
+						title="Edit Metadata"
+						aria-label="Edit Metadata"
+					>
+						<uk-icon icon="Pencil"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #refresh-metadata-modal"
+						title="Refresh Metadata"
+						aria-label="Refresh Metadata"
+					>
+						<uk-icon icon="FolderSync"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #reindex-chapters-modal"
+						title="Re-index chapters"
+						aria-label="Re-index chapters"
+					>
+						<uk-icon icon="RotateCcw"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-destructive uk-btn-small"
+						uk-toggle="target: #delete-media-modal"
+						title="Delete series"
+						aria-label="Delete series"
+					>
+						<uk-icon icon="Trash"></uk-icon>
+					</button>
+					if isHighlighted {
+						<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+							<uk-icon icon="StarOff"></uk-icon>
+						</button>
+					} else {
+						<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+							<uk-icon icon="Star"></uk-icon>
+						</button>
+					}
+				</div>
+			}
+		</div>
 	</div>
 	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
 		<div id="chapters-container" class="p-2">

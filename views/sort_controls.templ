@@ -64,7 +64,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
         }
         
         <!-- Left side: Sort select + Search input -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center">
             <!-- Sort Select -->
             <form id="sort-controls-form">
                 <input type="hidden" name="order" value={ currentOrder }/>
@@ -83,7 +83,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 }
                 </form>
             
-            <div class="uk-inline">
+            <div class="uk-inline mr-2">
                 <button class="uk-btn uk-btn-default uk-btn-small" type="button" uk-toggle="target: #sort-dropdown">
                     if currentSort == "" {
                         Sort by

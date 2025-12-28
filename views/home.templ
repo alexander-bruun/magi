@@ -170,7 +170,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 									<div class="highlight-meta">
 										<span class="highlight-rating">
 											<uk-icon icon="star" class="uk-icon"></uk-icon>
-											{ fmt.Sprintf("%.1f", float64(score)/20.0) }
+											{ fmt.Sprint(score) }
 										</span>
 										<span class="uk-badge uk-background-primary">{ strings.ToUpper(highlight.Media.Type) }</span>
 										<span class="uk-badge uk-background-secondary">{ strings.ToUpper(highlight.Media.Status) }</span>

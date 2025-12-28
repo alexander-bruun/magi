@@ -220,7 +220,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 				sorts = append(sorts, struct{ Key, Label string }{"popularity", "Most Popular"})
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<!-- Left side: Sort select + Search input --><div class=\"flex items-center gap-2\"><!-- Sort Select --><form id=\"sort-controls-form\"><input type=\"hidden\" name=\"order\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<!-- Left side: Sort select + Search input --><div class=\"flex items-center\"><!-- Sort Select --><form id=\"sort-controls-form\"><input type=\"hidden\" name=\"order\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -309,7 +309,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</form><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" uk-toggle=\"target: #sort-dropdown\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</form><div class=\"uk-inline mr-2\"><button class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" uk-toggle=\"target: #sort-dropdown\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
