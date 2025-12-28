@@ -1,15 +1,3 @@
-!scripts/scrapers/*.sh
 .tmp/
-backups/
-builds/
-cache/
-magi
-magi.db
-magi.db-journal
-magi.db-shm
-magi.db-wal
-node_modules/
-scripts/scrapers/**
 *.out
-.env
-minio-data/
+node_modules/
