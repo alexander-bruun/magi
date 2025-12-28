@@ -110,12 +110,12 @@ func TestSafeJoinPath(t *testing.T) {
 	}
 }
 
-func TestGetCacheDirectory(t *testing.T) {
-	// This function returns a hardcoded path, so just test it returns something
-	result := GetCacheDirectory()
+func TestGetDataDirectory(t *testing.T) {
+	// This function returns the configured data directory path
+	result := GetDataDirectory()
 	assert.NotEmpty(t, result)
-	// Should be "cache" or similar
-	assert.Contains(t, result, "cache")
+	// Should be "./data" by default
+	assert.Equal(t, "./data", result)
 }
 
 func TestCopyFile(t *testing.T) {
@@ -178,9 +178,9 @@ func TestIsImageFile(t *testing.T) {
 		{"image.webp", true},
 		{"image.JPG", true}, // case insensitive
 		{"image.txt", false},
-		{"image", false},    // no extension
-		{"", false},         // empty
-		{"image.", false},   // dot but no extension
+		{"image", false},  // no extension
+		{"", false},       // empty
+		{"image.", false}, // dot but no extension
 	}
 
 	for _, test := range tests {
@@ -195,14 +195,14 @@ func TestGenerateRandomString(t *testing.T) {
 	for _, length := range lengths {
 		result := GenerateRandomString(length)
 		assert.Len(t, result, length, "GenerateRandomString(%d) should return string of length %d", length, length)
-		
+
 		// Check that all characters are in the charset
 		const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		for _, char := range result {
 			assert.Contains(t, charset, string(char), "Character %c not in charset", char)
 		}
 	}
-	
+
 	// Test zero length
 	result := GenerateRandomString(0)
 	assert.Empty(t, result)
@@ -229,13 +229,13 @@ func TestIsImageFileEdgeCases(t *testing.T) {
 		filename string
 		expected bool
 	}{
-		{"IMAGE.JPG", true},           // uppercase
-		{"Image.JpEg", true},          // mixed case
-		{"path/to/image.jpg", true},   // with path
-		{".jpg", true},                // just extension
-		{"image.jpg.bak", false},      // bak after jpg
-		{"image.jpg.txt", false},      // txt after jpg
-		{"image.JPG.png", true},       // png extension takes precedence
+		{"IMAGE.JPG", true},         // uppercase
+		{"Image.JpEg", true},        // mixed case
+		{"path/to/image.jpg", true}, // with path
+		{".jpg", true},              // just extension
+		{"image.jpg.bak", false},    // bak after jpg
+		{"image.jpg.txt", false},    // txt after jpg
+		{"image.JPG.png", true},     // png extension takes precedence
 	}
 
 	for _, test := range tests {
@@ -325,7 +325,7 @@ func TestListImagesInManga(t *testing.T) {
 	images, err := ListImagesInManga(tempDir)
 	assert.NoError(t, err)
 	assert.Len(t, images, 3)
-	
+
 	// Check that all returned paths contain the expected filenames
 	imageNames := make([]string, len(images))
 	for i, img := range images {

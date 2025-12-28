@@ -20,6 +20,13 @@ import (
 	"github.com/nwaples/rardecode/v2"
 )
 
+var dataDirectory = "./data"
+
+// SetDataDirectory sets the data directory path
+func SetDataDirectory(dir string) {
+	dataDirectory = dir
+}
+
 // isSafeArchivePath checks whether the provided path is safe for extraction (no directory traversal, not absolute).
 func isSafeArchivePath(name string) bool {
 	// Reject absolute paths
@@ -334,10 +341,10 @@ func CopyFile(src, dst string) error {
 }
 
 // isImageFile checks if a file is an image based on its extension.
-// ExtractAndCacheFirstImage extracts the first image from an archive and caches it with proper resizing.
+// ExtractAndStoreFirstImage extracts the first image from an archive and stores it with proper resizing.
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
-// Returns the cached image URL path.
-func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string, quality int) (string, error) {
+// Returns the stored image URL path.
+func ExtractAndStoreFirstImage(archivePath, slug, dataDir string, quality int) (string, error) {
 	log.Debugf("Extracting first image from archive '%s' for manga '%s'", archivePath, slug)
 
 	// Create a temporary directory for extraction
@@ -383,20 +390,20 @@ func ExtractAndCacheFirstImage(archivePath, slug, cacheDir string, quality int) 
 		return "", fmt.Errorf("no image file found after extraction")
 	}
 
-	// Process and cache the image, cropping from the top for tall webtoon pages
+	// Process and store the image, cropping from the top for tall webtoon pages
 	fileExt := filepath.Ext(extractedImagePath)[1:]
-	originalFile := filepath.Join(cacheDir, fmt.Sprintf("%s_original.%s", slug, fileExt))
-	croppedFile := filepath.Join(cacheDir, fmt.Sprintf("%s.%s", slug, fileExt))
+	originalFile := filepath.Join(dataDir, fmt.Sprintf("%s_original.%s", slug, fileExt))
+	croppedFile := filepath.Join(dataDir, fmt.Sprintf("%s.%s", slug, fileExt))
 
 	if err := CopyFile(extractedImagePath, originalFile); err != nil {
-		return "", fmt.Errorf("failed to copy image to cache: %w", err)
+		return "", fmt.Errorf("failed to copy image to data directory: %w", err)
 	}
 
 	if err := ProcessImageWithTopCrop(originalFile, croppedFile, quality); err != nil {
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	log.Debugf("Successfully processed and cached poster for manga '%s': %s", slug, croppedFile)
+	log.Debugf("Successfully processed and stored poster for manga '%s': %s", slug, croppedFile)
 	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, fileExt, GenerateRandomString(8)), nil
 }
 
@@ -484,10 +491,10 @@ func listImagesInRar(rarPath string) ([]string, error) {
 	return images, nil
 }
 
-// ExtractAndCacheImageWithCrop extracts an image (from a file path or archive) and caches it with optional cropping.
-func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int) (string, error) {
-	cacheDir := GetCacheDirectory()
-	postersDir := filepath.Join(cacheDir, "posters")
+// ExtractAndStoreImageWithCrop extracts an image (from a file path or archive) and stores it with optional cropping.
+func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int) (string, error) {
+	dataDir := GetDataDirectory()
+	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create posters directory: %w", err)
 	}
@@ -514,10 +521,10 @@ func ExtractAndCacheImageWithCrop(imagePath string, slug string, cropData map[st
 	return "", fmt.Errorf("archive image extraction not yet supported for custom posters")
 }
 
-func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]interface{}, quality int) (string, error) {
+func processCroppedImage(imagePath, slug, dataDir string, cropData map[string]interface{}, quality int) (string, error) {
 	// Always save as JPG for consistency and compression
-	originalFile := filepath.Join(cacheDir, fmt.Sprintf("%s_original.jpg", slug))
-	croppedFile := filepath.Join(cacheDir, fmt.Sprintf("%s.jpg", slug))
+	originalFile := filepath.Join(dataDir, fmt.Sprintf("%s_original.jpg", slug))
+	croppedFile := filepath.Join(dataDir, fmt.Sprintf("%s.jpg", slug))
 
 	// Copy original and convert to JPG
 	if err := CopyFile(imagePath, originalFile); err != nil {
@@ -532,9 +539,9 @@ func processCroppedImage(imagePath, slug, cacheDir string, cropData map[string]i
 	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
 }
 
-// GetCacheDirectory returns the cache directory path
-func GetCacheDirectory() string {
-	return "./cache"
+// GetDataDirectory returns the data directory path
+func GetDataDirectory() string {
+	return dataDirectory
 }
 
 // GetImageDataURIByIndex extracts an image at the given index and returns a data URI
@@ -690,10 +697,10 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 	return "", fmt.Errorf("image index out of range")
 }
 
-// ExtractAndCacheImageWithCropByIndex extracts an image by index with cropping
-func ExtractAndCacheImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, quality int) (string, error) {
-	cacheDir := GetCacheDirectory()
-	postersDir := filepath.Join(cacheDir, "posters")
+// ExtractAndStoreImageWithCropByIndex extracts an image by index with cropping
+func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, quality int) (string, error) {
+	dataDir := GetDataDirectory()
+	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create posters directory: %w", err)
 	}

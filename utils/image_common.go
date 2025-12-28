@@ -47,7 +47,7 @@ const (
 )
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestore.CacheBackend, quality int) error {
+func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore.DataBackend, quality int) error {
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
@@ -64,7 +64,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	if err := cacheBackend.Save(originalPath, originalData); err != nil {
+	if err := dataBackend.Save(originalPath, originalData); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	if err := cacheBackend.Save(fullPath, fullData); err != nil {
+	if err := dataBackend.Save(fullPath, fullData); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
+	if err := dataBackend.Save(thumbPath, thumbData); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	if err := cacheBackend.Save(smallPath, smallData); err != nil {
+	if err := dataBackend.Save(smallPath, smallData); err != nil {
 		return err
 	}
 
@@ -108,7 +108,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	if err := cacheBackend.Save(tinyPath, tinyData); err != nil {
+	if err := dataBackend.Save(tinyPath, tinyData); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, cacheBackend filestor
 	if err != nil {
 		return err
 	}
-	return cacheBackend.Save(displayPath, displayData)
+	return dataBackend.Save(displayPath, displayData)
 }
 
 // ensureDirExists ensures the directory exists, creating it if necessary.
@@ -554,7 +554,7 @@ func CleanupExpiredTokens() {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
-func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBackend, quality int) (string, error) {
+func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend, quality int) (string, error) {
 
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
@@ -630,7 +630,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBacke
 	if err != nil {
 		return "", fmt.Errorf("failed to encode original image: %w", err)
 	}
-	if err := cacheBackend.Save(originalPath, originalData); err != nil {
+	if err := dataBackend.Save(originalPath, originalData); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
@@ -641,7 +641,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBacke
 	if err != nil {
 		return "", fmt.Errorf("failed to encode full-size image: %w", err)
 	}
-	if err := cacheBackend.Save(fullPath, fullData); err != nil {
+	if err := dataBackend.Save(fullPath, fullData); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
@@ -652,7 +652,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBacke
 	if err != nil {
 		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
 	}
-	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
+	if err := dataBackend.Save(thumbPath, thumbData); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
@@ -663,7 +663,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBacke
 	if err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
-	if err := cacheBackend.Save(smallPath, smallData); err != nil {
+	if err := dataBackend.Save(smallPath, smallData); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
@@ -674,7 +674,7 @@ func ExtractPosterImage(filePath, slug string, cacheBackend filestore.CacheBacke
 // ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filestore.CacheBackend, quality int) (string, error) {
+func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filestore.DataBackend, quality int) (string, error) {
 
 	// Load the image
 	img, err := OpenImage(imagePath)
@@ -688,7 +688,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filest
 	if err != nil {
 		return "", fmt.Errorf("failed to encode original image: %w", err)
 	}
-	if err := cacheBackend.Save(originalPath, originalData); err != nil {
+	if err := dataBackend.Save(originalPath, originalData); err != nil {
 		return "", fmt.Errorf("failed to save original image: %w", err)
 	}
 
@@ -699,7 +699,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filest
 	if err != nil {
 		return "", fmt.Errorf("failed to encode full-size image: %w", err)
 	}
-	if err := cacheBackend.Save(fullPath, fullData); err != nil {
+	if err := dataBackend.Save(fullPath, fullData); err != nil {
 		return "", fmt.Errorf("failed to save full-size image: %w", err)
 	}
 
@@ -710,7 +710,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filest
 	if err != nil {
 		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
 	}
-	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
+	if err := dataBackend.Save(thumbPath, thumbData); err != nil {
 		return "", fmt.Errorf("failed to save thumbnail image: %w", err)
 	}
 
@@ -721,7 +721,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filest
 	if err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
-	if err := cacheBackend.Save(smallPath, smallData); err != nil {
+	if err := dataBackend.Save(smallPath, smallData); err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
@@ -729,9 +729,9 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, cacheBackend filest
 }
 
 // GenerateThumbnails generates thumbnail and small versions from a cached full-size image
-func GenerateThumbnails(fullImagePath, slug string, cacheBackend filestore.CacheBackend, quality int) error {
+func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBackend, quality int) error {
 	// Load the full-size image from cache
-	data, err := cacheBackend.Load(fullImagePath)
+	data, err := dataBackend.Load(fullImagePath)
 	if err != nil {
 		return fmt.Errorf("failed to load image from cache: %w", err)
 	}
@@ -750,7 +750,7 @@ func GenerateThumbnails(fullImagePath, slug string, cacheBackend filestore.Cache
 	if err != nil {
 		return fmt.Errorf("failed to encode thumbnail: %w", err)
 	}
-	if err := cacheBackend.Save(thumbPath, thumbData); err != nil {
+	if err := dataBackend.Save(thumbPath, thumbData); err != nil {
 		return fmt.Errorf("failed to save thumbnail: %w", err)
 	}
 
@@ -761,5 +761,5 @@ func GenerateThumbnails(fullImagePath, slug string, cacheBackend filestore.Cache
 	if err != nil {
 		return fmt.Errorf("failed to encode small image: %w", err)
 	}
-	return cacheBackend.Save(smallPath, smallData)
+	return dataBackend.Save(smallPath, smallData)
 }
