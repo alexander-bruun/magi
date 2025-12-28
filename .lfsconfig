@@ -1,2 +1,0 @@
-[lfs]
-	fetchexclude = "docs/images/*.png"
