@@ -452,9 +452,9 @@ func HighlightBanner(highlights []models.HighlightWithMedia) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var20 string
-			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(highlight.Media.CoverArtURL + "?size=display")
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(highlight.Media.CoverArtURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 163, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 163, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {

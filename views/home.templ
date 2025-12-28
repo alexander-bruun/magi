@@ -160,7 +160,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 								<!-- Poster (Left on desktop, top on mobile) -->
 								<div class="highlight-poster">
 									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="highlight-poster-link">
-										<img alt={ highlight.Media.Name } loading="lazy" src={ highlight.Media.CoverArtURL + "?size=display" } />
+										<img alt={ highlight.Media.Name } loading="lazy" src={ highlight.Media.CoverArtURL } />
 									</a>
 								</div>
 								

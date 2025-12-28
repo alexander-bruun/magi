@@ -319,12 +319,6 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 		<div id="media-vote" hx-get={ fmt.Sprintf("/series/%s/vote/fragment", media.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 	</div>
 	<div class="mt-2 flex justify-center">
-		<button type="button" class="uk-btn uk-btn-default uk-btn-small" uk-toggle="target: #collections-modal" hx-get={ fmt.Sprintf("/series/%s/collections/modal", media.Slug) } hx-target="#collections-modal-content" hx-swap="innerHTML" hx-trigger="click">
-			<uk-icon icon="folder"></uk-icon>
-			Add to Collection
-		</button>
-	</div>
-	<div class="mt-2 flex justify-center">
 		if media.Status != "" {
 			<span class="uk-badge">{ media.Status }</span>
 		}
@@ -563,7 +557,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				<div class="mb-5">
 					<label class="uk-form-label mb-2 block font-semibold" for="cover_url">Cover Art URL</label>
 					<input class="uk-input" type="url" id="cover_url" name="cover_url"/>
-					<small class="uk-text-muted block mt-2">Enter a URL to download and cache a new cover image</small>
+					<small class="uk-text-muted block mt-2">Enter a URL to download and store a new cover image</small>
 				</div>
 				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4" style="border-top: 1px solid #e5e5e5;">
 					<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
@@ -764,6 +758,16 @@ templ MediaFavoriteFragment(mangaSlug string, favCount int, isFavorite bool) {
 	</div>
 }
 
+// Favorite fragment for anonymous users - shows only the count
+templ MediaFavoriteFragmentAnonymous(mangaSlug string, favCount int) {
+	<div id="media-favorite" class="media-favorite-fragment inline-flex items-center">
+		<span class="text-sm text-gray-600" title={ fmt.Sprintf("%d favorites", favCount) }>
+			<uk-icon icon="Star"></uk-icon>
+			{ fmt.Sprint(favCount) }
+		</span>
+	</div>
+}
+
 // Vote fragment for a media. This small fragment is returned by HTMX when voting
 // so the UI can be updated in-place.
 templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int, userVote int) {
@@ -808,6 +812,18 @@ templ MediaVoteFragment(mangaSlug string, score int, upvotes int, downvotes int,
 	</div>
 }
 
+// Vote fragment for anonymous users - shows only the stats without buttons
+templ MediaVoteFragmentAnonymous(mangaSlug string, score int, upvotes int, downvotes int) {
+	<div id="media-vote" class="media-vote-fragment w-full flex justify-center">
+		<div class="flex items-center gap-3 px-3 md:px-0 max-w-xs w-full md:w-auto">
+			<div class="vote-stats flex flex-col items-center my-2 md:my-0 text-center flex-grow">
+				<div class="vote-count">{ fmt.Sprint(score) }</div>
+				<div class="vote-small">{ fmt.Sprint(upvotes) } ↑ · { fmt.Sprint(downvotes) } ↓</div>
+			</div>
+		</div>
+	</div>
+}
+
 templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration int, userRole string) {
 	<ul class="uk-accordion" uk-accordion>
 		for _, chapter := range chapters {
@@ -818,9 +834,11 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 						<a
 							class={ "uk-accordion-title pr-2 truncate", templ.KV("brand-gradient", chapter.Read) }
 							href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-							hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-							hx-target="#content"
-							hx-push-url="true"
+							if userRole != "anonymous" {
+								hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+								hx-target="#content"
+								hx-push-url="true"
+							}
 						>
 							{ chapter.Name }
 							<span
@@ -1008,13 +1026,15 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
 	</button>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
-	<div
-		id="read-state"
-		hx-post={ fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug) }
-		hx-trigger="load"
-		hx-swap="none"
-		class="hidden"
-	></div>
+	if userRole != "" {
+		<div
+			id="read-state"
+			hx-post={ fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug) }
+			hx-trigger="load"
+			hx-swap="none"
+			class="hidden"
+		></div>
+	}
 	@ChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
 	<!-- Pagination Controls (hidden in webtoon mode) -->
 	<div id="reader-pagination" style="display: none;">
@@ -1939,6 +1959,7 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 		function updateStars() {
 			var stars = document.querySelectorAll('.star-rating .star');
 			var ratingInput = document.querySelector('input[name="rating"]');
+			if (!ratingInput) return; // Exit if rating input doesn't exist
 			var rating = parseInt(ratingInput.value) || 0;
 			stars.forEach((star, index) => {
 				if (index < rating) {
@@ -1950,6 +1971,7 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 		}
 		function setRating(rating) {
 			var ratingInput = document.querySelector('input[name="rating"]');
+			if (!ratingInput) return; // Exit if rating input doesn't exist
 			ratingInput.value = rating;
 			updateStars();
 		}
@@ -1959,27 +1981,34 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 				return;
 			}
 			var content = reviewDiv.dataset.reviewContent;
-			document.querySelector('input[name="reviewId"]').value = id;
+			var reviewIdInput = document.querySelector('input[name="reviewId"]');
+			var contentTextarea = document.querySelector('textarea[name="content"]');
+			if (!reviewIdInput || !contentTextarea) return; // Exit if form elements don't exist
+			reviewIdInput.value = id;
 			setRating(rating);
-			document.querySelector('textarea[name="content"]').value = content;
-			document.querySelector('textarea[name="content"]').scrollIntoView({ behavior: 'smooth' });
+			contentTextarea.value = content;
+			contentTextarea.scrollIntoView({ behavior: 'smooth' });
 		}
-		// Attach event listeners
+		// Attach event listeners only if elements exist
 		var stars = document.querySelectorAll('.star-rating .star');
-		stars.forEach(star => {
-			star.addEventListener('click', () => {
-				var rating = parseInt(star.dataset.rating);
-				setRating(rating);
+		if (stars.length > 0) {
+			stars.forEach(star => {
+				star.addEventListener('click', () => {
+					var rating = parseInt(star.dataset.rating);
+					setRating(rating);
+				});
 			});
-		});
+		}
 		var editButtons = document.querySelectorAll('.edit-review-btn');
-		editButtons.forEach(btn => {
-			btn.addEventListener('click', () => {
-				var id = parseInt(btn.dataset.reviewId);
-				var rating = parseInt(btn.dataset.reviewRating);
-				editReview(id, rating);
+		if (editButtons.length > 0) {
+			editButtons.forEach(btn => {
+				btn.addEventListener('click', () => {
+					var id = parseInt(btn.dataset.reviewId);
+					var rating = parseInt(btn.dataset.reviewRating);
+					editReview(id, rating);
+				});
 			});
-		});
+		}
 		// Initial update
 		updateStars();
 	</script>
@@ -2036,9 +2065,6 @@ templ ReviewsList(media models.Media, reviews []models.Review, page int, perPage
 						<li>
 							<a
 								href="#"
-								hx-get={ fmt.Sprintf("/series/%s/reviews?page=%d", media.Slug, page-1) }
-								hx-target="#reviews-list"
-								hx-swap="outerHTML"
 							>«</a>
 						</li>
 					}
@@ -2049,9 +2075,6 @@ templ ReviewsList(media models.Media, reviews []models.Review, page int, perPage
 							<li>
 								<a
 									href="#"
-									hx-get={ fmt.Sprintf("/series/%s/reviews?page=%d", media.Slug, i) }
-									hx-target="#reviews-list"
-									hx-swap="outerHTML"
 								>{ fmt.Sprint(i) }</a>
 							</li>
 						}
@@ -2060,9 +2083,6 @@ templ ReviewsList(media models.Media, reviews []models.Review, page int, perPage
 						<li>
 							<a
 								href="#"
-								hx-get={ fmt.Sprintf("/series/%s/reviews?page=%d", media.Slug, page+1) }
-								hx-target="#reviews-list"
-								hx-swap="outerHTML"
 							>»</a>
 						</li>
 					}
