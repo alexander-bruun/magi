@@ -1,3 +1,4 @@
 .tmp/
 *.out
+magi
 node_modules/

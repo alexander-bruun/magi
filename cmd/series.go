@@ -46,8 +46,18 @@ func newSeriesListCmd(dataDirectory *string) *cobra.Command {
 			if librarySlug != "" {
 				medias, err = models.GetMediasByLibrarySlug(librarySlug)
 			} else {
+				// Get all libraries for admin access
+				libraries, err := models.GetLibraries()
+				if err != nil {
+					cmd.PrintErrf("Failed to get libraries: %v\n", err)
+					os.Exit(1)
+				}
+				var accessibleLibraries []string
+				for _, lib := range libraries {
+					accessibleLibraries = append(accessibleLibraries, lib.Slug)
+				}
 				// Get all medias with limit
-				medias, err = models.GetTopMedias(limit)
+				medias, err = models.GetTopMedias(limit, accessibleLibraries)
 			}
 
 			if err != nil {
