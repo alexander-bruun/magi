@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -244,7 +243,7 @@ func HandleAddHighlight(c *fiber.Ctx) error {
 	}
 
 	triggerNotification(c, "Series added to highlights successfully", "success")
-	return c.SendString("")
+	return HandleView(c, views.MediaHighlightFragment(mediaSlug, true))
 }
 
 // HandleRemoveHighlight handles removing a media from highlights via HTMX.
@@ -273,17 +272,5 @@ func HandleRemoveHighlight(c *fiber.Ctx) error {
 	}
 
 	triggerNotification(c, "Series removed from highlights successfully", "success")
-	// Return the "Add to Highlights" button HTML
-	return HandleView(c, templ.Raw(`
-		<button
-			type="button"
-			class="uk-btn uk-btn-success uk-btn-small"
-			uk-toggle="target: #add-highlight-modal"
-			title="Add to highlights"
-			aria-label="Add to highlights"
-		>
-			<uk-icon icon="Star"></uk-icon>
-			<span class="hidden md:inline ml-1">Add to Highlights</span>
-		</button>
-	`))
+	return HandleView(c, views.MediaHighlightFragment(mediaSlug, false))
 }

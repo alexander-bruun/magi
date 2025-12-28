@@ -192,7 +192,7 @@ func HandleMedia(c *fiber.Ctx) error {
 	if reverse {
 		slices.Reverse(chapters)
 	}
-	
+
 	// Get user role for conditional rendering
 	userRole := ""
 	userName := GetUserContext(c)
@@ -244,31 +244,31 @@ func HandleMedia(c *fiber.Ctx) error {
 			}
 		}
 	}
-	
+
 	// Fetch all reviews for the media
 	reviews, err := models.GetReviewsByMedia(slug)
 	if err != nil {
 		log.Errorf("Error getting reviews for %s: %v", slug, err)
 		reviews = []models.Review{} // Initialize empty slice on error
 	}
-	
+
 	// Check if media is highlighted
 	isHighlighted, err := models.IsMediaHighlighted(slug)
 	if err != nil {
 		log.Errorf("Error checking if media %s is highlighted: %v", slug, err)
 		isHighlighted = false
 	}
-	
+
 	if IsHTMXRequest(c) && c.Query("reverse") != "" {
-		return HandleView(c, views.MediaChaptersSection(*media, chapters, reverse, lastReadChapterSlug, cfg.PremiumEarlyAccessDuration, userRole))
+		return HandleView(c, views.MediaChaptersSection(*media, chapters, reverse, lastReadChapterSlug, cfg.PremiumEarlyAccessDuration, userRole, isHighlighted))
 	}
-	
+
 	if IsHTMXRequest(c) {
 		return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
 	}
-	
+
 	return HandleView(c, views.Media(*media, chapters, firstSlug, lastSlug, len(chapters), userRole, lastReadChapterSlug, reverse, cfg.PremiumEarlyAccessDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
-}// HandleMediaSearch returns search results for the quick-search panel.
+} // HandleMediaSearch returns search results for the quick-search panel.
 func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")
 
