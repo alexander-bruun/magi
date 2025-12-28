@@ -12,9 +12,9 @@ import (
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/robfig/cron/v3"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/robfig/cron/v3"
 )
 
 // LibraryFormData holds form data for creating/updating libraries
@@ -298,6 +298,54 @@ func HandleRemoveFolder(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+// HandleEnableLibrary enables a library
+func HandleEnableLibrary(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	err := models.EnableLibrary(slug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to enable library")
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	tableContent, err := renderLibraryTable(libraries)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	triggerNotification(c, "Library enabled successfully", "success")
+	setCommonHeaders(c)
+	return c.SendString(tableContent)
+}
+
+// HandleDisableLibrary disables a library
+func HandleDisableLibrary(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	err := models.DisableLibrary(slug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to disable library")
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	tableContent, err := renderLibraryTable(libraries)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	triggerNotification(c, "Library disabled successfully", "success")
+	setCommonHeaders(c)
+	return c.SendString(tableContent)
+}
+
 // HandleCancelEdit resets the library form to its default state.
 func HandleCancelEdit(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
@@ -322,7 +370,7 @@ func HandleBetter(c *fiber.Ctx) error {
 	if page < 1 {
 		page = 1
 	}
-	
+
 	return HandleView(c, views.Better(page))
 }
 
@@ -333,13 +381,13 @@ func HandleDismissDuplicate(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).SendString("Invalid duplicate ID")
 	}
-	
+
 	// Dismiss the duplicate
 	if err := models.DismissMediaDuplicate(int64(id)); err != nil {
 		log.Errorf("Failed to dismiss duplicate %d: %v", id, err)
 		return c.Status(500).SendString("Failed to dismiss duplicate")
 	}
-	
+
 	// Return empty response to remove the row
 	return c.SendString("")
 }
@@ -351,14 +399,14 @@ func HandleGetDuplicateFolderInfo(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
 	}
-	
+
 	// Get folder info
 	folderInfo, err := models.GetDuplicateFolderInfo(int64(id))
 	if err != nil {
 		log.Errorf("Failed to get folder info for duplicate %d: %v", id, err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to get folder info"})
 	}
-	
+
 	return c.JSON(folderInfo)
 }
 
@@ -369,30 +417,29 @@ func HandleDeleteDuplicateFolder(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
 	}
-	
+
 	type DeleteRequest struct {
 		FolderPath string `json:"folder_path"`
 	}
-	
+
 	var req DeleteRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
-	
+
 	// Delete the folder
 	if err := models.DeleteDuplicateFolder(int64(id), req.FolderPath); err != nil {
 		log.Errorf("Failed to delete folder %s for duplicate %d: %v", req.FolderPath, id, err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete folder"})
 	}
-	
+
 	return c.JSON(fiber.Map{"success": true})
 }
-
 
 // findDuplicatesInLibrary finds similar folders within a library's directories
 func findDuplicatesInLibrary(library models.Library, threshold float64) [][]models.DuplicateFolder {
 	var allFolders []string
-	
+
 	// Collect all subdirectories from all library folders
 	for _, folder := range library.Folders {
 		subdirs, err := getSubdirectories(folder)
@@ -451,7 +498,7 @@ func findDuplicatesInLibrary(library models.Library, threshold float64) [][]mode
 // getSubdirectories returns the names of all subdirectories in a given path
 func getSubdirectories(path string) ([]string, error) {
 	var subdirs []string
-	
+
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -497,4 +544,3 @@ func HandleBrowseDirectory(c *fiber.Ctx) error {
 
 	return c.JSON(fileEntries)
 }
-

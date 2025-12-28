@@ -19,8 +19,9 @@ type Library struct {
 	Cron             string         `json:"cron"`
 	Folders          []string       `json:"folders"`
 	MetadataProvider sql.NullString `json:"metadata_provider,omitempty"` // Optional: mangadex, mal, anilist, jikan
-	CreatedAt        int64          `json:"created_at"`                   // Unix timestamp
-	UpdatedAt        int64          `json:"updated_at"`                   // Unix timestamp
+	Enabled          bool           `json:"enabled"`                     // Whether the library is enabled
+	CreatedAt        int64          `json:"created_at"`                  // Unix timestamp
+	UpdatedAt        int64          `json:"updated_at"`                  // Unix timestamp
 }
 
 // GetFolderNames returns a comma-separated string of folder names
@@ -60,6 +61,7 @@ func CreateLibrary(library Library) error {
 	now := time.Now().Unix()
 	library.CreatedAt = now
 	library.UpdatedAt = now
+	library.Enabled = true // New libraries are enabled by default
 
 	foldersJson, err := json.Marshal(library.Folders)
 	if err != nil {
@@ -67,11 +69,11 @@ func CreateLibrary(library Library) error {
 	}
 
 	query := `
-	INSERT INTO libraries (slug, name, description, cron, folders, metadata_provider, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO libraries (slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, library.Slug, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.CreatedAt, library.UpdatedAt)
+	_, err = db.Exec(query, library.Slug, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.CreatedAt, library.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func CreateLibrary(library Library) error {
 
 // GetLibraries retrieves all Libraries from the database
 func GetLibraries() ([]Library, error) {
-	query := `SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries`
+	query := `SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at FROM libraries`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -95,7 +97,7 @@ func GetLibraries() ([]Library, error) {
 	for rows.Next() {
 		var library Library
 		var foldersJson string
-		if err := rows.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.CreatedAt, &library.UpdatedAt); err != nil {
+		if err := rows.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &library.CreatedAt, &library.UpdatedAt); err != nil {
 			log.Errorf("Failed to scan library row: %v", err)
 			continue
 		}
@@ -114,7 +116,7 @@ func GetLibraries() ([]Library, error) {
 // GetLibrary retrieves a single Library by slug
 func GetLibrary(slug string) (*Library, error) {
 	query := `
-	SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at
+	SELECT slug, name, description, cron, folders, metadata_provider, enabled, created_at, updated_at
 	FROM libraries
 	WHERE slug = ?
 	`
@@ -122,7 +124,7 @@ func GetLibrary(slug string) (*Library, error) {
 
 	var library Library
 	var foldersJson string
-	if err := row.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.CreatedAt, &library.UpdatedAt); err != nil {
+	if err := row.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &library.CreatedAt, &library.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("library with slug %s not found", slug)
 		}
@@ -148,11 +150,11 @@ func UpdateLibrary(library *Library) error {
 
 	query := `
 	UPDATE libraries
-	SET name = ?, description = ?, cron = ?, folders = ?, metadata_provider = ?, updated_at = ?
+	SET name = ?, description = ?, cron = ?, folders = ?, metadata_provider = ?, enabled = ?, updated_at = ?
 	WHERE slug = ?
 	`
 
-	_, err = db.Exec(query, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.UpdatedAt, library.Slug)
+	_, err = db.Exec(query, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.UpdatedAt, library.Slug)
 	if err != nil {
 		return err
 	}
@@ -177,10 +179,10 @@ func DeleteLibrary(slug string) error {
 
 	// Notify listeners to stop the indexer
 	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
-	
+
 	// Give the indexer time to stop and finish any in-progress operations
 	time.Sleep(2 * time.Second)
-	
+
 	// Now delete all mangas associated with this library
 	if err := DeleteMediasByLibrarySlug(slug); err != nil {
 		return err
@@ -194,6 +196,40 @@ func LibraryExists(slug string) (bool, error) {
 	return ExistsChecker(`SELECT 1 FROM libraries WHERE slug = ?`, slug)
 }
 
+// EnableLibrary enables a library by slug
+func EnableLibrary(slug string) error {
+	query := `UPDATE libraries SET enabled = 1, updated_at = ? WHERE slug = ?`
+	_, err := db.Exec(query, time.Now().Unix(), slug)
+	if err != nil {
+		return err
+	}
+
+	library, err := GetLibrary(slug)
+	if err != nil {
+		return err
+	}
+
+	NotifyListeners(Notification{Type: "library_enabled", Payload: *library})
+	return nil
+}
+
+// DisableLibrary disables a library by slug
+func DisableLibrary(slug string) error {
+	query := `UPDATE libraries SET enabled = 0, updated_at = ? WHERE slug = ?`
+	_, err := db.Exec(query, time.Now().Unix(), slug)
+	if err != nil {
+		return err
+	}
+
+	library, err := GetLibrary(slug)
+	if err != nil {
+		return err
+	}
+
+	NotifyListeners(Notification{Type: "library_disabled", Payload: *library})
+	return nil
+}
+
 // DuplicateFolder represents a folder with its similarity score
 type DuplicateFolder struct {
 	Name       string
@@ -205,4 +241,3 @@ type LibraryDuplicates struct {
 	Library    Library
 	Duplicates [][]DuplicateFolder // Each slice represents a group of similar folders
 }
-

@@ -306,11 +306,12 @@ func UserHasLibraryAccess(username, librarySlug string) (bool, error) {
 	FROM user_permissions up
 	JOIN permissions p ON up.permission_id = p.id
 	LEFT JOIN library_permissions lp ON p.id = lp.permission_id
+	LEFT JOIN libraries l ON lp.library_slug = l.slug
 	WHERE up.username = ?
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR lp.library_slug = ?
+	    OR (lp.library_slug = ? AND l.enabled = 1)
 	  )
 	`
 
@@ -330,11 +331,12 @@ func UserHasLibraryAccess(username, librarySlug string) (bool, error) {
 	FROM role_permissions rp
 	JOIN permissions p ON rp.permission_id = p.id
 	LEFT JOIN library_permissions lp ON p.id = lp.permission_id
+	LEFT JOIN libraries l ON lp.library_slug = l.slug
 	WHERE rp.role = ?
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR lp.library_slug = ?
+	    OR (lp.library_slug = ? AND l.enabled = 1)
 	  )
 	`
 
@@ -359,22 +361,40 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 		return nil, fmt.Errorf("user not found")
 	}
 
+	// Admins and moderators have access to all libraries
+	if user.Role == "admin" || user.Role == "moderator" {
+		libraries, err := GetLibraries()
+		if err != nil {
+			return nil, err
+		}
+
+		slugs := make([]string, 0, len(libraries))
+		for _, lib := range libraries {
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
+		}
+		return slugs, nil
+	}
+
 	// First check if user has wildcard permission (direct or role-based)
 	hasWildcard, err := userOrRoleHasWildcardPermission(username, user.Role)
 	if err != nil {
 		return nil, err
 	}
 
-	// If user has wildcard, return all libraries
+	// If user has wildcard, return all enabled libraries
 	if hasWildcard {
 		libraries, err := GetLibraries()
 		if err != nil {
 			return nil, err
 		}
 
-		slugs := make([]string, len(libraries))
-		for i, lib := range libraries {
-			slugs[i] = lib.Slug
+		slugs := make([]string, 0, len(libraries))
+		for _, lib := range libraries {
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
 		}
 		return slugs, nil
 	}
@@ -389,7 +409,8 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 	) AS combined
 	JOIN permissions p ON combined.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
-	WHERE p.is_enabled = 1
+	JOIN libraries l ON lp.library_slug = l.slug
+	WHERE p.is_enabled = 1 AND l.enabled = 1
 	ORDER BY lp.library_slug
 	`
 
@@ -601,11 +622,12 @@ func AnonymousHasLibraryAccess(librarySlug string) (bool, error) {
 	FROM role_permissions rp
 	JOIN permissions p ON rp.permission_id = p.id
 	LEFT JOIN library_permissions lp ON p.id = lp.permission_id
+	LEFT JOIN libraries l ON lp.library_slug = l.slug
 	WHERE rp.role = 'anonymous'
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR lp.library_slug = ?
+	    OR (lp.library_slug = ? AND l.enabled = 1)
 	  )
 	`
 
@@ -627,16 +649,18 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 		return nil, err
 	}
 
-	// If anonymous has wildcard, return all libraries
+	// If anonymous has wildcard, return all enabled libraries
 	if hasWildcard {
 		libraries, err := GetLibraries()
 		if err != nil {
 			return nil, err
 		}
 
-		slugs := make([]string, len(libraries))
-		for i, lib := range libraries {
-			slugs[i] = lib.Slug
+		slugs := make([]string, 0, len(libraries))
+		for _, lib := range libraries {
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
 		}
 		return slugs, nil
 	}
@@ -647,8 +671,10 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 	FROM role_permissions rp
 	JOIN permissions p ON rp.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
+	JOIN libraries l ON lp.library_slug = l.slug
 	WHERE rp.role = 'anonymous'
 	  AND p.is_enabled = 1
+	  AND l.enabled = 1
 	ORDER BY lp.library_slug
 	`
 
@@ -665,6 +691,20 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 			return nil, err
 		}
 		libraries = append(libraries, slug)
+	}
+
+	// If no specific permissions found for anonymous, allow access to all enabled libraries
+	if len(libraries) == 0 {
+		allLibraries, err := GetLibraries()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, lib := range allLibraries {
+			if lib.Enabled {
+				libraries = append(libraries, lib.Slug)
+			}
+		}
 	}
 
 	return libraries, rows.Err()

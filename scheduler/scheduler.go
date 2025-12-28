@@ -195,7 +195,7 @@ var (
 	scanMutex        sync.Mutex
 	indexingRunning  sync.Map
 	IndexMediaFunc   func(path, librarySlug string, dataBackend filestore.DataBackend) (string, error)
-	dataBackend     filestore.DataBackend
+	dataBackend      filestore.DataBackend
 )
 
 // Indexer represents the state of an indexer
@@ -596,6 +596,10 @@ func (nl *NotificationListener) Notify(notification models.Notification) {
 		nl.handleLibraryUpdated(notification.Payload.(models.Library))
 	case "library_deleted":
 		nl.handleLibraryDeleted(notification.Payload.(models.Library))
+	case "library_enabled":
+		nl.handleLibraryEnabled(notification.Payload.(models.Library))
+	case "library_disabled":
+		nl.handleLibraryDisabled(notification.Payload.(models.Library))
 	default:
 		log.Warnf("Unknown notification type: %s", notification.Type)
 	}
@@ -626,6 +630,22 @@ func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Libra
 		existingIndexer.Stop()
 		// Stop already removes from the map, so no need to delete again
 		return
+	}
+}
+
+func (nl *NotificationListener) handleLibraryEnabled(enabledLibrary models.Library) {
+	// Start indexer for the enabled library
+	indexer := NewIndexer(enabledLibrary)
+	activeIndexers.Store(enabledLibrary.Slug, indexer)
+	go indexer.Start()
+}
+
+func (nl *NotificationListener) handleLibraryDisabled(disabledLibrary models.Library) {
+	// Stop indexer for the disabled library
+	if val, ok := activeIndexers.Load(disabledLibrary.Slug); ok {
+		existingIndexer := val.(*Indexer)
+		existingIndexer.Stop()
+		// Stop already removes from the map, so no need to delete again
 	}
 }
 
