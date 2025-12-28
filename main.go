@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"net/http"
@@ -36,11 +37,9 @@ var assetsfs embed.FS
 func main() {
 	var dataDirectory string
 	var logLevel string
-	var cacheDirectory string
-	var backupDirectory string
 	var port string
 
-	// Cache backend configuration
+	// Data backend configuration
 	var backend string
 	var localPath string
 	var sftpHost string
@@ -65,10 +64,17 @@ func main() {
 		case "windows":
 			defaultDataDirectory = filepath.Join(os.Getenv("LOCALAPPDATA"), "magi")
 		case "linux":
-			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), ".magi")
 		default:
 			// Fallback for unknown OS
-			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), "magi")
+			defaultDataDirectory = filepath.Join(os.Getenv("HOME"), ".magi")
+		}
+	}
+
+	// Ensure the default data directory is absolute
+	if !filepath.IsAbs(defaultDataDirectory) {
+		if abs, err := filepath.Abs(defaultDataDirectory); err == nil {
+			defaultDataDirectory = abs
 		}
 	}
 
@@ -77,6 +83,7 @@ func main() {
 		Short: "Magi - A manga reader application",
 		Long:  `Magi is a web-based manga reader application.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			var backupDirectory string
 			// Set log level
 			if logLevel == "" {
 				logLevel = "info"
@@ -94,19 +101,22 @@ func main() {
 
 			log.Info("Starting Magi!")
 
-			// Determine cache directory
-			if cacheDirectory == "" {
-				cacheDirectory = filepath.Join(dataDirectory, "cache")
+			// Ensure dataDirectory is absolute
+			if !filepath.IsAbs(dataDirectory) {
+				if abs, err := filepath.Abs(dataDirectory); err == nil {
+					dataDirectory = abs
+				}
 			}
+
+			// Set the data directory for utility functions
+			utils.SetDataDirectory(dataDirectory)
 
 			// Determine backup directory
-			if backupDirectory == "" {
-				backupDirectory = filepath.Join(dataDirectory, "backups")
-			}
+			backupDirectory = filepath.Join(dataDirectory, "backups")
 
 			// Ensure the directories exist
-			if err := os.MkdirAll(cacheDirectory, os.ModePerm); err != nil {
-				log.Errorf("Failed to create cache directory: %s", err)
+			if err := os.MkdirAll(dataDirectory, os.ModePerm); err != nil {
+				log.Errorf("Failed to create data directory: %s", err)
 				return
 			}
 			if err := os.MkdirAll(backupDirectory, os.ModePerm); err != nil {
@@ -114,45 +124,45 @@ func main() {
 				return
 			}
 
-			// Configure cache backend with priority hierarchy: CLI flags > Env vars > Default
-			cacheConfig := &filestore.CacheConfig{
-				BackendType: getConfigValue(backend, os.Getenv("MAGI_CACHE_BACKEND"), "local"),
+			// Configure data backend with priority hierarchy: CLI flags > Env vars > Default
+			dataConfig := &filestore.DataConfig{
+				BackendType: getConfigValue(backend, os.Getenv("MAGI_DATA_BACKEND"), "local"),
 			}
 
-			switch cacheConfig.BackendType {
+			switch dataConfig.BackendType {
 			case "local":
-				cacheConfig.LocalBasePath = getConfigValue(localPath, os.Getenv("MAGI_CACHE_LOCAL_PATH"), cacheDirectory)
+				dataConfig.LocalBasePath = getConfigValue(localPath, os.Getenv("MAGI_DATA_LOCAL_PATH"), dataDirectory)
 			case "sftp":
-				cacheConfig.SFTPHost = getConfigValue(sftpHost, os.Getenv("MAGI_CACHE_SFTP_HOST"), "")
-				cacheConfig.SFTPPort = getConfigIntValue(sftpPort, getEnvIntOrDefault("MAGI_CACHE_SFTP_PORT", 22), 22)
-				cacheConfig.SFTPUsername = getConfigValue(sftpUsername, os.Getenv("MAGI_CACHE_SFTP_USERNAME"), "")
-				cacheConfig.SFTPPassword = getConfigValue(sftpPassword, os.Getenv("MAGI_CACHE_SFTP_PASSWORD"), "")
-				cacheConfig.SFTPKeyFile = getConfigValue(sftpKeyFile, os.Getenv("MAGI_CACHE_SFTP_KEY_FILE"), "")
-				cacheConfig.SFTPBasePath = getConfigValue(sftpBasePath, os.Getenv("MAGI_CACHE_SFTP_BASE_PATH"), "")
+				dataConfig.SFTPHost = getConfigValue(sftpHost, os.Getenv("MAGI_DATA_SFTP_HOST"), "")
+				dataConfig.SFTPPort = getConfigIntValue(sftpPort, getEnvIntOrDefault("MAGI_DATA_SFTP_PORT", 22), 22)
+				dataConfig.SFTPUsername = getConfigValue(sftpUsername, os.Getenv("MAGI_DATA_SFTP_USERNAME"), "")
+				dataConfig.SFTPPassword = getConfigValue(sftpPassword, os.Getenv("MAGI_DATA_SFTP_PASSWORD"), "")
+				dataConfig.SFTPKeyFile = getConfigValue(sftpKeyFile, os.Getenv("MAGI_DATA_SFTP_KEY_FILE"), "")
+				dataConfig.SFTPBasePath = getConfigValue(sftpBasePath, os.Getenv("MAGI_DATA_SFTP_BASE_PATH"), "")
 			case "s3":
-				cacheConfig.S3Bucket = getConfigValue(s3Bucket, os.Getenv("MAGI_CACHE_S3_BUCKET"), "")
-				cacheConfig.S3Region = getConfigValue(s3Region, os.Getenv("MAGI_CACHE_S3_REGION"), "")
-				cacheConfig.S3Endpoint = getConfigValue(s3Endpoint, os.Getenv("MAGI_CACHE_S3_ENDPOINT"), "")
-				cacheConfig.S3BasePath = getConfigValue(s3BasePath, os.Getenv("MAGI_CACHE_S3_BASE_PATH"), "")
+				dataConfig.S3Bucket = getConfigValue(s3Bucket, os.Getenv("MAGI_DATA_S3_BUCKET"), "")
+				dataConfig.S3Region = getConfigValue(s3Region, os.Getenv("MAGI_DATA_S3_REGION"), "")
+				dataConfig.S3Endpoint = getConfigValue(s3Endpoint, os.Getenv("MAGI_DATA_S3_ENDPOINT"), "")
+				dataConfig.S3BasePath = getConfigValue(s3BasePath, os.Getenv("MAGI_DATA_S3_BASE_PATH"), "")
 			}
 
-			// Validate cache configuration
-			if err := cacheConfig.Validate(); err != nil {
-				log.Errorf("Invalid cache configuration: %v", err)
+			// Validate data configuration
+			if err := dataConfig.Validate(); err != nil {
+				log.Errorf("Invalid data configuration: %v", err)
 				return
 			}
 
-			// Create cache backend
-			cacheBackendInstance, err := cacheConfig.CreateBackend()
+			// Create data backend
+			dataBackendInstance, err := dataConfig.CreateBackend()
 			if err != nil {
-				log.Errorf("Failed to create cache backend: %v", err)
+				log.Errorf("Failed to create data backend: %v", err)
 				return
 			}
 
-			log.Infof("Using cache backend: %s", cacheConfig.BackendType)
+			log.Infof("Using data backend: %s", dataConfig.BackendType)
 
 			log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
-			log.Debugf("Using '%s/...' as the image caching location", cacheDirectory)
+			log.Debugf("Using '%s/...' as the image caching location", dataDirectory)
 			log.Debugf("Using '%s/...' as the backup location", backupDirectory)
 
 			// Initialize console log streaming for admin panel
@@ -199,7 +209,7 @@ func main() {
 			})
 
 			// Start API in its own goroutine
-			go handlers.Initialize(app, cacheBackendInstance, backupDirectory, port)
+			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port)
 
 			// Start Indexer in its own goroutine
 			libraries, err := models.GetLibraries()
@@ -207,7 +217,7 @@ func main() {
 				log.Warnf("Failed to get libraries: %v", err)
 				return
 			}
-			go scheduler.InitializeIndexer(cacheDirectory, libraries, cacheBackendInstance)
+			go scheduler.InitializeIndexer(dataDirectory, libraries, dataBackendInstance)
 			go scheduler.InitializeScraperScheduler()
 
 			// Set up signal handling for graceful shutdown
@@ -224,40 +234,51 @@ func main() {
 				log.Info("Received internal shutdown request, stopping services...")
 			}
 
-			// Stop all background services
-			scheduler.StopAllIndexers()
-			handlers.StopTokenCleanup()
-			scheduler.StopScraperScheduler()
+			// Create a context with timeout for graceful shutdown
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer shutdownCancel()
 
-			log.Info("Shutdown complete.")
+			// Stop all background services with timeout
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				scheduler.StopAllIndexers()
+				handlers.StopTokenCleanup()
+				scheduler.StopScraperScheduler()
+			}()
+
+			select {
+			case <-done:
+				log.Info("Shutdown complete.")
+			case <-shutdownCtx.Done():
+				log.Warn("Shutdown timed out, forcing exit.")
+			}
 		},
 	}
 
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	rootCmd.PersistentFlags().StringVar(&dataDirectory, "data-directory", defaultDataDirectory, "Path to the data directory")
-	rootCmd.PersistentFlags().StringVar(&cacheDirectory, "cache-directory", os.Getenv("MAGI_CACHE_DIR"), "Path to the cache directory")
-	rootCmd.PersistentFlags().StringVar(&backupDirectory, "backup-directory", os.Getenv("MAGI_BACKUP_DIR"), "Path to the backup directory")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", os.Getenv("LOG_LEVEL"), "Set the log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&port, "port", os.Getenv("PORT"), "Port to run the server on")
 
-	// Cache backend flags
-	rootCmd.PersistentFlags().StringVar(&backend, "backend", os.Getenv("MAGI_CACHE_BACKEND"), "Cache backend type (local, sftp, s3)")
-	rootCmd.PersistentFlags().StringVar(&localPath, "local-path", os.Getenv("MAGI_CACHE_LOCAL_PATH"), "Local cache directory path")
+	// Data backend flags
+	rootCmd.PersistentFlags().StringVar(&backend, "backend", os.Getenv("MAGI_DATA_BACKEND"), "Data backend type (local, sftp, s3)")
+	rootCmd.PersistentFlags().StringVar(&localPath, "local-path", os.Getenv("MAGI_DATA_LOCAL_PATH"), "Local data directory path")
 
-	// SFTP cache flags
-	rootCmd.PersistentFlags().StringVar(&sftpHost, "sftp-host", os.Getenv("MAGI_CACHE_SFTP_HOST"), "SFTP cache host")
-	rootCmd.PersistentFlags().IntVar(&sftpPort, "sftp-port", getEnvIntOrDefault("MAGI_CACHE_SFTP_PORT", 22), "SFTP cache port")
-	rootCmd.PersistentFlags().StringVar(&sftpUsername, "sftp-username", os.Getenv("MAGI_CACHE_SFTP_USERNAME"), "SFTP cache username")
-	rootCmd.PersistentFlags().StringVar(&sftpPassword, "sftp-password", os.Getenv("MAGI_CACHE_SFTP_PASSWORD"), "SFTP cache password")
-	rootCmd.PersistentFlags().StringVar(&sftpKeyFile, "sftp-key-file", os.Getenv("MAGI_CACHE_SFTP_KEY_FILE"), "SFTP cache private key file")
-	rootCmd.PersistentFlags().StringVar(&sftpBasePath, "sftp-base-path", os.Getenv("MAGI_CACHE_SFTP_BASE_PATH"), "SFTP cache base path")
+	// SFTP data flags
+	rootCmd.PersistentFlags().StringVar(&sftpHost, "sftp-host", os.Getenv("MAGI_DATA_SFTP_HOST"), "SFTP data host")
+	rootCmd.PersistentFlags().IntVar(&sftpPort, "sftp-port", getEnvIntOrDefault("MAGI_DATA_SFTP_PORT", 22), "SFTP data port")
+	rootCmd.PersistentFlags().StringVar(&sftpUsername, "sftp-username", os.Getenv("MAGI_DATA_SFTP_USERNAME"), "SFTP data username")
+	rootCmd.PersistentFlags().StringVar(&sftpPassword, "sftp-password", os.Getenv("MAGI_DATA_SFTP_PASSWORD"), "SFTP data password")
+	rootCmd.PersistentFlags().StringVar(&sftpKeyFile, "sftp-key-file", os.Getenv("MAGI_DATA_SFTP_KEY_FILE"), "SFTP data private key file")
+	rootCmd.PersistentFlags().StringVar(&sftpBasePath, "sftp-base-path", os.Getenv("MAGI_DATA_SFTP_BASE_PATH"), "SFTP data base path")
 
-	// S3 cache flags
-	rootCmd.PersistentFlags().StringVar(&s3Bucket, "s3-bucket", os.Getenv("MAGI_CACHE_S3_BUCKET"), "S3 cache bucket")
-	rootCmd.PersistentFlags().StringVar(&s3Region, "s3-region", os.Getenv("MAGI_CACHE_S3_REGION"), "S3 cache region")
-	rootCmd.PersistentFlags().StringVar(&s3Endpoint, "s3-endpoint", os.Getenv("MAGI_CACHE_S3_ENDPOINT"), "S3 cache endpoint (for S3-compatible services)")
-	rootCmd.PersistentFlags().StringVar(&s3BasePath, "s3-base-path", os.Getenv("MAGI_CACHE_S3_BASE_PATH"), "S3 cache base path")
+	// S3 data flags
+	rootCmd.PersistentFlags().StringVar(&s3Bucket, "s3-bucket", os.Getenv("MAGI_DATA_S3_BUCKET"), "S3 data bucket")
+	rootCmd.PersistentFlags().StringVar(&s3Region, "s3-region", os.Getenv("MAGI_DATA_S3_REGION"), "S3 data region")
+	rootCmd.PersistentFlags().StringVar(&s3Endpoint, "s3-endpoint", os.Getenv("MAGI_DATA_S3_ENDPOINT"), "S3 data endpoint (for S3-compatible services)")
+	rootCmd.PersistentFlags().StringVar(&s3BasePath, "s3-base-path", os.Getenv("MAGI_DATA_S3_BASE_PATH"), "S3 data base path")
 
 	// Add commands
 	rootCmd.AddCommand(cmd.NewVersionCmd(Version))
@@ -266,7 +287,7 @@ func main() {
 	rootCmd.AddCommand(cmd.NewUserCmd(&dataDirectory))
 	rootCmd.AddCommand(cmd.NewLibraryCmd(&dataDirectory))
 	rootCmd.AddCommand(cmd.NewSeriesCmd(&dataDirectory))
-	rootCmd.AddCommand(cmd.NewBackupCmd(&dataDirectory, &backupDirectory))
+	rootCmd.AddCommand(cmd.NewBackupCmd(&dataDirectory, &dataDirectory))
 	rootCmd.AddCommand(cmd.NewHighlightsCmd(&dataDirectory))
 	rootCmd.AddCommand(cmd.NewMaintenanceCmd(&dataDirectory))
 
