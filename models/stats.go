@@ -212,7 +212,7 @@ func ensureTodaysStatsRecorded(today string) error {
 }
 
 // GetTopReadMedias returns the top media by reading activity for the given period
-func GetTopReadMedias(period string, limit int) ([]Media, error) {
+func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([]Media, error) {
 	cfg, err := GetAppConfig()
 	if err != nil {
 		// If we can't get config, default to showing all content
@@ -250,26 +250,50 @@ func GetTopReadMedias(period string, limit int) ([]Media, error) {
 		return nil, fmt.Errorf("invalid period: %s", period)
 	}
 
+	var libraryFilter string
+	var args []interface{}
+
+	if len(accessibleLibraries) > 0 {
+		libraryPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
+		libraryPlaceholders = libraryPlaceholders[:len(libraryPlaceholders)-1] // remove trailing comma
+		libraryFilter = fmt.Sprintf("AND m.library_slug IN (%s)", libraryPlaceholders)
+	} else {
+		// No accessible libraries - return empty result
+		return []Media{}, nil
+	}
+
 	query := fmt.Sprintf(`
-        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, top_reads.read_count, m.created_at, m.updated_at
+        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, COALESCE(top_reads.read_count, 0) as read_count, m.created_at, m.updated_at
         FROM media m
-        INNER JOIN (
+        LEFT JOIN (
             SELECT media_slug, COUNT(*) as read_count
             FROM reading_states rs
             WHERE 1=1 %s
             GROUP BY media_slug
-            ORDER BY read_count DESC
-            LIMIT ?
         ) top_reads ON m.slug = top_reads.media_slug
-        WHERE m.content_rating IN (%s)
-        ORDER BY top_reads.read_count DESC
-    `, dateFilter, placeholders)
+        LEFT JOIN (
+            SELECT media_slug, 
+                CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+                THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+                ELSE 0 END as score
+            FROM votes
+            GROUP BY media_slug
+        ) v ON v.media_slug = m.slug
+        WHERE m.content_rating IN (%s) %s
+        ORDER BY COALESCE(top_reads.read_count, 0) DESC, v.score DESC
+        LIMIT ?
+    `, dateFilter, placeholders, libraryFilter)
 
-	args := make([]interface{}, len(allowedRatings)+1)
-	args[0] = limit
-	for i, rating := range allowedRatings {
-		args[i+1] = rating
+	// Add content rating args
+	for _, rating := range allowedRatings {
+		args = append(args, rating)
 	}
+	// Then library args
+	for _, lib := range accessibleLibraries {
+		args = append(args, lib)
+	}
+	// Then limit
+	args = append(args, limit)
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
