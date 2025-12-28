@@ -237,8 +237,8 @@ func DeleteMedia(slug string) error {
 
 // deletePosterImages deletes the poster image files for a media
 func deletePosterImages(slug string) {
-	cacheDir := utils.GetCacheDirectory()
-	postersDir := filepath.Join(cacheDir, "posters")
+	dataDir := utils.GetDataDirectory()
+	postersDir := filepath.Join(dataDir, "posters")
 
 	// Delete main poster image
 	mainPath := filepath.Join(postersDir, fmt.Sprintf("%s.webp", slug))

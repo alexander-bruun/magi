@@ -690,6 +690,11 @@ func roleHasWildcardPermission(role string) (bool, error) {
 	return count > 0, nil
 }
 
+// RoleHasWildcardPermission checks if a role has any enabled wildcard permission
+func RoleHasWildcardPermission(role string) (bool, error) {
+	return roleHasWildcardPermission(role)
+}
+
 // RoleHasAccess checks if a role has access to premium chapters
 // Returns true if the role has any enabled permission with premium_chapter_access = true
 func RoleHasAccess(role string) (bool, error) {

@@ -27,16 +27,16 @@ type BackupInfo struct {
 }
 
 // Initialize connects to the SQLite database and optionally applies necessary migrations
-func Initialize(cacheDirectory string) error {
-	return InitializeWithMigration(cacheDirectory, true)
+func Initialize(dataDirectory string) error {
+	return InitializeWithMigration(dataDirectory, true)
 }
 
 // InitializeWithMigration connects to the SQLite database and applies migrations if applyMigrations is true
-func InitializeWithMigration(cacheDirectory string, applyMigrationsFlag bool) error {
+func InitializeWithMigration(dataDirectory string, applyMigrationsFlag bool) error {
 	start := time.Now()
 	defer utils.LogDuration("Initialize", start)
 
-	databasePath := filepath.Join(cacheDirectory, "magi.db")
+	databasePath := filepath.Join(dataDirectory, "magi.db")
 
 	var err error
 	db, err = sql.Open("sqlite3", databasePath)
@@ -47,8 +47,8 @@ func InitializeWithMigration(cacheDirectory string, applyMigrationsFlag bool) er
 	// Configure connection pool for 10k concurrent users
 	// MaxOpenConns: Scale to handle peak load with room for background tasks
 	// MaxIdleConns: Keep warm connections ready for new requests
-	db.SetMaxOpenConns(100)      // Scale for ~10k concurrent users
-	db.SetMaxIdleConns(25)       // Keep warm connections ready
+	db.SetMaxOpenConns(100)                 // Scale for ~10k concurrent users
+	db.SetMaxIdleConns(25)                  // Keep warm connections ready
 	db.SetConnMaxLifetime(30 * time.Minute) // Recycle connections periodically
 
 	// Enable WAL mode for better concurrency and performance
