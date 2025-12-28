@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// S3Adapter implements CacheBackend for AWS S3 storage
+// S3Adapter implements DataBackend for AWS S3 storage
 type S3Adapter struct {
 	client   *s3.Client
 	bucket   string
@@ -30,9 +30,9 @@ type S3Config struct {
 	Endpoint string // for S3-compatible services like MinIO
 }
 
-// NewS3Adapter creates a new S3 cache adapter
+// NewS3Adapter creates a new S3 data adapter
 func NewS3Adapter(s3Config S3Config) (*S3Adapter, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
+	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(s3Config.Region),
 	)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *S3Adapter) Save(path string, data []byte) error {
 func (s *S3Adapter) SaveReader(path string, reader io.Reader) error {
 	key := s.getKey(path)
 
-	_, err := s.client.PutObject(context.TODO(), &s3.PutObjectInput{
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 		Body:   reader,
@@ -85,7 +85,7 @@ func (s *S3Adapter) Load(path string) ([]byte, error) {
 func (s *S3Adapter) LoadReader(path string) (io.ReadCloser, error) {
 	key := s.getKey(path)
 
-	resp, err := s.client.GetObject(context.TODO(), &s3.GetObjectInput{
+	resp, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
@@ -100,7 +100,7 @@ func (s *S3Adapter) LoadReader(path string) (io.ReadCloser, error) {
 func (s *S3Adapter) Exists(path string) (bool, error) {
 	key := s.getKey(path)
 
-	_, err := s.client.HeadObject(context.TODO(), &s3.HeadObjectInput{
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
@@ -121,7 +121,7 @@ func (s *S3Adapter) Exists(path string) (bool, error) {
 func (s *S3Adapter) Delete(path string) error {
 	key := s.getKey(path)
 
-	_, err := s.client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+	_, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
@@ -137,7 +137,7 @@ func (s *S3Adapter) CreateDir(path string) error {
 		key += "/"
 	}
 
-	_, err := s.client.PutObject(context.TODO(), &s3.PutObjectInput{
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 		Body:   bytes.NewReader([]byte{}),
@@ -153,7 +153,7 @@ func (s *S3Adapter) List(path string) ([]string, error) {
 		prefix += "/"
 	}
 
-	resp, err := s.client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
+	resp, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.bucket),
 		Prefix: aws.String(prefix),
 	})

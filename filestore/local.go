@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 )
 
-// LocalFileSystemAdapter implements CacheBackend for local file system storage
+// LocalFileSystemAdapter implements DataBackend for local file system storage
 type LocalFileSystemAdapter struct {
 	basePath string
 }
 
-// NewLocalFileSystemAdapter creates a new local file system cache adapter
+// NewLocalFileSystemAdapter creates a new local file system data adapter
 func NewLocalFileSystemAdapter(basePath string) *LocalFileSystemAdapter {
 	return &LocalFileSystemAdapter{
 		basePath: basePath,

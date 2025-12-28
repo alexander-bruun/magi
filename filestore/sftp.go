@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-// SFTPAdapter implements CacheBackend for SFTP storage
+// SFTPAdapter implements DataBackend for SFTP storage
 type SFTPAdapter struct {
 	client   *sftp.Client
 	basePath string
@@ -29,7 +29,7 @@ type SFTPConfig struct {
 	BasePath string
 }
 
-// NewSFTPAdapter creates a new SFTP cache adapter
+// NewSFTPAdapter creates a new SFTP data adapter
 func NewSFTPAdapter(config SFTPConfig) (*SFTPAdapter, error) {
 	var auth []ssh.AuthMethod
 
