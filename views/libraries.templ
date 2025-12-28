@@ -39,6 +39,7 @@ templ LibraryTable(libraries []models.Library) {
 				<tr>
 					<th class="text-center">ID</th>
 					<th class="text-center">Name</th>
+					<th class="text-center">Status</th>
 					<th class="text-center">Cron</th>
 					<th class="text-center">Metadata Provider</th>
 					<th class="text-center">Folders</th>
@@ -56,6 +57,15 @@ templ LibraryTable(libraries []models.Library) {
 						<td>
 							<div class="mt-2 flex items-center justify-center">
 								<p>{ library.Name }</p>
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								if library.Enabled {
+									<span class="uk-label uk-label-success">Enabled</span>
+								} else {
+									<span class="uk-label uk-label-warning">Disabled</span>
+								}
 							</div>
 						</td>
 						<td>
@@ -98,6 +108,31 @@ templ LibraryTable(libraries []models.Library) {
 									>
 										<uk-icon icon="Pencil"></uk-icon>
 									</button>
+									if library.Enabled {
+										<button
+											type="button"
+											class="uk-btn uk-btn-destructive h-10 w-10 flex-shrink-0"
+											hx-post={ fmt.Sprintf("/admin/libraries/%s/disable", library.Slug) }
+											hx-trigger="click"
+											hx-target="#libraries-table"
+											hx-swap="outerHTML"
+											hx-confirm="Are you sure you want to disable this library? Series from this library will no longer be visible."
+										>
+											<uk-icon icon="EyeOff"></uk-icon>
+										</button>
+									} else {
+										<button
+											type="button"
+											class="uk-btn btn-success h-10 w-10 flex-shrink-0"
+											hx-post={ fmt.Sprintf("/admin/libraries/%s/enable", library.Slug) }
+											hx-trigger="click"
+											hx-target="#libraries-table"
+											hx-swap="outerHTML"
+											hx-confirm="Are you sure you want to enable this library? Series from this library will become visible again."
+										>
+											<uk-icon icon="Eye"></uk-icon>
+										</button>
+									}
 									<button
 										type="button"
 										class="uk-btn uk-btn-destructive h-10 w-10 flex-shrink-0"

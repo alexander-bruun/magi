@@ -1090,7 +1090,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
 templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
-	<div class="flex items-center justify-between p-4">
+	<div class="flex items-center justify-between" style="padding: 1rem 15%;">
 		if previousChapter != "" {
 			<a
 				class="uk-btn uk-btn-default"
