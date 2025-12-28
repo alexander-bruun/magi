@@ -214,7 +214,7 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 
 // HandlePosterSet sets a custom poster image based on user selection or upload
 func HandlePosterSet(c *fiber.Ctx) error {
-	if cacheManager == nil {
+	if dataManager == nil {
 		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
 	}
 
@@ -225,8 +225,8 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
-	cacheDir := utils.GetCacheDirectory()
-	postersDir := filepath.Join(cacheDir, "posters")
+	dataDir := utils.GetDataDirectory()
+	postersDir := filepath.Join(dataDir, "posters")
 
 	// Check for file upload
 	if file, err := c.FormFile("poster"); err == nil {
@@ -253,21 +253,21 @@ func HandlePosterSet(c *fiber.Ctx) error {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		cachePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
-		if err := cacheManager.Save(cachePath, imageData); err != nil {
+		if err := dataManager.Save(cachePath, imageData); err != nil {
 			return sendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Generate thumbnails
 		fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
-		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, cacheManager.Backend(), models.GetProcessedImageQuality()); err != nil {
+		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend(), models.GetProcessedImageQuality()); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
 
-		cachedImageURL := fmt.Sprintf("/api/posters/%s.jpg?t=%d", mangaSlug, time.Now().Unix())
+		storedImageURL := fmt.Sprintf("/api/posters/%s.jpg?t=%d", mangaSlug, time.Now().Unix())
 
 		// Update media with new cover art URL
-		media.CoverArtURL = cachedImageURL
+		media.CoverArtURL = storedImageURL
 		if err := models.UpdateMedia(media); err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
@@ -318,20 +318,20 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Extract crop from image and cache it
-	cachedImageURL, err := utils.ExtractAndCacheImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, models.GetProcessedImageQuality())
+	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, models.GetProcessedImageQuality())
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
 	fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
-	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, cacheManager.Backend(), models.GetProcessedImageQuality()); err != nil {
+	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend(), models.GetProcessedImageQuality()); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 	}
 
 	// Update media with new cover art URL
-	media.CoverArtURL = cachedImageURL
+	media.CoverArtURL = storedImageURL
 	if err := models.UpdateMedia(media); err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}

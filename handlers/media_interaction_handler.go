@@ -18,10 +18,10 @@ type MediaInteractionFormData struct {
 
 // MediaInteractionData holds data for media interactions like votes
 type MediaInteractionData struct {
-	Score    int
-	UpVotes  int
+	Score     int
+	UpVotes   int
 	DownVotes int
-	UserVote int
+	UserVote  int
 }
 
 // ProcessMediaVote processes a vote for media
@@ -125,6 +125,10 @@ func HandleMediaVoteFragment(c *fiber.Ctx) error {
 		v, _ := models.GetUserVoteForMedia(userName, mangaSlug)
 		userVote = v
 	}
+	if userName == "" {
+		// For anonymous users, show only the stats without buttons
+		return HandleView(c, views.MediaVoteFragmentAnonymous(mangaSlug, score, up, down))
+	}
 	return HandleView(c, views.MediaVoteFragment(mangaSlug, score, up, down, userVote))
 }
 
@@ -184,6 +188,10 @@ func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
 	if userName != "" {
 		f, _ := models.IsFavoriteForUser(userName, mangaSlug)
 		isFav = f
+	}
+	if userName == "" {
+		// For anonymous users, show only the count without buttons
+		return HandleView(c, views.MediaFavoriteFragmentAnonymous(mangaSlug, favCount))
 	}
 	return HandleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
 }

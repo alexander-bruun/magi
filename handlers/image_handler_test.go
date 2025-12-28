@@ -16,7 +16,7 @@ func TestHandleAvatarRequest(t *testing.T) {
 	req := httptest.NewRequest("GET", "/avatar/test.jpg", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
-	// Should return 500 since cache is not initialized
+	// Should return 500 since data backend is not initialized
 	assert.Equal(t, 500, resp.StatusCode)
 }
 
@@ -28,7 +28,7 @@ func TestHandlePosterRequest(t *testing.T) {
 	req := httptest.NewRequest("GET", "/poster/test.jpg", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
-	// Should return 500 since cache is not initialized
+	// Should return 500 since data backend is not initialized
 	assert.Equal(t, 500, resp.StatusCode)
 }
 

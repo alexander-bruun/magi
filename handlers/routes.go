@@ -15,21 +15,21 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 )
 
-// savedCacheDirectory stores the cache directory path for image downloads
-var savedCacheDirectory string
+// savedDataDirectory stores the data directory path for image downloads
+var savedDataDirectory string
 
 // savedBackupDirectory stores the backup directory path
 var savedBackupDirectory string
 
-// cacheManager manages cache operations
-var cacheManager *filestore.CacheManager
+// dataManager manages data operations
+var dataManager *filestore.DataManager
 
-// GetCacheBackend returns the current cache backend
-func GetCacheBackend() filestore.CacheBackend {
-	if cacheManager == nil {
+// GetDataBackend returns the current data backend
+func GetDataBackend() filestore.DataBackend {
+	if dataManager == nil {
 		return nil
 	}
-	return cacheManager.Backend()
+	return dataManager.Backend()
 }
 
 // shutdownChan is used to trigger application shutdown
@@ -44,11 +44,14 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirectory string, port string) {
+func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string) {
 	log.Info("Initializing application routes and middleware")
 
-	// Initialize cache manager with provided backend
-	cacheManager = filestore.NewCacheManager(cacheBackend)
+	// Initialize data manager with provided backend
+	dataManager = filestore.NewDataManager(dataBackend)
+
+	// Store backup directory for backup operations
+	savedBackupDirectory = backupDirectory
 
 	// ========================================
 	// Initialize CSS Parser for dynamic CSS injection
@@ -113,6 +116,7 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 		AllowHeaders: "Content-Type,Authorization",
 	}))
 
+	app.Use(RequestIDMiddleware())
 	app.Use(OptionalAuthMiddleware())
 	app.Use(MaintenanceModeMiddleware())
 	app.Use(healthcheck.New())
@@ -146,10 +150,10 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 	// ========================================
 
 	// Dynamic image serving (legacy - returns 404 for cached images)
-	app.Use("/api/images", BotDetectionMiddleware(), imageCacheMiddleware)
-	app.Get("/api/images/*", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
-		return handleImageRequest(c)
-	})
+	// app.Use("/api/images", BotDetectionMiddleware(), imageCacheMiddleware)
+	// app.Get("/api/images/*", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
+	// 	return handleImageRequest(c)
+	// })
 
 	// Poster serving (no bot detection for better UX)
 	app.Use("/api/posters", imageCacheMiddleware)
@@ -305,10 +309,10 @@ func Initialize(app *fiber.App, cacheBackend filestore.CacheBackend, backupDirec
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("moderator"), HandleDeleteMedia)
 
 	// Poster selector
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
-	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", ConditionalAuthMiddleware(), HandlePosterChapterSelect)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", ConditionalAuthMiddleware(), HandlePosterSelector)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", ConditionalAuthMiddleware(), HandlePosterPreview)
+	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", ConditionalAuthMiddleware(), HandlePosterSet)
 
 	// Highlight management
 	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)

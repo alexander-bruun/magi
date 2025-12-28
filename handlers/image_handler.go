@@ -19,18 +19,18 @@ import (
 
 // handleAvatarRequest serves avatar images with quality based on user role
 func handleAvatarRequest(c *fiber.Ctx) error {
-	return handleCachedImageRequest(c, "avatars")
+	return handleStoredImageRequest(c, "avatars")
 }
 
 // handlePosterRequest serves poster images with quality based on user role
 func handlePosterRequest(c *fiber.Ctx) error {
-	return handleCachedImageRequest(c, "posters")
+	return handleStoredImageRequest(c, "posters")
 }
 
-// handleCachedImageRequest serves cached images with quality based on user role
-func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
-	if cacheManager == nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Cache not initialized")
+// handleStoredImageRequest serves stored images with quality based on user role
+func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
+	if dataManager == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Data manager not initialized")
 	}
 
 	// Get the requested path (remove /api/{subDir}/ prefix)
@@ -58,8 +58,8 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 		}
 	}
 
-	// Check if the file exists in cache
-	exists, err := cacheManager.Exists(imagePath)
+	// Check if the file exists in data manager
+	exists, err := dataManager.Exists(imagePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
 	}
@@ -83,7 +83,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 
 	// Load the image
 	start := time.Now()
-	reader, err := cacheManager.LoadReader(imagePath)
+	reader, err := dataManager.LoadReader(imagePath)
 	if err != nil {
 		// If loading fails, try to serve without compression
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -99,7 +99,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -122,7 +122,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -162,7 +162,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -175,7 +175,7 @@ func handleCachedImageRequest(c *fiber.Ctx, subDir string) error {
 
 // handleImageRequest serves images with quality based on user role
 func handleImageRequest(c *fiber.Ctx) error {
-	if cacheManager == nil {
+	if dataManager == nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Cache not initialized")
 	}
 
@@ -193,8 +193,8 @@ func handleImageRequest(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
 	}
 
-	// Check if the file exists in cache
-	exists, err := cacheManager.Exists(imagePath)
+	// Check if the file exists in data manager
+	exists, err := dataManager.Exists(imagePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
 	}
@@ -218,7 +218,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 
 	// Load the image
 	start := time.Now()
-	reader, err := cacheManager.LoadReader(imagePath)
+	reader, err := dataManager.LoadReader(imagePath)
 	if err != nil {
 		// If loading fails, serve original file
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -234,7 +234,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -257,7 +257,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -297,7 +297,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := cacheManager.Load(imagePath)
+		data, err := dataManager.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}

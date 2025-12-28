@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -37,10 +39,10 @@ const (
 
 // AccountListConfig holds configuration for account list types
 type AccountListConfig struct {
-	Title          string
+	Title           string
 	BreadcrumbLabel string
-	EmptyMessage   string
-	Path           string
+	EmptyMessage    string
+	Path            string
 }
 
 // GetAccountListConfig returns the title and breadcrumb for an account list type
@@ -61,13 +63,13 @@ func GetAccountListConfig(listType string) (title string, breadcrumbLabel string
 
 // AccountListData holds data for account list pages
 type AccountListData struct {
-	Media       []models.Media
-	TotalPages  int
-	AllTags     []string
-	SearchCount int
-	Title       string
+	Media        []models.Media
+	TotalPages   int
+	AllTags      []string
+	SearchCount  int
+	Title        string
 	EmptyMessage string
-	Path        string
+	Path         string
 }
 
 // GetAccountListData retrieves data for user account lists (favorites, upvoted, etc.)
@@ -567,10 +569,10 @@ func HandleConnectMAL(c *fiber.Ctx) error {
 
 	// Save the account with client_id and client_secret
 	account := &models.UserExternalAccount{
-		UserName:     userName,
-		ServiceName:  "mal",
-		ExternalUserID: clientID, // Store client_id here
-		RefreshToken: clientSecret, // Store client_secret here
+		UserName:       userName,
+		ServiceName:    "mal",
+		ExternalUserID: clientID,     // Store client_id here
+		RefreshToken:   clientSecret, // Store client_secret here
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
@@ -652,10 +654,10 @@ func HandleConnectAniList(c *fiber.Ctx) error {
 
 	// Save the account with client_id and client_secret
 	account := &models.UserExternalAccount{
-		UserName:     userName,
-		ServiceName:  "anilist",
-		ExternalUserID: clientID, // Store client_id here
-		RefreshToken: clientSecret, // Store client_secret here
+		UserName:       userName,
+		ServiceName:    "anilist",
+		ExternalUserID: clientID,     // Store client_id here
+		RefreshToken:   clientSecret, // Store client_secret here
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
@@ -733,7 +735,6 @@ func HandleDisconnectAniList(c *fiber.Ctx) error {
 
 	return HandleView(c, views.ExternalAccountsPage(accounts))
 }
-
 
 // HandleDisconnectMAL disconnects the MAL account
 func HandleDisconnectMAL(c *fiber.Ctx) error {
@@ -950,7 +951,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	// Delete old avatar file if exists
 	if currentUser.Avatar != "" {
 		oldFilename := strings.TrimPrefix(currentUser.Avatar, "/api/avatars/")
-		oldFilepath := fmt.Sprintf("./cache/avatars/%s", oldFilename)
+		oldFilepath := filepath.Join(utils.GetDataDirectory(), "avatars", oldFilename)
 		if err := os.Remove(oldFilepath); err != nil && !os.IsNotExist(err) {
 			// Log but don't fail the request
 			log.Warnf("Failed to delete old avatar file %s: %v", oldFilepath, err)
@@ -983,15 +984,16 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 		ext = ".gif"
 	}
 	filename := fmt.Sprintf("%s_%d%s", userName, time.Now().Unix(), ext)
-	filepath := fmt.Sprintf("./cache/avatars/%s", filename)
+	filePath := filepath.Join(utils.GetDataDirectory(), "avatars", filename)
 
 	// Ensure avatars directory exists
-	if err := os.MkdirAll("./cache/avatars", 0755); err != nil {
+	avatarsDir := filepath.Join(utils.GetDataDirectory(), "avatars")
+	if err := os.MkdirAll(avatarsDir, 0755); err != nil {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Save the file
-	if err := c.SaveFile(file, filepath); err != nil {
+	if err := c.SaveFile(file, filePath); err != nil {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
@@ -999,7 +1001,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	avatarURL := fmt.Sprintf("/api/avatars/%s", filename)
 	if err := models.UpdateUserAvatar(userName, avatarURL); err != nil {
 		// Clean up file if DB update fails
-		os.Remove(filepath)
+		os.Remove(filePath)
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 

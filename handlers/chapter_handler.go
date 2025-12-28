@@ -41,6 +41,7 @@ func isChapterAccessible(chapter *models.Chapter, userName string) bool {
 			log.Errorf("Failed to check premium chapter access for anonymous role: %v", err)
 			return false
 		}
+		log.Debugf("Chapter %s is premium, anonymous access: %v", chapter.Slug, hasAccess)
 		return hasAccess
 	}
 
@@ -97,6 +98,7 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 				break
 			}
 		}
+		log.Debugf("Anonymous library access for %s: hasAccess=%v, accessibleLibs=%v, media.LibrarySlug=%s", mediaSlug, hasAccess, accessibleLibs, media.LibrarySlug)
 	} else {
 		hasAccess, err = models.UserHasLibraryAccess(userName, media.LibrarySlug)
 		if err != nil {

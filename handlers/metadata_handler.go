@@ -90,21 +90,21 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrMetadataSyncFailed, err)
 	}
 
-	// Get cover URL and download/cache it
+	// Get cover URL and download/store it
 	coverURL := provider.GetCoverImageURL(meta)
-	var cachedImageURL string
+	var storedImageURL string
 	if coverURL != "" {
-		cachedImageURL, err = scheduler.DownloadAndCacheImage(existingMedia.Slug, coverURL)
+		storedImageURL, err = scheduler.DownloadAndStoreImage(existingMedia.Slug, coverURL)
 		if err != nil {
 			log.Warnf("Failed to download cover art: %v", err)
 			// Try local images as fallback
-			cachedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
+			storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
 		}
 	}
 
 	// Update media with metadata
 	originalType := existingMedia.Type
-	metadata.UpdateMedia(existingMedia, meta, cachedImageURL)
+	metadata.UpdateMedia(existingMedia, meta, storedImageURL)
 
 	// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
 	detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
@@ -185,13 +185,13 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// Process cover art URL (download and cache)
+	// Process cover art URL (download and store)
 	if formData.CoverURL != "" {
-		cachedImageURL, err := scheduler.DownloadAndCacheImage(existingMedia.Slug, formData.CoverURL)
+		storedImageURL, err := scheduler.DownloadAndStoreImage(existingMedia.Slug, formData.CoverURL)
 		if err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
-		existingMedia.CoverArtURL = cachedImageURL
+		existingMedia.CoverArtURL = storedImageURL
 	}
 
 	// Update media in database
@@ -289,26 +289,26 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		// Get the cover art URL from the provider
 		coverURL := provider.GetCoverImageURL(meta)
 
-		// Download and cache the new cover art if available
-		var cachedImageURL string
+		// Download and store the new cover art if available
+		var storedImageURL string
 		if coverURL != "" {
 			log.Debugf("Attempting to download cover art from provider for media '%s': %s", mangaSlug, coverURL)
-			cachedImageURL, err = scheduler.DownloadAndCacheImage(mangaSlug, coverURL)
+			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL)
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
 				log.Debugf("Falling back to local images for poster generation for media '%s'", mangaSlug)
-				cachedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
+				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
 			}
 		} else {
 			// No cover URL from provider, try local images
 			log.Debugf("No cover URL from provider for media '%s', trying local images", mangaSlug)
-			cachedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
+			storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
 		}
 
-		if cachedImageURL != "" {
-			log.Debugf("Successfully set poster URL for media '%s': %s", mangaSlug, cachedImageURL)
-			existingMedia.CoverArtURL = cachedImageURL
+		if storedImageURL != "" {
+			log.Debugf("Successfully set poster URL for media '%s': %s", mangaSlug, storedImageURL)
+			existingMedia.CoverArtURL = storedImageURL
 		} else {
 			log.Warnf("No poster URL could be generated for media '%s' during metadata refresh", mangaSlug)
 		}
@@ -355,9 +355,9 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 
 		// Try to set poster from local images
-		cachedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
-		if cachedImageURL != "" {
-			existingMedia.CoverArtURL = cachedImageURL
+		storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
+		if storedImageURL != "" {
+			existingMedia.CoverArtURL = storedImageURL
 		}
 
 		// Update media metadata without changing created_at

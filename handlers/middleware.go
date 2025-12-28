@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/url"
 	"strings"
 	"sync"
@@ -24,23 +26,23 @@ var roleHierarchy = map[string]int{
 
 // Bot detection constants
 const (
-	maxSeriesAccesses   = 5  // Max series accesses per time window
-	maxChapterAccesses  = 10  // Max chapter accesses per time window
-	accessTimeWindow    = 60  // Time window in seconds
-	cleanupInterval     = 300 // Cleanup old entries every 5 minutes
+	maxSeriesAccesses  = 5   // Max series accesses per time window
+	maxChapterAccesses = 10  // Max chapter accesses per time window
+	accessTimeWindow   = 60  // Time window in seconds
+	cleanupInterval    = 300 // Cleanup old entries every 5 minutes
 )
 
 // Rate limiting tracking with memory management
 // Using fixed-size ring buffer per IP to prevent unbounded memory growth
 type RateLimitTracker struct {
 	Requests [10]time.Time // Fixed-size ring buffer (last 10 requests)
-	Index    int            // Current write position
-	Count    int            // Actual number of requests tracked
+	Index    int           // Current write position
+	Count    int           // Actual number of requests tracked
 }
 
 var (
-	requestCounts = make(map[string]*RateLimitTracker)
-	requestsMu    sync.RWMutex
+	requestCounts        = make(map[string]*RateLimitTracker)
+	requestsMu           sync.RWMutex
 	requestCleanupTicker *time.Ticker
 )
 
@@ -52,23 +54,23 @@ type IPTracker struct {
 }
 
 var (
-	ipTrackers = make(map[string]*IPTracker)
-	trackersMu sync.RWMutex
+	ipTrackers           = make(map[string]*IPTracker)
+	trackersMu           sync.RWMutex
 	trackerCleanupTicker *time.Ticker
-	maxTrackedIPs = 50000 // Prevent unbounded memory growth
+	maxTrackedIPs        = 50000 // Prevent unbounded memory growth
 )
 
 func init() {
 	// Start periodic cleanup of old rate limit entries to prevent memory bloat
 	requestCleanupTicker = time.NewTicker(1 * time.Minute)
 	trackerCleanupTicker = time.NewTicker(5 * time.Minute)
-	
+
 	go func() {
 		for range requestCleanupTicker.C {
 			cleanupOldRequestCounts()
 		}
 	}()
-	
+
 	go func() {
 		for range trackerCleanupTicker.C {
 			cleanupOldIPTrackers()
@@ -80,10 +82,10 @@ func init() {
 func cleanupOldRequestCounts() {
 	requestsMu.Lock()
 	defer requestsMu.Unlock()
-	
+
 	now := time.Now()
 	inactiveThreshold := now.Add(-10 * time.Minute) // Remove trackers inactive for 10 minutes
-	
+
 	for ip, tracker := range requestCounts {
 		// Check if any requests are recent
 		hasRecentRequest := false
@@ -93,7 +95,7 @@ func cleanupOldRequestCounts() {
 				break
 			}
 		}
-		
+
 		// Remove tracker if completely inactive
 		if !hasRecentRequest {
 			delete(requestCounts, ip)
@@ -105,10 +107,10 @@ func cleanupOldRequestCounts() {
 func cleanupOldIPTrackers() {
 	trackersMu.Lock()
 	defer trackersMu.Unlock()
-	
+
 	now := time.Now()
 	cleanupThreshold := now.Add(-30 * time.Minute) // Remove trackers inactive for 30+ minutes
-	
+
 	for ip, tracker := range ipTrackers {
 		// Clean old accesses from this tracker
 		var validSeriesAccesses []time.Time
@@ -117,14 +119,14 @@ func cleanupOldIPTrackers() {
 				validSeriesAccesses = append(validSeriesAccesses, t)
 			}
 		}
-		
+
 		var validChapterAccesses []time.Time
 		for _, t := range tracker.ChapterAccesses {
 			if t.After(cleanupThreshold) {
 				validChapterAccesses = append(validChapterAccesses, t)
 			}
 		}
-		
+
 		// Remove tracker if no recent activity
 		if len(validSeriesAccesses) == 0 && len(validChapterAccesses) == 0 {
 			delete(ipTrackers, ip)
@@ -134,7 +136,7 @@ func cleanupOldIPTrackers() {
 			ipTrackers[ip].LastCleanup = now
 		}
 	}
-	
+
 	// If still too many trackers, clean most aggressively
 	if len(ipTrackers) > maxTrackedIPs {
 		// Force aggressive cleanup: remove oldest 20% of trackers
@@ -281,6 +283,28 @@ func isPrivilegedUser(c *fiber.Ctx) bool {
 	return user.Role == "moderator" || user.Role == "admin"
 }
 
+// generateRequestID generates a random request ID
+func generateRequestID() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
+// RequestIDMiddleware adds a unique request ID to each request
+func RequestIDMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		requestID := generateRequestID()
+
+		// Add to context for use in handlers
+		c.Locals("requestID", requestID)
+
+		// Add to response header
+		c.Set("X-Request-ID", requestID)
+
+		return c.Next()
+	}
+}
+
 // RateLimitingMiddleware limits the number of requests per IP
 func RateLimitingMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -289,7 +313,7 @@ func RateLimitingMiddleware() fiber.Handler {
 			log.Errorf("Failed to get app config for rate limiting: %v", err)
 			return c.Next() // Continue without rate limiting on error
 		}
-		
+
 		if !cfg.RateLimitEnabled {
 			return c.Next()
 		}
@@ -298,22 +322,22 @@ func RateLimitingMiddleware() fiber.Handler {
 		if isPrivilegedUser(c) {
 			return c.Next()
 		}
-		
+
 		ip := getRealIP(c)
 		now := time.Now()
-		
+
 		requestsMu.Lock()
 		tracker, exists := requestCounts[ip]
 		if !exists {
 			tracker = &RateLimitTracker{}
 			requestCounts[ip] = tracker
 		}
-		
+
 		// Count valid requests within the window (using ring buffer)
 		windowStart := now.Add(-time.Duration(cfg.RateLimitWindow) * time.Second)
 		validCount := 0
 		oldestValid := now
-		
+
 		for i := 0; i < tracker.Count; i++ {
 			if tracker.Requests[i].After(windowStart) {
 				validCount++
@@ -322,37 +346,37 @@ func RateLimitingMiddleware() fiber.Handler {
 				}
 			}
 		}
-		
+
 		// Check if limit exceeded
 		if validCount >= cfg.RateLimitRequests {
 			requestsMu.Unlock()
 			log.Infof("Rate limit exceeded for IP: %s", ip)
-			
+
 			resetTime := oldestValid.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
 			timeRemaining := resetTime.Sub(now)
 			seconds := int(timeRemaining.Seconds())
 			if seconds < 0 {
 				seconds = 0
 			}
-			
+
 			// For HTMX requests, return rate limit notification
 			if IsHTMXRequest(c) {
 				message := "Too many requests. Please wait before trying again."
 				triggerNotification(c, message, "warning")
 				return c.Status(fiber.StatusTooManyRequests).SendString("")
 			}
-			
+
 			// Return rate limit error page for regular requests
 			return HandleView(c, views.RateLimit(seconds))
 		}
-		
+
 		// Add current request to ring buffer (fixed size)
 		tracker.Requests[tracker.Index] = now
 		tracker.Index = (tracker.Index + 1) % len(tracker.Requests)
 		if tracker.Count < len(tracker.Requests) {
 			tracker.Count++
 		}
-		
+
 		requestsMu.Unlock()
 		return c.Next()
 	}
@@ -398,7 +422,7 @@ func BotDetectionMiddleware() fiber.Handler {
 			log.Errorf("Failed to get app config for bot detection: %v", err)
 			return c.Next() // Continue without bot detection on error
 		}
-		
+
 		if !cfg.BotDetectionEnabled {
 			return c.Next()
 		}
@@ -407,7 +431,7 @@ func BotDetectionMiddleware() fiber.Handler {
 		if isPrivilegedUser(c) {
 			return c.Next()
 		}
-		
+
 		ip := getRealIP(c)
 		log.Debugf("Bot detection for IP: %s, Path: %s", ip, c.Path())
 
@@ -519,6 +543,7 @@ func filterTimesAfter(times []time.Time, after time.Time) []time.Time {
 	}
 	return filtered
 }
+
 // but does not enforce authentication. It sets c.Locals("user_name") when a valid
 // token is found so handlers can optionally adapt views for logged-in users.
 func OptionalAuthMiddleware() fiber.Handler {
@@ -552,24 +577,33 @@ func ConditionalAuthMiddleware() fiber.Handler {
 		libraries, err := models.GetAccessibleLibrariesForAnonymous()
 		if err != nil {
 			// If we can't get anonymous permissions, fail open
+			log.Debugf("Failed to get anonymous libraries: %v", err)
+			return c.Next()
+		}
+
+		hasWildcard, err := models.RoleHasWildcardPermission("anonymous")
+		if err != nil {
+			log.Debugf("Failed to check anonymous wildcard: %v", err)
+			return c.Next()
+		}
+
+		log.Debugf("Anonymous permissions: hasWildcard=%v, libraries=%v", hasWildcard, libraries)
+
+		// If anonymous has wildcard permission or specific library access, allow
+		if hasWildcard || len(libraries) > 0 {
 			return c.Next()
 		}
 
 		// If anonymous has no permissions, require authentication
-		if len(libraries) == 0 {
-			originalURL := c.OriginalURL()
-			target := originalURL
-			if strings.HasPrefix(originalURL, "/series/") {
-				parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
-				if len(parts) > 1 {
-					target = "/series/" + parts[0]
-				}
+		originalURL := c.OriginalURL()
+		target := originalURL
+		if strings.HasPrefix(originalURL, "/series/") {
+			parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
+			if len(parts) > 1 {
+				target = "/series/" + parts[0]
 			}
-			return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
 		}
-
-		// Anonymous has permissions, allow access
-		return c.Next()
+		return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
 	}
 }
 
@@ -586,32 +620,32 @@ func GetCurrentUsername(c *fiber.Ctx) string {
 // Returns libraries based on role permissions for authenticated users or anonymous permissions for unauthenticated users
 func GetUserAccessibleLibraries(c *fiber.Ctx) ([]string, error) {
 	username := GetCurrentUsername(c)
-	
+
 	// If no user is authenticated, return anonymous role permissions
 	if username == "" {
 		return models.GetAccessibleLibrariesForAnonymous()
 	}
-	
+
 	// Check user role
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil {
 		return []string{}, err
 	}
-	
+
 	// Admins and moderators have access to all libraries
 	if user.Role == "admin" || user.Role == "moderator" {
 		libraries, err := models.GetLibraries()
 		if err != nil {
 			return nil, err
 		}
-		
+
 		slugs := make([]string, len(libraries))
 		for i, lib := range libraries {
 			slugs[i] = lib.Slug
 		}
 		return slugs, nil
 	}
-	
+
 	// Regular users - get accessible libraries based on permissions
 	return models.GetAccessibleLibrariesForUser(username)
 }
@@ -619,23 +653,23 @@ func GetUserAccessibleLibraries(c *fiber.Ctx) ([]string, error) {
 // UserHasLibraryAccess checks if the current user has access to a specific library
 func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 	username := GetCurrentUsername(c)
-	
+
 	// If no user is authenticated, check anonymous role permissions
 	if username == "" {
 		return models.AnonymousHasLibraryAccess(librarySlug)
 	}
-	
+
 	// Check user role
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil {
 		return false, err
 	}
-	
+
 	// Admins and moderators have access to all libraries
 	if user.Role == "admin" || user.Role == "moderator" {
 		return true, nil
 	}
-	
+
 	// Regular users - check permissions
 	return models.UserHasLibraryAccess(username, librarySlug)
 }
@@ -644,7 +678,7 @@ func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 func ImageProtectionMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		score := calculateBotScore(c)
-		
+
 		// If score is high, require captcha
 		if score >= 50 {
 			if c.Cookies("captcha_solved") != "true" {
@@ -661,7 +695,7 @@ func ImageProtectionMiddleware() fiber.Handler {
 				return c.Redirect("/captcha", fiber.StatusSeeOther)
 			}
 		}
-		
+
 		// If score is very high, block outright
 		if score >= 80 {
 			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
@@ -672,7 +706,7 @@ func ImageProtectionMiddleware() fiber.Handler {
 			}
 			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
 		}
-		
+
 		return c.Next()
 	}
 }
@@ -682,14 +716,14 @@ func calculateBotScore(c *fiber.Ctx) int {
 	score := 0
 	userAgent := c.Get("User-Agent")
 	userAgentLower := strings.ToLower(userAgent)
-	
+
 	// User-Agent checks
 	if userAgent == "" {
 		score += 30
 	} else if len(userAgent) < 20 {
 		score += 20
 	}
-	
+
 	// Bot indicators in User-Agent
 	botKeywords := []string{"bot", "crawler", "spider", "scraper", "headless", "selenium", "puppeteer", "phantomjs", "python-requests", "curl", "wget"}
 	for _, keyword := range botKeywords {
@@ -698,7 +732,7 @@ func calculateBotScore(c *fiber.Ctx) int {
 			break
 		}
 	}
-	
+
 	// Check if it's a known browser
 	browserFound := false
 	browsers := []string{"chrome", "firefox", "safari", "edge", "opera", "brave", "vivaldi"}
@@ -711,17 +745,17 @@ func calculateBotScore(c *fiber.Ctx) int {
 	if !browserFound && userAgent != "" {
 		score += 25
 	}
-	
+
 	// Header checks
 	if c.Get("Referer") == "" {
 		score += 10
 	}
-	
+
 	accept := c.Get("Accept")
 	if accept == "" || (!strings.Contains(accept, "image") && !strings.Contains(accept, "*/*")) {
 		score += 15
 	}
-	
+
 	// Modern browser headers
 	if c.Get("Sec-Fetch-Dest") == "" {
 		score += 10
@@ -732,17 +766,17 @@ func calculateBotScore(c *fiber.Ctx) int {
 	if c.Get("Sec-Fetch-Site") == "" {
 		score += 10
 	}
-	
+
 	// Check for automation headers
 	if c.Get("X-Requested-With") != "" {
 		score += 15
 	}
-	
+
 	// Check for proxy/VPN indicators
 	if c.Get("X-Forwarded-For") != "" && strings.Contains(c.Get("X-Forwarded-For"), ",") {
 		score += 10 // Multiple proxies
 	}
-	
+
 	// Check for unusual Accept-Language
 	acceptLang := c.Get("Accept-Language")
 	if acceptLang == "" {
@@ -750,17 +784,17 @@ func calculateBotScore(c *fiber.Ctx) int {
 	} else if len(strings.Split(acceptLang, ",")) > 5 {
 		score += 5 // Too many languages
 	}
-	
+
 	// Check for DNT (Do Not Track)
 	if c.Get("DNT") == "1" {
 		score += 5
 	}
-	
+
 	// Check request method - images should be GET
 	if c.Method() != fiber.MethodGet && c.Method() != fiber.MethodHead {
 		score += 20
 	}
-	
+
 	return score
 }
 
