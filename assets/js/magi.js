@@ -345,134 +345,6 @@
     };
   })();
 
-  /**
-   * Manages Cropper.js initialization for image cropping functionality
-   */
-  const CropperManager = (function() {
-    function initCropper(img, cropDataInput) {
-      if (!img || !cropDataInput) {
-        console.error('Missing required elements for Cropper.js');
-        return;
-      }
-      
-      if (typeof Cropper === 'undefined') {
-        setTimeout(() => initCropper(img, cropDataInput), 100);
-        return;
-      }
-      
-      // Find and disable the save button initially
-      const container = cropDataInput.closest('.cropper-container') || cropDataInput.parentElement;
-      const saveButton = container.querySelector('button[hx-post*="poster/set"]');
-      if (saveButton) {
-        saveButton.disabled = true;
-      }
-      
-      // Destroy any existing cropper
-      if (img.cropper) {
-        img.cropper.destroy();
-      }
-      
-      // Initialize Cropper.js with 2:3 aspect ratio for poster
-      const cropper = new Cropper(img, {
-        aspectRatio: 2 / 3,
-        viewMode: 1,
-        autoCropArea: 2,
-        responsive: true,
-        restore: true,
-        guides: true,
-        center: true,
-        highlight: true,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        toggleDragModeOnDblclick: true,
-        zoom: function(e) {
-          // Limit zoom range
-          if (e.detail.ratio > 4) {
-            e.preventDefault();
-          }
-        },
-        ready: function() {
-          // Enable the save button when cropper is ready
-          if (saveButton) {
-            saveButton.disabled = false;
-          }
-          
-          // Calculate zoom to fit image width to container width
-          const container = document.getElementById('image-container');
-          const containerWidth = container ? container.clientWidth : img.parentElement.clientWidth;
-          const imageWidth = cropper.getImageData().naturalWidth;
-          
-          // Zoom to fit width exactly
-          const fitZoom = containerWidth / imageWidth;
-          cropper.zoomTo(fitZoom);
-          
-          // Position at top-left (0, 0)
-          cropper.setCanvasData({
-            left: 0,
-            top: 0
-          });
-          
-          // Set initial crop data
-          const data = cropper.getData(true);
-          const cropData = {
-            x: Math.round(data.x),
-            y: Math.round(data.y),
-            width: Math.round(data.width),
-            height: Math.round(data.height)
-          };
-          cropDataInput.value = JSON.stringify(cropData);
-        },
-        crop: function(e) {
-          // Update crop data whenever the crop area changes
-          const data = cropper.getData(true);
-          
-          // Convert from image coordinates to actual image pixel coordinates
-          const cropData = {
-            x: Math.round(data.x),
-            y: Math.round(data.y),
-            width: Math.round(data.width),
-            height: Math.round(data.height)
-          };
-          
-          cropDataInput.value = JSON.stringify(cropData);
-        }
-      });
-    }
-
-    function initializeCroppers() {
-      document.querySelectorAll('input[data-crop-data]').forEach(function(cropDataInput) {
-        const container = cropDataInput.closest('.cropper-container') || cropDataInput.parentElement;
-        const img = container.querySelector('img');
-        
-        if (img) {
-          if (img.complete) {
-            initCropper(img, cropDataInput);
-          } else {
-            img.addEventListener('load', function() {
-              initCropper(img, cropDataInput);
-            });
-          }
-        }
-      });
-    }
-
-    function init() {
-      // Auto-initialize cropper for inputs with data-crop-data attribute
-      document.addEventListener('DOMContentLoaded', function() {
-        initializeCroppers();
-      });
-      // Also initialize after HTMX swaps
-      document.addEventListener('htmx:afterSwap', function() {
-        initializeCroppers();
-      });
-    }
-
-    return {
-      init: init,
-      initCropper: initCropper
-    };
-  })();
-
   const SiteUI = (function() {
     const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
     const MOBILE_BREAKPOINT = '(max-width: 768px)';
@@ -1186,7 +1058,6 @@
       safeExecute(() => DropdownManager.init(), 'Dropdown manager');
       safeExecute(() => ThemeManager.init(), 'Theme manager');
       safeExecute(() => SearchModalManager.init(), 'Search modal focus');
-      safeExecute(() => CropperManager.init(), 'Cropper manager');
       safeExecute(() => ConfigManager.init(), 'Config manager');
       safeExecute(() => JobStatusManager.init(), 'Job status manager');
     }
@@ -1399,7 +1270,6 @@
   window.Magi = {
     SmoothScroll: SmoothScroll,
     JobStatusManager: JobStatusManager,
-    CropperManager: CropperManager,
     ConfigManager: ConfigManager,
     parseAnsiColors: parseAnsiColors,
     applyAnsiStyles: applyAnsiStyles,

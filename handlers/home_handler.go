@@ -214,116 +214,15 @@ func HandleHome(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights, unreadCount, notifications), unreadCount, notifications)
-}
-
-// HandleTopReadPeriod renders the top read list for a specific period via HTMX
-func HandleTopReadPeriod(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
-		return c.Redirect("/")
-	}
-
-	period := c.Query("period", "today")
-	log.Debugf("Top read request for period: %s", period)
-
-	// Get accessible libraries for the current user
-	userName := GetUserContext(c)
-	var accessibleLibraries []string
-	if userName == "" {
-		// Anonymous user
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	} else {
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	}
-
-	var topRead []models.Media
-	var err error
-	switch period {
-	case "today":
-		topRead, err = models.GetTopReadMedias("today", 10, accessibleLibraries)
-	case "week":
-		topRead, err = models.GetTopReadMedias("week", 10, accessibleLibraries)
-	case "month":
-		topRead, err = models.GetTopReadMedias("month", 10, accessibleLibraries)
-	case "year":
-		topRead, err = models.GetTopReadMedias("year", 10, accessibleLibraries)
-	case "all":
-		topRead, err = models.GetTopReadMedias("all", 10, accessibleLibraries)
-	default:
-		return c.Status(400).SendString("Invalid period")
-	}
+	// Fetch homepage statistics
+	stats, err := models.GetHomePageStats()
 	if err != nil {
-		log.Errorf("Error getting top read: %v", err)
-		return c.Status(500).SendString(err.Error())
+		log.Errorf("Failed to get homepage statistics: %v", err)
+		// Continue with empty stats if error
+		stats = models.HomePageStats{}
 	}
 
-	log.Debugf("Got %d media for period %s", len(topRead), period)
-
-	var title string
-	var emptyMessage string
-	switch period {
-	case "today":
-		emptyMessage = "No reads today"
-	case "week":
-		emptyMessage = "No reads this week"
-	case "month":
-		emptyMessage = "No reads this month"
-	case "year":
-		emptyMessage = "No reads this year"
-	case "all":
-		emptyMessage = "No reads recorded"
-	}
-
-	return renderComponent(c, views.TopReadList(topRead, emptyMessage, title))
-}
-
-// HandleTopPopular renders the top popular media list via HTMX
-func HandleTopPopular(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
-		return c.Redirect("/")
-	}
-
-	// Get accessible libraries for the current user
-	userName := GetUserContext(c)
-	var accessibleLibraries []string
-	if userName == "" {
-		// Anonymous user
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	} else {
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	}
-
-	topMedias, err := models.GetTopMedias(10, accessibleLibraries)
-	if err != nil {
-		log.Errorf("Error getting top medias: %v", err)
-		return c.Status(500).SendString(err.Error())
-	}
-
-	log.Debugf("Got %d top medias", len(topMedias))
-
-	return renderComponent(c, views.TopPopularFragment(topMedias))
+	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights, stats, unreadCount, notifications), unreadCount, notifications)
 }
 
 // HandleTopPopularFull renders the Popular section with sub-navigation
@@ -380,50 +279,6 @@ func HandleTopPopularFull(c *fiber.Ctx) error {
 	log.Debugf("Got %d media for period %s", len(topMedias), period)
 
 	return renderComponent(c, views.TopPopularFullFragment(topMedias, period))
-}
-
-// HandleTop10 renders the entire Top 10 card with HTMX tabs
-func HandleTop10(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
-		return c.Redirect("/")
-	}
-
-	// Get accessible libraries for the current user
-	userName := GetUserContext(c)
-	var accessibleLibraries []string
-	if userName == "" {
-		// Anonymous user
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	} else {
-		var err error
-		accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
-		if err != nil {
-			log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
-			accessibleLibraries = []string{} // Empty if error
-		}
-	}
-
-	topMedias, err := models.GetTopMedias(10, accessibleLibraries)
-	if err != nil {
-		log.Errorf("Error getting top medias: %v", err)
-		return c.Status(500).SendString(err.Error())
-	}
-
-	topReadAll, err := models.GetTopReadMedias("all", 10, accessibleLibraries)
-	if err != nil {
-		log.Errorf("Error getting top read all: %v", err)
-		return c.Status(500).SendString(err.Error())
-	}
-
-	log.Debugf("Got %d top medias and %d top read", len(topMedias), len(topReadAll))
-
-	return renderComponent(c, views.Top10Card(topMedias, topReadAll))
 }
 
 // HandleTopReadFull renders the Most Read section with sub-navigation
@@ -606,16 +461,6 @@ func HandleTopReadCard(c *fiber.Ctx) error {
 	log.Debugf("Got %d read media for period %s", len(topRead), period)
 
 	return renderComponent(c, views.Top10CardContent("read", period, topPopular, topRead))
-}
-
-// HandleStatistics renders the statistics section via HTMX
-func HandleStatistics(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
-		return c.Redirect("/")
-	}
-
-	return renderComponent(c, views.StatisticsFragment())
 }
 
 // HandleNotFound renders the generic not-found page for unrouted paths.

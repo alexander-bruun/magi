@@ -1233,9 +1233,246 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 			</div>
 		}
 	</div>
-	<!-- Cropper dependencies - loaded when poster editor is used -->
-	<link rel="stylesheet" href="/assets/css/vendor/cropper.min.css"/>
-	<script src="/assets/js/vendor/cropper.min.js" defer></script>
+	<!-- Custom cropper styles and script -->
+	<style>
+		.cropper-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+			pointer-events: none;
+			z-index: 10;
+		}
+		.cropper-box {
+			position: absolute;
+			border: 2px solid #39f;
+			background: rgba(255, 255, 255, 0.1);
+			cursor: move;
+			box-sizing: border-box;
+			z-index: 11;
+		}
+		.cropper-handle {
+			position: absolute;
+			width: 10px;
+			height: 10px;
+			background: #39f;
+			border: 1px solid #fff;
+			z-index: 12;
+		}
+		.cropper-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+		.cropper-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+		.cropper-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+		.cropper-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+	</style>
+	<script>
+		function initCustomCropper(container) {
+			const img = container.querySelector('img');
+			// Look for cropDataInput and saveButton in the parent container
+			const parentContainer = container.closest('.poster-preview-cropper') || container.parentElement;
+			const cropDataInput = parentContainer.querySelector('input[data-crop-data]');
+			const saveButton = parentContainer.querySelector('button[hx-post*="poster/set"]');
+			
+			if (!img || !cropDataInput) return;
+			
+			// Wait for image to load
+			if (!img.complete) {
+				img.onload = () => initCropper();
+				return;
+			}
+			initCropper();
+			
+			function initCropper() {
+				const containerRect = container.getBoundingClientRect();
+				const imgRect = img.getBoundingClientRect();
+				
+				// If image hasn't loaded yet, wait
+				if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+					img.onload = () => initCropper();
+					return;
+				}
+				
+				// Clean up any existing cropper elements
+				container.querySelectorAll('.cropper-overlay, .cropper-box').forEach(el => el.remove());
+				
+				// Create overlay
+				const overlay = document.createElement('div');
+				overlay.className = 'cropper-overlay';
+				// Position overlay to cover the entire container
+				overlay.style.top = '0px';
+				overlay.style.left = '0px';
+				overlay.style.width = '100%';
+				overlay.style.height = '100%';
+				container.style.position = 'relative';
+				container.appendChild(overlay);
+				
+				// Create crop box
+				const cropBox = document.createElement('div');
+				cropBox.className = 'cropper-box';
+				container.appendChild(cropBox);
+				
+				// Create handles
+				const handles = ['nw', 'ne', 'sw', 'se'].map(pos => {
+					const handle = document.createElement('div');
+					handle.className = `cropper-handle ${pos}`;
+					cropBox.appendChild(handle);
+					return handle;
+				});
+				
+				// Calculate initial crop box (2:3 aspect ratio, centered)
+				const aspectRatio = 2/3;
+				let boxWidth = Math.min(200, containerRect.width * 0.8);
+				let boxHeight = boxWidth / aspectRatio;
+				
+				if (boxHeight > containerRect.height * 0.8) {
+					boxHeight = containerRect.height * 0.8;
+					boxWidth = boxHeight * aspectRatio;
+				}
+				
+				let boxX = (containerRect.width - boxWidth) / 2;
+				let boxY = (containerRect.height - boxHeight) / 2;
+				
+				updateCropBox();
+				let isDragging = false;
+				let dragStartX, dragStartY;
+				let isResizing = false;
+				let resizeHandle;
+				
+				// Mouse events
+				cropBox.addEventListener('mousedown', startDrag);
+				handles.forEach(handle => {
+					handle.addEventListener('mousedown', (e) => {
+						e.stopPropagation();
+						isResizing = true;
+						resizeHandle = handle.classList[1];
+						dragStartX = e.clientX;
+						dragStartY = e.clientY;
+						document.addEventListener('mousemove', resize);
+						document.addEventListener('mouseup', stopResize);
+					});
+				});
+				
+				function startDrag(e) {
+					isDragging = true;
+					const containerRect = container.getBoundingClientRect();
+					dragStartX = e.clientX - (containerRect.left + boxX);
+					dragStartY = e.clientY - (containerRect.top + boxY);
+					document.addEventListener('mousemove', drag);
+					document.addEventListener('mouseup', stopDrag);
+				}
+				
+				function drag(e) {
+					if (!isDragging) return;
+					const containerRect = container.getBoundingClientRect();
+					boxX = e.clientX - dragStartX - containerRect.left;
+					boxY = e.clientY - dragStartY - containerRect.top;
+					constrainBox();
+					updateCropBox();
+				}
+				
+				function stopDrag() {
+					isDragging = false;
+					document.removeEventListener('mousemove', drag);
+					document.removeEventListener('mouseup', stopDrag);
+				}
+				
+				function resize(e) {
+					if (!isResizing) return;
+					const dx = e.clientX - dragStartX;
+					const dy = e.clientY - dragStartY;
+					
+					switch (resizeHandle) {
+						case 'se':
+							boxWidth += dx;
+							boxHeight += dy;
+							break;
+						case 'sw':
+							boxX += dx;
+							boxWidth -= dx;
+							boxHeight += dy;
+							break;
+						case 'ne':
+							boxY += dy;
+							boxWidth += dx;
+							boxHeight -= dy;
+							break;
+						case 'nw':
+							boxX += dx;
+							boxY += dy;
+							boxWidth -= dx;
+							boxHeight -= dy;
+							break;
+					}
+					
+					// Maintain aspect ratio
+					boxHeight = boxWidth / aspectRatio;
+					
+					dragStartX = e.clientX;
+					dragStartY = e.clientY;
+					
+					constrainBox();
+					updateCropBox();
+				}
+				
+				function stopResize() {
+					isResizing = false;
+					document.removeEventListener('mousemove', resize);
+					document.removeEventListener('mouseup', stopResize);
+				}
+				
+				function constrainBox() {
+					boxX = Math.max(0, Math.min(boxX, containerRect.width - boxWidth));
+					boxY = Math.max(0, Math.min(boxY, containerRect.height - boxHeight));
+					boxWidth = Math.max(50, Math.min(boxWidth, containerRect.width - boxX));
+					boxHeight = boxWidth / aspectRatio;
+					boxHeight = Math.max(50, Math.min(boxHeight, containerRect.height - boxY));
+					boxWidth = boxHeight * aspectRatio;
+				}
+				
+				function updateCropBox() {
+					cropBox.style.left = boxX + 'px';
+					cropBox.style.top = boxY + 'px';
+					cropBox.style.width = boxWidth + 'px';
+					cropBox.style.height = boxHeight + 'px';
+					
+					// Update crop data - convert from container coordinates to image coordinates
+					const imgRect = img.getBoundingClientRect();
+					const containerRect = container.getBoundingClientRect();
+					const scaleX = img.naturalWidth / imgRect.width;
+					const scaleY = img.naturalHeight / imgRect.height;
+					
+					// Convert container coordinates to image coordinates
+					const imageX = (boxX - (imgRect.left - containerRect.left)) / imgRect.width * img.naturalWidth;
+					const imageY = (boxY - (imgRect.top - containerRect.top)) / imgRect.height * img.naturalHeight;
+					const imageWidth = boxWidth / imgRect.width * img.naturalWidth;
+					const imageHeight = boxHeight / imgRect.height * img.naturalHeight;
+					
+					const cropData = {
+						x: Math.round(Math.max(0, imageX)),
+						y: Math.round(Math.max(0, imageY)),
+						width: Math.round(Math.min(img.naturalWidth - imageX, imageWidth)),
+						height: Math.round(Math.min(img.naturalHeight - imageY, imageHeight))
+					};
+					
+					cropDataInput.value = JSON.stringify(cropData);
+					
+					// Enable save button
+					if (saveButton) saveButton.disabled = false;
+				}
+			}
+		}
+		
+		// Initialize cropper when DOM is ready
+		document.addEventListener('DOMContentLoaded', function() {
+			document.querySelectorAll('.cropper-container').forEach(initCustomCropper);
+		});
+		
+		// Also initialize after HTMX swaps
+		document.addEventListener('htmx:afterSwap', function() {
+			document.querySelectorAll('.cropper-container').forEach(initCustomCropper);
+		});
+	</script>
 }
 
 // PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js

@@ -290,6 +290,12 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 		return HandleView(c, views.OneDoesNotSimplySearch())
 	}
 
+	// Get app config for content rating limit
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
 	// Get accessible libraries for the current user
 	accessibleLibraries, err := GetUserAccessibleLibraries(c)
 	if err != nil {
@@ -303,6 +309,7 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 		SortBy:              "name",
 		SortOrder:           "desc",
 		AccessibleLibraries: accessibleLibraries,
+		ContentRatingLimit:  cfg.ContentRatingLimit,
 	}
 	media, _, err := models.SearchMediasWithOptions(opts)
 	if err != nil {

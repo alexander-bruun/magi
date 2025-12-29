@@ -83,8 +83,8 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 	} else {
 		<ul class="top-manga-list">
 			for i, m := range media {
-				<li>
-					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 py-2">
+				<li class="flex items-center justify-between gap-3 py-2">
+					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 flex-1">
 						<div class="w-10 h-14 overflow-hidden rounded-sm">
 							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
 						</div>
@@ -92,32 +92,17 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 							<span class="font-medium">{ m.Name }</span>
 							<div class="text-xs uk-text-muted">{ m.Author }</div>
 						</div>
-						<div class="flex flex-col items-center">
-							<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
-							<div class="text-xs uk-text-muted mt-1">
-								{ fmt.Sprintf("%d reads", m.ReadCount) }
-							</div>
-						</div>
 					</a>
+					<div class="flex flex-col items-center">
+						<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+						<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
+							<span class="flex items-center gap-1"><uk-icon icon="eye" stroke-width="2"></uk-icon> { fmt.Sprint(m.ReadCount) }</span>
+						</div>
+					</div>
 				</li>
 			}
 		</ul>
 	}
-}
-
-templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
-	<div>
-		<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list-centered">
-			<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" class="tab-link">Today</a></li>
-			<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" class="tab-link">Week</a></li>
-			<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" class="tab-link">Month</a></li>
-			<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" class="tab-link">Year</a></li>
-			<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" class="tab-link">All Time</a></li>
-		</ul>
-	</div>
-	<div id="top-read-content">
-		@TopReadList(media, emptyMessage, title)
-	</div>
 }
 
 templ TopPopularList(media []models.Media) {
@@ -127,7 +112,7 @@ templ TopPopularList(media []models.Media) {
 		<ul class="top-manga-list">
 			for i, m := range media {
 				{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
-				<li class="flex items-center gap-3 py-2">
+				<li class="flex items-center justify-between gap-3 py-2">
 					<div class="w-10 h-14 overflow-hidden rounded-sm">
 						<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
 							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
@@ -149,13 +134,9 @@ templ TopPopularList(media []models.Media) {
 	}
 }
 
-templ TopPopularFragment(media []models.Media) {
-	@TopPopularList(media)
-}
-
 templ TopPopularFullFragment(media []models.Media, activePeriod string) {
 	<div class="tab-nav-overflow">
-		<ul class="uk-tab" id="top-popular-subnav" class="tab-nav-list-centered">
+		<ul class="uk-tab tab-nav-list-centered" id="top-popular-subnav">
 			<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-popular-full?period=today" hx-target="#top-popular-full" class="tab-link">Today</a></li>
 			<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-popular-full?period=week" hx-target="#top-popular-full" class="tab-link">Week</a></li>
 			<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-popular-full?period=month" hx-target="#top-popular-full" class="tab-link">Month</a></li>
@@ -203,7 +184,7 @@ templ Top10CardContent(activeTab string, activePeriod string, topMedias []models
 templ TopReadFullWrapper(media []models.Media, activePeriod string) {
 	<div id="top-read-full">
 		<div class="tab-nav-overflow">
-			<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list-centered">
+			<ul class="uk-tab tab-nav-list-centered" id="most-read-subnav">
 				<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-read-full?period=today" hx-target="#top-read-full" class="tab-link">Today</a></li>
 				<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-read-full?period=week" hx-target="#top-read-full" class="tab-link">Week</a></li>
 				<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-read-full?period=month" hx-target="#top-read-full" class="tab-link">Month</a></li>
@@ -334,30 +315,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 	</div>
 }
 
-templ StatisticsFragment() {
-	{{ totalMedias, _ := models.GetTotalMedias() }}
-	{{ totalChapters, _ := models.GetTotalChapters() }}
-	{{ totalChaptersRead, _ := models.GetTotalChaptersRead() }}
-	{{ mangasChange, _ := models.GetDailyChange("media") }}
-	{{ chaptersChange, _ := models.GetDailyChange("chapters") }}
-	{{ chaptersReadChange, _ := models.GetDailyChange("chapters_read") }}
-	{{ totalNovels, _ := models.GetTotalMediasByType("novel") }}
-	{{ totalNovelChapters, _ := models.GetTotalChaptersByType("novel") }}
-	{{ totalNovelChaptersRead, _ := models.GetTotalChaptersReadByType("novel") }}
-	{{ novelsChange, _ := models.GetDailyChangeByType("media", "novel") }}
-	{{ novelChaptersChange, _ := models.GetDailyChangeByType("chapters", "novel") }}
-	{{ novelChaptersReadChange, _ := models.GetDailyChangeByType("chapters_read", "novel") }}
-	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-		@StatCard("Mangas", totalMedias, mangasChange)
-		@StatCard("Manga Chapters", totalChapters, chaptersChange)
-		@StatCard("Manga Chapters Read", totalChaptersRead, chaptersReadChange)
-		@StatCard("Novels", totalNovels, novelsChange)
-		@StatCard("Novel Chapters", totalNovelChapters, novelChaptersChange)
-		@StatCard("Novel Chapters Read", totalNovelChaptersRead, novelChaptersReadChange)
-	</div>
-}
-
-templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, unreadCount int, notifications []models.UserNotification) {
+templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -387,7 +345,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 
 			<div class="md:col-span-1 lg:col-span-1">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Top 10</span></h2>
-				<div id="top-10-content" hx-get="/top-10" hx-trigger="load"></div>
+				@Top10Card(topMedias, topReadAll)
 			</div>
 		</div>
 
@@ -401,7 +359,14 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 		</div>
 
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-6"><span>Statistics</span></h2>
-		<div id="statistics-content" hx-get="/statistics" hx-trigger="intersect, every 30s"></div>
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+			@StatCard("Mangas", stats.TotalMedias, stats.MangasChange)
+			@StatCard("Manga Chapters", stats.TotalChapters, stats.ChaptersChange)
+			@StatCard("Manga Chapters Read", stats.TotalChaptersRead, stats.ChaptersReadChange)
+			@StatCard("Novels", stats.TotalNovels, stats.NovelsChange)
+			@StatCard("Novel Chapters", stats.TotalNovelChapters, stats.NovelChaptersChange)
+			@StatCard("Novel Chapters Read", stats.TotalNovelChaptersRead, stats.NovelChaptersReadChange)
+		</div>
 		<div class="text-center mt-2">
 			<small class="text-gray-500">Green badges show change in the last 24 hours</small>
 		</div>

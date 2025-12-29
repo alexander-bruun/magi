@@ -33,6 +33,22 @@ type DiskStats struct {
 	AvailableGB  float64 `json:"available_gb"`
 }
 
+// HomePageStats holds statistics data for the home page
+type HomePageStats struct {
+	TotalMedias             int
+	TotalChapters           int
+	TotalChaptersRead       int
+	MangasChange            int
+	ChaptersChange          int
+	ChaptersReadChange      int
+	TotalNovels             int
+	TotalNovelChapters      int
+	TotalNovelChaptersRead  int
+	NovelsChange            int
+	NovelChaptersChange     int
+	NovelChaptersReadChange int
+}
+
 // MonitoringData holds all monitoring dashboard data
 type MonitoringData struct {
 	UserData             string
@@ -111,6 +127,88 @@ func GetTotalChaptersReadByType(mediaType string) (int, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+// GetHomePageStats fetches all statistics data needed for the home page
+func GetHomePageStats() (HomePageStats, error) {
+	stats := HomePageStats{}
+
+	// Get total counts
+	totalMedias, err := GetTotalMedias()
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalMedias = totalMedias
+
+	totalChapters, err := GetTotalChapters()
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalChapters = totalChapters
+
+	totalChaptersRead, err := GetTotalChaptersRead()
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalChaptersRead = totalChaptersRead
+
+	// Get daily changes
+	mangasChange, err := GetDailyChange("media")
+	if err != nil {
+		return stats, err
+	}
+	stats.MangasChange = mangasChange
+
+	chaptersChange, err := GetDailyChange("chapters")
+	if err != nil {
+		return stats, err
+	}
+	stats.ChaptersChange = chaptersChange
+
+	chaptersReadChange, err := GetDailyChange("chapters_read")
+	if err != nil {
+		return stats, err
+	}
+	stats.ChaptersReadChange = chaptersReadChange
+
+	// Get novel-specific stats
+	totalNovels, err := GetTotalMediasByType("novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalNovels = totalNovels
+
+	totalNovelChapters, err := GetTotalChaptersByType("novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalNovelChapters = totalNovelChapters
+
+	totalNovelChaptersRead, err := GetTotalChaptersReadByType("novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.TotalNovelChaptersRead = totalNovelChaptersRead
+
+	novelsChange, err := GetDailyChangeByType("media", "novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.NovelsChange = novelsChange
+
+	novelChaptersChange, err := GetDailyChangeByType("chapters", "novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.NovelChaptersChange = novelChaptersChange
+
+	novelChaptersReadChange, err := GetDailyChangeByType("chapters_read", "novel")
+	if err != nil {
+		return stats, err
+	}
+	stats.NovelChaptersReadChange = novelChaptersReadChange
+
+	return stats, nil
 }
 
 // GetChaptersReadCount returns the number of reading_state records for a given manga

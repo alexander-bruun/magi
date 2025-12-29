@@ -208,14 +208,10 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Public Routes
 	// ========================================
 	app.Get("/", HandleHome)
-	app.Get("/top-read", HandleTopReadPeriod)
-	app.Get("/top-popular", HandleTopPopular)
 	app.Get("/top-popular-full", HandleTopPopularFull)
 	app.Get("/top-read-full", HandleTopReadFull)
 	app.Get("/top-popular-card", HandleTopPopularCard)
 	app.Get("/top-read-card", HandleTopReadCard)
-	app.Get("/top-10", HandleTop10)
-	app.Get("/statistics", HandleStatistics)
 	app.Get("/external/callback/mal", HandleMALCallback)
 	app.Get("/external/callback/anilist", HandleAniListCallback)
 
