@@ -1287,6 +1287,7 @@ type SearchOptions struct {
 	Types               []string // filter by media types (any match)
 	AccessibleLibraries []string // filter by accessible libraries for permission system
 	ContentRatingLimit  int      // filter by content rating
+	SearchFilter        string   // lenient search filter
 }
 
 // SearchMediasWithOptions performs a flexible media search using options
@@ -1338,7 +1339,10 @@ func SearchMediasWithOptions(opts SearchOptions) ([]Media, int64, error) {
 	total := int64(len(mangas))
 
 	// Apply text search filter
-	if opts.Filter != "" {
+	if opts.SearchFilter != "" {
+		mangas = FilterMediasBySearch(mangas, opts.SearchFilter)
+		total = int64(len(mangas))
+	} else if opts.Filter != "" {
 		mangas = applyBigramSearch(opts.Filter, mangas)
 		total = int64(len(mangas))
 	}

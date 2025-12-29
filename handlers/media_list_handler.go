@@ -50,7 +50,7 @@ func GetMediaListData(params models.QueryParams, userName string) (*MediaListDat
 
 	// Search media using options
 	opts := models.SearchOptions{
-		Filter:              params.SearchFilter,
+		SearchFilter:        params.SearchFilter,
 		Page:                params.Page,
 		PageSize:            defaultPageSize,
 		SortBy:              params.Sort,
@@ -297,7 +297,7 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 	}
 
 	opts := models.SearchOptions{
-		Filter:              searchParam,
+		SearchFilter:        searchParam,
 		Page:                defaultPage,
 		PageSize:            searchPageSize,
 		SortBy:              "name",
