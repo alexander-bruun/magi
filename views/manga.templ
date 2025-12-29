@@ -2096,6 +2096,7 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 		// Initial update
 		updateStars();
 	</script>
+	<script src="/assets/js/reader.js" defer></script>
 }
 
 templ ReviewsList(media models.Media, reviews []models.Review, page int, perPage int, userRole string, userName string) {

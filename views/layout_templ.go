@@ -43,7 +43,7 @@ func Layout(content templ.Component, userRole string, currentPath string, unread
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script><script src=\"/assets/js/reader.js\" defer></script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

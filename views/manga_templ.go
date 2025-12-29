@@ -3679,7 +3679,7 @@ func MediaReviewsSection(media models.Media, reviews []models.Review, userReview
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 344, "</div><script>\n\t\tfunction updateStars() {\n\t\t\tvar stars = document.querySelectorAll('.star-rating .star');\n\t\t\tvar ratingInput = document.querySelector('input[name=\"rating\"]');\n\t\t\tif (!ratingInput) return; // Exit if rating input doesn't exist\n\t\t\tvar rating = parseInt(ratingInput.value) || 0;\n\t\t\tstars.forEach((star, index) => {\n\t\t\t\tif (index < rating) {\n\t\t\t\t\tstar.style.color = '#fbbf24'; // yellow-400\n\t\t\t\t} else {\n\t\t\t\t\tstar.style.color = '#9ca3af'; // gray-300\n\t\t\t\t}\n\t\t\t});\n\t\t}\n\t\tfunction setRating(rating) {\n\t\t\tvar ratingInput = document.querySelector('input[name=\"rating\"]');\n\t\t\tif (!ratingInput) return; // Exit if rating input doesn't exist\n\t\t\tratingInput.value = rating;\n\t\t\tupdateStars();\n\t\t}\n\t\tfunction editReview(id, rating) {\n\t\t\tvar reviewDiv = document.querySelector(`[data-review-id=\"${id}\"]`);\n\t\t\tif (!reviewDiv) {\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tvar content = reviewDiv.dataset.reviewContent;\n\t\t\tvar reviewIdInput = document.querySelector('input[name=\"reviewId\"]');\n\t\t\tvar contentTextarea = document.querySelector('textarea[name=\"content\"]');\n\t\t\tif (!reviewIdInput || !contentTextarea) return; // Exit if form elements don't exist\n\t\t\treviewIdInput.value = id;\n\t\t\tsetRating(rating);\n\t\t\tcontentTextarea.value = content;\n\t\t\tcontentTextarea.scrollIntoView({ behavior: 'smooth' });\n\t\t}\n\t\t// Attach event listeners only if elements exist\n\t\tvar stars = document.querySelectorAll('.star-rating .star');\n\t\tif (stars.length > 0) {\n\t\t\tstars.forEach(star => {\n\t\t\t\tstar.addEventListener('click', () => {\n\t\t\t\t\tvar rating = parseInt(star.dataset.rating);\n\t\t\t\t\tsetRating(rating);\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\t\tvar editButtons = document.querySelectorAll('.edit-review-btn');\n\t\tif (editButtons.length > 0) {\n\t\t\teditButtons.forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', () => {\n\t\t\t\t\tvar id = parseInt(btn.dataset.reviewId);\n\t\t\t\t\tvar rating = parseInt(btn.dataset.reviewRating);\n\t\t\t\t\teditReview(id, rating);\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\t\t// Initial update\n\t\tupdateStars();\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 344, "</div><script>\n\t\tfunction updateStars() {\n\t\t\tvar stars = document.querySelectorAll('.star-rating .star');\n\t\t\tvar ratingInput = document.querySelector('input[name=\"rating\"]');\n\t\t\tif (!ratingInput) return; // Exit if rating input doesn't exist\n\t\t\tvar rating = parseInt(ratingInput.value) || 0;\n\t\t\tstars.forEach((star, index) => {\n\t\t\t\tif (index < rating) {\n\t\t\t\t\tstar.style.color = '#fbbf24'; // yellow-400\n\t\t\t\t} else {\n\t\t\t\t\tstar.style.color = '#9ca3af'; // gray-300\n\t\t\t\t}\n\t\t\t});\n\t\t}\n\t\tfunction setRating(rating) {\n\t\t\tvar ratingInput = document.querySelector('input[name=\"rating\"]');\n\t\t\tif (!ratingInput) return; // Exit if rating input doesn't exist\n\t\t\tratingInput.value = rating;\n\t\t\tupdateStars();\n\t\t}\n\t\tfunction editReview(id, rating) {\n\t\t\tvar reviewDiv = document.querySelector(`[data-review-id=\"${id}\"]`);\n\t\t\tif (!reviewDiv) {\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tvar content = reviewDiv.dataset.reviewContent;\n\t\t\tvar reviewIdInput = document.querySelector('input[name=\"reviewId\"]');\n\t\t\tvar contentTextarea = document.querySelector('textarea[name=\"content\"]');\n\t\t\tif (!reviewIdInput || !contentTextarea) return; // Exit if form elements don't exist\n\t\t\treviewIdInput.value = id;\n\t\t\tsetRating(rating);\n\t\t\tcontentTextarea.value = content;\n\t\t\tcontentTextarea.scrollIntoView({ behavior: 'smooth' });\n\t\t}\n\t\t// Attach event listeners only if elements exist\n\t\tvar stars = document.querySelectorAll('.star-rating .star');\n\t\tif (stars.length > 0) {\n\t\t\tstars.forEach(star => {\n\t\t\t\tstar.addEventListener('click', () => {\n\t\t\t\t\tvar rating = parseInt(star.dataset.rating);\n\t\t\t\t\tsetRating(rating);\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\t\tvar editButtons = document.querySelectorAll('.edit-review-btn');\n\t\tif (editButtons.length > 0) {\n\t\t\teditButtons.forEach(btn => {\n\t\t\t\tbtn.addEventListener('click', () => {\n\t\t\t\t\tvar id = parseInt(btn.dataset.reviewId);\n\t\t\t\t\tvar rating = parseInt(btn.dataset.reviewRating);\n\t\t\t\t\teditReview(id, rating);\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\t\t// Initial update\n\t\tupdateStars();\n\t</script><script src=\"/assets/js/reader.js\" defer></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3732,7 +3732,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 				var templ_7745c5c3_Var174 string
 				templ_7745c5c3_Var174, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(review.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2115, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2116, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var174))
 				if templ_7745c5c3_Err != nil {
@@ -3745,7 +3745,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 				var templ_7745c5c3_Var175 string
 				templ_7745c5c3_Var175, templ_7745c5c3_Err = templ.JoinStringErrs(html.EscapeString(review.Content))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2115, Col: 141}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2116, Col: 141}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var175))
 				if templ_7745c5c3_Err != nil {
@@ -3758,7 +3758,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 				var templ_7745c5c3_Var176 string
 				templ_7745c5c3_Var176, templ_7745c5c3_Err = templ.JoinStringErrs(review.UserUsername)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2118, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2119, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var176))
 				if templ_7745c5c3_Err != nil {
@@ -3780,7 +3780,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 					var templ_7745c5c3_Var177 string
 					templ_7745c5c3_Var177, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("color: %s", color))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2125, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2126, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var177))
 					if templ_7745c5c3_Err != nil {
@@ -3798,7 +3798,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 				var templ_7745c5c3_Var178 string
 				templ_7745c5c3_Var178, templ_7745c5c3_Err = templ.JoinStringErrs(review.CreatedAt.Format("Jan 2, 2006"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2129, Col: 82}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2130, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var178))
 				if templ_7745c5c3_Err != nil {
@@ -3816,7 +3816,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 					var templ_7745c5c3_Var179 string
 					templ_7745c5c3_Var179, templ_7745c5c3_Err = templ.JoinStringErrs(review.Content)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2132, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2133, Col: 52}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var179))
 					if templ_7745c5c3_Err != nil {
@@ -3835,7 +3835,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 					var templ_7745c5c3_Var180 string
 					templ_7745c5c3_Var180, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(review.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2136, Col: 133}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2137, Col: 133}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var180))
 					if templ_7745c5c3_Err != nil {
@@ -3848,7 +3848,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 					var templ_7745c5c3_Var181 string
 					templ_7745c5c3_Var181, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(review.Rating))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2136, Col: 182}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2137, Col: 182}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var181))
 					if templ_7745c5c3_Err != nil {
@@ -3861,7 +3861,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 					var templ_7745c5c3_Var182 string
 					templ_7745c5c3_Var182, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/reviews/%d", media.Slug, review.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2137, Col: 147}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2138, Col: 147}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var182))
 					if templ_7745c5c3_Err != nil {
@@ -3902,7 +3902,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 						var templ_7745c5c3_Var183 string
 						templ_7745c5c3_Var183, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2157, Col: 50}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2158, Col: 50}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var183))
 						if templ_7745c5c3_Err != nil {
@@ -3920,7 +3920,7 @@ func ReviewsList(media models.Media, reviews []models.Review, page int, perPage 
 						var templ_7745c5c3_Var184 string
 						templ_7745c5c3_Var184, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2162, Col: 24}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2163, Col: 24}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var184))
 						if templ_7745c5c3_Err != nil {
@@ -3981,7 +3981,7 @@ func ChapterCommentsSection(media models.Media, chapter models.Chapter, comments
 			var templ_7745c5c3_Var186 string
 			templ_7745c5c3_Var186, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/%s/comments", media.Slug, chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2187, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2188, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var186))
 			if templ_7745c5c3_Err != nil {
@@ -4047,7 +4047,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var188 string
 				templ_7745c5c3_Var188, templ_7745c5c3_Err = templ.JoinStringErrs(comment.UserUsername)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2226, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2227, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var188))
 				if templ_7745c5c3_Err != nil {
@@ -4060,7 +4060,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var189 string
 				templ_7745c5c3_Var189, templ_7745c5c3_Err = templ.JoinStringErrs(comment.CreatedAt.Format("Jan 2, 2006 at 3:04 PM"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2227, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2228, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var189))
 				if templ_7745c5c3_Err != nil {
@@ -4073,7 +4073,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var190 string
 				templ_7745c5c3_Var190, templ_7745c5c3_Err = templ.JoinStringErrs(comment.Content)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2229, Col: 77}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2230, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var190))
 				if templ_7745c5c3_Err != nil {
@@ -4091,7 +4091,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 					var templ_7745c5c3_Var191 string
 					templ_7745c5c3_Var191, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/comments/%d", comment.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2235, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2236, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var191))
 					if templ_7745c5c3_Err != nil {
