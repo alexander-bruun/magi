@@ -11,11 +11,11 @@ templ Backups(backups []models.BackupInfo) {
 	@Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Backups", Href: "/admin/backups"}})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Database Backups</span></h2>
 	<div id="backup-content" class="flex place-content-center">
-			<div class="w-4/5 space-y-6">
-				@BackupForm()
-				@BackupList(backups)
-			</div>
+		<div class="w-4/5 space-y-6">
+			@BackupForm()
+			@BackupList(backups)
 		</div>
+	</div>
 }
 
 templ BackupForm() {
