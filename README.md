@@ -14,6 +14,10 @@
 
 **Magi** is a self-hosted, lightweight manga & light novel server and reader. Organize and read your personal digital manga collection through a modern web interface.
 
+<div align="center">
+  <img src="docs/example.png" alt="Magi Example Homepage" width="600"/>
+</div>
+
 > [!IMPORTANT]
 > **Magi does NOT distribute copyrighted material.** It's designed exclusively as a local library manager for your legally obtained manga files.
 
