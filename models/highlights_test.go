@@ -27,6 +27,12 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// Ensure clean database state by removing any existing database file
+	databasePath := filepath.Join(tempDir, "magi.db")
+	if _, err := os.Stat(databasePath); err == nil {
+		os.Remove(databasePath)
+	}
+
 	// Initialize test database with migrations to create all tables
 	err = InitializeWithMigration(tempDir, true)
 	if err != nil {
