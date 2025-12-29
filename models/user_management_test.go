@@ -267,65 +267,65 @@ func TestCreateUser_PasswordHashing(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 func TestUpdateUserRole(t *testing.T) {
-// Create mock DB
-mockDB, mock, err := sqlmock.New()
-assert.NoError(t, err)
-defer mockDB.Close()
+	// Create mock DB
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
 
-// Replace global db
-originalDB := db
-db = mockDB
-defer func() { db = originalDB }()
+	// Replace global db
+	originalDB := db
+	db = mockDB
+	defer func() { db = originalDB }()
 
-// Mock FindUserByUsername
-mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
-WithArgs("testuser").
-WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}).
-AddRow("testuser", "pass", "reader", false, ""))
+	// Mock FindUserByUsername
+	mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
+		WithArgs("testuser").
+		WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}).
+			AddRow("testuser", "pass", "reader", false, ""))
 
-// Mock the update
-mock.ExpectExec(`UPDATE users SET role = \? WHERE username = \?`).
-WithArgs("moderator", "testuser").
-WillReturnResult(sqlmock.NewResult(0, 1))
+	// Mock the update
+	mock.ExpectExec(`UPDATE users SET role = \? WHERE username = \?`).
+		WithArgs("moderator", "testuser").
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-// Call the function
-err = UpdateUserRole("testuser", "moderator")
-assert.NoError(t, err)
+	// Call the function
+	err = UpdateUserRole("testuser", "moderator")
+	assert.NoError(t, err)
 
-// Ensure expectations met
-assert.NoError(t, mock.ExpectationsWereMet())
+	// Ensure expectations met
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestUpdateUserRole_InvalidRole(t *testing.T) {
-// Call the function with invalid role
-err := UpdateUserRole("testuser", "invalid")
-assert.Error(t, err)
-assert.Contains(t, err.Error(), "invalid role")
+	// Call the function with invalid role
+	err := UpdateUserRole("testuser", "invalid")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid role")
 }
 
 func TestUpdateUserRole_UserNotFound(t *testing.T) {
-// Create mock DB
-mockDB, mock, err := sqlmock.New()
-assert.NoError(t, err)
-defer mockDB.Close()
+	// Create mock DB
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
 
-// Replace global db
-originalDB := db
-db = mockDB
-defer func() { db = originalDB }()
+	// Replace global db
+	originalDB := db
+	db = mockDB
+	defer func() { db = originalDB }()
 
-// Mock FindUserByUsername returning no rows
-mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
-WithArgs("nonexistent").
-WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}))
+	// Mock FindUserByUsername returning no rows
+	mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
+		WithArgs("nonexistent").
+		WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}))
 
-// Call the function
-err = UpdateUserRole("nonexistent", "moderator")
-assert.Error(t, err)
-assert.Contains(t, err.Error(), "not found")
+	// Call the function
+	err = UpdateUserRole("nonexistent", "moderator")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
 
-// Ensure expectations met
-assert.NoError(t, mock.ExpectationsWereMet())
+	// Ensure expectations met
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestPromoteUser_Success(t *testing.T) {
@@ -555,38 +555,38 @@ func TestDemoteUser_CannotDemoteFurther(t *testing.T) {
 }
 
 func TestUpdateUserRoleTx_Success(t *testing.T) {
-// Create mock DB
-mockDB, mock, err := sqlmock.New()
-assert.NoError(t, err)
-defer mockDB.Close()
+	// Create mock DB
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
 
-// Replace global db
-originalDB := db
-db = mockDB
-defer func() { db = originalDB }()
+	// Replace global db
+	originalDB := db
+	db = mockDB
+	defer func() { db = originalDB }()
 
-// Create a mock transaction
-mock.ExpectBegin()
-tx, err := mockDB.Begin()
-assert.NoError(t, err)
+	// Create a mock transaction
+	mock.ExpectBegin()
+	tx, err := mockDB.Begin()
+	assert.NoError(t, err)
 
-// Mock FindUserByUsername
-mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
-	WithArgs("testuser").
-	WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}).
-		AddRow("testuser", "hashedpass", "reader", false, ""))
+	// Mock FindUserByUsername
+	mock.ExpectQuery(`SELECT username, password, role, banned, avatar FROM users WHERE username = \?`).
+		WithArgs("testuser").
+		WillReturnRows(sqlmock.NewRows([]string{"username", "password", "role", "banned", "avatar"}).
+			AddRow("testuser", "hashedpass", "reader", false, ""))
 
-// Mock the update within transaction
-mock.ExpectExec(`UPDATE users SET role = \? WHERE username = \?`).
-	WithArgs("moderator", "testuser").
-	WillReturnResult(sqlmock.NewResult(0, 1))
+	// Mock the update within transaction
+	mock.ExpectExec(`UPDATE users SET role = \? WHERE username = \?`).
+		WithArgs("moderator", "testuser").
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-// Call the function
-err = UpdateUserRoleTx(tx, "testuser", "moderator")
-assert.NoError(t, err)
+	// Call the function
+	err = UpdateUserRoleTx(tx, "testuser", "moderator")
+	assert.NoError(t, err)
 
-// Ensure expectations met
-assert.NoError(t, mock.ExpectationsWereMet())
+	// Ensure expectations met
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestResetUserPassword(t *testing.T) {
