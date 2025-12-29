@@ -31,6 +31,7 @@ var (
 	headCriticalScripts = map[string]bool{
 		"/assets/js/vendor/core.iife.js": true, // Franken UI core
 		"/assets/js/vendor/icon.iife.js": true, // Franken UI icons (uk-icon element)
+		"/assets/js/vendor/chart.min.js": true, // Chart.js library for monitoring charts
 	}
 )
 
