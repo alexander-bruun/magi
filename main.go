@@ -219,6 +219,7 @@ func main() {
 			}
 			go scheduler.InitializeIndexer(dataDirectory, libraries, dataBackendInstance)
 			go scheduler.InitializeScraperScheduler()
+			go scheduler.InitializeSubscriptionScheduler()
 
 			// Set up signal handling for graceful shutdown
 			sigChan := make(chan os.Signal, 1)
@@ -245,6 +246,7 @@ func main() {
 				scheduler.StopAllIndexers()
 				handlers.StopTokenCleanup()
 				scheduler.StopScraperScheduler()
+				scheduler.StopSubscriptionScheduler()
 			}()
 
 			select {

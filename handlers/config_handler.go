@@ -1,194 +1,203 @@
 package handlers
 
 import (
-    "github.com/alexander-bruun/magi/models"
-    "github.com/alexander-bruun/magi/utils"
-    "github.com/alexander-bruun/magi/views"
-    fiber "github.com/gofiber/fiber/v2"
-    websocket "github.com/gofiber/websocket/v2"
+	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/views"
+	fiber "github.com/gofiber/fiber/v2"
+	websocket "github.com/gofiber/websocket/v2"
 )
 
 // HandleConfiguration renders the configuration page.
 func HandleConfiguration(c *fiber.Ctx) error {
-    cfg, err := models.GetAppConfig()
-    if err != nil {
-        return sendInternalServerError(c, ErrConfigLoadFailed, err)
-    }
-    return HandleView(c, views.Config(cfg))
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return sendInternalServerError(c, ErrConfigLoadFailed, err)
+	}
+	return HandleView(c, views.Config(cfg))
 }
 
 // HandleConfigurationUpdate processes updates to the global configuration.
 func HandleConfigurationUpdate(c *fiber.Ctx) error {
-    var config models.AppConfig
-    if err := c.BodyParser(&config); err != nil {
-        return sendBadRequestError(c, ErrBadRequest)
-    }
+	var config models.AppConfig
+	if err := c.BodyParser(&config); err != nil {
+		return sendBadRequestError(c, ErrBadRequest)
+	}
 
-    // Process content_rating_limit
-    contentRatingLimit := config.ContentRatingLimit
-    if contentRatingLimit < 0 || contentRatingLimit > 3 {
-        contentRatingLimit = 3 // default to show all
-    }
+	// Process content_rating_limit
+	contentRatingLimit := config.ContentRatingLimit
+	if contentRatingLimit < 0 || contentRatingLimit > 3 {
+		contentRatingLimit = 3 // default to show all
+	}
 
-    // Process max_users
-    maxUsers := config.MaxUsers
-    if maxUsers < 0 {
-        maxUsers = 0
-    }
+	// Process max_users
+	maxUsers := config.MaxUsers
+	if maxUsers < 0 {
+		maxUsers = 0
+	}
 
-    if _, err := models.UpdateAppConfig(config.AllowRegistration, maxUsers, contentRatingLimit); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update maintenance mode configuration
-    maintenanceEnabled := config.MaintenanceEnabled
-    maintenanceMessage := config.MaintenanceMessage
-    if maintenanceMessage == "" {
-        maintenanceMessage = "We are currently performing maintenance. Please check back later."
-    }
-    if _, err := models.UpdateMaintenanceConfig(maintenanceEnabled, maintenanceMessage); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update metadata provider configuration if provided
-    metadataProvider := config.MetadataProvider
-    if metadataProvider != "" {
-        malToken := config.MALApiToken
-        anilistToken := config.AniListApiToken
-        if _, err := models.UpdateMetadataConfig(metadataProvider, malToken, anilistToken); err != nil {
-            return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-        }
-    }
-    
-    // Update rate limiting configuration
-    rateLimitEnabled := config.RateLimitEnabled
-    rateLimitRequests := config.RateLimitRequests
-    if rateLimitRequests <= 0 {
-        rateLimitRequests = 100
-    }
-    rateLimitWindow := config.RateLimitWindow
-    if rateLimitWindow <= 0 {
-        rateLimitWindow = 60
-    }
-    if _, err := models.UpdateRateLimitConfig(rateLimitEnabled, rateLimitRequests, rateLimitWindow); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update bot detection configuration
-    botDetectionEnabled := config.BotDetectionEnabled
-    botSeriesThreshold := config.BotSeriesThreshold
-    if botSeriesThreshold <= 0 {
-        botSeriesThreshold = 5
-    }
-    botChapterThreshold := config.BotChapterThreshold
-    if botChapterThreshold <= 0 {
-        botChapterThreshold = 10
-    }
-    botDetectionWindow := config.BotDetectionWindow
-    if botDetectionWindow <= 0 {
-        botDetectionWindow = 60
-    }
-    if _, err := models.UpdateBotDetectionConfig(botDetectionEnabled, botSeriesThreshold, botChapterThreshold, botDetectionWindow); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update compression quality configuration
-    readerQuality := config.ReaderCompressionQuality
-    moderatorQuality := config.ModeratorCompressionQuality
-    adminQuality := config.AdminCompressionQuality
-    premiumQuality := config.PremiumCompressionQuality
-    anonymousQuality := config.AnonymousCompressionQuality
-    processedQuality := config.ProcessedImageQuality
-    if readerQuality < 0 || readerQuality > 100 {
-        readerQuality = 70
-    }
-    if moderatorQuality < 0 || moderatorQuality > 100 {
-        moderatorQuality = 85
-    }
-    if adminQuality < 0 || adminQuality > 100 {
-        adminQuality = 100
-    }
-    if premiumQuality < 0 || premiumQuality > 100 {
-        premiumQuality = 90
-    }
-    if anonymousQuality < 0 || anonymousQuality > 100 {
-        anonymousQuality = 70
-    }
-    if processedQuality < 0 || processedQuality > 100 {
-        processedQuality = 85
-    }
-    if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update image token validity configuration
-    imageTokenValidity := config.ImageTokenValidityMinutes
-    if imageTokenValidity < 1 || imageTokenValidity > 60 {
-        imageTokenValidity = 5
-    }
-    if _, err := models.UpdateImageTokenConfig(imageTokenValidity); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update premium early access configuration
-    premiumEarlyAccess := config.PremiumEarlyAccessDuration
-    if premiumEarlyAccess < 0 {
-        premiumEarlyAccess = 3600
-    }
-    if _, err := models.UpdatePremiumEarlyAccessConfig(premiumEarlyAccess); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update max premium chapters configuration
-    maxPremiumChapters := config.MaxPremiumChapters
-    if maxPremiumChapters < 0 {
-        maxPremiumChapters = 3
-    }
-    if _, err := models.UpdateMaxPremiumChaptersConfig(maxPremiumChapters); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update premium cooldown scaling configuration
-    premiumCooldownScalingEnabled := config.PremiumCooldownScalingEnabled
-    if _, err := models.UpdatePremiumCooldownScalingConfig(premiumCooldownScalingEnabled); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    // Update NEW badge duration configuration
-    newBadgeDuration := config.NewBadgeDuration
-    if newBadgeDuration < 1 {
-        newBadgeDuration = 48 // default to 48 hours
-    }
-    if _, err := models.UpdateNewBadgeDurationConfig(newBadgeDuration); err != nil {
-        return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-    }
-    
-    return HandleView(c, views.ConfigForm())
+	if _, err := models.UpdateAppConfig(config.AllowRegistration, maxUsers, contentRatingLimit); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update maintenance mode configuration
+	maintenanceEnabled := config.MaintenanceEnabled
+	maintenanceMessage := config.MaintenanceMessage
+	if maintenanceMessage == "" {
+		maintenanceMessage = "We are currently performing maintenance. Please check back later."
+	}
+	if _, err := models.UpdateMaintenanceConfig(maintenanceEnabled, maintenanceMessage); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update metadata provider configuration if provided
+	metadataProvider := config.MetadataProvider
+	if metadataProvider != "" {
+		malToken := config.MALApiToken
+		anilistToken := config.AniListApiToken
+		if _, err := models.UpdateMetadataConfig(metadataProvider, malToken, anilistToken); err != nil {
+			return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+		}
+	}
+
+	// Update Stripe configuration
+	stripeEnabled := config.StripeEnabled
+	stripePublishableKey := config.StripePublishableKey
+	stripeSecretKey := config.StripeSecretKey
+	stripeWebhookSecret := config.StripeWebhookSecret
+	if _, err := models.UpdateStripeConfig(stripeEnabled, stripePublishableKey, stripeSecretKey, stripeWebhookSecret); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update rate limiting configuration
+	rateLimitEnabled := config.RateLimitEnabled
+	rateLimitRequests := config.RateLimitRequests
+	if rateLimitRequests <= 0 {
+		rateLimitRequests = 100
+	}
+	rateLimitWindow := config.RateLimitWindow
+	if rateLimitWindow <= 0 {
+		rateLimitWindow = 60
+	}
+	if _, err := models.UpdateRateLimitConfig(rateLimitEnabled, rateLimitRequests, rateLimitWindow); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update bot detection configuration
+	botDetectionEnabled := config.BotDetectionEnabled
+	botSeriesThreshold := config.BotSeriesThreshold
+	if botSeriesThreshold <= 0 {
+		botSeriesThreshold = 5
+	}
+	botChapterThreshold := config.BotChapterThreshold
+	if botChapterThreshold <= 0 {
+		botChapterThreshold = 10
+	}
+	botDetectionWindow := config.BotDetectionWindow
+	if botDetectionWindow <= 0 {
+		botDetectionWindow = 60
+	}
+	if _, err := models.UpdateBotDetectionConfig(botDetectionEnabled, botSeriesThreshold, botChapterThreshold, botDetectionWindow); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update compression quality configuration
+	readerQuality := config.ReaderCompressionQuality
+	moderatorQuality := config.ModeratorCompressionQuality
+	adminQuality := config.AdminCompressionQuality
+	premiumQuality := config.PremiumCompressionQuality
+	anonymousQuality := config.AnonymousCompressionQuality
+	processedQuality := config.ProcessedImageQuality
+	if readerQuality < 0 || readerQuality > 100 {
+		readerQuality = 70
+	}
+	if moderatorQuality < 0 || moderatorQuality > 100 {
+		moderatorQuality = 85
+	}
+	if adminQuality < 0 || adminQuality > 100 {
+		adminQuality = 100
+	}
+	if premiumQuality < 0 || premiumQuality > 100 {
+		premiumQuality = 90
+	}
+	if anonymousQuality < 0 || anonymousQuality > 100 {
+		anonymousQuality = 70
+	}
+	if processedQuality < 0 || processedQuality > 100 {
+		processedQuality = 85
+	}
+	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update image token validity configuration
+	imageTokenValidity := config.ImageTokenValidityMinutes
+	if imageTokenValidity < 1 || imageTokenValidity > 60 {
+		imageTokenValidity = 5
+	}
+	if _, err := models.UpdateImageTokenConfig(imageTokenValidity); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update premium early access configuration
+	premiumEarlyAccess := config.PremiumEarlyAccessDuration
+	if premiumEarlyAccess < 0 {
+		premiumEarlyAccess = 3600
+	}
+	if _, err := models.UpdatePremiumEarlyAccessConfig(premiumEarlyAccess); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update max premium chapters configuration
+	maxPremiumChapters := config.MaxPremiumChapters
+	if maxPremiumChapters < 0 {
+		maxPremiumChapters = 3
+	}
+	if _, err := models.UpdateMaxPremiumChaptersConfig(maxPremiumChapters); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update premium cooldown scaling configuration
+	premiumCooldownScalingEnabled := config.PremiumCooldownScalingEnabled
+	if _, err := models.UpdatePremiumCooldownScalingConfig(premiumCooldownScalingEnabled); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update NEW badge duration configuration
+	newBadgeDuration := config.NewBadgeDuration
+	if newBadgeDuration < 1 {
+		newBadgeDuration = 48 // default to 48 hours
+	}
+	if _, err := models.UpdateNewBadgeDurationConfig(newBadgeDuration); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	return HandleView(c, views.ConfigForm())
 }
 
 // HandleConsoleLogsWebSocketUpgrade upgrades the connection to WebSocket for console logs
 func HandleConsoleLogsWebSocketUpgrade(c *fiber.Ctx) error {
-    // Check if this is a WebSocket upgrade request
-    if websocket.IsWebSocketUpgrade(c) {
-        // Upgrade to WebSocket with authentication validation
-        return websocket.New(func(conn *websocket.Conn) {
-            // Verify user is authenticated as admin via Locals
-            userName := conn.Locals("user_name")
-            if userName == nil {
-                conn.Close()
-                return
-            }
+	// Check if this is a WebSocket upgrade request
+	if websocket.IsWebSocketUpgrade(c) {
+		// Upgrade to WebSocket with authentication validation
+		return websocket.New(func(conn *websocket.Conn) {
+			// Verify user is authenticated as admin via Locals
+			userName := conn.Locals("user_name")
+			if userName == nil {
+				conn.Close()
+				return
+			}
 
-            // Additional role check - verify admin role
-            user, err := models.FindUserByUsername(userName.(string))
-            if err != nil || user == nil || user.Role != "admin" {
-                conn.Close()
-                return
-            }
+			// Additional role check - verify admin role
+			user, err := models.FindUserByUsername(userName.(string))
+			if err != nil || user == nil || user.Role != "admin" {
+				conn.Close()
+				return
+			}
 
-            // Authentication passed, handle WebSocket connection
-            utils.HandleConsoleLogsWebSocket(conn)
-        })(c)
-    }
-    return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
+			// Authentication passed, handle WebSocket connection
+			utils.HandleConsoleLogsWebSocket(conn)
+		})(c)
+	}
+	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")
 }

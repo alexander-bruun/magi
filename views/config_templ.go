@@ -282,310 +282,359 @@ func ConfigForm() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" placeholder=\"Enter your AniList access token (optional)\"><p class=\"text-xs text-muted-foreground mt-1\">Optional: Increases rate limits. Get token from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\" class=\"uk-link\">AniList Developer Settings</a></p></div></div><!-- Rate Limiting Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Rate Limiting</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"rate_limit_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" placeholder=\"Enter your AniList access token (optional)\"><p class=\"text-xs text-muted-foreground mt-1\">Optional: Increases rate limits. Get token from <a href=\"https://anilist.co/settings/developer\" target=\"_blank\" class=\"uk-link\">AniList Developer Settings</a></p></div></div><!-- Stripe Payment Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Stripe Payment Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"stripe_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.RateLimitEnabled {
+		if cfg.StripeEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " class=\"uk-checkbox\"> <span>Enable rate limiting</span></label><p class=\"text-xs text-muted-foreground mt-1\">Limit the number of requests per IP address to prevent abuse.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Requests per window</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_requests\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " class=\"uk-checkbox\"> <span>Enable Stripe payments</span></label><p class=\"text-xs text-muted-foreground mt-1\">Enable Stripe integration for premium subscriptions.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Stripe Publishable Key</label> <input type=\"text\" class=\"uk-input\" name=\"stripe_publishable_key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitRequests))
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripePublishableKey)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 116, Col: 137}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 116, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of requests allowed per time window.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Time window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_window\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" placeholder=\"pk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Stripe Secret Key</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_secret_key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitWindow))
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeSecretKey)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 121, Col: 133}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 121, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for rate limiting.</p></div></div><!-- Bot Detection Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Bot Detection</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"bot_detection_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.BotDetectionEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " class=\"uk-checkbox\"> <span>Enable bot detection</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically detect and ban IPs that access too many series/chapters in sequence.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Series access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_series_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" placeholder=\"sk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Stripe Webhook Secret</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_webhook_secret\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotSeriesThreshold))
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeWebhookSecret)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 138, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 126, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum series page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Chapter access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_chapter_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" placeholder=\"whsec_...\"><p class=\"text-xs text-muted-foreground mt-1\">Webhook endpoint secret for verifying Stripe webhook signatures.</p></div></div><!-- Rate Limiting Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Rate Limiting</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"rate_limit_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.RateLimitEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, " class=\"uk-checkbox\"> <span>Enable rate limiting</span></label><p class=\"text-xs text-muted-foreground mt-1\">Limit the number of requests per IP address to prevent abuse.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Requests per window</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_requests\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotChapterThreshold))
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitRequests))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 143, Col: 141}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 143, Col: 137}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum chapter page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Detection window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_detection_window\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of requests allowed per time window.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Time window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_window\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotDetectionWindow))
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitWindow))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 148, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 148, Col: 133}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Compression Quality Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Compression Quality</span></h4><p class=\"text-sm text-muted-foreground mb-4\">Configure image compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p><div class=\"uk-margin\"><label class=\"block mb-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"anonymous_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for rate limiting.</p></div></div><!-- Bot Detection Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Bot Detection</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"bot_detection_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.BotDetectionEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, " class=\"uk-checkbox\"> <span>Enable bot detection</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically detect and ban IPs that access too many series/chapters in sequence.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Series access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_series_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotSeriesThreshold))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 160, Col: 233}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 165, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\" id=\"anonymous-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"anonymous-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum series page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Chapter access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_chapter_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotChapterThreshold))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 161, Col: 180}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 170, Col: 141}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Reader compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"reader_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum chapter page accesses allowed per time window before banning.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Detection window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_detection_window\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotDetectionWindow))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 168, Col: 227}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 175, Col: 139}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" id=\"reader-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"reader-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div><!-- Compression Quality Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Compression Quality</span></h4><p class=\"text-sm text-muted-foreground mb-4\">Configure image compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p><div class=\"uk-margin\"><label class=\"block mb-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"anonymous_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 169, Col: 174}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 187, Col: 233}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with reader role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Moderator compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"moderator_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\" id=\"anonymous-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"anonymous-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AnonymousCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 176, Col: 233}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 188, Col: 180}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" id=\"moderator-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"moderator-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Reader compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"reader_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 177, Col: 180}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 195, Col: 227}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with moderator role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Premium compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"premium_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" id=\"reader-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"reader-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumCompressionQuality))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ReaderCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 184, Col: 229}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 196, Col: 174}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\" id=\"premium-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"premium-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with reader role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Moderator compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"moderator_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumCompressionQuality))
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 185, Col: 176}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 203, Col: 233}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with premium role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Admin compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"admin_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\" id=\"moderator-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"moderator-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ModeratorCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 192, Col: 225}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 204, Col: 180}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "\" id=\"admin-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"admin-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with moderator role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Premium compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"premium_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 193, Col: 172}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 211, Col: 229}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with admin role. Higher values = better quality but larger files.</p></div></div><!-- Image Processing Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Image Processing Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-2\">Processed image quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"processed_image_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\" id=\"premium-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"premium-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 205, Col: 221}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 212, Col: 176}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\" id=\"processed-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"processed-value\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with premium role. Higher values = better quality but larger files.</p></div><div class=\"uk-margin\"><label class=\"block mb-2\">Admin compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"admin_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 206, Col: 174}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 219, Col: 225}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p></div></div><!-- Image Access Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Image Access Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\" id=\"admin-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"admin-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes))
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.AdminCompressionQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 217, Col: 163}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 220, Col: 172}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Premium Features</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for users with admin role. Higher values = better quality but larger files.</p></div></div><!-- Image Processing Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Image Processing Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-2\">Processed image quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider\" name=\"processed_image_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration))
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 227, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 232, Col: 221}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in seconds that premium users can access chapters before their release time.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Maximum premium chapters</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_premium_chapters\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "\" id=\"processed-slider\"> <span class=\"text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center\" id=\"processed-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxPremiumChapters))
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ProcessedImageQuality))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 232, Col: 139}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 233, Col: 174}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of the most recent chapters that can be marked as premium.</p></div><div class=\"uk-margin\"><label class=\"uk-form-label\"><input type=\"checkbox\" class=\"uk-checkbox\" name=\"premium_cooldown_scaling_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.PremiumCooldownScalingEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "> Enable premium cooldown scaling</label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p></div></div><!-- Badge Display Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Badge Display Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">NEW badge duration (hours)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"new_badge_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "</span></div><p class=\"text-xs text-muted-foreground mt-1\">Image quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p></div></div><!-- Image Access Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Image Access Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.NewBadgeDuration))
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 249, Col: 135}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 244, Col: 163}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in hours that media is marked with a NEW badge after being updated.</p></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><style>\n        .slider::-webkit-slider-thumb {\n            appearance: none;\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n        .slider::-moz-range-thumb {\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n    </style><script>\n        // Update value displays when sliders change\n        document.getElementById('reader-slider').addEventListener('input', function() {\n            document.getElementById('reader-value').textContent = this.value;\n        });\n        document.getElementById('moderator-slider').addEventListener('input', function() {\n            document.getElementById('moderator-value').textContent = this.value;\n        });\n        document.getElementById('admin-slider').addEventListener('input', function() {\n            document.getElementById('admin-value').textContent = this.value;\n        });\n        document.getElementById('anonymous-slider').addEventListener('input', function() {\n            document.getElementById('anonymous-value').textContent = this.value;\n        });\n        document.getElementById('processed-slider').addEventListener('input', function() {\n            document.getElementById('processed-value').textContent = this.value;\n        });\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Premium Features</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var29 string
+		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 254, Col: 156}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in seconds that premium users can access chapters before their release time.</p></div><div class=\"uk-margin\"><label class=\"block mb-1\">Maximum premium chapters</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_premium_chapters\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var30 string
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxPremiumChapters))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 259, Col: 139}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of the most recent chapters that can be marked as premium.</p></div><div class=\"uk-margin\"><label class=\"uk-form-label\"><input type=\"checkbox\" class=\"uk-checkbox\" name=\"premium_cooldown_scaling_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.PremiumCooldownScalingEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "> Enable premium cooldown scaling</label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p></div></div><!-- Badge Display Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-4\"><span>Badge Display Settings</span></h4><div class=\"uk-margin\"><label class=\"block mb-1\">NEW badge duration (hours)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"new_badge_duration\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var31 string
+		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.NewBadgeDuration))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 276, Col: 135}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in hours that media is marked with a NEW badge after being updated.</p></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><style>\n        .slider::-webkit-slider-thumb {\n            appearance: none;\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n        .slider::-moz-range-thumb {\n            height: 20px;\n            width: 20px;\n            border-radius: 50%;\n            background: #3b82f6;\n            cursor: pointer;\n            border: 2px solid #ffffff;\n            box-shadow: 0 0 2px rgba(0,0,0,0.3);\n        }\n    </style><script>\n        // Update value displays when sliders change\n        document.getElementById('reader-slider').addEventListener('input', function() {\n            document.getElementById('reader-value').textContent = this.value;\n        });\n        document.getElementById('moderator-slider').addEventListener('input', function() {\n            document.getElementById('moderator-value').textContent = this.value;\n        });\n        document.getElementById('admin-slider').addEventListener('input', function() {\n            document.getElementById('admin-value').textContent = this.value;\n        });\n        document.getElementById('anonymous-slider').addEventListener('input', function() {\n            document.getElementById('anonymous-value').textContent = this.value;\n        });\n        document.getElementById('processed-slider').addEventListener('input', function() {\n            document.getElementById('processed-value').textContent = this.value;\n        });\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -609,12 +658,12 @@ func ConsoleLogs() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var29 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var29 == nil {
-			templ_7745c5c3_Var29 = templ.NopComponent
+		templ_7745c5c3_Var32 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var32 == nil {
+			templ_7745c5c3_Var32 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<div class=\"uk-container mt-8\" hx-ext=\"ws\" ws-connect=\"/admin/config/logs\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\" style=\"display:flex; flex-direction:column; gap:2px;\"></div></div></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<div class=\"uk-container mt-8\" hx-ext=\"ws\" ws-connect=\"/admin/config/logs\"><h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Console Logs</span></h3><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\" style=\"display:flex; flex-direction:column; gap:2px;\"></div></div></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

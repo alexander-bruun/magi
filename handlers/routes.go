@@ -186,6 +186,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 
 	api.Get("/comic", BotDetectionMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
 	api.Get("/image", ImageProtectionMiddleware(), BotDetectionMiddleware(), ConditionalAuthMiddleware(), ImageHandler)
+	api.Get("/config/stripe", HandleGetStripeConfig)
 
 	// Comments
 	api.Delete("/comments/:id", AuthMiddleware("reader"), HandleDeleteComment)
@@ -356,6 +357,15 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	account.Post("/external/anilist/connect", HandleConnectAniList)
 	account.Get("/external/anilist/authorize", HandleAuthorizeAniList)
 	account.Post("/external/anilist/disconnect", HandleDisconnectAniList)
+
+	// ========================================
+	// Premium Routes
+	// ========================================
+	app.Get("/premium", AuthMiddleware("reader"), HandlePremiumPage)
+	app.Post("/premium/create-checkout-session", AuthMiddleware("reader"), HandleCreateCheckoutSession)
+	app.Get("/premium/success", AuthMiddleware("reader"), HandlePremiumSuccess)
+	app.Post("/premium/cancel", AuthMiddleware("premium"), HandlePremiumCancel)
+	app.Post("/api/stripe/webhook", HandleStripeWebhook)
 
 	// ========================================
 	// Notification Routes

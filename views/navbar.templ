@@ -151,6 +151,9 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 								<li><a href="/account"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
 								<li><a href="/account/favorites"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
 								<li><a href="/account/reading"><uk-icon icon="Bookmark" class="icon-pad"></uk-icon>Reading lists</a></li>
+								if userRole == "reader" {
+									<li><a href="/premium"><uk-icon icon="Crown" class="icon-pad"></uk-icon>Premium</a></li>
+								}
 							}
 						if userRole == "moderator" || userRole == "admin" {
 							<li class="uk-nav-header">Moderator</li>

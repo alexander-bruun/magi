@@ -20,8 +20,9 @@ const (
 
 var roleHierarchy = map[string]int{
 	"reader":    1,
-	"moderator": 2,
-	"admin":     3,
+	"premium":   2,
+	"moderator": 3,
+	"admin":     4,
 }
 
 // Bot detection constants

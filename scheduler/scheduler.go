@@ -133,9 +133,11 @@ func (j *ScraperJob) Execute() error {
 }
 
 var (
-	scraperScheduler   *CronScheduler
-	scraperMutex       sync.Mutex
-	scraperExecuteFunc ScraperExecuteFunc
+	scraperScheduler      *CronScheduler
+	scraperMutex          sync.Mutex
+	scraperExecuteFunc    ScraperExecuteFunc
+	subscriptionScheduler *CronScheduler
+	subscriptionMutex     sync.Mutex
 )
 
 // RegisterScraperScript registers a single scraper script with the scheduler
@@ -185,6 +187,8 @@ var (
 	NotifyIndexerStarted  func(librarySlug string, libraryName string)
 	NotifyIndexerProgress func(librarySlug string, currentMedia string, progress string)
 	NotifyIndexerFinished func(librarySlug string)
+	NotifyScraperStarted  func(scriptID int64, scriptName string)
+	NotifyScraperFinished func(scriptID int64)
 )
 
 var (

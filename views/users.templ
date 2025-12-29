@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"time"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -117,6 +118,7 @@ templ UsersTable(users []models.User, page, pageSize int, total int64, filter st
 				<tr>
 					<th class="text-center">Username</th>
 					<th class="text-center">Role</th>
+					<th class="text-center">Subscription</th>
 					<th class="text-center">Actions</th>
 				</tr>
 			</thead>
@@ -149,6 +151,15 @@ templ UsersTable(users []models.User, page, pageSize int, total int64, filter st
 								<span class="text-red-500">Banned</span>
 							} else {
 								{ user.Role }
+							}
+						</td>
+						<td class="text-center" style="vertical-align: middle;">
+							if user.Subscription != nil && user.Subscription.Status == "active" {
+								{ fmt.Sprintf("%.0f days left", time.Until(user.Subscription.CurrentPeriodEnd).Hours()/24) }
+							} else if user.Role == "premium" {
+								<span class="text-orange-500">Lifetime</span>
+							} else {
+								<span class="text-gray-500">-</span>
 							}
 						</td>
 						<td colspan="3">

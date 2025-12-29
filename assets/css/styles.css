@@ -5,6 +5,7 @@
   /* Role colors */
   --role-admin: #84cc16;        /* lime-500-ish */
   --role-moderator: #06b6d4;    /* sky-500-ish */
+  --role-premium: #f59e0b;      /* amber-500-ish */
   --role-reader: #9ca3af;       /* stone-400-ish */
   --role-banned: #dc2626;       /* red-600-ish */
   --avatar-border: rgba(0, 0, 0, 0.12);
@@ -80,6 +81,7 @@ html {
    ============================================ */
 .role-admin { color: var(--role-admin); }
 .role-moderator { color: var(--role-moderator); }
+.role-premium { color: var(--role-premium); }
 .role-reader { color: var(--role-reader); }
 .role-banned {
   color: var(--role-banned);

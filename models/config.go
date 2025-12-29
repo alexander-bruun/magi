@@ -16,6 +16,12 @@ type AppConfig struct {
 	AniListApiToken    string `json:"anilist_api_token" form:"anilist_api_token"`       // AniList API token (optional)
 	ImageAccessSecret  string `json:"image_access_secret" form:"image_access_secret"`
 
+	// Stripe payment settings
+	StripeEnabled        bool   `json:"stripe_enabled" form:"stripe_enabled"`                 // whether Stripe payments are enabled
+	StripePublishableKey string `json:"stripe_publishable_key" form:"stripe_publishable_key"` // Stripe publishable key
+	StripeSecretKey      string `json:"stripe_secret_key" form:"stripe_secret_key"`           // Stripe secret key
+	StripeWebhookSecret  string `json:"stripe_webhook_secret" form:"stripe_webhook_secret"`   // Stripe webhook secret for verification
+
 	// Rate limiting settings
 	RateLimitEnabled  bool `json:"rate_limit_enabled" form:"rate_limit_enabled"`
 	RateLimitRequests int  `json:"rate_limit_requests" form:"rate_limit_requests"` // requests per window
@@ -82,6 +88,10 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(metadata_provider, 'mangadex'), 
         COALESCE(mal_api_token, ''), 
         COALESCE(anilist_api_token, ''),
+        COALESCE(stripe_enabled, 0),
+        COALESCE(stripe_publishable_key, ''),
+        COALESCE(stripe_secret_key, ''),
+        COALESCE(stripe_webhook_secret, ''),
         COALESCE(rate_limit_enabled, 1),
         COALESCE(rate_limit_requests, 100),
         COALESCE(rate_limit_window, 60),
@@ -109,6 +119,10 @@ func loadConfigFromDB() (AppConfig, error) {
 	var metadataProvider string
 	var malApiToken string
 	var anilistApiToken string
+	var stripeEnabled int
+	var stripePublishableKey string
+	var stripeSecretKey string
+	var stripeWebhookSecret string
 	var rateLimitEnabled int
 	var rateLimitRequests int
 	var rateLimitWindow int
@@ -131,6 +145,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var newBadgeDuration int
 
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken,
+		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
 		if err == sql.ErrNoRows {
@@ -142,6 +157,10 @@ func loadConfigFromDB() (AppConfig, error) {
 				MetadataProvider:              "mangadex",
 				MALApiToken:                   "",
 				AniListApiToken:               "",
+				StripeEnabled:                 false,
+				StripePublishableKey:          "",
+				StripeSecretKey:               "",
+				StripeWebhookSecret:           "",
 				RateLimitEnabled:              true,
 				RateLimitRequests:             100,
 				RateLimitWindow:               60,
@@ -174,6 +193,10 @@ func loadConfigFromDB() (AppConfig, error) {
 		MetadataProvider:              metadataProvider,
 		MALApiToken:                   malApiToken,
 		AniListApiToken:               anilistApiToken,
+		StripeEnabled:                 stripeEnabled == 1,
+		StripePublishableKey:          stripePublishableKey,
+		StripeSecretKey:               stripeSecretKey,
+		StripeWebhookSecret:           stripeWebhookSecret,
 		RateLimitEnabled:              rateLimitEnabled == 1,
 		RateLimitRequests:             rateLimitRequests,
 		RateLimitWindow:               rateLimitWindow,
@@ -515,6 +538,22 @@ func UpdateMaintenanceConfig(enabled bool, message string) (AppConfig, error) {
 	cachedConfig = AppConfig{}
 	configCacheTime = time.Time{}
 	configMu.Unlock()
+
+	return GetAppConfig()
+}
+
+// UpdateStripeConfig updates the Stripe payment configuration
+func UpdateStripeConfig(enabled bool, publishableKey, secretKey, webhookSecret string) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+
+	_, err := db.Exec(`UPDATE app_config SET stripe_enabled = ?, stripe_publishable_key = ?, stripe_secret_key = ?, stripe_webhook_secret = ? WHERE id = 1`,
+		enabledInt, publishableKey, secretKey, webhookSecret)
+	if err != nil {
+		return AppConfig{}, err
+	}
 
 	return GetAppConfig()
 }

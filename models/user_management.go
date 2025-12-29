@@ -13,12 +13,13 @@ import (
 
 // User represents the user table schema
 type User struct {
-	Username  string    `json:"username"`
-	Password  string    `json:"password"`
-	Role      string    `json:"role"`
-	Banned    bool      `json:"banned"`
-	Avatar    string    `json:"avatar,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	Username     string        `json:"username"`
+	Password     string        `json:"password"`
+	Role         string        `json:"role"`
+	Banned       bool          `json:"banned"`
+	Avatar       string        `json:"avatar,omitempty"`
+	CreatedAt    time.Time     `json:"created_at"`
+	Subscription *Subscription `json:"subscription,omitempty"` // Active subscription if any
 }
 
 // BannedIP represents a banned IP address
@@ -94,6 +95,16 @@ func GetUsersWithOptions(opts UserSearchOptions) ([]User, int64, error) {
 	users, err := GetUsers()
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// Load subscription data for each user
+	for i := range users {
+		subscription, err := GetUserSubscription(users[i].Username)
+		if err != nil {
+			log.Warnf("Failed to load subscription for user %s: %v", users[i].Username, err)
+		} else {
+			users[i].Subscription = subscription
+		}
 	}
 
 	total := int64(len(users))

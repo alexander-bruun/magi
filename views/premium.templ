@@ -1,0 +1,147 @@
+package views
+
+import (
+	"fmt"
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ PremiumPage(plans []models.SubscriptionPlan) {
+    @PageTitle("Premium Subscription")
+    <div class="uk-container uk-margin-top">
+        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }})
+        <h3 class="uk-heading-line uk-text-center"><span>Premium Subscription</span></h3>
+
+        <div class="uk-width-4xl uk-margin-auto">
+            <div class="uk-text-center uk-margin-bottom">
+                <h2 class="uk-h1 uk-margin-small-bottom">Unlock Premium Features</h2>
+                <p class="uk-text-lead">Get early access to chapters, higher quality images, and support the platform</p>
+            </div>
+
+            <div class="uk-grid uk-grid-match uk-child-width-1-4@m uk-margin-bottom">
+                for _, plan := range plans {
+                    @PremiumPlanCard(plan)
+                }
+            </div>
+
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <h3 class="uk-card-title">Premium Benefits</h3>
+                <ul class="uk-list uk-list-divider">
+                    <li>Early access to new chapters (up to 3 chapters ahead)</li>
+                    <li>Higher quality images (90% JPEG compression vs 70%)</li>
+                    <li>Support ongoing development and hosting costs</li>
+                    <li>Help keep the platform ad-free</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        let stripe;
+        let elements;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Stripe
+            fetch('/api/config/stripe')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.publishableKey) {
+                        stripe = Stripe(data.publishableKey);
+                    }
+                })
+                .catch(err => console.error('Failed to load Stripe config:', err));
+        });
+
+        function selectPlan(planId) {
+            if (!stripe) {
+                alert('Payment system not initialized. Please refresh the page.');
+                return;
+            }
+
+            // Show loading
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Processing...';
+            button.disabled = true;
+
+            // Create checkout session
+            fetch('/premium/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plan_id: planId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    return;
+                }
+
+                // Redirect to Stripe Checkout
+                window.location.href = data.url;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+    </script>
+}
+
+templ PremiumPlanCard(plan models.SubscriptionPlan) {
+    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+        <h3 class="uk-card-title uk-margin-small-bottom">{ plan.Name }</h3>
+        <div class="uk-text-large uk-text-bold uk-margin-small-bottom">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
+        <div class="uk-text-meta uk-margin-bottom">{ plan.Description }</div>
+        if plan.Savings != "" {
+            <div class="uk-label uk-label-success uk-margin-bottom">
+                { plan.Savings }
+            </div>
+        }
+        <button
+            onclick={ templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)} }
+            class="uk-btn uk-btn-primary uk-width-1-1"
+        >
+            Subscribe Now
+        </button>
+    </div>
+}
+
+templ PremiumSuccess() {
+    @PageTitle("Payment Successful")
+    <div class="uk-container uk-margin-top">
+        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }, { Label: "Success", Href: "/premium/success" }})
+        <div class="uk-width-2xl uk-margin-auto uk-text-center">
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <div class="uk-text-large uk-margin-bottom">✅</div>
+                <h2 class="uk-card-title uk-margin-small-bottom">Payment Successful!</h2>
+                <p class="uk-text-muted">Thank you for your subscription. Your premium access has been activated.</p>
+            </div>
+
+            <div class="uk-margin">
+                <h3 class="uk-h3">What's Next?</h3>
+                <ul class="uk-list uk-list-divider uk-margin-bottom">
+                    <li>Your account has been upgraded to premium</li>
+                    <li>You now have early access to new chapters</li>
+                    <li>Enjoy higher quality images</li>
+                    <li>Access premium features across the platform</li>
+                </ul>
+
+                <div class="uk-flex uk-flex-center uk-margin">
+                    <a href="/" class="uk-btn uk-btn-primary uk-margin-small-right">
+                        Continue Reading
+                    </a>
+                    <a href="/account" class="uk-btn uk-btn-secondary">
+                        View Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -101,6 +101,33 @@ templ ConfigForm() {
             </div>
         </div>
         
+        <!-- Stripe Payment Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-4"><span>Stripe Payment Settings</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="stripe_enabled" checked?={ cfg.StripeEnabled } class="uk-checkbox" />
+                    <span>Enable Stripe payments</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">Enable Stripe integration for premium subscriptions.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Stripe Publishable Key</label>
+                <input type="text" class="uk-input" name="stripe_publishable_key" value={ cfg.StripePublishableKey } placeholder="pk_test_..." />
+                <p class="text-xs text-muted-foreground mt-1">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Stripe Secret Key</label>
+                <input type="password" class="uk-input" name="stripe_secret_key" value={ cfg.StripeSecretKey } placeholder="sk_test_..." />
+                <p class="text-xs text-muted-foreground mt-1">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p>
+            </div>
+            <div class="uk-margin">
+                <label class="block mb-1">Stripe Webhook Secret</label>
+                <input type="password" class="uk-input" name="stripe_webhook_secret" value={ cfg.StripeWebhookSecret } placeholder="whsec_..." />
+                <p class="text-xs text-muted-foreground mt-1">Webhook endpoint secret for verifying Stripe webhook signatures.</p>
+            </div>
+        </div>
+        
         <!-- Rate Limiting Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-4"><span>Rate Limiting</span></h4>

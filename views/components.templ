@@ -291,15 +291,30 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                 </button>
             </div>
             <div class="flex-1">
-                if user.Role == "admin" {
-                    <h3  class="role-admin uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
-                } else if user.Role == "moderator" {
-                    <h3 class="role-moderator uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
-                } else if user.Role == "premium" {
-                    <h3 class="role-premium uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
-                } else {
-                    <h3 class="role-reader uk-h3 mb-1"><strong>{ user.Username }</strong></h3>
-                }
+                <div class="flex items-center gap-2 mb-1">
+                    <h3 class="uk-h3"><strong>{ user.Username }</strong></h3>
+                    if user.Role == "admin" {
+                        <span class="uk-badge inline-flex items-center gap-1" style="background: var(--role-admin); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            <uk-icon icon="Shield" class="w-3 h-3"></uk-icon>
+                            Admin
+                        </span>
+                    } else if user.Role == "moderator" {
+                        <span class="uk-badge inline-flex items-center gap-1" style="background: var(--role-moderator); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            <uk-icon icon="ShieldCheck" class="w-3 h-3"></uk-icon>
+                            Moderator
+                        </span>
+                    } else if user.Role == "premium" {
+                        <span class="uk-badge inline-flex items-center gap-1" style="background: var(--role-premium); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            <uk-icon icon="Star" class="w-3 h-3" style="transform: translateY(-2px);"></uk-icon>
+                            Premium
+                        </span>
+                    } else {
+                        <span class="uk-badge inline-flex items-center gap-1" style="background: var(--role-reader); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            <uk-icon icon="User" class="w-3 h-3"></uk-icon>
+                            Reader
+                        </span>
+                    }
+                </div>
                 if user.Banned {
                     <p class="role-banned font-semibold">This account is banned</p>
                 } else {
