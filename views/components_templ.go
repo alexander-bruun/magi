@@ -389,7 +389,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			return templ_7745c5c3_Err
 		}
 		if isNewUpdate(media.UpdatedAt) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span class=\"uk-badge absolute top-2 right-2 badge-new\">NEW</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span class=\"uk-badge absolute top-2 right-2 badge-new-margin\">NEW</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

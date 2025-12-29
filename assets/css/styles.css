@@ -74,10 +74,8 @@ html {
   }
 }
 
-.dark {
-  --ui-sep: rgba(255, 255, 255, 0.12);
-  --ui-sep-edge: rgba(255, 255, 255, 0.10);
-  --ui-shadow: rgba(0, 0, 0, 0.55);
+.dark .badge-new-margin {
+  color: white;
 }
 
 
@@ -2449,11 +2447,34 @@ textarea.code-editor-hidden {
 }
 
 /* Override UK dotnav for better touch targets */
+.uk-dotnav {
+  padding: 0.25rem 0 !important; /* Add padding to prevent clipping */
+}
+
 .uk-dotnav > * > * {
   width: 1.25rem !important;
   height: 1.25rem !important;
   min-width: 1.25rem !important;
   min-height: 1.25rem !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: hsl(var(--muted-foreground) / 0.4) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.uk-dotnav > * > *:hover {
+  background: hsl(var(--muted-foreground) / 0.7) !important;
+}
+
+.uk-dotnav > *.uk-active > * {
+  background: hsl(var(--primary)) !important;
+  transform: scale(1.3) !important;
+  transform-origin: center !important;
 }
 
 /* Tablet breakpoint */
@@ -2615,7 +2636,7 @@ textarea.code-editor-hidden {
 
 /* Media Card Badges */
 .badge-new-margin {
-  background: #10b981;
+  background: #10b981 !important;
   color: black;
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
   font-size: 0.625rem;

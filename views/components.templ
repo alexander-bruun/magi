@@ -89,7 +89,7 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 			<div class="uk-card-media-top flex justify-center items-center relative">
 				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed)
 				if isNewUpdate(media.UpdatedAt) {
-					<span class="uk-badge absolute top-2 right-2 badge-new">
+					<span class="uk-badge absolute top-2 right-2 badge-new-margin">
 						NEW
 					</span>
 				}
