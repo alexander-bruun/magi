@@ -81,7 +81,7 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 	if len(media) == 0 {
 		@EmptyState(emptyMessage)
 	} else {
-		<ul class="top-media-list">
+		<ul class="top-manga-list">
 			for i, m := range media {
 				<li>
 					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 py-2">
@@ -106,8 +106,8 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 }
 
 templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
-	<div class="tab-nav-overflow">
-		<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list">
+	<div>
+		<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list-centered">
 			<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" class="tab-link">Today</a></li>
 			<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" class="tab-link">Week</a></li>
 			<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" class="tab-link">Month</a></li>
@@ -124,7 +124,7 @@ templ TopPopularList(media []models.Media) {
 	if len(media) == 0 {
 		@EmptyState("No media have been indexed yet.")
 	} else {
-		<ul class="top-media-list">
+		<ul class="top-manga-list">
 			for i, m := range media {
 				{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
 				<li class="flex items-center gap-3 py-2">
@@ -324,6 +324,11 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 						</li>
 					}
 				</ul>
+				
+				<!-- Pause/Play Button -->
+				<button type="button" class="highlight-nav-pause" onclick="togglePause();" aria-label="Pause/Play slider">
+					<uk-icon icon="pause" class="uk-icon" id="pause-icon"></uk-icon>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -405,14 +410,18 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			let currentIndex = 0;
+			let isPaused = localStorage.getItem('highlightSliderPaused') === 'true';
 			const slider = document.getElementById('highlight-slider');
 			const dots = document.getElementById('highlight-dots');
+			const pauseBtn = document.getElementById('highlight-pause-btn');
+			const pauseIcon = document.getElementById('pause-icon');
 			
 			if (slider) {
 				const slides = slider.children;
 				const totalSlides = slides.length;
 				const sliderContent = slider.parentElement;
 				let containerWidth = sliderContent.offsetWidth;
+				let autoSlideInterval;
 				
 				function setWidths() {
 					containerWidth = sliderContent.offsetWidth;
@@ -455,15 +464,58 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 					updateSlider();
 				}
 				
-				// Auto slide
-				let autoSlideInterval = setInterval(nextSlide, 6000);
+				function startAutoSlide() {
+					if (!isPaused) {
+						autoSlideInterval = setInterval(nextSlide, 6000);
+					}
+				}
 				
-				// Pause on hover
+				function stopAutoSlide() {
+					if (autoSlideInterval) {
+						clearInterval(autoSlideInterval);
+						autoSlideInterval = null;
+					}
+				}
+				
+				function updatePauseButton() {
+					if (pauseIcon) {
+						pauseIcon.setAttribute('icon', isPaused ? 'play' : 'pause');
+					}
+					if (pauseBtn) {
+						pauseBtn.setAttribute('aria-label', isPaused ? 'Play slider' : 'Pause slider');
+					}
+				}
+				
+				function togglePause() {
+					isPaused = !isPaused;
+					localStorage.setItem('highlightSliderPaused', isPaused);
+					updatePauseButton();
+					
+					if (isPaused) {
+						stopAutoSlide();
+					} else {
+						startAutoSlide();
+					}
+				}
+				
+				// Initialize pause button state
+				updatePauseButton();
+				
+				// Start auto slide if not paused
+				startAutoSlide();
+				
+				// Pause on hover (only if not manually paused)
 				const hoverContainer = slider.closest('.highlight-slider-container');
 				if (hoverContainer) {
-					hoverContainer.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
+					hoverContainer.addEventListener('mouseenter', () => {
+						if (!isPaused) {
+							stopAutoSlide();
+						}
+					});
 					hoverContainer.addEventListener('mouseleave', () => {
-						autoSlideInterval = setInterval(nextSlide, 6000);
+						if (!isPaused) {
+							startAutoSlide();
+						}
 					});
 				}
 				
@@ -471,6 +523,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 				window.nextSlide = nextSlide;
 				window.prevSlide = prevSlide;
 				window.goToSlide = goToSlide;
+				window.togglePause = togglePause;
 				
 				updateSlider();
 			}

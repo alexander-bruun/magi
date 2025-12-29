@@ -2399,7 +2399,7 @@ func Chapter(previousChapter string, currentChapter string, nextChapter string, 
 			templ_7745c5c3_Var109 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PageTitle(chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PageTitle(media.Name+": "+chapter.Name).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

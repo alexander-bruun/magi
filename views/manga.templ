@@ -966,7 +966,7 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 }
 
 templ Chapter(previousChapter string, currentChapter string, nextChapter string, media models.Media, images []string, chapter models.Chapter, chapters []models.Chapter, comments []models.Comment, userRole string, userName string) {
-	@PageTitle(chapter.Name)
+	@PageTitle(media.Name + ": " + chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Home", Href: "/"},
 		{Label: "Series", Href: "/series"},

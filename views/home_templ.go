@@ -128,7 +128,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<ul class=\"top-media-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<ul class=\"top-manga-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -241,7 +241,7 @@ func TopReadFragment(media []models.Media, emptyMessage string, title string) te
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"tab-nav-overflow\"><ul class=\"uk-tab\" id=\"most-read-subnav\" class=\"tab-nav-list\"><li class=\"uk-active\"><a hx-get=\"/top-read?period=today\" hx-target=\"#top-read-content\" class=\"tab-link\">Today</a></li><li><a hx-get=\"/top-read?period=week\" hx-target=\"#top-read-content\" class=\"tab-link\">Week</a></li><li><a hx-get=\"/top-read?period=month\" hx-target=\"#top-read-content\" class=\"tab-link\">Month</a></li><li><a hx-get=\"/top-read?period=year\" hx-target=\"#top-read-content\" class=\"tab-link\">Year</a></li><li><a hx-get=\"/top-read?period=all\" hx-target=\"#top-read-content\" class=\"tab-link\">All Time</a></li></ul></div><div id=\"top-read-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div><ul class=\"uk-tab\" id=\"most-read-subnav\" class=\"tab-nav-list-centered\"><li class=\"uk-active\"><a hx-get=\"/top-read?period=today\" hx-target=\"#top-read-content\" class=\"tab-link\">Today</a></li><li><a hx-get=\"/top-read?period=week\" hx-target=\"#top-read-content\" class=\"tab-link\">Week</a></li><li><a hx-get=\"/top-read?period=month\" hx-target=\"#top-read-content\" class=\"tab-link\">Month</a></li><li><a hx-get=\"/top-read?period=year\" hx-target=\"#top-read-content\" class=\"tab-link\">Year</a></li><li><a hx-get=\"/top-read?period=all\" hx-target=\"#top-read-content\" class=\"tab-link\">All Time</a></li></ul></div><div id=\"top-read-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -284,7 +284,7 @@ func TopPopularList(media []models.Media) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<ul class=\"top-media-list\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<ul class=\"top-manga-list\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1219,7 +1219,7 @@ func HighlightBanner(highlights []models.HighlightWithMedia) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</ul></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</ul><!-- Pause/Play Button --><button type=\"button\" class=\"highlight-nav-pause\" onclick=\"togglePause();\" aria-label=\"Pause/Play slider\"><uk-icon icon=\"pause\" class=\"uk-icon\" id=\"pause-icon\"></uk-icon></button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1371,7 +1371,7 @@ func Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enriche
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div><div class=\"text-center mt-4\"><a href=\"/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at\" class=\"uk-btn uk-btn-primary\">View More</a></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center mt-6\"><span>Statistics</span></h2><div id=\"statistics-content\" hx-get=\"/statistics\" hx-trigger=\"intersect, every 30s\"></div><div class=\"text-center mt-2\"><small class=\"text-gray-500\">Green badges show change in the last 24 hours</small></div></div><script>\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tlet currentIndex = 0;\n\t\t\tconst slider = document.getElementById('highlight-slider');\n\t\t\tconst dots = document.getElementById('highlight-dots');\n\t\t\t\n\t\t\tif (slider) {\n\t\t\t\tconst slides = slider.children;\n\t\t\t\tconst totalSlides = slides.length;\n\t\t\t\tconst sliderContent = slider.parentElement;\n\t\t\t\tlet containerWidth = sliderContent.offsetWidth;\n\t\t\t\t\n\t\t\t\tfunction setWidths() {\n\t\t\t\t\tcontainerWidth = sliderContent.offsetWidth;\n\t\t\t\t\tArray.from(slides).forEach(slide => {\n\t\t\t\t\t\tslide.style.width = `${containerWidth}px`;\n\t\t\t\t\t});\n\t\t\t\t\tslider.style.width = `${totalSlides * containerWidth}px`;\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tsetWidths();\n\t\t\t\t\n\t\t\t\t// Update widths on resize\n\t\t\t\twindow.addEventListener('resize', setWidths);\n\t\t\t\t\n\t\t\t\tfunction updateSlider() {\n\t\t\t\t\tconst translateX = -currentIndex * containerWidth;\n\t\t\t\t\tslider.style.transform = `translate3d(${translateX}px, 0px, 0px)`;\n\t\t\t\t\t\n\t\t\t\t\t// Update dots\n\t\t\t\t\tif (dots) {\n\t\t\t\t\t\tconst dotItems = dots.querySelectorAll('li');\n\t\t\t\t\t\tdotItems.forEach((dot, index) => {\n\t\t\t\t\t\t\tdot.classList.toggle('active', index === currentIndex);\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction nextSlide() {\n\t\t\t\t\tcurrentIndex = (currentIndex + 1) % totalSlides;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction prevSlide() {\n\t\t\t\t\tcurrentIndex = (currentIndex - 1 + totalSlides) % totalSlides;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction goToSlide(index) {\n\t\t\t\t\tcurrentIndex = index;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Auto slide\n\t\t\t\tlet autoSlideInterval = setInterval(nextSlide, 6000);\n\t\t\t\t\n\t\t\t\t// Pause on hover\n\t\t\t\tconst hoverContainer = slider.closest('.highlight-slider-container');\n\t\t\t\tif (hoverContainer) {\n\t\t\t\t\thoverContainer.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));\n\t\t\t\t\thoverContainer.addEventListener('mouseleave', () => {\n\t\t\t\t\t\tautoSlideInterval = setInterval(nextSlide, 6000);\n\t\t\t\t\t});\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Make functions global\n\t\t\t\twindow.nextSlide = nextSlide;\n\t\t\t\twindow.prevSlide = prevSlide;\n\t\t\t\twindow.goToSlide = goToSlide;\n\t\t\t\t\n\t\t\t\tupdateSlider();\n\t\t\t}\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div><div class=\"text-center mt-4\"><a href=\"/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at\" class=\"uk-btn uk-btn-primary\">View More</a></div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center mt-6\"><span>Statistics</span></h2><div id=\"statistics-content\" hx-get=\"/statistics\" hx-trigger=\"intersect, every 30s\"></div><div class=\"text-center mt-2\"><small class=\"text-gray-500\">Green badges show change in the last 24 hours</small></div></div><script>\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tlet currentIndex = 0;\n\t\t\tlet isPaused = localStorage.getItem('highlightSliderPaused') === 'true';\n\t\t\tconst slider = document.getElementById('highlight-slider');\n\t\t\tconst dots = document.getElementById('highlight-dots');\n\t\t\tconst pauseBtn = document.getElementById('highlight-pause-btn');\n\t\t\tconst pauseIcon = document.getElementById('pause-icon');\n\t\t\t\n\t\t\tif (slider) {\n\t\t\t\tconst slides = slider.children;\n\t\t\t\tconst totalSlides = slides.length;\n\t\t\t\tconst sliderContent = slider.parentElement;\n\t\t\t\tlet containerWidth = sliderContent.offsetWidth;\n\t\t\t\tlet autoSlideInterval;\n\t\t\t\t\n\t\t\t\tfunction setWidths() {\n\t\t\t\t\tcontainerWidth = sliderContent.offsetWidth;\n\t\t\t\t\tArray.from(slides).forEach(slide => {\n\t\t\t\t\t\tslide.style.width = `${containerWidth}px`;\n\t\t\t\t\t});\n\t\t\t\t\tslider.style.width = `${totalSlides * containerWidth}px`;\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tsetWidths();\n\t\t\t\t\n\t\t\t\t// Update widths on resize\n\t\t\t\twindow.addEventListener('resize', setWidths);\n\t\t\t\t\n\t\t\t\tfunction updateSlider() {\n\t\t\t\t\tconst translateX = -currentIndex * containerWidth;\n\t\t\t\t\tslider.style.transform = `translate3d(${translateX}px, 0px, 0px)`;\n\t\t\t\t\t\n\t\t\t\t\t// Update dots\n\t\t\t\t\tif (dots) {\n\t\t\t\t\t\tconst dotItems = dots.querySelectorAll('li');\n\t\t\t\t\t\tdotItems.forEach((dot, index) => {\n\t\t\t\t\t\t\tdot.classList.toggle('active', index === currentIndex);\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction nextSlide() {\n\t\t\t\t\tcurrentIndex = (currentIndex + 1) % totalSlides;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction prevSlide() {\n\t\t\t\t\tcurrentIndex = (currentIndex - 1 + totalSlides) % totalSlides;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction goToSlide(index) {\n\t\t\t\t\tcurrentIndex = index;\n\t\t\t\t\tupdateSlider();\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction startAutoSlide() {\n\t\t\t\t\tif (!isPaused) {\n\t\t\t\t\t\tautoSlideInterval = setInterval(nextSlide, 6000);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction stopAutoSlide() {\n\t\t\t\t\tif (autoSlideInterval) {\n\t\t\t\t\t\tclearInterval(autoSlideInterval);\n\t\t\t\t\t\tautoSlideInterval = null;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction updatePauseButton() {\n\t\t\t\t\tif (pauseIcon) {\n\t\t\t\t\t\tpauseIcon.setAttribute('icon', isPaused ? 'play' : 'pause');\n\t\t\t\t\t}\n\t\t\t\t\tif (pauseBtn) {\n\t\t\t\t\t\tpauseBtn.setAttribute('aria-label', isPaused ? 'Play slider' : 'Pause slider');\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tfunction togglePause() {\n\t\t\t\t\tisPaused = !isPaused;\n\t\t\t\t\tlocalStorage.setItem('highlightSliderPaused', isPaused);\n\t\t\t\t\tupdatePauseButton();\n\t\t\t\t\t\n\t\t\t\t\tif (isPaused) {\n\t\t\t\t\t\tstopAutoSlide();\n\t\t\t\t\t} else {\n\t\t\t\t\t\tstartAutoSlide();\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Initialize pause button state\n\t\t\t\tupdatePauseButton();\n\t\t\t\t\n\t\t\t\t// Start auto slide if not paused\n\t\t\t\tstartAutoSlide();\n\t\t\t\t\n\t\t\t\t// Pause on hover (only if not manually paused)\n\t\t\t\tconst hoverContainer = slider.closest('.highlight-slider-container');\n\t\t\t\tif (hoverContainer) {\n\t\t\t\t\thoverContainer.addEventListener('mouseenter', () => {\n\t\t\t\t\t\tif (!isPaused) {\n\t\t\t\t\t\t\tstopAutoSlide();\n\t\t\t\t\t\t}\n\t\t\t\t\t});\n\t\t\t\t\thoverContainer.addEventListener('mouseleave', () => {\n\t\t\t\t\t\tif (!isPaused) {\n\t\t\t\t\t\t\tstartAutoSlide();\n\t\t\t\t\t\t}\n\t\t\t\t\t});\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Make functions global\n\t\t\t\twindow.nextSlide = nextSlide;\n\t\t\t\twindow.prevSlide = prevSlide;\n\t\t\t\twindow.goToSlide = goToSlide;\n\t\t\t\twindow.togglePause = togglePause;\n\t\t\t\t\n\t\t\t\tupdateSlider();\n\t\t\t}\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1412,7 +1412,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var71 templ.SafeURL
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", item.Media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 487, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 540, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 			if templ_7745c5c3_Err != nil {
@@ -1433,7 +1433,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var72 templ.SafeURL
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", item.Media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 495, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 548, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {
@@ -1446,7 +1446,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			var templ_7745c5c3_Var73 string
 			templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(item.Media.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 495, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 548, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 			if templ_7745c5c3_Err != nil {
@@ -1479,7 +1479,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 				var templ_7745c5c3_Var75 templ.SafeURL
 				templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 505, Col: 81}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 558, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
 				if templ_7745c5c3_Err != nil {
@@ -1505,7 +1505,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 				var templ_7745c5c3_Var77 string
 				templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 505, Col: 255}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 558, Col: 255}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 				if templ_7745c5c3_Err != nil {
@@ -1533,7 +1533,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					var templ_7745c5c3_Var78 string
 					templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.PremiumCountdown)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 518, Col: 38}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 571, Col: 38}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 					if templ_7745c5c3_Err != nil {
@@ -1547,7 +1547,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					var templ_7745c5c3_Var79 string
 					templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(getRelativeTime(chapter.CreatedAt))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 521, Col: 47}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 574, Col: 47}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 					if templ_7745c5c3_Err != nil {
