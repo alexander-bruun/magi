@@ -55,16 +55,16 @@ func TestCreateHighlight(t *testing.T) {
 
 	// Create a test media first
 	media := &Media{
-		Slug:        "test-manga",
-		Name:        "Test Manga",
-		Description: "Test description",
-		CoverArtURL: "/test/cover.jpg",
-		Author:      "Test Author",
-		Type:        "manga",
-		Status:      "ongoing",
+		Slug:          "test-manga",
+		Name:          "Test Manga",
+		Description:   "Test description",
+		CoverArtURL:   "/test/cover.jpg",
+		Author:        "Test Author",
+		Type:          "manga",
+		Status:        "ongoing",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path",
 	}
 	err := CreateMedia(*media)
 	assert.NoError(t, err)
@@ -88,31 +88,31 @@ func TestGetHighlights(t *testing.T) {
 
 	// Create test media
 	media1 := &Media{
-		Slug:        "test-manga-1",
-		Name:        "Test Manga 1",
-		Description: "Test description 1",
-		CoverArtURL: "/test/cover1.jpg",
-		Author:      "Test Author 1",
-		Type:        "manga",
-		Status:      "ongoing",
+		Slug:          "test-manga-1",
+		Name:          "Test Manga 1",
+		Description:   "Test description 1",
+		CoverArtURL:   "/test/cover1.jpg",
+		Author:        "Test Author 1",
+		Type:          "manga",
+		Status:        "ongoing",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path1",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path1",
 	}
 	err := CreateMedia(*media1)
 	assert.NoError(t, err)
 
 	media2 := &Media{
-		Slug:        "test-manga-2",
-		Name:        "Test Manga 2",
-		Description: "Test description 2",
-		CoverArtURL: "/test/cover2.jpg",
-		Author:      "Test Author 2",
-		Type:        "manga",
-		Status:      "completed",
+		Slug:          "test-manga-2",
+		Name:          "Test Manga 2",
+		Description:   "Test description 2",
+		CoverArtURL:   "/test/cover2.jpg",
+		Author:        "Test Author 2",
+		Type:          "manga",
+		Status:        "completed",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path2",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path2",
 	}
 	err = CreateMedia(*media2)
 	assert.NoError(t, err)
@@ -140,16 +140,16 @@ func TestUpdateHighlight(t *testing.T) {
 
 	// Create test media
 	media := &Media{
-		Slug:        "test-manga",
-		Name:        "Test Manga",
-		Description: "Test description",
-		CoverArtURL: "/test/cover.jpg",
-		Author:      "Test Author",
-		Type:        "manga",
-		Status:      "ongoing",
+		Slug:          "test-manga",
+		Name:          "Test Manga",
+		Description:   "Test description",
+		CoverArtURL:   "/test/cover.jpg",
+		Author:        "Test Author",
+		Type:          "manga",
+		Status:        "ongoing",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path",
 	}
 	err := CreateMedia(*media)
 	assert.NoError(t, err)
@@ -177,16 +177,16 @@ func TestDeleteHighlight(t *testing.T) {
 
 	// Create test media
 	media := &Media{
-		Slug:        "test-manga",
-		Name:        "Test Manga",
-		Description: "Test description",
-		CoverArtURL: "/test/cover.jpg",
-		Author:      "Test Author",
-		Type:        "manga",
-		Status:      "ongoing",
+		Slug:          "test-manga",
+		Name:          "Test Manga",
+		Description:   "Test description",
+		CoverArtURL:   "/test/cover.jpg",
+		Author:        "Test Author",
+		Type:          "manga",
+		Status:        "ongoing",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path",
 	}
 	err := CreateMedia(*media)
 	assert.NoError(t, err)
@@ -211,16 +211,16 @@ func TestIsMediaHighlighted(t *testing.T) {
 
 	// Create test media
 	media := &Media{
-		Slug:        "test-manga",
-		Name:        "Test Manga",
-		Description: "Test description",
-		CoverArtURL: "/test/cover.jpg",
-		Author:      "Test Author",
-		Type:        "manga",
-		Status:      "ongoing",
+		Slug:          "test-manga",
+		Name:          "Test Manga",
+		Description:   "Test description",
+		CoverArtURL:   "/test/cover.jpg",
+		Author:        "Test Author",
+		Type:          "manga",
+		Status:        "ongoing",
 		ContentRating: "safe",
-		LibrarySlug: "test-library",
-		Path:        "/test/path",
+		LibrarySlug:   "test-library",
+		Path:          "/test/path",
 	}
 	err := CreateMedia(*media)
 	assert.NoError(t, err)
