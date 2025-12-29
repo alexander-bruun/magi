@@ -63,8 +63,8 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 											<div class="notification-item uk-card uk-card-small uk-card-body mb-2 unread" data-id="{ notification.ID }">
 												<div class="flex gap-2">
 													<div class="flex-1">
-														<a href="/series/{ notification.MediaSlug }/{ notification.ChapterSlug }" 
-														   hx-get="/series/{ notification.MediaSlug }/{ notification.ChapterSlug }" 
+														<a href={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
+														   hx-get={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
 														   hx-target="#content" 
 														   class="block text-inherit no-underline hover:text-primary">
 															<p class="uk-text-small uk-margin-small">{ notification.Message }</p>

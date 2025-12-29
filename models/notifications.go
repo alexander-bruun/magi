@@ -82,11 +82,11 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.media_slug = c.media_slug
 	WHERE n.user_name = ?
 	`
-	
+
 	if unreadOnly {
 		query += " AND n.is_read = 0"
 	}
-	
+
 	query += " ORDER BY n.created_at DESC LIMIT 50"
 
 	rows, err := db.Query(query, userName)
@@ -126,13 +126,13 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 // GetUnreadNotificationCount returns the count of unread notifications for a user
 func GetUnreadNotificationCount(userName string) (int, error) {
 	query := `SELECT COUNT(*) FROM user_notifications WHERE user_name = ? AND is_read = 0`
-	
+
 	var count int
 	err := db.QueryRow(query, userName).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return count, nil
 }
 
@@ -265,11 +265,11 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	}
 	var message string
 	if len(chapterNames) == 1 {
-		message = "New chapter available: " + chapterNames[0]
+		message = fmt.Sprintf("New chapter available for %s: %s", manga.Name, chapterNames[0])
 	} else if len(chapterNames) <= 5 {
-		message = "New chapters available: " + strings.Join(chapterNames, ", ")
+		message = fmt.Sprintf("New chapters available for %s: %s", manga.Name, strings.Join(chapterNames, ", "))
 	} else {
-		message = fmt.Sprintf("New chapters available: %s to %s (%d total)", chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
+		message = fmt.Sprintf("New chapters available for %s: %s to %s (%d total)", manga.Name, chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
 	}
 	firstChapterSlug := newChapters[0].slug
 
@@ -326,6 +326,13 @@ func BundleNotificationsForUser(userName string) error {
 		var mangaSlug string
 		var count int
 		if err := rows.Scan(&mangaSlug, &count); err != nil {
+			continue
+		}
+
+		// Get manga name
+		manga, err := GetMediaUnfiltered(mangaSlug)
+		if err != nil || manga == nil {
+			log.Errorf("Failed to get manga details for bundling: %v", err)
 			continue
 		}
 
@@ -388,11 +395,11 @@ func BundleNotificationsForUser(userName string) error {
 		// Create bundled message
 		var message string
 		if len(chapterNames) == 1 {
-			message = "New chapter available: " + chapterNames[0]
+			message = fmt.Sprintf("New chapter available for %s: %s", manga.Name, chapterNames[0])
 		} else if len(chapterNames) <= 5 {
-			message = "New chapters available: " + strings.Join(chapterNames, ", ")
+			message = fmt.Sprintf("New chapters available for %s: %s", manga.Name, strings.Join(chapterNames, ", "))
 		} else {
-			message = fmt.Sprintf("New chapters available: %s to %s (%d total)", chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
+			message = fmt.Sprintf("New chapters available for %s: %s to %s (%d total)", manga.Name, chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
 		}
 
 		// Delete old notifications
@@ -437,6 +444,13 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		var mangaSlug string
 		var count int
 		if err := rows.Scan(&mangaSlug, &count); err != nil {
+			continue
+		}
+
+		// Get manga name
+		manga, err := GetMediaUnfiltered(mangaSlug)
+		if err != nil || manga == nil {
+			log.Errorf("Failed to get manga details for bundling: %v", err)
 			continue
 		}
 
@@ -499,11 +513,11 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		// Create bundled message
 		var message string
 		if len(chapterNames) == 1 {
-			message = "New chapter available: " + chapterNames[0]
+			message = fmt.Sprintf("New chapter available for %s: %s", manga.Name, chapterNames[0])
 		} else if len(chapterNames) <= 5 {
-			message = "New chapters available: " + strings.Join(chapterNames, ", ")
+			message = fmt.Sprintf("New chapters available for %s: %s", manga.Name, strings.Join(chapterNames, ", "))
 		} else {
-			message = fmt.Sprintf("New chapters available: %s to %s (%d total)", chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
+			message = fmt.Sprintf("New chapters available for %s: %s to %s (%d total)", manga.Name, chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
 		}
 
 		// Delete old notifications
