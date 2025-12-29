@@ -434,7 +434,7 @@ templ Showcase(media []models.EnrichedMedia) {
                     for _, media := range media {
                         {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
                         <li>
-                            <a href={ fmt.Sprintf("/series/%s", media.Slug) } class="block">
+                            <a href={ fmt.Sprintf("/series/%s", media.Slug) } class="block" aria-label={ fmt.Sprintf("View %s", media.Name) }>
                                 <div class="uk-card uk-card-default uk-card-body p-2 showcase-card">
                                     <div class="uk-card-media-top relative">
                                         @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
@@ -471,10 +471,10 @@ templ Showcase(media []models.EnrichedMedia) {
                         </li>
                     }
                 </ul>
-                <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous"></a>
-                <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next"></a>
+                <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
+                <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
             </div>
-            <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4"></ul>
+            <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
         </div>
     }
 }

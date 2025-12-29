@@ -241,7 +241,7 @@ func Navbar(userRole string, currentPath string, unreadCount int, notifications 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a class=\"uk-btn uk-btn-default\" href=\"https://github.com/sponsors/alexander-bruun\" aria-label=\"Sponsor project\"><uk-icon icon=\"heart\"></uk-icon></a></div></aside>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

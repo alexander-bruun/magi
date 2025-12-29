@@ -179,6 +179,11 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	})
 	app.Static("/assets/img/", "./assets/img/")
 
+	// Robots.txt
+	app.Get("/robots.txt", func(c *fiber.Ctx) error {
+		return c.SendFile("./assets/robots.txt")
+	})
+
 	// ========================================
 	// API Endpoints
 	// ========================================

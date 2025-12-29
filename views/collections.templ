@@ -6,6 +6,7 @@ import (
 )
 
 templ Collections(collections []models.Collection) {
+	{{ isFirstImage := true }}
 	<div class="container mx-auto px-4 py-8">
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="text-3xl font-bold">Collections</h1>
@@ -36,12 +37,22 @@ templ Collections(collections []models.Collection) {
 								<div class="grid grid-cols-2 gap-0 mb-3">
 									for i, media := range collection.TopMedia {
 										if i < 4 {
-											<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="block">
-												<img
-													src={ media.CoverArtURL + "?size=tiny" }
-													alt={ media.Name }
-													class="w-full h-auto block"
-												/>
+											<a href={ templ.URL(fmt.Sprintf("/collections/%d", collection.ID)) } class="block" aria-label={ fmt.Sprintf("View collection %s", collection.Name) }>
+												if isFirstImage {
+													<img
+														src={ media.CoverArtURL + "?size=tiny" }
+														alt={ media.Name }
+														class="w-full h-auto block"
+														fetchpriority="high"
+													/>
+													{{ isFirstImage = false }}
+												} else {
+													<img
+														src={ media.CoverArtURL + "?size=tiny" }
+														alt={ media.Name }
+														class="w-full h-auto block"
+													/>
+												}
 											</a>
 										}
 									}
@@ -62,12 +73,12 @@ templ Collections(collections []models.Collection) {
 							<p class="text-sm mb-3 line-clamp-2">{ collection.Description }</p>
 						}
 
-						<div class="flex items-center justify-between text-sm text-gray-500">
+						<div class="flex items-center justify-between text-sm text-gray-700">
 							<span>by { collection.CreatedBy }</span>
 							<span>{ collection.MediaCount } series</span>
 						</div>
 
-						<div class="mt-3 text-xs text-gray-400">
+						<div class="mt-3 text-xs text-gray-700">
 							Created { collection.CreatedAt.Format("Jan 2, 2006") }
 						</div>
 					</div>

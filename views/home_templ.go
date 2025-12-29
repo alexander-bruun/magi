@@ -521,7 +521,7 @@ func Top10Card(topMedias []models.Media, topReadToday []models.Media) templ.Comp
 			templ_7745c5c3_Var26 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div id=\"top-10-card\" class=\"uk-card uk-card-default uk-card-body mt-6\"><div class=\"flex justify-center gap-8 mb-4\"><button class=\"px-4 py-2 text-blue-600 font-medium cursor-pointer active-tab border-b-2 border-blue-500\" hx-get=\"/top-popular-card\" hx-target=\"#top-10-card\">Popular</button> <button class=\"px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer border-b-2 border-transparent\" hx-get=\"/top-read-card\" hx-target=\"#top-10-card\">Most Read</button></div><div id=\"top-content\"><div id=\"top-popular-full\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div id=\"top-10-card\" class=\"uk-card uk-card-default uk-card-body mt-6 bg-white\"><div class=\"flex justify-center gap-8 mb-4\"><button class=\"px-4 py-2 text-blue-600 font-medium cursor-pointer active-tab border-b-2 border-blue-500\" hx-get=\"/top-popular-card\" hx-target=\"#top-10-card\">Popular</button> <button class=\"px-4 py-2 text-gray-800 hover:text-gray-700 cursor-pointer border-b-2 border-gray-400\" hx-get=\"/top-read-card\" hx-target=\"#top-10-card\">Most Read</button></div><div id=\"top-content\"><div id=\"top-popular-full\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -562,7 +562,7 @@ func Top10CardContent(activeTab string, activePeriod string, topMedias []models.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var28 = []any{templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "popular"), templ.KV("text-gray-500 hover:text-gray-700 border-transparent", activeTab != "popular")}
+		var templ_7745c5c3_Var28 = []any{templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "popular"), templ.KV("text-gray-800 hover:text-gray-700 border-gray-400", activeTab != "popular")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var28...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -584,7 +584,7 @@ func Top10CardContent(activeTab string, activePeriod string, topMedias []models.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var30 = []any{templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "read"), templ.KV("text-gray-500 hover:text-gray-700 border-transparent", activeTab != "read")}
+		var templ_7745c5c3_Var30 = []any{templ.KV("px-4 py-2 font-medium cursor-pointer border-b-2", true), templ.KV("text-blue-600 active-tab border-blue-500", activeTab == "read"), templ.KV("text-gray-800 hover:text-gray-700 border-gray-400", activeTab != "read")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var30...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
