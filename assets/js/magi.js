@@ -6,13 +6,13 @@
  * @author Magi Development Team
  */
 
-(function(window) {
+(function (window) {
   'use strict';
 
   // ============================================================================
   // SMOOTH SCROLL MODULE
   // ============================================================================
-  
+
   /**
    * Generic smooth scrolling utility for HTMX-powered applications.
    * Automatically scrolls to elements after HTMX swaps/settles when they have
@@ -22,7 +22,7 @@
    * 1. Add data-smooth-scroll attribute to any element you want to scroll to after HTMX updates
    * 2. Optionally add data-scroll-offset="N" to specify offset in pixels (useful for fixed headers)
    */
-  const SmoothScroll = (function() {
+  const SmoothScroll = (function () {
     /**
      * Find the nearest scrollable ancestor of an element
      */
@@ -78,11 +78,11 @@
         var container = getScrollableAncestor(el);
 
         // Blur any focused element to avoid browsers jumping to focused elements
-        try { 
+        try {
           if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
           }
-        } catch(e) {}
+        } catch (e) { }
 
         if (container === window) {
           var top = el.getBoundingClientRect().top + window.pageYOffset - offset;
@@ -112,18 +112,18 @@
      */
     function handleScrollIfNeeded(target) {
       if (!target) return;
-      
+
       // Check if the target or any of its children have the data-smooth-scroll attribute
-      var scrollTarget = target.hasAttribute('data-smooth-scroll') 
-        ? target 
+      var scrollTarget = target.hasAttribute('data-smooth-scroll')
+        ? target
         : target.querySelector('[data-smooth-scroll]');
-      
+
       if (!scrollTarget) return;
-      
+
       var offset = getOffsetForElement(scrollTarget);
       // Use a short timeout to allow layout/images to settle
-      setTimeout(function() { 
-        scrollToElement(scrollTarget, offset); 
+      setTimeout(function () {
+        scrollToElement(scrollTarget, offset);
       }, 90);
     }
 
@@ -132,12 +132,12 @@
      */
     function init() {
       // Listen for HTMX afterSettle event (most reliable - after all processing is complete)
-      document.addEventListener('htmx:afterSettle', function(evt) {
+      document.addEventListener('htmx:afterSettle', function (evt) {
         handleScrollIfNeeded(evt && evt.detail && evt.detail.target);
       });
 
       // Also listen for afterSwap as a quicker attempt
-      document.addEventListener('htmx:afterSwap', function(evt) {
+      document.addEventListener('htmx:afterSwap', function (evt) {
         handleScrollIfNeeded(evt && evt.detail && evt.detail.target);
       });
     }
@@ -262,12 +262,12 @@
   /**
    * Manages configuration page interactions
    */
-  const ConfigManager = (function() {
+  const ConfigManager = (function () {
     function updateTokenFields() {
       const providerSelect = document.getElementById('metadata-provider-select');
       const malField = document.getElementById('mal-token-field');
       const anilistField = document.getElementById('anilist-token-field');
-      
+
       if (providerSelect && malField && anilistField) {
         const provider = providerSelect.value;
         malField.style.display = provider === 'mal' ? 'block' : 'none';
@@ -276,7 +276,7 @@
     }
 
     function init() {
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         const providerSelect = document.getElementById('metadata-provider-select');
         if (providerSelect) {
           providerSelect.addEventListener('change', updateTokenFields);
@@ -288,7 +288,7 @@
       });
 
       // Reinitialize on HTMX swap
-      document.addEventListener('htmx:afterSettle', function(event) {
+      document.addEventListener('htmx:afterSettle', function (event) {
         if (event.detail.xhr && event.detail.xhr.status === 200) {
           const providerSelect = document.getElementById('metadata-provider-select');
           if (providerSelect) {
@@ -306,7 +306,7 @@
     function initConsoleLogs() {
       // Console logs now use HTMX WebSocket extension
       // Add autoscroll functionality for log outputs
-      
+
       // Initial scroll to bottom for existing logs
       const consoleContainer = document.getElementById('console-logs-container');
       if (consoleContainer) {
@@ -316,10 +316,10 @@
       if (scraperContainer) {
         scraperContainer.scrollTop = scraperContainer.scrollHeight;
       }
-      
+
       // Add autoscroll on new websocket messages (only once)
       if (!window.logAutoscrollInitialized) {
-        document.addEventListener('htmx:wsAfterMessage', function(event) {
+        document.addEventListener('htmx:wsAfterMessage', function (event) {
           const target = event.detail.elt;
           if (target) {
             // Check for console logs (config page) - ws-connect is on outer div, scroll inner container
@@ -345,7 +345,7 @@
     };
   })();
 
-  const SiteUI = (function() {
+  const SiteUI = (function () {
     const STORAGE_KEY = '__FRANKEN_SIDEBAR_COLLAPSED__';
     const MOBILE_BREAKPOINT = '(max-width: 768px)';
 
@@ -371,7 +371,7 @@
           sidebar: document.getElementById('sidebar'),
           backdrop: document.getElementById('sidebar-backdrop')
         };
-        
+
         this.mediaQuery = window.matchMedia(MOBILE_BREAKPOINT);
         this.initializeState();
         this.attachEventListeners();
@@ -381,7 +381,7 @@
         const stored = localStorage.getItem(STORAGE_KEY);
         const shouldCollapse = stored ? stored === '1' : this.mediaQuery.matches;
         this.applyCollapsed(shouldCollapse);
-        
+
         if (this.mediaQuery.matches) {
           this.closeMobile();
         }
@@ -407,8 +407,8 @@
 
       handleToggle() {
         if (this.mediaQuery.matches) {
-          this.elements.body.classList.contains('sidebar-open') 
-            ? this.closeMobile() 
+          this.elements.body.classList.contains('sidebar-open')
+            ? this.closeMobile()
             : this.openMobile();
         } else {
           const isCollapsed = this.elements.body.classList.toggle('sidebar-collapsed');
@@ -429,7 +429,7 @@
       attachEventListeners() {
         this.elements.toggle?.addEventListener('click', () => this.handleToggle());
         this.elements.backdrop?.addEventListener('click', () => this.closeMobile());
-        
+
         document.addEventListener('click', (e) => {
           if (this.mediaQuery.matches && e.target.closest('.sidebar a[href]')) {
             this.closeMobile();
@@ -437,15 +437,15 @@
         });
 
         document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape' && 
-              this.mediaQuery.matches && 
-              this.elements.body.classList.contains('sidebar-open')) {
+          if (e.key === 'Escape' &&
+            this.mediaQuery.matches &&
+            this.elements.body.classList.contains('sidebar-open')) {
             this.closeMobile();
           }
         });
 
         const handleChange = (e) => this.handleMediaQueryChange(e);
-        this.mediaQuery.addEventListener?.('change', handleChange) || 
+        this.mediaQuery.addEventListener?.('change', handleChange) ||
           this.mediaQuery.addListener?.(handleChange);
       }
     };
@@ -478,14 +478,14 @@
 
       findBestMatches(currentPath, navLinks) {
         const bestMatches = new Map();
-        
+
         navLinks.forEach(({ path, parent, group }) => {
           if (!parent || !group) return;
-          
-          const isMatch = path === '/' 
-            ? currentPath === '/' 
+
+          const isMatch = path === '/'
+            ? currentPath === '/'
             : currentPath === path || currentPath.startsWith(path + '/');
-          
+
           if (isMatch) {
             const score = path.length;
             const current = bestMatches.get(group);
@@ -501,16 +501,16 @@
       updateActiveNav() {
         const currentPath = this.normalizePath(location.pathname);
         const navLinks = this.getNavLinks();
-        
+
         this.clearActiveStates();
-        
+
         const bestMatches = this.findBestMatches(currentPath, navLinks);
         bestMatches.forEach(({ parent }) => parent.classList.add('uk-active'));
       },
 
       init() {
         const update = () => this.updateActiveNav();
-        
+
         if (document.readyState !== 'loading') {
           update();
         } else {
@@ -524,10 +524,10 @@
         document.addEventListener('click', (ev) => {
           const link = ev.target.closest('a[href]');
           if (!link || link.target === '_blank') return;
-          
+
           const href = link.getAttribute('href');
           if (!href || (href.startsWith('http') && new URL(href).origin !== location.origin)) return;
-          
+
           setTimeout(update, 10);
         });
       }
@@ -590,7 +590,7 @@
           if (sort) {
             elements.sortSelect.value = sort;
           }
-          
+
           // Force uk-select to update its display
           const ukSelect = elements.sortSelect.closest('uk-select') || document.querySelector('uk-select');
           if (ukSelect) {
@@ -649,18 +649,18 @@
       updateHiddenSelect(target, value) {
         if (value == null) return;
 
-        const select = target.tagName === 'UK-SELECT' 
+        const select = target.tagName === 'UK-SELECT'
           ? target.querySelector('select[hidden]')
-          : target.closest('uk-select')?.querySelector('select[hidden]') 
-            || document.querySelector('select[name="sort"][hidden]');
+          : target.closest('uk-select')?.querySelector('select[hidden]')
+          || document.querySelector('select[name="sort"][hidden]');
 
         if (!select) return;
 
         const options = Array.from(select.options);
-        const match = options.find(opt => 
+        const match = options.find(opt =>
           opt.value === String(value) || opt.text === String(value)
         );
-        
+
         select.value = match ? match.value : String(value);
         select.dispatchEvent(new Event('change', { bubbles: true }));
       },
@@ -675,7 +675,7 @@
         if (elements.modeInput) {
           elements.modeInput.value = nextMode;
         }
-        
+
         btn.setAttribute('data-mode', nextMode);
         btn.textContent = nextMode === 'any' ? 'Any' : 'All';
 
@@ -683,7 +683,7 @@
           const url = new URL(window.location.href);
           url.searchParams.set('tag_mode', nextMode);
           window.history.replaceState({}, '', url);
-        } catch {}
+        } catch { }
       },
 
       init() {
@@ -779,13 +779,13 @@
       createEditor(ta) {
         // Prevent double initialization
         if (ta.dataset.codeEditorInit) return;
-        
+
         // Mark as initializing immediately
         ta.dataset.codeEditorInit = '1';
-        
+
         const mode = ta.dataset.codeEditor || ta.dataset.codeMode || 'shell';
         const height = ta.dataset.codeEditorHeight || '384px';
-        
+
         try {
           const editor = window.CodeMirror.fromTextArea(ta, {
             mode,
@@ -839,13 +839,13 @@
           };
           waitForCodeMirror();
         };
-        
+
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', ready);
         } else {
           ready();
         }
-        
+
         document.addEventListener('htmx:afterSwap', (event) => {
           const target = event.detail?.target || event.target;
           if (target) {
@@ -918,7 +918,7 @@
         document.body.addEventListener('click', (e) => {
           const link = e.target.closest('a[href]');
           const dropdown = e.target.closest('.uk-dropdown');
-          
+
           if (link && dropdown && (link.hasAttribute('hx-get') || link.hasAttribute('hx-post'))) {
             setTimeout(() => this.closeAllDropdowns(), 0);
           }
@@ -940,14 +940,14 @@
       applyTheme() {
         const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
         const htmlElement = document.documentElement;
-        
+
         // Apply mode
         if (config.mode === 'dark') {
           htmlElement.classList.add('dark');
         } else {
           htmlElement.classList.remove('dark');
         }
-        
+
         // Apply other theme options
         Object.keys(config).forEach(key => {
           if (key !== 'mode') {
@@ -963,18 +963,18 @@
       init() {
         // Apply theme on load
         this.applyTheme();
-        
+
         document.addEventListener('click', (e) => {
           if (e.target.classList.contains('theme-option')) {
             e.preventDefault();
             const key = e.target.dataset.key;
             const value = e.target.dataset.value;
-            
+
             // Update localStorage
             const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
             config[key] = value;
             localStorage.setItem("__FRANKEN__", JSON.stringify(config));
-            
+
             // Update classes
             const htmlElement = document.documentElement;
             if (key === 'mode') {
@@ -990,7 +990,7 @@
               // Add new class
               htmlElement.classList.add(value);
             }
-            
+
             // Update active states
             document.querySelectorAll(`.theme-option[data-key="${key}"]`).forEach(btn => {
               btn.classList.remove('uk-active');
@@ -998,15 +998,15 @@
             e.target.classList.add('uk-active');
           }
         });
-        
+
         // Reapply theme on HTMX swaps (for history navigation)
         document.addEventListener('htmx:afterSwap', () => {
           this.applyTheme();
         });
 
         // Parse ANSI colors in log outputs after HTMX swaps
-        document.addEventListener('htmx:afterSwap', function() {
-          document.querySelectorAll('.log-output').forEach(function(element) {
+        document.addEventListener('htmx:afterSwap', function () {
+          document.querySelectorAll('.log-output').forEach(function (element) {
             if (!element.dataset.ansiParsed) {
               const originalText = element.textContent;
               if (originalText && /\x1b\[([0-9;]*)m/.test(originalText)) {
@@ -1016,7 +1016,7 @@
             }
           });
         });
-        
+
         // Set initial active states
         const config = JSON.parse(localStorage.getItem("__FRANKEN__") || "{}");
         Object.keys(config).forEach(key => {
@@ -1068,12 +1068,12 @@
   // ============================================================================
   // JOB STATUS MANAGER MODULE
   // ============================================================================
-  
+
   /**
    * Manages WebSocket connection for job status updates and displays a spinning
    * loader in the sidebar when indexer or scraper jobs are running.
    */
-  const JobStatusManager = (function() {
+  const JobStatusManager = (function () {
     let ws = null;
     let reconnectTimer = null;
     let activeJobs = [];
@@ -1091,14 +1091,14 @@
       try {
         ws = new WebSocket(wsUrl);
 
-        ws.onopen = function() {
+        ws.onopen = function () {
           if (reconnectTimer) {
             clearTimeout(reconnectTimer);
             reconnectTimer = null;
           }
         };
 
-        ws.onmessage = function(event) {
+        ws.onmessage = function (event) {
           try {
             const data = JSON.parse(event.data);
             if (data.action === 'jobs_update') {
@@ -1109,11 +1109,11 @@
           }
         };
 
-        ws.onerror = function(error) {
+        ws.onerror = function (error) {
           console.error('[JobStatus] WebSocket error:', error);
         };
 
-        ws.onclose = function() {
+        ws.onclose = function () {
           ws = null;
           reconnectTimer = setTimeout(connect, 5000);
         };
@@ -1135,7 +1135,7 @@
 
     function updateJobStatus(jobs) {
       activeJobs = jobs;
-      
+
       if (!indicator) {
         return;
       }
@@ -1180,13 +1180,13 @@
       if (!indicator) {
         return;
       }
-      
+
       // Create custom tooltip
       tooltipDiv = document.createElement('div');
       tooltipDiv.className = 'job-status-tooltip';
       tooltipDiv.style.cssText = 'position: fixed; display: none; background: var(--ui-bg-base, #1f2937); color: var(--text-color, white); padding: 8px 12px; border-radius: 6px; font-size: 13px; line-height: 1.4; z-index: 10000; pointer-events: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); max-width: 250px;';
       document.body.appendChild(tooltipDiv);
-      
+
       // Show tooltip on hover
       indicator.addEventListener('mouseenter', () => {
         if (activeJobs.length > 0) {
@@ -1194,21 +1194,21 @@
           updateTooltipPosition();
         }
       });
-      
+
       indicator.addEventListener('mouseleave', () => {
         tooltipDiv.style.display = 'none';
       });
-      
+
       console.debug('[JobStatus] Indicator found, initializing WebSocket connection');
       connect();
     }
-    
+
     function updateTooltipPosition() {
       if (!tooltipDiv || !indicator) return;
-      
+
       const rect = indicator.getBoundingClientRect();
       const offset = 10;
-      
+
       // Position to the right of the indicator
       tooltipDiv.style.left = (rect.right + offset) + 'px';
       tooltipDiv.style.top = (rect.top + (rect.height / 2) - (tooltipDiv.offsetHeight / 2)) + 'px';
@@ -1253,7 +1253,7 @@
   /**
    * Handle HTMX-triggered notifications
    */
-  document.addEventListener('showNotification', function(event) {
+  document.addEventListener('showNotification', function (event) {
     const detail = event.detail;
     if (detail && detail.message) {
       const options = {
@@ -1283,7 +1283,7 @@
   // ============================================================================
   // FILE EXPLORER MODULE
   // ============================================================================
-  
+
   // Global variable to track the current target input for file explorer
   window.currentFileExplorerTarget = null;
 
@@ -1291,16 +1291,16 @@
    * Opens the file explorer modal for selecting a folder path
    * @param {HTMLElement} inputElement - The input element to update with the selected path
    */
-  window.openFileExplorer = function(inputElement) {
+  window.openFileExplorer = function (inputElement) {
     // Store the target input element directly
     window.currentFileExplorerTarget = inputElement;
-    
+
     // Hide the select button initially
     const selectBtn = document.getElementById('select-folder-btn');
     if (selectBtn) {
       selectBtn.style.display = 'none';
     }
-    
+
     // Load initial directory listing
     fetch('/admin/libraries/helpers/browse?path=/')
       .then(response => response.json())
@@ -1308,11 +1308,11 @@
         // Update the modal content
         const modal = document.getElementById('file-explorer-modal');
         const content = modal.querySelector('#file-explorer-content');
-        
+
         // Create the content HTML
         let html = '<ul class="uk-list uk-list-divider">';
         html += '<li class="uk-text-muted">Current path: /</li>';
-        
+
         entries.forEach(entry => {
           if (entry.IsDir) {
             html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
@@ -1320,16 +1320,16 @@
             html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
           }
         });
-        
+
         html += '</ul>';
-        
+
         content.innerHTML = html;
-        
+
         // Update the select button
         const selectBtn = document.getElementById('select-folder-btn');
         selectBtn.style.display = 'block';
         selectBtn.onclick = () => selectFolder('/');
-        
+
         // Show the modal
         UIkit.modal(modal).show();
       })
@@ -1342,23 +1342,23 @@
    * Navigates to a folder in the file explorer
    * @param {string} path - The path to navigate to
    */
-  window.navigateToFolder = function(path) {
+  window.navigateToFolder = function (path) {
     fetch('/admin/libraries/helpers/browse?path=' + encodeURIComponent(path))
       .then(response => response.json())
       .then(entries => {
         const modal = document.getElementById('file-explorer-modal');
         const content = modal.querySelector('#file-explorer-content');
-        
+
         let html = '<ul class="uk-list uk-list-divider">';
-        
+
         // Add parent directory link if not at root
         if (path !== '/') {
           const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
           html += `<li><a href="#" onclick="navigateToFolder('${parentPath}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="ArrowLeft"></uk-icon> ..</span></a></li>`;
         }
-        
+
         html += `<li class="uk-text-muted">Current path: ${path}</li>`;
-        
+
         entries.forEach(entry => {
           if (entry.IsDir) {
             html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
@@ -1366,11 +1366,11 @@
             html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
           }
         });
-        
+
         html += '</ul>';
-        
+
         content.innerHTML = html;
-        
+
         // Update the select button
         const selectBtn = document.getElementById('select-folder-btn');
         selectBtn.style.display = 'block';
@@ -1385,25 +1385,23 @@
    * Selects the current folder and closes the modal
    * @param {string} path - The selected path
    */
-  window.selectFolder = function(path) {
+  window.selectFolder = function (path) {
     const inputElement = window.currentFileExplorerTarget;
     if (inputElement) {
       inputElement.value = path;
     }
-    
+
     // Clear the global target
     window.currentFileExplorerTarget = null;
-    
+
     // Hide the select button
     const selectBtn = document.getElementById('select-folder-btn');
     if (selectBtn) {
       selectBtn.style.display = 'none';
     }
-    
+
     // Close the modal
     UIkit.modal(document.getElementById('file-explorer-modal')).hide();
   };
-
-
 
 })(window);
