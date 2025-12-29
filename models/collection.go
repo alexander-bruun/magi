@@ -88,7 +88,7 @@ func GetCollectionByID(id int) (*Collection, error) {
 }
 
 // GetCollectionsByUser retrieves all collections created by a user
-func GetCollectionsByUser(username string) ([]Collection, error) {
+func GetCollectionsByUser(username string, accessibleLibraries []string) ([]Collection, error) {
 	rows, err := db.Query(`
 		SELECT c.id, c.name, c.description, c.created_by, c.created_at, c.updated_at,
 		       COUNT(cm.media_slug) as media_count
@@ -125,7 +125,7 @@ func GetCollectionsByUser(username string) ([]Collection, error) {
 		collection.UpdatedAt = time.Unix(updatedAt, 0)
 
 		// Get top 4 media for poster display
-		topMedia, err := GetTopMediaInCollection(collection.ID)
+		topMedia, err := GetTopMediaInCollection(collection.ID, accessibleLibraries)
 		if err != nil {
 			log.Debugf("Failed to get top media for collection %d: %v", collection.ID, err)
 		}
@@ -138,7 +138,7 @@ func GetCollectionsByUser(username string) ([]Collection, error) {
 }
 
 // GetAllCollections retrieves all collections with media counts
-func GetAllCollections() ([]Collection, error) {
+func GetAllCollections(accessibleLibraries []string) ([]Collection, error) {
 	rows, err := db.Query(`
 		SELECT c.id, c.name, c.description, c.created_by, c.created_at, c.updated_at,
 		       COUNT(cm.media_slug) as media_count
@@ -174,7 +174,7 @@ func GetAllCollections() ([]Collection, error) {
 		collection.UpdatedAt = time.Unix(updatedAt, 0)
 
 		// Get top 4 media for poster display
-		topMedia, err := GetTopMediaInCollection(collection.ID)
+		topMedia, err := GetTopMediaInCollection(collection.ID, accessibleLibraries)
 		if err != nil {
 			log.Debugf("Failed to get top media for collection %d: %v", collection.ID, err)
 		}
@@ -244,8 +244,8 @@ func RemoveMediaFromCollection(collectionID int, mediaSlug string) error {
 	return nil
 }
 
-// GetCollectionMedia retrieves all media in a collection
-func GetCollectionMedia(collectionID int) ([]Media, error) {
+// GetCollectionMedia retrieves all media in a collection, filtered by accessible libraries
+func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
 		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
@@ -296,11 +296,16 @@ func GetCollectionMedia(collectionID int) ([]Media, error) {
 		media = append(media, m)
 	}
 
+	// Filter by accessible libraries
+	if len(accessibleLibraries) > 0 {
+		media = filterByAccessibleLibraries(media, accessibleLibraries)
+	}
+
 	return media, nil
 }
 
-// GetTopMediaInCollection retrieves the top 4 most popular media in a collection (by vote score)
-func GetTopMediaInCollection(collectionID int) ([]Media, error) {
+// GetTopMediaInCollection retrieves the top 4 most popular media in a collection (by vote score), filtered by accessible libraries
+func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
 		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
@@ -352,6 +357,11 @@ func GetTopMediaInCollection(collectionID int) ([]Media, error) {
 		media = append(media, m)
 	}
 
+	// Filter by accessible libraries
+	if len(accessibleLibraries) > 0 {
+		media = filterByAccessibleLibraries(media, accessibleLibraries)
+	}
+
 	return media, nil
 }
 
@@ -374,7 +384,7 @@ func IsMediaInCollection(collectionID int, mediaSlug string) (bool, error) {
 // Returns a map of collection IDs that contain the media
 func BatchCheckMediaInCollections(collectionIDs []int, mediaSlug string) (map[int]bool, error) {
 	result := make(map[int]bool)
-	
+
 	if len(collectionIDs) == 0 {
 		return result, nil
 	}

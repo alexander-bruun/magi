@@ -761,7 +761,7 @@ func TestGetRecentSeriesWithChapters(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	// Mock the SELECT query for recent media
-	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at FROM media m INNER JOIN chapters c ON c\.media_slug = m\.slug WHERE m\.library_slug IN \(\?\) GROUP BY m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at ORDER BY MAX\(c\.created_at\) DESC LIMIT \?`).
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at FROM media m INNER JOIN libraries l ON m\.library_slug = l\.slug INNER JOIN chapters c ON c\.media_slug = m\.slug WHERE m\.library_slug IN \(\?\) AND l\.enabled = 1 GROUP BY m\.slug, m\.name, m\.author, m\.description, m\.type, m\.status, m\.cover_art_url, m\.library_slug, m\.created_at, m\.updated_at ORDER BY MAX\(c\.created_at\) DESC LIMIT \?`).
 		WithArgs("library1", 2).
 		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "type", "status", "cover_art_url", "library_slug", "created_at", "updated_at"}).
 			AddRow("manga1", "Manga One", "Author One", "Description One", "manga", "ongoing", "/covers/manga1.jpg", "library1", 1640995200, 1640995200).

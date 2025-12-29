@@ -7,6 +7,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // CollectionMediaFormData represents form data for adding/removing media from collections
@@ -17,7 +18,28 @@ type CollectionMediaFormData struct {
 
 // HandleCollections displays all collections
 func HandleCollections(c *fiber.Ctx) error {
-	collections, err := models.GetAllCollections()
+	userName := GetUserContext(c)
+
+	// Get accessible libraries for the current user
+	var accessibleLibraries []string
+	if userName == "" {
+		// Anonymous user
+		var err error
+		accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
+		if err != nil {
+			log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
+			accessibleLibraries = []string{} // Empty if error
+		}
+	} else {
+		var err error
+		accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
+		if err != nil {
+			log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+			accessibleLibraries = []string{} // Empty if error
+		}
+	}
+
+	collections, err := models.GetAllCollections(accessibleLibraries)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -32,7 +54,14 @@ func HandleUserCollections(c *fiber.Ctx) error {
 		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
-	collections, err := models.GetCollectionsByUser(userName)
+	// Get accessible libraries for the current user
+	accessibleLibraries, err := models.GetAccessibleLibrariesForUser(userName)
+	if err != nil {
+		log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+		accessibleLibraries = []string{} // Empty if error
+	}
+
+	collections, err := models.GetCollectionsByUser(userName, accessibleLibraries)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -56,7 +85,26 @@ func HandleCollection(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrCollectionNotFound)
 	}
 
-	media, err := models.GetCollectionMedia(id)
+	userName := GetUserContext(c)
+
+	// Get accessible libraries for the current user
+	var accessibleLibraries []string
+	if userName == "" {
+		// Anonymous user
+		accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
+		if err != nil {
+			log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
+			accessibleLibraries = []string{} // Empty if error
+		}
+	} else {
+		accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
+		if err != nil {
+			log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+			accessibleLibraries = []string{} // Empty if error
+		}
+	}
+
+	media, err := models.GetCollectionMedia(id, accessibleLibraries)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -66,7 +114,6 @@ func HandleCollection(c *fiber.Ctx) error {
 		Media:      media,
 	}
 
-	userName := GetUserContext(c)
 	canEdit := userName != "" && (userName == collection.CreatedBy || userName == "admin" || userName == "moderator")
 
 	return HandleView(c, views.Collection(collectionWithMedia, canEdit))
@@ -330,8 +377,15 @@ func HandleGetMediaCollections(c *fiber.Ctx) error {
 		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
+	// Get accessible libraries for the current user
+	accessibleLibraries, err := models.GetAccessibleLibrariesForUser(userName)
+	if err != nil {
+		log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+		accessibleLibraries = []string{} // Empty if error
+	}
+
 	// Get user's collections
-	collections, err := models.GetCollectionsByUser(userName)
+	collections, err := models.GetCollectionsByUser(userName, accessibleLibraries)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -363,8 +417,15 @@ func HandleGetMediaCollectionsModal(c *fiber.Ctx) error {
 		return sendUnauthorizedError(c, ErrUnauthorized)
 	}
 
+	// Get accessible libraries for the current user
+	accessibleLibraries, err := models.GetAccessibleLibrariesForUser(userName)
+	if err != nil {
+		log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+		accessibleLibraries = []string{} // Empty if error
+	}
+
 	// Get user's collections
-	collections, err := models.GetCollectionsByUser(userName)
+	collections, err := models.GetCollectionsByUser(userName, accessibleLibraries)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}

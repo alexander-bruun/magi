@@ -623,6 +623,7 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 		COALESCE(vote_scores.score, 0) as vote_score,
 		m.created_at, m.updated_at 
 	FROM media m
+	INNER JOIN libraries l ON m.library_slug = l.slug
 	LEFT JOIN (
 		SELECT media_slug, COUNT(*) as read_count
 		FROM reading_states
@@ -635,7 +636,8 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 			ELSE 0 END as score
 		FROM votes
 		GROUP BY media_slug
-	) vote_scores ON m.slug = vote_scores.media_slug`
+	) vote_scores ON m.slug = vote_scores.media_slug
+	WHERE l.enabled = 1`
 
 	rows, err := db.Query(query)
 	if err != nil {

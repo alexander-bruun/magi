@@ -223,7 +223,21 @@ func HandleMedia(c *fiber.Ctx) error {
 			log.Errorf("Error getting user review for %s: %v", slug, err)
 		}
 		// Fetch user's collections
-		userCollections, err = models.GetCollectionsByUser(userName)
+		var accessibleLibraries []string
+		if userName != "" {
+			accessibleLibraries, err = models.GetAccessibleLibrariesForUser(userName)
+			if err != nil {
+				log.Errorf("Failed to get accessible libraries for user %s: %v", userName, err)
+				accessibleLibraries = []string{} // Empty if error
+			}
+		} else {
+			accessibleLibraries, err = models.GetAccessibleLibrariesForAnonymous()
+			if err != nil {
+				log.Errorf("Failed to get accessible libraries for anonymous: %v", err)
+				accessibleLibraries = []string{} // Empty if error
+			}
+		}
+		userCollections, err = models.GetCollectionsByUser(userName, accessibleLibraries)
 		if err != nil {
 			log.Errorf("Error getting user collections: %v", err)
 			userCollections = []models.Collection{}

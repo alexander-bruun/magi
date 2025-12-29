@@ -146,7 +146,7 @@ func TestGetCollectionsByUser(t *testing.T) {
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "read_count", "vote_score", "created_at", "updated_at"}))
 
-	collections, err := GetCollectionsByUser("testuser")
+	collections, err := GetCollectionsByUser("testuser", []string{"lib1", "lib2"})
 	assert.NoError(t, err)
 	assert.Len(t, collections, 2)
 
@@ -192,7 +192,7 @@ func TestGetAllCollections(t *testing.T) {
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "read_count", "vote_score", "created_at", "updated_at"}))
 
-	collections, err := GetAllCollections()
+	collections, err := GetAllCollections([]string{"lib1", "lib2"})
 	assert.NoError(t, err)
 	assert.Len(t, collections, 2)
 
@@ -268,7 +268,7 @@ func TestGetCollectionMedia(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "read_count", "vote_score", "created_at", "updated_at"}).
 			AddRow("test-media", "Test Media", "Author", "Description", 2023, "en", "manga", "ongoing", "safe", "test-lib", "/cover.jpg", "/path", 10, 5, 8, 1640995200, 1640995200))
 
-	media, err := GetCollectionMedia(1)
+	media, err := GetCollectionMedia(1, []string{}) // Empty slice means no filtering for test
 	assert.NoError(t, err)
 	assert.Len(t, media, 1)
 	assert.Equal(t, "test-media", media[0].Slug)

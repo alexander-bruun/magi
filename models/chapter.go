@@ -573,8 +573,9 @@ func GetRecentSeriesWithChapters(limit int, maxPremiumChapters int, premiumDurat
 		query = fmt.Sprintf(`
 			SELECT m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.library_slug, m.created_at, m.updated_at
 			FROM media m
+			INNER JOIN libraries l ON m.library_slug = l.slug
 			INNER JOIN chapters c ON c.media_slug = m.slug
-			WHERE m.library_slug IN (%s)
+			WHERE m.library_slug IN (%s) AND l.enabled = 1
 			GROUP BY m.slug, m.name, m.author, m.description, m.type, m.status, m.cover_art_url, m.library_slug, m.created_at, m.updated_at
 			ORDER BY MAX(c.created_at) DESC
 			LIMIT ?
