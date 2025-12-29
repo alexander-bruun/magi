@@ -38,25 +38,29 @@ func PremiumPage(plans []models.SubscriptionPlan) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container uk-margin-top\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Premium", Href: "/premium"}}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h3 class=\"uk-heading-line uk-text-center\"><span>Premium Subscription</span></h3><div class=\"uk-width-4xl uk-margin-auto\"><div class=\"uk-text-center uk-margin-bottom\"><h2 class=\"uk-h1 uk-margin-small-bottom\">Unlock Premium Features</h2><p class=\"uk-text-lead\">Get early access to chapters, higher quality images, and support the platform</p></div><div class=\"uk-grid uk-grid-match uk-child-width-1-4@m uk-margin-bottom\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-margin-large-bottom\"><!-- Pricing Plans --><div class=\"uk-text-center uk-margin-bottom\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Choose Your Plan</span></h2></div><div class=\"mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, plan := range plans {
-			templ_7745c5c3_Err = PremiumPlanCard(plan).Render(ctx, templ_7745c5c3_Buffer)
+		for i, plan := range plans {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"h-full\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = PremiumPlanCard(plan, i == 1).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"uk-card uk-card-default uk-card-body uk-margin-bottom\"><h3 class=\"uk-card-title\">Premium Benefits</h3><ul class=\"uk-list uk-list-divider\"><li>Early access to new chapters (up to 3 chapters ahead)</li><li>Higher quality images (90% JPEG compression vs 70%)</li><li>Support ongoing development and hosting costs</li><li>Help keep the platform ad-free</li></ul></div></div></div><script src=\"https://js.stripe.com/v3/\"></script><script>\n        let stripe;\n        let elements;\n\n        document.addEventListener('DOMContentLoaded', function() {\n            // Initialize Stripe\n            fetch('/api/config/stripe')\n                .then(response => response.json())\n                .then(data => {\n                    if (data.publishableKey) {\n                        stripe = Stripe(data.publishableKey);\n                    }\n                })\n                .catch(err => console.error('Failed to load Stripe config:', err));\n        });\n\n        function selectPlan(planId) {\n            if (!stripe) {\n                alert('Payment system not initialized. Please refresh the page.');\n                return;\n            }\n\n            // Show loading\n            const button = event.target;\n            const originalText = button.textContent;\n            button.textContent = 'Processing...';\n            button.disabled = true;\n\n            // Create checkout session\n            fetch('/premium/create-checkout-session', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json',\n                },\n                body: JSON.stringify({ plan_id: planId }),\n            })\n            .then(response => response.json())\n            .then(data => {\n                if (data.error) {\n                    alert('Error: ' + data.error);\n                    button.textContent = originalText;\n                    button.disabled = false;\n                    return;\n                }\n\n                // Redirect to Stripe Checkout\n                window.location.href = data.url;\n            })\n            .catch(error => {\n                console.error('Error:', error);\n                alert('An error occurred. Please try again.');\n                button.textContent = originalText;\n                button.disabled = false;\n            });\n        }\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><!-- Premium Benefits --><div class=\"mt-4\"><div class=\"uk-text-center uk-margin-bottom\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Why Go Premium?</span></h2></div><div class=\"mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\"><div class=\"h-full\"><div class=\"uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col\"><div class=\"uk-margin-bottom flex-shrink-0\"><span class=\"uk-text-large\">⚡</span></div><h3 class=\"uk-card-title uk-margin-small-bottom flex-shrink-0\">Early Access</h3><p class=\"uk-text-muted flex-grow\">Get up to 3 chapters ahead of everyone else</p></div></div><div class=\"h-full\"><div class=\"uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col\"><div class=\"uk-margin-bottom flex-shrink-0\"><span class=\"uk-text-large\">🖼️</span></div><h3 class=\"uk-card-title uk-margin-small-bottom flex-shrink-0\">High Quality Images</h3><p class=\"uk-text-muted flex-grow\">Enjoy crystal-clear images with 90% JPEG compression</p></div></div><div class=\"h-full\"><div class=\"uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col\"><div class=\"uk-margin-bottom flex-shrink-0\"><span class=\"uk-text-large\">❤️</span></div><h3 class=\"uk-card-title uk-margin-small-bottom flex-shrink-0\">Support Creators</h3><p class=\"uk-text-muted flex-grow\">Help keep the platform ad-free and support ongoing development</p></div></div></div></div><!-- FAQ Section --><div class=\"mt-4\"><div class=\"text-center mb-8\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Frequently Asked Questions</span></h2></div><div class=\"max-w-3xl mx-auto space-y-4\"><div class=\"bg-white rounded-lg shadow-sm border border-gray-200 p-6\"><div class=\"flex items-start\"><div class=\"flex-shrink-0\"><span class=\"text-xl\">❓</span></div><div class=\"ml-4\"><h3 class=\"text-lg font-semibold text-gray-900 mb-2\">Can I cancel anytime?</h3><p class=\"text-gray-600\">Yes, you can cancel your subscription at any time from your account settings. You'll continue to have access to premium features until the end of your current billing period.</p></div></div></div><div class=\"bg-white rounded-lg shadow-sm border border-gray-200 p-6\"><div class=\"flex items-start\"><div class=\"flex-shrink-0\"><span class=\"text-xl\">💳</span></div><div class=\"ml-4\"><h3 class=\"text-lg font-semibold text-gray-900 mb-2\">What payment methods do you accept?</h3><p class=\"text-gray-600\">We accept all major credit cards (Visa, MasterCard, American Express) through our secure Stripe payment processor. All transactions are encrypted and PCI compliant.</p></div></div></div><div class=\"bg-white rounded-lg shadow-sm border border-gray-200 p-6\"><div class=\"flex items-start\"><div class=\"flex-shrink-0\"><span class=\"text-xl\">🔒</span></div><div class=\"ml-4\"><h3 class=\"text-lg font-semibold text-gray-900 mb-2\">Is my payment information secure?</h3><p class=\"text-gray-600\">Absolutely. We use Stripe's industry-leading security to protect your payment information. We never store your credit card details on our servers - all payment processing is handled securely by Stripe.</p></div></div></div><div class=\"bg-white rounded-lg shadow-sm border border-gray-200 p-6\"><div class=\"flex items-start\"><div class=\"flex-shrink-0\"><span class=\"text-xl\">⚡</span></div><div class=\"ml-4\"><h3 class=\"text-lg font-semibold text-gray-900 mb-2\">When do premium chapters become available?</h3><p class=\"text-gray-600\">Premium chapters are released 3 chapters ahead of the regular schedule. Once the premium period expires, chapters become available to all users.</p></div></div></div></div></div></div><script src=\"https://js.stripe.com/v3/\"></script><script>\n\t\tlet stripe;\n\t\tlet elements;\n\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t// Initialize Stripe\n\t\t\tfetch('/api/config/stripe')\n\t\t\t\t.then(response => response.json())\n\t\t\t\t.then(data => {\n\t\t\t\t\tif (data.publishableKey) {\n\t\t\t\t\t\tstripe = Stripe(data.publishableKey);\n\t\t\t\t\t}\n\t\t\t\t})\n\t\t\t\t.catch(err => console.error('Failed to load Stripe config:', err));\n\t\t});\n\n\t\tfunction selectPlan(planId) {\n\t\t\tif (!stripe) {\n\t\t\t\talert('Payment system not initialized. Please refresh the page.');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\t// Show loading\n\t\t\tconst button = event.target;\n\t\t\tconst originalText = button.textContent;\n\t\t\tbutton.textContent = 'Processing...';\n\t\t\tbutton.disabled = true;\n\n\t\t\t// Create checkout session\n\t\t\tfetch('/premium/create-checkout-session', {\n\t\t\t\tmethod: 'POST',\n\t\t\t\theaders: {\n\t\t\t\t\t'Content-Type': 'application/json',\n\t\t\t\t},\n\t\t\t\tbody: JSON.stringify({ plan_id: planId }),\n\t\t\t})\n\t\t\t.then(response => response.json())\n\t\t\t.then(data => {\n\t\t\t\tif (data.error) {\n\t\t\t\t\talert('Error: ' + data.error);\n\t\t\t\t\tbutton.textContent = originalText;\n\t\t\t\t\tbutton.disabled = false;\n\t\t\t\t\treturn;\n\t\t\t\t}\n\n\t\t\t\t// Redirect to Stripe Checkout\n\t\t\t\twindow.location.href = data.url;\n\t\t\t})\n\t\t\t.catch(error => {\n\t\t\t\tconsole.error('Error:', error);\n\t\t\t\talert('An error occurred. Please try again.');\n\t\t\t\tbutton.textContent = originalText;\n\t\t\t\tbutton.disabled = false;\n\t\t\t});\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -64,7 +68,7 @@ func PremiumPage(plans []models.SubscriptionPlan) templ.Component {
 	})
 }
 
-func PremiumPlanCard(plan models.SubscriptionPlan) templ.Component {
+func PremiumPlanCard(plan models.SubscriptionPlan, isPopular bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -85,82 +89,106 @@ func PremiumPlanCard(plan models.SubscriptionPlan) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"uk-card uk-card-default uk-card-body uk-text-center\"><h3 class=\"uk-card-title uk-margin-small-bottom\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"uk-card uk-card-default uk-card-hover uk-card-body uk-text-center\"><h3 class=\"uk-card-title uk-margin-small-bottom\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 99, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 182, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</h3><div class=\"uk-text-large uk-text-bold uk-margin-small-bottom\">$")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</h3><div class=\"uk-text-large uk-text-bold uk-margin-small-bottom\">$")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f", float64(plan.Price)/100))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 100, Col: 118}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 183, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div class=\"uk-text-meta uk-margin-bottom\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"uk-text-meta uk-margin-bottom\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 101, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 184, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if plan.Savings != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"uk-label uk-label-success uk-margin-bottom\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"uk-label uk-label-success uk-margin-bottom\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Savings)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 104, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 187, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+		}
+		var templ_7745c5c3_Var7 = []any{func() string {
+			if isPopular {
+				return "uk-btn uk-btn-primary uk-width-1-1 bg-blue-600 hover:bg-blue-700"
+			} else {
+				return "uk-btn uk-btn-primary uk-width-1-1"
+			}
+		}()}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var7...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)})
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<button onclick=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<button onclick=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var7 templ.ComponentScript = templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7.Call)
+		var templ_7745c5c3_Var8 templ.ComponentScript = templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8.Call)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" class=\"uk-btn uk-btn-primary uk-width-1-1\">Subscribe Now</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var7).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/premium.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\">Subscribe Now</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -184,16 +212,16 @@ func PremiumSuccess() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var8 == nil {
-			templ_7745c5c3_Var8 = templ.NopComponent
+		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var10 == nil {
+			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = PageTitle("Payment Successful").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"uk-container uk-margin-top\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"uk-margin-top\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -201,7 +229,7 @@ func PremiumSuccess() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"uk-width-2xl uk-margin-auto uk-text-center\"><div class=\"uk-card uk-card-default uk-card-body uk-margin-bottom\"><div class=\"uk-text-large uk-margin-bottom\">✅</div><h2 class=\"uk-card-title uk-margin-small-bottom\">Payment Successful!</h2><p class=\"uk-text-muted\">Thank you for your subscription. Your premium access has been activated.</p></div><div class=\"uk-margin\"><h3 class=\"uk-h3\">What's Next?</h3><ul class=\"uk-list uk-list-divider uk-margin-bottom\"><li>Your account has been upgraded to premium</li><li>You now have early access to new chapters</li><li>Enjoy higher quality images</li><li>Access premium features across the platform</li></ul><div class=\"uk-flex uk-flex-center uk-margin\"><a href=\"/\" class=\"uk-btn uk-btn-primary uk-margin-small-right\">Continue Reading</a> <a href=\"/account\" class=\"uk-btn uk-btn-secondary\">View Account</a></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"uk-width-2xl uk-margin-auto uk-text-center\"><div class=\"uk-card uk-card-default uk-card-body uk-margin-bottom\"><div class=\"uk-text-large uk-margin-bottom\">✅</div><h2 class=\"uk-card-title uk-margin-small-bottom\">Payment Successful!</h2><p class=\"uk-text-muted\">Thank you for your subscription. Your premium access has been activated.</p></div><div class=\"uk-margin\"><h3 class=\"uk-h3\">What's Next?</h3><ul class=\"uk-list uk-list-divider uk-margin-bottom\"><li>Your account has been upgraded to premium</li><li>You now have early access to new chapters</li><li>Enjoy higher quality images</li><li>Access premium features across the platform</li></ul><div class=\"uk-flex uk-flex-center uk-margin\"><a href=\"/\" class=\"uk-btn uk-btn-primary uk-margin-small-right\">Continue Reading</a> <a href=\"/account\" class=\"uk-btn uk-btn-secondary\">View Account</a></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

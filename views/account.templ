@@ -59,23 +59,18 @@ templ Account(userName string) {
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Account</span></h2>
 
     <!-- Profile card -->
-    <div class="uk-container mt-4">
-        if user != nil {
-            @ProfileCard(*user, totalChaptersRead, totalMediaRead, readingStreak, favoriteGenres)
-        }
-    </div>
+    if user != nil {
+        @ProfileCard(*user, totalChaptersRead, totalMediaRead, readingStreak, favoriteGenres)
+    }
 
     <!-- Reading Timeline -->
-    <div class="uk-container mt-6">
-        @ReadingTimeline(activities)
-    </div>
+    @ReadingTimeline(activities)
 
     <!-- Content Tabs -->
-    <div class="uk-container mt-6">
-        <div class="flex items-center justify-between mt-4">
-            <h3 class="uk-h4 mb-2">Upvoted</h3>
-            <a href={ templ.URL("/account/upvoted") } class="uk-button uk-button-text">View all</a>
-        </div>
+    <div class="flex items-center justify-between mt-4">
+        <h3 class="uk-h4 mb-2">Upvoted</h3>
+        <a href={ templ.URL("/account/upvoted") } class="uk-button uk-button-text">View all</a>
+    </div>
 
         if len(liked) == 0 {
             <p class="role-reader">You have not upvoted any media yet.</p>
@@ -92,5 +87,4 @@ templ Account(userName string) {
         } else {
             @MediaSlider(downvoted, 200, 300, true, true, "")
         }
-    </div>
 }

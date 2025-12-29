@@ -9,14 +9,12 @@ templ BannedIPs() {
 	{{ bannedIPs, _ := models.GetBannedIPs() }}
 
 	@PageTitle("Banned IPs")
-	<div class="uk-container mt-2">
-		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Banned IPs", Href: "/admin/banned-ips" }})
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Banned IPs</span></h3>
-		<div class="flex place-content-center">
-			<div class="w-2/4">
-				<div class="uk-card p-2">
-					@BannedIPsTable(bannedIPs)
-				</div>
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Banned IPs", Href: "/admin/banned-ips" }})
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Banned IPs</span></h2>
+	<div class="flex place-content-center">
+		<div class="w-2/4">
+			<div class="uk-card p-2">
+				@BannedIPsTable(bannedIPs)
 			</div>
 		</div>
 	</div>

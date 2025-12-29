@@ -898,12 +898,12 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			return templ_7745c5c3_Err
 		}
 		if user.Role == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-admin); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"Shield\" class=\"w-3 h-3\"></uk-icon> Admin</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-admin); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"Shield\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Admin</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if user.Role == "moderator" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-moderator); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"ShieldCheck\" class=\"w-3 h-3\"></uk-icon> Moderator</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-moderator); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"ShieldCheck\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Moderator</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -913,7 +913,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-reader); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"User\" class=\"w-3 h-3\"></uk-icon> Reader</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-reader); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"User\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Reader</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

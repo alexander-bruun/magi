@@ -45,7 +45,7 @@ func ExternalAccountsPage(accounts []models.UserExternalAccount) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>External Accounts</span></h2><div class=\"uk-container mt-4\"><p class=\"uk-text-center uk-text-muted mb-6\">Connect your accounts to sync reading progress with external services.</p><div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-h4 mb-4\">MyAnimeList</h3>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>External Accounts</span></h2><p class=\"uk-text-center uk-text-muted mb-6\">Connect your accounts to sync reading progress with external services.</p><div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-h4 mb-4\">MyAnimeList</h3>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -97,7 +97,7 @@ func ExternalAccountsPage(accounts []models.UserExternalAccount) templ.Component
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

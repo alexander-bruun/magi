@@ -13,22 +13,20 @@ templ Libraries() {
 		{ Label: "Home", Href: "/" },
 		{ Label: "Libraries", Href: "/admin/libraries" },
 	})
-	<div class="uk-container mt-2">
-		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-			<div id="form-column" class="lg:col-span-1">
-				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Creator</span></h3>
+	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+		<div id="form-column" class="lg:col-span-1">
+			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
 				<div class="uk-card p-2">
 					@LibraryForm(models.Library{}, "post", false)
 				</div>
 			</div>
 			<div id="table-column" class="lg:col-span-3">
-				<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Libraries</span></h3>
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Libraries</span></h2>
 				<div class="uk-card p-2">
 					@LibraryTable(libraries)
 				</div>
 			</div>
 		</div>
-	</div>
 	@FileExplorer()
 }
 

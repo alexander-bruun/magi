@@ -7,13 +7,11 @@ import (
 
 templ Config(cfg models.AppConfig) {
     @PageTitle("Configuration")
-    <div class="uk-container mt-2">
-        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
-        <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Configuration</span></h3>
-        <div class="flex place-content-center">
-            <div class="w-3/4 space-y-6">
-                @ConfigForm()
-            </div>
+    @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
+    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Configuration</span></h2>
+    <div class="flex place-content-center">
+        <div class="w-3/4 space-y-6">
+            @ConfigForm()
         </div>
     </div>
     
@@ -329,8 +327,8 @@ templ ConfigForm() {
 }
 
 templ ConsoleLogs() {
-    <div class="uk-container mt-8" hx-ext="ws" ws-connect="/admin/config/logs">
-        <h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Console Logs</span></h3>
+    <div class="mt-8" hx-ext="ws" ws-connect="/admin/config/logs">
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Console Logs</span></h2>
         <div class="flex place-content-center">
             <div class="w-full px-4">
                 <div class="uk-card p-4">

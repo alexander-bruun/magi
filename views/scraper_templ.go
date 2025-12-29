@@ -313,7 +313,7 @@ func Scraper(scripts []models.ScraperScript, activeID int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<h3 class=\"uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center\"><span>Scraper Scripts</span></h3><!-- Tabs Container --><div class=\"scraper-tabs-container border-b border-border mb-4\"><div class=\"flex items-center gap-1 overflow-x-auto pb-2\"><!-- Existing Script Tabs --><div id=\"script-tabs\" class=\"flex items-center gap-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Scraper Scripts</span></h2><!-- Tabs Container --><div class=\"scraper-tabs-container border-b border-border mb-4\"><div class=\"flex items-center gap-1 overflow-x-auto pb-2\"><!-- Existing Script Tabs --><div id=\"script-tabs\" class=\"flex items-center gap-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

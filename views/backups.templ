@@ -8,16 +8,14 @@ import (
 
 templ Backups(backups []models.BackupInfo) {
 	@PageTitle("Backups")
-	<div class="uk-container mt-2">
-		@Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Backups", Href: "/admin/backups"}})
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Database Backups</span></h3>
-		<div id="backup-content" class="flex place-content-center">
+	@Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Backups", Href: "/admin/backups"}})
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Database Backups</span></h2>
+	<div id="backup-content" class="flex place-content-center">
 			<div class="w-4/5 space-y-6">
 				@BackupForm()
 				@BackupList(backups)
 			</div>
 		</div>
-	</div>
 }
 
 templ BackupForm() {

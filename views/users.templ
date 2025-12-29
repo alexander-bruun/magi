@@ -10,10 +10,9 @@ import (
 
 templ Users() {
 	@PageTitle("Users")
-	<div class="uk-container mt-2">
-		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
-		<div class="flex place-content-center">
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
+	<div class="flex place-content-center">
 			<div class="w-3/4">
 				<div class="uk-card p-2">
 					<!-- Search and Page Size Controls -->
@@ -56,15 +55,13 @@ templ Users() {
 				</div>
 			</div>
 		</div>
-	</div>
 }
 
 templ UsersWithData(users []models.User, page, pageSize int, total int64, filter string) {
 	@PageTitle("Users")
-	<div class="uk-container mt-2">
-		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Users</span></h3>
-		<div class="flex place-content-center">
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
+	<div class="flex place-content-center">
 			<div class="w-3/4">
 				<div class="uk-card p-2">
 					<!-- Search and Page Size Controls -->
@@ -108,7 +105,6 @@ templ UsersWithData(users []models.User, page, pageSize int, total int64, filter
 				</div>
 			</div>
 		</div>
-	</div>
 }
 
 templ UsersTable(users []models.User, page, pageSize int, total int64, filter string) {

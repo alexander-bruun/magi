@@ -112,7 +112,7 @@ templ Scraper(scripts []models.ScraperScript, activeID int64) {
 	@PageTitle("Scraper")
 	<div class="mt-4">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
-		<h3 class="uk-heading-line text-xl font-semibold mb-4 uk-h3 uk-text-center"><span>Scraper Scripts</span></h3>
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scraper Scripts</span></h2>
 		
 		<!-- Tabs Container -->
 		<div class="scraper-tabs-container border-b border-border mb-4">

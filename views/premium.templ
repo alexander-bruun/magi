@@ -6,96 +6,179 @@ import (
 )
 
 templ PremiumPage(plans []models.SubscriptionPlan) {
-    @PageTitle("Premium Subscription")
-    <div class="uk-container uk-margin-top">
-        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }})
-        <h3 class="uk-heading-line uk-text-center"><span>Premium Subscription</span></h3>
+	@PageTitle("Premium Subscription")
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }})
+	
+	<div class="uk-margin-large-bottom">
+		<!-- Pricing Plans -->
+		<div class="uk-text-center uk-margin-bottom">
+			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Choose Your Plan</span></h2>
+		</div>
 
-        <div class="uk-width-4xl uk-margin-auto">
-            <div class="uk-text-center uk-margin-bottom">
-                <h2 class="uk-h1 uk-margin-small-bottom">Unlock Premium Features</h2>
-                <p class="uk-text-lead">Get early access to chapters, higher quality images, and support the platform</p>
-            </div>
+		<div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+			for i, plan := range plans {
+				<div class="h-full">
+					@PremiumPlanCard(plan, i == 1)
+				</div>
+			}
+		</div>
 
-            <div class="uk-grid uk-grid-match uk-child-width-1-4@m uk-margin-bottom">
-                for _, plan := range plans {
-                    @PremiumPlanCard(plan)
-                }
-            </div>
+		<!-- Premium Benefits -->
+		<div class="mt-4">
+			<div class="uk-text-center uk-margin-bottom">
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Why Go Premium?</span></h2>
+			</div>
+			
+			<div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div class="h-full">
+					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
+						<div class="uk-margin-bottom flex-shrink-0">
+							<span class="uk-text-large">⚡</span>
+						</div>
+						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Early Access</h3>
+						<p class="uk-text-muted flex-grow">Get up to 3 chapters ahead of everyone else</p>
+					</div>
+				</div>
+				<div class="h-full">
+					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
+						<div class="uk-margin-bottom flex-shrink-0">
+							<span class="uk-text-large">🖼️</span>
+						</div>
+						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">High Quality Images</h3>
+						<p class="uk-text-muted flex-grow">Enjoy crystal-clear images with 90% JPEG compression</p>
+					</div>
+				</div>
+				<div class="h-full">
+					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
+						<div class="uk-margin-bottom flex-shrink-0">
+							<span class="uk-text-large">❤️</span>
+						</div>
+						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Support Creators</h3>
+						<p class="uk-text-muted flex-grow">Help keep the platform ad-free and support ongoing development</p>
+					</div>
+				</div>
+			</div>
+		</div>
 
-            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
-                <h3 class="uk-card-title">Premium Benefits</h3>
-                <ul class="uk-list uk-list-divider">
-                    <li>Early access to new chapters (up to 3 chapters ahead)</li>
-                    <li>Higher quality images (90% JPEG compression vs 70%)</li>
-                    <li>Support ongoing development and hosting costs</li>
-                    <li>Help keep the platform ad-free</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+		<!-- FAQ Section -->
+		<div class="mt-4">
+			<div class="text-center mb-8">
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Frequently Asked Questions</span></h2>
+			</div>
 
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        let stripe;
-        let elements;
+			<div class="max-w-3xl mx-auto space-y-4">
+				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div class="flex items-start">
+						<div class="flex-shrink-0">
+							<span class="text-xl">❓</span>
+						</div>
+						<div class="ml-4">
+							<h3 class="text-lg font-semibold text-gray-900 mb-2">Can I cancel anytime?</h3>
+							<p class="text-gray-600">Yes, you can cancel your subscription at any time from your account settings. You'll continue to have access to premium features until the end of your current billing period.</p>
+						</div>
+					</div>
+				</div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Stripe
-            fetch('/api/config/stripe')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.publishableKey) {
-                        stripe = Stripe(data.publishableKey);
-                    }
-                })
-                .catch(err => console.error('Failed to load Stripe config:', err));
-        });
+				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div class="flex items-start">
+						<div class="flex-shrink-0">
+							<span class="text-xl">💳</span>
+						</div>
+						<div class="ml-4">
+							<h3 class="text-lg font-semibold text-gray-900 mb-2">What payment methods do you accept?</h3>
+							<p class="text-gray-600">We accept all major credit cards (Visa, MasterCard, American Express) through our secure Stripe payment processor. All transactions are encrypted and PCI compliant.</p>
+						</div>
+					</div>
+				</div>
 
-        function selectPlan(planId) {
-            if (!stripe) {
-                alert('Payment system not initialized. Please refresh the page.');
-                return;
-            }
+				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div class="flex items-start">
+						<div class="flex-shrink-0">
+							<span class="text-xl">🔒</span>
+						</div>
+						<div class="ml-4">
+							<h3 class="text-lg font-semibold text-gray-900 mb-2">Is my payment information secure?</h3>
+							<p class="text-gray-600">Absolutely. We use Stripe's industry-leading security to protect your payment information. We never store your credit card details on our servers - all payment processing is handled securely by Stripe.</p>
+						</div>
+					</div>
+				</div>
 
-            // Show loading
-            const button = event.target;
-            const originalText = button.textContent;
-            button.textContent = 'Processing...';
-            button.disabled = true;
+				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div class="flex items-start">
+						<div class="flex-shrink-0">
+							<span class="text-xl">⚡</span>
+						</div>
+						<div class="ml-4">
+							<h3 class="text-lg font-semibold text-gray-900 mb-2">When do premium chapters become available?</h3>
+							<p class="text-gray-600">Premium chapters are released 3 chapters ahead of the regular schedule. Once the premium period expires, chapters become available to all users.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-            // Create checkout session
-            fetch('/premium/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ plan_id: planId }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    button.textContent = originalText;
-                    button.disabled = false;
-                    return;
-                }
+	<script src="https://js.stripe.com/v3/"></script>
+	<script>
+		let stripe;
+		let elements;
 
-                // Redirect to Stripe Checkout
-                window.location.href = data.url;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-                button.textContent = originalText;
-                button.disabled = false;
-            });
-        }
-    </script>
+		document.addEventListener('DOMContentLoaded', function() {
+			// Initialize Stripe
+			fetch('/api/config/stripe')
+				.then(response => response.json())
+				.then(data => {
+					if (data.publishableKey) {
+						stripe = Stripe(data.publishableKey);
+					}
+				})
+				.catch(err => console.error('Failed to load Stripe config:', err));
+		});
+
+		function selectPlan(planId) {
+			if (!stripe) {
+				alert('Payment system not initialized. Please refresh the page.');
+				return;
+			}
+
+			// Show loading
+			const button = event.target;
+			const originalText = button.textContent;
+			button.textContent = 'Processing...';
+			button.disabled = true;
+
+			// Create checkout session
+			fetch('/premium/create-checkout-session', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ plan_id: planId }),
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.error) {
+					alert('Error: ' + data.error);
+					button.textContent = originalText;
+					button.disabled = false;
+					return;
+				}
+
+				// Redirect to Stripe Checkout
+				window.location.href = data.url;
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				alert('An error occurred. Please try again.');
+				button.textContent = originalText;
+				button.disabled = false;
+			});
+		}
+	</script>
 }
 
-templ PremiumPlanCard(plan models.SubscriptionPlan) {
-    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+templ PremiumPlanCard(plan models.SubscriptionPlan, isPopular bool) {
+    <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center">
         <h3 class="uk-card-title uk-margin-small-bottom">{ plan.Name }</h3>
         <div class="uk-text-large uk-text-bold uk-margin-small-bottom">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
         <div class="uk-text-meta uk-margin-bottom">{ plan.Description }</div>
@@ -106,7 +189,7 @@ templ PremiumPlanCard(plan models.SubscriptionPlan) {
         }
         <button
             onclick={ templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)} }
-            class="uk-btn uk-btn-primary uk-width-1-1"
+            class={ func() string { if isPopular { return "uk-btn uk-btn-primary uk-width-1-1 bg-blue-600 hover:bg-blue-700" } else { return "uk-btn uk-btn-primary uk-width-1-1" } }() }
         >
             Subscribe Now
         </button>
@@ -115,7 +198,7 @@ templ PremiumPlanCard(plan models.SubscriptionPlan) {
 
 templ PremiumSuccess() {
     @PageTitle("Payment Successful")
-    <div class="uk-container uk-margin-top">
+    <div class="uk-margin-top">
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }, { Label: "Success", Href: "/premium/success" }})
         <div class="uk-width-2xl uk-margin-auto uk-text-center">
             <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">

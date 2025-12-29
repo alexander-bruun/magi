@@ -8,15 +8,14 @@ import (
 
 templ Better(currentPage int) {
 	@PageTitle("Better")
-	<div class="uk-container mt-2">
-		@Breadcrumb([]BreadcrumbItem{
-			{ Label: "Home", Href: "/" },
-			{ Label: "Libraries", Href: "/admin/libraries" },
-			{ Label: "Better", Href: "/admin/duplicates" },
-		})
-		<h2 class="uk-heading-line text-2xl font-bold mb-6 uk-h2 uk-text-center">
-			<span>Media Duplicates</span>
-		</h2>
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Home", Href: "/" },
+		{ Label: "Libraries", Href: "/admin/libraries" },
+		{ Label: "Better", Href: "/admin/duplicates" },
+	})
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center">
+		<span>Media Duplicates</span>
+	</h2>
 		
 		{{ const limit = 20 }}
 		{{ duplicates, total, _ := models.GetActiveMediaDuplicates(currentPage, limit) }}
@@ -112,7 +111,6 @@ templ Better(currentPage int) {
 				Back to Libraries
 			</a>
 		</div>
-	</div>
 
 	<!-- Delete Modal -->
 	<div id="delete-modal" uk-modal>
