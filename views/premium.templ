@@ -198,7 +198,7 @@ templ PremiumPlanCard(plan models.SubscriptionPlan, isPopular bool) {
 
 templ PremiumSuccess() {
     @PageTitle("Payment Successful")
-    <div class="uk-margin-top">
+    <div class="mt-4">
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }, { Label: "Success", Href: "/premium/success" }})
         <div class="uk-width-2xl uk-margin-auto uk-text-center">
             <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">

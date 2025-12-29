@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS user_notifications (
     media_slug TEXT NOT NULL,
     chapter_slug TEXT NOT NULL,
     message TEXT NOT NULL,
+    type TEXT DEFAULT 'chapter',
     is_read INTEGER DEFAULT 0,
     created_at INTEGER NOT NULL,
     FOREIGN KEY (user_name) REFERENCES users(username) ON DELETE CASCADE,

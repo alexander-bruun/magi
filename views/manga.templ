@@ -1154,7 +1154,7 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 	<div id="poster-selector-content" class="poster-editor uk-margin">
 		<div class="uk-margin-bottom">
 			<label class="uk-form-label"><strong>Select a Chapter ({ fmt.Sprint(len(chapters)) } found):</strong></label>
-			<div class="grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin-top uk-margin-bottom">
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 uk-margin-bottom">
 				{{ chaptersPerPage := 10 }}
 				{{ totalPages := (len(chapters) + chaptersPerPage - 1) / chaptersPerPage }}
 				{{ start := (chapterPage - 1) * chaptersPerPage }}
@@ -1182,7 +1182,7 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 				}
 			</div>
 			if totalPages > 1 {
-				<div class="grid grid-cols-3 gap-2 uk-margin-top">
+				<div class="grid grid-cols-3 gap-2 mt-4">
 					<div class="text-left">
 						if chapterPage > 1 {
 							<button class="uk-btn uk-btn-default" hx-get={ fmt.Sprintf("/series/%s/poster/selector?page=%d", mangaSlug, chapterPage-1) } hx-target="#poster-selector-content" hx-swap="outerHTML">Prev</button>
@@ -1496,7 +1496,7 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 			/>
 		</div>
 		<!-- Buttons always visible at bottom -->
-		<div class="uk-flex uk-flex-center gap-2 uk-margin-top poster-buttons-container">
+		<div class="uk-flex uk-flex-center gap-2 mt-4 poster-buttons-container">
 			<button
 				type="button"
 				class="uk-btn uk-btn-default"

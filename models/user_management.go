@@ -83,6 +83,36 @@ func GetUsers() ([]User, error) {
 	return users, nil
 }
 
+// GetUsersByRole retrieves all users with a specific role
+func GetUsersByRole(role string) ([]User, error) {
+	query := `
+	SELECT username, password, role, banned, avatar, created_at
+	FROM users
+	WHERE role = ?
+	`
+
+	rows, err := db.Query(query, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 // UserSearchOptions holds options for user search and pagination
 type UserSearchOptions struct {
 	Filter   string

@@ -196,11 +196,6 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Comments
 	api.Delete("/comments/:id", AuthMiddleware("reader"), HandleDeleteComment)
 
-	apiAdmin := api.Group("/admin", AuthMiddleware("admin"))
-	apiAdmin.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
-	apiAdmin.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
-	apiAdmin.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
-
 	// ========================================
 	// Captcha Routes
 	// ========================================
@@ -219,6 +214,13 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Get("/top-read-card", HandleTopReadCard)
 	app.Get("/external/callback/mal", HandleMALCallback)
 	app.Get("/external/callback/anilist", HandleAniListCallback)
+
+	// ========================================
+	// Issue Reporting Routes
+	// ========================================
+	app.Get("/report-issue", HandleReportIssue)
+	app.Post("/report-issue", OptionalAuthMiddleware(), HandleCreateIssue)
+	app.Get("/report-issue/success", HandleReportIssueSuccess)
 
 	// ========================================
 	// Authentication Routes
@@ -472,6 +474,16 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Duplicate Detection
 	// ========================================
 	app.Get("/admin/duplicates", AuthMiddleware("admin"), HandleBetter)
+
+	// ========================================
+	// Issue Management
+	// ========================================
+	app.Get("/admin/issues", AuthMiddleware("admin"), HandleIssuesAdmin)
+	apiAdmin := app.Group("/admin", AuthMiddleware("admin"))
+	apiAdmin.Put("/issues/:id/status", HandleUpdateIssueStatus)
+	apiAdmin.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
+	apiAdmin.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
+	apiAdmin.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
 
 	// ========================================
 	// Configuration

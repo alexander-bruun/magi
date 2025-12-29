@@ -661,7 +661,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</div><div class=\"uk-margin-top uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1524,7 +1524,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div><div class=\"uk-margin-top uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> Assign to Selected Users</button></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> Assign to Selected Users</button></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

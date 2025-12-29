@@ -46,40 +46,56 @@ type UserNotification struct {
 	Message     string    `json:"message"`
 	IsRead      bool      `json:"is_read"`
 	CreatedAt   time.Time `json:"created_at"`
+	Type        string    `json:"type"` // "chapter" or "admin_issue"
 }
 
 // CreateUserNotification creates a new notification for a user about a new chapter
 func CreateUserNotification(userName, mangaSlug, chapterSlug, message string) error {
+	return CreateUserNotificationWithType(userName, mangaSlug, chapterSlug, message, "chapter")
+}
+
+// CreateUserNotificationWithType creates a new notification for a user with a specific type
+func CreateUserNotificationWithType(userName, mediaSlug, chapterSlug, message, notificationType string) error {
 	query := `
-	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at)
-	VALUES (?, ?, ?, ?, 0, ?)
+	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at, type)
+	VALUES (?, ?, ?, ?, 0, ?, ?)
 	`
 
 	createdAt := time.Now().Unix()
-	_, err := db.Exec(query, userName, mangaSlug, chapterSlug, message, createdAt)
+	_, err := db.Exec(query, userName, mediaSlug, chapterSlug, message, createdAt, notificationType)
 	return err
+}
+
+// CreateAdminNotification creates a new admin notification for moderators/admins
+func CreateAdminNotification(userName, message string) error {
+	return CreateUserNotificationWithType(userName, "admin", "", message, "admin_issue")
 }
 
 // CreateUserNotificationTx creates a new notification for a user about a new chapter within a transaction
 func CreateUserNotificationTx(tx *sql.Tx, userName, mangaSlug, chapterSlug, message string) error {
+	return CreateUserNotificationTxWithType(tx, userName, mangaSlug, chapterSlug, message, "chapter")
+}
+
+// CreateUserNotificationTxWithType creates a new notification for a user with a specific type within a transaction
+func CreateUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, chapterSlug, message, notificationType string) error {
 	query := `
-	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at)
-	VALUES (?, ?, ?, ?, 0, ?)
+	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at, type)
+	VALUES (?, ?, ?, ?, 0, ?, ?)
 	`
 
 	createdAt := time.Now().Unix()
-	_, err := tx.Exec(query, userName, mangaSlug, chapterSlug, message, createdAt)
+	_, err := tx.Exec(query, userName, mediaSlug, chapterSlug, message, createdAt, notificationType)
 	return err
 }
 
 // GetUserNotifications retrieves all notifications for a user, optionally filtered by read status
 func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification, error) {
 	query := `
-	SELECT n.id, n.user_name, n.media_slug, n.chapter_slug, n.message, n.is_read, n.created_at,
-	       m.name as manga_name, c.name as chapter_name
+	SELECT n.id, n.user_name, n.media_slug, n.chapter_slug, n.message, n.is_read, n.created_at, n.type,
+	       COALESCE(m.name, '') as manga_name, COALESCE(c.name, '') as chapter_name
 	FROM user_notifications n
-	LEFT JOIN media m ON n.media_slug = m.slug
-	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.media_slug = c.media_slug
+	LEFT JOIN media m ON n.media_slug = m.slug AND n.type = 'chapter'
+	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.media_slug = c.media_slug AND n.type = 'chapter'
 	WHERE n.user_name = ?
 	`
 
@@ -99,18 +115,16 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 	for rows.Next() {
 		var n UserNotification
 		var createdAt int64
-		var mangaName, chapterName *string
+		var mangaName, chapterName string
 
-		if err := rows.Scan(&n.ID, &n.UserName, &n.MediaSlug, &n.ChapterSlug, &n.Message, &n.IsRead, &createdAt, &mangaName, &chapterName); err != nil {
+		if err := rows.Scan(&n.ID, &n.UserName, &n.MediaSlug, &n.ChapterSlug, &n.Message, &n.IsRead, &createdAt, &n.Type, &mangaName, &chapterName); err != nil {
 			return nil, err
 		}
 
 		n.CreatedAt = time.Unix(createdAt, 0)
-		if mangaName != nil {
-			n.MangaName = *mangaName
-		}
-		if chapterName != nil {
-			n.ChapterName = *chapterName
+		if n.Type == "chapter" {
+			n.MangaName = mangaName
+			n.ChapterName = chapterName
 		}
 
 		notifications = append(notifications, n)

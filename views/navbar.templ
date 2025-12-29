@@ -37,6 +37,46 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 						</div>
 					</div>
 				</div>
+				<div id="report-issue-modal" uk-modal role="dialog" aria-labelledby="report-issue-modal-title" aria-modal="true">
+					<div class="uk-modal-dialog uk-modal-body">
+						<h2 id="report-issue-modal-title" class="uk-modal-title">Report Issue</h2>
+						<form hx-post="/report-issue" hx-target="#report-issue-modal .uk-modal-body" hx-swap="innerHTML" hx-on:htmx:after-request="if (event.detail.xhr.status === 200) { UIkit.modal('#report-issue-modal').hide(); }">
+							<div class="uk-margin">
+								<label class="uk-form-label" for="issue-title">Title</label>
+								<input class="uk-input" id="issue-title" name="title" type="text" placeholder="Brief description of the issue" required>
+							</div>
+							<div class="uk-margin">
+								<label class="uk-form-label" for="issue-category">Category</label>
+								<select class="uk-select" id="issue-category" name="category">
+									<option value="bug">Bug Report</option>
+									<option value="feature">Feature Request</option>
+									<option value="improvement">Improvement</option>
+									<option value="question">Question</option>
+								</select>
+							</div>
+							<div class="uk-margin">
+								<label class="uk-form-label" for="issue-priority">Priority</label>
+								<select class="uk-select" id="issue-priority" name="priority">
+									<option value="low">Low</option>
+									<option value="medium">Medium</option>
+									<option value="high">High</option>
+									<option value="critical">Critical</option>
+								</select>
+							</div>
+							<div class="uk-margin">
+								<label class="uk-form-label" for="issue-description">Description</label>
+								<textarea class="uk-textarea" id="issue-description" name="description" rows="5" placeholder="Please provide detailed information about the issue..." required></textarea>
+							</div>
+							<p class="uk-text-meta uk-margin-small">
+								Your report will be stored locally and can be reviewed by administrators.
+							</p>
+							<div class="uk-margin uk-text-right">
+								<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
+								<button class="uk-btn uk-btn-primary" type="submit">Submit Report</button>
+							</div>
+						</form>
+					</div>
+				</div>
 				if userRole != "" {
 					<div class="uk-navbar-item">
 						<div class="uk-inline">
@@ -46,6 +86,19 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 									<span id="notification-badge" class="notification-badge">{ unreadCount }</span>
 								} else {
 									<span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+								}
+								{{
+									hasAdminNotification := false
+									for _, n := range notifications {
+										if n.Type == "admin_issue" && !n.IsRead {
+											hasAdminNotification = true
+										}
+									}
+								}}
+								if hasAdminNotification {
+									<span class="admin-notification-indicator">
+										<uk-icon icon="CircleAlert" ratio="0.6"></uk-icon>
+									</span>
 								}
 							</button>
 							<div class="uk-card uk-card-body uk-drop notification-dropdown" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
@@ -63,13 +116,23 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 											<div class="notification-item uk-card uk-card-small uk-card-body mb-2 unread" data-id="{ notification.ID }">
 												<div class="flex gap-2">
 													<div class="flex-1">
-														<a href={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
-														   hx-get={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
-														   hx-target="#content" 
-														   class="block text-inherit no-underline hover:text-primary">
-															<p class="uk-text-small uk-margin-small">{ notification.Message }</p>
-															<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
-														</a>
+														if notification.Type == "admin_issue" {
+															<a href="/admin/issues" 
+															   hx-get="/admin/issues" 
+															   hx-target="#content" 
+															   class="block text-inherit no-underline hover:text-primary">
+																<p class="uk-text-small uk-margin-small">{ notification.Message }</p>
+																<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
+															</a>
+														} else {
+															<a href={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
+															   hx-get={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
+															   hx-target="#content" 
+															   class="block text-inherit no-underline hover:text-primary">
+																<p class="uk-text-small uk-margin-small">{ notification.Message }</p>
+																<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
+															</a>
+														}
 													</div>
 													<button class="uk-btn uk-btn-secondary btn-circular" hx-post={ templ.SafeURL(fmt.Sprintf("/api/notifications/%d/read", notification.ID)) } hx-target="closest .notification-item" hx-swap="delete" hx-on:htmx:after-request="fetch('/api/notifications/unread-count').then(r => r.json()).then(d => { const badge = document.getElementById('notification-badge'); if (badge) { if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; } } if (d.count == 0) { const btn = document.getElementById('mark-all-read'); if (btn) btn.style.display = 'none'; } })" title="Mark as read">
 														<uk-icon icon="X" class="w-4 h-4"></uk-icon>
@@ -159,6 +222,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 							<li class="uk-nav-header">Moderator</li>
 							<li><a href="/admin/users"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
 							<li><a href="/admin/permissions"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
+							<li><a href="/admin/issues"><uk-icon icon="Bug" class="icon-pad"></uk-icon>Issues</a></li>
 							<li><a href="/admin/duplicates"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
 							<li><a href="/admin/scraper"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
 						}
@@ -200,6 +264,9 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 					<div data-uk-spinner></div>
 				</div>
 			}
+			<button class="uk-btn uk-btn-default" uk-toggle="target: #report-issue-modal" aria-label="Report issue">
+				<uk-icon icon="Bug"></uk-icon>
+			</button>
 			<a class="uk-btn uk-btn-default" href="https://github.com/sponsors/alexander-bruun" aria-label="Sponsor project">
 				<uk-icon icon="heart"></uk-icon>
 			</a>

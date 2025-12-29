@@ -2827,7 +2827,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin-top uk-margin-bottom\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 267, " found):</strong></label><div class=\"grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 uk-margin-bottom\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2899,7 +2899,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			return templ_7745c5c3_Err
 		}
 		if totalPages > 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "<div class=\"grid grid-cols-3 gap-2 uk-margin-top\"><div class=\"text-left\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 275, "<div class=\"grid grid-cols-3 gap-2 mt-4\"><div class=\"text-left\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -3129,7 +3129,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 299, "\" alt=\"Poster preview\" class=\"poster-crop-image\"></div><!-- Buttons always visible at bottom --><div class=\"uk-flex uk-flex-center gap-2 uk-margin-top poster-buttons-container\"><button type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 299, "\" alt=\"Poster preview\" class=\"poster-crop-image\"></div><!-- Buttons always visible at bottom --><div class=\"uk-flex uk-flex-center gap-2 mt-4 poster-buttons-container\"><button type=\"button\" class=\"uk-btn uk-btn-default\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
