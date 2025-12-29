@@ -1,5 +1,5 @@
 -- Create the highlights table
-CREATE TABLE highlights (
+CREATE TABLE IF NOT EXISTS highlights (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     media_slug TEXT NOT NULL UNIQUE,
     background_image_url TEXT,

@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS scraper_execution_logs (
     FOREIGN KEY (script_id) REFERENCES scraper_scripts(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_scraper_execution_logs_script_id ON scraper_execution_logs(script_id);
-CREATE INDEX idx_scraper_execution_logs_start_time ON scraper_execution_logs(start_time DESC);
-CREATE INDEX idx_scraper_execution_logs_status ON scraper_execution_logs(status);
+CREATE INDEX IF NOT EXISTS idx_scraper_execution_logs_script_id ON scraper_execution_logs(script_id);
+CREATE INDEX IF NOT EXISTS idx_scraper_execution_logs_start_time ON scraper_execution_logs(start_time DESC);
+CREATE INDEX IF NOT EXISTS idx_scraper_execution_logs_status ON scraper_execution_logs(status);

@@ -32,8 +32,8 @@ func TestContentRatingToInt(t *testing.T) {
 
 func TestIsContentRatingAllowed(t *testing.T) {
 	tests := []struct {
-		rating string
-		limit  int
+		rating   string
+		limit    int
 		expected bool
 	}{
 		{"safe", 0, true},
@@ -94,20 +94,15 @@ func TestLoadConfigFromDB(t *testing.T) {
 	// Mock successful query with all fields
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
-			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
-			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
-			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
-			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message", "new_badge_duration",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality", "admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 100, 2, "mangadex", "mal-token", "anilist-token",
+			1, 100, 2, "mangadex", "mal-token", "anilist-token", "secret-key",
+			1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
 			5, 3600, 3, 0,
 			0, `We are currently performing maintenance. Please check back later.`, 48))
-
 
 	config, err := loadConfigFromDB()
 	assert.NoError(t, err)
@@ -136,6 +131,11 @@ func TestLoadConfigFromDB(t *testing.T) {
 	assert.Equal(t, false, config.PremiumCooldownScalingEnabled)
 	assert.Equal(t, false, config.MaintenanceEnabled)
 	assert.Equal(t, `We are currently performing maintenance. Please check back later.`, config.MaintenanceMessage)
+	assert.Equal(t, "secret-key", config.ImageAccessSecret)
+	assert.Equal(t, true, config.StripeEnabled)
+	assert.Equal(t, "pk_test", config.StripePublishableKey)
+	assert.Equal(t, "sk_test", config.StripeSecretKey)
+	assert.Equal(t, "whsec_test", config.StripeWebhookSecret)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -201,18 +201,15 @@ func TestGetAppConfig_CacheMiss(t *testing.T) {
 	// Mock successful query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
-			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
-			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
-			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
-			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message", "new_badge_duration",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality", "admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			0, 50, 1, "mal", "mal-token", "anilist-token",
+			0, 50, 1, "mal", "mal-token", "anilist-token", "secret-key",
+			1, "pk_test", "sk_test", "whsec_test",
 			0, 200, 120, 0, 10,
 			20, 120, 80, 90,
 			100, 95, 75, 90,
-			10, 7200, 5, 1, 0, `We are currently performing maintenance. Please check back later.`, 48))
+			10, 7200, 5, 1,
+			0, `We are currently performing maintenance. Please check back later.`, 48))
 
 	config, err := GetAppConfig()
 	assert.NoError(t, err)
@@ -229,9 +226,9 @@ func TestGetAppConfig_CacheHit(t *testing.T) {
 	configMu.Lock()
 	cachedConfig = AppConfig{
 		AllowRegistration:  true,
-		MaxUsers:          25,
+		MaxUsers:           25,
 		ContentRatingLimit: 0,
-		MetadataProvider:  "jikan",
+		MetadataProvider:   "jikan",
 	}
 	configCacheTime = time.Now()
 	configMu.Unlock()
@@ -280,14 +277,10 @@ func TestRefreshAppConfig(t *testing.T) {
 	// Mock successful query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
-			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
-			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
-			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
-			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message", "new_badge_duration",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality", "admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 75, 2, "anilist", "mal-token-2", "anilist-token-2",
+			1, 75, 2, "anilist", "mal-token-2", "anilist-token-2", "secret-key",
+			1, "pk_test", "sk_test", "whsec_test",
 			1, 150, 90, 1, 8,
 			15, 90, 75, 88,
 			100, 92, 72, 88,
@@ -321,14 +314,10 @@ func TestUpdateAppConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
-			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
-			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
-			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
-			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
-			"maintenance_enabled", "maintenance_message", "new_badge_duration",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality", "admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 200, 1, "mangadex", "", "",
+			1, 200, 1, "mangadex", "", "", "secret-key",
+			1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -360,14 +349,14 @@ func TestUpdateAppConfig_ContentRatingBounds(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			0, 0, 0, "mangadex", "", "",
+			0, 0, 0, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -384,14 +373,14 @@ func TestUpdateAppConfig_ContentRatingBounds(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			0, 0, 3, "mangadex", "", "",
+			0, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -421,14 +410,14 @@ func TestUpdateRateLimitConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			0, 250, 180, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -461,14 +450,14 @@ func TestUpdateCompressionConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 75, 88,
 			100, 95, 72, 90,
@@ -503,14 +492,14 @@ func TestUpdateCompressionConfig_Bounds(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 0, 0,
 			100, 90, 70, 85,
@@ -540,14 +529,14 @@ func TestUpdatePremiumEarlyAccessConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -577,14 +566,14 @@ func TestUpdatePremiumEarlyAccessConfig_Negative(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -614,14 +603,14 @@ func TestUpdateMaxPremiumChaptersConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -650,14 +639,14 @@ func TestUpdateMaxPremiumChaptersConfig_Negative(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -686,14 +675,14 @@ func TestUpdatePremiumCooldownScalingConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -724,14 +713,14 @@ func TestUpdateMetadataConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mal", "new-mal-token", "new-anilist-token",
+			1, 0, 3, "mal", "new-mal-token", "new-anilist-token", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -763,14 +752,14 @@ func TestUpdateMetadataConfig_InvalidProvider(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "token", "token2",
+			1, 0, 3, "mangadex", "token", "token2", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -800,14 +789,14 @@ func TestUpdateBotDetectionConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 0, 15,
 			25, 120, 70, 85,
 			100, 90, 70, 85,
@@ -841,14 +830,14 @@ func TestUpdateImageTokenConfig(t *testing.T) {
 	// Mock the refresh query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -878,14 +867,14 @@ func TestUpdateImageTokenConfig_Bounds(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -902,14 +891,14 @@ func TestUpdateImageTokenConfig_Bounds(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -937,14 +926,14 @@ func TestGetCompressionQualityForRole(t *testing.T) {
 	// Mock successful query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 75, 88,
 			95, 92, 78, 87,
@@ -1027,14 +1016,14 @@ func TestGetImageTokenValidityMinutes(t *testing.T) {
 	// Mock successful query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 85,
@@ -1085,14 +1074,14 @@ func TestGetProcessedImageQuality(t *testing.T) {
 	// Mock successful query
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,.*FROM app_config WHERE id = 1`).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token",
+			"allow_registration", "max_users", "content_rating_limit", "metadata_provider", "mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret",
 			"rate_limit_enabled", "rate_limit_requests", "rate_limit_window", "bot_detection_enabled", "bot_series_threshold",
 			"bot_chapter_threshold", "bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality", "processed_image_quality",
 			"image_token_validity_minutes", "premium_early_access_duration", "max_premium_chapters", "premium_cooldown_scaling_enabled",
 			"maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, 0, 3, "mangadex", "", "",
+			1, 0, 3, "mangadex", "", "", "secret-key", 1, "pk_test", "sk_test", "whsec_test",
 			1, 100, 60, 1, 5,
 			10, 60, 70, 85,
 			100, 90, 70, 88,

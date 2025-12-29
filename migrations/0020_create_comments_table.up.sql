@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS comments (
     FOREIGN KEY(media_slug) REFERENCES media(slug) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_comments_target ON comments(target_type, target_slug);
-CREATE INDEX idx_comments_user ON comments(user_username);
-CREATE INDEX idx_comments_media_slug ON comments(media_slug);
+CREATE INDEX IF NOT EXISTS idx_comments_target ON comments(target_type, target_slug);
+CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_username);
+CREATE INDEX IF NOT EXISTS idx_comments_media_slug ON comments(media_slug);

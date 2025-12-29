@@ -1,5 +1,5 @@
 -- +migrate Up
-CREATE TABLE user_external_accounts (
+CREATE TABLE IF NOT EXISTS user_external_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_name TEXT NOT NULL,
     service_name TEXT NOT NULL, -- e.g., 'toraka', 'anilist', 'mal', 'mangadex'

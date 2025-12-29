@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS scraper_scripts (
     shared_script TEXT DEFAULT NULL
 );
 
-CREATE INDEX idx_scraper_scripts_name ON scraper_scripts(name);
-CREATE INDEX idx_scraper_scripts_enabled ON scraper_scripts(enabled);
+CREATE INDEX IF NOT EXISTS idx_scraper_scripts_name ON scraper_scripts(name);
+CREATE INDEX IF NOT EXISTS idx_scraper_scripts_enabled ON scraper_scripts(enabled);

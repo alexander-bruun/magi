@@ -1076,14 +1076,53 @@ func TestGetUsersWithOptions(t *testing.T) {
 
 	mock.ExpectQuery(`SELECT username, password, role, banned, avatar, created_at FROM users`).
 		WillReturnRows(rows1)
+	// Mock subscription queries for each user (no active subscriptions)
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user2").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("testuser").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+
 	mock.ExpectQuery(`SELECT username, password, role, banned, avatar, created_at FROM users`).
 		WillReturnRows(rows2)
+	// Mock subscription queries for each user (no active subscriptions)
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user2").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("testuser").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+
 	mock.ExpectQuery(`SELECT username, password, role, banned, avatar, created_at FROM users`).
 		WillReturnRows(rows3)
+	// Mock subscription queries for each user (no active subscriptions)
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user2").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("testuser").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+
 	mock.ExpectQuery(`SELECT username, password, role, banned, avatar, created_at FROM users`).
 		WillReturnRows(rows4)
+	// Mock subscription queries for each user (no active subscriptions)
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user2").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("testuser").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+
 	mock.ExpectQuery(`SELECT username, password, role, banned, avatar, created_at FROM users`).
 		WillReturnRows(rows5)
+	// Mock subscription queries for each user (no active subscriptions)
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("user2").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
+	mock.ExpectQuery(`SELECT id, username, stripe_customer_id, stripe_subscription_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at FROM user_subscriptions WHERE username = \? AND status = 'active' ORDER BY created_at DESC LIMIT 1`).
+		WithArgs("testuser").WillReturnRows(sqlmock.NewRows([]string{"id", "username", "stripe_customer_id", "stripe_subscription_id", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "created_at", "updated_at"}))
 
 	// Test without filter
 	users, total, err := GetUsersWithOptions(UserSearchOptions{Page: 1, PageSize: 10})

@@ -18,7 +18,7 @@ func TestCreateUserNotification(t *testing.T) {
 	defer func() { db = originalDB }()
 
 	mock.ExpectExec(`INSERT INTO user_notifications`).
-		WithArgs("testuser", "manga1", "chapter1", "New chapter available", sqlmock.AnyArg()).
+		WithArgs("testuser", "manga1", "chapter1", "New chapter available", sqlmock.AnyArg(), "chapter").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = CreateUserNotification("testuser", "manga1", "chapter1", "New chapter available")
@@ -36,11 +36,11 @@ func TestGetUserNotifications(t *testing.T) {
 	db = mockDB
 	defer func() { db = originalDB }()
 
-	rows := sqlmock.NewRows([]string{"id", "user_name", "media_slug", "chapter_slug", "message", "is_read", "created_at", "manga_name", "chapter_name"}).
-		AddRow(1, "testuser", "manga1", "chapter1", "New chapter", false, 1640995200, "Manga One", "Chapter 1").
-		AddRow(2, "testuser", "manga2", "chapter2", "Another chapter", true, 1641081600, "Manga Two", "Chapter 2")
+	rows := sqlmock.NewRows([]string{"id", "user_name", "media_slug", "chapter_slug", "message", "is_read", "created_at", "type", "manga_name", "chapter_name"}).
+		AddRow(1, "testuser", "manga1", "chapter1", "New chapter", false, 1640995200, "chapter", "Manga One", "Chapter 1").
+		AddRow(2, "testuser", "manga2", "chapter2", "Another chapter", true, 1641081600, "chapter", "Manga Two", "Chapter 2")
 
-	mock.ExpectQuery(`SELECT n\.id, n\.user_name, n\.media_slug, n\.chapter_slug, n\.message, n\.is_read, n\.created_at, m\.name as manga_name, c\.name as chapter_name FROM user_notifications n LEFT JOIN media m ON n\.media_slug = m\.slug LEFT JOIN chapters c ON n\.chapter_slug = c\.slug AND n\.media_slug = c\.media_slug WHERE n\.user_name = \? ORDER BY n\.created_at DESC LIMIT 50`).
+	mock.ExpectQuery(`SELECT n\.id, n\.user_name, n\.media_slug, n\.chapter_slug, n\.message, n\.is_read, n\.created_at, n\.type, COALESCE\(m\.name, ''\) as manga_name, COALESCE\(c\.name, ''\) as chapter_name FROM user_notifications n LEFT JOIN media m ON n\.media_slug = m\.slug AND n\.type = 'chapter' LEFT JOIN chapters c ON n\.chapter_slug = c\.slug AND n\.media_slug = c\.media_slug AND n\.type = 'chapter' WHERE n\.user_name = \? ORDER BY n\.created_at DESC LIMIT 50`).
 		WithArgs("testuser").
 		WillReturnRows(rows)
 
@@ -197,7 +197,7 @@ func TestNotifyUsersOfNewChapters(t *testing.T) {
 
 	// Mock CreateUserNotificationTx calls for user1
 	mock.ExpectExec(`INSERT INTO user_notifications`).
-		WithArgs("user1", "manga1", "ch1", "New chapters available: Chapter 1, Chapter 2", sqlmock.AnyArg()).
+		WithArgs("user1", "manga1", "ch1", "New chapters available for Manga One: Chapter 1, Chapter 2", sqlmock.AnyArg(), "chapter").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Mock the exists query (no recent notification) for user2
@@ -207,13 +207,15 @@ func TestNotifyUsersOfNewChapters(t *testing.T) {
 
 	// Mock CreateUserNotificationTx calls for user2
 	mock.ExpectExec(`INSERT INTO user_notifications`).
-		WithArgs("user2", "manga1", "ch1", "New chapters available: Chapter 1, Chapter 2", sqlmock.AnyArg()).
+		WithArgs("user2", "manga1", "ch1", "New chapters available for Manga One: Chapter 1, Chapter 2", sqlmock.AnyArg(), "chapter").
 		WillReturnResult(sqlmock.NewResult(2, 1))
 
-	// Mock BundleNotificationsForUserTx calls
+	// Mock bundling queries for user1
 	mock.ExpectQuery(`SELECT media_slug, COUNT\(\*\) as count FROM user_notifications WHERE user_name = \? AND is_read = 0 GROUP BY media_slug HAVING COUNT\(\*\) > 1`).
 		WithArgs("user1").
 		WillReturnRows(sqlmock.NewRows([]string{"media_slug", "count"}))
+
+	// Mock bundling queries for user2
 	mock.ExpectQuery(`SELECT media_slug, COUNT\(\*\) as count FROM user_notifications WHERE user_name = \? AND is_read = 0 GROUP BY media_slug HAVING COUNT\(\*\) > 1`).
 		WithArgs("user2").
 		WillReturnRows(sqlmock.NewRows([]string{"media_slug", "count"}))
@@ -242,10 +244,17 @@ func TestBundleNotificationsForUser(t *testing.T) {
 		WithArgs("user1").
 		WillReturnRows(mediaRows)
 
+	// Mock GetMediaUnfiltered query
+	mediaDetailRows := sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at"}).
+		AddRow("manga1", "Manga One", "Author", "Description", 2023, "en", "manga", "ongoing", "safe", "lib1", "cover.jpg", "/path", 10, 1234567890, 1234567890)
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
+		WithArgs("manga1").
+		WillReturnRows(mediaDetailRows)
+
 	// Mock getting notification details
 	notifRows := sqlmock.NewRows([]string{"id", "chapter_slug", "message"}).
-		AddRow(1, "ch1", "New chapter available: Chapter 1").
-		AddRow(2, "ch2", "New chapter available: Chapter 2")
+		AddRow(1, "ch1", "New chapter available for Manga One: Chapter 1").
+		AddRow(2, "ch2", "New chapter available for Manga One: Chapter 2")
 	mock.ExpectQuery(`SELECT id, chapter_slug, message FROM user_notifications WHERE user_name = \? AND media_slug = \? AND is_read = 0 ORDER BY created_at ASC`).
 		WithArgs("user1", "manga1").
 		WillReturnRows(notifRows)
@@ -265,7 +274,7 @@ func TestBundleNotificationsForUser(t *testing.T) {
 
 	// Mock creating bundled notification
 	mock.ExpectExec(`INSERT INTO user_notifications`).
-		WithArgs("user1", "manga1", "ch1", "New chapters available: Chapter 1, Chapter 2", sqlmock.AnyArg()).
+		WithArgs("user1", "manga1", "ch1", "New chapters available for Manga One: Chapter 1, Chapter 2", sqlmock.AnyArg(), "chapter").
 		WillReturnResult(sqlmock.NewResult(3, 1))
 
 	err = BundleNotificationsForUser("user1")
@@ -295,10 +304,17 @@ func TestBundleNotificationsForUserTx(t *testing.T) {
 		WithArgs("user1").
 		WillReturnRows(mediaRows)
 
+	// Mock GetMediaUnfiltered query
+	mediaDetailRows := sqlmock.NewRows([]string{"slug", "name", "author", "description", "year", "original_language", "type", "status", "content_rating", "library_slug", "cover_art_url", "path", "file_count", "created_at", "updated_at"}).
+		AddRow("manga1", "Manga One", "Author", "Description", 2023, "en", "manga", "ongoing", "safe", "lib1", "cover.jpg", "/path", 10, 1234567890, 1234567890)
+	mock.ExpectQuery(`SELECT m\.slug, m\.name, m\.author, m\.description, m\.year, m\.original_language, m\.type, m\.status, m\.content_rating, m\.library_slug, m\.cover_art_url, m\.path, m\.file_count, m\.created_at, m\.updated_at FROM media m JOIN libraries l ON m\.library_slug = l\.slug WHERE m\.slug = \? AND l\.enabled = 1`).
+		WithArgs("manga1").
+		WillReturnRows(mediaDetailRows)
+
 	// Mock getting notification details
 	notifRows := sqlmock.NewRows([]string{"id", "chapter_slug", "message"}).
-		AddRow(1, "ch1", "New chapter available: Chapter 1").
-		AddRow(2, "ch2", "New chapter available: Chapter 2")
+		AddRow(1, "ch1", "New chapter available for Manga One: Chapter 1").
+		AddRow(2, "ch2", "New chapter available for Manga One: Chapter 2")
 	mock.ExpectQuery(`SELECT id, chapter_slug, message FROM user_notifications WHERE user_name = \? AND media_slug = \? AND is_read = 0 ORDER BY created_at ASC`).
 		WithArgs("user1", "manga1").
 		WillReturnRows(notifRows)
@@ -318,7 +334,7 @@ func TestBundleNotificationsForUserTx(t *testing.T) {
 
 	// Mock creating bundled notification
 	mock.ExpectExec(`INSERT INTO user_notifications`).
-		WithArgs("user1", "manga1", "ch1", "New chapters available: Chapter 1, Chapter 2", sqlmock.AnyArg()).
+		WithArgs("user1", "manga1", "ch1", "New chapters available for Manga One: Chapter 1, Chapter 2", sqlmock.AnyArg(), "chapter").
 		WillReturnResult(sqlmock.NewResult(3, 1))
 
 	err = BundleNotificationsForUserTx(tx, "user1")

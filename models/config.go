@@ -88,6 +88,7 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(metadata_provider, 'mangadex'), 
         COALESCE(mal_api_token, ''), 
         COALESCE(anilist_api_token, ''),
+        COALESCE(image_access_secret, ''),
         COALESCE(stripe_enabled, 0),
         COALESCE(stripe_publishable_key, ''),
         COALESCE(stripe_secret_key, ''),
@@ -119,6 +120,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var metadataProvider string
 	var malApiToken string
 	var anilistApiToken string
+	var imageAccessSecret string
 	var stripeEnabled int
 	var stripePublishableKey string
 	var stripeSecretKey string
@@ -144,7 +146,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var maintenanceMessage string
 	var newBadgeDuration int
 
-	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken,
+	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
@@ -157,6 +159,7 @@ func loadConfigFromDB() (AppConfig, error) {
 				MetadataProvider:              "mangadex",
 				MALApiToken:                   "",
 				AniListApiToken:               "",
+				ImageAccessSecret:             "",
 				StripeEnabled:                 false,
 				StripePublishableKey:          "",
 				StripeSecretKey:               "",
@@ -193,6 +196,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		MetadataProvider:              metadataProvider,
 		MALApiToken:                   malApiToken,
 		AniListApiToken:               anilistApiToken,
+		ImageAccessSecret:             imageAccessSecret,
 		StripeEnabled:                 stripeEnabled == 1,
 		StripePublishableKey:          stripePublishableKey,
 		StripeSecretKey:               stripeSecretKey,

@@ -27,12 +27,16 @@ CREATE TABLE IF NOT EXISTS app_config (
     premium_cooldown_scaling_enabled INTEGER NOT NULL DEFAULT 0,
     maintenance_enabled INTEGER NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
     maintenance_message TEXT NOT NULL DEFAULT 'We are currently performing maintenance. Please check back later.', -- Custom maintenance message
-    new_badge_duration INTEGER NOT NULL DEFAULT 48 -- Duration in hours that media is marked as NEW after update
+    new_badge_duration INTEGER NOT NULL DEFAULT 48, -- Duration in hours that media is marked as NEW after update
+    stripe_enabled INTEGER NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
+    stripe_publishable_key TEXT NOT NULL DEFAULT '',
+    stripe_secret_key TEXT NOT NULL DEFAULT '',
+    stripe_webhook_secret TEXT NOT NULL DEFAULT ''
 );
 
 -- Ensure exactly one row exists (id = 1)
 INSERT INTO app_config (id, allow_registration, max_users, content_rating_limit, metadata_provider, mal_api_token, anilist_api_token, 
     rate_limit_enabled, rate_limit_requests, rate_limit_window, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window,
-    image_access_secret, reader_compression_quality, moderator_compression_quality, admin_compression_quality, premium_compression_quality, anonymous_compression_quality, processed_image_quality, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration)
-SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 1, 5, 10, 60, '', 70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 0, 'We are currently performing maintenance. Please check back later.', 48
+    image_access_secret, reader_compression_quality, moderator_compression_quality, admin_compression_quality, premium_compression_quality, anonymous_compression_quality, processed_image_quality, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret)
+SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 1, 5, 10, 60, '', 70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', ''
 WHERE NOT EXISTS (SELECT 1 FROM app_config WHERE id = 1);

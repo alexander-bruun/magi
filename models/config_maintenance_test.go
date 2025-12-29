@@ -12,12 +12,12 @@ import (
 // TestUpdateMaintenanceConfig tests the UpdateMaintenanceConfig function
 func TestUpdateMaintenanceConfig(t *testing.T) {
 	tests := []struct {
-		name              string
-		enabled           bool
-		message           string
-		expectedEnabled   bool
-		expectedMessage   string
-		shouldError       bool
+		name            string
+		enabled         bool
+		message         string
+		expectedEnabled bool
+		expectedMessage string
+		shouldError     bool
 	}{
 		{
 			name:            "Enable maintenance with custom message",
@@ -94,14 +94,15 @@ func TestUpdateMaintenanceConfig(t *testing.T) {
 			mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,`).
 				WillReturnRows(sqlmock.NewRows([]string{
 					"allow_registration", "max_users", "content_rating_limit", "metadata_provider",
-					"mal_api_token", "anilist_api_token", "rate_limit_enabled", "rate_limit_requests",
+					"mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key",
+					"stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests",
 					"rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold",
 					"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 					"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 					"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
 					"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 				}).AddRow(
-					1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
+					1, int64(0), 3, "mangadex", "", "", "", 0, "", "", "", 1, 100, 60, 1, 5, 10, 60,
 					70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, enabledInt, tt.message, 48,
 				))
 
@@ -140,14 +141,15 @@ func TestGetMaintenanceStatus(t *testing.T) {
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,`).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"allow_registration", "max_users", "content_rating_limit", "metadata_provider",
-			"mal_api_token", "anilist_api_token", "rate_limit_enabled", "rate_limit_requests",
+			"mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key",
+			"stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests",
 			"rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold",
 			"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
 			"processed_image_quality", "image_token_validity_minutes", "premium_early_access_duration",
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message", "new_badge_duration",
 		}).AddRow(
-			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
+			1, int64(0), 3, "mangadex", "", "", "", 0, "", "", "", 1, 100, 60, 1, 5, 10, 60,
 			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "Test maintenance message", 48,
 		))
 
@@ -179,7 +181,8 @@ func TestGetMaintenanceStatusDisabled(t *testing.T) {
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,`).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"allow_registration", "max_users", "content_rating_limit", "metadata_provider",
-			"mal_api_token", "anilist_api_token", "rate_limit_enabled", "rate_limit_requests",
+			"mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key",
+			"stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests",
 			"rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold",
 			"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
@@ -187,7 +190,7 @@ func TestGetMaintenanceStatusDisabled(t *testing.T) {
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
 			"new_badge_duration",
 		}).AddRow(
-			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
+			1, int64(0), 3, "mangadex", "", "", "", 0, "", "", "", 1, 100, 60, 1, 5, 10, 60,
 			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 0, "Default message", 48,
 		))
 
@@ -223,7 +226,8 @@ func TestMaintenanceMessageWithSpecialChars(t *testing.T) {
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,`).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"allow_registration", "max_users", "content_rating_limit", "metadata_provider",
-			"mal_api_token", "anilist_api_token", "rate_limit_enabled", "rate_limit_requests",
+			"mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key",
+			"stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests",
 			"rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold",
 			"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
@@ -231,7 +235,7 @@ func TestMaintenanceMessageWithSpecialChars(t *testing.T) {
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
 			"new_badge_duration",
 		}).AddRow(
-			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
+			1, int64(0), 3, "mangadex", "", "", "", 0, "", "", "", 1, 100, 60, 1, 5, 10, 60,
 			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, testMessage, 48,
 		))
 
@@ -262,7 +266,8 @@ func TestMaintenanceMessageEmpty(t *testing.T) {
 	mock.ExpectQuery(`SELECT allow_registration, max_users, content_rating_limit,`).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"allow_registration", "max_users", "content_rating_limit", "metadata_provider",
-			"mal_api_token", "anilist_api_token", "rate_limit_enabled", "rate_limit_requests",
+			"mal_api_token", "anilist_api_token", "image_access_secret", "stripe_enabled", "stripe_publishable_key",
+			"stripe_secret_key", "stripe_webhook_secret", "rate_limit_enabled", "rate_limit_requests",
 			"rate_limit_window", "bot_detection_enabled", "bot_series_threshold", "bot_chapter_threshold",
 			"bot_detection_window", "reader_compression_quality", "moderator_compression_quality",
 			"admin_compression_quality", "premium_compression_quality", "anonymous_compression_quality",
@@ -270,7 +275,7 @@ func TestMaintenanceMessageEmpty(t *testing.T) {
 			"max_premium_chapters", "premium_cooldown_scaling_enabled", "maintenance_enabled", "maintenance_message",
 			"new_badge_duration",
 		}).AddRow(
-			1, int64(0), 3, "mangadex", "", "", 1, 100, 60, 1, 5, 10, 60,
+			1, int64(0), 3, "mangadex", "", "", "", 0, "", "", "", 1, 100, 60, 1, 5, 10, 60,
 			70, 85, 100, 90, 70, 85, 5, 3600, 3, 0, 1, "", 48,
 		))
 
@@ -280,4 +285,3 @@ func TestMaintenanceMessageEmpty(t *testing.T) {
 	assert.Equal(t, "", cfg.MaintenanceMessage)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
-

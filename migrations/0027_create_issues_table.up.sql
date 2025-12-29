@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS issues (
     FOREIGN KEY(user_username) REFERENCES users(username) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_issues_status ON issues(status);
-CREATE INDEX idx_issues_user ON issues(user_username);
-CREATE INDEX idx_issues_created_at ON issues(created_at);
+CREATE INDEX IF NOT EXISTS idx_issues_status ON issues(status);
+CREATE INDEX IF NOT EXISTS idx_issues_user ON issues(user_username);
+CREATE INDEX IF NOT EXISTS idx_issues_created_at ON issues(created_at);

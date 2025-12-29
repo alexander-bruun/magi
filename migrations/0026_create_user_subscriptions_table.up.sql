@@ -1,5 +1,5 @@
 -- +migrate Up
-CREATE TABLE user_subscriptions (
+CREATE TABLE IF NOT EXISTS user_subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
     stripe_customer_id TEXT,
@@ -13,7 +13,7 @@ CREATE TABLE user_subscriptions (
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_user_subscriptions_username ON user_subscriptions(username);
-CREATE INDEX idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
-CREATE INDEX idx_user_subscriptions_stripe_subscription_id ON user_subscriptions(stripe_subscription_id);
-CREATE INDEX idx_user_subscriptions_status ON user_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_username ON user_subscriptions(username);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_subscription_id ON user_subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status);
