@@ -115,7 +115,7 @@ func EditCollectionModal(collection models.Collection) templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-modal-header\" style=\"display: flex; justify-content: space-between; align-items: center;\"><h2 class=\"uk-modal-title\">Edit Collection</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><form hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-modal-header modal-header\"><h2 class=\"uk-modal-title\">Edit Collection</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

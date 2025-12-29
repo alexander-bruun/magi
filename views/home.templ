@@ -106,13 +106,13 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 }
 
 templ TopReadFragment(media []models.Media, emptyMessage string, title string) {
-	<div style="overflow-x: auto;">
-		<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap;">
-			<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" style="cursor: pointer;">Today</a></li>
-			<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" style="cursor: pointer;">Week</a></li>
-			<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" style="cursor: pointer;">Month</a></li>
-			<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" style="cursor: pointer;">Year</a></li>
-			<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" style="cursor: pointer;">All Time</a></li>
+	<div class="tab-nav-overflow">
+		<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list">
+			<li class="uk-active"><a hx-get="/top-read?period=today" hx-target="#top-read-content" class="tab-link">Today</a></li>
+			<li><a hx-get="/top-read?period=week" hx-target="#top-read-content" class="tab-link">Week</a></li>
+			<li><a hx-get="/top-read?period=month" hx-target="#top-read-content" class="tab-link">Month</a></li>
+			<li><a hx-get="/top-read?period=year" hx-target="#top-read-content" class="tab-link">Year</a></li>
+			<li><a hx-get="/top-read?period=all" hx-target="#top-read-content" class="tab-link">All Time</a></li>
 		</ul>
 	</div>
 	<div id="top-read-content">
@@ -154,13 +154,13 @@ templ TopPopularFragment(media []models.Media) {
 }
 
 templ TopPopularFullFragment(media []models.Media, activePeriod string) {
-	<div style="overflow-x: auto;">
-		<ul class="uk-tab" id="top-popular-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;">
-			<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-popular-full?period=today" hx-target="#top-popular-full" style="cursor: pointer;">Today</a></li>
-			<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-popular-full?period=week" hx-target="#top-popular-full" style="cursor: pointer;">Week</a></li>
-			<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-popular-full?period=month" hx-target="#top-popular-full" style="cursor: pointer;">Month</a></li>
-			<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-popular-full?period=year" hx-target="#top-popular-full" style="cursor: pointer;">Year</a></li>
-			<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-popular-full?period=all" hx-target="#top-popular-full" style="cursor: pointer;">All Time</a></li>
+	<div class="tab-nav-overflow">
+		<ul class="uk-tab" id="top-popular-subnav" class="tab-nav-list-centered">
+			<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-popular-full?period=today" hx-target="#top-popular-full" class="tab-link">Today</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-popular-full?period=week" hx-target="#top-popular-full" class="tab-link">Week</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-popular-full?period=month" hx-target="#top-popular-full" class="tab-link">Month</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-popular-full?period=year" hx-target="#top-popular-full" class="tab-link">Year</a></li>
+			<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-popular-full?period=all" hx-target="#top-popular-full" class="tab-link">All Time</a></li>
 		</ul>
 	</div>
 	<div id="top-popular-content">
@@ -202,13 +202,13 @@ templ Top10CardContent(activeTab string, activePeriod string, topMedias []models
 
 templ TopReadFullWrapper(media []models.Media, activePeriod string) {
 	<div id="top-read-full">
-		<div style="overflow-x: auto;">
-			<ul class="uk-tab" id="most-read-subnav" style="white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;">
-				<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-read-full?period=today" hx-target="#top-read-full" style="cursor: pointer;">Today</a></li>
-				<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-read-full?period=week" hx-target="#top-read-full" style="cursor: pointer;">Week</a></li>
-				<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-read-full?period=month" hx-target="#top-read-full" style="cursor: pointer;">Month</a></li>
-				<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-read-full?period=year" hx-target="#top-read-full" style="cursor: pointer;">Year</a></li>
-				<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-read-full?period=all" hx-target="#top-read-full" style="cursor: pointer;">All Time</a></li>
+		<div class="tab-nav-overflow">
+			<ul class="uk-tab" id="most-read-subnav" class="tab-nav-list-centered">
+				<li class={templ.KV("uk-active", activePeriod == "today")}><a href="#" hx-get="/top-read-full?period=today" hx-target="#top-read-full" class="tab-link">Today</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "week")}><a href="#" hx-get="/top-read-full?period=week" hx-target="#top-read-full" class="tab-link">Week</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "month")}><a href="#" hx-get="/top-read-full?period=month" hx-target="#top-read-full" class="tab-link">Month</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "year")}><a href="#" hx-get="/top-read-full?period=year" hx-target="#top-read-full" class="tab-link">Year</a></li>
+				<li class={templ.KV("uk-active", activePeriod == "all")}><a href="#" hx-get="/top-read-full?period=all" hx-target="#top-read-full" class="tab-link">All Time</a></li>
 			</ul>
 		</div>
 		<div id="top-read-content">
@@ -231,8 +231,8 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 					<a href={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } class="text-sm truncate block">{ chapter.Name }</a>
 					<div class="text-xs text-gray-400 mt-1">
 						if chapter.IsPremium {
-							<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
-								<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+							<span class="uk-badge badge-premium">
+								<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
 									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
 								</svg>
 								{ chapter.PremiumCountdown }
@@ -504,15 +504,15 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 										<span class="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0"></span>
 												<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } onclick="event.stopPropagation()" class={ "text-sm hover:text-blue-600 transition-colors truncate leading-tight", templ.KV("brand-gradient", chapter.Read) }>{ chapter.Name }</a>
 										if isNewUpdate(chapter.CreatedAt) {
-											<span class="uk-badge" style="background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.125rem 0.25rem; margin-left: 0.25rem; animation: pulse 1.5s ease-in-out infinite;">
+											<span class="uk-badge badge-new-margin">
 												NEW
 											</span>
 										}
 									</div>
 									<span class="text-sm text-gray-500 flex-shrink-0 whitespace-nowrap">
 										if chapter.IsPremium {
-											<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
-												<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+											<span class="uk-badge badge-premium">
+												<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
 													<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
 												</svg>
 												{ chapter.PremiumCountdown }

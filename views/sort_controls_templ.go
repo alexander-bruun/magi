@@ -435,7 +435,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</ul></div></div><!-- Search Input --><div class=\"uk-inline\" style=\"position: relative;\"><input id=\"search-input\" class=\"uk-input uk-form-small\" type=\"text\" name=\"search\" placeholder=\"Search by title...\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</ul></div></div><!-- Search Input --><div class=\"uk-inline search-input-container\"><input id=\"search-input\" class=\"uk-input uk-form-small search-input\" type=\"text\" name=\"search\" placeholder=\"Search by title...\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -448,14 +448,14 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" style=\"padding-right: 32px;\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 139, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 138, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -468,7 +468,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 140, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 139, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -479,14 +479,14 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 			return templ_7745c5c3_Err
 		}
 		if searchFilter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-small\" style=\"position: absolute; right: 2px; top: 50%; padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-small search-clear-btn\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 151, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 149, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -499,7 +499,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 152, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 150, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -541,7 +541,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 183, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 181, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -554,7 +554,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 184, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 182, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -567,7 +567,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"order":"%s", "page":"1"}`, toggled))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 186, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 184, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -618,7 +618,7 @@ func TagsDropdownButton(path string, targetID string, parentID string, currentSo
 			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-inline\" style=\"display:inline-block;\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center\" style=\"margin-bottom: 10px;\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -634,7 +634,7 @@ func TagsDropdownButton(path string, targetID string, parentID string, currentSo
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top\" style=\"max-height:300px; overflow:auto;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top tag-list-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -685,7 +685,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 237, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 235, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -698,7 +698,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 238, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 236, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -711,7 +711,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"tag_mode":"%s", "page":"1"}`, nextMode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 240, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 238, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
@@ -724,7 +724,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		var templ_7745c5c3_Var29 string
 		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Switch to match %s tags", nextMode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 243, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 241, Col: 69}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
@@ -737,7 +737,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Currently: match %s • Click for %s", tagMode, nextMode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 244, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 242, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -794,7 +794,7 @@ func TagApplyButton(path string, targetID string, parentID string) templ.Compone
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 256, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 254, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -807,7 +807,7 @@ func TagApplyButton(path string, targetID string, parentID string) templ.Compone
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 257, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 255, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -849,7 +849,7 @@ func TagClearButton(path string, targetID string, parentID string) templ.Compone
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 272, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 270, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -862,7 +862,7 @@ func TagClearButton(path string, targetID string, parentID string) templ.Compone
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 273, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 271, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -898,7 +898,7 @@ func TypesDropdownButton(path string, targetID string, parentID string, currentS
 			templ_7745c5c3_Var37 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-inline\" style=\"display:inline-block;\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by types\"><uk-icon icon=\"Filter\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center\" style=\"margin-bottom: 10px;\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by types\"><uk-icon icon=\"Filter\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -910,7 +910,7 @@ func TypesDropdownButton(path string, targetID string, parentID string, currentS
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</div></div></div></div><div id=\"type-list\" class=\"uk-margin-small-top\" style=\"max-height:300px; overflow:auto;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "</div></div></div></div><div id=\"type-list\" class=\"uk-margin-small-top type-list-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -954,7 +954,7 @@ func TypeApplyButton(path string, targetID string, parentID string) templ.Compon
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 314, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 312, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -967,7 +967,7 @@ func TypeApplyButton(path string, targetID string, parentID string) templ.Compon
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 315, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 313, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -1009,7 +1009,7 @@ func TypeClearButton(path string, targetID string, parentID string) templ.Compon
 		var templ_7745c5c3_Var42 string
 		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 330, Col: 21}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 328, Col: 21}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 		if templ_7745c5c3_Err != nil {
@@ -1022,7 +1022,7 @@ func TypeClearButton(path string, targetID string, parentID string) templ.Compon
 		var templ_7745c5c3_Var43 string
 		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs("#" + parentID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 331, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 329, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
@@ -1123,7 +1123,7 @@ func PaginationItem(path string, targetID string, enabled bool, page int, text s
 			var templ_7745c5c3_Var46 templ.SafeURL
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 371, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 369, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1136,7 +1136,7 @@ func PaginationItem(path string, targetID string, enabled bool, page int, text s
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(href)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 372, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 370, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 			if templ_7745c5c3_Err != nil {
@@ -1149,7 +1149,7 @@ func PaginationItem(path string, targetID string, enabled bool, page int, text s
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 373, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 371, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -1175,7 +1175,7 @@ func PaginationItem(path string, targetID string, enabled bool, page int, text s
 				var templ_7745c5c3_Var49 string
 				templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 382, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 380, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 				if templ_7745c5c3_Err != nil {
@@ -1207,7 +1207,7 @@ func PaginationItem(path string, targetID string, enabled bool, page int, text s
 				var templ_7745c5c3_Var50 string
 				templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 396, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 394, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 				if templ_7745c5c3_Err != nil {
@@ -1253,7 +1253,7 @@ func PaginationNumbers(path string, targetID string, totalPages int, currentPage
 				var templ_7745c5c3_Var52 string
 				templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 406, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/sort_controls.templ`, Line: 404, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 				if templ_7745c5c3_Err != nil {

@@ -389,13 +389,13 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			return templ_7745c5c3_Err
 		}
 		if isNewUpdate(media.UpdatedAt) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span class=\"uk-badge absolute top-2 right-2\" style=\"background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.25rem 0.375rem; animation: pulse 1.5s ease-in-out infinite;\">NEW</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<span class=\"uk-badge absolute top-2 right-2 badge-new\">NEW</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if media.PremiumCountdown != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span class=\"uk-badge absolute top-2 left-2\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span class=\"uk-badge absolute top-2 left-2 badge-premium\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -414,7 +414,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			}
 		}
 		if sort == "popularity" && media.VoteScore != 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"uk-badge absolute top-2 right-2\" style=\"background: #dbeafe; color: #1e40af; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path d=\"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span class=\"uk-badge absolute top-2 right-2 badge-popularity\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path d=\"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -433,7 +433,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			}
 		}
 		if sort == "read_count" && media.ReadCount > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"uk-badge absolute top-2 right-2\" style=\"background: #dcfce7; color: #166534; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 12a2 2 0 100-4 2 2 0 000 4z\" clip-rule=\"evenodd\"></path> <path fill-rule=\"evenodd\" d=\"M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"uk-badge absolute top-2 right-2 badge-read-count\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 12a2 2 0 100-4 2 2 0 000 4z\" clip-rule=\"evenodd\"></path> <path fill-rule=\"evenodd\" d=\"M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -456,7 +456,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if media.Year > 0 {
 				value = fmt.Sprintf("%d", media.Year)
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #f3f4f6; color: #374151; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, " <span class=\"uk-badge absolute top-2 right-2 badge-neutral\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -479,7 +479,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if value == "" {
 				value = "Unknown"
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, " <span class=\"uk-badge absolute top-2 right-2 badge-premium\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -502,7 +502,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if value == "" {
 				value = "Unknown"
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #e0e7ff; color: #3730a3; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, " <span class=\"uk-badge absolute top-2 right-2 badge-type\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -525,7 +525,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if value == "" {
 				value = "Unknown"
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #fee2e2; color: #991b1b; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " <span class=\"uk-badge absolute top-2 right-2 badge-content-rating\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -548,7 +548,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if !media.CreatedAt.IsZero() {
 				value = media.CreatedAt.Format("2006-01-02")
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #f3f4f6; color: #374151; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, " <span class=\"uk-badge absolute top-2 right-2 badge-neutral\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -571,7 +571,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 			if !media.UpdatedAt.IsZero() {
 				value = media.UpdatedAt.Format("2006-01-02")
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " <span class=\"uk-badge absolute top-2 right-2\" style=\"background: #f3f4f6; color: #374151; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " <span class=\"uk-badge absolute top-2 right-2 badge-neutral\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -839,7 +839,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			templ_7745c5c3_Var41 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"relative flex justify-center items-center avatar-container\"><style>\n                    .avatar-container:hover .avatar-image {\n                        opacity: 0.5;\n                    }\n                    .avatar-container:hover .change-avatar-btn {\n                        opacity: 1;\n                        pointer-events: auto;\n                    }\n                    .change-avatar-btn {\n                        position: absolute;\n                        top: 50%;\n                        left: 50%;\n                        transform: translate(-50%, -50%);\n                        width: 40px;\n                        height: 40px;\n                        border-radius: 50%;\n                        opacity: 0;\n                        pointer-events: none;\n                        transition: opacity 0.3s ease;\n                        background: rgba(0, 0, 0, 0.7);\n                        color: white;\n                        display: flex;\n                        align-items: center;\n                        justify-content: center;\n                        border: none;\n                        cursor: pointer;\n                    }\n                    .change-avatar-btn:hover {\n                        opacity: 1;\n                        pointer-events: auto;\n                    }\n                </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"relative flex justify-center items-center avatar-container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -851,7 +851,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var42 string
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(user.Avatar)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 277, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 245, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 			if templ_7745c5c3_Err != nil {
@@ -869,7 +869,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(string(user.Username[0]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 280, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 248, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -887,7 +887,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 		var templ_7745c5c3_Var44 string
 		templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 295, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 263, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 		if templ_7745c5c3_Err != nil {
@@ -898,22 +898,22 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			return templ_7745c5c3_Err
 		}
 		if user.Role == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-admin); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"Shield\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Admin</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge inline-flex items-center gap-1 badge-role\" style=\"background: var(--role-admin); color: white;\"><uk-icon icon=\"Shield\" class=\"w-3 h-3 icon-translate\"></uk-icon> Admin</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if user.Role == "moderator" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-moderator); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"ShieldCheck\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Moderator</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<span class=\"uk-badge inline-flex items-center gap-1 badge-role\" style=\"background: var(--role-moderator); color: white;\"><uk-icon icon=\"ShieldCheck\" class=\"w-3 h-3 icon-translate\"></uk-icon> Moderator</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else if user.Role == "premium" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-premium); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"Star\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Premium</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "<span class=\"uk-badge inline-flex items-center gap-1 badge-role\" style=\"background: var(--role-premium); color: white;\"><uk-icon icon=\"Star\" class=\"w-3 h-3 icon-translate\"></uk-icon> Premium</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span class=\"uk-badge inline-flex items-center gap-1\" style=\"background: var(--role-reader); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15);\"><uk-icon icon=\"User\" class=\"w-3 h-3\" style=\"transform: translateY(-2px);\"></uk-icon> Reader</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "<span class=\"uk-badge inline-flex items-center gap-1 badge-role\" style=\"background: var(--role-reader); color: white;\"><uk-icon icon=\"User\" class=\"w-3 h-3 icon-translate\"></uk-icon> Reader</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -935,7 +935,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(totalChaptersRead)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 324, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 292, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -948,7 +948,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(totalMediaRead)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 328, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 296, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -961,7 +961,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(readingStreak)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 332, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 300, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 			if templ_7745c5c3_Err != nil {
@@ -974,7 +974,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(len(favoriteGenres))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 336, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 304, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -997,7 +997,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 					var templ_7745c5c3_Var49 string
 					templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(genre)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 345, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 313, Col: 123}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 					if templ_7745c5c3_Err != nil {
@@ -1024,7 +1024,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div></div></div><!-- Avatar Upload Modal --><div id=\"avatar-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Change Avatar</h2><form hx-post=\"/account/avatar\" hx-target=\"#avatar-modal\" hx-swap=\"none\" enctype=\"multipart/form-data\"><div class=\"uk-margin\"><label class=\"uk-form-label\">Upload Avatar Image</label><div class=\"relative\"><input type=\"file\" name=\"avatar\" accept=\"image/*\" id=\"avatar-input\" class=\"absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 appearance-none\" style=\"font-size: 0;\" required><div class=\"flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50\"><div class=\"text-center\"><svg class=\"mx-auto h-6 w-6 text-gray-400 mb-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12\"></path></svg> <span id=\"file-text\" class=\"text-sm\">Choose an image file...</span></div></div></div></div><p class=\"uk-text-meta\">Supported formats: JPG, PNG, GIF. Max size: 2MB</p><div class=\"uk-modal-footer uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\">Upload</button></div></form><script>\n                document.getElementById('avatar-input').addEventListener('change', function(e) {\n                    const file = e.target.files[0];\n                    const fileText = document.getElementById('file-text');\n                    if (file) {\n                        fileText.textContent = file.name;\n                        fileText.classList.remove('');\n                        fileText.classList.add('text-blue-600', 'font-medium');\n                    } else {\n                        fileText.textContent = 'Choose an image file...';\n                        fileText.classList.remove('text-blue-600', 'font-medium');\n                        fileText.classList.add('');\n                    }\n                });\n\n                // Handle HTMX avatar update trigger\n                document.addEventListener('avatarUpdated', function(evt) {\n                    // Show notification\n                    if (typeof showNotification === 'function') {\n                        showNotification(evt.detail.message, evt.detail.status);\n                    }\n\n                    // Close modal\n                    const modal = document.getElementById('avatar-modal');\n                    if (modal && typeof UIkit !== 'undefined') {\n                        UIkit.modal(modal).hide();\n                    }\n\n                    // Refresh avatar image\n                    const avatarImg = document.querySelector('img[alt=\"avatar\"]');\n                    if (avatarImg) {\n                        // Add timestamp to force reload\n                        const src = avatarImg.src;\n                        avatarImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();\n                    }\n                });\n            </script></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div></div></div><!-- Avatar Upload Modal --><div id=\"avatar-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Change Avatar</h2><form hx-post=\"/account/avatar\" hx-target=\"#avatar-modal\" hx-swap=\"none\" enctype=\"multipart/form-data\"><div class=\"uk-margin\"><label class=\"uk-form-label\">Upload Avatar Image</label><div class=\"relative\"><input type=\"file\" name=\"avatar\" accept=\"image/*\" id=\"avatar-input\" class=\"absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 hidden-input\" required><div class=\"flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50\"><div class=\"text-center\"><svg class=\"mx-auto h-6 w-6 text-gray-400 mb-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12\"></path></svg> <span id=\"file-text\" class=\"text-sm\">Choose an image file...</span></div></div></div></div><p class=\"uk-text-meta\">Supported formats: JPG, PNG, GIF. Max size: 2MB</p><div class=\"uk-modal-footer uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\">Upload</button></div></form><script>\n                document.getElementById('avatar-input').addEventListener('change', function(e) {\n                    const file = e.target.files[0];\n                    const fileText = document.getElementById('file-text');\n                    if (file) {\n                        fileText.textContent = file.name;\n                        fileText.classList.remove('');\n                        fileText.classList.add('text-blue-600', 'font-medium');\n                    } else {\n                        fileText.textContent = 'Choose an image file...';\n                        fileText.classList.remove('text-blue-600', 'font-medium');\n                        fileText.classList.add('');\n                    }\n                });\n\n                // Handle HTMX avatar update trigger\n                document.addEventListener('avatarUpdated', function(evt) {\n                    // Show notification\n                    if (typeof showNotification === 'function') {\n                        showNotification(evt.detail.message, evt.detail.status);\n                    }\n\n                    // Close modal\n                    const modal = document.getElementById('avatar-modal');\n                    if (modal && typeof UIkit !== 'undefined') {\n                        UIkit.modal(modal).hide();\n                    }\n\n                    // Refresh avatar image\n                    const avatarImg = document.querySelector('img[alt=\"avatar\"]');\n                    if (avatarImg) {\n                        // Add timestamp to force reload\n                        const src = avatarImg.src;\n                        avatarImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();\n                    }\n                });\n            </script></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1102,7 +1102,7 @@ func MediaSlider(media []models.Media, width int, height int, truncate bool, fix
 			templ_7745c5c3_Var51 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\" style=\"gap: 1rem;\" role=\"list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto slider-items\" role=\"list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1157,7 +1157,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto\" style=\"gap: 1rem;\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto slider-items\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1170,13 +1170,13 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var53 templ.SafeURL
 				templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 469, Col: 75}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 437, Col: 75}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "\" class=\"block\"><div class=\"uk-card uk-card-default uk-card-body p-2\" style=\"width:200px;\"><div class=\"uk-card-media-top relative\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "\" class=\"block\"><div class=\"uk-card uk-card-default uk-card-body p-2 showcase-card\"><div class=\"uk-card-media-top relative\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1188,14 +1188,14 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				if derived == "" {
 					derived = metadata.DetermineMediaTypeByLanguage(media.OriginalLanguage)
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<div class=\"absolute left-2 top-2\"><span class=\"uk-badge shadow-sm\" style=\"background: hsl(var(--background)); box-shadow: 0 4px 10px rgba(0,0,0,0.12);\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<div class=\"absolute left-2 top-2\"><span class=\"uk-badge shadow-sm showcase-type-badge\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var54 string
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToUpper(derived))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 478, Col: 188}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 446, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 				if templ_7745c5c3_Err != nil {
@@ -1206,14 +1206,14 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if media.PremiumCountdown != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span class=\"uk-badge\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12); margin-left: 0.25rem;\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<span class=\"uk-badge showcase-premium-badge\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var55 string
 					templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(media.PremiumCountdown)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 484, Col: 76}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 452, Col: 76}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 					if templ_7745c5c3_Err != nil {
@@ -1231,7 +1231,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var56 string
 				templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 489, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 457, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 				if templ_7745c5c3_Err != nil {
@@ -1249,7 +1249,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					var templ_7745c5c3_Var57 templ.SafeURL
 					templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 492, Col: 130}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 460, Col: 130}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 					if templ_7745c5c3_Err != nil {
@@ -1262,7 +1262,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					var templ_7745c5c3_Var58 string
 					templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(media.LatestChapterName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 492, Col: 248}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 460, Col: 248}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 					if templ_7745c5c3_Err != nil {
@@ -1285,7 +1285,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				var templ_7745c5c3_Var59 string
 				templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(score))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 498, Col: 82}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 466, Col: 82}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 				if templ_7745c5c3_Err != nil {
@@ -1334,7 +1334,7 @@ func SuccessAlert(message string) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 518, Col: 14}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 486, Col: 14}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1376,13 +1376,13 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><h3 class=\"uk-h4 mb-8\">Reading Timeline</h3><!-- Timeline Container --><div class=\"relative w-full\" style=\"height: 280px;\"><!-- Horizontal Line (behind with low z-index) --><div class=\"absolute left-0 right-0 w-full bg-gray-300 z-0\" style=\"top: 50%; height: 4px; transform: translateY(-50%);\"></div><!-- Timeline Points and Items --><div class=\"relative w-full h-full flex justify-between px-4 z-10\" style=\"align-items: center;\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><h3 class=\"uk-h4 mb-8\">Reading Timeline</h3><!-- Timeline Container --><div class=\"relative w-full timeline-container\"><!-- Horizontal Line (behind with low z-index) --><div class=\"absolute left-0 right-0 w-full bg-gray-300 z-0 timeline-line\"></div><!-- Timeline Points and Items --><div class=\"relative w-full h-full flex justify-between px-4 z-10 timeline-points\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for i, activity := range activities {
 				if activity.Media != nil {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div class=\"flex flex-col items-center flex-1 relative\" style=\"height: 100%;\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div class=\"flex flex-col items-center flex-1 relative timeline-item\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1394,7 +1394,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var63 templ.SafeURL
 						templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/series/" + activity.Media.Slug))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 544, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 512, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 						if templ_7745c5c3_Err != nil {
@@ -1407,7 +1407,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var64 string
 						templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(activity.Media.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 545, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 513, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 						if templ_7745c5c3_Err != nil {
@@ -1420,7 +1420,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var65 string
 						templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(activity.ReadingState.CreatedAt.Format("Jan 2"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 548, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 516, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 						if templ_7745c5c3_Err != nil {
@@ -1448,7 +1448,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var66 templ.SafeURL
 						templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/series/" + activity.Media.Slug))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 564, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 532, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 						if templ_7745c5c3_Err != nil {
@@ -1461,7 +1461,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var67 string
 						templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(activity.Media.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 565, Col: 69}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 533, Col: 69}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 						if templ_7745c5c3_Err != nil {
@@ -1474,7 +1474,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						var templ_7745c5c3_Var68 string
 						templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(activity.ReadingState.CreatedAt.Format("Jan 2"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 568, Col: 97}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 536, Col: 97}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 						if templ_7745c5c3_Err != nil {
@@ -1534,7 +1534,7 @@ func FileExplorer() templ.Component {
 			templ_7745c5c3_Var69 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" style=\"max-height: 400px; overflow-y: auto;\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex uk-flex-between uk-margin-top\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary\" type=\"button\" style=\"display: none;\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" class=\"file-explorer-content\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex uk-flex-between uk-margin-top\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary select-folder-btn\" type=\"button\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

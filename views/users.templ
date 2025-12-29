@@ -142,14 +142,14 @@ templ UsersTable(users []models.User, page, pageSize int, total int64, filter st
 								}
 							}
 						</td>
-						<td class="text-center" style="vertical-align: middle;">
+						<td class="text-center table-cell-middle">
 							if user.Banned {
 								<span class="text-red-500">Banned</span>
 							} else {
 								{ user.Role }
 							}
 						</td>
-						<td class="text-center" style="vertical-align: middle;">
+						<td class="text-center table-cell-middle">
 							if user.Subscription != nil && user.Subscription.Status == "active" {
 								{ fmt.Sprintf("%.0f days left", time.Until(user.Subscription.CurrentPeriodEnd).Hours()/24) }
 							} else if user.Role == "premium" {

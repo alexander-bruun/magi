@@ -170,7 +170,7 @@ func Collection(collection models.CollectionWithMedia, canEdit bool) templ.Compo
 				return templ_7745c5c3_Err
 			}
 			for _, media := range collection.Media {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full\"><div class=\"flex-1 overflow-hidden uk-position-relative\" style=\"aspect-ratio: 150/200;\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full\"><div class=\"flex-1 overflow-hidden uk-position-relative collection-media-aspect\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -232,7 +232,7 @@ func Collection(collection models.CollectionWithMedia, canEdit bool) templ.Compo
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<h4 class=\"uk-card-title uk-text-center uk-text-small uk-margin-remove\" style=\"overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<h4 class=\"uk-card-title uk-text-center uk-text-small uk-margin-remove collection-title-truncate\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

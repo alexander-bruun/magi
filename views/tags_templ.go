@@ -35,7 +35,7 @@ func TagsDropdown(path string, targetID string, currentSort string, currentOrder
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-inline\" style=\"display:inline-block;margin-left:8px;\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-inline tags-inline-block\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -74,7 +74,7 @@ func TagsDropdown(path string, targetID string, currentSort string, currentOrder
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center\" style=\"margin-bottom: 10px;\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -90,7 +90,7 @@ func TagsDropdown(path string, targetID string, currentSort string, currentOrder
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top\" style=\"max-height:300px; overflow:auto;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top tags-list-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -197,7 +197,7 @@ func TagsFilterDrop(path string, targetID string, currentSort string, currentOrd
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center\" style=\"margin-bottom: 10px;\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -213,7 +213,7 @@ func TagsFilterDrop(path string, targetID string, currentSort string, currentOrd
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top\" style=\"max-height:300px; overflow:auto;\" hx-get=\"/series/tags/fragment\" hx-trigger=\"revealed\" hx-target=\"this\" hx-swap=\"innerHTML\"></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top tags-list-scroll\" hx-get=\"/series/tags/fragment\" hx-trigger=\"revealed\" hx-target=\"this\" hx-swap=\"innerHTML\"></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -525,7 +525,7 @@ func TagsFragment(allTags []string, selected []string) templ.Component {
 		for _, v := range selected {
 			selectedMap[strings.ToLower(strings.TrimSpace(v))] = true
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"grid grid-cols-1 gap-y-3\" style=\"padding-top: 5px;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"grid grid-cols-1 gap-y-3 tags-grid-padding\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -554,14 +554,14 @@ func TagsFragment(allTags []string, selected []string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "> <span class=\"leading-none flex-1 min-w-0\" style=\"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "> <span class=\"leading-none flex-1 min-w-0 tags-text-truncate\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/tags.templ`, Line: 136, Col: 134}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/tags.templ`, Line: 136, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {

@@ -453,7 +453,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 			templ_7745c5c3_Var18 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-modal-header\" style=\"display: flex; justify-content: space-between; align-items: center;\"><h2 class=\"uk-modal-title uk-margin-remove\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title uk-margin-remove\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -602,7 +602,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<div class=\"uk-card uk-card-default uk-card-body\" style=\"max-height: 300px; overflow-y: auto; padding: 15px;\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Select the libraries this permission applies to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllLibraries(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllLibraries(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Select the libraries this permission applies to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllLibraries(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllLibraries(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1339,7 +1339,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 		for _, username := range usersWithPerm {
 			assignedMap[username] = true
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div class=\"uk-modal-header\" style=\"display: flex; justify-content: space-between; align-items: center;\"><h2 class=\"uk-modal-title uk-margin-remove\">Bulk Assign: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title uk-margin-remove\">Bulk Assign: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1382,14 +1382,14 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				return templ_7745c5c3_Err
 			}
 		} else if len(permission.Libraries) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span class=\"uk-label\" style=\"background: #666;\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<span class=\"uk-label permissions-label-libraries\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Libraries", len(permission.Libraries)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 871, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 871, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1401,7 +1401,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 			}
 		}
 		if permission.PremiumChapterAccess {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<span class=\"uk-label\" style=\"background: #ffd700; color: #000;\"><uk-icon icon=\"star\" ratio=\"0.5\"></uk-icon> Premium Access</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 152, "<span class=\"uk-label permissions-label-premium\"><uk-icon icon=\"star\" ratio=\"0.5\"></uk-icon> Premium Access</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1429,7 +1429,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<div class=\"uk-card uk-card-default uk-card-body\" style=\"max-height: 400px; overflow-y: auto; padding: 15px;\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Choose users to grant this permission to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllUsers(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllUsers(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll-large\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Choose users to grant this permission to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllUsers(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllUsers(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1480,7 +1480,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "><div class=\"uk-flex uk-flex-middle uk-flex-wrap\" style=\"gap: 5px;\"><span class=\"uk-text-bold\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "><div class=\"uk-flex uk-flex-middle uk-flex-wrap permissions-flex-gap\"><span class=\"uk-text-bold\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1503,7 +1503,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 						return templ_7745c5c3_Err
 					}
 				} else if user.Role == "moderator" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<span class=\"uk-label uk-label-small\" style=\"background: #faa05a;\">Mod</span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 165, "<span class=\"uk-label uk-label-small permissions-label-mod\">Mod</span> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

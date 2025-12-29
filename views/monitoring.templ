@@ -24,7 +24,7 @@ templ Monitoring(data *models.MonitoringData) {
 							<span class="font-semibold">CPU:</span>
 							<span class="font-semibold text-blue-600" id="cpuPercentage">--</span>
 						</div>
-						<div id="cpuBars" style="display: flex; height: 32px; gap: 4px; border-radius: 4px; border: 1px solid #e5e7eb; align-items: center; padding: 4px;">
+						<div id="cpuBars" class="cpu-bars">
 							<!-- CPU bars will be generated here -->
 						</div>
 						<div class="text-xs text-gray-500 mt-1 flex justify-between">
@@ -39,10 +39,10 @@ templ Monitoring(data *models.MonitoringData) {
 							<span class="font-semibold">Mem:</span>
 							<span class="font-semibold brand-gradient" id="memoryPercentage">--</span>
 						</div>
-						<div style="display: flex; height: 32px; gap: 0; overflow: hidden; border-radius: 4px; border: 1px solid #e5e7eb; padding: 0;">
-							<div style="width: 0%; background-color: #10b981; min-width: 0;" id="memUsedBar" title="Used Memory"></div>
-							<div style="width: 0%; background-color: #eab308; min-width: 0;" id="memCachedBar" title="Cached Memory"></div>
-							<div style="width: 100%; background-color: #d1d5db; min-width: 0;" id="memFreeBar" title="Free Memory"></div>
+						<div class="memory-bar">
+							<div class="mem-used-bar" id="memUsedBar" title="Used Memory"></div>
+							<div class="mem-cached-bar" id="memCachedBar" title="Cached Memory"></div>
+							<div class="mem-free-bar" id="memFreeBar" title="Free Memory"></div>
 						</div>
 						<div class="text-xs mt-2 grid grid-cols-3 gap-2 text-center" id="memoryDetails">
 							<div><span class="inline-block w-2 h-2 bg-green-600 rounded-sm mr-1"></span>Used: --</div>
@@ -220,9 +220,9 @@ templ Monitoring(data *models.MonitoringData) {
 			let cpuBarHTML = '';
 			for (let i = 0; i < cpuSegments; i++) {
 				if (i < usedSegments) {
-					cpuBarHTML += '<div style="flex: 1; height: 100%; background-color: #3b82f6; min-width: 0;"></div>';
+					cpuBarHTML += '<div class="cpu-bar-used"></div>';
 				} else {
-					cpuBarHTML += '<div style="flex: 1; height: 100%; background-color: #1f2937; min-width: 0;"></div>';
+					cpuBarHTML += '<div class="cpu-bar-free"></div>';
 				}
 			}
 			document.getElementById('cpuBars').innerHTML = cpuBarHTML;
@@ -293,7 +293,7 @@ templ Monitoring(data *models.MonitoringData) {
 						</div>
 						
 						<!-- Usage bar -->
-						<div style="display: flex; height: 20px; gap: 0; overflow: hidden; border-radius: 4px; border: 1px solid #e5e7eb; padding: 0; margin-bottom: 8px;">
+						<div class="disk-usage-bar">
 							<div style="width: ${Math.min(percentage, 100)}%; background-color: ${barColor}; min-width: 0;"></div>
 							<div style="width: ${Math.max(0, 100 - percentage)}%; background-color: #e5e7eb; min-width: 0;"></div>
 						</div>

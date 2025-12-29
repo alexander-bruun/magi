@@ -51,7 +51,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, media := range collection.Media {
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full">
-						<div class="flex-1 overflow-hidden uk-position-relative" style="aspect-ratio: 150/200;">
+						<div class="flex-1 overflow-hidden uk-position-relative collection-media-aspect">
 							<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block w-full h-full">
 								<img src={ media.CoverArtURL + "?size=tiny" } alt={ media.Name } class="w-full h-full object-cover rounded-t-lg"/>
 							</a>
@@ -62,7 +62,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 									<uk-icon icon="x" ratio="0.8"></uk-icon>
 								</button>
 							}
-							<h4 class="uk-card-title uk-text-center uk-text-small uk-margin-remove" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+							<h4 class="uk-card-title uk-text-center uk-text-small uk-margin-remove collection-title-truncate">
 								<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="uk-link-text">
 									{ media.Name }
 								</a>

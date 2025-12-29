@@ -26,13 +26,13 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 					</button>
 				</div>
 				<div id="search-modal" uk-modal role="dialog" aria-labelledby="search-modal-title" aria-modal="true">
-					<div class="uk-modal-body uk-modal-dialog modal-body-transparent" style="max-width: 100%; width: 100%; max-height: 100vh;">
+					<div class="uk-modal-body uk-modal-dialog modal-body-transparent search-modal-body">
 						<form hx-get="/series/search" hx-target="#search-modal-content" hx-trigger="input delay:200ms, submit" hx-swap="innerHTML" role="search">
-							<div class="mx-auto mt-8 mb-4" style="width: 100%; max-width: 800px;">
+							<div class="mx-auto mt-8 mb-4 search-input-container">
 								<input id="searchInput" class="uk-input w-full input-bg" type="search" name="search" placeholder="Search for media by title..." autocomplete="off" aria-label="Search for media by title" />
 							</div>
 						</form>
-						<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4 input-bg overflow-y-auto" style="max-height: calc(100vh - 200px);">
+						<div id="search-modal-content" class="px-4 uk-margin my-2 uk-card py-4 input-bg overflow-y-auto search-modal-content">
 							@OneDoesNotSimplySearch()
 						</div>
 					</div>
@@ -48,14 +48,14 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 									<span id="notification-badge" class="notification-badge" style="display: none;">0</span>
 								}
 							</button>
-							<div class="uk-card uk-card-body uk-drop" style="min-width: 350px; max-width: 400px;" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
+							<div class="uk-card uk-card-body uk-drop notification-dropdown" data-uk-dropdown="mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm" role="menu">
 								<div class="flex justify-between items-center mb-3">
 									<h3 class="uk-h4 mb-0">Notifications</h3>
 									if len(notifications) > 0 {
 										<button id="mark-all-read" class="uk-btn uk-btn-secondary uk-btn-small" hx-post="/api/notifications/mark-all-read" hx-target="#notification-list" hx-swap="innerHTML" hx-on:htmx:after-request="fetch('/api/notifications/unread-count').then(r => r.json()).then(d => { const badge = document.getElementById('notification-badge'); if (badge) { if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; } } if (d.count == 0) { const btn = document.getElementById('mark-all-read'); if (btn) btn.style.display = 'none'; } })">Mark all read</button>
 									}
 								</div>
-								<div id="notification-list" class="notification-list" style="max-height: 400px; overflow-y: auto;">
+								<div id="notification-list" class="notification-list">
 									if len(notifications) == 0 {
 										<p class="uk-text-muted uk-text-center py-4">No new notifications</p>
 									} else {
@@ -95,18 +95,18 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 								<div class="mb-4">
 									<h3 class="uk-h4 mb-2">Theme</h3>
 									<div class="grid grid-cols-3 gap-2">
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-zinc" data-hex="#52525b"><span class="color-circle" style="background-color: #52525b;"></span>Zinc</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-slate" data-hex="#64748b"><span class="color-circle" style="background-color: #64748b;"></span>Slate</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-stone" data-hex="#78716c"><span class="color-circle" style="background-color: #78716c;"></span>Stone</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-gray" data-hex="#6b7280"><span class="color-circle" style="background-color: #6b7280;"></span>Gray</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-neutral" data-hex="#737373"><span class="color-circle" style="background-color: #737373;"></span>Neutral</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-red" data-hex="#dc2626"><span class="color-circle" style="background-color: #dc2626;"></span>Red</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-rose" data-hex="#e11d48"><span class="color-circle" style="background-color: #e11d48;"></span>Rose</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-orange" data-hex="#f97316"><span class="color-circle" style="background-color: #f97316;"></span>Orange</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-green" data-hex="#16a34a"><span class="color-circle" style="background-color: #16a34a;"></span>Green</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-blue" data-hex="#2563eb"><span class="color-circle" style="background-color: #2563eb;"></span>Blue</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-yellow" data-hex="#facc15"><span class="color-circle" style="background-color: #facc15;"></span>Yellow</button>
-										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-violet" data-hex="#7c3aed"><span class="color-circle" style="background-color: #7c3aed;"></span>Violet</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-zinc" data-hex="#52525b"><span class="color-circle color-zinc"></span>Zinc</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-slate" data-hex="#64748b"><span class="color-circle color-slate"></span>Slate</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-stone" data-hex="#78716c"><span class="color-circle color-stone"></span>Stone</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-gray" data-hex="#6b7280"><span class="color-circle color-gray"></span>Gray</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-neutral" data-hex="#737373"><span class="color-circle color-neutral"></span>Neutral</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-red" data-hex="#dc2626"><span class="color-circle color-red"></span>Red</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-rose" data-hex="#e11d48"><span class="color-circle color-rose"></span>Rose</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-orange" data-hex="#f97316"><span class="color-circle color-orange"></span>Orange</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-green" data-hex="#16a34a"><span class="color-circle color-green"></span>Green</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-blue" data-hex="#2563eb"><span class="color-circle color-blue"></span>Blue</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-yellow" data-hex="#facc15"><span class="color-circle color-yellow"></span>Yellow</button>
+										<button class="theme-option uk-btn uk-btn-default uk-btn-small" data-key="theme" data-value="uk-theme-violet" data-hex="#7c3aed"><span class="color-circle color-violet"></span>Violet</button>
 									</div>
 								</div>
 								<!-- Radii Section -->

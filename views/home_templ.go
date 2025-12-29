@@ -241,7 +241,7 @@ func TopReadFragment(media []models.Media, emptyMessage string, title string) te
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div style=\"overflow-x: auto;\"><ul class=\"uk-tab\" id=\"most-read-subnav\" style=\"white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap;\"><li class=\"uk-active\"><a hx-get=\"/top-read?period=today\" hx-target=\"#top-read-content\" style=\"cursor: pointer;\">Today</a></li><li><a hx-get=\"/top-read?period=week\" hx-target=\"#top-read-content\" style=\"cursor: pointer;\">Week</a></li><li><a hx-get=\"/top-read?period=month\" hx-target=\"#top-read-content\" style=\"cursor: pointer;\">Month</a></li><li><a hx-get=\"/top-read?period=year\" hx-target=\"#top-read-content\" style=\"cursor: pointer;\">Year</a></li><li><a hx-get=\"/top-read?period=all\" hx-target=\"#top-read-content\" style=\"cursor: pointer;\">All Time</a></li></ul></div><div id=\"top-read-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"tab-nav-overflow\"><ul class=\"uk-tab\" id=\"most-read-subnav\" class=\"tab-nav-list\"><li class=\"uk-active\"><a hx-get=\"/top-read?period=today\" hx-target=\"#top-read-content\" class=\"tab-link\">Today</a></li><li><a hx-get=\"/top-read?period=week\" hx-target=\"#top-read-content\" class=\"tab-link\">Week</a></li><li><a hx-get=\"/top-read?period=month\" hx-target=\"#top-read-content\" class=\"tab-link\">Month</a></li><li><a hx-get=\"/top-read?period=year\" hx-target=\"#top-read-content\" class=\"tab-link\">Year</a></li><li><a hx-get=\"/top-read?period=all\" hx-target=\"#top-read-content\" class=\"tab-link\">All Time</a></li></ul></div><div id=\"top-read-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -440,7 +440,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div style=\"overflow-x: auto;\"><ul class=\"uk-tab\" id=\"top-popular-subnav\" style=\"white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div class=\"tab-nav-overflow\"><ul class=\"uk-tab\" id=\"top-popular-subnav\" class=\"tab-nav-list-centered\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -462,7 +462,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=today\" hx-target=\"#top-popular-full\" style=\"cursor: pointer;\">Today</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=today\" hx-target=\"#top-popular-full\" class=\"tab-link\">Today</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -484,7 +484,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=week\" hx-target=\"#top-popular-full\" style=\"cursor: pointer;\">Week</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=week\" hx-target=\"#top-popular-full\" class=\"tab-link\">Week</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -506,7 +506,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=month\" hx-target=\"#top-popular-full\" style=\"cursor: pointer;\">Month</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=month\" hx-target=\"#top-popular-full\" class=\"tab-link\">Month</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -528,7 +528,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=year\" hx-target=\"#top-popular-full\" style=\"cursor: pointer;\">Year</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=year\" hx-target=\"#top-popular-full\" class=\"tab-link\">Year</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -550,7 +550,7 @@ func TopPopularFullFragment(media []models.Media, activePeriod string) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=all\" hx-target=\"#top-popular-full\" style=\"cursor: pointer;\">All Time</a></li></ul></div><div id=\"top-popular-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\"><a href=\"#\" hx-get=\"/top-popular-full?period=all\" hx-target=\"#top-popular-full\" class=\"tab-link\">All Time</a></li></ul></div><div id=\"top-popular-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -728,7 +728,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 			templ_7745c5c3_Var34 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div id=\"top-read-full\"><div style=\"overflow-x: auto;\"><ul class=\"uk-tab\" id=\"most-read-subnav\" style=\"white-space: nowrap; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div id=\"top-read-full\"><div class=\"tab-nav-overflow\"><ul class=\"uk-tab\" id=\"most-read-subnav\" class=\"tab-nav-list-centered\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -750,7 +750,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\"><a href=\"#\" hx-get=\"/top-read-full?period=today\" hx-target=\"#top-read-full\" style=\"cursor: pointer;\">Today</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\"><a href=\"#\" hx-get=\"/top-read-full?period=today\" hx-target=\"#top-read-full\" class=\"tab-link\">Today</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -772,7 +772,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\"><a href=\"#\" hx-get=\"/top-read-full?period=week\" hx-target=\"#top-read-full\" style=\"cursor: pointer;\">Week</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\"><a href=\"#\" hx-get=\"/top-read-full?period=week\" hx-target=\"#top-read-full\" class=\"tab-link\">Week</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -794,7 +794,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"><a href=\"#\" hx-get=\"/top-read-full?period=month\" hx-target=\"#top-read-full\" style=\"cursor: pointer;\">Month</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"><a href=\"#\" hx-get=\"/top-read-full?period=month\" hx-target=\"#top-read-full\" class=\"tab-link\">Month</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -816,7 +816,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\"><a href=\"#\" hx-get=\"/top-read-full?period=year\" hx-target=\"#top-read-full\" style=\"cursor: pointer;\">Year</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\"><a href=\"#\" hx-get=\"/top-read-full?period=year\" hx-target=\"#top-read-full\" class=\"tab-link\">Year</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -838,7 +838,7 @@ func TopReadFullWrapper(media []models.Media, activePeriod string) templ.Compone
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\"><a href=\"#\" hx-get=\"/top-read-full?period=all\" hx-target=\"#top-read-full\" style=\"cursor: pointer;\">All Time</a></li></ul></div><div id=\"top-read-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "\"><a href=\"#\" hx-get=\"/top-read-full?period=all\" hx-target=\"#top-read-full\" class=\"tab-link\">All Time</a></li></ul></div><div id=\"top-read-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -945,7 +945,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 				return templ_7745c5c3_Err
 			}
 			if chapter.IsPremium {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<span class=\"uk-badge badge-premium\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1516,7 +1516,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					return templ_7745c5c3_Err
 				}
 				if isNewUpdate(chapter.CreatedAt) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<span class=\"uk-badge\" style=\"background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.125rem 0.25rem; margin-left: 0.25rem; animation: pulse 1.5s ease-in-out infinite;\">NEW</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<span class=\"uk-badge badge-new-margin\">NEW</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1526,7 +1526,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 					return templ_7745c5c3_Err
 				}
 				if chapter.IsPremium {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span class=\"uk-badge\" style=\"background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);\"><svg class=\"w-3 h-3\" fill=\"currentColor\" viewBox=\"0 0 20 20\" style=\"display: inline-block; margin-right: 0.25rem;\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span class=\"uk-badge badge-premium\"><svg class=\"w-3 h-3 inline-svg\" fill=\"currentColor\" viewBox=\"0 0 20 20\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z\" clip-rule=\"evenodd\"></path></svg> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

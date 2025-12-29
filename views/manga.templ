@@ -165,8 +165,8 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 				hx-swap="outerHTML"
 			>
 				<button type="submit" class="uk-icon-button" title="Mark as unread" aria-label="Mark as unread">
-					<uk-icon class="eye-open" icon="eye" style="display:inline-flex"></uk-icon>
-					<uk-icon class="eye-closed" icon="eye-closed" style="display:none"></uk-icon>
+					<uk-icon class="eye-open" icon="eye"></uk-icon>
+					<uk-icon class="eye-closed" icon="eye-closed"></uk-icon>
 				</button>
 			</form>
 		</div>
@@ -178,8 +178,8 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 				hx-swap="outerHTML"
 			>
 				<button type="submit" class="uk-icon-button" title="Mark as read" aria-label="Mark as read">
-					<uk-icon class="eye-open" icon="eye" style="display:none"></uk-icon>
-					<uk-icon class="eye-closed" icon="eye-closed" style="display:inline-flex"></uk-icon>
+					<uk-icon class="eye-open eye-open-hidden" icon="eye"></uk-icon>
+					<uk-icon class="eye-closed eye-closed-visible" icon="eye-closed"></uk-icon>
 				</button>
 			</form>
 		</div>
@@ -191,46 +191,9 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	{{ if userRole == "moderator" || userRole == "admin" {
 	posterClass += " admin-hover"
 } }}
-	<style>
-		.poster-container {
-			width: 100%;
-			aspect-ratio: 300/500;
-			max-width: 500px;
-			margin: 0 auto;
-		}
-		.admin-hover:hover .poster-image {
-			opacity: 0.5;
-		}
-		.admin-hover:hover .edit-poster-btn {
-			opacity: 1;
-			pointer-events: auto;
-		}
-		.edit-poster-btn {
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 60px;
-			height: 60px;
-			border-radius: 50%;
-			opacity: 0;
-			pointer-events: auto;
-			transition: opacity 0.3s ease;
-			background: rgba(0, 0, 0, 0.7);
-			color: white;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border: none;
-			cursor: pointer;
-		}
-		.edit-poster-btn:hover {
-			opacity: 1;
-			pointer-events: auto;
-		}
-	</style>
+
 	<div class={ posterClass }>
-		<img loading="lazy" src={ media.CoverArtURL } alt={ media.Name } class="poster-image transition-opacity duration-300 w-full h-full object-cover"/>
+		<img loading="lazy" src={ media.CoverArtURL } alt={ media.Name } class="poster-image transition-opacity duration-300 w-full object-contain"/>
 		if userRole == "moderator" || userRole == "admin" {
 			<button
 				type="button"
@@ -379,7 +342,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	</div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal role="dialog" aria-labelledby="metadata-modal-title" aria-modal="true">
-		<div class="uk-modal-body uk-modal-dialog" style="max-width: min(1000px, 95vw); width: min(1000px, 95vw);">
+		<div class="uk-modal-body uk-modal-dialog reader-modal">
 			<h2 id="metadata-modal-title" class="uk-modal-title">Update metadata</h2>
 			<p>
 				This form, is used in case you believe the metadata was scraped from the wrong media. Use the search field below to get a list of other options to pick from.
@@ -404,7 +367,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	</div>
 	<!-- Edit Metadata Modal for Moderators/Admins -->
 	<div id="edit-metadata-modal" uk-modal role="dialog" aria-labelledby="edit-metadata-modal-title" aria-modal="true">
-		<div class="uk-modal-body uk-modal-dialog hide-scrollbar" style="max-height: 80vh; overflow-y: auto; padding: 2rem;">
+		<div class="uk-modal-body uk-modal-dialog hide-scrollbar reader-modal-body">
 			<h2 id="edit-metadata-modal-title" class="uk-modal-title mb-3">Edit Media Metadata</h2>
 			<p class="uk-text-muted mb-6">
 				Manually edit the metadata for this media. Changes will overwrite existing data.
@@ -491,7 +454,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 					<input class="uk-input" type="url" id="cover_url" name="cover_url"/>
 					<small class="uk-text-muted block mt-2">Enter a URL to download and store a new cover image</small>
 				</div>
-				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4" style="border-top: 1px solid #e5e5e5;">
+				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4 reader-footer">
 					<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
 					<button type="submit" class="uk-btn uk-btn-primary px-6">Save Changes</button>
 				</div>
@@ -509,7 +472,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				<p class="text-sm"><strong>Media Path:</strong></p>
 				<p class="text-sm uk-text-muted break-all">{ media.Path }</p>
 			</div>
-			<div class="uk-alert uk-alert-primary text-sm mb-4" style="padding: 1rem;">
+			<div class="uk-alert uk-alert-primary text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
 					<uk-icon icon="Info" class="shrink-0 mt-0.5"></uk-icon>
 					<div>
@@ -548,7 +511,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				<p class="text-sm"><strong>Media Path:</strong></p>
 				<p class="text-sm uk-text-muted break-all">{ media.Path }</p>
 			</div>
-			<div class="uk-alert uk-alert-primary text-sm mb-4" style="padding: 1rem;">
+			<div class="uk-alert uk-alert-primary text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
 					<uk-icon icon="Info" class="shrink-0 mt-0.5"></uk-icon>
 					<div>
@@ -586,7 +549,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				<p class="text-sm"><strong>Media:</strong> { media.Name }</p>
 				<p class="text-sm"><strong>Path:</strong> { media.Path }</p>
 			</div>
-			<div class="uk-alert uk-alert-destructive text-sm mb-4" style="padding: 1rem;">
+			<div class="uk-alert uk-alert-destructive text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
 					<uk-icon icon="AlertTriangle" class="shrink-0 mt-0.5"></uk-icon>
 					<div>
@@ -610,7 +573,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	</div>
 	<!-- Edit Poster Modal for Moderators/Admins -->
 	<div id="edit-poster-modal" uk-modal role="dialog" aria-labelledby="edit-poster-modal-title" aria-modal="true">
-		<div class="uk-modal-body uk-modal-dialog hide-scrollbar" style="max-height: 80vh; overflow-y: auto; padding: 2rem;">
+		<div class="uk-modal-body uk-modal-dialog hide-scrollbar reader-modal-body">
 			<h2 id="edit-poster-modal-title" class="uk-modal-title mb-3">Edit Poster</h2>
 			<p class="uk-text-muted mb-6">
 				Upload a new poster image or select one from your media files.
@@ -792,7 +755,7 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 							></span>
 						</a>
 						if isNewUpdate(chapter.CreatedAt) {
-							<span class="uk-badge ml-2" style="background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12); font-size: 0.625rem; padding: 0.125rem 0.25rem; animation: pulse 1.5s ease-in-out infinite;">
+							<span class="uk-badge ml-2 badge-new-margin">
 								NEW
 							</span>
 						}
@@ -805,8 +768,8 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 						}
 						if chapter.IsPremium {
 							<div class="flex items-center mr-3">
-								<span class="uk-badge" style="background: #fef3c7; color: #92400e; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
-									<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 0.25rem;">
+								<span class="uk-badge badge-premium">
+									<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
 										<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
 									</svg>
 									{ chapter.PremiumCountdown }
@@ -977,7 +940,7 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 						</div>
 					}
 					if result.Description != "" {
-						<div class="text-sm text-gray-700 mb-3 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; max-height: 4.5rem;" title={ result.Description }>
+						<div class="text-sm text-gray-700 mb-3 overflow-hidden description-clamp" title={ result.Description }>
 							{ result.Description }
 						</div>
 					}
@@ -1010,19 +973,6 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
 	})
-	<style>
-		.scroll-to-top {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			border-radius: 50%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			cursor: pointer;
-			z-index: 1000;
-		}
-	</style>
 	<button
 		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
 		type="button"
@@ -1042,7 +992,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 	}
 	@ChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
 	<!-- Pagination Controls (hidden in webtoon mode) -->
-	<div id="reader-pagination" style="display: none;">
+	<div id="reader-pagination" class="reader-pagination">
 		<div class="pagination-controls">
 			<button id="first-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="First page">
 				<uk-icon icon="chevrons-left" ratio="0.8"></uk-icon>
@@ -1065,7 +1015,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		}
 	</div>
 	<!-- Pagination Controls (bottom, hidden in webtoon mode) -->
-	<div id="reader-pagination-bottom" style="display: none;">
+	<div id="reader-pagination-bottom" class="reader-pagination">
 		<div class="pagination-controls">
 			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('first-page-btn').click()" title="First page">
 				<uk-icon icon="chevrons-left" ratio="0.8"></uk-icon>
@@ -1090,7 +1040,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
 templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
-	<div class="flex items-center justify-between" style="padding: 1rem 15%;">
+	<div class="flex items-center justify-between reader-controls">
 		if previousChapter != "" {
 			<a
 				class="uk-btn uk-btn-default"
@@ -1116,7 +1066,7 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 							<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 						</button>
 						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-							<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;padding-right: 5px;">
+							<ul class="uk-dropdown-nav uk-nav dropdown-nav">
 								for _, ch := range chapters {
 									<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
 										<a
@@ -1290,7 +1240,7 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 
 // PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js
 templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex int, imageDataURI string) {
-	<div class="poster-preview-cropper" style="display: flex; flex-direction: column; height: 100%;">
+	<div class="poster-preview-cropper poster-cropper">
 		<div class="uk-margin-bottom">
 			<p><strong>Selected Image #{ fmt.Sprint(imageIndex + 1) }</strong></p>
 			<p class="uk-text-small uk-text-muted">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p>
@@ -1298,18 +1248,18 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 		<!-- Image container for Cropper.js -->
 		<div
 			id="image-container"
-			style="max-height: 800px; overflow: hidden; border: 1px solid #ddd; background: #f5f5f5; flex: 1; position: relative;"
+			class="cropper-container"
 		>
 			<img
 				id="poster-crop-image"
 				loading="lazy"
 				src={ imageDataURI }
 				alt="Poster preview"
-				style="display: block; width: 100%; height: auto;"
+				class="poster-crop-image"
 			/>
 		</div>
 		<!-- Buttons always visible at bottom -->
-		<div class="uk-flex uk-flex-center gap-2 uk-margin-top" style="padding-top: 16px; border-top: 1px solid #ddd; flex-shrink: 0;">
+		<div class="uk-flex uk-flex-center gap-2 uk-margin-top poster-buttons-container">
 			<button
 				type="button"
 				class="uk-btn uk-btn-default"
@@ -1346,114 +1296,6 @@ templ NovelChapter(previousChapter string, currentChapter string, nextChapter st
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
 	})
-	<style>
-		.scroll-to-top {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			border-radius: 50%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			cursor: pointer;
-			z-index: 1000;
-		}
-		.epub-reader p {
-			text-align: var(--reader-text-align, justify);
-		}
-		.epub-reader {
-			padding: 0 var(--reader-margin, 20px) !important;
-			font-family: 'Georgia', 'Times New Roman', serif !important;
-			line-height: 1.6 !important;
-			scroll-behavior: smooth;
-		}
-		.epub-reader.custom-text-color {
-			color: var(--custom-text-color) !important;
-		}
-		.epub-reader.custom-text-color * {
-			color: var(--custom-text-color) !important;
-		}
-		.epub-reader img {
-			max-width: 100%;
-			height: auto;
-			display: block;
-			margin: 20px auto;
-			border-radius: 8px;
-			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		}
-		.epub-reader h1, .epub-reader h2, .epub-reader h3 {
-			margin-top: 2em;
-			margin-bottom: 1em;
-			line-height: 1.3;
-			font-weight: 600;
-		}
-		.epub-reader h1 {
-			font-size: 2em;
-		}
-		.epub-reader h2 {
-			font-size: 1.5em;
-		}
-		.epub-reader h3 {
-			font-size: 1.25em;
-		}
-		.epub-reader p {
-			margin-bottom: 1.5em;
-			text-align: justify;
-			hyphens: auto;
-			word-spacing: 0.1em;
-		}
-		.epub-reader .centerp, .epub-reader .section-marking {
-			text-align: center;
-			margin: 2em 0;
-		}
-		.epub-reader blockquote {
-			margin: 2em 0;
-			padding: 1em 2em;
-			border-left: 4px solid #4299e1;
-			background-color: rgba(66, 153, 225, 0.1);
-			font-style: italic;
-		}
-		.dark .epub-reader blockquote {
-			background-color: rgba(66, 153, 225, 0.2);
-			border-left-color: #63b3ed;
-		}
-		.toc-content ul {
-			list-style: none;
-			padding: 0;
-			margin: 0;
-		}
-		.toc-content li {
-			margin: 0;
-			padding: 0;
-		}
-		.toc-content a {
-			display: block;
-			padding: 8px 12px;
-			color: #4a5568;
-			text-decoration: none;
-			border-radius: 6px;
-			transition: all 0.2s ease;
-			font-size: 14px;
-			line-height: 1.4;
-		}
-		.dark .toc-content a {
-			color: #cbd5e0;
-		}
-		.toc-content a:hover {
-			background-color: #e2e8f0;
-			color: #2d3748;
-		}
-		.dark .toc-content a:hover {
-			background-color: #4a5568;
-			color: #e2e8f0;
-		}
-		.toc-content a:active {
-			background-color: #cbd5e0;
-		}
-		.dark .toc-content a:active {
-			background-color: #2d3748;
-		}
-	</style>
 	<button
 		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
 		type="button"
@@ -1750,7 +1592,7 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 						<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 					</button>
 					<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-						<ul class="uk-dropdown-nav uk-nav" style="max-height:300px;overflow:auto;margin: 0;">
+						<ul class="uk-dropdown-nav uk-nav chapter-dropdown-nav">
 							for _, ch := range chapters {
 								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
 									<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug) }>{ ch.Name }</a>

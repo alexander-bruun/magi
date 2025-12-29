@@ -284,28 +284,6 @@ templ ConfigForm() {
         </div>
     </form>
 
-    <style>
-        .slider::-webkit-slider-thumb {
-            appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 2px rgba(0,0,0,0.3);
-        }
-        .slider::-moz-range-thumb {
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 2px rgba(0,0,0,0.3);
-        }
-    </style>
-
     <script>
         // Update value displays when sliders change
         document.getElementById('reader-slider').addEventListener('input', function() {
@@ -333,7 +311,7 @@ templ ConsoleLogs() {
             <div class="w-full px-4">
                 <div class="uk-card p-4">
                     <div id="console-logs-container" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
-                        <div id="console-logs-output" style="display:flex; flex-direction:column; gap:2px;"></div>
+                        <div id="console-logs-output" class="config-console-logs"></div>
                     </div>
                 </div>
             </div>

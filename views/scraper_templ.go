@@ -539,14 +539,14 @@ func ScraperTab(script *models.ScraperScript, activeID int64) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</button><!-- Delete button placed inside the tab to the right of the name --><button type=\"button\" class=\"uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2 cursor-pointer\" style=\"cursor: pointer;\" onclick=\"event.stopPropagation()\" hx-delete=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</button><!-- Delete button placed inside the tab to the right of the name --><button type=\"button\" class=\"uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2 cursor-pointer\" onclick=\"event.stopPropagation()\" hx-delete=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d", script.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 202, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 201, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -559,7 +559,7 @@ func ScraperTab(script *models.ScraperScript, activeID int64) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Are you sure you want to delete '%s'?", script.Name))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 203, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 202, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -674,7 +674,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d", script.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 241, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 240, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -692,7 +692,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(script.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 257, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 256, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -725,7 +725,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(script.Schedule)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 290, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 289, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -754,7 +754,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("display: %s", getDisplayStyle(script.Language == "python")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 309, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 308, Col: 109}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -786,7 +786,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/run", script.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 332, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 331, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -799,7 +799,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/cancel", script.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 343, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 342, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -817,7 +817,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/toggle", script.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 354, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 353, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -840,7 +840,7 @@ func ScraperEditorTabContent(script *models.ScraperScript) templ.Component {
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/toggle", script.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 365, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 364, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -889,20 +889,20 @@ func ScraperLogsTabContent(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/logs", script.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 389, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 388, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\"><div class=\"text-muted-foreground mb-2\">Live Output</div><div id=\"log-output-container\" style=\"display:flex; flex-direction:column; gap:2px;\"></div></div><div id=\"scraper-logs-container\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\"><div class=\"text-muted-foreground mb-2\">Live Output</div><div id=\"log-output-container\" class=\"log-output-container\"></div></div><div id=\"scraper-logs-container\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/logs/view", script.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 394, Col: 96}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 393, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -977,7 +977,7 @@ func ScraperScriptRow(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", script.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 412, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 411, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -990,7 +990,7 @@ func ScraperScriptRow(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(script.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 415, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 414, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -1003,7 +1003,7 @@ func ScraperScriptRow(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var37 string
 		templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(script.Language)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 417, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 416, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 		if templ_7745c5c3_Err != nil {
@@ -1016,7 +1016,7 @@ func ScraperScriptRow(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(script.Schedule)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 418, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 417, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -1029,7 +1029,7 @@ func ScraperScriptRow(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(script.FormatLastRun())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 419, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 418, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1140,7 +1140,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 			var templ_7745c5c3_Var42 string
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", pagination["current_page"]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 453, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 452, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 			if templ_7745c5c3_Err != nil {
@@ -1153,7 +1153,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", pagination["total_pages"]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 453, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 452, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 			if templ_7745c5c3_Err != nil {
@@ -1166,7 +1166,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", pagination["total_count"]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 454, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 453, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -1216,7 +1216,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 				var templ_7745c5c3_Var45 string
 				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["prev_page"]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 479, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 478, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
@@ -1239,7 +1239,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", pagination["current_page"]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 490, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 489, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -1252,7 +1252,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", pagination["total_pages"]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 490, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 489, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 			if templ_7745c5c3_Err != nil {
@@ -1270,7 +1270,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 				var templ_7745c5c3_Var48 string
 				templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["next_page"]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 496, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 495, Col: 115}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 				if templ_7745c5c3_Err != nil {
@@ -1358,7 +1358,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 		var templ_7745c5c3_Var50 string
 		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatStartTime())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 526, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 525, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 		if templ_7745c5c3_Err != nil {
@@ -1371,7 +1371,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatDuration())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 527, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 526, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
@@ -1384,7 +1384,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 		var templ_7745c5c3_Var52 string
 		templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/scraper/%d/logs/%d", log.ScriptID, log.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 532, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 531, Col: 79}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 		if templ_7745c5c3_Err != nil {
@@ -1402,7 +1402,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 543, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 542, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1420,7 +1420,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 545, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 544, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
@@ -1438,7 +1438,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 547, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 546, Col: 107}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
@@ -1456,7 +1456,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 549, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 548, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1474,7 +1474,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 551, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 550, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
@@ -1511,7 +1511,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(*log.ErrorMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 562, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 561, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1589,7 +1589,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(getCodeEditorLanguage(script.Language))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 585, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 584, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 		if templ_7745c5c3_Err != nil {
@@ -1602,7 +1602,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(getScriptPlaceholder(script.Language))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 588, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 587, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
@@ -1615,7 +1615,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var63 string
 		templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(script.Script)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 589, Col: 19}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 588, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 		if templ_7745c5c3_Err != nil {
@@ -1628,7 +1628,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(fmt.Sprintf("display: %s", getDisplayStyle(script.ID == 0 || script.Language == "bash")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 594, Col: 129}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 593, Col: 129}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1641,7 +1641,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(getSharedScriptContent(script.SharedScript))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 605, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 604, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 		if templ_7745c5c3_Err != nil {

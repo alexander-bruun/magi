@@ -127,15 +127,14 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
             </div>
             
             <!-- Search Input -->
-            <div class="uk-inline" style="position: relative;">
+            <div class="uk-inline search-input-container">
                 <input
                     id="search-input"
-                    class="uk-input uk-form-small"
+                    class="uk-input uk-form-small search-input"
                     type="text"
                     name="search"
                     placeholder="Search by title..."
                     value={ searchFilter }
-                    style="padding-right: 32px;"
                     hx-get={ path }
                     hx-target={ "#" + targetID }
                     hx-include="#sort-controls-form"
@@ -146,8 +145,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 if searchFilter != "" {
                     <button
                         type="button"
-                        class="uk-btn uk-btn-icon uk-btn-small"
-                        style="position: absolute; right: 2px; top: 50%; padding: 0; width: 24px; height: 24px; min-height: 24px; background: transparent; border: none;"
+                        class="uk-btn uk-btn-icon uk-btn-small search-clear-btn"
                         hx-get={ path }
                         hx-target={ "#" + targetID }
                         hx-include="#sort-controls-form"
@@ -200,14 +198,14 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
 
 // TagsDropdownButton renders inline tag filter button with dropdown
 templ TagsDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
-    <div class="uk-inline" style="display:inline-block;">
+    <div class="uk-inline filter-dropdown-inline">
         <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
             <uk-icon icon="Tag"></uk-icon>
         </button>
         <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
                 <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                    <div class="uk-flex-center uk-flex-middle uk-text-center filter-controls-center">
                         <div class="uk-inline">
                             <div class="uk-btn-group uk-width-auto">
                                 @TagModeToggleButtonInline(path, targetID, parentID, tagMode)
@@ -217,7 +215,7 @@ templ TagsDropdownButton(path string, targetID string, parentID string, currentS
                         </div>
                     </div>
                 </div>
-                <div id="tag-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                <div id="tag-list" class="uk-margin-small-top tag-list-scroll">
                     @TagsFragment(allTags, selectedTags)
                 </div>
             </form>
@@ -285,14 +283,14 @@ templ TagClearButton(path string, targetID string, parentID string) {
 
 // TypesDropdownButton renders inline type filter button with dropdown
 templ TypesDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTypes []string, allTypes []string) {
-    <div class="uk-inline" style="display:inline-block;">
+    <div class="uk-inline filter-dropdown-inline">
         <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by types">
             <uk-icon icon="Filter"></uk-icon>
         </button>
         <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="type-filter-form" class="uk-form">
                 <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center" style="margin-bottom: 10px;">
+                    <div class="uk-flex-center uk-flex-middle uk-text-center filter-controls-center">
                         <div class="uk-inline">
                             <div class="uk-btn-group uk-width-auto">
                                 @TypeApplyButton(path, targetID, parentID)
@@ -301,7 +299,7 @@ templ TypesDropdownButton(path string, targetID string, parentID string, current
                         </div>
                     </div>
                 </div>
-                <div id="type-list" class="uk-margin-small-top" style="max-height:300px; overflow:auto;">
+                <div id="type-list" class="uk-margin-small-top type-list-scroll">
                     @TypesFragment(allTypes, selectedTypes)
                 </div>
             </form>

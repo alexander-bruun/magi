@@ -70,7 +70,7 @@ templ Better(currentPage int) {
 									<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
 								</td>
 								<td class="uk-text-center">
-									<div class="uk-flex uk-flex-center uk-flex-middle" style="gap: 8px;">
+									<div class="uk-flex uk-flex-center uk-flex-middle flex-gap-8">
 										<button 
 											class="uk-btn uk-btn-secondary uk-btn-small"
 											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
@@ -115,12 +115,12 @@ templ Better(currentPage int) {
 	<!-- Delete Modal -->
 	<div id="delete-modal" uk-modal>
 		<div class="uk-modal-dialog">
-			<div class="uk-modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+			<div class="uk-modal-header modal-header">
 				<h2 class="uk-modal-title uk-margin-remove">Delete Duplicate Folder</h2>
 				<button class="uk-modal-close" type="button" uk-close></button>
 			</div>
 			<div class="uk-modal-body">
-				<p class="uk-text-warning" style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+				<p class="uk-text-warning warning-flex">
 					<uk-icon icon="TriangleAlert"></uk-icon>
 					<span>Select which folder to delete. This action cannot be undone!</span>
 				</p>
@@ -189,11 +189,11 @@ templ Better(currentPage int) {
 							<code class="uk-text-small uk-text-muted">${folder.path}</code>
 						</div>
 						<div class="uk-margin-small">
-							<p class="uk-text-small uk-margin-remove" style="display: flex; align-items: center; gap: 4px;">
+							<p class="uk-text-small uk-margin-remove flex-gap-4">
 								<uk-icon icon="File"></uk-icon>
 								<strong>Files:</strong> ${folder.file_count}
 							</p>
-							<p class="uk-text-small uk-margin-remove" style="display: flex; align-items: center; gap: 4px;">
+							<p class="uk-text-small uk-margin-remove flex-gap-4">
 								<uk-icon icon="Clock"></uk-icon>
 								<strong>Modified:</strong> ${lastModified}
 							</p>

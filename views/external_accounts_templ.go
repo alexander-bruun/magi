@@ -61,12 +61,12 @@ func ExternalAccountsPage(accounts []models.UserExternalAccount) templ.Component
 				return templ_7745c5c3_Err
 			}
 		} else if malAccount.AccessToken == "" || len(malAccount.AccessToken) < 30 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"mb-4\">Your MyAnimeList credentials are saved.</p><a href=\"/account/external/mal/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with MyAnimeList</a><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"mb-4\">Your MyAnimeList credentials are saved.</p><a href=\"/account/external/mal/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with MyAnimeList</a><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" class=\"form-inline\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"mb-4\">Your MyAnimeList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"mb-4\">Your MyAnimeList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/mal/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" class=\"form-inline\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -87,12 +87,12 @@ func ExternalAccountsPage(accounts []models.UserExternalAccount) templ.Component
 				return templ_7745c5c3_Err
 			}
 		} else if anilistAccount.AccessToken == "" || len(anilistAccount.AccessToken) < 30 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"mb-4\">Your AniList credentials are saved.</p><a href=\"/account/external/anilist/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with AniList</a><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"mb-4\">Your AniList credentials are saved.</p><a href=\"/account/external/anilist/authorize\" class=\"uk-btn uk-btn-secondary mr-2\">Authorize with AniList</a><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" class=\"form-inline\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"mb-4\">Your AniList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" style=\"display: inline;\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<p class=\"mb-4\">Your AniList account is authorized.</p><button class=\"uk-btn uk-btn-secondary mr-2\" disabled>Authorized</button><form hx-post=\"/account/external/anilist/disconnect\" hx-target=\"#content\" hx-swap=\"innerHTML\" class=\"form-inline\"><button class=\"uk-btn uk-btn-destructive\" type=\"submit\">Disconnect</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

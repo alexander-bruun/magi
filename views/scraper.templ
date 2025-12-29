@@ -197,7 +197,6 @@ templ ScraperTab(script *models.ScraperScript, activeID int64) {
 		<button 
 			type="button"
 			class="uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2 cursor-pointer"
-			style="cursor: pointer;"
 			onclick="event.stopPropagation()"
 			hx-delete={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
 			hx-confirm={ fmt.Sprintf("Are you sure you want to delete '%s'?", script.Name) }
@@ -388,7 +387,7 @@ templ ScraperLogsTabContent(script *models.ScraperScript) {
 		hx-ext="ws" 
 		ws-connect={ fmt.Sprintf("/admin/scraper/%d/logs", script.ID) }>
 		<div class="text-muted-foreground mb-2">Live Output</div>
-		<div id="log-output-container" style="display:flex; flex-direction:column; gap:2px;"></div>
+		<div id="log-output-container" class="log-output-container"></div>
 	</div>
 
 	<div id="scraper-logs-container" hx-get={ fmt.Sprintf("/admin/scraper/%d/logs/view", script.ID) } hx-trigger="load" hx-swap="innerHTML">
