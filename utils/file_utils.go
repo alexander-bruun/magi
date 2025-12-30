@@ -540,7 +540,7 @@ func listImagesInRar(rarPath string) ([]string, error) {
 }
 
 // ExtractAndStoreImageWithCrop extracts an image (from a file path or archive) and stores it with optional cropping.
-func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int) (string, error) {
+func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int, useWebP bool) (string, error) {
 	dataDir := GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
@@ -560,7 +560,7 @@ func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[st
 		if !strings.HasSuffix(lowerPath, ".cbz") && !strings.HasSuffix(lowerPath, ".cbr") &&
 			!strings.HasSuffix(lowerPath, ".zip") && !strings.HasSuffix(lowerPath, ".rar") {
 			// It's a direct image file
-			return processCroppedImage(imagePath, slug, postersDir, cropData, quality)
+			return processCroppedImage(imagePath, slug, postersDir, cropData, quality, useWebP)
 		}
 	}
 
@@ -569,14 +569,40 @@ func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[st
 	return "", fmt.Errorf("archive image extraction not yet supported for custom posters")
 }
 
-func processCroppedImage(imagePath, slug, dataDir string, cropData map[string]interface{}, quality int) (string, error) {
-	// Always save as JPG for consistency and compression
-	originalFile := filepath.Join(dataDir, fmt.Sprintf("%s_original.jpg", slug))
-	croppedFile := filepath.Join(dataDir, fmt.Sprintf("%s.jpg", slug))
+func processCroppedImage(imagePath, slug, dataDir string, cropData map[string]interface{}, quality int, useWebP bool) (string, error) {
+	// Save as WebP if enabled, otherwise JPEG
+	var originalFile, croppedFile, ext string
+	if useWebP {
+		originalFile = filepath.Join(dataDir, fmt.Sprintf("%s_original.webp", slug)) // Save original as WebP with extended build
+		croppedFile = filepath.Join(dataDir, fmt.Sprintf("%s.webp", slug))
+		ext = "webp"
+	} else {
+		originalFile = filepath.Join(dataDir, fmt.Sprintf("%s_original.jpg", slug))
+		croppedFile = filepath.Join(dataDir, fmt.Sprintf("%s.jpg", slug))
+		ext = "jpg"
+	}
 
-	// Copy original and convert to JPG
-	if err := CopyFile(imagePath, originalFile); err != nil {
-		return "", fmt.Errorf("failed to copy image: %w", err)
+	// Load the source image and save it in the appropriate format
+	img, err := OpenImage(imagePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open source image: %w", err)
+	}
+
+	// Save the original in the processing format
+	if strings.HasSuffix(originalFile, ".webp") {
+		// Use EncodeImageToBytes for WebP (available in extended build)
+		data, encodeErr := EncodeImageToBytes(img, "webp", quality)
+		if encodeErr != nil {
+			return "", fmt.Errorf("failed to encode original image as WebP: %w", encodeErr)
+		}
+		if err := os.WriteFile(originalFile, data, 0644); err != nil {
+			return "", fmt.Errorf("failed to save original image: %w", err)
+		}
+	} else {
+		// Use saveProcessedImage for JPEG
+		if err := saveProcessedImage(originalFile, img, quality); err != nil {
+			return "", fmt.Errorf("failed to save original image: %w", err)
+		}
 	}
 
 	// Apply cropping if provided
@@ -584,7 +610,7 @@ func processCroppedImage(imagePath, slug, dataDir string, cropData map[string]in
 		return "", fmt.Errorf("failed to process image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/posters/%s.jpg?v=%s", slug, GenerateRandomString(8)), nil
+	return fmt.Sprintf("/api/posters/%s.%s", slug, ext), nil
 }
 
 // GetDataDirectory returns the data directory path
@@ -746,7 +772,7 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 }
 
 // ExtractAndStoreImageWithCropByIndex extracts an image by index with cropping
-func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}) (string, error) {
+func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, useWebP bool) (string, error) {
 	dataDir := GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
@@ -801,7 +827,7 @@ func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int,
 		}
 	}
 
-	return processCroppedImage(imagePath, slug, postersDir, cropData, 100)
+	return processCroppedImage(imagePath, slug, postersDir, cropData, 100, useWebP)
 }
 
 // extractImageFromZipToPath extracts a specific image from a zip archive

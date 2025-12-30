@@ -228,6 +228,13 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	dataDir := utils.GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 
+	// Get config to determine WebP support
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	useWebP := !cfg.DisableWebpConversion
+
 	// Check for file upload
 	if file, err := c.FormFile("poster"); err == nil {
 		// Handle upload
@@ -242,29 +249,37 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		}
 		defer os.Remove(tempPath) // Clean up temp file
 
-		// Load and convert to WebP
+		// Load and convert to appropriate format
 		img, err := utils.OpenImage(tempPath)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
-		imageData, err := utils.EncodeImageToBytes(img, "webp", 100)
+		var format string
+		var cachePath string
+		if useWebP {
+			format = "webp"
+			cachePath = fmt.Sprintf("posters/%s.webp", mangaSlug)
+		} else {
+			format = "jpeg"
+			cachePath = fmt.Sprintf("posters/%s.jpg", mangaSlug)
+		}
+
+		imageData, err := utils.EncodeImageToBytes(img, format, 100)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
-		cachePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
 		if err := dataManager.Save(cachePath, imageData); err != nil {
 			return sendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Generate thumbnails
-		fullImagePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
-		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
+		if err := utils.GenerateThumbnails(cachePath, mangaSlug, dataManager.Backend()); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
 
-		storedImageURL := fmt.Sprintf("/api/posters/%s.webp?t=%d", mangaSlug, time.Now().Unix())
+		storedImageURL := fmt.Sprintf("/api/posters/%s.%s", mangaSlug, format)
 
 		// Update media with new cover art URL
 		media.CoverArtURL = storedImageURL
@@ -318,13 +333,18 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Extract crop from image and cache it
-	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData)
+	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, useWebP)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
-	fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
+	var fullImagePath string
+	if useWebP {
+		fullImagePath = fmt.Sprintf("posters/%s.webp", mangaSlug)
+	} else {
+		fullImagePath = fmt.Sprintf("posters/%s.jpg", mangaSlug)
+	}
 	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)

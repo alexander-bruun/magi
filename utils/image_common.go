@@ -403,19 +403,35 @@ func OpenImage(path string) (image.Image, error) {
 
 // saveProcessedImage encodes and saves a processed image to the specified path.
 func saveProcessedImage(filePath string, img image.Image, quality int) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
 	switch {
 	case strings.HasSuffix(filePath, ".jpg"), strings.HasSuffix(filePath, ".jpeg"):
+		file, err := os.Create(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %w", err)
+		}
+		defer file.Close()
 		return jpeg.Encode(file, img, &jpeg.Options{Quality: quality})
 	case strings.HasSuffix(filePath, ".png"):
+		file, err := os.Create(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %w", err)
+		}
+		defer file.Close()
 		return png.Encode(file, img)
 	case strings.HasSuffix(filePath, ".gif"):
+		file, err := os.Create(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %w", err)
+		}
+		defer file.Close()
 		return gif.Encode(file, img, nil)
+	case strings.HasSuffix(filePath, ".webp"):
+		// Use EncodeImageToBytes for WebP (available in extended build)
+		data, err := EncodeImageToBytes(img, "webp", quality)
+		if err != nil {
+			return fmt.Errorf("failed to encode WebP: %w", err)
+		}
+		return os.WriteFile(filePath, data, 0644)
 	default:
 		return fmt.Errorf("unsupported file format: %s", filePath)
 	}
