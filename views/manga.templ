@@ -1062,15 +1062,6 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
 	</button>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
-	if userRole != "" {
-		<div
-			id="read-state"
-			hx-post={ fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug) }
-			hx-trigger="load"
-			hx-swap="none"
-			class="hidden"
-		></div>
-	}
 	@ChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
 	<!-- Pagination Controls (hidden in webtoon mode) -->
 	<div id="reader-pagination" class="reader-pagination">

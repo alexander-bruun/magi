@@ -184,9 +184,9 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 	return data, nil
 }
 
-// MarkChapterReadIfNeeded marks a chapter as read for non-HTMX requests
+// MarkChapterReadIfNeeded marks a chapter as read for the logged-in user
 func MarkChapterReadIfNeeded(userName, mediaSlug, chapterSlug string, isHTMX bool) error {
-	if userName != "" && !isHTMX {
+	if userName != "" {
 		err := models.MarkChapterRead(userName, mediaSlug, chapterSlug)
 		if err != nil {
 			return err
@@ -288,7 +288,7 @@ func HandleChapter(c *fiber.Ctx) error {
 		comments = []models.Comment{} // Initialize empty slice on error
 	}
 
-	// Mark read if needed (fallback for non-HTMX requests)
+	// Mark read if needed
 	err = MarkChapterReadIfNeeded(userName, mangaSlug, chapterSlug, IsHTMXRequest(c))
 	if err != nil {
 		// Log error but don't fail the request
