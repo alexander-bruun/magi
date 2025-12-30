@@ -128,6 +128,11 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 		log.Errorf("Failed to lookup media '%s': %s", slug, err)
 	}
 
+	var oldLibrary string
+	if existingMedia != nil {
+		oldLibrary = existingMedia.LibrarySlug
+	}
+
 	if existingMedia != nil && existingMedia.LibrarySlug != librarySlug {
 		// Count chapters in the new path
 		var newCandidateCount int
@@ -150,18 +155,65 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 			})
 		}
 
+		// Ensure existing media's FileCount is accurate before comparison
+		var existingCandidateCount int
+		if existingMedia.FileCount > 0 {
+			// Use stored count if it's non-zero
+			existingCandidateCount = existingMedia.FileCount
+		} else {
+			// Recalculate if FileCount is 0 (might be outdated)
+			if existingMedia.Path != "" {
+				existingFileInfo, err := os.Stat(existingMedia.Path)
+				if err == nil && !existingFileInfo.IsDir() {
+					// Single file
+					existingCandidateCount = 1
+				} else if err == nil {
+					// Directory - count chapter files
+					_ = filepath.WalkDir(existingMedia.Path, func(p string, d fs.DirEntry, walkErr error) error {
+						if walkErr != nil {
+							return nil
+						}
+						if d.IsDir() {
+							return nil
+						}
+						name := d.Name()
+						cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
+						if containsNumber(cleanedName) {
+							existingCandidateCount++
+						}
+						return nil
+					})
+				}
+				// Update the stored FileCount for future use
+				if existingCandidateCount > 0 {
+					existingMedia.FileCount = existingCandidateCount
+					if err := models.UpdateMedia(existingMedia); err != nil {
+						log.Errorf("Failed to update FileCount for existing media '%s': %v", slug, err)
+					}
+				}
+			}
+		}
+
+		// Check if we've already recorded this duplicate
+		fp1, fp2 := existingMedia.Path, absolutePath
+		if fp1 > fp2 {
+			fp1, fp2 = fp2, fp1
+		}
+		existingDup, err := models.GetMediaDuplicateByFolders(slug, fp1, fp2)
+		if err != nil {
+			log.Errorf("Failed to check existing media duplicate for '%s': %v", slug, err)
+		}
+
 		// If the new source has more chapters, prioritize it
 		if newCandidateCount > existingMedia.FileCount {
-			log.Infof("Prioritizing cross-library source with more chapters for media '%s': old library='%s' folder='%s' (%d chapters), new library='%s' folder='%s' (%d chapters)",
-				slug, existingMedia.LibrarySlug, existingMedia.Path, existingMedia.FileCount, librarySlug, absolutePath, newCandidateCount)
 			// Delete existing chapters since file paths may change
 			if err := models.DeleteChaptersByMediaSlug(slug); err != nil {
 				log.Errorf("Failed to delete chapters for media '%s': %v", slug, err)
 			}
 			existingMedia.Path = absolutePath
 			existingMedia.LibrarySlug = librarySlug
-			existingMedia.FileCount = 0
-			existingMedia.UpdatedAt = time.Now()
+			existingMedia.FileCount = 0          // Will be updated after re-indexing
+			existingMedia.UpdatedAt = time.Now() // Force re-indexing
 			if err := models.UpdateMedia(existingMedia); err != nil {
 				log.Errorf("Failed to update media for cross-library prioritization '%s': %s", slug, err)
 			} else {
@@ -169,23 +221,8 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 			}
 			// Now treat it as existing media in the new library
 		} else {
-			// Record cross-library duplicate
-			fp1, fp2 := existingMedia.Path, absolutePath
-			if fp1 > fp2 {
-				fp1, fp2 = fp2, fp1
-			}
-
-			// Check if we've already recorded this duplicate; if so, skip logging/creating
-			existingDup, err := models.GetMediaDuplicateByFolders(slug, fp1, fp2)
-			if err != nil {
-				log.Errorf("Failed to check existing media duplicate for '%s': %v", slug, err)
-			}
-
+			// Record cross-library duplicate if not already recorded
 			if existingDup == nil {
-				// This is a new duplicate: log and record it
-				log.Warnf("Detected cross-library duplicate for media '%s': library '%s' folder='%s', library '%s' folder='%s'",
-					slug, existingMedia.LibrarySlug, existingMedia.Path, librarySlug, absolutePath)
-
 				duplicate := models.MediaDuplicate{
 					MediaSlug:   slug,
 					LibrarySlug: librarySlug,
@@ -202,7 +239,7 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 	}
 
 	if existingMedia != nil {
-		return handleExistingMedia(existingMedia, absolutePath, librarySlug, cleanedName, slug, provider, fileInfo, isSingleFile)
+		return handleExistingMedia(existingMedia, absolutePath, librarySlug, cleanedName, slug, provider, fileInfo, isSingleFile, oldLibrary)
 	} else {
 		return handleNewMedia(cleanedName, slug, librarySlug, absolutePath, provider, isSingleFile)
 	}
@@ -593,6 +630,7 @@ func processDeletionsDryRun(presentMap map[string]presentInfo, existingMap map[s
 
 // updateMediaFileCount updates the media's file count
 func updateMediaFileCount(slug string, fileCount int) {
+	log.Debugf("Updating media '%s' file count to %d", slug, fileCount)
 	m, err := models.GetMediaUnfiltered(slug)
 	if err == nil && m != nil {
 		m.FileCount = fileCount
@@ -844,7 +882,7 @@ func extractAndCacheEPUBImage(reader *zip.ReadCloser, imagePath, epubPath string
 }
 
 // handleExistingMedia handles updating an existing media entry
-func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug, cleanedName, slug string, provider metadata.Provider, fileInfo os.FileInfo, isSingleFile bool) (string, error) {
+func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug, cleanedName, slug string, provider metadata.Provider, fileInfo os.FileInfo, isSingleFile bool, oldLibrary string) (string, error) {
 	// If existing media has no tags, try to fetch metadata to get tags
 	if len(existingMedia.Tags) == 0 && provider != nil {
 		meta, err := provider.FindBestMatch(cleanedName)
@@ -855,81 +893,6 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 				log.Debugf("Fetched and set %d tags for existing media '%s'", len(meta.Tags), slug)
 			}
 		}
-	}
-
-	// Detect if this is a different folder being added to an existing media
-	if existingMedia.Path != "" && existingMedia.Path != absolutePath {
-		// Count chapters in the new folder
-		var newCandidateCount int
-		if isSingleFile {
-			newCandidateCount = 1
-		} else {
-			_ = filepath.WalkDir(absolutePath, func(p string, d fs.DirEntry, walkErr error) error {
-				if walkErr != nil {
-					return nil
-				}
-				if d.IsDir() {
-					return nil
-				}
-				name := d.Name()
-				cleanedName := utils.RemovePatterns(strings.TrimSuffix(name, filepath.Ext(name)))
-				if containsNumber(cleanedName) {
-					newCandidateCount++
-				}
-				return nil
-			})
-		}
-
-		originalPath := existingMedia.Path
-
-		// If the new folder has more chapters, prioritize it
-		if newCandidateCount > existingMedia.FileCount {
-			log.Infof("Prioritizing new folder with more chapters for media '%s': old='%s' (%d chapters), new='%s' (%d chapters)",
-				slug, existingMedia.Path, existingMedia.FileCount, absolutePath, newCandidateCount)
-			// Delete existing chapters since file paths may change
-			if err := models.DeleteChaptersByMediaSlug(slug); err != nil {
-				log.Errorf("Failed to delete chapters for media '%s': %v", slug, err)
-			}
-			existingMedia.Path = absolutePath
-			existingMedia.FileCount = 0
-			existingMedia.UpdatedAt = time.Now()
-			if err := models.UpdateMedia(existingMedia); err != nil {
-				log.Errorf("Failed to update media path for '%s': %s", slug, err)
-			} else {
-				BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' - switched to better source with %d chapters", cleanedName, newCandidateCount))
-			}
-		}
-
-		// Ensure consistent ordering for the DB lookup
-		fp1, fp2 := originalPath, absolutePath
-		if fp1 > fp2 {
-			fp1, fp2 = fp2, fp1
-		}
-
-		// Check if we've already recorded this duplicate; if so, skip logging/creating
-		existingDup, err := models.GetMediaDuplicateByFolders(slug, fp1, fp2)
-		if err != nil {
-			// On DB error, fall back to logging and attempt to create (best-effort)
-			log.Errorf("Failed to check existing media duplicate for '%s': %v", slug, err)
-		}
-
-		if existingDup == nil {
-			// This is a new duplicate: log and record it
-			log.Warnf("Detected duplicate folder for media '%s': existing='%s', new='%s'",
-				slug, originalPath, absolutePath)
-
-			duplicate := models.MediaDuplicate{
-				MediaSlug:   slug,
-				LibrarySlug: librarySlug,
-				FolderPath1: originalPath,
-				FolderPath2: absolutePath,
-			}
-
-			if err := models.CreateMediaDuplicate(duplicate); err != nil {
-				log.Errorf("Failed to record media duplicate for '%s': %v", slug, err)
-			}
-		}
-		// Still index the chapters from this new folder
 	}
 
 	// Fast path 1: use stored file_count on the Media. If the number of
@@ -977,16 +940,27 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 	}
 
 	// Skip indexing if the directory hasn't been modified since last update
-	if !fileInfo.ModTime().After(existingMedia.UpdatedAt) {
-		log.Debugf("Skipping indexing for unchanged media '%s'", slug)
+	// But force re-indexing if the library changed (cross-library prioritization) or path changed
+	// Or if the media was updated very recently (within last hour, indicating prioritization)
+	forceReindex := existingMedia.LibrarySlug != librarySlug || existingMedia.Path != absolutePath
+	recentlyUpdated := time.Since(existingMedia.UpdatedAt) < 1*time.Hour
+	if recentlyUpdated {
+		forceReindex = true
+	}
+	if !forceReindex && !fileInfo.ModTime().After(existingMedia.UpdatedAt) {
 		return slug, nil
 	}
 
-	// Index chapters recursively; returns added and deleted counts.
 	added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, false)
 	if err != nil {
 		log.Errorf("Failed to index chapters for existing media '%s': %s", slug, err)
 		return slug, err
+	}
+
+	// Update FileCount after indexing
+	existingMedia.FileCount = existingMedia.FileCount + added - deleted
+	if err := models.UpdateMedia(existingMedia); err != nil {
+		log.Errorf("Failed to update media file count for '%s': %s", slug, err)
 	}
 
 	if added > 0 && len(newChapterSlugs) > 0 {
@@ -996,7 +970,11 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 	}
 
 	if added > 0 || deleted > 0 {
-		log.Infof("Updated series: '%s' (added: %d deleted: %d)", cleanedName, added, deleted)
+		if oldLibrary != "" && oldLibrary != librarySlug {
+			log.Infof("Updated series: %s (added=%d deleted=%d, switched from %s to %s)", cleanedName, added, deleted, oldLibrary, librarySlug)
+		} else {
+			log.Infof("Updated series: %s (added=%d deleted=%d) in %s", cleanedName, added, deleted, librarySlug)
+		}
 		BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Updated series '%s' (added: %d chapters, deleted: %d)", cleanedName, added, deleted))
 	}
 	return slug, nil
