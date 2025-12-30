@@ -1,11 +1,7 @@
 package handlers
 
 import (
-	"archive/zip"
-	"bytes"
 	"fmt"
-	"image"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,9 +10,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/chai2010/webp"
 	fiber "github.com/gofiber/fiber/v2"
-	"github.com/nwaples/rardecode/v2"
 )
 
 // ImageServeData holds data needed for serving images
@@ -74,35 +68,6 @@ func GetCompressionQualityForUser(userName string) int {
 	return models.GetCompressionQualityForRole("anonymous")
 }
 
-// ProcessImageForServing processes an image for serving with compression
-func ProcessImageForServing(filePath string, quality int) ([]byte, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
 // GetImagesFromDirectory gets image files from a directory
 func GetImagesFromDirectory(dirPath string, page int) (string, error) {
 	entries, err := os.ReadDir(dirPath)
@@ -130,169 +95,6 @@ func GetImagesFromDirectory(dirPath string, page int) (string, error) {
 	}
 
 	return filepath.Join(dirPath, imageFiles[page-1]), nil
-}
-
-// ServeComicArchiveFromZIP serves an image from a ZIP archive
-func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
-	r, err := zip.OpenReader(filePath)
-	if err != nil {
-		return nil, "", err
-	}
-	defer r.Close()
-
-	// Get sorted list of image files
-	var imageFiles []string
-	for _, f := range r.File {
-		lowerName := strings.ToLower(f.Name)
-		if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") ||
-			strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".gif") ||
-			strings.HasSuffix(lowerName, ".webp") {
-			imageFiles = append(imageFiles, f.Name)
-		}
-	}
-
-	sort.Strings(imageFiles)
-
-	if page < 1 || page > len(imageFiles) {
-		return nil, "", fmt.Errorf("page %d out of range", page)
-	}
-
-	file := r.File[page-1]
-	rc, err := file.Open()
-	if err != nil {
-		return nil, "", err
-	}
-	defer rc.Close()
-
-	if disableWebpConversion {
-		// Serve original image without recompression
-		data, err := io.ReadAll(rc)
-		if err != nil {
-			return nil, "", err
-		}
-		ext := strings.ToLower(filepath.Ext(file.Name))
-		var contentType string
-		switch ext {
-		case ".jpg", ".jpeg":
-			contentType = "image/jpeg"
-		case ".png":
-			contentType = "image/png"
-		case ".gif":
-			contentType = "image/gif"
-		case ".webp":
-			contentType = "image/webp"
-		default:
-			contentType = "application/octet-stream"
-		}
-		return data, contentType, nil
-	}
-
-	img, _, err := image.Decode(rc)
-	if err != nil {
-		return nil, "", err
-	}
-
-	var buf bytes.Buffer
-	// Use WebP
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), "image/webp", nil
-}
-
-// ServeComicArchiveFromRAR serves an image from a RAR archive
-func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
-	r, err := rardecode.OpenReader(filePath)
-	if err != nil {
-		return nil, "", err
-	}
-	defer r.Close()
-
-	// Get sorted list of image files
-	var imageFiles []*rardecode.FileHeader
-	for {
-		header, err := r.Next()
-		if err != nil {
-			break
-		}
-		lowerName := strings.ToLower(header.Name)
-		if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") ||
-			strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".gif") ||
-			strings.HasSuffix(lowerName, ".webp") {
-			imageFiles = append(imageFiles, header)
-		}
-	}
-
-	sort.Slice(imageFiles, func(i, j int) bool {
-		return imageFiles[i].Name < imageFiles[j].Name
-	})
-
-	if page < 1 || page > len(imageFiles) {
-		return nil, "", fmt.Errorf("page %d out of range", page)
-	}
-
-	// Skip to the desired file
-	r, err = rardecode.OpenReader(filePath)
-	if err != nil {
-		return nil, "", err
-	}
-	defer r.Close()
-
-	for i := 0; i < page; i++ {
-		_, err := r.Next()
-		if err != nil {
-			return nil, "", err
-		}
-	}
-
-	if disableWebpConversion {
-		// Serve original image without recompression
-		data, err := io.ReadAll(r)
-		if err != nil {
-			return nil, "", err
-		}
-		ext := strings.ToLower(filepath.Ext(imageFiles[page-1].Name))
-		var contentType string
-		switch ext {
-		case ".jpg", ".jpeg":
-			contentType = "image/jpeg"
-		case ".png":
-			contentType = "image/png"
-		case ".gif":
-			contentType = "image/gif"
-		case ".webp":
-			contentType = "image/webp"
-		default:
-			contentType = "application/octet-stream"
-		}
-		return data, contentType, nil
-	}
-
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return nil, "", err
-	}
-
-	var buf bytes.Buffer
-	// Use WebP
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), "image/webp", nil
 }
 
 // ComicHandler processes requests to serve comic book pages based on the provided query parameters.
@@ -344,8 +146,8 @@ func ComicHandler(c *fiber.Ctx) error {
 		strings.HasSuffix(lowerFileName, ".png"), strings.HasSuffix(lowerFileName, ".webp"),
 		strings.HasSuffix(lowerFileName, ".gif"):
 		// Process image for serving
-		imageBytes, err := ProcessImageForServing(imageData.FilePath, quality)
-		c.Set("Content-Type", "image/webp")
+		imageBytes, contentType, err := ProcessImageForServing(imageData.FilePath, quality)
+		c.Set("Content-Type", contentType)
 		if err != nil {
 			// If encoding fails, serve original
 			return c.SendFile(imageData.FilePath)
@@ -382,8 +184,8 @@ func serveImageFromDirectory(c *fiber.Ctx, dirPath string, page int) error {
 	quality := GetCompressionQualityForUser(userName)
 
 	// Process image for serving
-	imageBytes, err := ProcessImageForServing(imagePath, quality)
-	c.Set("Content-Type", "image/jpeg")
+	imageBytes, contentType, err := ProcessImageForServing(imagePath, quality)
+	c.Set("Content-Type", contentType)
 	if err != nil {
 		// If encoding fails, serve original
 		return c.SendFile(imagePath)

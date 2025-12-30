@@ -1,5 +1,7 @@
 .tmp/
 *.out
+builds/
 magi
 node_modules/
+scripts/scrapers/*.json
 scripts/scrapers/start_all_scrapers.sh

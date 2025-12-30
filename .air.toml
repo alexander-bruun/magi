@@ -5,7 +5,7 @@ tmp_dir = ".tmp"
 [build]
 args_bin = []
 bin = "./.tmp/main"
-cmd = "if [ -f ./.tmp/main ]; then rm ./.tmp/main; fi && templ generate && go build -o ./.tmp/main ."
+cmd = "if [ -f ./.tmp/main ]; then rm ./.tmp/main; fi && templ generate && go build --tags extended -o ./.tmp/main ."
 delay = 1000
 exclude_dir = [".tmp", "testdata", "docs", "scripts"]
 exclude_file = []

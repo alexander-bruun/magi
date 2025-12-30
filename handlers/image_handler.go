@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"archive/zip"
-	"bytes"
 	"image"
 	"io"
 	"os"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
-	"github.com/chai2010/webp"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -165,15 +163,7 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
 	// Encode all images as WebP for better compression
-	var buf bytes.Buffer
-	// WebP quality is 0-100
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-	}
-	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
+	data, err := utils.EncodeImageToBytes(img, "webp", quality)
 	c.Set("Content-Type", "image/webp")
 
 	if err != nil {
@@ -199,7 +189,7 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	}
 
 	c.Set("Cache-Control", "public, max-age=31536000, immutable")
-	return c.Send(buf.Bytes())
+	return c.Send(data)
 }
 
 // handleImageRequest serves images with quality based on user role
@@ -329,15 +319,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
 	// Encode all images as WebP for better compression
-	var buf bytes.Buffer
-	// WebP quality is 0-100
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-	}
-	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
+	data, err := utils.EncodeImageToBytes(img, "webp", quality)
 	c.Set("Content-Type", "image/webp")
 
 	if err != nil {
@@ -363,7 +345,7 @@ func handleImageRequest(c *fiber.Ctx) error {
 	}
 
 	c.Set("Cache-Control", "public, max-age=31536000, immutable")
-	return c.Send(buf.Bytes())
+	return c.Send(data)
 }
 
 // ImageHandler serves images for both comics and light novels using token-based authentication
@@ -666,8 +648,8 @@ func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int)
 	quality := GetCompressionQualityForUser(userName)
 
 	// Process image for serving
-	imageBytes, err := ProcessImageForServing(imagePath, quality)
-	c.Set("Content-Type", "image/webp")
+	imageBytes, contentType, err := ProcessImageForServing(imagePath, quality)
+	c.Set("Content-Type", contentType)
 	var ext string
 	if err != nil {
 		// If encoding fails, serve original
