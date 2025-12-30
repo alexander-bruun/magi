@@ -2,3 +2,4 @@
 *.out
 magi
 node_modules/
+scripts/scrapers/start_all_scrapers.sh
