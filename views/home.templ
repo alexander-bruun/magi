@@ -86,7 +86,7 @@ templ TopReadList(media []models.Media, emptyMessage string, title string) {
 				<li class="flex items-center justify-between gap-3 py-2">
 					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 flex-1">
 						<div class="w-10 h-14 overflow-hidden rounded-sm">
-							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
+							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
 						</div>
 						<div class="flex-1">
 							<span class="font-medium">{ m.Name }</span>
@@ -115,7 +115,7 @@ templ TopPopularList(media []models.Media) {
 				<li class="flex items-center justify-between gap-3 py-2">
 					<div class="w-10 h-14 overflow-hidden rounded-sm">
 						<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
-							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true)
+							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
 						</a>
 					</div>
 					<div class="flex-1">
@@ -203,7 +203,7 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 		for _, chapter := range chapters {
 			<li class="flex items-center gap-3 p-3 rounded-lg uk-shadow-sm border">
 				<div class="w-12 h-16 overflow-hidden rounded">
-					@MediaCover(chapter.CoverArtURL, chapter.MediaName, 80, 112, true)
+					@MediaCover(chapter.CoverArtURL, chapter.MediaName, 80, 112, true, "")
 				</div>
 				<div class="flex-1 min-w-0">
 					<div class="flex items-center gap-2 mb-1">
@@ -241,7 +241,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 						<li class="highlight-slide">
 							<!-- Background Image -->
 							<div class="highlight-bg">
-								<img alt="" fetchpriority="high" loading="eager" decoding="async" src={ strings.Replace(highlight.Media.CoverArtURL, ".webp", "_small.webp", 1) } />
+								<img alt="" loading="eager" decoding="async" src={ strings.Replace(highlight.Media.CoverArtURL, ".webp", "_small.webp", 1) } />
 							</div>
 							
 							<!-- Content Grid -->
@@ -249,7 +249,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 								<!-- Poster (Left on desktop, top on mobile) -->
 								<div class="highlight-poster">
 									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="highlight-poster-link">
-										<img alt={ highlight.Media.Name } loading="lazy" src={ highlight.Media.CoverArtURL } />
+										<img alt={ highlight.Media.Name } fetchpriority="high" loading="eager" src={ highlight.Media.CoverArtURL } />
 									</a>
 								</div>
 								
@@ -504,7 +504,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 					<div class="flex-shrink-0 relative">
 									<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>
 							<div class="w-24 h-32 overflow-hidden rounded">
-								@MediaCover(item.Media.CoverArtURL, item.Media.Name, 96, 128, true)
+								@MediaCover(item.Media.CoverArtURL, item.Media.Name, 96, 128, true, "")
 							</div>
 						</a>
 					</div>

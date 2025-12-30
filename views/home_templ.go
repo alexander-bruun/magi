@@ -150,7 +150,7 @@ func TopReadList(media []models.Media, emptyMessage string, title string) templ.
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = MediaCover(m.CoverArtURL, m.Name, 60, 90, true).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -270,7 +270,7 @@ func TopPopularList(media []models.Media) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = MediaCover(m.CoverArtURL, m.Name, 60, 90, true).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -844,7 +844,7 @@ func RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MediaCover(chapter.CoverArtURL, chapter.MediaName, 80, 112, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MediaCover(chapter.CoverArtURL, chapter.MediaName, 80, 112, true, "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -973,14 +973,14 @@ func HighlightBanner(highlights []models.HighlightWithMedia) templ.Component {
 		}
 		for _, highlight := range highlights {
 			score, _, _, _ := models.GetMediaVotes(highlight.Media.Slug)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<li class=\"highlight-slide\"><!-- Background Image --><div class=\"highlight-bg\"><img alt=\"\" fetchpriority=\"high\" loading=\"eager\" decoding=\"async\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<li class=\"highlight-slide\"><!-- Background Image --><div class=\"highlight-bg\"><img alt=\"\" loading=\"eager\" decoding=\"async\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(strings.Replace(highlight.Media.CoverArtURL, ".webp", "_small.webp", 1))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 244, Col: 151}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 244, Col: 130}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1012,14 +1012,14 @@ func HighlightBanner(highlights []models.HighlightWithMedia) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\" loading=\"lazy\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\" fetchpriority=\"high\" loading=\"eager\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(highlight.Media.CoverArtURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 252, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 252, Col: 114}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1349,7 +1349,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = MediaCover(item.Media.CoverArtURL, item.Media.Name, 96, 128, true).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MediaCover(item.Media.CoverArtURL, item.Media.Name, 96, 128, true, "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

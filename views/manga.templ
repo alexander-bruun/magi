@@ -1004,7 +1004,7 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 			<div class="uk-card uk-card-default uk-card-body p-4 rounded-lg uk-shadow-sm flex flex-col h-full">
 				if result.CoverArtURL != "" {
 					<div class="mb-3 flex justify-center">
-						@MediaCover(result.CoverArtURL, result.Title, 120, 160, true)
+						@MediaCover(result.CoverArtURL, result.Title, 120, 160, true, "")
 					</div>
 				}
 				<div class="flex-1">

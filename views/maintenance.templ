@@ -32,7 +32,6 @@ templ MaintenancePage(message string) {
 		</head>
 		<body>
 			<div class="maintenance-container">
-				<div class="maintenance-icon">⚙️</div>
 				<h1>Maintenance Mode</h1>
 				<div class="maintenance-content">
 					@templ.Raw(template.HTML(message))

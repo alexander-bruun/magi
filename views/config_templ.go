@@ -456,7 +456,7 @@ func ConfigForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</label><p class=\"text-xs text-muted-foreground\">When enabled, images will be stored in their original format instead of being converted to WebP.</p></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mt-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 rounded-lg slider\" name=\"anonymous_compression_quality\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</label><p class=\"text-xs text-muted-foreground\">When enabled, images will be served in their original format instead of being converted to WebP.</p></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mt-2\">Anonymous compression quality</label><div class=\"flex items-center space-x-4\"><input type=\"range\" min=\"1\" max=\"100\" class=\"flex-1 h-2 rounded-lg slider\" name=\"anonymous_compression_quality\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

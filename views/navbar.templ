@@ -291,7 +291,7 @@ templ SearchMedias(media []models.Media) {
 			<a href={ templ.URL(fmt.Sprintf("/series/%s", m.Slug)) } class="block uk-modal-close" aria-label={ fmt.Sprintf("View %s", m.Name) }>
 				<div class="uk-card uk-card-default uk-card-body p-3 rounded-lg uk-shadow-sm">
 					<div class="flex justify-center items-center mb-3">
-						@MediaCover(m.CoverArtURL, m.Name, 150, 200, true)
+						@MediaCover(m.CoverArtURL, m.Name, 150, 200, true, "")
 					</div>
 					<h3 class="uk-card-title uk-h4 mb-2 text-center truncate-header" title={ m.Name }>{ m.Name }</h3>
 					<div class="text-center text-sm text-gray-500">

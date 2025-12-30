@@ -2524,7 +2524,7 @@ func UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) te
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = MediaCover(result.CoverArtURL, result.Title, 120, 160, true).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = MediaCover(result.CoverArtURL, result.Title, 120, 160, true, "").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

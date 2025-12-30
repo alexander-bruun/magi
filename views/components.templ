@@ -87,7 +87,7 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 				{ media.Name }
 			</h3>
 			<div class="flex justify-center items-center relative">
-				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed)
+				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed, "")
 				if isNewUpdate(media.UpdatedAt) {
 					<span class="uk-badge absolute top-2 right-2 badge-new-margin">
 						NEW
@@ -196,7 +196,7 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 }
 
 // MediaCover renders the media cover image with proper sizing
-templ MediaCover(coverURL string, altText string, width int, height int, fixed bool) {
+templ MediaCover(coverURL string, altText string, width int, height int, fixed bool, fetchPriority string) {
     {{ imageURL := coverURL }}
     // Use tiny thumbnail for very small displays
     if width <= 60 && height <= 90 {
@@ -208,11 +208,21 @@ templ MediaCover(coverURL string, altText string, width int, height int, fixed b
     }
     
     if fixed {
-        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText }/>
+        if fetchPriority != "" {
+            <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } fetchpriority={ fetchPriority }/>
+        } else {
+            <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText }/>
+        }
     } else {
-        <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-            <img src={ imageURL } alt={ altText } class="w-full h-full"/>
-        </div>
+        if fetchPriority != "" {
+            <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
+                <img src={ imageURL } alt={ altText } class="w-full h-full" fetchpriority={ fetchPriority }/>
+            </div>
+        } else {
+            <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
+                <img src={ imageURL } alt={ altText } class="w-full h-full"/>
+            </div>
+        }
     }
 }
 
@@ -431,13 +441,17 @@ templ Showcase(media []models.EnrichedMedia) {
         <div uk-slider>
             <div class="uk-position-relative" tabindex="-1">
                 <ul class="uk-slider-items slider-items">
-                    for _, media := range media {
+                    for i, media := range media {
                         {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
+                        {{ fetchPriority := "" }}
+                        if i == 0 {
+                            {{ fetchPriority = "high" }}
+                        }
                         <li>
                             <a href={ fmt.Sprintf("/series/%s", media.Slug) } class="block" aria-label={ fmt.Sprintf("View %s", media.Name) }>
                                 <div class="uk-card uk-card-default uk-card-body p-2 showcase-card">
                                     <div class="relative">
-                                        @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
+                                        @MediaCover(media.CoverArtURL, media.Name, 200, 300, true, fetchPriority)
                                         {{ derived := media.Type }}
                                         if derived == "" {
                                             {{ derived = metadata.DetermineMediaTypeByLanguage(media.OriginalLanguage) }}
