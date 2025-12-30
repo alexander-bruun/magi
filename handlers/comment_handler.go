@@ -27,7 +27,7 @@ func HandleGetComments(c *fiber.Ctx) error {
 
 	var comments []models.Comment
 	var err error
-	
+
 	if targetType == "chapter" {
 		// For chapter comments, filter by media_slug too
 		comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
@@ -35,7 +35,7 @@ func HandleGetComments(c *fiber.Ctx) error {
 		// For media comments, just use target
 		comments, err = models.GetCommentsByTarget(targetType, targetSlug)
 	}
-	
+
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -98,7 +98,7 @@ func HandleCreateComment(c *fiber.Ctx) error {
 		// Fetch updated comments
 		var comments []models.Comment
 		var err error
-		
+
 		if targetType == "chapter" {
 			// For chapter comments, filter by media_slug too
 			comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
@@ -106,7 +106,7 @@ func HandleCreateComment(c *fiber.Ctx) error {
 			// For media comments, just use target
 			comments, err = models.GetCommentsByTarget(targetType, targetSlug)
 		}
-		
+
 		if err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
@@ -141,10 +141,10 @@ func HandleCreateComment(c *fiber.Ctx) error {
 		}
 		html := buf.String()
 		wrapped := fmt.Sprintf(`<div id="comments-section" class="mt-8">%s</div>`, html)
-		
+
 		// Add success notification for HTMX requests
 		triggerNotification(c, "Comment posted successfully", "success")
-		
+
 		return c.SendString(wrapped)
 	}
 

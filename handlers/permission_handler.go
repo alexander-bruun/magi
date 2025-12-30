@@ -12,12 +12,12 @@ import (
 
 // PermissionFormData represents form data for creating/updating permissions
 type PermissionFormData struct {
-	Name                  string   `json:"name"`
-	Description           string   `json:"description"`
-	IsWildcard            bool     `json:"is_wildcard"`
-	PremiumChapterAccess  bool     `json:"premium_chapter_access"`
-	IsEnabled             bool     `json:"is_enabled"`
-	Libraries             []string `json:"libraries"`
+	Name                 string   `json:"name"`
+	Description          string   `json:"description"`
+	IsWildcard           bool     `json:"is_wildcard"`
+	PremiumChapterAccess bool     `json:"premium_chapter_access"`
+	IsEnabled            bool     `json:"is_enabled"`
+	Libraries            []string `json:"libraries"`
 }
 
 // AssignPermissionToUserFormData represents form data for assigning permissions to users
@@ -56,17 +56,17 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 	}
 
 	idParam := c.Params("id")
-	
+
 	libraries, err := models.GetLibraries()
 	if err != nil {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
-	
+
 	// If ID is "new", render create form
 	if idParam == "new" {
 		return HandleView(c, views.PermissionForm(nil, libraries))
 	}
-	
+
 	// Otherwise, load existing permission for editing
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
@@ -97,7 +97,7 @@ func HandleCreatePermission(c *fiber.Ctx) error {
 	description := formData.Description
 	isWildcard := formData.IsWildcard
 	premiumChapterAccess := formData.PremiumChapterAccess
-	
+
 	if name == "" {
 		return sendBadRequestError(c, ErrPermissionNameRequired)
 	}
@@ -147,7 +147,7 @@ func HandleUpdatePermission(c *fiber.Ctx) error {
 	isWildcard := formData.IsWildcard
 	isEnabled := formData.IsEnabled
 	premiumChapterAccess := formData.PremiumChapterAccess
-	
+
 	if name == "" {
 		return sendBadRequestError(c, ErrPermissionNameRequired)
 	}
@@ -214,7 +214,7 @@ func HandleAssignPermissionToUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&formData); err != nil {
 		return sendBadRequestError(c, ErrBadRequest)
 	}
-	
+
 	if formData.Username == "" || formData.PermissionID == "" {
 		return sendBadRequestError(c, ErrPermissionUserRequired)
 	}
@@ -396,7 +396,7 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 	}
 
 	triggerCustomNotification(c, "", map[string]interface{}{
-		"closeModal":        true,
+		"closeModal":         true,
 		"refreshPermissions": true,
 		"showNotification": map[string]string{
 			"message": message,

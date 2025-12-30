@@ -60,7 +60,7 @@ func (m *MangaDexProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 
 func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	
+
 	// Build content rating query parameters based on global setting
 	var contentRatingParams []string
 	if m.config != nil {
@@ -81,12 +81,12 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 		// Default to all if no config
 		contentRatingParams = []string{
 			"contentRating[]=safe",
-			"contentRating[]=suggestive", 
+			"contentRating[]=suggestive",
 			"contentRating[]=erotica",
 			"contentRating[]=pornographic",
 		}
 	}
-	
+
 	contentRatingQuery := strings.Join(contentRatingParams, "&")
 	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", m.baseURL, titleEncoded, contentRatingQuery)
 
@@ -101,8 +101,8 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	var response struct {
-		Result   string `json:"result"`
-		Data     []mangadexMediaDetail `json:"data"`
+		Result string                `json:"result"`
+		Data   []mangadexMediaDetail `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -172,8 +172,8 @@ func (m *MangaDexProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	}
 
 	var response struct {
-		Result   string `json:"result"`
-		Data     mangadexMediaDetail `json:"data"`
+		Result string              `json:"result"`
+		Data   mangadexMediaDetail `json:"data"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -252,9 +252,9 @@ func (m *MangaDexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *
 
 // MangaDex API response structures
 type mangadexMediaDetail struct {
-	ID            string `json:"id"`
-	Type          string `json:"type"`
-	Attributes    mangadexAttributes `json:"attributes"`
+	ID            string                 `json:"id"`
+	Type          string                 `json:"type"`
+	Attributes    mangadexAttributes     `json:"attributes"`
 	Relationships []mangadexRelationship `json:"relationships"`
 }
 

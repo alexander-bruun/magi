@@ -87,7 +87,7 @@ func HandleCreateReview(c *fiber.Ctx) error {
 		if err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
-		
+
 		userReview, err := models.GetReviewByUserAndMedia(user.Username, mediaSlug)
 		if err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)

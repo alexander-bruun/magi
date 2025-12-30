@@ -22,13 +22,13 @@ type MediaMetadata struct {
 
 // SearchResult represents a single media search result
 type SearchResult struct {
-	ID               string
-	Title            string
-	Description      string
-	CoverArtURL      string
-	Year             int
-	SimilarityScore  float64
-	Tags             []string
+	ID              string
+	Title           string
+	Description     string
+	CoverArtURL     string
+	Year            int
+	SimilarityScore float64
+	Tags            []string
 }
 
 // Provider is the interface that all metadata providers must implement

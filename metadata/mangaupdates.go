@@ -281,12 +281,12 @@ type mangaupdatesSeriesDetail struct {
 	URL         string `json:"url"`
 	Description string `json:"description"`
 	Image       struct {
-		URL      struct {
+		URL struct {
 			Original string `json:"original"`
 			Thumb    string `json:"thumb"`
 		} `json:"url"`
-		Height   int `json:"height"`
-		Width    int `json:"width"`
+		Height int `json:"height"`
+		Width  int `json:"width"`
 	} `json:"image"`
 	Type           string  `json:"type"`
 	Year           string  `json:"year"`

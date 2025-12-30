@@ -111,7 +111,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 		}
 
 		id := fmt.Sprintf("%v", media["id"])
-		
+
 		titleData := media["title"].(map[string]interface{})
 		mangaTitle := extractAniListTitle(titleData)
 
@@ -475,7 +475,7 @@ func stripHTML(html string) string {
 	result = strings.ReplaceAll(result, "</i>", "")
 	result = strings.ReplaceAll(result, "<b>", "")
 	result = strings.ReplaceAll(result, "</b>", "")
-	
+
 	// Remove remaining HTML tags using a simple approach
 	for strings.Contains(result, "<") && strings.Contains(result, ">") {
 		start := strings.Index(result, "<")
@@ -485,6 +485,6 @@ func stripHTML(html string) string {
 		}
 		result = result[:start] + result[start+end+1:]
 	}
-	
+
 	return strings.TrimSpace(result)
 }

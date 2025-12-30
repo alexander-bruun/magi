@@ -12,15 +12,15 @@ import (
 
 // MediaDuplicate represents when different folders are detected as adding chapters to the same media
 type MediaDuplicate struct {
-	ID           int64  `json:"id"`
-	MediaSlug    string `json:"media_slug"`
-	MediaName    string `json:"manga_name"`
-	LibrarySlug  string `json:"library_slug"`
-	LibraryName  string `json:"library_name"`
-	FolderPath1  string `json:"folder_path_1"`
-	FolderPath2  string `json:"folder_path_2"`
-	Dismissed    bool   `json:"dismissed"`
-	CreatedAt    int64  `json:"created_at"`
+	ID          int64  `json:"id"`
+	MediaSlug   string `json:"media_slug"`
+	MediaName   string `json:"manga_name"`
+	LibrarySlug string `json:"library_slug"`
+	LibraryName string `json:"library_name"`
+	FolderPath1 string `json:"folder_path_1"`
+	FolderPath2 string `json:"folder_path_2"`
+	Dismissed   bool   `json:"dismissed"`
+	CreatedAt   int64  `json:"created_at"`
 }
 
 // FolderSimilarity represents a potential duplicate folder pair (deprecated - keeping for compatibility)
@@ -37,27 +37,27 @@ type FolderSimilarity struct {
 // CreateFolderSimilarity adds a new folder similarity record
 func CreateFolderSimilarity(similarity FolderSimilarity) error {
 	similarity.CreatedAt = time.Now().Unix()
-	
+
 	// Ensure folder names are in consistent order for uniqueness
 	if similarity.FolderName1 > similarity.FolderName2 {
 		similarity.FolderName1, similarity.FolderName2 = similarity.FolderName2, similarity.FolderName1
 	}
-	
+
 	query := `
 		INSERT OR IGNORE INTO folder_similarities 
 		(library_slug, folder_name_1, folder_name_2, similarity_score, dismissed, created_at)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
-	
-	_, err := db.Exec(query, 
-		similarity.LibrarySlug, 
-		similarity.FolderName1, 
-		similarity.FolderName2, 
+
+	_, err := db.Exec(query,
+		similarity.LibrarySlug,
+		similarity.FolderName1,
+		similarity.FolderName2,
 		similarity.SimilarityScore,
 		0, // dismissed = false
 		similarity.CreatedAt,
 	)
-	
+
 	return err
 }
 
@@ -69,19 +69,19 @@ func GetActiveFolderSimilarities() ([]FolderSimilarity, error) {
 		WHERE dismissed = 0
 		ORDER BY library_slug, similarity_score DESC
 	`
-	
+
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Errorf("Failed to get active folder similarities: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var similarities []FolderSimilarity
 	for rows.Next() {
 		var s FolderSimilarity
 		var dismissed int
-		if err := rows.Scan(&s.ID, &s.LibrarySlug, &s.FolderName1, &s.FolderName2, 
+		if err := rows.Scan(&s.ID, &s.LibrarySlug, &s.FolderName1, &s.FolderName2,
 			&s.SimilarityScore, &dismissed, &s.CreatedAt); err != nil {
 			log.Errorf("Failed to scan folder similarity: %v", err)
 			continue
@@ -89,7 +89,7 @@ func GetActiveFolderSimilarities() ([]FolderSimilarity, error) {
 		s.Dismissed = dismissed == 1
 		similarities = append(similarities, s)
 	}
-	
+
 	return similarities, nil
 }
 
@@ -99,12 +99,12 @@ func GetActiveFolderSimilaritiesByLibrary() (map[string][]FolderSimilarity, erro
 	if err != nil {
 		return nil, err
 	}
-	
+
 	grouped := make(map[string][]FolderSimilarity)
 	for _, s := range similarities {
 		grouped[s.LibrarySlug] = append(grouped[s.LibrarySlug], s)
 	}
-	
+
 	return grouped, nil
 }
 
@@ -148,10 +148,10 @@ func GetActiveFolderSimilaritiesWithPagination(page, limit int) ([]FolderSimilar
 		log.Errorf("Failed to count active folder similarities: %v", err)
 		return nil, 0, err
 	}
-	
+
 	// Calculate offset
 	offset := (page - 1) * limit
-	
+
 	// Get paginated results
 	query := `
 		SELECT id, library_slug, folder_name_1, folder_name_2, similarity_score, dismissed, created_at
@@ -160,19 +160,19 @@ func GetActiveFolderSimilaritiesWithPagination(page, limit int) ([]FolderSimilar
 		ORDER BY library_slug, similarity_score DESC
 		LIMIT ? OFFSET ?
 	`
-	
+
 	rows, err := db.Query(query, limit, offset)
 	if err != nil {
 		log.Errorf("Failed to get active folder similarities: %v", err)
 		return nil, 0, err
 	}
 	defer rows.Close()
-	
+
 	var similarities []FolderSimilarity
 	for rows.Next() {
 		var s FolderSimilarity
 		var dismissed int
-		if err := rows.Scan(&s.ID, &s.LibrarySlug, &s.FolderName1, &s.FolderName2, 
+		if err := rows.Scan(&s.ID, &s.LibrarySlug, &s.FolderName1, &s.FolderName2,
 			&s.SimilarityScore, &dismissed, &s.CreatedAt); err != nil {
 			log.Errorf("Failed to scan folder similarity: %v", err)
 			continue
@@ -180,7 +180,7 @@ func GetActiveFolderSimilaritiesWithPagination(page, limit int) ([]FolderSimilar
 		s.Dismissed = dismissed == 1
 		similarities = append(similarities, s)
 	}
-	
+
 	return similarities, total, nil
 }
 
@@ -190,39 +190,39 @@ func GetActiveFolderSimilaritiesByLibraryWithPagination(page, limit int) (map[st
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	grouped := make(map[string][]FolderSimilarity)
 	for _, s := range similarities {
 		grouped[s.LibrarySlug] = append(grouped[s.LibrarySlug], s)
 	}
-	
+
 	return grouped, total, nil
 }
 
 // CreateMediaDuplicate adds a new media duplicate record
 func CreateMediaDuplicate(duplicate MediaDuplicate) error {
 	duplicate.CreatedAt = time.Now().Unix()
-	
+
 	// Ensure folder paths are in consistent order for uniqueness
 	if duplicate.FolderPath1 > duplicate.FolderPath2 {
 		duplicate.FolderPath1, duplicate.FolderPath2 = duplicate.FolderPath2, duplicate.FolderPath1
 	}
-	
+
 	query := `
 		INSERT OR IGNORE INTO media_duplicates 
 		(media_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
-	
-	_, err := db.Exec(query, 
-		duplicate.MediaSlug, 
+
+	_, err := db.Exec(query,
+		duplicate.MediaSlug,
 		duplicate.LibrarySlug,
-		duplicate.FolderPath1, 
-		duplicate.FolderPath2, 
+		duplicate.FolderPath1,
+		duplicate.FolderPath2,
 		0, // dismissed = false
 		duplicate.CreatedAt,
 	)
-	
+
 	return err
 }
 
@@ -236,10 +236,10 @@ func GetActiveMediaDuplicates(page, limit int) ([]MediaDuplicate, int, error) {
 		log.Errorf("Failed to count active media duplicates: %v", err)
 		return nil, 0, err
 	}
-	
+
 	// Calculate offset
 	offset := (page - 1) * limit
-	
+
 	// Get paginated results with joined data
 	query := `
 		SELECT 
@@ -259,26 +259,26 @@ func GetActiveMediaDuplicates(page, limit int) ([]MediaDuplicate, int, error) {
 		ORDER BY md.created_at DESC
 		LIMIT ? OFFSET ?
 	`
-	
+
 	rows, err := db.Query(query, limit, offset)
 	if err != nil {
 		log.Errorf("Failed to get active media duplicates: %v", err)
 		return nil, 0, err
 	}
 	defer rows.Close()
-	
+
 	var duplicates []MediaDuplicate
 	for rows.Next() {
 		var d MediaDuplicate
 		var dismissed int
 		var mangaName, libraryName sql.NullString
-		
+
 		if err := rows.Scan(&d.ID, &d.MediaSlug, &mangaName, &d.LibrarySlug, &libraryName,
 			&d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt); err != nil {
 			log.Errorf("Failed to scan media duplicate: %v", err)
 			continue
 		}
-		
+
 		d.Dismissed = dismissed == 1
 		if mangaName.Valid {
 			d.MediaName = mangaName.String
@@ -286,10 +286,10 @@ func GetActiveMediaDuplicates(page, limit int) ([]MediaDuplicate, int, error) {
 		if libraryName.Valid {
 			d.LibraryName = libraryName.String
 		}
-		
+
 		duplicates = append(duplicates, d)
 	}
-	
+
 	return duplicates, total, nil
 }
 
@@ -319,27 +319,27 @@ func GetMediaDuplicateByFolders(mangaSlug, folderPath1, folderPath2 string) (*Me
 	if folderPath1 > folderPath2 {
 		folderPath1, folderPath2 = folderPath2, folderPath1
 	}
-	
+
 	query := `
 		SELECT id, media_slug, library_slug, folder_path_1, folder_path_2, dismissed, created_at
 		FROM media_duplicates
 		WHERE media_slug = ? AND folder_path_1 = ? AND folder_path_2 = ?
 	`
-	
+
 	var d MediaDuplicate
 	var dismissed int
-	
+
 	err := db.QueryRow(query, mangaSlug, folderPath1, folderPath2).Scan(
 		&d.ID, &d.MediaSlug, &d.LibrarySlug, &d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-	
+
 	d.Dismissed = dismissed == 1
 	return &d, nil
 }
@@ -372,26 +372,26 @@ func GetAllMediaDuplicates() ([]MediaDuplicate, error) {
 		LEFT JOIN libraries l ON md.library_slug = l.slug
 		ORDER BY md.created_at DESC
 	`
-	
+
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Errorf("Failed to get all media duplicates: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var duplicates []MediaDuplicate
 	for rows.Next() {
 		var d MediaDuplicate
 		var dismissed int
 		var mangaName, libraryName sql.NullString
-		
+
 		if err := rows.Scan(&d.ID, &d.MediaSlug, &mangaName, &d.LibrarySlug, &libraryName,
 			&d.FolderPath1, &d.FolderPath2, &dismissed, &d.CreatedAt); err != nil {
 			log.Errorf("Failed to scan media duplicate: %v", err)
 			continue
 		}
-		
+
 		d.Dismissed = dismissed == 1
 		if mangaName.Valid {
 			d.MediaName = mangaName.String
@@ -399,10 +399,10 @@ func GetAllMediaDuplicates() ([]MediaDuplicate, error) {
 		if libraryName.Valid {
 			d.LibraryName = libraryName.String
 		}
-		
+
 		duplicates = append(duplicates, d)
 	}
-	
+
 	return duplicates, nil
 }
 
@@ -437,29 +437,29 @@ func GetDuplicateFolderInfo(duplicateID int64) (*DuplicateFolderInfo, error) {
 		LEFT JOIN media m ON md.media_slug = m.slug
 		WHERE md.id = ?
 	`
-	
+
 	var info DuplicateFolderInfo
 	var mangaName sql.NullString
 	var folderPath1, folderPath2 string
-	
+
 	err := db.QueryRow(query, duplicateID).Scan(
 		&info.DuplicateID, &info.MediaSlug, &mangaName, &folderPath1, &folderPath2,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if mangaName.Valid {
 		info.MediaName = mangaName.String
 	}
-	
+
 	// Get info for folder 1
 	info.Folder1 = getFolderInfo(folderPath1)
-	
+
 	// Get info for folder 2
 	info.Folder2 = getFolderInfo(folderPath2)
-	
+
 	return &info, nil
 }
 
@@ -470,13 +470,13 @@ func getFolderInfo(path string) FolderInfo {
 		BaseName: filepath.Base(path),
 		Exists:   false,
 	}
-	
+
 	// Check if folder exists
 	fileInfo, err := os.Stat(path)
 	if err == nil {
 		info.Exists = true
 		info.LastModified = fileInfo.ModTime().Unix()
-		
+
 		// Count files in the folder
 		fileCount := 0
 		filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
@@ -490,7 +490,7 @@ func getFolderInfo(path string) FolderInfo {
 		})
 		info.FileCount = fileCount
 	}
-	
+
 	return info
 }
 
@@ -502,31 +502,31 @@ func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
 		FROM media_duplicates
 		WHERE id = ?
 	`
-	
+
 	var folder1, folder2, mangaSlug string
 	err := db.QueryRow(query, duplicateID).Scan(&folder1, &folder2, &mangaSlug)
 	if err != nil {
 		return err
 	}
-	
+
 	// Verify the folder path matches one of the duplicate folders
 	if folderPath != folder1 && folderPath != folder2 {
 		return fmt.Errorf("folder path does not match duplicate entry")
 	}
-	
+
 	// Delete the folder from disk
 	if err := os.RemoveAll(folderPath); err != nil {
 		return fmt.Errorf("failed to delete folder: %w", err)
 	}
-	
+
 	log.Infof("Deleted duplicate folder: %s", folderPath)
-	
+
 	// After deleting the folder, we should also update the media's path if needed
 	// and delete the duplicate entry since one folder is now gone
 	if err := DeleteMediaDuplicateByID(duplicateID); err != nil {
 		log.Errorf("Failed to delete duplicate entry after folder deletion: %v", err)
 	}
-	
+
 	// If we deleted the primary media path, update it to the remaining folder
 	media, err := GetMediaUnfiltered(mangaSlug)
 	if err == nil && media != nil {
@@ -542,7 +542,6 @@ func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
-

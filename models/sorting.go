@@ -5,14 +5,14 @@ import "strings"
 
 // SortOption describes a single allowed sort field and optional alias list.
 type SortOption struct {
-	Key    string   // canonical key used internally
+	Key     string   // canonical key used internally
 	Aliases []string // accepted alternative names
 }
 
 // GenericSortConfig holds configuration for validating and applying sorts.
 type GenericSortConfig struct {
-	Allowed []SortOption
-	DefaultKey string
+	Allowed      []SortOption
+	DefaultKey   string
 	DefaultOrder string // "asc" or "desc"
 }
 
@@ -21,14 +21,16 @@ type GenericSortConfig struct {
 func (c GenericSortConfig) NormalizeSort(sortBy, order string) (key string, ord string) {
 	sb := strings.ToLower(strings.TrimSpace(sortBy))
 	ob := strings.ToLower(strings.TrimSpace(order))
-	
+
 	// Determine default order based on sort key
 	defaultOrder := c.DefaultOrder
 	if sb == "popularity" || sb == "read_count" {
 		defaultOrder = "desc"
 	}
-	
-	if ob != "asc" && ob != "desc" { ob = defaultOrder }
+
+	if ob != "asc" && ob != "desc" {
+		ob = defaultOrder
+	}
 	key = c.DefaultKey
 	for _, opt := range c.Allowed {
 		if sb == opt.Key {
@@ -57,7 +59,7 @@ var MediaSortConfig = GenericSortConfig{
 		{Key: "read_count", Aliases: []string{"readcount"}},
 		{Key: "popularity"},
 	},
-	DefaultKey: "name",
+	DefaultKey:   "name",
 	DefaultOrder: "asc",
 }
 
@@ -69,7 +71,7 @@ func GetAllowedMediaSortOptions() []SortOption {
 		// On error, return all options
 		return MediaSortConfig.Allowed
 	}
-	
+
 	// If content rating limit is less than 3 (not showing all), exclude content_rating from sort
 	if cfg.ContentRatingLimit < 3 {
 		filtered := make([]SortOption, 0, len(MediaSortConfig.Allowed)-1)
@@ -80,7 +82,7 @@ func GetAllowedMediaSortOptions() []SortOption {
 		}
 		return filtered
 	}
-	
+
 	return MediaSortConfig.Allowed
 }
 
@@ -96,23 +98,63 @@ func SortMedias(media []Media, key, order string) {
 			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) })
 		}
 	case "type":
-		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) < strings.ToLower(media[j].Type) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) > strings.ToLower(media[j].Type) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) < strings.ToLower(media[j].Type) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) > strings.ToLower(media[j].Type) })
+		}
 	case "year":
-		if asc { sort.Slice(media, func(i, j int) bool { return media[i].Year < media[j].Year }) } else { sort.Slice(media, func(i, j int) bool { return media[i].Year > media[j].Year }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].Year < media[j].Year })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].Year > media[j].Year })
+		}
 	case "status":
-		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) < strings.ToLower(media[j].Status) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) > strings.ToLower(media[j].Status) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) < strings.ToLower(media[j].Status) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) > strings.ToLower(media[j].Status) })
+		}
 	case "content_rating":
-		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].ContentRating) < strings.ToLower(media[j].ContentRating) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].ContentRating) > strings.ToLower(media[j].ContentRating) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool {
+				return strings.ToLower(media[i].ContentRating) < strings.ToLower(media[j].ContentRating)
+			})
+		} else {
+			sort.Slice(media, func(i, j int) bool {
+				return strings.ToLower(media[i].ContentRating) > strings.ToLower(media[j].ContentRating)
+			})
+		}
 	case "created_at":
-		if asc { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.Before(media[j].CreatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.After(media[j].CreatedAt) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.Before(media[j].CreatedAt) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.After(media[j].CreatedAt) })
+		}
 	case "updated_at":
-		if asc { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.Before(media[j].UpdatedAt) }) } else { sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.After(media[j].UpdatedAt) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.Before(media[j].UpdatedAt) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.After(media[j].UpdatedAt) })
+		}
 	case "read_count":
-		if asc { sort.Slice(media, func(i, j int) bool { return media[i].ReadCount < media[j].ReadCount }) } else { sort.Slice(media, func(i, j int) bool { return media[i].ReadCount > media[j].ReadCount }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].ReadCount < media[j].ReadCount })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].ReadCount > media[j].ReadCount })
+		}
 	case "popularity":
-		if asc { sort.Slice(media, func(i, j int) bool { return media[i].VoteScore < media[j].VoteScore }) } else { sort.Slice(media, func(i, j int) bool { return media[i].VoteScore > media[j].VoteScore }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].VoteScore < media[j].VoteScore })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].VoteScore > media[j].VoteScore })
+		}
 	default:
 		// default already handled by NormalizeSort -> name
-		if asc { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) }) } else { sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) }) }
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) })
+		}
 	}
 }

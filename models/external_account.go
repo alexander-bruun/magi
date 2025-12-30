@@ -6,15 +6,15 @@ import (
 
 // UserExternalAccount represents external service accounts linked to users
 type UserExternalAccount struct {
-	ID              int64     `json:"id"`
-	UserName        string    `json:"user_name"`
-	ServiceName     string    `json:"service_name"`
-	ExternalUserID  string    `json:"external_user_id"`
-	AccessToken     string    `json:"access_token"`
-	RefreshToken    string    `json:"refresh_token"`
-	TokenExpiresAt  time.Time `json:"token_expires_at"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID             int64     `json:"id"`
+	UserName       string    `json:"user_name"`
+	ServiceName    string    `json:"service_name"`
+	ExternalUserID string    `json:"external_user_id"`
+	AccessToken    string    `json:"access_token"`
+	RefreshToken   string    `json:"refresh_token"`
+	TokenExpiresAt time.Time `json:"token_expires_at"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // GetUserExternalAccount retrieves an external account for a user and service

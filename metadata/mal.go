@@ -209,14 +209,14 @@ func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata 
 	}
 
 	metadata := &MediaMetadata{
-		Title:        node.Title,
-		Description:  node.Synopsis,
-		Year:         year,
-		Status:       convertMALStatus(node.Status),
+		Title:         node.Title,
+		Description:   node.Synopsis,
+		Year:          year,
+		Status:        convertMALStatus(node.Status),
 		ContentRating: convertMALContentRating(node.NSFW),
-		CoverArtURL:  coverURL,
-		ExternalID:   fmt.Sprintf("%d", node.ID),
-		Type:         convertMALMediaType(node.MediaType),
+		CoverArtURL:   coverURL,
+		ExternalID:    fmt.Sprintf("%d", node.ID),
+		Type:          convertMALMediaType(node.MediaType),
 	}
 
 	// Extract tags from genres
@@ -254,16 +254,16 @@ func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata 
 
 // MAL API response structures
 type malMediaNode struct {
-	ID                int    `json:"id"`
-	Title             string `json:"title"`
-	Synopsis          string `json:"synopsis"`
-	StartDate         string `json:"start_date"`
-	EndDate           string `json:"end_date"`
-	Status            string `json:"status"`
-	MediaType         string `json:"media_type"`
-	NSFW              string `json:"nsfw"`
-	NumChapters       int    `json:"num_chapters"`
-	MainPicture       struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Synopsis    string `json:"synopsis"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	Status      string `json:"status"`
+	MediaType   string `json:"media_type"`
+	NSFW        string `json:"nsfw"`
+	NumChapters int    `json:"num_chapters"`
+	MainPicture struct {
 		Medium string `json:"medium"`
 		Large  string `json:"large"`
 	} `json:"main_picture"`

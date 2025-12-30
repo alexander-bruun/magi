@@ -23,7 +23,7 @@ type LibraryConfigProvider interface {
 // GetProviderFromConfig returns the configured metadata provider instance
 func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
 	providerName := config.GetMetadataProvider()
-	
+
 	var apiToken string
 	switch providerName {
 	case "mal":
@@ -61,7 +61,7 @@ func GetProviderForLibrary(libraryProvider sql.NullString, config ConfigProvider
 		// Fall back to global config
 		providerName = config.GetMetadataProvider()
 	}
-	
+
 	var apiToken string
 	switch providerName {
 	case "mal":

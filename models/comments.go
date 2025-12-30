@@ -7,14 +7,14 @@ import (
 
 // Comment represents a comment on media or chapter
 type Comment struct {
-	ID          int       `json:"id"`
-	UserUsername string   `json:"user_username"`
-	TargetType  string   `json:"target_type"` // "media" or "chapter"
-	TargetSlug  string   `json:"target_slug"`
-	MediaSlug   string   `json:"media_slug"`
-	Content     string   `json:"content"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           int       `json:"id"`
+	UserUsername string    `json:"user_username"`
+	TargetType   string    `json:"target_type"` // "media" or "chapter"
+	TargetSlug   string    `json:"target_slug"`
+	MediaSlug    string    `json:"media_slug"`
+	Content      string    `json:"content"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // CreateComment adds a new comment

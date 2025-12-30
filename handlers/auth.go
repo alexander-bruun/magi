@@ -117,7 +117,7 @@ func CreateUserHandler(c *fiber.Ctx) error {
 		} else {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
-		
+
 		// For HTMX requests, return validation error with notification
 		if IsHTMXRequest(c) {
 			return sendValidationError(c, errorMsg)
@@ -133,10 +133,10 @@ func CreateUserHandler(c *fiber.Ctx) error {
 	}
 
 	setSessionCookie(c, sessionToken)
-	
+
 	// Add success notification for HTMX requests
 	triggerNotification(c, "Account created successfully! Welcome to Magi.", "success")
-	
+
 	c.Set("HX-Redirect", "/")
 	return c.SendStatus(fiber.StatusCreated)
 }
@@ -167,10 +167,10 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	}
 
 	setSessionCookie(c, sessionToken)
-	
+
 	// Add success notification for HTMX requests
 	triggerNotification(c, "Login successful! Welcome back.", "success")
-	
+
 	// Redirect to target page if provided, otherwise home
 	target := formData.Target
 	if target == "" {

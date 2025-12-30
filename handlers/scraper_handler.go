@@ -5,22 +5,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 )
 
 // ScraperFormData represents form data for creating/updating scraper scripts
 type ScraperFormData struct {
-	Name         string      `json:"name" form:"name"`
-	Script       string      `json:"script" form:"script"`
-	Language     string      `json:"language" form:"language"`
-	Schedule     string      `json:"schedule" form:"schedule"`
-	SharedScript string      `json:"shared_script" form:"shared_script"`
-	VariableName interface{} `json:"variable_name" form:"variable_name"`
+	Name          string      `json:"name" form:"name"`
+	Script        string      `json:"script" form:"script"`
+	Language      string      `json:"language" form:"language"`
+	Schedule      string      `json:"schedule" form:"schedule"`
+	SharedScript  string      `json:"shared_script" form:"shared_script"`
+	VariableName  interface{} `json:"variable_name" form:"variable_name"`
 	VariableValue interface{} `json:"variable_value" form:"variable_value"`
-	Package      interface{} `json:"package" form:"package"`
+	Package       interface{} `json:"package" form:"package"`
 }
 
 // normalizeToStringSlice converts interface{} to []string, handling both single values and arrays
@@ -28,7 +28,7 @@ func normalizeToStringSlice(data interface{}) []string {
 	if data == nil {
 		return []string{}
 	}
-	
+
 	switch v := data.(type) {
 	case []interface{}:
 		result := make([]string, len(v))
@@ -51,11 +51,11 @@ func normalizeToStringSlice(data interface{}) []string {
 // Variables should be submitted as: variable_name=<key> and variable_value=<value> (paired in order)
 func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 	variables := make(map[string]string)
-	
+
 	// Normalize the interface{} fields to []string
 	names := normalizeToStringSlice(formData.VariableName)
 	values := normalizeToStringSlice(formData.VariableValue)
-	
+
 	// Pair them up
 	for i := 0; i < len(names); i++ {
 		name := string(names[i])
@@ -68,7 +68,7 @@ func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 			variables[name] = value
 		}
 	}
-	
+
 	return variables
 }
 
@@ -76,17 +76,17 @@ func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 // Packages should be submitted as: package=<package_name> (multiple)
 func extractPackagesFromForm(formData ScraperFormData) []string {
 	var packages []string
-	
+
 	// Normalize the interface{} field to []string
 	pkgNames := normalizeToStringSlice(formData.Package)
-	
+
 	for _, pkg := range pkgNames {
 		pkgName := strings.TrimSpace(string(pkg))
 		if pkgName != "" {
 			packages = append(packages, pkgName)
 		}
 	}
-	
+
 	return packages
 }
 
@@ -129,7 +129,7 @@ func HandleScraperScriptDetail(c *fiber.Ctx) error {
 // HandleScraperScriptCreate creates a new script
 func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	var formData ScraperFormData
-	
+
 	// Check if this is a JSON request (HTMX form-json)
 	contentType := c.Get("Content-Type")
 	if strings.Contains(contentType, "application/json") {
@@ -144,7 +144,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
 		formData.SharedScript = c.FormValue("shared_script")
-		
+
 		// For traditional form data, we need to manually collect arrays
 		varNames := c.Request().PostArgs().PeekMulti("variable_name")
 		if len(varNames) > 0 {
@@ -154,7 +154,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 			}
 			formData.VariableName = names
 		}
-		
+
 		varValues := c.Request().PostArgs().PeekMulti("variable_value")
 		if len(varValues) > 0 {
 			values := make([]string, len(varValues))
@@ -163,7 +163,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 			}
 			formData.VariableValue = values
 		}
-		
+
 		packages := c.Request().PostArgs().PeekMulti("package")
 		if len(packages) > 0 {
 			pkgs := make([]string, len(packages))
@@ -228,10 +228,10 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	}
 
 	var formData ScraperFormData
-	
+
 	// Check if this is a JSON request (HTMX form-json)
 	contentType := c.Get("Content-Type")
-	
+
 	if strings.Contains(contentType, "application/json") {
 		// Parse as JSON first
 		if err := c.BodyParser(&formData); err != nil {
@@ -244,26 +244,26 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
 		formData.SharedScript = c.FormValue("shared_script")
-		
-	// For traditional form data, we need to manually collect arrays
-	varNames := c.Request().PostArgs().PeekMulti("variable_name")
-	if len(varNames) > 0 {
-		names := make([]string, len(varNames))
-		for i, v := range varNames {
-			names[i] = string(v)
+
+		// For traditional form data, we need to manually collect arrays
+		varNames := c.Request().PostArgs().PeekMulti("variable_name")
+		if len(varNames) > 0 {
+			names := make([]string, len(varNames))
+			for i, v := range varNames {
+				names[i] = string(v)
+			}
+			formData.VariableName = names
 		}
-		formData.VariableName = names
-	}
-	
-	varValues := c.Request().PostArgs().PeekMulti("variable_value")
-	if len(varValues) > 0 {
-		values := make([]string, len(varValues))
-		for i, v := range varValues {
-			values[i] = string(v)
+
+		varValues := c.Request().PostArgs().PeekMulti("variable_value")
+		if len(varValues) > 0 {
+			values := make([]string, len(varValues))
+			for i, v := range varValues {
+				values[i] = string(v)
+			}
+			formData.VariableValue = values
 		}
-		formData.VariableValue = values
-	}
-	
+
 		packages := c.Request().PostArgs().PeekMulti("package")
 		if len(packages) > 0 {
 			pkgs := make([]string, len(packages))
@@ -403,7 +403,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 
 	// Parse form data to get variable overrides
 	var formData ScraperFormData
-	
+
 	// Try to parse as form data first
 	varNames := c.Request().PostArgs().PeekMulti("variable_name")
 	if len(varNames) > 0 {
@@ -413,7 +413,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 		}
 		formData.VariableName = names
 	}
-	
+
 	varValues := c.Request().PostArgs().PeekMulti("variable_value")
 	if len(varValues) > 0 {
 		values := make([]string, len(varValues))
@@ -422,7 +422,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 		}
 		formData.VariableValue = values
 	}
-	
+
 	// If no variables found, try JSON parsing
 	namesSlice := normalizeToStringSlice(formData.VariableName)
 	if len(namesSlice) == 0 {
@@ -436,7 +436,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 	for k, v := range script.Variables {
 		variables[k] = v
 	}
-	
+
 	// Override with form values if provided
 	formVariables := extractVariablesFromForm(formData)
 	for k, v := range formVariables {
@@ -480,11 +480,11 @@ func HandleScraperScriptsList(c *fiber.Ctx) error {
 func HandleScraperNewForm(c *fiber.Ctx) error {
 	// Create an empty script for the form
 	emptyScript := &models.ScraperScript{
-		ID:       0,
-		Name:     "",
-		Script:   "",
-		Language: "bash", // Default to bash for new scripts
-		Schedule: "0 0 * * *",
+		ID:        0,
+		Name:      "",
+		Script:    "",
+		Language:  "bash", // Default to bash for new scripts
+		Schedule:  "0 0 * * *",
 		Variables: make(map[string]string),
 		Packages:  []string{},
 		Enabled:   true,

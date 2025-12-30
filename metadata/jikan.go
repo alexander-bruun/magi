@@ -193,14 +193,14 @@ func (j *JikanProvider) convertToMediaMetadata(data *jikanMediaData) *MediaMetad
 	}
 
 	metadata := &MediaMetadata{
-		Title:        data.Title,
-		Description:  data.Synopsis,
-		Year:         year,
-		Status:       convertJikanStatus(data.Status),
+		Title:         data.Title,
+		Description:   data.Synopsis,
+		Year:          year,
+		Status:        convertJikanStatus(data.Status),
 		ContentRating: convertJikanRating(data.Demographics),
-		CoverArtURL:  coverURL,
-		ExternalID:   fmt.Sprintf("%d", data.MalID),
-		Type:         convertJikanType(data.Type),
+		CoverArtURL:   coverURL,
+		ExternalID:    fmt.Sprintf("%d", data.MalID),
+		Type:          convertJikanType(data.Type),
 	}
 
 	// Extract tags from genres, themes, and demographics
@@ -244,15 +244,15 @@ func (j *JikanProvider) convertToMediaMetadata(data *jikanMediaData) *MediaMetad
 
 // Jikan API response structures
 type jikanMediaData struct {
-	MalID          int    `json:"mal_id"`
-	Title          string `json:"title"`
-	TitleEnglish   string `json:"title_english"`
-	TitleJapanese  string `json:"title_japanese"`
-	TitleSynonyms  []string `json:"title_synonyms"`
-	Synopsis       string `json:"synopsis"`
-	Type           string `json:"type"`
-	Status         string `json:"status"`
-	Published      struct {
+	MalID         int      `json:"mal_id"`
+	Title         string   `json:"title"`
+	TitleEnglish  string   `json:"title_english"`
+	TitleJapanese string   `json:"title_japanese"`
+	TitleSynonyms []string `json:"title_synonyms"`
+	Synopsis      string   `json:"synopsis"`
+	Type          string   `json:"type"`
+	Status        string   `json:"status"`
+	Published     struct {
 		From string `json:"from"`
 		To   string `json:"to"`
 	} `json:"published"`

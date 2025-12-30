@@ -212,46 +212,46 @@ func (k *KitsuProvider) convertToMediaMetadata(detail *kitsuMediaDetail) *MediaM
 
 // Kitsu API response structures
 type kitsuMediaDetail struct {
-	ID         string             `json:"id"`
-	Type       string             `json:"type"`
-	Attributes kitsuAttributes    `json:"attributes"`
+	ID         string          `json:"id"`
+	Type       string          `json:"type"`
+	Attributes kitsuAttributes `json:"attributes"`
 }
 
 type kitsuAttributes struct {
-	CreatedAt        string            `json:"createdAt"`
-	UpdatedAt        string            `json:"updatedAt"`
-	Slug             string            `json:"slug"`
-	Synopsis         string            `json:"synopsis"`
-	Description      string            `json:"description"`
-	CoverImageTopOffset int            `json:"coverImageTopOffset"`
-	Titles           map[string]string `json:"titles"`
-	CanonicalTitle   string            `json:"canonicalTitle"`
-	AbbreviatedTitles []string         `json:"abbreviatedTitles"`
-	AverageRating    string            `json:"averageRating"`
-	UserCount        int               `json:"userCount"`
-	FavoritesCount   int               `json:"favoritesCount"`
-	StartDate        string            `json:"startDate"`
-	EndDate          string            `json:"endDate"`
-	PopularityRank   int               `json:"popularityRank"`
-	RatingRank       *int              `json:"ratingRank"`
-	AgeRating        *string           `json:"ageRating"`
-	AgeRatingGuide   *string           `json:"ageRatingGuide"`
-	Subtype          string            `json:"subtype"`
-	Status           string            `json:"status"`
-	Tba              *string           `json:"tba"`
-	PosterImage      kitsuImage        `json:"posterImage"`
-	CoverImage       *kitsuImage       `json:"coverImage"`
-	ChapterCount     *int              `json:"chapterCount"`
-	VolumeCount      *int              `json:"volumeCount"`
-	Serialization    *string           `json:"serialization"`
-	MangaType        *string           `json:"mangaType"`
+	CreatedAt           string            `json:"createdAt"`
+	UpdatedAt           string            `json:"updatedAt"`
+	Slug                string            `json:"slug"`
+	Synopsis            string            `json:"synopsis"`
+	Description         string            `json:"description"`
+	CoverImageTopOffset int               `json:"coverImageTopOffset"`
+	Titles              map[string]string `json:"titles"`
+	CanonicalTitle      string            `json:"canonicalTitle"`
+	AbbreviatedTitles   []string          `json:"abbreviatedTitles"`
+	AverageRating       string            `json:"averageRating"`
+	UserCount           int               `json:"userCount"`
+	FavoritesCount      int               `json:"favoritesCount"`
+	StartDate           string            `json:"startDate"`
+	EndDate             string            `json:"endDate"`
+	PopularityRank      int               `json:"popularityRank"`
+	RatingRank          *int              `json:"ratingRank"`
+	AgeRating           *string           `json:"ageRating"`
+	AgeRatingGuide      *string           `json:"ageRatingGuide"`
+	Subtype             string            `json:"subtype"`
+	Status              string            `json:"status"`
+	Tba                 *string           `json:"tba"`
+	PosterImage         kitsuImage        `json:"posterImage"`
+	CoverImage          *kitsuImage       `json:"coverImage"`
+	ChapterCount        *int              `json:"chapterCount"`
+	VolumeCount         *int              `json:"volumeCount"`
+	Serialization       *string           `json:"serialization"`
+	MangaType           *string           `json:"mangaType"`
 }
 
 type kitsuImage struct {
-	Tiny    string `json:"tiny"`
-	Large   string `json:"large"`
-	Small   string `json:"small"`
-	Medium  string `json:"medium"`
+	Tiny     string `json:"tiny"`
+	Large    string `json:"large"`
+	Small    string `json:"small"`
+	Medium   string `json:"medium"`
 	Original string `json:"original"`
 }
 

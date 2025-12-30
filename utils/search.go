@@ -8,7 +8,7 @@ import (
 func BigramSearch(keyword string, items []string) []string {
 	// Normalize keyword for case-insensitive search
 	keywordLower := strings.ToLower(keyword)
-	
+
 	var results []string
 	for _, item := range items {
 		if score := CompareStrings(keywordLower, strings.ToLower(item)); score > 0.3 {
