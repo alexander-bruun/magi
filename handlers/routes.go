@@ -184,6 +184,17 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 		return c.SendFile("./assets/robots.txt")
 	})
 
+	// PWA manifest and service worker
+	app.Get("/assets/manifest.json", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "application/manifest+json")
+		return c.SendFile("./assets/manifest.json")
+	})
+
+	app.Get("/assets/js/sw.js", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "application/javascript")
+		return c.SendFile("./assets/js/sw.js")
+	})
+
 	// ========================================
 	// API Endpoints
 	// ========================================

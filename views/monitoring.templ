@@ -7,7 +7,7 @@ templ Monitoring(data *models.MonitoringData) {
 	@Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Monitoring", Href: "/admin/monitoring"}})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>System Monitoring</span></h2>
 	<div class="flex place-content-center">
-		<div class="w-5/6">
+		<div class="w-full md:w-5/6">
 			<div class="uk-card p-4 mb-6">
 				<h4 class="text-lg font-semibold mb-4">System Totals</h4>
 				<div class="flex flex-wrap gap-4" id="totals">

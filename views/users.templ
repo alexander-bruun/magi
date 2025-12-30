@@ -13,8 +13,8 @@ templ Users() {
 	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
 	<div class="flex place-content-center">
-			<div class="w-3/4">
-				<div class="uk-card p-2">
+			<div class="w-full md:w-3/4">
+				<div class="uk-card p-2 w-full">
 					<!-- Search and Page Size Controls -->
 					<div class="mb-4 flex gap-4">
 						<div class="flex-1">
@@ -62,8 +62,8 @@ templ UsersWithData(users []models.User, page, pageSize int, total int64, filter
 	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
 	<div class="flex place-content-center">
-			<div class="w-3/4">
-				<div class="uk-card p-2">
+			<div class="w-full md:w-3/4">
+				<div class="uk-card p-2 w-full">
 					<!-- Search and Page Size Controls -->
 					<div class="mb-4 flex gap-4">
 						<div class="flex-1">
@@ -109,15 +109,16 @@ templ UsersWithData(users []models.User, page, pageSize int, total int64, filter
 
 templ UsersTable(users []models.User, page, pageSize int, total int64, filter string) {
 	<div id="users-table">
-		<table class="uk-table">
-			<thead>
-				<tr>
-					<th class="text-center">Username</th>
-					<th class="text-center">Role</th>
-					<th class="text-center">Subscription</th>
-					<th class="text-center">Actions</th>
-				</tr>
-			</thead>
+		<div class="uk-overflow-auto">
+			<table class="uk-table">
+				<thead>
+					<tr>
+						<th class="text-center">Username</th>
+						<th class="text-center">Role</th>
+						<th class="text-center">Subscription</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
 			<tbody>
 				for _, user := range users {
 					<tr>
@@ -241,6 +242,7 @@ templ UsersTable(users []models.User, page, pageSize int, total int64, filter st
 				@UsersPagination("/admin/users/table", "users-container", totalPages, page, filter, pageSize)
 			</div>
 		}
+		</div>
 	</div>
 }
 

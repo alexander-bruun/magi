@@ -17,20 +17,20 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 	</div>
 
 	<!-- Stats Cards -->
-	<div class="uk-flex uk-flex-wrap mt-4 mb-4" style="gap: 1rem; justify-content: center;">
-		<div class="uk-card uk-card-default uk-card-body uk-flex-1" style="min-width: 200px;">
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
+		<div class="uk-card uk-card-default uk-card-body">
 			<h3 class="uk-card-title uk-text-center">{ stats["open"] }</h3>
 			<p class="uk-text-center uk-text-meta">Open Issues</p>
 		</div>
-		<div class="uk-card uk-card-default uk-card-body uk-flex-1" style="min-width: 200px;">
+		<div class="uk-card uk-card-default uk-card-body">
 			<h3 class="uk-card-title uk-text-center">{ stats["in_progress"] }</h3>
 			<p class="uk-text-center uk-text-meta">In Progress</p>
 		</div>
-		<div class="uk-card uk-card-default uk-card-body uk-flex-1" style="min-width: 200px;">
+		<div class="uk-card uk-card-default uk-card-body">
 			<h3 class="uk-card-title uk-text-center">{ stats["closed"] }</h3>
 			<p class="uk-text-center uk-text-meta">Closed Issues</p>
 		</div>
-		<div class="uk-card uk-card-default uk-card-body uk-flex-1" style="min-width: 200px;">
+		<div class="uk-card uk-card-default uk-card-body">
 			<h3 class="uk-card-title uk-text-center">{ len(issues) }</h3>
 			<p class="uk-text-center uk-text-meta">Total Issues</p>
 		</div>

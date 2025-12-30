@@ -46,7 +46,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-margin-bottom\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Issue Management</span></h2></div><!-- Stats Cards --><div class=\"uk-flex uk-flex-wrap mt-4 mb-4\" style=\"gap: 1rem; justify-content: center;\"><div class=\"uk-card uk-card-default uk-card-body uk-flex-1\" style=\"min-width: 200px;\"><h3 class=\"uk-card-title uk-text-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-margin-bottom\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Issue Management</span></h2></div><!-- Stats Cards --><div class=\"grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -59,7 +59,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h3><p class=\"uk-text-center uk-text-meta\">Open Issues</p></div><div class=\"uk-card uk-card-default uk-card-body uk-flex-1\" style=\"min-width: 200px;\"><h3 class=\"uk-card-title uk-text-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h3><p class=\"uk-text-center uk-text-meta\">Open Issues</p></div><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -72,7 +72,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h3><p class=\"uk-text-center uk-text-meta\">In Progress</p></div><div class=\"uk-card uk-card-default uk-card-body uk-flex-1\" style=\"min-width: 200px;\"><h3 class=\"uk-card-title uk-text-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h3><p class=\"uk-text-center uk-text-meta\">In Progress</p></div><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -85,7 +85,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</h3><p class=\"uk-text-center uk-text-meta\">Closed Issues</p></div><div class=\"uk-card uk-card-default uk-card-body uk-flex-1\" style=\"min-width: 200px;\"><h3 class=\"uk-card-title uk-text-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</h3><p class=\"uk-text-center uk-text-meta\">Closed Issues</p></div><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

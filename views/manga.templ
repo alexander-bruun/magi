@@ -823,7 +823,8 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 		{{ buttonIcon = "arrow-down" }}
 		{{ buttonTitle = "Sort chapters in descending order" }}
 	}
-	<div class="flex justify-between items-center mb-4">
+	<!-- Mobile layout -->
+	<div class="flex justify-between items-center mb-2 md:hidden">
 		<button
 			id="reverse-btn"
 			type="button"
@@ -835,10 +836,96 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<uk-icon icon={ buttonIcon }></uk-icon>
 			<span class="ml-1">{ buttonText }</span>
 		</button>
-		<div class="flex items-center gap-2">
+		if lastReadChapterSlug != "" {
+			<a
+				href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				class="uk-btn uk-btn-primary"
+				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				hx-target="#content"
+				hx-push-url="true"
+				title="Resume reading from where you left off"
+			>
+				<uk-icon icon="Play"></uk-icon>
+				<span class="ml-1">Resume</span>
+			</a>
+		}
+	</div>
+	<div class="flex justify-center mb-2 md:hidden">
+		if userRole == "moderator" || userRole == "admin" {
+			<div class="uk-btn-group">
+				<button
+					type="button"
+					class="uk-btn uk-btn-primary uk-btn-small"
+					uk-toggle="target: #metadata-modal"
+					title="Search for Metadata"
+					aria-label="Search for Metadata"
+				>
+					<uk-icon icon="Search"></uk-icon>
+				</button>
+				<button
+					type="button"
+					class="uk-btn uk-btn-secondary uk-btn-small"
+					uk-toggle="target: #edit-metadata-modal"
+					title="Edit Metadata"
+					aria-label="Edit Metadata"
+				>
+					<uk-icon icon="Pencil"></uk-icon>
+				</button>
+				<button
+					type="button"
+					class="uk-btn uk-btn-secondary uk-btn-small"
+					uk-toggle="target: #refresh-metadata-modal"
+					title="Refresh Metadata"
+					aria-label="Refresh Metadata"
+				>
+					<uk-icon icon="FolderSync"></uk-icon>
+				</button>
+				<button
+					type="button"
+					class="uk-btn uk-btn-secondary uk-btn-small"
+					uk-toggle="target: #reindex-chapters-modal"
+					title="Re-index chapters"
+					aria-label="Re-index chapters"
+				>
+					<uk-icon icon="RotateCcw"></uk-icon>
+				</button>
+				<button
+					type="button"
+					class="uk-btn uk-btn-destructive uk-btn-small"
+					uk-toggle="target: #delete-media-modal"
+					title="Delete series"
+					aria-label="Delete series"
+				>
+					<uk-icon icon="Trash"></uk-icon>
+				</button>
+				if isHighlighted {
+					<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+						<uk-icon icon="StarOff"></uk-icon>
+					</button>
+				} else {
+					<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+						<uk-icon icon="Star"></uk-icon>
+					</button>
+				}
+			</div>
+		}
+	</div>
+	<!-- Desktop layout for medium screens -->
+	<div class="hidden md:flex xl:hidden flex-col gap-2 mb-4">
+		<div class="flex justify-between items-center">
+			<button
+				id="reverse-btn-desktop"
+				type="button"
+				class="uk-btn uk-btn-default"
+				hx-get={ toggleURL }
+				hx-target="#chapters-section"
+				title={ buttonTitle }
+			>
+				<uk-icon icon={ buttonIcon }></uk-icon>
+				<span class="ml-1">{ buttonText }</span>
+			</button>
 			if lastReadChapterSlug != "" {
 				<a
-					href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
 					class="uk-btn uk-btn-primary"
 					hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
 					hx-target="#content"
@@ -849,7 +936,9 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 					<span class="ml-1">Resume</span>
 				</a>
 			}
-			if userRole == "moderator" || userRole == "admin" {
+		</div>
+		if userRole == "moderator" || userRole == "admin" {
+			<div class="flex justify-center">
 				<div class="uk-btn-group">
 					<button
 						type="button"
@@ -897,17 +986,103 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 						<uk-icon icon="Trash"></uk-icon>
 					</button>
 					if isHighlighted {
-						<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+						<button id="highlight-btn-desktop" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-desktop" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
 							<uk-icon icon="StarOff"></uk-icon>
 						</button>
 					} else {
-						<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+						<button id="highlight-btn-desktop" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-desktop" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
 							<uk-icon icon="Star"></uk-icon>
 						</button>
 					}
 				</div>
-			}
-		</div>
+			</div>
+		}
+	</div>
+	<!-- Desktop layout for large screens -->
+	<div class="hidden xl:flex justify-between items-center mb-4">
+		<button
+			id="reverse-btn-large"
+			type="button"
+			class="uk-btn uk-btn-default"
+			hx-get={ toggleURL }
+			hx-target="#chapters-section"
+			title={ buttonTitle }
+		>
+			<uk-icon icon={ buttonIcon }></uk-icon>
+			<span class="ml-1">{ buttonText }</span>
+		</button>
+		if userRole == "moderator" || userRole == "admin" {
+			<div class="flex justify-center flex-1">
+				<div class="uk-btn-group">
+					<button
+						type="button"
+						class="uk-btn uk-btn-primary uk-btn-small"
+						uk-toggle="target: #metadata-modal"
+						title="Search for Metadata"
+						aria-label="Search for Metadata"
+					>
+						<uk-icon icon="Search"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #edit-metadata-modal"
+						title="Edit Metadata"
+						aria-label="Edit Metadata"
+					>
+						<uk-icon icon="Pencil"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #refresh-metadata-modal"
+						title="Refresh Metadata"
+						aria-label="Refresh Metadata"
+					>
+						<uk-icon icon="FolderSync"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary uk-btn-small"
+						uk-toggle="target: #reindex-chapters-modal"
+						title="Re-index chapters"
+						aria-label="Re-index chapters"
+					>
+						<uk-icon icon="RotateCcw"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-destructive uk-btn-small"
+						uk-toggle="target: #delete-media-modal"
+						title="Delete series"
+						aria-label="Delete series"
+					>
+						<uk-icon icon="Trash"></uk-icon>
+					</button>
+					if isHighlighted {
+						<button id="highlight-btn-large" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-large" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+							<uk-icon icon="StarOff"></uk-icon>
+						</button>
+					} else {
+						<button id="highlight-btn-large" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-large" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+							<uk-icon icon="Star"></uk-icon>
+						</button>
+					}
+				</div>
+			</div>
+		}
+		if lastReadChapterSlug != "" {
+			<a
+				class="uk-btn uk-btn-primary"
+				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				hx-target="#content"
+				hx-push-url="true"
+				title="Resume reading from where you left off"
+			>
+				<uk-icon icon="Play"></uk-icon>
+				<span class="ml-1">Resume</span>
+			</a>
+		}
 	</div>
 	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
 		<div id="chapters-container" class="p-2">
@@ -1065,15 +1240,16 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 							<span class="hidden sm:inline">{ chapter.Name }</span>
 							<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 						</button>
-						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-justify; offset: 5; flip: false; boundary: false; auto-update: false; animation: uk-anmt-slide-top-sm; duration: 100">
 							<ul class="uk-dropdown-nav uk-nav dropdown-nav">
 								for _, ch := range chapters {
-									<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
+									<li class={ templ.KV("active-chapter", ch.Slug == chapter.Slug) }>
 										<a
 											class="flex justify-between items-center w-full"
 											href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)) }
+											onclick="event.preventDefault(); window.location.href=this.href; return false;"
 										>
-											<span>{ ch.Name }</span>
+											<span class={ templ.KV("font-semibold", ch.Slug == chapter.Slug) }>{ ch.Name }</span>
 											if ch.IsPremium {
 												<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
 											}
@@ -1252,19 +1428,23 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 			cursor: move;
 			box-sizing: border-box;
 			z-index: 11;
+			touch-action: none;
+			user-select: none;
 		}
 		.cropper-handle {
 			position: absolute;
-			width: 10px;
-			height: 10px;
+			width: 20px;
+			height: 20px;
 			background: #39f;
-			border: 1px solid #fff;
+			border: 2px solid #fff;
+			border-radius: 50%;
 			z-index: 12;
+			touch-action: none;
 		}
-		.cropper-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
-		.cropper-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
-		.cropper-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
-		.cropper-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+		.cropper-handle.nw { top: -12px; left: -12px; cursor: nw-resize; }
+		.cropper-handle.ne { top: -12px; right: -12px; cursor: ne-resize; }
+		.cropper-handle.sw { bottom: -12px; left: -12px; cursor: sw-resize; }
+		.cropper-handle.se { bottom: -12px; right: -12px; cursor: se-resize; }
 	</style>
 	<script>
 		function initCustomCropper(container) {
@@ -1353,6 +1533,21 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 					});
 				});
 				
+				// Touch events for mobile support
+				cropBox.addEventListener('touchstart', startDragTouch, { passive: false });
+				handles.forEach(handle => {
+					handle.addEventListener('touchstart', (e) => {
+						e.stopPropagation();
+						isResizing = true;
+						resizeHandle = handle.classList[1];
+						const touch = e.touches[0];
+						dragStartX = touch.clientX;
+						dragStartY = touch.clientY;
+						document.addEventListener('touchmove', resizeTouch, { passive: false });
+						document.addEventListener('touchend', stopResizeTouch);
+					}, { passive: false });
+				});
+				
 				function startDrag(e) {
 					isDragging = true;
 					const containerRect = container.getBoundingClientRect();
@@ -1360,6 +1555,17 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 					dragStartY = e.clientY - (containerRect.top + boxY);
 					document.addEventListener('mousemove', drag);
 					document.addEventListener('mouseup', stopDrag);
+				}
+				
+				function startDragTouch(e) {
+					e.preventDefault();
+					isDragging = true;
+					const containerRect = container.getBoundingClientRect();
+					const touch = e.touches[0];
+					dragStartX = touch.clientX - (containerRect.left + boxX);
+					dragStartY = touch.clientY - (containerRect.top + boxY);
+					document.addEventListener('touchmove', dragTouch, { passive: false });
+					document.addEventListener('touchend', stopDragTouch);
 				}
 				
 				function drag(e) {
@@ -1371,10 +1577,27 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 					updateCropBox();
 				}
 				
+				function dragTouch(e) {
+					if (!isDragging) return;
+					e.preventDefault();
+					const containerRect = container.getBoundingClientRect();
+					const touch = e.touches[0];
+					boxX = touch.clientX - dragStartX - containerRect.left;
+					boxY = touch.clientY - dragStartY - containerRect.top;
+					constrainBox();
+					updateCropBox();
+				}
+				
 				function stopDrag() {
 					isDragging = false;
 					document.removeEventListener('mousemove', drag);
 					document.removeEventListener('mouseup', stopDrag);
+				}
+				
+				function stopDragTouch() {
+					isDragging = false;
+					document.removeEventListener('touchmove', dragTouch);
+					document.removeEventListener('touchend', stopDragTouch);
 				}
 				
 				function resize(e) {
@@ -1415,10 +1638,56 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 					updateCropBox();
 				}
 				
+				function resizeTouch(e) {
+					if (!isResizing) return;
+					e.preventDefault();
+					const touch = e.touches[0];
+					const dx = touch.clientX - dragStartX;
+					const dy = touch.clientY - dragStartY;
+					
+					switch (resizeHandle) {
+						case 'se':
+							boxWidth += dx;
+							boxHeight += dy;
+							break;
+						case 'sw':
+							boxX += dx;
+							boxWidth -= dx;
+							boxHeight += dy;
+							break;
+						case 'ne':
+							boxY += dy;
+							boxWidth += dx;
+							boxHeight -= dy;
+							break;
+						case 'nw':
+							boxX += dx;
+							boxY += dy;
+							boxWidth -= dx;
+							boxHeight -= dy;
+							break;
+					}
+					
+					// Maintain aspect ratio
+					boxHeight = boxWidth / aspectRatio;
+					
+					dragStartX = touch.clientX;
+					dragStartY = touch.clientY;
+					
+					constrainBox();
+					updateCropBox();
+				}
+				
 				function stopResize() {
 					isResizing = false;
 					document.removeEventListener('mousemove', resize);
 					document.removeEventListener('mouseup', stopResize);
+				}
+				
+				function stopResizeTouch() {
+					isResizing = false;
+					document.removeEventListener('touchmove', resizeTouch);
+					document.removeEventListener('touchend', stopResizeTouch);
 				}
 				
 				function constrainBox() {
@@ -1560,14 +1829,7 @@ templ NovelChapter(previousChapter string, currentChapter string, nextChapter st
 		</div>
 	</div>
 	<script>
-		function scrollToTop() {
-			const mainContent = document.getElementById('main-content');
-			if (mainContent) {
-				mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-			} else {
-				window.scrollTo({ top: 0, behavior: 'smooth' });
-			}
-		}
+		// Use the global scrollToTop function from magi.js
 
 		// Reader customization variables
 		let currentFontSize = 18;

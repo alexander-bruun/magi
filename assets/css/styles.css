@@ -1202,6 +1202,18 @@ main.site-main::-webkit-scrollbar-thumb:hover {
   margin-top: 0 !important;
 }
 
+/* Make chapter dropdown scrollable */
+.uk-dropdown[id*="chapter-list-drop"] {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Prevent double scrollbars */
+.uk-dropdown[id*="chapter-list-drop"] .uk-dropdown-nav {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .tag-container {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -1425,6 +1437,37 @@ main.site-main::-webkit-scrollbar-thumb:hover {
 .reader-mode-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* Prevent dropdown items from causing page scroll */
+.uk-dropdown a:focus,
+.uk-dropdown li:focus,
+.uk-dropdown :focus {
+  scroll-behavior: auto !important;
+  scroll-margin: 0 !important;
+  scroll-padding: 0 !important;
+}
+
+.uk-dropdown {
+  scroll-behavior: auto !important;
+}
+
+/* Ensure active chapter is visible in dropdown with proper scroll margin */
+.uk-dropdown li:has(.font-semibold) {
+  scroll-margin-top: 8px;
+  scroll-margin-bottom: 8px;
+}
+
+/* Alternative approach: if we can make the active item focusable */
+.uk-dropdown li:has(.font-semibold) a {
+  /* Ensure the active link can receive focus and has proper scroll behavior */
+  scroll-margin-top: 8px;
+  scroll-margin-bottom: 8px;
+}
+
+/* If we want smooth scrolling for dropdown navigation */
+.uk-dropdown {
+  scroll-behavior: smooth;
 }
 
 /* Pagination controls */
@@ -2507,6 +2550,14 @@ textarea.code-editor-hidden {
   background: hsl(var(--primary)) !important;
   transform: scale(1.3) !important;
   transform-origin: center !important;
+}
+
+/* Add vertical spacing between wrapped dotnav lines on mobile */
+@media (max-width: 767px) {
+  .uk-dotnav {
+    gap: 0.5rem 0.25rem !important; /* horizontal gap, vertical gap */
+    row-gap: 0.5rem !important; /* additional vertical spacing between rows */
+  }
 }
 
 /* Tablet breakpoint */

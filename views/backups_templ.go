@@ -43,7 +43,7 @@ func Backups(backups []models.BackupInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Database Backups</span></h2><div id=\"backup-content\" class=\"flex place-content-center\"><div class=\"w-4/5 space-y-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Database Backups</span></h2><div id=\"backup-content\" class=\"flex place-content-center\"><div class=\"w-full md:w-4/5 space-y-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

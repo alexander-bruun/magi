@@ -10,7 +10,7 @@ templ Config(cfg models.AppConfig) {
     @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Configuration</span></h2>
     <div class="flex place-content-center">
-        <div class="w-3/4 space-y-6">
+        <div class="w-full md:w-3/4 space-y-6">
             @ConfigForm()
         </div>
     </div>

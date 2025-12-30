@@ -869,22 +869,20 @@
     // Scroll Helpers
     const ScrollHelpers = {
       init() {
-        window.scrollToTop = () => {
-          const mainContent = document.getElementById('main-content');
-          if (mainContent) {
-            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-          } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
+        const getScrollableElements = () => [
+          document.getElementById('reader-images-container'),
+          document.querySelector('.uk-card.uk-card-default.p-6.max-h-screen.overflow-y-auto')
+        ].filter(Boolean);
+
+        const scrollToTop = (behavior = 'smooth') => {
+          // Scroll any reader containers to top
+          getScrollableElements().forEach(el => el.scrollTo({ top: 0, behavior }));
+          // Always scroll window to top
+          window.scrollTo({ top: 0, behavior });
         };
-        window.scrollToTopInstant = () => {
-          const mainContent = document.getElementById('main-content');
-          if (mainContent) {
-            mainContent.scrollTo({ top: 0, behavior: 'auto' });
-          } else {
-            window.scrollTo({ top: 0, behavior: 'auto' });
-          }
-        };
+
+        window.scrollToTop = () => scrollToTop('smooth');
+        window.scrollToTopInstant = () => scrollToTop('auto');
       }
     };
 
@@ -903,14 +901,16 @@
       },
 
       scrollActiveIntoView(dropdownEl) {
-        const activeItem = dropdownEl.querySelector('li.uk-active');
+        const activeItem = dropdownEl.querySelector('li.active-chapter');
         if (activeItem) {
           setTimeout(() => {
+            // Use scrollIntoView on the active item with block: 'nearest' to avoid page scrolling
             activeItem.scrollIntoView({
-              block: 'center',
+              block: 'nearest',
+              inline: 'nearest',
               behavior: 'instant'
             });
-          }, 50);
+          }, 100); // Increased timeout to ensure dropdown is fully rendered
         }
       },
 
