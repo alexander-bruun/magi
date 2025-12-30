@@ -877,8 +877,9 @@
         const scrollToTop = (behavior = 'smooth') => {
           // Scroll any reader containers to top
           getScrollableElements().forEach(el => el.scrollTo({ top: 0, behavior }));
-          // Always scroll window to top
-          window.scrollTo({ top: 0, behavior });
+          // Always scroll main content to top
+          const mainElement = document.querySelector('main.site-main');
+          if (mainElement) mainElement.scrollTo({ top: 0, behavior });
         };
 
         window.scrollToTop = () => scrollToTop('smooth');
