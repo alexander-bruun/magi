@@ -161,6 +161,7 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 			existingMedia.Path = absolutePath
 			existingMedia.LibrarySlug = librarySlug
 			existingMedia.FileCount = 0
+			existingMedia.UpdatedAt = time.Now()
 			if err := models.UpdateMedia(existingMedia); err != nil {
 				log.Errorf("Failed to update media for cross-library prioritization '%s': %s", slug, err)
 			} else {
@@ -891,6 +892,7 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 			}
 			existingMedia.Path = absolutePath
 			existingMedia.FileCount = 0
+			existingMedia.UpdatedAt = time.Now()
 			if err := models.UpdateMedia(existingMedia); err != nil {
 				log.Errorf("Failed to update media path for '%s': %s", slug, err)
 			} else {
