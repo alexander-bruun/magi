@@ -123,7 +123,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		anonymousQuality = 70
 	}
 	// processedQuality is now deprecated - always use 100 for processed images
-	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, 100); err != nil {
+	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 

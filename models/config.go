@@ -107,7 +107,6 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(admin_compression_quality, 100),
         COALESCE(premium_compression_quality, 90),
         COALESCE(anonymous_compression_quality, 70),
-        COALESCE(processed_image_quality, 85),
         COALESCE(disable_webp_conversion, 0),
         COALESCE(image_token_validity_minutes, 5),
         COALESCE(premium_early_access_duration, 3600),
@@ -294,7 +293,7 @@ func UpdateRateLimitConfig(enabled bool, requests, window int) (AppConfig, error
 }
 
 // UpdateCompressionConfig updates the compression quality settings per role
-func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality int) (AppConfig, error) {
+func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality int) (AppConfig, error) {
 	// Ensure qualities are within valid range (0-100)
 	if readerQuality < 0 {
 		readerQuality = 0
@@ -326,14 +325,8 @@ func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, prem
 	if anonymousQuality > 100 {
 		anonymousQuality = 100
 	}
-	if processedQuality < 0 {
-		processedQuality = 0
-	}
-	if processedQuality > 100 {
-		processedQuality = 100
-	}
-	_, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, premium_compression_quality = ?, anonymous_compression_quality = ?, processed_image_quality = ? WHERE id = 1`,
-		readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality)
+	_, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, premium_compression_quality = ?, anonymous_compression_quality = ? WHERE id = 1`,
+		readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality)
 	if err != nil {
 		return AppConfig{}, err
 	}
