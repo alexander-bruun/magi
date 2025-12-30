@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -334,7 +333,44 @@ func MediaCount(filterBy, filter string) (int, error) {
 	count := 0
 	for _, media := range mediaList {
 		if filterBy != "" && filter != "" {
-			value := reflect.ValueOf(media).FieldByName(filterBy).String()
+			var value string
+			switch filterBy {
+			case "Slug":
+				value = media.Slug
+			case "Name":
+				value = media.Name
+			case "Author":
+				value = media.Author
+			case "Description":
+				value = media.Description
+			case "Year":
+				value = fmt.Sprintf("%d", media.Year)
+			case "OriginalLanguage":
+				value = media.OriginalLanguage
+			case "Type":
+				value = media.Type
+			case "Status":
+				value = media.Status
+			case "ContentRating":
+				value = media.ContentRating
+			case "LibrarySlug":
+				value = media.LibrarySlug
+			case "CoverArtURL":
+				value = media.CoverArtURL
+			case "Path":
+				value = media.Path
+			case "FileCount":
+				value = fmt.Sprintf("%d", media.FileCount)
+			case "Tags":
+				value = strings.Join(media.Tags, " ")
+			case "CreatedAt":
+				value = media.CreatedAt.String()
+			case "UpdatedAt":
+				value = media.UpdatedAt.String()
+			default:
+				// If unknown field, skip
+				continue
+			}
 			if strings.Contains(strings.ToLower(value), strings.ToLower(filter)) {
 				count++
 			}

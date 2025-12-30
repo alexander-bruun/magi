@@ -313,7 +313,7 @@ func Scraper(scripts []models.ScraperScript, activeID int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Scraper Scripts</span></h2><!-- Tabs Container --><div class=\"scraper-tabs-container border-b border-border mb-4\"><div class=\"flex items-center gap-1 overflow-x-auto pb-2\"><!-- Existing Script Tabs --><div id=\"script-tabs\" class=\"flex items-center gap-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Scraper Scripts</span></h2><!-- Tabs Container --><div class=\"border-b border-border mb-4\"><div class=\"flex items-center gap-1 overflow-x-auto pb-2\"><!-- Existing Script Tabs --><div id=\"script-tabs\" class=\"flex items-center gap-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -321,7 +321,7 @@ func Scraper(scripts []models.ScraperScript, activeID int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><!-- Plus Button for New Script --><button class=\"uk-btn uk-btn-small uk-btn-default h-10 w-10 flex items-center justify-center\" hx-get=\"/admin/scraper/new\" hx-target=\"#scraper-editor-container\" hx-swap=\"innerHTML\" title=\"New script\" aria-label=\"New script\"><uk-icon icon=\"plus\" ratio=\"1\"></uk-icon></button></div></div><!-- Editor Container --><div id=\"scraper-editor-container\" class=\"uk-card uk-card-body p-4\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><!-- Plus Button for New Script --><button class=\"uk-btn uk-btn-default h-10 w-10 flex items-center justify-center\" hx-get=\"/admin/scraper/new\" hx-target=\"#scraper-editor-container\" hx-swap=\"innerHTML\" title=\"New script\" aria-label=\"New script\"><uk-icon icon=\"plus\" ratio=\"1\"></uk-icon></button></div></div><!-- Editor Container --><div id=\"scraper-editor-container\" class=\"uk-card uk-card-body p-4\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -443,7 +443,7 @@ func ScraperEditorWithUpdatedTabs(script *models.ScraperScript, scripts []models
 
 // Helper function to get tab class
 func getTabClass(isActive bool) string {
-	base := "uk-tab px-3 py-2 rounded-t border-t border-l border-r border-border hover:bg-accent whitespace-nowrap text-sm flex items-center gap-2 transition-colors duration-200"
+	base := "uk-tab px-3 py-2 rounded-t border-t border-l border-r border-border hover:bg-accent text-sm flex items-center gap-2 duration-200"
 	if isActive {
 		return base + " active"
 	}
@@ -539,7 +539,7 @@ func ScraperTab(script *models.ScraperScript, activeID int64) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</button><!-- Delete button placed inside the tab to the right of the name --><button type=\"button\" class=\"uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2 cursor-pointer\" onclick=\"event.stopPropagation()\" hx-delete=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</button><!-- Delete button placed inside the tab to the right of the name --><button type=\"button\" class=\"uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2\" onclick=\"event.stopPropagation()\" hx-delete=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -882,7 +882,7 @@ func ScraperLogsTabContent(script *models.ScraperScript) templ.Component {
 			templ_7745c5c3_Var30 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<!-- HTMX WebSocket extension for live log streaming --><div id=\"scraper-log-viewer\" class=\"mb-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto\" hx-ext=\"ws\" ws-connect=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<!-- HTMX WebSocket extension for live log streaming --><div id=\"scraper-log-viewer\" class=\"mb-6 uk-card uk-card-body bg-surface p-3 text-xs max-h-96 overflow-y-auto\" hx-ext=\"ws\" ws-connect=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1209,7 +1209,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 				return templ_7745c5c3_Err
 			}
 			if pagination["has_prev"].(bool) {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<button class=\"uk-btn uk-btn-default uk-btn-small\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1227,7 +1227,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<button class=\"uk-btn uk-btn-default uk-btn-small\" disabled>Previous</button> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "<button class=\"uk-btn uk-btn-default\" disabled>Previous</button> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1263,7 +1263,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 				return templ_7745c5c3_Err
 			}
 			if pagination["has_next"].(bool) {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<button class=\"uk-btn uk-btn-default uk-btn-small\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<button class=\"uk-btn uk-btn-default\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1281,7 +1281,7 @@ func ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginatio
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<button class=\"uk-btn uk-btn-default uk-btn-small\" disabled>Next</button>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "<button class=\"uk-btn uk-btn-default\" disabled>Next</button>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1351,14 +1351,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<span class=\"font-mono text-sm\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<span class=\"text-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var50 string
 		templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatStartTime())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 525, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 525, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 		if templ_7745c5c3_Err != nil {
@@ -1377,7 +1377,7 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ")</span></div><div class=\"flex items-center gap-2\"><button class=\"text-xs px-2 py-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors\" hx-delete=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, ")</span></div><div class=\"flex items-center gap-2\"><button class=\"text-xs px-2 py-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30\" hx-delete=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1395,14 +1395,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if log.Status == "success" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span class=\"text-xs px-2 py-1 rounded whitespace-nowrap bg-success/20 text-success\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<span class=\"text-xs px-2 py-1 rounded bg-success/20 text-success\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 542, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 542, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1413,14 +1413,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else if log.Status == "error" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span class=\"text-xs px-2 py-1 rounded whitespace-nowrap bg-destructive/20 text-destructive\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<span class=\"text-xs px-2 py-1 rounded bg-destructive/20 text-destructive\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var54 string
 			templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 544, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 544, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 			if templ_7745c5c3_Err != nil {
@@ -1431,14 +1431,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else if log.Status == "running" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<span class=\"text-xs px-2 py-1 rounded whitespace-nowrap bg-yellow-500/20 text-yellow-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<span class=\"text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var55 string
 			templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 546, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 546, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 			if templ_7745c5c3_Err != nil {
@@ -1449,14 +1449,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else if log.Status == "aborted" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span class=\"text-xs px-2 py-1 rounded whitespace-nowrap bg-gray-500/20 text-gray-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<span class=\"text-xs px-2 py-1 rounded bg-gray-500/20 text-gray-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var56 string
 			templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 548, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 548, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 			if templ_7745c5c3_Err != nil {
@@ -1467,14 +1467,14 @@ func ScraperLogEntry(log *models.ScraperExecutionLog) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<span class=\"text-xs px-2 py-1 rounded whitespace-nowrap\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<span class=\"text-xs px-2 py-1 rounded\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(log.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 550, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/scraper.templ`, Line: 550, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 			if templ_7745c5c3_Err != nil {
@@ -1552,7 +1552,7 @@ func ScraperLogViewer(scriptID int64) templ.Component {
 			templ_7745c5c3_Var59 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<div id=\"scraper-log-viewer\" class=\"mt-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto\"><div class=\"text-muted-foreground mb-2\">Live Output</div><div id=\"log-output-container\" class=\"space-y-1\"></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<div id=\"scraper-log-viewer\" class=\"mt-6 uk-card uk-card-body bg-surface p-3 text-xs max-h-96 overflow-y-auto\"><div class=\"text-muted-foreground mb-2\">Live Output</div><div id=\"log-output-container\" class=\"space-y-1\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1595,7 +1595,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\" data-code-editor-height=\"384px\" class=\"w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none\" placeholder=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "\" data-code-editor-height=\"384px\" class=\"w-full h-96 p-3 text-sm bg-background text-foreground border-0 resize-none\" placeholder=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1634,7 +1634,7 @@ func LanguageDependentSections(script *models.ScraperScript) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\"><label for=\"shared-script-content\" class=\"uk-form-label\">Shared Script (optional)</label><p class=\"text-xs text-muted-foreground mb-3\">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p><div class=\"uk-card uk-card-default uk-card-body p-0 border overflow-hidden\"><textarea id=\"shared-script-content\" name=\"shared_script\" data-code-editor=\"shell\" data-code-editor-height=\"200px\" class=\"w-full h-48 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none\" placeholder=\"#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 132, "\"><label for=\"shared-script-content\" class=\"uk-form-label\">Shared Script (optional)</label><p class=\"text-xs text-muted-foreground mb-3\">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p><div class=\"uk-card uk-card-default uk-card-body p-0 border overflow-hidden\"><textarea id=\"shared-script-content\" name=\"shared_script\" data-code-editor=\"shell\" data-code-editor-height=\"200px\" class=\"w-full h-48 p-3 text-sm bg-background text-foreground border-0 resize-none\" placeholder=\"#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

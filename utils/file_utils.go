@@ -22,9 +22,169 @@ import (
 
 var dataDirectory = "./data"
 
+// ArchiveIterator provides a common interface for iterating through archive files
+type ArchiveIterator interface {
+	Next() (name string, reader io.ReadCloser, err error)
+	Close() error
+}
+
 // SetDataDirectory sets the data directory path
 func SetDataDirectory(dir string) {
 	dataDirectory = dir
+}
+
+// zipIterator implements ArchiveIterator for ZIP files
+type zipIterator struct {
+	reader *zip.ReadCloser
+	files  []*zip.File
+	index  int
+}
+
+func (z *zipIterator) Next() (string, io.ReadCloser, error) {
+	if z.index >= len(z.files) {
+		return "", nil, io.EOF
+	}
+	file := z.files[z.index]
+	z.index++
+	reader, err := file.Open()
+	return file.Name, reader, err
+}
+
+func (z *zipIterator) Close() error {
+	return z.reader.Close()
+}
+
+// rarIterator implements ArchiveIterator for RAR files
+type rarIterator struct {
+	reader *rardecode.Reader
+	file   *os.File
+}
+
+func (r *rarIterator) Next() (string, io.ReadCloser, error) {
+	header, err := r.reader.Next()
+	if err != nil {
+		return "", nil, err
+	}
+	// For RAR, we return a wrapper that implements ReadCloser
+	return header.Name, &rarReadCloser{reader: r.reader}, nil
+}
+
+func (r *rarIterator) Close() error {
+	return r.file.Close()
+}
+
+// rarReadCloser wraps the RAR reader to implement io.ReadCloser
+type rarReadCloser struct {
+	reader *rardecode.Reader
+}
+
+func (r *rarReadCloser) Read(p []byte) (n int, err error) {
+	return r.reader.Read(p)
+}
+
+func (r *rarReadCloser) Close() error {
+	// RAR reader doesn't need explicit closing per file
+	return nil
+}
+
+// epubIterator implements ArchiveIterator for EPUB files with prioritized image directories
+type epubIterator struct {
+	reader      *zip.ReadCloser
+	files       []*zip.File
+	index       int
+	prioritized []string
+}
+
+func (e *epubIterator) Next() (string, io.ReadCloser, error) {
+	if e.index >= len(e.files) {
+		return "", nil, io.EOF
+	}
+	file := e.files[e.index]
+	e.index++
+	reader, err := file.Open()
+	return file.Name, reader, err
+}
+
+func (e *epubIterator) Close() error {
+	return e.reader.Close()
+}
+
+// newEpubIterator creates an EPUB iterator with prioritized image directories
+func newEpubIterator(reader *zip.ReadCloser) *epubIterator {
+	// For EPUB files, prioritize images in common image directories
+	imageDirs := []string{"OEBPS/Images/", "Images/", "images/", "OEBPS/images/"}
+
+	// Separate prioritized and non-prioritized files
+	var prioritized []*zip.File
+	var others []*zip.File
+
+	for _, file := range reader.File {
+		isPrioritized := false
+		for _, dir := range imageDirs {
+			if strings.HasPrefix(file.Name, dir) {
+				prioritized = append(prioritized, file)
+				isPrioritized = true
+				break
+			}
+		}
+		if !isPrioritized {
+			others = append(others, file)
+		}
+	}
+
+	// Combine prioritized files first, then others
+	allFiles := append(prioritized, others...)
+
+	return &epubIterator{
+		reader: reader,
+		files:  allFiles,
+		index:  0,
+	}
+}
+
+// extractFirstImageFromArchive extracts the first image from any archive using the iterator
+func extractFirstImageFromArchive(iter ArchiveIterator, outputFolder string) error {
+	defer iter.Close()
+
+	for {
+		name, reader, err := iter.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error reading archive: %w", err)
+		}
+
+		if isImageFile(name) {
+			// Extract the file
+			outputPath, err := safeJoinPath(outputFolder, name)
+			if err != nil {
+				reader.Close()
+				return fmt.Errorf("invalid archive path: %w", err)
+			}
+
+			// Create directory if needed
+			dir := filepath.Dir(outputPath)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				reader.Close()
+				return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			}
+
+			dst, err := os.Create(outputPath)
+			if err != nil {
+				reader.Close()
+				return err
+			}
+
+			_, err = io.Copy(dst, reader)
+			dst.Close()
+			reader.Close()
+			return err
+		}
+		reader.Close()
+	}
+
+	return fmt.Errorf("no image files found in archive")
 }
 
 // isSafeArchivePath checks whether the provided path is safe for extraction (no directory traversal, not absolute).
@@ -180,26 +340,9 @@ func extractFirstImageFromZip(zipPath, outputFolder string) error {
 	if err != nil {
 		return fmt.Errorf("invalid or corrupt zip file: %w", err)
 	}
-	defer reader.Close()
 
-	// Check if archive contains any images
-	hasImages := false
-	for _, file := range reader.File {
-		if !strings.Contains(file.Name, "..") {
-			if isImageFile(file.Name) {
-				hasImages = true
-				if err := extractZipFile(file, outputFolder); err != nil {
-					return fmt.Errorf("failed to extract image: %w", err)
-				}
-				return nil
-			}
-		}
-	}
-
-	if !hasImages {
-		return fmt.Errorf("no image files found in archive")
-	}
-	return nil
+	iter := &zipIterator{reader: reader, files: reader.File, index: 0}
+	return extractFirstImageFromArchive(iter, outputFolder)
 }
 
 func extractFirstImageFromRar(rarPath, outputFolder string) error {
@@ -207,35 +350,15 @@ func extractFirstImageFromRar(rarPath, outputFolder string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open rar file: %w", err)
 	}
-	defer file.Close()
 
 	reader, err := rardecode.NewReader(file)
 	if err != nil {
+		file.Close()
 		return fmt.Errorf("invalid or corrupt rar file: %w", err)
 	}
 
-	hasImages := false
-	for {
-		header, err := reader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("error reading rar archive: %w", err)
-		}
-		if isImageFile(header.Name) {
-			hasImages = true
-			if err := extractRarFile(reader, header.Name, outputFolder); err != nil {
-				return fmt.Errorf("failed to extract image: %w", err)
-			}
-			return nil
-		}
-	}
-
-	if !hasImages {
-		return fmt.Errorf("no image files found in archive")
-	}
-	return nil
+	iter := &rarIterator{reader: reader, file: file}
+	return extractFirstImageFromArchive(iter, outputFolder)
 }
 
 func extractFirstImageFromEPUB(epubPath, outputFolder string) error {
@@ -243,84 +366,9 @@ func extractFirstImageFromEPUB(epubPath, outputFolder string) error {
 	if err != nil {
 		return fmt.Errorf("invalid or corrupt epub file: %w", err)
 	}
-	defer reader.Close()
 
-	// For EPUB files, prioritize images in common image directories
-	imageDirs := []string{"OEBPS/Images/", "Images/", "images/", "OEBPS/images/"}
-
-	// First, try to find images in prioritized directories
-	for _, imgDir := range imageDirs {
-		for _, file := range reader.File {
-			if strings.HasPrefix(file.Name, imgDir) && isImageFile(file.Name) {
-				if err := extractZipFile(file, outputFolder); err != nil {
-					return fmt.Errorf("failed to extract image: %w", err)
-				}
-				return nil
-			}
-		}
-	}
-
-	// If no images found in prioritized directories, extract the first image found
-	for _, file := range reader.File {
-		if isImageFile(file.Name) {
-			if err := extractZipFile(file, outputFolder); err != nil {
-				return fmt.Errorf("failed to extract image: %w", err)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("no image files found in epub")
-}
-
-func extractZipFile(file *zip.File, outputFolder string) error {
-	// Validate the archive path for safety
-	if !isSafeArchivePath(file.Name) {
-		return fmt.Errorf("unsafe archive path: %s", file.Name)
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	outputPath := filepath.Join(outputFolder, file.Name)
-	if !strings.HasPrefix(filepath.Clean(outputPath), filepath.Clean(outputFolder)+string(os.PathSeparator)) {
-		return fmt.Errorf("invalid file path: %s", outputPath)
-	}
-
-	// Create the directory if it doesn't exist
-	dir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
-	}
-
-	dst, err := os.Create(outputPath)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, src)
-	return err
-}
-
-func extractRarFile(reader io.Reader, fileName, outputFolder string) error {
-	// Validate and sanitize the path
-	outputPath, err := safeJoinPath(outputFolder, fileName)
-	if err != nil {
-		return fmt.Errorf("invalid archive path: %w", err)
-	}
-
-	dst, err := os.Create(outputPath)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, reader)
-	return err
+	iter := newEpubIterator(reader)
+	return extractFirstImageFromArchive(iter, outputFolder)
 }
 
 func CopyFile(src, dst string) error {
@@ -698,7 +746,7 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 }
 
 // ExtractAndStoreImageWithCropByIndex extracts an image by index with cropping
-func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, quality int) (string, error) {
+func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}) (string, error) {
 	dataDir := GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
@@ -753,7 +801,7 @@ func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int,
 		}
 	}
 
-	return processCroppedImage(imagePath, slug, postersDir, cropData, quality)
+	return processCroppedImage(imagePath, slug, postersDir, cropData, 100)
 }
 
 // extractImageFromZipToPath extracts a specific image from a zip archive

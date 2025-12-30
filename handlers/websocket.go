@@ -26,12 +26,12 @@ type JobStatus struct {
 
 // JobStatusManager manages WebSocket connections and active job statuses
 type JobStatusManager struct {
-	clients     map[*websocket.Conn]bool
-	activeJobs  map[string]JobStatus // key: unique identifier (e.g., "scraper_1" or "indexer_mylib")
-	mu          sync.RWMutex
-	writeMu     sync.Mutex // Protects WebSocket writes
-	pingTicker  *time.Ticker
-	stopPing    chan struct{}
+	clients    map[*websocket.Conn]bool
+	activeJobs map[string]JobStatus // key: unique identifier (e.g., "scraper_1" or "indexer_mylib")
+	mu         sync.RWMutex
+	writeMu    sync.Mutex // Protects WebSocket writes
+	pingTicker *time.Ticker
+	stopPing   chan struct{}
 }
 
 var jobStatusManager = &JobStatusManager{
@@ -50,7 +50,7 @@ func init() {
 func StopJobStatusManager() {
 	close(jobStatusManager.stopPing)
 	jobStatusManager.pingTicker.Stop()
-	
+
 	jobStatusManager.mu.Lock()
 	for conn := range jobStatusManager.clients {
 		conn.Close()

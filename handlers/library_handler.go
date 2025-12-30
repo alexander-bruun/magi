@@ -90,7 +90,6 @@ func renderLibraryTable(libraries []models.Library) (string, error) {
 }
 
 func setCommonHeaders(c *fiber.Ctx) {
-	triggerCustomNotification(c, "reset-form", map[string]interface{}{})
 	c.Response().Header.Set("Content-Type", "text/html")
 }
 
@@ -131,9 +130,21 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
+	// Render a fresh form
+	var formBuf bytes.Buffer
+	emptyLibrary := models.Library{}
+	err = views.LibraryForm(emptyLibrary, "post", false).Render(context.Background(), &formBuf)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	formContent := formBuf.String()
+
+	// Combine table and form with OOB swap for form
+	responseContent := tableContent + `<div id="library-form" hx-swap-oob="innerHTML">` + formContent + `</div>`
+
 	triggerNotification(c, "Library created successfully", "success")
 	setCommonHeaders(c)
-	return c.SendString(tableContent)
+	return c.SendString(responseContent)
 }
 
 // HandleDeleteLibrary removes an existing library and responds with the updated table fragment.

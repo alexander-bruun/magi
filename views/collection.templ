@@ -6,10 +6,17 @@ import (
 )
 
 templ Collection(collection models.CollectionWithMedia, canEdit bool) {
-	<div class="container mx-auto px-4 py-8">
+	@PageTitle("Collections - " + collection.Name)
+	@Breadcrumb([]BreadcrumbItem{
+		{ Label: "Collections", Href: "/collections" },
+		{ Label: collection.Name },
+	})
+	
+	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ collection.Name }</span></h2>
+		
+	<div class="mx-auto px-4 py-8">
 		<div class="flex justify-between items-start mb-8">
 			<div class="flex-1">
-				<h1 class="text-3xl font-bold mb-2">{ collection.Name }</h1>
 				if collection.Description != "" {
 					<p class="text-lg mb-4">{ collection.Description }</p>
 				}
@@ -24,11 +31,11 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 
 			if canEdit {
 				<div class="flex space-x-2 ml-4">
-					<button type="button" class="uk-btn uk-btn-default uk-btn-small" uk-toggle="target: #edit-collection-modal" hx-get={ templ.URL(fmt.Sprintf("/collections/%d/edit/modal", collection.ID)) } hx-target="#edit-collection-modal-content" hx-swap="innerHTML">
+					<button type="button" class="uk-btn uk-btn-default" uk-toggle="target: #edit-collection-modal" hx-get={ templ.URL(fmt.Sprintf("/collections/%d/edit/modal", collection.ID)) } hx-target="#edit-collection-modal-content" hx-swap="innerHTML">
 						<uk-icon icon="pencil"></uk-icon>
 						Edit
 					</button>
-					<button class="uk-btn uk-btn-destructive uk-btn-small" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/delete", collection.ID)) } hx-confirm="Are you sure you want to delete this collection? This action cannot be undone." hx-target="#content" hx-push-url="true">
+					<button class="uk-btn uk-btn-destructive" hx-post={ templ.URL(fmt.Sprintf("/collections/%d/delete", collection.ID)) } hx-confirm="Are you sure you want to delete this collection? This action cannot be undone." hx-target="#content" hx-push-url="true">
 						<uk-icon icon="trash"></uk-icon>
 						Delete
 					</button>
@@ -39,7 +46,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 		if len(collection.Media) == 0 {
 			<div class="text-center py-12">
 				<div class="flex items-center justify-center mb-4">
-					<uk-icon icon="book" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+					<uk-icon icon="book" ratio="3" class="mr-4"></uk-icon>
 					<h2 class="text-xl font-semibold">No series in this collection</h2>
 				</div>
 				if canEdit {
@@ -53,7 +60,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body p-0 relative flex flex-col h-full">
 						<div class="flex-1 overflow-hidden uk-position-relative collection-media-aspect">
 							<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="block w-full h-full">
-								<img src={ media.CoverArtURL + "?size=tiny" } alt={ media.Name } class="w-full h-full object-cover rounded-t-lg"/>
+								<img src={ media.CoverArtURL + "?size=tiny" } alt={ media.Name } class="w-full h-full rounded-t-lg"/>
 							</a>
 						</div>
 						<div class="p-3">
@@ -62,7 +69,7 @@ templ Collection(collection models.CollectionWithMedia, canEdit bool) {
 									<uk-icon icon="x" ratio="0.8"></uk-icon>
 								</button>
 							}
-							<h4 class="uk-card-title uk-text-center uk-text-small uk-margin-remove collection-title-truncate">
+							<h4 class="uk-card-title uk-text-center collection-title-truncate">
 								<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="uk-link-text">
 									{ media.Name }
 								</a>

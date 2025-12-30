@@ -46,7 +46,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-margin-bottom\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Issue Management</span></h2></div><!-- Stats Cards --><div class=\"grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Issue Management</span></h2></div><!-- Stats Cards --><div class=\"grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4\"><div class=\"uk-card uk-card-default uk-card-body\"><h3 class=\"uk-card-title uk-text-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -98,7 +98,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</h3><p class=\"uk-text-center uk-text-meta\">Total Issues</p></div></div><!-- Filters --><div class=\"uk-margin-bottom\"><form id=\"issues-filter-form\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\"><div class=\"uk-flex uk-flex-wrap\" style=\"gap: 2rem; justify-content: center;\"><div><label class=\"uk-form-label uk-margin-small-right\">Status:</label> <select class=\"uk-select\" name=\"status\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\" hx-include=\"closest form\"><option value=\"\">All Status</option> <option value=\"open\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</h3><p class=\"uk-text-center uk-text-meta\">Total Issues</p></div></div><!-- Filters --><div><form id=\"issues-filter-form\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\"><div class=\"uk-flex uk-flex-wrap\" style=\"gap: 2rem; justify-content: center;\"><div><label class=\"uk-form-label\">Status:</label> <select class=\"uk-select\" name=\"status\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\" hx-include=\"closest form\"><option value=\"\">All Status</option> <option value=\"open\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,7 +128,7 @@ func Issues(issues []models.Issue, stats map[string]int, status, category string
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, ">Closed</option></select></div><div><label class=\"uk-form-label uk-margin-small-right\">Category:</label> <select class=\"uk-select\" name=\"category\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\" hx-include=\"closest form\"><option value=\"\">All Categories</option> <option value=\"bug\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, ">Closed</option></select></div><div><label class=\"uk-form-label\">Category:</label> <select class=\"uk-select\" name=\"category\" hx-get=\"/admin/issues\" hx-target=\"#issues-content\" hx-swap=\"innerHTML\" hx-include=\"closest form\"><option value=\"\">All Categories</option> <option value=\"bug\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -499,7 +499,7 @@ func IssueRow(issue models.Issue) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" hx-swap=\"outerHTML\" style=\"display: inline; margin-right: 5px;\"><input type=\"hidden\" name=\"status\" value=\"in_progress\"> <button class=\"uk-btn uk-btn-small uk-btn-primary\" type=\"submit\">Start Progress</button></form><form hx-put=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\" hx-swap=\"outerHTML\" style=\"display: inline; margin-right: 5px;\"><input type=\"hidden\" name=\"status\" value=\"in_progress\"> <button class=\"uk-btn uk-btn-primary\" type=\"submit\">Start Progress</button></form><form hx-put=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -525,7 +525,7 @@ func IssueRow(issue models.Issue) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" hx-swap=\"outerHTML\" style=\"display: inline;\"><input type=\"hidden\" name=\"status\" value=\"closed\"> <button class=\"uk-btn uk-btn-small uk-btn-secondary\" type=\"submit\">Close</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\" hx-swap=\"outerHTML\" style=\"display: inline;\"><input type=\"hidden\" name=\"status\" value=\"closed\"> <button class=\"uk-btn uk-btn-secondary\" type=\"submit\">Close</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -556,7 +556,7 @@ func IssueRow(issue models.Issue) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" hx-swap=\"outerHTML\" style=\"display: inline;\"><input type=\"hidden\" name=\"status\" value=\"closed\"> <button class=\"uk-btn uk-btn-small uk-btn-secondary\" type=\"submit\">Close</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" hx-swap=\"outerHTML\" style=\"display: inline;\"><input type=\"hidden\" name=\"status\" value=\"closed\"> <button class=\"uk-btn uk-btn-secondary\" type=\"submit\">Close</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

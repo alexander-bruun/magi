@@ -107,7 +107,6 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	adminQuality := config.AdminCompressionQuality
 	premiumQuality := config.PremiumCompressionQuality
 	anonymousQuality := config.AnonymousCompressionQuality
-	processedQuality := config.ProcessedImageQuality
 	if readerQuality < 0 || readerQuality > 100 {
 		readerQuality = 70
 	}
@@ -123,10 +122,14 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	if anonymousQuality < 0 || anonymousQuality > 100 {
 		anonymousQuality = 70
 	}
-	if processedQuality < 0 || processedQuality > 100 {
-		processedQuality = 85
+	// processedQuality is now deprecated - always use 100 for processed images
+	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, 100); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
-	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality); err != nil {
+
+	// Update image processing configuration
+	disableWebpConversion := config.DisableWebpConversion
+	if _, err := models.UpdateImageProcessingConfig(disableWebpConversion); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 

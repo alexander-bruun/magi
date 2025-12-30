@@ -39,7 +39,7 @@ templ Captcha(errorMsg string, captchaID string) {
 							</span>
 						</label>
 						<div class="text-center p-4 bg-surface-variant rounded-lg border-2 border-dashed border-outline">
-							<img src={ templ.SafeURL(fmt.Sprintf("/captcha/%s.png", captchaID)) } alt="Captcha" class="mx-auto rounded shadow-sm"/>
+							<img src={ templ.SafeURL(fmt.Sprintf("/captcha/%s.png", captchaID)) } alt="Captcha" class="mx-auto rounded uk-shadow-sm"/>
 						</div>
 					</div>
 

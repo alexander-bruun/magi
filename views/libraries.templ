@@ -60,7 +60,7 @@ templ LibraryTable(libraries []models.Library) {
 						<td>
 							<div class="mt-2 flex items-center justify-center">
 								if library.Enabled {
-									<span class="uk-label uk-label-success">Enabled</span>
+									<span class="uk-label">Enabled</span>
 								} else {
 									<span class="uk-label uk-label-warning">Disabled</span>
 								}
@@ -87,7 +87,7 @@ templ LibraryTable(libraries []models.Library) {
 						</td>
 						<td colspan="3">
 							<div class="flex items-center justify-center">
-								<div class="uk-btn-group uk-width-auto flex-nowrap">
+								<div class="uk-btn-group flex-nowrap">
 									<button
 										type="button"
 										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
@@ -160,7 +160,6 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 				hx-post="/admin/libraries"
 				hx-target="#libraries-table"
 				hx-trigger="submit"
-				hx-on:htmx:afterRequest="event.detail.xhr.status === 200 && this.reset()"
 			>
 				@FormContent(library, editing)
 			</form>
@@ -172,7 +171,6 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 				hx-put={ fmt.Sprintf("/admin/libraries/%s", library.Slug) }
 				hx-target="#libraries-table"
 				hx-trigger="submit"
-				hx-on:htmx:afterRequest="event.detail.xhr.status === 200 && this.reset()"
 			>
 				@FormContent(library, editing)
 			</form>
@@ -245,7 +243,7 @@ templ FolderInputs(folders []string, editing bool) {
 		}
 	</div>
 	if editing {
-		<div class="mt-4 uk-flex uk-flex-center">
+		<div class="mt-4 uk-flex">
 			<button type="submit" class="uk-btn uk-btn-default mr-2">Save</button>
 			<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/admin/libraries/helpers/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
 		</div>
@@ -260,7 +258,7 @@ templ FolderInputs(folders []string, editing bool) {
 templ FolderRow(folderValue string, isFirst bool, canRemove bool, index int) {
 	<div class="folder-row mb-4 flex items-center">
 		<input id={ fmt.Sprintf("folder-input-%d", index) } class="uk-input folder-input" type="text" name="folders" placeholder="Folder Path" value={ folderValue }/>
-		<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn" onclick="openFileExplorer(this.previousElementSibling)">
+		<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" onclick="openFileExplorer(this.previousElementSibling)">
 			<uk-icon icon="FolderOpen"></uk-icon>
 		</button>
 		if isFirst {

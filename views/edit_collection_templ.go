@@ -47,7 +47,7 @@ func EditCollection(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\"><div class=\"mb-4\"><label for=\"name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"name\" name=\"name\" class=\"uk-input w-full\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\"><div class=\"mb-4\"><label for=\"name\" class=\"block text-sm font-medium mb-2\">Collection Name *</label> <input type=\"text\" id=\"name\" name=\"name\" class=\"uk-input w-full\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,7 +60,7 @@ func EditCollection(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"e.g., Batman Universe, Shonen Jump\" required></div><div class=\"mb-6\"><label for=\"description\" class=\"block text-sm font-medium text-gray-700 mb-2\">Description</label> <textarea id=\"description\" name=\"description\" rows=\"4\" class=\"uk-textarea w-full\" placeholder=\"Describe what this collection is about...\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" placeholder=\"e.g., Batman Universe, Shonen Jump\" required></div><div class=\"mb-6\"><label for=\"description\" class=\"block text-sm font-medium mb-2\">Description</label> <textarea id=\"description\" name=\"description\" rows=\"4\" class=\"uk-textarea w-full\" placeholder=\"Describe what this collection is about...\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -128,7 +128,7 @@ func EditCollectionModal(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#edit-collection-modal\" hx-swap=\"none\" hx-ext=\"form-json\" class=\"uk-modal-body\"><div class=\"mb-4\"><label for=\"modal-name\" class=\"block text-sm font-medium text-gray-700 mb-2\">Collection Name *</label> <input type=\"text\" id=\"modal-name\" name=\"name\" class=\"uk-input w-full\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#edit-collection-modal\" hx-swap=\"none\" hx-ext=\"form-json\" class=\"uk-modal-body\"><div class=\"mb-4\"><label for=\"modal-name\" class=\"block text-sm font-medium mb-2\">Collection Name *</label> <input type=\"text\" id=\"modal-name\" name=\"name\" class=\"uk-input w-full\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -141,7 +141,7 @@ func EditCollectionModal(collection models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" placeholder=\"e.g., Batman Universe, Shonen Jump\" required></div><div class=\"mb-6\"><label for=\"modal-description\" class=\"block text-sm font-medium text-gray-700 mb-2\">Description</label> <textarea id=\"modal-description\" name=\"description\" rows=\"4\" class=\"uk-textarea w-full\" placeholder=\"Describe what this collection is about...\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" placeholder=\"e.g., Batman Universe, Shonen Jump\" required></div><div class=\"mb-6\"><label for=\"modal-description\" class=\"block text-sm font-medium mb-2\">Description</label> <textarea id=\"modal-description\" name=\"description\" rows=\"4\" class=\"uk-textarea w-full\" placeholder=\"Describe what this collection is about...\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

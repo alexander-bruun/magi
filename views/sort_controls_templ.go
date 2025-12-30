@@ -309,7 +309,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</form><div class=\"uk-inline mr-2\"><button class=\"uk-btn uk-btn-default uk-btn-small\" type=\"button\" uk-toggle=\"target: #sort-dropdown\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</form><div class=\"uk-inline mr-2\"><button class=\"uk-btn uk-btn-default\" type=\"button\" uk-toggle=\"target: #sort-dropdown\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -435,7 +435,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</ul></div></div><!-- Search Input --><div class=\"uk-inline search-input-container\"><input id=\"search-input\" class=\"uk-input uk-form-small search-input\" type=\"text\" name=\"search\" placeholder=\"Search by title...\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</ul></div></div><!-- Search Input --><div class=\"uk-inline search-input-container\"><input id=\"search-input\" class=\"uk-input search-input\" type=\"text\" name=\"search\" placeholder=\"Search by title...\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -479,7 +479,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 			return templ_7745c5c3_Err
 		}
 		if searchFilter != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-small search-clear-btn\" hx-get=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<button type=\"button\" class=\"uk-btn uk-btn-icon search-clear-btn\" hx-get=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -534,7 +534,7 @@ func SortControls(path string, targetID string, parentID string, currentSort str
 		if currentOrder == "desc" {
 			toggled = "asc"
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<button class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<button class=\"uk-btn uk-btn-default uk-btn-icon btn-circular\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -618,7 +618,7 @@ func TagsDropdownButton(path string, targetID string, parentID string, currentSo
 			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"tag-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" aria-label=\"Filter by tags\"><uk-icon icon=\"Tag\"></uk-icon></button><div id=\"tag-filter-drop\" data-trigger-id=\"tag-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"tag-filter-form\" class=\"uk-form\"><div class=\"uk-margin-small\"><div class=\"uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -678,7 +678,7 @@ func TagModeToggleButtonInline(path string, targetID string, parentID string, ta
 		} else {
 			nextMode = "any"
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<button type=\"button\" class=\"uk-btn uk-btn-default uk-btn-small uk-btn-icon\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<button type=\"button\" class=\"uk-btn uk-btn-default uk-btn-icon\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -787,7 +787,7 @@ func TagApplyButton(path string, targetID string, parentID string) templ.Compone
 			templ_7745c5c3_Var31 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-small uk-btn-icon\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-icon\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -842,7 +842,7 @@ func TagClearButton(path string, targetID string, parentID string) templ.Compone
 			templ_7745c5c3_Var34 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<button type=\"button\" class=\"uk-btn uk-btn-destructive uk-btn-small uk-btn-icon\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "<button type=\"button\" class=\"uk-btn uk-btn-destructive uk-btn-icon\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -898,7 +898,7 @@ func TypesDropdownButton(path string, targetID string, parentID string, currentS
 			templ_7745c5c3_Var37 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by types\"><uk-icon icon=\"Filter\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-inline filter-dropdown-inline\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" aria-label=\"Filter by types\"><uk-icon icon=\"Filter\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><div class=\"uk-margin-small\"><div class=\"uk-text-center filter-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -947,7 +947,7 @@ func TypeApplyButton(path string, targetID string, parentID string) templ.Compon
 			templ_7745c5c3_Var38 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-small uk-btn-icon\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<button type=\"button\" class=\"uk-btn uk-btn-primary uk-btn-icon\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1002,7 +1002,7 @@ func TypeClearButton(path string, targetID string, parentID string) templ.Compon
 			templ_7745c5c3_Var41 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<button type=\"button\" class=\"uk-btn uk-btn-destructive uk-btn-small uk-btn-icon\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "<button type=\"button\" class=\"uk-btn uk-btn-destructive uk-btn-icon\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

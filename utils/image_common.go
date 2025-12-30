@@ -47,7 +47,7 @@ const (
 )
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore.DataBackend, quality int) error {
+func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore.DataBackend, useWebp bool) error {
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
@@ -60,7 +60,7 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Save original (unprocessed) for potential future use
 	originalPath := fmt.Sprintf("posters/%s_original%s", baseName, filepath.Ext(fileNameWithExtension))
-	originalData, err := EncodeImageToBytes(img, format, quality)
+	originalData, err := EncodeImageToBytes(img, format, 100)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,14 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullPath := fmt.Sprintf("posters/%s.webp", baseName)
-	fullData, err := EncodeImageToBytes(fullImg, "webp", quality)
+	var fullFormat string
+	if useWebp {
+		fullFormat = "webp"
+	} else {
+		fullFormat = format
+	}
+	fullPath := fmt.Sprintf("posters/%s.%s", baseName, fullFormat)
+	fullData, err := EncodeImageToBytes(fullImg, fullFormat, 100)
 	if err != nil {
 		return err
 	}
@@ -81,8 +87,14 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbPath := fmt.Sprintf("posters/%s_thumb.webp", baseName)
-	thumbData, err := EncodeImageToBytes(thumbImg, "webp", quality)
+	var thumbFormat string
+	if useWebp {
+		thumbFormat = "webp"
+	} else {
+		thumbFormat = format
+	}
+	thumbPath := fmt.Sprintf("posters/%s_thumb.%s", baseName, thumbFormat)
+	thumbData, err := EncodeImageToBytes(thumbImg, thumbFormat, 100)
 	if err != nil {
 		return err
 	}
@@ -92,8 +104,14 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallPath := fmt.Sprintf("posters/%s_small.webp", baseName)
-	smallData, err := EncodeImageToBytes(smallImg, "webp", quality)
+	var smallFormat string
+	if useWebp {
+		smallFormat = "webp"
+	} else {
+		smallFormat = format
+	}
+	smallPath := fmt.Sprintf("posters/%s_small.%s", baseName, smallFormat)
+	smallData, err := EncodeImageToBytes(smallImg, smallFormat, 100)
 	if err != nil {
 		return err
 	}
@@ -103,8 +121,14 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Generate tiny version (60x90) for very small displays
 	tinyImg := resizeAndCrop(img, tinyWidth, tinyHeight)
-	tinyPath := fmt.Sprintf("posters/%s_tiny.webp", baseName)
-	tinyData, err := EncodeImageToBytes(tinyImg, "webp", quality)
+	var tinyFormat string
+	if useWebp {
+		tinyFormat = "webp"
+	} else {
+		tinyFormat = format
+	}
+	tinyPath := fmt.Sprintf("posters/%s_tiny.%s", baseName, tinyFormat)
+	tinyData, err := EncodeImageToBytes(tinyImg, tinyFormat, 100)
 	if err != nil {
 		return err
 	}
@@ -114,17 +138,18 @@ func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore
 
 	// Generate display version (144x216) for highlight posters
 	displayImg := resizeAndCrop(img, displayWidth, displayHeight)
-	displayPath := fmt.Sprintf("posters/%s_display.webp", baseName)
-	displayData, err := EncodeImageToBytes(displayImg, "webp", quality)
+	var displayFormat string
+	if useWebp {
+		displayFormat = "webp"
+	} else {
+		displayFormat = format
+	}
+	displayPath := fmt.Sprintf("posters/%s_display.%s", baseName, displayFormat)
+	displayData, err := EncodeImageToBytes(displayImg, displayFormat, 100)
 	if err != nil {
 		return err
 	}
 	return dataBackend.Save(displayPath, displayData)
-}
-
-// ensureDirExists ensures the directory exists, creating it if necessary.
-func ensureDirExists(dir string) error {
-	return os.MkdirAll(dir, 0755)
 }
 
 // getFileNameWithExtension returns the file name with an extension if not already present.
@@ -516,7 +541,7 @@ func ValidateImageToken(token string) (*ImageAccessToken, error) {
 	}
 	tokenInfo := val.(*ImageAccessToken)
 
-	// log.Infof("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
+	log.Debugf("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
 
 	// Check expiration
 	if time.Now().After(tokenInfo.ExpiresAt) {
@@ -532,7 +557,7 @@ func ValidateImageToken(token string) (*ImageAccessToken, error) {
 // ConsumeImageToken consumes a validated token
 func ConsumeImageToken(token string) {
 	tokens.Delete(token)
-	// log.Infof("Token %s consumed", token)
+	log.Debugf("Token %s consumed", token)
 }
 
 // CleanupExpiredTokens removes expired tokens from the store
@@ -554,7 +579,7 @@ func CleanupExpiredTokens() {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
-func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend, quality int) (string, error) {
+func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
 
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
@@ -625,8 +650,14 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 	}
 
 	// Save original (unprocessed) for potential future use
-	originalPath := fmt.Sprintf("posters/%s_original.webp", slug)
-	originalData, err := EncodeImageToBytes(img, "webp", quality)
+	var originalFormat string
+	if useWebp {
+		originalFormat = "webp"
+	} else {
+		originalFormat = "jpeg"
+	}
+	originalPath := fmt.Sprintf("posters/%s_original.%s", slug, originalFormat)
+	originalData, err := EncodeImageToBytes(img, originalFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode original image: %w", err)
 	}
@@ -636,8 +667,14 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullPath := fmt.Sprintf("posters/%s.webp", slug)
-	fullData, err := EncodeImageToBytes(fullImg, "webp", quality)
+	var fullFormat string
+	if useWebp {
+		fullFormat = "webp"
+	} else {
+		fullFormat = "jpeg"
+	}
+	fullPath := fmt.Sprintf("posters/%s.%s", slug, fullFormat)
+	fullData, err := EncodeImageToBytes(fullImg, fullFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode full-size image: %w", err)
 	}
@@ -647,8 +684,14 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbPath := fmt.Sprintf("posters/%s_thumb.webp", slug)
-	thumbData, err := EncodeImageToBytes(thumbImg, "webp", quality)
+	var thumbFormat string
+	if useWebp {
+		thumbFormat = "webp"
+	} else {
+		thumbFormat = "jpeg"
+	}
+	thumbPath := fmt.Sprintf("posters/%s_thumb.%s", slug, thumbFormat)
+	thumbData, err := EncodeImageToBytes(thumbImg, thumbFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
 	}
@@ -658,8 +701,14 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallPath := fmt.Sprintf("posters/%s_small.webp", slug)
-	smallData, err := EncodeImageToBytes(smallImg, "webp", quality)
+	var smallFormat string
+	if useWebp {
+		smallFormat = "webp"
+	} else {
+		smallFormat = "jpeg"
+	}
+	smallPath := fmt.Sprintf("posters/%s_small.%s", slug, smallFormat)
+	smallData, err := EncodeImageToBytes(smallImg, smallFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
@@ -668,13 +717,19 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 	}
 
 	log.Debugf("Successfully processed and cached poster images for media '%s'", slug)
-	return fmt.Sprintf("/api/posters/%s.webp?v=%s", slug, GenerateRandomString(8)), nil
+	var returnFormat string
+	if useWebp {
+		returnFormat = "webp"
+	} else {
+		returnFormat = "jpg"
+	}
+	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, returnFormat, GenerateRandomString(8)), nil
 }
 
 // ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filestore.DataBackend, quality int) (string, error) {
+func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
 
 	// Load the image
 	img, err := OpenImage(imagePath)
@@ -683,8 +738,15 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 	}
 
 	// Save original (unprocessed) for potential future use
-	originalPath := fmt.Sprintf("posters/%s_original.webp", slug)
-	originalData, err := EncodeImageToBytes(img, "webp", quality)
+	var originalFormat string
+	if useWebp {
+		originalFormat = "webp"
+	} else {
+		// For original, keep as is - but since we don't know the original format, use jpeg as fallback
+		originalFormat = "jpeg"
+	}
+	originalPath := fmt.Sprintf("posters/%s_original.%s", slug, originalFormat)
+	originalData, err := EncodeImageToBytes(img, originalFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode original image: %w", err)
 	}
@@ -694,8 +756,14 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 
 	// Generate full-size version (400x600)
 	fullImg := resizeAndCrop(img, targetWidth, targetHeight)
-	fullPath := fmt.Sprintf("posters/%s.webp", slug)
-	fullData, err := EncodeImageToBytes(fullImg, "webp", quality)
+	var fullFormat string
+	if useWebp {
+		fullFormat = "webp"
+	} else {
+		fullFormat = "jpeg"
+	}
+	fullPath := fmt.Sprintf("posters/%s.%s", slug, fullFormat)
+	fullData, err := EncodeImageToBytes(fullImg, fullFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode full-size image: %w", err)
 	}
@@ -705,8 +773,14 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbPath := fmt.Sprintf("posters/%s_thumb.webp", slug)
-	thumbData, err := EncodeImageToBytes(thumbImg, "webp", quality)
+	var thumbFormat string
+	if useWebp {
+		thumbFormat = "webp"
+	} else {
+		thumbFormat = "jpeg"
+	}
+	thumbPath := fmt.Sprintf("posters/%s_thumb.%s", slug, thumbFormat)
+	thumbData, err := EncodeImageToBytes(thumbImg, thumbFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to encode thumbnail image: %w", err)
 	}
@@ -716,8 +790,14 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallPath := fmt.Sprintf("posters/%s_small.webp", slug)
-	smallData, err := EncodeImageToBytes(smallImg, "webp", quality)
+	var smallFormat string
+	if useWebp {
+		smallFormat = "webp"
+	} else {
+		smallFormat = "jpeg"
+	}
+	smallPath := fmt.Sprintf("posters/%s_small.%s", slug, smallFormat)
+	smallData, err := EncodeImageToBytes(smallImg, smallFormat, 100)
 	if err != nil {
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
@@ -725,11 +805,17 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 		return "", fmt.Errorf("failed to save small image: %w", err)
 	}
 
-	return fmt.Sprintf("/api/posters/%s.webp?v=%s", slug, GenerateRandomString(8)), nil
+	var returnFormat string
+	if useWebp {
+		returnFormat = "webp"
+	} else {
+		returnFormat = "jpg"
+	}
+	return fmt.Sprintf("/api/posters/%s.%s?v=%s", slug, returnFormat, GenerateRandomString(8)), nil
 }
 
 // GenerateThumbnails generates thumbnail and small versions from a cached full-size image
-func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBackend, quality int) error {
+func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBackend) error {
 	// Load the full-size image from cache
 	data, err := dataBackend.Load(fullImagePath)
 	if err != nil {
@@ -743,10 +829,19 @@ func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBa
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
+	// Determine format from the full image path extension
+	ext := strings.ToLower(filepath.Ext(fullImagePath))
+	var format string
+	if ext == ".webp" {
+		format = "webp"
+	} else {
+		format = "jpeg"
+	}
+
 	// Generate thumbnail version (200x300) for listings
 	thumbImg := resizeAndCrop(img, thumbWidth, thumbHeight)
-	thumbPath := fmt.Sprintf("posters/%s_thumb.webp", slug)
-	thumbData, err := EncodeImageToBytes(thumbImg, "webp", quality)
+	thumbPath := fmt.Sprintf("posters/%s_thumb.%s", slug, format)
+	thumbData, err := EncodeImageToBytes(thumbImg, format, 100)
 	if err != nil {
 		return fmt.Errorf("failed to encode thumbnail: %w", err)
 	}
@@ -756,8 +851,8 @@ func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBa
 
 	// Generate small version (100x150) for compact views
 	smallImg := resizeAndCrop(img, smallWidth, smallHeight)
-	smallPath := fmt.Sprintf("posters/%s_small.webp", slug)
-	smallData, err := EncodeImageToBytes(smallImg, "webp", quality)
+	smallPath := fmt.Sprintf("posters/%s_small.%s", slug, format)
+	smallData, err := EncodeImageToBytes(smallImg, format, 100)
 	if err != nil {
 		return fmt.Errorf("failed to encode small image: %w", err)
 	}

@@ -39,7 +39,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 			return templ_7745c5c3_Err
 		}
 		if len(userCollections) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-8\"><div class=\"flex items-center justify-center mb-4\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"text-gray-400 mr-4\"></uk-icon><h2 class=\"text-xl font-semibold\">No collections yet</h2></div><p class=\" mb-4\">Create your first collection to organize your favorite series.</p><a href=\"/collections/create\" class=\"uk-btn uk-btn-primary\" hx-get=\"/collections/create\" hx-target=\"#content\" hx-push-url=\"true\">Create Collection</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-8\"><div class=\"flex items-center justify-center mb-4\"><uk-icon icon=\"folder\" ratio=\"3\" class=\"mr-4\"></uk-icon><h2 class=\"text-xl font-semibold\">No collections yet</h2></div><p class=\" mb-4\">Create your first collection to organize your favorite series.</p><a href=\"/collections/create\" class=\"uk-btn uk-btn-primary\" hx-get=\"/collections/create\" hx-target=\"#content\" hx-push-url=\"true\">Create Collection</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -138,7 +138,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-destructive uk-btn-small\"><uk-icon icon=\"x\"></uk-icon> Remove</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-destructive\"><uk-icon icon=\"x\"></uk-icon> Remove</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -169,7 +169,7 @@ func MediaCollections(mediaSlug string, userCollections []models.Collection, med
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-primary uk-btn-small\"><uk-icon icon=\"plus\"></uk-icon> Add</button></form>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"> <button type=\"submit\" class=\"uk-btn uk-btn-primary\"><uk-icon icon=\"plus\"></uk-icon> Add</button></form>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

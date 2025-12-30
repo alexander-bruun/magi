@@ -11,7 +11,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 	
 	<div class="uk-margin-large-bottom">
 		<!-- Pricing Plans -->
-		<div class="uk-text-center uk-margin-bottom">
+		<div class="uk-text-center">
 			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Choose Your Plan</span></h2>
 		</div>
 
@@ -25,14 +25,14 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 
 		<!-- Premium Benefits -->
 		<div class="mt-4">
-			<div class="uk-text-center uk-margin-bottom">
+			<div class="uk-text-center">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Why Go Premium?</span></h2>
 			</div>
 			
 			<div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				<div class="h-full">
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
-						<div class="uk-margin-bottom flex-shrink-0">
+						<div class="flex-shrink-0">
 							<span class="uk-text-large">⚡</span>
 						</div>
 						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Early Access</h3>
@@ -41,7 +41,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 				</div>
 				<div class="h-full">
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
-						<div class="uk-margin-bottom flex-shrink-0">
+						<div class="flex-shrink-0">
 							<span class="uk-text-large">🖼️</span>
 						</div>
 						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">High Quality Images</h3>
@@ -50,7 +50,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 				</div>
 				<div class="h-full">
 					<div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center h-full flex flex-col">
-						<div class="uk-margin-bottom flex-shrink-0">
+						<div class="flex-shrink-0">
 							<span class="uk-text-large">❤️</span>
 						</div>
 						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Support Creators</h3>
@@ -67,49 +67,49 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 			</div>
 
 			<div class="max-w-3xl mx-auto space-y-4">
-				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div class="rounded-lg uk-shadow-sm border p-6">
 					<div class="flex items-start">
 						<div class="flex-shrink-0">
 							<span class="text-xl">❓</span>
 						</div>
 						<div class="ml-4">
-							<h3 class="text-lg font-semibold text-gray-900 mb-2">Can I cancel anytime?</h3>
+							<h3 class="text-lg font-semibold mb-2">Can I cancel anytime?</h3>
 							<p class="text-gray-600">Yes, you can cancel your subscription at any time from your account settings. You'll continue to have access to premium features until the end of your current billing period.</p>
 						</div>
 					</div>
 				</div>
 
-				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div class="rounded-lg uk-shadow-sm border p-6">
 					<div class="flex items-start">
 						<div class="flex-shrink-0">
 							<span class="text-xl">💳</span>
 						</div>
 						<div class="ml-4">
-							<h3 class="text-lg font-semibold text-gray-900 mb-2">What payment methods do you accept?</h3>
+							<h3 class="text-lg font-semibold mb-2">What payment methods do you accept?</h3>
 							<p class="text-gray-600">We accept all major credit cards (Visa, MasterCard, American Express) through our secure Stripe payment processor. All transactions are encrypted and PCI compliant.</p>
 						</div>
 					</div>
 				</div>
 
-				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div class="rounded-lg uk-shadow-sm border p-6">
 					<div class="flex items-start">
 						<div class="flex-shrink-0">
 							<span class="text-xl">🔒</span>
 						</div>
 						<div class="ml-4">
-							<h3 class="text-lg font-semibold text-gray-900 mb-2">Is my payment information secure?</h3>
+							<h3 class="text-lg font-semibold mb-2">Is my payment information secure?</h3>
 							<p class="text-gray-600">Absolutely. We use Stripe's industry-leading security to protect your payment information. We never store your credit card details on our servers - all payment processing is handled securely by Stripe.</p>
 						</div>
 					</div>
 				</div>
 
-				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div class="rounded-lg uk-shadow-sm border p-6">
 					<div class="flex items-start">
 						<div class="flex-shrink-0">
 							<span class="text-xl">⚡</span>
 						</div>
 						<div class="ml-4">
-							<h3 class="text-lg font-semibold text-gray-900 mb-2">When do premium chapters become available?</h3>
+							<h3 class="text-lg font-semibold mb-2">When do premium chapters become available?</h3>
 							<p class="text-gray-600">Premium chapters are released 3 chapters ahead of the regular schedule. Once the premium period expires, chapters become available to all users.</p>
 						</div>
 					</div>
@@ -180,16 +180,16 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 templ PremiumPlanCard(plan models.SubscriptionPlan, isPopular bool) {
     <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center">
         <h3 class="uk-card-title uk-margin-small-bottom">{ plan.Name }</h3>
-        <div class="uk-text-large uk-text-bold uk-margin-small-bottom">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
-        <div class="uk-text-meta uk-margin-bottom">{ plan.Description }</div>
+        <div class="uk-text-large uk-margin-small-bottom">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
+        <div class="uk-text-meta">{ plan.Description }</div>
         if plan.Savings != "" {
-            <div class="uk-label uk-label-success uk-margin-bottom">
+            <div class="uk-label">
                 { plan.Savings }
             </div>
         }
         <button
             onclick={ templ.ComponentScript{Call: fmt.Sprintf("selectPlan('%s')", plan.ID)} }
-            class={ func() string { if isPopular { return "uk-btn uk-btn-primary uk-width-1-1 bg-blue-600 hover:bg-blue-700" } else { return "uk-btn uk-btn-primary uk-width-1-1" } }() }
+            class={ func() string { if isPopular { return "uk-btn uk-btn-primary bg-blue-600 hover:bg-blue-700" } else { return "uk-btn uk-btn-primary" } }() }
         >
             Subscribe Now
         </button>
@@ -201,23 +201,23 @@ templ PremiumSuccess() {
     <div class="mt-4">
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }, { Label: "Success", Href: "/premium/success" }})
         <div class="uk-width-2xl uk-margin-auto uk-text-center">
-            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
-                <div class="uk-text-large uk-margin-bottom">✅</div>
+            <div class="uk-card uk-card-default uk-card-body">
+                <div class="uk-text-large">✅</div>
                 <h2 class="uk-card-title uk-margin-small-bottom">Payment Successful!</h2>
                 <p class="uk-text-muted">Thank you for your subscription. Your premium access has been activated.</p>
             </div>
 
             <div class="uk-margin">
                 <h3 class="uk-h3">What's Next?</h3>
-                <ul class="uk-list uk-list-divider uk-margin-bottom">
+                <ul class="uk-list uk-list-divider">
                     <li>Your account has been upgraded to premium</li>
                     <li>You now have early access to new chapters</li>
                     <li>Enjoy higher quality images</li>
                     <li>Access premium features across the platform</li>
                 </ul>
 
-                <div class="uk-flex uk-flex-center uk-margin">
-                    <a href="/" class="uk-btn uk-btn-primary uk-margin-small-right">
+                <div class="uk-flex uk-margin">
+                    <a href="/" class="uk-btn uk-btn-primary">
                         Continue Reading
                     </a>
                     <a href="/account" class="uk-btn uk-btn-secondary">

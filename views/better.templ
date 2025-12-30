@@ -21,18 +21,18 @@ templ Better(currentPage int) {
 		{{ duplicates, total, _ := models.GetActiveMediaDuplicates(currentPage, limit) }}
 		if len(duplicates) == 0 {
 			<div class="uk-alert-success" uk-alert>
-				<div class="uk-flex uk-flex-middle uk-flex-center">
+				<div class="uk-flex">
 					<uk-icon icon="BadgeCheck" size="32" class="mr-3"></uk-icon>
-					<p class="text-lg uk-margin-remove">
+					<p class="text-lg">
 						No duplicate media found in any library!
 					</p>
 				</div>
 			</div>
 		} else {
-			<div class="uk-alert-warning mb-4" uk-alert>
-				<div class="uk-flex uk-flex-middle">
+			<div class="mb-4" uk-alert>
+				<div class="uk-flex">
 					<uk-icon icon="TriangleAlert" size="32" class="mr-3"></uk-icon>
-					<p class="uk-margin-remove">
+					<p>
 						The following media have chapters from multiple different folders. This typically indicates duplicate folder structures.
 					</p>
 				</div>
@@ -70,9 +70,9 @@ templ Better(currentPage int) {
 									<code class="text-sm">{ filepath.Base(dup.FolderPath2) }</code>
 								</td>
 								<td class="uk-text-center">
-									<div class="uk-flex uk-flex-center uk-flex-middle flex-gap-8">
+									<div class="uk-flex flex-gap-8">
 										<button 
-											class="uk-btn uk-btn-secondary uk-btn-small"
+											class="uk-btn uk-btn-secondary"
 											hx-post={ fmt.Sprintf("/api/duplicates/%d/dismiss", dup.ID) }
 											hx-target={ fmt.Sprintf("#duplicate-%d", dup.ID) }
 											hx-swap="outerHTML swap:0.5s"
@@ -82,7 +82,7 @@ templ Better(currentPage int) {
 											Dismiss
 										</button>
 										<button 
-											class="uk-btn uk-btn-destructive uk-btn-small"
+											class="uk-btn uk-btn-destructive"
 											onclick={ templ.ComponentScript{Call: fmt.Sprintf("openDeleteModal(%d)", dup.ID)} }
 										>
 											<uk-icon icon="Trash2" class="mr-1"></uk-icon>
@@ -116,17 +116,17 @@ templ Better(currentPage int) {
 	<div id="delete-modal" uk-modal>
 		<div class="uk-modal-dialog">
 			<div class="uk-modal-header modal-header">
-				<h2 class="uk-modal-title uk-margin-remove">Delete Duplicate Folder</h2>
+				<h2 class="uk-modal-title">Delete Duplicate Folder</h2>
 				<button class="uk-modal-close" type="button" uk-close></button>
 			</div>
 			<div class="uk-modal-body">
-				<p class="uk-text-warning warning-flex">
+				<p class="warning-flex">
 					<uk-icon icon="TriangleAlert"></uk-icon>
 					<span>Select which folder to delete. This action cannot be undone!</span>
 				</p>
 			
 				<div id="modal-content" class="mt-4">
-					<div class="uk-flex uk-flex-center">
+					<div class="uk-flex">
 						<div uk-spinner></div>
 					</div>
 				</div>
@@ -144,7 +144,7 @@ templ Better(currentPage int) {
 			
 			// Load folder information
 			const modalContent = document.getElementById('modal-content');
-			modalContent.innerHTML = '<div class="uk-flex uk-flex-center"><div uk-spinner></div></div>';
+			modalContent.innerHTML = '<div class="uk-flex"><div uk-spinner></div></div>';
 			
 			try {
 				const response = await fetch(`/api/admin/duplicates/${duplicateId}/folder-info`);
@@ -166,13 +166,13 @@ templ Better(currentPage int) {
 			if (!folder.exists) {
 				return `
 					<div>
-						<div class="uk-card uk-card-default uk-card-body uk-card-small">
+						<div class="uk-card uk-card-default uk-card-body">
 							<h3 class="uk-card-title">${title}</h3>
-							<p class="uk-text-destructive">
+							<p>
 								<uk-icon icon="AlertCircle"></uk-icon>
 								Folder not found
 							</p>
-							<code class="uk-text-small">${folder.path}</code>
+							<code >${folder.path}</code>
 						</div>
 					</div>
 				`;
@@ -182,24 +182,24 @@ templ Better(currentPage int) {
 			
 			return `
 				<div>
-					<div class="uk-card uk-card-default uk-card-body uk-card-small">
+					<div class="uk-card uk-card-default uk-card-body">
 						<h3 class="uk-card-title">${title}</h3>
 						<div class="uk-margin-small">
-							<p class="uk-text-bold uk-margin-remove">${folder.base_name}</p>
-							<code class="uk-text-small uk-text-muted">${folder.path}</code>
+							<p>${folder.base_name}</p>
+							<code class="uk-text-muted">${folder.path}</code>
 						</div>
 						<div class="uk-margin-small">
-							<p class="uk-text-small uk-margin-remove flex-gap-4">
+							<p class="flex-gap-4">
 								<uk-icon icon="File"></uk-icon>
 								<strong>Files:</strong> ${folder.file_count}
 							</p>
-							<p class="uk-text-small uk-margin-remove flex-gap-4">
+							<p class="flex-gap-4">
 								<uk-icon icon="Clock"></uk-icon>
 								<strong>Modified:</strong> ${lastModified}
 							</p>
 						</div>
 						<button 
-							class="uk-btn uk-btn-destructive uk-btn-small uk-width-1-1 uk-margin-small-top"
+							class="uk-btn uk-btn-destructive uk-margin-small-top"
 							onclick="confirmDeleteFolder('${folder.path}', ${duplicateId})"
 						>
 							<uk-icon icon="Trash2" class="mr-1"></uk-icon>

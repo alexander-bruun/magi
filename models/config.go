@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -41,6 +42,9 @@ type AppConfig struct {
 	AnonymousCompressionQuality int `json:"anonymous_compression_quality" form:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
 	ProcessedImageQuality       int `json:"processed_image_quality" form:"processed_image_quality"`             // Image quality for processed images (thumbnails, covers) (0-100)
 
+	// Image processing settings
+	DisableWebpConversion bool `json:"disable_webp_conversion" form:"disable_webp_conversion"` // whether to disable conversion of images to WebP format
+
 	// Image token settings
 	ImageTokenValidityMinutes int `json:"image_token_validity_minutes" form:"image_token_validity_minutes"` // validity time for image access tokens in minutes
 
@@ -75,9 +79,8 @@ func (c *AppConfig) GetContentRatingLimit() int {
 }
 
 var (
-	cachedConfig    AppConfig
+	configCache     atomic.Value // AppConfig
 	configOnce      sync.Once
-	configMu        sync.RWMutex
 	configCacheTime time.Time
 	configCacheTTL  = 5 * time.Minute // Cache config for 5 minutes to reduce lock contention
 )
@@ -106,6 +109,7 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(premium_compression_quality, 90),
         COALESCE(anonymous_compression_quality, 70),
         COALESCE(processed_image_quality, 85),
+        COALESCE(disable_webp_conversion, 0),
         COALESCE(image_token_validity_minutes, 5),
         COALESCE(premium_early_access_duration, 3600),
         COALESCE(max_premium_chapters, 3),
@@ -138,6 +142,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var premiumCompressionQuality int
 	var anonymousCompressionQuality int
 	var processedImageQuality int
+	var disableWebpConversion int
 	var imageTokenValidityMinutes int
 	var premiumEarlyAccessDuration int
 	var maxPremiumChapters int
@@ -149,7 +154,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
+		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
 			return AppConfig{
@@ -177,6 +182,7 @@ func loadConfigFromDB() (AppConfig, error) {
 				PremiumCompressionQuality:     90,
 				AnonymousCompressionQuality:   70,
 				ProcessedImageQuality:         85,
+				DisableWebpConversion:         false,
 				ImageTokenValidityMinutes:     5,
 				PremiumEarlyAccessDuration:    3600,
 				MaxPremiumChapters:            3,
@@ -214,6 +220,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		PremiumCompressionQuality:     premiumCompressionQuality,
 		AnonymousCompressionQuality:   anonymousCompressionQuality,
 		ProcessedImageQuality:         processedImageQuality,
+		DisableWebpConversion:         disableWebpConversion == 1,
 		ImageTokenValidityMinutes:     imageTokenValidityMinutes,
 		PremiumEarlyAccessDuration:    premiumEarlyAccessDuration,
 		MaxPremiumChapters:            maxPremiumChapters,
@@ -227,14 +234,12 @@ func loadConfigFromDB() (AppConfig, error) {
 // GetAppConfig returns the cached configuration with TTL-based refresh
 // Cache is valid for 5 minutes to balance freshness with performance (reduces lock contention)
 func GetAppConfig() (AppConfig, error) {
-	configMu.RLock()
-	// Check if cache is still valid (fast path - read lock only)
+	// Check if cache is still valid
 	if !configCacheTime.IsZero() && time.Since(configCacheTime) < configCacheTTL {
-		cfg := cachedConfig
-		configMu.RUnlock()
-		return cfg, nil
+		if cfg := configCache.Load(); cfg != nil {
+			return cfg.(AppConfig), nil
+		}
 	}
-	configMu.RUnlock()
 
 	// Cache expired or not yet loaded - refresh it
 	cfg, err := loadConfigFromDB()
@@ -242,10 +247,8 @@ func GetAppConfig() (AppConfig, error) {
 		return AppConfig{}, err
 	}
 
-	configMu.Lock()
-	cachedConfig = cfg
+	configCache.Store(cfg)
 	configCacheTime = time.Now()
-	configMu.Unlock()
 
 	return cfg, nil
 }
@@ -256,9 +259,7 @@ func RefreshAppConfig() (AppConfig, error) {
 	if err != nil {
 		return AppConfig{}, err
 	}
-	configMu.Lock()
-	cachedConfig = cfg
-	configMu.Unlock()
+	configCache.Store(cfg)
 	return cfg, nil
 }
 
@@ -337,6 +338,20 @@ func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, prem
 	}
 	_, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, premium_compression_quality = ?, anonymous_compression_quality = ?, processed_image_quality = ? WHERE id = 1`,
 		readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality, processedQuality)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateImageProcessingConfig updates the image processing settings
+func UpdateImageProcessingConfig(disableWebpConversion bool) (AppConfig, error) {
+	disableWebpInt := 0
+	if disableWebpConversion {
+		disableWebpInt = 1
+	}
+	_, err := db.Exec(`UPDATE app_config SET disable_webp_conversion = ? WHERE id = 1`,
+		disableWebpInt)
 	if err != nil {
 		return AppConfig{}, err
 	}
@@ -515,16 +530,6 @@ func GetImageTokenValidityMinutes() int {
 	return cfg.ImageTokenValidityMinutes
 }
 
-// GetProcessedImageQuality returns the image compression quality for processed images (thumbnails, covers)
-func GetProcessedImageQuality() int {
-	cfg, err := GetAppConfig()
-	if err != nil {
-		// Return default if config can't be loaded
-		return 85
-	}
-	return cfg.ProcessedImageQuality
-}
-
 // UpdateMaintenanceConfig updates the maintenance mode settings
 func UpdateMaintenanceConfig(enabled bool, message string) (AppConfig, error) {
 	enabledInt := 0
@@ -538,10 +543,7 @@ func UpdateMaintenanceConfig(enabled bool, message string) (AppConfig, error) {
 	}
 
 	// Invalidate cache to force reload
-	configMu.Lock()
-	cachedConfig = AppConfig{}
 	configCacheTime = time.Time{}
-	configMu.Unlock()
 
 	return GetAppConfig()
 }

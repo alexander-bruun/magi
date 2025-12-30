@@ -7,21 +7,21 @@ import (
 // TypesDropdown renders the Types filter button and dropdown form (multi-select)
 templ TypesDropdown(path string, targetID string, currentSort string, currentOrder string, selectedTypes []string, allTypes []string) {
     <div class="uk-inline types-dropdown">
-        <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by type">
+        <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by type">
             <uk-icon icon="BookOpen"></uk-icon>
         </button>
-        <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="type-filter-form" class="uk-form">
                 <input type="hidden" name="sort" value={ currentSort }>
                 <input type="hidden" name="order" value={ currentOrder }>
-                <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center types-center">
+                <div class="uk-margin-small">
+                    <div class="uk-text-center types-center">
                         <div class="uk-inline">
-                            <div class="uk-btn-group uk-width-auto">
-                                <button type="submit" class="uk-btn uk-btn-icon uk-btn-small uk-btn-primary" aria-label="Apply type filters" title="Apply type filters" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
+                            <div class="uk-btn-group">
+                                <button type="submit" class="uk-btn uk-btn-icon uk-btn-primary" aria-label="Apply type filters" title="Apply type filters" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
                                     <uk-icon icon="Check"></uk-icon>
                                 </button>
-                                <button type="button" class="uk-btn uk-btn-icon uk-btn-small uk-btn-destructive" aria-label="Clear types" title="Clear types" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" hx-vals='{"types":[]}' onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
+                                <button type="button" class="uk-btn uk-btn-icon uk-btn-destructive" aria-label="Clear types" title="Clear types" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" hx-vals='{"types":[]}' onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
                                     <uk-icon icon="x"></uk-icon>
                                 </button>
                             </div>
@@ -38,25 +38,25 @@ templ TypesDropdown(path string, targetID string, currentSort string, currentOrd
 
 // Button-only to allow grouping with other controls
 templ TypesFilterButton() {
-    <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by type">
+    <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by type">
         <uk-icon icon="BookOpen"></uk-icon>
     </button>
 }
 
 // Drop-only to be placed outside button group
 templ TypesFilterDrop(path string, targetID string, currentSort string, currentOrder string, selectedTypes []string, allTypes []string) {
-    <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+    <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
         <form id="type-filter-form" class="uk-form">
             <input type="hidden" name="sort" value={ currentSort }>
             <input type="hidden" name="order" value={ currentOrder }>
-            <div class="uk-width-1-1 uk-margin-small">
-                <div class="uk-flex-center uk-flex-middle uk-text-center types-center">
+            <div class="uk-margin-small">
+                <div class="uk-text-center types-center">
                     <div class="uk-inline">
-                        <div class="uk-btn-group uk-width-auto">
-                            <button type="submit" class="uk-btn uk-btn-icon uk-btn-small uk-btn-primary" aria-label="Apply type filters" title="Apply type filters" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
+                        <div class="uk-btn-group">
+                            <button type="submit" class="uk-btn uk-btn-icon uk-btn-primary" aria-label="Apply type filters" title="Apply type filters" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
                                 <uk-icon icon="Check"></uk-icon>
                             </button>
-                            <button type="button" class="uk-btn uk-btn-icon uk-btn-small uk-btn-destructive" aria-label="Clear types" title="Clear types" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" hx-vals='{"types":[]}' onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
+                            <button type="button" class="uk-btn uk-btn-icon uk-btn-destructive" aria-label="Clear types" title="Clear types" hx-get={ path } hx-target={ "#" + targetID } hx-push-url="true" hx-replace-url="true" hx-include="#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input" hx-vals='{"types":[]}' onclick="document.getElementById('type-filter-drop')?.classList.remove('uk-open');">
                                 <uk-icon icon="x"></uk-icon>
                             </button>
                         </div>
@@ -82,7 +82,7 @@ templ TypesFragment(allTypes []string, selected []string) {
             {{ isChecked := selectedMap[lt] }}
             <div class="uk-margin-small flex items-center">
                 <label class="inline-flex items-center gap-3 min-w-0 w-full">
-                    <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="types" value={ t } checked?={ isChecked }>
+                    <input class="uk-checkbox shrink-0" type="checkbox" name="types" value={ t } checked?={ isChecked }>
                     <span class="leading-none flex-1 min-w-0 types-label">{ t }</span>
                 </label>
             </div>

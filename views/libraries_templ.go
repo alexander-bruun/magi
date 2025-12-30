@@ -131,7 +131,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if library.Enabled {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<span class=\"uk-label uk-label-success\">Enabled</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<span class=\"uk-label\">Enabled</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -187,7 +187,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></td><td colspan=\"3\"><div class=\"flex items-center justify-center\"><div class=\"uk-btn-group uk-width-auto flex-nowrap\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></td><td colspan=\"3\"><div class=\"flex items-center justify-center\"><div class=\"uk-btn-group flex-nowrap\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -302,7 +302,7 @@ func LibraryForm(library models.Library, action string, editing bool) templ.Comp
 		}
 		ctx = templ.ClearChildren(ctx)
 		if action == "post" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div id=\"library-form\"><form id=\"library-form\" hx-post=\"/admin/libraries\" hx-target=\"#libraries-table\" hx-trigger=\"submit\" hx-on:htmx:afterRequest=\"event.detail.xhr.status === 200 && this.reset()\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div id=\"library-form\"><form id=\"library-form\" hx-post=\"/admin/libraries\" hx-target=\"#libraries-table\" hx-trigger=\"submit\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -322,13 +322,13 @@ func LibraryForm(library models.Library, action string, editing bool) templ.Comp
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/libraries/%s", library.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 172, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 171, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-target=\"#libraries-table\" hx-trigger=\"submit\" hx-on:htmx:afterRequest=\"event.detail.xhr.status === 200 && this.reset()\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" hx-target=\"#libraries-table\" hx-trigger=\"submit\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -373,7 +373,7 @@ func FormContent(library models.Library, editing bool) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(library.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 192, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 190, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -396,7 +396,7 @@ func FormContent(library models.Library, editing bool) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(library.Cron)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 204, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 202, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -409,7 +409,7 @@ func FormContent(library models.Library, editing bool) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(library.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 215, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 213, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -535,7 +535,7 @@ func FolderInputs(folders []string, editing bool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if editing {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"mt-4 uk-flex uk-flex-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Save</button> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2\" hx-get=\"/admin/libraries/helpers/cancel-edit\" hx-target=\"#library-form\" hx-swap=\"outerHTML\">Cancel</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"mt-4 uk-flex\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Save</button> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2\" hx-get=\"/admin/libraries/helpers/cancel-edit\" hx-target=\"#library-form\" hx-swap=\"outerHTML\">Cancel</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -578,7 +578,7 @@ func FolderRow(folderValue string, isFirst bool, canRemove bool, index int) temp
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("folder-input-%d", index))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 262, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 260, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -591,13 +591,13 @@ func FolderRow(folderValue string, isFirst bool, canRemove bool, index int) temp
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(folderValue)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 262, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/libraries.templ`, Line: 260, Col: 156}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10 browse-btn\" onclick=\"openFileExplorer(this.previousElementSibling)\"><uk-icon icon=\"FolderOpen\"></uk-icon></button> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"> <button type=\"button\" class=\"uk-btn uk-btn-default ml-2 h-10 w-10\" onclick=\"openFileExplorer(this.previousElementSibling)\"><uk-icon icon=\"FolderOpen\"></uk-icon></button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

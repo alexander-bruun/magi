@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"image"
-	"image/jpeg"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
+	"github.com/chai2010/webp"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -81,6 +81,33 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
 	}
 
+	// Check if image compression is disabled
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to get config")
+	}
+	if cfg.DisableWebpConversion {
+		// Serve original image without compression or conversion
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		data, err := dataManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
+	}
+
 	// Load the image
 	start := time.Now()
 	reader, err := dataManager.LoadReader(imagePath)
@@ -137,15 +164,17 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	log.Debugf("Recording image load time for %s: %v", ext, time.Since(start).Seconds())
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
-	// Encode all images as JPEG for better performance and consistent compression
+	// Encode all images as WebP for better compression
 	var buf bytes.Buffer
-	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
-	jpegQuality := quality
-	if jpegQuality < 1 {
-		jpegQuality = 1
+	// WebP quality is 0-100
+	webpQuality := float32(quality)
+	if webpQuality < 0 {
+		webpQuality = 0
 	}
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
-	c.Set("Content-Type", "image/jpeg")
+	if webpQuality > 100 {
+	}
+	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
+	c.Set("Content-Type", "image/webp")
 
 	if err != nil {
 		// If encoding fails, serve original file
@@ -216,6 +245,33 @@ func handleImageRequest(c *fiber.Ctx) error {
 		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
 	}
 
+	// Check if image compression is disabled
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to get config")
+	}
+	if cfg.DisableWebpConversion {
+		// Serve original image without compression or conversion
+		switch strings.ToLower(filepath.Ext(imagePath)) {
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
+		data, err := dataManager.Load(imagePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
+		}
+		return c.Send(data)
+	}
+
 	// Load the image
 	start := time.Now()
 	reader, err := dataManager.LoadReader(imagePath)
@@ -272,15 +328,17 @@ func handleImageRequest(c *fiber.Ctx) error {
 	log.Debugf("Recording image load time for %s: %v", ext, time.Since(start).Seconds())
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
-	// Encode all images as JPEG for better performance and consistent compression
+	// Encode all images as WebP for better compression
 	var buf bytes.Buffer
-	// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
-	jpegQuality := quality
-	if jpegQuality < 1 {
-		jpegQuality = 1
+	// WebP quality is 0-100
+	webpQuality := float32(quality)
+	if webpQuality < 0 {
+		webpQuality = 0
 	}
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
-	c.Set("Content-Type", "image/jpeg")
+	if webpQuality > 100 {
+	}
+	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
+	c.Set("Content-Type", "image/webp")
 
 	if err != nil {
 		// If encoding fails, serve original file
@@ -447,6 +505,26 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
+	// Get app config for compression settings
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	// Get user role for compression quality
+	userName, _ := c.Locals("user_name").(string)
+	var quality int
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil {
+			quality = models.GetCompressionQualityForRole(user.Role)
+		} else {
+			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
+		}
+	} else {
+		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
+	}
+
 	// If the path is a directory, serve images from within it
 	if fileInfo.IsDir() {
 		imageLoadDuration.WithLabelValues("dir").Observe(time.Since(start).Seconds())
@@ -465,19 +543,19 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		return c.SendFile(filePath)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
 		imageLoadDuration.WithLabelValues("cbr").Observe(time.Since(start).Seconds())
-		imageBytes, err := ServeComicArchiveFromRAR(filePath, page, 95) // Default quality
+		imageBytes, contentType, err := ServeComicArchiveFromRAR(filePath, page, quality, cfg.DisableWebpConversion)
 		if err != nil {
 			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
 		imageLoadDuration.WithLabelValues("cbz").Observe(time.Since(start).Seconds())
-		imageBytes, err := ServeComicArchiveFromZIP(filePath, page, 95) // Default quality
+		imageBytes, contentType, err := ServeComicArchiveFromZIP(filePath, page, quality, cfg.DisableWebpConversion)
 		if err != nil {
 			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
 	default:
 		return sendBadRequestError(c, ErrImageUnsupportedType)
@@ -551,7 +629,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	ext := strings.ToLower(filepath.Ext(assetPath))
 	switch ext {
 	case ".jpg", ".jpeg":
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", "image/webp")
 	case ".png":
 		c.Set("Content-Type", "image/png")
 	case ".gif":
@@ -589,7 +667,7 @@ func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int)
 
 	// Process image for serving
 	imageBytes, err := ProcessImageForServing(imagePath, quality)
-	c.Set("Content-Type", "image/jpeg")
+	c.Set("Content-Type", "image/webp")
 	var ext string
 	if err != nil {
 		// If encoding fails, serve original

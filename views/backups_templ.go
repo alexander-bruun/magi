@@ -206,7 +206,7 @@ func BackupItem(backup models.BackupInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div><div class=\"flex space-x-2\"><button type=\"button\" class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div><div class=\"flex space-x-2\"><button type=\"button\" class=\"uk-btn uk-btn-destructive\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

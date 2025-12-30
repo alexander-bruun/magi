@@ -12,7 +12,7 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 		{ Label: "Libraries", Href: "/admin/libraries" },
 		{ Label: "Better", Href: "/admin/duplicates" },
 	})
-	<div class="uk-margin-bottom">
+	<div >
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Issue Management</span></h2>
 	</div>
 
@@ -37,11 +37,11 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 	</div>
 
 	<!-- Filters -->
-	<div class="uk-margin-bottom">
+	<div >
 		<form id="issues-filter-form" hx-get="/admin/issues" hx-target="#issues-content" hx-swap="innerHTML">
 			<div class="uk-flex uk-flex-wrap" style="gap: 2rem; justify-content: center;">
 				<div>
-					<label class="uk-form-label uk-margin-small-right">Status:</label>
+					<label class="uk-form-label">Status:</label>
 					<select class="uk-select" name="status" 
 					        hx-get="/admin/issues" 
 					        hx-target="#issues-content" 
@@ -54,7 +54,7 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 					</select>
 				</div>
 				<div>
-					<label class="uk-form-label uk-margin-small-right">Category:</label>
+					<label class="uk-form-label">Category:</label>
 					<select class="uk-select" name="category" 
 					        hx-get="/admin/issues" 
 					        hx-target="#issues-content" 
@@ -161,14 +161,14 @@ templ IssueRow(issue models.Issue) {
 				      hx-swap="outerHTML"
 				      style="display: inline; margin-right: 5px;">
 					<input type="hidden" name="status" value="in_progress">
-					<button class="uk-btn uk-btn-small uk-btn-primary" type="submit">Start Progress</button>
+					<button class="uk-btn uk-btn-primary" type="submit">Start Progress</button>
 				</form>
 				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }
 				      hx-target={ fmt.Sprintf("#issue-%d", issue.ID) }
 				      hx-swap="outerHTML"
 				      style="display: inline;">
 					<input type="hidden" name="status" value="closed">
-					<button class="uk-btn uk-btn-small uk-btn-secondary" type="submit">Close</button>
+					<button class="uk-btn uk-btn-secondary" type="submit">Close</button>
 				</form>
 			} else if issue.Status == "in_progress" {
 				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }
@@ -176,7 +176,7 @@ templ IssueRow(issue models.Issue) {
 				      hx-swap="outerHTML"
 				      style="display: inline;">
 					<input type="hidden" name="status" value="closed">
-					<button class="uk-btn uk-btn-small uk-btn-secondary" type="submit">Close</button>
+					<button class="uk-btn uk-btn-secondary" type="submit">Close</button>
 				</form>
 			} else if issue.Status == "closed" {
 				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }

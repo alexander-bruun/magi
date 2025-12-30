@@ -309,7 +309,7 @@ func UsersTable(users []models.User, page, pageSize int, total int64, filter str
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</td><td colspan=\"3\"><div class=\"flex place-content-center\"><div class=\"uk-btn-group uk-width-auto\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</td><td colspan=\"3\"><div class=\"flex place-content-center\"><div class=\"uk-btn-group\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

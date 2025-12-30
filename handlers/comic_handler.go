@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/jpeg"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,6 +14,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
+	"github.com/chai2010/webp"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/nwaples/rardecode/v2"
 )
@@ -87,11 +88,14 @@ func ProcessImageForServing(filePath string, quality int) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	jpegQuality := quality
-	if jpegQuality < 1 {
-		jpegQuality = 1
+	webpQuality := float32(quality)
+	if webpQuality < 0 {
+		webpQuality = 0
 	}
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
+	if webpQuality > 100 {
+		webpQuality = 100
+	}
+	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +133,10 @@ func GetImagesFromDirectory(dirPath string, page int) (string, error) {
 }
 
 // ServeComicArchiveFromZIP serves an image from a ZIP archive
-func ServeComicArchiveFromZIP(filePath string, page int, quality int) ([]byte, error) {
+func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer r.Close()
 
@@ -150,39 +154,64 @@ func ServeComicArchiveFromZIP(filePath string, page int, quality int) ([]byte, e
 	sort.Strings(imageFiles)
 
 	if page < 1 || page > len(imageFiles) {
-		return nil, fmt.Errorf("page %d out of range", page)
+		return nil, "", fmt.Errorf("page %d out of range", page)
 	}
 
 	file := r.File[page-1]
 	rc, err := file.Open()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rc.Close()
 
+	if disableWebpConversion {
+		// Serve original image without recompression
+		data, err := io.ReadAll(rc)
+		if err != nil {
+			return nil, "", err
+		}
+		ext := strings.ToLower(filepath.Ext(file.Name))
+		var contentType string
+		switch ext {
+		case ".jpg", ".jpeg":
+			contentType = "image/jpeg"
+		case ".png":
+			contentType = "image/png"
+		case ".gif":
+			contentType = "image/gif"
+		case ".webp":
+			contentType = "image/webp"
+		default:
+			contentType = "application/octet-stream"
+		}
+		return data, contentType, nil
+	}
+
 	img, _, err := image.Decode(rc)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var buf bytes.Buffer
-	jpegQuality := quality
-	if jpegQuality < 1 {
-		jpegQuality = 1
+	// Use WebP
+	webpQuality := float32(quality)
+	if webpQuality < 0 {
+		webpQuality = 0
 	}
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
-	if err != nil {
-		return nil, err
+	if webpQuality > 100 {
+		webpQuality = 100
 	}
-
-	return buf.Bytes(), nil
+	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
+		return nil, "", err
+	}
+	return buf.Bytes(), "image/webp", nil
 }
 
 // ServeComicArchiveFromRAR serves an image from a RAR archive
-func ServeComicArchiveFromRAR(filePath string, page int, quality int) ([]byte, error) {
+func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
 	r, err := rardecode.OpenReader(filePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer r.Close()
 
@@ -206,45 +235,70 @@ func ServeComicArchiveFromRAR(filePath string, page int, quality int) ([]byte, e
 	})
 
 	if page < 1 || page > len(imageFiles) {
-		return nil, fmt.Errorf("page %d out of range", page)
+		return nil, "", fmt.Errorf("page %d out of range", page)
 	}
 
 	// Skip to the desired file
 	r, err = rardecode.OpenReader(filePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer r.Close()
 
 	for i := 0; i < page; i++ {
 		_, err := r.Next()
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
+	}
+
+	if disableWebpConversion {
+		// Serve original image without recompression
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, "", err
+		}
+		ext := strings.ToLower(filepath.Ext(imageFiles[page-1].Name))
+		var contentType string
+		switch ext {
+		case ".jpg", ".jpeg":
+			contentType = "image/jpeg"
+		case ".png":
+			contentType = "image/png"
+		case ".gif":
+			contentType = "image/gif"
+		case ".webp":
+			contentType = "image/webp"
+		default:
+			contentType = "application/octet-stream"
+		}
+		return data, contentType, nil
 	}
 
 	img, _, err := image.Decode(r)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var buf bytes.Buffer
-	jpegQuality := quality
-	if jpegQuality < 1 {
-		jpegQuality = 1
+	// Use WebP
+	webpQuality := float32(quality)
+	if webpQuality < 0 {
+		webpQuality = 0
 	}
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
-	if err != nil {
-		return nil, err
+	if webpQuality > 100 {
+		webpQuality = 100
 	}
-
-	return buf.Bytes(), nil
+	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
+		return nil, "", err
+	}
+	return buf.Bytes(), "image/webp", nil
 }
 
 // ComicHandler processes requests to serve comic book pages based on the provided query parameters.
 func ComicHandler(c *fiber.Ctx) error {
 	token := c.Query("token")
-	
+
 	if token == "" {
 		return sendBadRequestError(c, ErrComicTokenRequired)
 	}
@@ -278,6 +332,12 @@ func ComicHandler(c *fiber.Ctx) error {
 	userName, _ := c.Locals("user_name").(string)
 	quality := GetCompressionQualityForUser(userName)
 
+	// Get app config
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
 	// Serve the file based on its extension
 	switch {
 	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".jpeg"),
@@ -285,25 +345,25 @@ func ComicHandler(c *fiber.Ctx) error {
 		strings.HasSuffix(lowerFileName, ".gif"):
 		// Process image for serving
 		imageBytes, err := ProcessImageForServing(imageData.FilePath, quality)
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", "image/webp")
 		if err != nil {
 			// If encoding fails, serve original
 			return c.SendFile(imageData.FilePath)
 		}
 		return c.Send(imageBytes)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
-		imageBytes, err := ServeComicArchiveFromRAR(imageData.FilePath, tokenInfo.Page, quality)
+		imageBytes, contentType, err := ServeComicArchiveFromRAR(imageData.FilePath, tokenInfo.Page, quality, cfg.DisableWebpConversion)
 		if err != nil {
 			return HandleView(c, views.Error(err.Error()))
 		}
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
-		imageBytes, err := ServeComicArchiveFromZIP(imageData.FilePath, tokenInfo.Page, quality)
+		imageBytes, contentType, err := ServeComicArchiveFromZIP(imageData.FilePath, tokenInfo.Page, quality, cfg.DisableWebpConversion)
 		if err != nil {
 			return HandleView(c, views.Error(err.Error()))
 		}
-		c.Set("Content-Type", "image/jpeg")
+		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
 	default:
 		return HandleView(c, views.Error("Unsupported file type"))

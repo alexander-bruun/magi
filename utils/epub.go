@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -21,8 +22,8 @@ type Chapter struct {
 }
 
 type Container struct {
-	XMLName    xml.Name `xml:"container"`
-	Rootfiles  struct {
+	XMLName   xml.Name `xml:"container"`
+	Rootfiles struct {
 		Rootfile struct {
 			FullPath string `xml:"full-path,attr"`
 		} `xml:"rootfile"`
@@ -125,21 +126,21 @@ func GetChapters(epubPath string) ([]Chapter, error) {
 	}
 
 	// Create map from id to href
-	idToHref := make(map[string]string)
+	idToHref := sync.Map{} // id -> href
 	for _, item := range pkg.Manifest.Items {
-		idToHref[item.ID] = item.Href
+		idToHref.Store(item.ID, item.Href)
 	}
 
 	opfDir := filepath.Dir(opfPath)
 
 	var chapters []Chapter
 	for _, itemref := range pkg.Spine.Itemrefs {
-		href, ok := idToHref[itemref.Idref]
+		href, ok := idToHref.Load(itemref.Idref)
 		if !ok {
 			continue
 		}
-		path := filepath.Join(opfDir, href)
-		chapters = append(chapters, Chapter{ID: itemref.Idref, Path: path, Href: href})
+		path := filepath.Join(opfDir, href.(string))
+		chapters = append(chapters, Chapter{ID: itemref.Idref, Path: path, Href: href.(string)})
 	}
 
 	return chapters, nil
@@ -386,19 +387,19 @@ func GetTOC(epubPath string) string {
 	opfDir := filepath.Dir(opfPath)
 
 	// Create map from id to href
-	idToHref := make(map[string]string)
+	idToHref := sync.Map{} // id -> href
 	for _, item := range pkg.Manifest.Items {
-		idToHref[item.ID] = item.Href
+		idToHref.Store(item.ID, item.Href)
 	}
 
 	validIds := make(map[string]bool)
 	for _, itemref := range pkg.Spine.Itemrefs {
-		href, ok := idToHref[itemref.Idref]
+		href, ok := idToHref.Load(itemref.Idref)
 		if !ok {
 			continue
 		}
-		chapterPath := filepath.Join(opfDir, href)
-		validIds["chapter-" + chapterPath] = true
+		chapterPath := filepath.Join(opfDir, href.(string))
+		validIds["chapter-"+chapterPath] = true
 	}
 
 	// Find TOC href
@@ -567,7 +568,7 @@ func GetBookContentWithValidity(epubPath, mangaSlug, chapterSlug string, validit
 	for i, chapter := range chapters {
 		// Skip table of contents chapters
 		if strings.Contains(strings.ToLower(chapter.Path), "toc") ||
-		   strings.Contains(strings.ToLower(chapter.Href), "toc") {
+			strings.Contains(strings.ToLower(chapter.Href), "toc") {
 			continue
 		}
 
@@ -665,9 +666,9 @@ func cleanHTMLContentWithValidity(html, mangaSlug, chapterSlug, chapterPath, opf
 		html = html[:start] + html[start+end+1:]
 	}
 
-        // Rewrite img src attributes to point to asset endpoint
-        html = rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir, validityMinutes)
-        return html
+	// Rewrite img src attributes to point to asset endpoint
+	html = rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, opfDir, validityMinutes)
+	return html
 }
 
 // rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint with tokens
@@ -685,7 +686,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 		if srcIndex == -1 {
 			return match
 		}
-		
+
 		// Find the quote character
 		quoteChar := ""
 		valueStart := srcIndex + 4 // after src=
@@ -695,7 +696,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 				valueStart++
 			}
 		}
-		
+
 		// Find the end of the value
 		valueEnd := valueStart
 		for valueEnd < len(match) {
@@ -710,11 +711,11 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 			}
 			valueEnd++
 		}
-		
+
 		if valueStart >= valueEnd {
 			return match
 		}
-		
+
 		originalSrc := match[valueStart:valueEnd]
 
 		// Skip if already an absolute URL or data URI
@@ -725,7 +726,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 		// Resolve the asset path relative to the chapter's directory, then relative to OPF dir
 		chapterDir := filepath.Dir(chapterPath)
 		absoluteAsset := filepath.Clean(filepath.Join(chapterDir, originalSrc))
-		
+
 		// Make it relative to the OPF directory
 		var cleanPath string
 		if strings.HasPrefix(absoluteAsset, opfDir+"/") {
@@ -760,7 +761,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 		if hrefIndex == -1 {
 			return match
 		}
-		
+
 		// Find the quote character
 		quoteChar := ""
 		valueStart := hrefIndex + 5 // after href=
@@ -770,7 +771,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 				valueStart++
 			}
 		}
-		
+
 		// Find the end of the value
 		valueEnd := valueStart
 		for valueEnd < len(match) {
@@ -785,11 +786,11 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 			}
 			valueEnd++
 		}
-		
+
 		if valueStart >= valueEnd {
 			return match
 		}
-		
+
 		originalHref := match[valueStart:valueEnd]
 
 		// Skip if already an absolute URL or data URI
@@ -800,7 +801,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 		// Resolve the asset path relative to the chapter's directory, then relative to OPF dir
 		chapterDir := filepath.Dir(chapterPath)
 		absoluteAsset := filepath.Clean(filepath.Join(chapterDir, originalHref))
-		
+
 		// Make it relative to the OPF directory
 		var cleanPath string
 		if strings.HasPrefix(absoluteAsset, opfDir+"/") {
@@ -836,7 +837,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 		if hrefIndex == -1 {
 			return match
 		}
-		
+
 		// Find the quote character
 		quoteChar := ""
 		valueStart := hrefIndex + 5 // after href=
@@ -846,7 +847,7 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 				valueStart++
 			}
 		}
-		
+
 		// Find the end of the value
 		valueEnd := valueStart
 		for valueEnd < len(match) {
@@ -861,11 +862,11 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, chapterSlug, chapterPath, 
 			}
 			valueEnd++
 		}
-		
+
 		if valueStart >= valueEnd {
 			return match
 		}
-		
+
 		originalHref := match[valueStart:valueEnd]
 
 		// If href starts with "/series/", disable the link to prevent navigation to wrong series

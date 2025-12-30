@@ -123,8 +123,13 @@ html {
 }
 
 .badge.bg-success {
-  background-color: #16a34a !important;
-  color: #fff !important;
+  background-color: #065f46 !important;
+  color: #f3f4f6 !important;
+}
+
+.badge.bg-muted {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
 }
 
 /* Destructive / error styling */
@@ -2719,7 +2724,7 @@ textarea.code-editor-hidden {
 
 /* Media Card Badges */
 .badge-new-margin {
-  background: #10b981 !important;
+  background: #065f46 !important;
   color: black;
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
   font-size: 0.625rem;

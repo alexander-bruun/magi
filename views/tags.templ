@@ -8,18 +8,18 @@ import (
 // TagsDropdown renders the Tags filter button and dropdown form
 templ TagsDropdown(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
     <div class="uk-inline tags-inline-block">
-        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by tags">
             <uk-icon icon="Tag"></uk-icon>
         </button>
-        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
                 <input type="hidden" name="sort" value={ currentSort }>
                 <input type="hidden" name="order" value={ currentOrder }>
                 <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
-                <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center tags-controls-center">
+                <div class="uk-margin-small">
+                    <div class="uk-text-center tags-controls-center">
                         <div class="uk-inline">
-                            <div class="uk-btn-group uk-width-auto">
+                            <div class="uk-btn-group">
                                 @TagModeToggleButton(path, targetID, tagMode)
                                 @TagActionButton(path, targetID, "Apply filters", "Check", "uk-btn-primary", true)
                                 @TagActionButton(path, targetID, "Clear filters", "x", "uk-btn-destructive", false)
@@ -37,22 +37,22 @@ templ TagsDropdown(path string, targetID string, currentSort string, currentOrde
 
 // Button-only to allow grouping with other controls
 templ TagsFilterButton(path string, targetID string) {
-    <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+    <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by tags">
         <uk-icon icon="Tag"></uk-icon>
     </button>
 }
 
 // Drop-only to be placed outside button group
 templ TagsFilterDrop(path string, targetID string, currentSort string, currentOrder string, selectedTags []string, tagMode string) {
-    <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+    <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
         <form id="tag-filter-form" class="uk-form">
             <input type="hidden" name="sort" value={ currentSort }>
             <input type="hidden" name="order" value={ currentOrder }>
             <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
-            <div class="uk-width-1-1 uk-margin-small">
-                <div class="uk-flex-center uk-flex-middle uk-text-center tags-controls-center">
+            <div class="uk-margin-small">
+                <div class="uk-text-center tags-controls-center">
                     <div class="uk-inline">
-                        <div class="uk-btn-group uk-width-auto">
+                        <div class="uk-btn-group">
                             @TagModeToggleButton(path, targetID, tagMode)
                             @TagActionButton(path, targetID, "Apply filters", "Check", "uk-btn-primary", true)
                             @TagActionButton(path, targetID, "Clear filters", "x", "uk-btn-destructive", false)
@@ -75,7 +75,7 @@ templ TagModeToggleButton(path string, targetID string, tagMode string) {
     } else {
         {{ nextMode = "any" }}
     }
-    <button type="button" class="uk-btn uk-btn-default uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-default uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + targetID }
         hx-push-url="true"
@@ -108,7 +108,7 @@ templ TagActionButton(path string, targetID string, label string, icon string, b
         {{ buttonType = "button" }}
     }
     <button type={ buttonType } 
-        class={ "uk-btn uk-btn-icon uk-btn-small " + btnClass }
+        class={ "uk-btn uk-btn-icon " + btnClass }
         aria-label={ label }
         title={ label }
         hx-get={ path }
@@ -132,7 +132,7 @@ templ TagsFragment(allTags []string, selected []string) {
             {{ isChecked := selectedMap[strings.ToLower(tag)] }}
             <div class="uk-margin-small flex items-center">
                 <label class="inline-flex items-center gap-3 min-w-0 w-full">
-                    <input class="uk-checkbox align-middle shrink-0" type="checkbox" name="tags" value={ tag } checked?={ isChecked }>
+                    <input class="uk-checkbox shrink-0" type="checkbox" name="tags" value={ tag } checked?={ isChecked }>
                     <span class="leading-none flex-1 min-w-0 tags-text-truncate">{ tag }</span>
                 </label>
             </div>

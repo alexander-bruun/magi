@@ -7,7 +7,6 @@
   <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/alexander-bruun/magi">
   <img alt="GitHub License" src="https://img.shields.io/github/license/alexander-bruun/magi">
   <img alt="GitHub Sponsors" src="https://img.shields.io/github/sponsors/alexander-bruun">
-  <img alt="Tests" src="https://github.com/alexander-bruun/magi/actions/workflows/test.yml/badge.svg">
 </div>
 
 # Magi

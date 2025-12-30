@@ -84,7 +84,7 @@ func HandleHome(c *fiber.Ctx) error {
 	}
 
 	// Fetch latest updates data
-	latestUpdates, err := models.GetRecentSeriesWithChapters(20, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries)
+	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries)
 	if err != nil {
 		log.Errorf("Failed to get latest updates: %v", err)
 		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error

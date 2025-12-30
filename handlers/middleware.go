@@ -39,11 +39,11 @@ type RateLimitTracker struct {
 	Requests [10]time.Time // Fixed-size ring buffer (last 10 requests)
 	Index    int           // Current write position
 	Count    int           // Actual number of requests tracked
+	mu       sync.Mutex    // Per-IP mutex for thread safety
 }
 
 var (
-	requestCounts        = make(map[string]*RateLimitTracker)
-	requestsMu           sync.RWMutex
+	requestCounts        sync.Map // map[string]*RateLimitTracker, concurrent
 	requestCleanupTicker *time.Ticker
 )
 
@@ -52,11 +52,11 @@ type IPTracker struct {
 	SeriesAccesses  []time.Time
 	ChapterAccesses []time.Time
 	LastCleanup     time.Time
+	mu              sync.Mutex // Per-IP mutex for thread safety
 }
 
 var (
-	ipTrackers           = make(map[string]*IPTracker)
-	trackersMu           sync.RWMutex
+	ipTrackers           sync.Map // map[string]*IPTracker, concurrent
 	trackerCleanupTicker *time.Ticker
 	maxTrackedIPs        = 50000 // Prevent unbounded memory growth
 )
@@ -81,14 +81,10 @@ func init() {
 
 // cleanupOldRequestCounts removes expired rate limit entries (now simple with ring buffers)
 func cleanupOldRequestCounts() {
-	requestsMu.Lock()
-	defer requestsMu.Unlock()
-
 	now := time.Now()
-	inactiveThreshold := now.Add(-10 * time.Minute) // Remove trackers inactive for 10 minutes
-
-	for ip, tracker := range requestCounts {
-		// Check if any requests are recent
+	inactiveThreshold := now.Add(-10 * time.Minute)
+	requestCounts.Range(func(key, value any) bool {
+		tracker := value.(*RateLimitTracker)
 		hasRecentRequest := false
 		for i := 0; i < tracker.Count; i++ {
 			if tracker.Requests[i].After(inactiveThreshold) {
@@ -96,68 +92,65 @@ func cleanupOldRequestCounts() {
 				break
 			}
 		}
-
-		// Remove tracker if completely inactive
 		if !hasRecentRequest {
-			delete(requestCounts, ip)
+			requestCounts.Delete(key)
 		}
-	}
+		return true
+	})
 }
 
 // cleanupOldIPTrackers removes stale bot detection entries and prevents unbounded memory growth
 func cleanupOldIPTrackers() {
-	trackersMu.Lock()
-	defer trackersMu.Unlock()
-
 	now := time.Now()
-	cleanupThreshold := now.Add(-30 * time.Minute) // Remove trackers inactive for 30+ minutes
-
-	for ip, tracker := range ipTrackers {
-		// Clean old accesses from this tracker
+	cleanupThreshold := now.Add(-30 * time.Minute)
+	count := 0
+	ipTrackers.Range(func(key, value any) bool {
+		tracker := value.(*IPTracker)
+		tracker.mu.Lock()
 		var validSeriesAccesses []time.Time
 		for _, t := range tracker.SeriesAccesses {
 			if t.After(cleanupThreshold) {
 				validSeriesAccesses = append(validSeriesAccesses, t)
 			}
 		}
-
 		var validChapterAccesses []time.Time
 		for _, t := range tracker.ChapterAccesses {
 			if t.After(cleanupThreshold) {
 				validChapterAccesses = append(validChapterAccesses, t)
 			}
 		}
-
-		// Remove tracker if no recent activity
+		tracker.SeriesAccesses = validSeriesAccesses
+		tracker.ChapterAccesses = validChapterAccesses
+		tracker.LastCleanup = now
+		tracker.mu.Unlock()
 		if len(validSeriesAccesses) == 0 && len(validChapterAccesses) == 0 {
-			delete(ipTrackers, ip)
+			ipTrackers.Delete(key)
 		} else {
-			ipTrackers[ip].SeriesAccesses = validSeriesAccesses
-			ipTrackers[ip].ChapterAccesses = validChapterAccesses
-			ipTrackers[ip].LastCleanup = now
+			count++
 		}
-	}
-
+		return true
+	})
 	// If still too many trackers, clean most aggressively
-	if len(ipTrackers) > maxTrackedIPs {
-		// Force aggressive cleanup: remove oldest 20% of trackers
+	if count > maxTrackedIPs {
+		// Remove oldest 20% of trackers
 		type trackerAge struct {
-			ip       string
+			key      any
 			lastSeen time.Time
 		}
 		var ages []trackerAge
-		for ip, tracker := range ipTrackers {
-			ages = append(ages, trackerAge{ip, tracker.LastCleanup})
-		}
-		// Simple cleanup: remove IPs with oldest cleanup time
-		for i := 0; i < len(ipTrackers)/5; i++ {
+		ipTrackers.Range(func(key, value any) bool {
+			tracker := value.(*IPTracker)
+			ages = append(ages, trackerAge{key, tracker.LastCleanup})
+			return true
+		})
+		for i := 0; i < count/5; i++ {
 			oldestIdx := 0
 			for j := 1; j < len(ages); j++ {
 				if ages[j].lastSeen.Before(ages[oldestIdx].lastSeen) {
 					oldestIdx = j
 				}
 			}
-			delete(ipTrackers, ages[oldestIdx].ip)
+			ipTrackers.Delete(ages[oldestIdx].key)
 			ages = append(ages[:oldestIdx], ages[oldestIdx+1:]...)
 		}
 	}
@@ -327,12 +320,20 @@ func RateLimitingMiddleware() fiber.Handler {
 		ip := getRealIP(c)
 		now := time.Now()
 
-		requestsMu.Lock()
-		tracker, exists := requestCounts[ip]
-		if !exists {
+		// Get or create tracker using sync.Map
+		trackerIface, loaded := requestCounts.Load(ip)
+		var tracker *RateLimitTracker
+		if !loaded {
 			tracker = &RateLimitTracker{}
-			requestCounts[ip] = tracker
+			actual, _ := requestCounts.LoadOrStore(ip, tracker)
+			tracker = actual.(*RateLimitTracker)
+		} else {
+			tracker = trackerIface.(*RateLimitTracker)
 		}
+
+		// Lock the specific tracker for rate limiting logic
+		tracker.mu.Lock()
+		defer tracker.mu.Unlock()
 
 		// Count valid requests within the window (using ring buffer)
 		windowStart := now.Add(-time.Duration(cfg.RateLimitWindow) * time.Second)
@@ -350,7 +351,6 @@ func RateLimitingMiddleware() fiber.Handler {
 
 		// Check if limit exceeded
 		if validCount >= cfg.RateLimitRequests {
-			requestsMu.Unlock()
 			log.Infof("Rate limit exceeded for IP: %s", ip)
 
 			resetTime := oldestValid.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
@@ -378,7 +378,6 @@ func RateLimitingMiddleware() fiber.Handler {
 			tracker.Count++
 		}
 
-		requestsMu.Unlock()
 		return c.Next()
 	}
 }
@@ -454,8 +453,18 @@ func BotDetectionMiddleware() fiber.Handler {
 		// Track access if it's a media or chapter request
 		path := c.Path()
 		if strings.HasPrefix(path, "/series/") {
-			trackersMu.Lock()
-			tracker := getOrCreateTracker(ip)
+			// Get or create tracker using sync.Map
+			trackerIface, loaded := ipTrackers.Load(ip)
+			var tracker *IPTracker
+			if !loaded {
+				tracker = &IPTracker{}
+				actual, _ := ipTrackers.LoadOrStore(ip, tracker)
+				tracker = actual.(*IPTracker)
+			} else {
+				tracker = trackerIface.(*IPTracker)
+			}
+			// Lock the specific tracker for access tracking
+			tracker.mu.Lock()
 			now := time.Now()
 
 			// Count path segments to determine if it's a chapter page
@@ -487,25 +496,11 @@ func BotDetectionMiddleware() fiber.Handler {
 				tracker.LastCleanup = now
 			}
 
-			trackersMu.Unlock()
+			tracker.mu.Unlock()
 		}
 
 		return c.Next()
 	}
-}
-
-// getOrCreateTracker gets or creates an IPTracker for the given IP
-func getOrCreateTracker(ip string) *IPTracker {
-	if tracker, exists := ipTrackers[ip]; exists {
-		return tracker
-	}
-	tracker := &IPTracker{
-		SeriesAccesses:  []time.Time{},
-		ChapterAccesses: []time.Time{},
-		LastCleanup:     time.Now(),
-	}
-	ipTrackers[ip] = tracker
-	return tracker
 }
 
 // isBotBehavior checks if the access pattern indicates bot behavior

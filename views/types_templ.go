@@ -34,7 +34,7 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-inline types-dropdown\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by type\"><uk-icon icon=\"BookOpen\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-inline types-dropdown\"><button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" aria-label=\"Filter by type\"><uk-icon icon=\"BookOpen\"></uk-icon></button><div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,14 +60,14 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-small uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 21, Col: 181}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 21, Col: 168}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -80,20 +80,20 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 21, Col: 210}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 21, Col: 197}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"Check\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-small uk-btn-destructive\" aria-label=\"Clear types\" title=\"Clear types\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"Check\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-destructive\" aria-label=\"Clear types\" title=\"Clear types\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 24, Col: 171}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 24, Col: 158}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -106,7 +106,7 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 24, Col: 200}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 24, Col: 187}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -150,7 +150,7 @@ func TypesFilterButton() templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon uk-btn-small\" type=\"button\" aria-label=\"Filter by type\"><uk-icon icon=\"BookOpen\"></uk-icon></button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<button id=\"type-filter-btn\" class=\"uk-btn uk-btn-default uk-btn-icon\" type=\"button\" aria-label=\"Filter by type\"><uk-icon icon=\"BookOpen\"></uk-icon></button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -180,7 +180,7 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div id=\"type-filter-drop\" data-trigger-id=\"type-filter-btn\" class=\"uk-drop uk-dropdown min-w-64 p-3\" data-uk-dropdown=\"mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100\"><form id=\"type-filter-form\" class=\"uk-form\"><input type=\"hidden\" name=\"sort\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -206,14 +206,14 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div class=\"uk-width-1-1 uk-margin-small\"><div class=\"uk-flex-center uk-flex-middle uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group uk-width-auto\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-small uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 56, Col: 177}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 56, Col: 164}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -226,20 +226,20 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 56, Col: 206}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 56, Col: 193}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"Check\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-small uk-btn-destructive\" aria-label=\"Clear types\" title=\"Clear types\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form, #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"Check\"></uk-icon></button> <button type=\"button\" class=\"uk-btn uk-btn-icon uk-btn-destructive\" aria-label=\"Clear types\" title=\"Clear types\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(path)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 59, Col: 167}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 59, Col: 154}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -252,7 +252,7 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("#" + targetID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 59, Col: 196}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 59, Col: 183}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -307,14 +307,14 @@ func TypesFragment(allTypes []string, selected []string) templ.Component {
 		for _, t := range allTypes {
 			lt := strings.ToLower(t)
 			isChecked := selectedMap[lt]
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"uk-margin-small flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox align-middle shrink-0\" type=\"checkbox\" name=\"types\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"uk-margin-small flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox shrink-0\" type=\"checkbox\" name=\"types\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(t)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 85, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/types.templ`, Line: 85, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {

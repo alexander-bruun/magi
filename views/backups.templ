@@ -58,7 +58,7 @@ templ BackupItem(backup models.BackupInfo) {
 		</div>
 		<div class="flex space-x-2">
 			<button type="button"
-					class="uk-btn uk-btn-destructive uk-btn-small"
+					class="uk-btn uk-btn-destructive"
 					hx-post={ "/admin/backups/restore/" + backup.Filename }
 					hx-confirm="Are you sure you want to restore this backup? This will replace the current database and replace the current database."
 					hx-target="#backup-restore-result"

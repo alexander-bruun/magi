@@ -29,7 +29,7 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mt-6 uk-card rounded-lg shadow w-2/4 mx-auto p-4 flex flex-col items-center justify-between\"><span class=\"text-sm sm:text-center font-bold\">© 2025 <a href=\"https://github.com/alexander-bruun/magi/\" class=\"hover:underline\">Magi™</a>. All Rights Reserved.</span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mt-6 uk-card rounded-lgw-2/4 mx-auto p-4 flex flex-col items-center justify-between\"><span class=\"text-sm sm:text-center font-bold\">© 2025 <a href=\"https://github.com/alexander-bruun/magi/\" class=\"hover:underline\">Magi™</a>. All Rights Reserved.</span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

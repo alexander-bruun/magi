@@ -17,12 +17,12 @@ templ Monitoring(data *models.MonitoringData) {
 			<!-- System Resources - CPU and Memory Row -->
 			<div class="uk-card p-4 mb-6 w-full">
 				<h4 class="text-lg font-semibold mb-6">System Resources</h4>
-				<div class="space-y-6 font-mono text-sm mb-8">
+				<div class="space-y-6 text-sm mb-8">
 					<!-- CPU Usage - htop style -->
 					<div>
 						<div class="flex justify-between mb-2">
 							<span class="font-semibold">CPU:</span>
-							<span class="font-semibold text-blue-600" id="cpuPercentage">--</span>
+							<span class="font-semibold" id="cpuPercentage">--</span>
 						</div>
 						<div id="cpuBars" class="cpu-bars">
 							<!-- CPU bars will be generated here -->
@@ -45,15 +45,15 @@ templ Monitoring(data *models.MonitoringData) {
 							<div class="mem-free-bar" id="memFreeBar" title="Free Memory"></div>
 						</div>
 						<div class="text-xs mt-2 grid grid-cols-3 gap-2 text-center" id="memoryDetails">
-							<div><span class="inline-block w-2 h-2 bg-green-600 rounded-sm mr-1"></span>Used: --</div>
+							<div><span class="inline-block w-2 h-2 rounded-sm mr-1"></span>Used: --</div>
 							<div><span class="inline-block w-2 h-2 bg-yellow-500 rounded-sm mr-1"></span>Cached: --</div>
-							<div><span class="inline-block w-2 h-2 bg-gray-300 rounded-sm mr-1"></span>Free: --</div>
+							<div><span class="inline-block w-2 h-2 rounded-sm mr-1"></span>Free: --</div>
 						</div>
 					</div>
 				</div>
 				<!-- Disk Usage Row -->
 				<div class="border-t pt-6">
-					<h5 class="text-md font-semibold mb-4">Disk Usage</h5>
+					<h5 class="font-semibold mb-4">Disk Usage</h5>
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="diskStatsContainer">
 						<p class="text-gray-500">Loading disk information...</p>
 					</div>
@@ -65,11 +65,11 @@ templ Monitoring(data *models.MonitoringData) {
 					<h4 class="text-lg font-semibold mb-4">Image Load Times by File Type</h4>
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
-							<h5 class="text-md font-medium mb-2">Average Load Time (seconds)</h5>
+							<h5 class="font-medium mb-2">Average Load Time (seconds)</h5>
 							<canvas id="loadTimeChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Load Count</h5>
+							<h5 class="font-medium mb-2">Load Count</h5>
 							<canvas id="loadCountChart" width="400" height="300"></canvas>
 						</div>
 					</div>
@@ -78,11 +78,11 @@ templ Monitoring(data *models.MonitoringData) {
 					<h4 class="text-lg font-semibold mb-4">User Analytics</h4>
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
-							<h5 class="text-md font-medium mb-2">Users Created Over Time</h5>
+							<h5 class="font-medium mb-2">Users Created Over Time</h5>
 							<canvas id="usersChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">User Role Distribution</h5>
+							<h5 class="font-medium mb-2">User Role Distribution</h5>
 							<canvas id="rolesChart" width="400" height="250"></canvas>
 						</div>
 					</div>
@@ -106,15 +106,15 @@ templ Monitoring(data *models.MonitoringData) {
 				<h4 class="text-lg font-semibold mb-4">Top Popular Series</h4>
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div>
-						<h5 class="text-md font-medium mb-2">Most Read (by Chapters)</h5>
+						<h5 class="font-medium mb-2">Most Read (by Chapters)</h5>
 						<canvas id="popularReadsChart" width="400" height="300"></canvas>
 					</div>
 					<div>
-						<h5 class="text-md font-medium mb-2">Most Favorited</h5>
+						<h5 class="font-medium mb-2">Most Favorited</h5>
 						<canvas id="popularFavoritesChart" width="400" height="300"></canvas>
 					</div>
 					<div>
-						<h5 class="text-md font-medium mb-2">Highest Rated</h5>
+						<h5 class="font-medium mb-2">Highest Rated</h5>
 						<canvas id="popularVotesChart" width="400" height="300"></canvas>
 					</div>
 				</div>
@@ -124,19 +124,19 @@ templ Monitoring(data *models.MonitoringData) {
 					<h4 class="text-lg font-semibold mb-4">Community Engagement</h4>
 					<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
 						<div>
-							<h5 class="text-md font-medium mb-2">Comments Over Time (Last 30 Days)</h5>
+							<h5 class="font-medium mb-2">Comments Over Time (Last 30 Days)</h5>
 							<canvas id="commentsActivityChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Reviews Over Time (Last 30 Days)</h5>
+							<h5 class="font-medium mb-2">Reviews Over Time (Last 30 Days)</h5>
 							<canvas id="reviewsActivityChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Most Commented Series</h5>
+							<h5 class="font-medium mb-2">Most Commented Series</h5>
 							<canvas id="topCommentedChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Most Reviewed Series</h5>
+							<h5 class="font-medium mb-2">Most Reviewed Series</h5>
 							<canvas id="topReviewedChart" width="400" height="300"></canvas>
 						</div>
 					</div>
@@ -147,15 +147,15 @@ templ Monitoring(data *models.MonitoringData) {
 					<h4 class="text-lg font-semibold mb-4">User Activity Levels</h4>
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 						<div>
-							<h5 class="text-md font-medium mb-2">Chapters Read Distribution per User</h5>
+							<h5 class="font-medium mb-2">Chapters Read Distribution per User</h5>
 							<canvas id="chaptersDistributionChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Activity by Media Type</h5>
+							<h5 class="font-medium mb-2">Activity by Media Type</h5>
 							<canvas id="activityByMediaTypeChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Most Active Readers (Top 10)</h5>
+							<h5 class="font-medium mb-2">Most Active Readers (Top 10)</h5>
 							<canvas id="mostActiveReadersChart" width="400" height="300"></canvas>
 						</div>
 					</div>
@@ -166,15 +166,15 @@ templ Monitoring(data *models.MonitoringData) {
 					<h4 class="text-lg font-semibold mb-4">Content Growth</h4>
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 						<div>
-							<h5 class="text-md font-medium mb-2">New Media Added Over Time (Last 30 Days)</h5>
+							<h5 class="font-medium mb-2">New Media Added Over Time (Last 30 Days)</h5>
 							<canvas id="newMediaOverTimeChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">New Chapters Added Over Time (Last 30 Days)</h5>
+							<h5 class="font-medium mb-2">New Chapters Added Over Time (Last 30 Days)</h5>
 							<canvas id="newChaptersOverTimeChart" width="400" height="300"></canvas>
 						</div>
 						<div>
-							<h5 class="text-md font-medium mb-2">Media Distribution by Type</h5>
+							<h5 class="font-medium mb-2">Media Distribution by Type</h5>
 							<canvas id="mediaGrowthByTypeChart" width="400" height="300"></canvas>
 						</div>
 					</div>
@@ -245,9 +245,9 @@ templ Monitoring(data *models.MonitoringData) {
 			
 			// Update memory details
 			const memDetailsHTML = `
-				<div><span class="inline-block w-2 h-2 bg-green-500 rounded-sm mr-1"></span>Used: ${memUsed.toFixed(0)} MB</div>
+				<div><span class="inline-block w-2 h-2 rounded-sm mr-1"></span>Used: ${memUsed.toFixed(0)} MB</div>
 				<div><span class="inline-block w-2 h-2 bg-yellow-500 rounded-sm mr-1"></span>Cached: 0 MB</div>
-				<div><span class="inline-block w-2 h-2 bg-gray-800 rounded-sm mr-1"></span>Free: ${memFree.toFixed(0)} MB</div>
+				<div><span class="inline-block w-2 h-2 rounded-sm mr-1"></span>Free: ${memFree.toFixed(0)} MB</div>
 			`;
 			document.getElementById('memoryDetails').innerHTML = memDetailsHTML;
 		}
@@ -283,11 +283,11 @@ templ Monitoring(data *models.MonitoringData) {
 					: disk.path;
 				
 				html += `
-					<div class="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+					<div class="p-4 rounded-lg border">
 						<div class="flex justify-between items-center mb-3">
 							<div class="flex items-center gap-2">
 								<uk-icon icon="database"></uk-icon>
-								<span class="font-semibold text-gray-800">${diskName}</span>
+								<span class="font-semibold">${diskName}</span>
 							</div>
 							<span class="text-sm font-bold ${textColor}">${percentage.toFixed(1)}%</span>
 						</div>
@@ -328,32 +328,32 @@ templ Monitoring(data *models.MonitoringData) {
 			const totalsDiv = document.getElementById('totals');
 			totalsDiv.innerHTML = `
 				<div class="flex-1 min-w-max">
-					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
-						<div class="text-2xl font-bold text-blue-600">${data.totals.medias}</div>
+					<div class="p-4 rounded-lg text-center h-full">
+						<div class="text-2xl font-bold">${data.totals.medias}</div>
 						<div class="text-sm">Medias</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
-					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
+					<div class="p-4 rounded-lg text-center h-full">
 						<div class="text-2xl font-bold brand-gradient">${data.totals.chapters}</div>
 						<div class="text-sm">Chapters</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
-					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
-						<div class="text-2xl font-bold text-purple-600">${data.totals.chapters_read}</div>
+					<div class="p-4 rounded-lg text-center h-full">
+						<div class="text-2xl font-bold">${data.totals.chapters_read}</div>
 						<div class="text-sm">Chapters Read</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
-					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
-						<div class="text-2xl font-bold text-orange-600">${data.totals.users}</div>
+					<div class="p-4 rounded-lg text-center h-full">
+						<div class="text-2xl font-bold">${data.totals.users}</div>
 						<div class="text-sm">Users</div>
 					</div>
 				</div>
 				<div class="flex-1 min-w-max">
-					<div class="bg-white p-4 rounded-lg shadow text-center h-full">
-						<div class="text-2xl font-bold text-red-600">${data.totals.libraries}</div>
+					<div class="p-4 rounded-lg text-center h-full">
+						<div class="text-2xl font-bold">${data.totals.libraries}</div>
 						<div class="text-sm">Libraries</div>
 					</div>
 				</div>

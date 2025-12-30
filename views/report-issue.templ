@@ -4,7 +4,7 @@ templ ReportIssue() {
 	<div class="uk-container uk-container-small mt-4">
 		<div class="uk-card uk-card-default uk-card-body">
 			<h1 class="uk-heading-medium">Report Issue</h1>
-			<p class="uk-text-meta uk-margin-bottom">
+			<p class="uk-text-meta">
 				Found a bug or have a feature request? Let us know!
 			</p>
 			<form hx-post="/report-issue" hx-target="#issue-form" hx-swap="innerHTML">
@@ -39,8 +39,8 @@ templ ReportIssue() {
 					<input class="uk-input" id="issue-url" name="url" type="url" placeholder="https://example.com/page-with-issue">
 				</div>
 				<div class="uk-margin" id="issue-form">
-					<button class="uk-btn uk-btn-primary uk-width-1-1" type="submit">
-						<uk-icon icon="Send" class="uk-margin-small-right"></uk-icon>
+					<button class="uk-btn uk-btn-primary" type="submit">
+						<uk-icon icon="Send"></uk-icon>
 						Submit Issue
 					</button>
 				</div>

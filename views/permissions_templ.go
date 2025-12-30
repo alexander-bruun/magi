@@ -41,7 +41,7 @@ func PermissionsManagement() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"permissions-page\"><!-- Header Section --><div class=\"permissions-header\"><div class=\"sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8\"><div class=\"py-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!-- Header Section --><div class=\"sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8\"><div class=\"py-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -49,20 +49,20 @@ func PermissionsManagement() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"flex flex-col sm:items-center sm:justify-between sm:flex-row\"><div><h1 class=\"text-3xl font-bold text-gray-900\">Permissions Management</h1><p class=\"mt-2 text-sm\">Manage access permissions and user roles for your libraries</p></div><div class=\"flex items-center space-x-3 mt-4 sm:mt-0\"><div class=\"bg-blue-50 px-3 py-2 rounded-lg\"><div class=\"flex items-center space-x-2\"><uk-icon icon=\"users\" ratio=\"0.8\" class=\"text-blue-600\"></uk-icon> <span class=\"text-sm font-medium text-blue-700\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"flex flex-col sm:items-center sm:justify-between sm:flex-row\"><div><h1 class=\"text-3xl font-bold\">Permissions Management</h1><p class=\"mt-2 text-sm\">Manage access permissions and user roles for your libraries</p></div><div class=\"flex items-center space-x-3 mt-4 sm:mt-0\"><div class=\"px-3 py-2 rounded-lg\"><div class=\"flex items-center space-x-2\"><uk-icon icon=\"users\" ratio=\"0.8\"></uk-icon> <span class=\"text-sm font-medium\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(len(users))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 29, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 27, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " Users</span></div></div><button class=\"uk-btn uk-btn-primary\" hx-get=\"/api/permissions/new/form\" hx-target=\"#modal-content\" uk-toggle=\"target: #permission-modal\"><uk-icon icon=\"plus\" ratio=\"0.8\" class=\"mr-2\"></uk-icon> New Permission</button></div></div></div></div></div><!-- Main Content --><div class=\"sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8\"><!-- Tab Navigation --><div class=\"permissions-tabs mb-8\"><ul class=\"uk-tab\" uk-tab><li class=\"uk-active\"><a href=\"#\">Permissions</a></li><li><a href=\"#\">Roles</a></li><li><a href=\"#\">Users</a></li></ul><ul class=\"uk-switcher mt-4\"><li class=\"uk-active\"><div id=\"permissions-list\" hx-get=\"/api/permissions/list\" hx-trigger=\"load\" hx-swap=\"innerHTML\" class=\"permissions-grid\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\" class=\"text-gray-400 animate-spin\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading permissions...</p></div></div></div></li><!-- Roles Tab --><li><div class=\"roles-section uk-card uk-card-default uk-card-body w-full\"><div class=\"roles-grid\"><!-- Role Assignment Card --><div class=\"role-card\"><div class=\"role-header\"><h3 class=\"text-lg font-medium text-gray-900\">Role Permissions</h3></div><div class=\"p-4\"><div class=\"space-y-4\"><div><label class=\"block text-sm font-medium text-gray-700 mb-2\">Select Role</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Select Role <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\"><li><a href=\"#\" hx-get=\"/api/roles/permissions\" hx-target=\"#role-permissions-list\" hx-vals='{\"role\": \"\"}' hx-swap=\"innerHTML\">-- Select a role --</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " Users</span></div></div><button class=\"uk-btn uk-btn-primary\" hx-get=\"/api/permissions/new/form\" hx-target=\"#modal-content\" uk-toggle=\"target: #permission-modal\"><uk-icon icon=\"plus\" ratio=\"0.8\" class=\"mr-2\"></uk-icon> New Permission</button></div></div></div></div><!-- Main Content --><div class=\"sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8\"><!-- Tab Navigation --><div class=\"mb-8\"><ul class=\"uk-tab\" uk-tab><li class=\"uk-active\"><a href=\"#\">Permissions</a></li><li><a href=\"#\">Roles</a></li><li><a href=\"#\">Users</a></li></ul><ul class=\"uk-switcher mt-4\"><li class=\"uk-active\"><div id=\"permissions-list\" hx-get=\"/api/permissions/list\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading permissions...</p></div></div></div></li><!-- Roles Tab --><li><div class=\"uk-card uk-card-default uk-card-body w-full\"><!-- Role Assignment Card --><h3 class=\"text-lg font-medium\">Role Permissions</h3><div class=\"p-4\"><div class=\"space-y-4\"><div><label class=\"block text-sm font-medium mb-2\">Select Role</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Select Role <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\"><li><a href=\"#\" hx-get=\"/api/roles/permissions\" hx-target=\"#role-permissions-list\" hx-vals='{\"role\": \"\"}' hx-swap=\"innerHTML\">-- Select a role --</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -74,7 +74,7 @@ func PermissionsManagement() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"role\": \"%s\"}", role))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 98, Col: 145}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 90, Col: 142}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -87,7 +87,7 @@ func PermissionsManagement() templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(role)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 99, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 91, Col: 21}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -131,7 +131,7 @@ func PermissionsManagement() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div></div></div></div><!-- Role Overview Card --><div class=\"role-card\"><div class=\"role-header\"><h3 class=\"text-lg font-medium text-gray-900\">Role Overview</h3></div><div class=\"p-4\"><div class=\"space-y-4\"><div class=\"flex items-center justify-between p-3 bg-gray-50 rounded-lg\"><div class=\"flex items-center space-x-3\"><div class=\"role-indicator\"></div><div><h4 class=\"role-name\">admin</h4><p class=\"role-description\">Full system access</p></div></div><div class=\"role-icon\"><uk-icon icon=\"crown\" ratio=\"0.8\"></uk-icon></div></div></div></div></div></div></div></li><!-- Users Tab --><li><div class=\"users-section uk-card uk-card-default uk-card-body w-full\"><div class=\"users-grid\"><div class=\"user-card\"><div class=\"user-header\"><h3 class=\"text-lg font-medium text-gray-900\">User Permissions</h3></div><div class=\"p-4\"><div class=\"space-y-4\"><div><label class=\"block text-sm font-medium text-gray-700 mb-2\">Select User</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Select User <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\"><li><a href=\"#\" hx-get=\"/api/users/permissions\" hx-target=\"#user-permissions-list\" hx-vals='{\"username\": \"\"}' hx-swap=\"innerHTML\">-- Select a user --</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div></div></div><!-- Role Overview Card --><h3 class=\"text-lg font-medium\">Role Overview</h3><div class=\"p-4\"><div class=\"space-y-4\"><div class=\"flex items-center justify-between p-3 bg-gray-50 rounded-lg\"><div class=\"flex items-center space-x-3\"><h4>admin</h4><p>Full system access</p></div><uk-icon icon=\"crown\" ratio=\"0.8\"></uk-icon></div></div></div></div></li><!-- Users Tab --><li><div class=\"uk-card uk-card-default uk-card-body w-full\"><h3 class=\"text-lg font-medium\">User Permissions</h3><div class=\"p-4\"><div class=\"space-y-4\"><div><label class=\"block text-sm font-medium mb-2\">Select User</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Select User <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\"><li><a href=\"#\" hx-get=\"/api/users/permissions\" hx-target=\"#user-permissions-list\" hx-vals='{\"username\": \"\"}' hx-swap=\"innerHTML\">-- Select a user --</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -143,7 +143,7 @@ func PermissionsManagement() templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"username\": \"%s\"}", user.Username))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 171, Col: 158}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 148, Col: 155}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -156,7 +156,7 @@ func PermissionsManagement() templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 172, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 149, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -190,7 +190,7 @@ func PermissionsManagement() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div></div></div></div></div></div></li></ul></div></div><!-- Modals --><div id=\"permission-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-dialog-large\"><div id=\"modal-content\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\" class=\"text-gray-400 animate-spin\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading...</p></div></div></div></div></div><div id=\"bulk-assign-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-dialog-large\"><div id=\"bulk-modal-content\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\" class=\"text-gray-400 animate-spin\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading...</p></div></div></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div></div></div></div></li></ul></div></div><!-- Modals --><div id=\"permission-modal\" uk-modal><div class=\"uk-modal-dialog\"><div id=\"modal-content\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading...</p></div></div></div></div></div><div id=\"bulk-assign-modal\" uk-modal><div class=\"uk-modal-dialog\"><div id=\"bulk-modal-content\"><div class=\"flex items-center justify-center py-12\"><div class=\"text-center\"><uk-icon icon=\"spinner\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">Loading...</p></div></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -220,7 +220,7 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(permissions) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"text-center py-12\"><uk-icon icon=\"shield-off\" ratio=\"3\" class=\"text-gray-300\"></uk-icon><h3 class=\"mt-4 text-lg font-medium text-gray-900\">No permissions defined yet</h3><p class=\"mt-2 text-sm text-gray-500\">Get started by creating your first permission to control access to your libraries.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"text-center py-12\"><uk-icon icon=\"shield-off\" ratio=\"3\"></uk-icon><h3 class=\"mt-4 text-lg font-medium\">No permissions defined yet</h3><p class=\"mt-2 text-sm text-gray-500\">Get started by creating your first permission to control access to your libraries.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -237,20 +237,20 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 237, Col: 94}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 211, Col: 94}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"><div class=\"uk-card-body\"><div class=\"flex items-start justify-between\"><div class=\"flex-1\"><div class=\"flex items-center space-x-2 mb-2\"><h3 class=\"text-lg font-semibold text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"><div class=\"uk-card-body\"><div class=\"flex items-start justify-between\"><div class=\"flex-1\"><div class=\"flex items-center space-x-2 mb-2\"><h3 class=\"text-lg font-semibold\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 242, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 216, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -279,14 +279,14 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 258, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 232, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"text-gray-400 italic\">No description provided</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<span class=\"italic\">No description provided</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -301,14 +301,14 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<span class=\"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800\"><uk-icon icon=\"folder\" ratio=\"0.6\" class=\"mr-1\"></uk-icon> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<span class=\"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium\"><uk-icon icon=\"folder\" ratio=\"0.6\" class=\"mr-1\"></uk-icon> ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(perm.Libraries)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 273, Col: 52}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 247, Col: 52}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -340,14 +340,14 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div></div></div><div class=\"flex flex-col sm:items-center sm:justify-between sm:flex-row pt-4 border-t border-gray-200\"><div class=\"flex items-center space-x-2 mb-2 sm:mb-0\"><span class=\"text-xs text-gray-500\">Last modified</span> <time class=\"text-xs text-gray-400\" datetime=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div></div></div><div class=\"flex flex-col sm:items-center sm:justify-between sm:flex-row pt-4 border-t\"><div class=\"flex items-center space-x-2 mb-2 sm:mb-0\"><span class=\"text-xs text-gray-500\">Last modified</span> <time class=\"text-xs\" datetime=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(time.Unix(perm.UpdatedAt, 0).Format("2006-01-02T15:04:05Z"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 295, Col: 115}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 269, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -360,46 +360,46 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(time.Unix(perm.UpdatedAt, 0).Format("Jan 02, 2006"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 296, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 270, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</time></div><div class=\"flex items-center space-x-1\"><button class=\"uk-btn uk-btn-default uk-btn-small\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</time></div><div class=\"flex items-center space-x-1\"><button class=\"uk-btn uk-btn-default\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/permissions/%d/form", perm.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 303, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 277, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\" hx-target=\"#modal-content\" uk-toggle=\"target: #permission-modal\" title=\"Edit permission\"><uk-icon icon=\"pencil\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-default uk-btn-small\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\" hx-target=\"#modal-content\" uk-toggle=\"target: #permission-modal\" title=\"Edit permission\"><uk-icon icon=\"pencil\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-default\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/permissions/%d/bulk-assign", perm.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 312, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 286, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" hx-target=\"#bulk-modal-content\" uk-toggle=\"target: #bulk-assign-modal\" title=\"Bulk assign to users\"><uk-icon icon=\"users\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-delete=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" hx-target=\"#bulk-modal-content\" uk-toggle=\"target: #bulk-assign-modal\" title=\"Bulk assign to users\"><uk-icon icon=\"users\" ratio=\"0.7\"></uk-icon></button> <button class=\"uk-btn uk-btn-destructive\" hx-delete=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/permissions/%d", perm.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 321, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 295, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -412,7 +412,7 @@ func PermissionsList(permissions []models.PermissionWithLibraries) templ.Compone
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Delete permission \"%s\"?\n\nThis will remove the permission from all users and roles.", perm.Name))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 323, Col: 135}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 297, Col: 135}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -453,7 +453,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 			templ_7745c5c3_Var18 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title uk-margin-remove\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -480,7 +480,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/permissions/%d", permission.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 354, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 328, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
@@ -496,7 +496,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, " hx-swap=\"none\"><!-- Basic Information Section --><div class=\"mb-4\"><h4 class=\"text-lg font-semibold mb-2 border-b border-gray-200 pb-1\"><span>Basic Information</span></h4><div class=\"mb-4\"><label class=\"uk-form-label uk-text-bold\"><uk-icon icon=\"tag\" ratio=\"0.8\"></uk-icon> Permission Name <span class=\"uk-text-destructive\">*</span></label> <input class=\"uk-input\" type=\"text\" name=\"name\" placeholder=\"e.g., premium_access\" required")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, " hx-swap=\"none\"><!-- Basic Information Section --><div class=\"mb-4\"><h4 class=\"text-lg font-semibold mb-2 border-b pb-1\"><span>Basic Information</span></h4><div class=\"mb-4\"><label class=\"uk-form-label\"><uk-icon icon=\"tag\" ratio=\"0.8\"></uk-icon> Permission Name <span>*</span></label> <input class=\"uk-input\" type=\"text\" name=\"name\" placeholder=\"e.g., premium_access\" required")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -508,7 +508,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(permission.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 377, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 351, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -519,7 +519,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "> <small class=\"uk-text-muted\">Use lowercase with underscores (no spaces)</small></div><div class=\"mb-4\"><label class=\"uk-form-label uk-text-bold\"><uk-icon icon=\"file-text\" ratio=\"0.8\"></uk-icon> Description</label> <textarea class=\"uk-textarea\" name=\"description\" rows=\"2\" placeholder=\"Describe what this permission grants access to...\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "> <small class=\"uk-text-muted\">Use lowercase with underscores (no spaces)</small></div><div class=\"mb-4\"><label class=\"uk-form-label\"><uk-icon icon=\"file-text\" ratio=\"0.8\"></uk-icon> Description</label> <textarea class=\"uk-textarea\" name=\"description\" rows=\"2\" placeholder=\"Describe what this permission grants access to...\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -531,7 +531,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(permission.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 393, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 367, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -542,7 +542,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "></textarea></div></div><!-- Access Settings Section --><div class=\"uk-margin-bottom\"><h4 class=\"uk-heading-line uk-h5 uk-margin-small-bottom\"><span>Access Settings</span></h4><div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex uk-flex-middle\"><input class=\"uk-checkbox uk-margin-small-right\" type=\"checkbox\" name=\"is_wildcard\" id=\"wildcard-checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "></textarea></div></div><!-- Access Settings Section --><div><h4 class=\"uk-heading-line uk-h5 uk-margin-small-bottom\"><span>Access Settings</span></h4><div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex\"><input class=\"uk-checkbox\" type=\"checkbox\" name=\"is_wildcard\" id=\"wildcard-checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -552,7 +552,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, " onchange=\"document.getElementById('libraries-container').style.display = this.checked ? 'none' : 'block';\"> <span class=\"uk-text-bold\"><uk-icon icon=\"asterisk\" ratio=\"0.7\"></uk-icon> Wildcard Permission</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Grant access to all libraries (current and future)</small></div></div><div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex uk-flex-middle\"><input class=\"uk-checkbox uk-margin-small-right\" type=\"checkbox\" name=\"premium_chapter_access\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, " onchange=\"document.getElementById('libraries-container').style.display = this.checked ? 'none' : 'block';\"> <span><uk-icon icon=\"asterisk\" ratio=\"0.7\"></uk-icon> Wildcard Permission</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Grant access to all libraries (current and future)</small></div></div><div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex\"><input class=\"uk-checkbox\" type=\"checkbox\" name=\"premium_chapter_access\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -562,12 +562,12 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "> <span class=\"uk-text-bold\"><uk-icon icon=\"star\" ratio=\"0.7\"></uk-icon> Premium Chapter Access</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Grant access to premium chapters in the defined libraries</small></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "> <span><uk-icon icon=\"star\" ratio=\"0.7\"></uk-icon> Premium Chapter Access</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Grant access to premium chapters in the defined libraries</small></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if permission != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex uk-flex-middle\"><input class=\"uk-checkbox uk-margin-small-right\" type=\"checkbox\" name=\"is_enabled\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<div class=\"uk-margin\"><div class=\"uk-form-controls\"><label class=\"uk-flex\"><input class=\"uk-checkbox\" type=\"checkbox\" name=\"is_enabled\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -577,12 +577,12 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "> <span class=\"uk-text-bold\"><uk-icon icon=\"check\" ratio=\"0.7\"></uk-icon> Enabled</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Disable to temporarily revoke access without deleting</small></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "> <span><uk-icon icon=\"check\" ratio=\"0.7\"></uk-icon> Enabled</span></label> <small class=\"uk-text-muted uk-margin-small-left\">Disable to temporarily revoke access without deleting</small></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</div><!-- Library Selection Section --><div class=\"uk-margin-bottom\" id=\"libraries-container\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</div><!-- Library Selection Section --><div id=\"libraries-container\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -592,17 +592,17 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "><h4 class=\"uk-heading-line uk-h5 uk-margin-small-bottom\"><span>Library Access</span></h4><label class=\"uk-form-label uk-text-bold\"><uk-icon icon=\"database\" ratio=\"0.8\"></uk-icon> Select Libraries</label> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "><h4 class=\"uk-heading-line uk-h5 uk-margin-small-bottom\"><span>Library Access</span></h4><label class=\"uk-form-label\"><uk-icon icon=\"database\" ratio=\"0.8\"></uk-icon> Select Libraries</label> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(libraries) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-alert uk-alert-warning\"><uk-icon icon=\"warning\" ratio=\"0.8\"></uk-icon> No libraries available. Create libraries first.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "<div class=\"uk-alert\"><uk-icon icon=\"warning\" ratio=\"0.8\"></uk-icon> No libraries available. Create libraries first.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Select the libraries this permission applies to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllLibraries(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllLibraries(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex\"><small class=\"uk-text-muted\">Select the libraries this permission applies to</small><div><button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"selectAllLibraries(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-default uk-margin-small-left\" onclick=\"clearAllLibraries(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -615,14 +615,14 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 						}
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " <div><label class=\"uk-flex uk-flex-middle uk-padding-small uk-background-muted\" style=\"border-radius: 4px; cursor: pointer; transition: background 0.2s;\" onmouseover=\"this.style.background='#f0f0f0'\" onmouseout=\"this.style.background=''\"><input class=\"uk-checkbox uk-margin-small-right library-checkbox\" type=\"checkbox\" name=\"libraries[]\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " <div><label class=\"uk-flex uk-padding-small uk-background-muted\" style=\"border-radius: 4px; cursor: pointer; transition: background 0.2s;\" onmouseover=\"this.style.background='#f0f0f0'\" onmouseout=\"this.style.background=''\"><input class=\"uk-checkbox library-checkbox\" type=\"checkbox\" name=\"libraries[]\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(lib.Slug)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 513, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 487, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -638,14 +638,14 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "> <span class=\"uk-text-small\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "> <span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var23 string
 				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(lib.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 518, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 492, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 				if templ_7745c5c3_Err != nil {
@@ -661,7 +661,7 @@ func PermissionForm(permission *models.PermissionWithLibraries, libraries []mode
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -705,7 +705,7 @@ func RolePermissionsEmpty() templ.Component {
 			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<div class=\"flex flex-col items-center justify-center py-8\"><uk-icon icon=\"users\" ratio=\"2\" class=\"text-gray-300\"></uk-icon><p class=\"mt-2 text-sm text-gray-500 text-center\">Select a role above to manage its permissions</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "<div class=\"flex flex-col items-center justify-center py-8\"><uk-icon icon=\"users\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500 text-center\">Select a role above to manage its permissions</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -734,14 +734,14 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 			templ_7745c5c3_Var25 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<div class=\"space-y-6\"><!-- Assigned Permissions Section --><div><div class=\"flex items-center justify-between mb-4\"><h4 class=\"text-lg font-medium text-gray-900\">Assigned to ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<div class=\"space-y-6\"><!-- Assigned Permissions Section --><div><div class=\"flex items-center justify-between mb-4\"><h4 class=\"text-lg font-medium\">Assigned to ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 560, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 534, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
@@ -754,7 +754,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(permissions)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 562, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 536, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -765,7 +765,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 			return templ_7745c5c3_Err
 		}
 		if len(permissions) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<div class=\"text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200\"><uk-icon icon=\"shield-off\" ratio=\"2\" class=\"text-gray-300\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">No permissions assigned to this role yet</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<div class=\"text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed\"><uk-icon icon=\"shield-off\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">No permissions assigned to this role yet</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -775,14 +775,14 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 				return templ_7745c5c3_Err
 			}
 			for _, perm := range permissions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div class=\"uk-card uk-card-default uk-card-body w-full\"><div class=\"uk-card-body\"><div class=\"flex-1\"><div class=\"flex items-center space-x-3\"><h5 class=\"text-sm font-medium text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div class=\"uk-card uk-card-default uk-card-body w-full\"><div class=\"uk-card-body\"><div class=\"flex-1\"><div class=\"flex items-center space-x-3\"><h5 class=\"text-sm font-medium\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 579, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 553, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -815,14 +815,14 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 						return templ_7745c5c3_Err
 					}
 				} else if len(perm.Libraries) > 0 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<span class=\"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "<span class=\"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var29 string
 					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d libs", len(perm.Libraries)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 605, Col: 58}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 579, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 					if templ_7745c5c3_Err != nil {
@@ -841,7 +841,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 					var templ_7745c5c3_Var30 string
 					templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 612, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 586, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 					if templ_7745c5c3_Err != nil {
@@ -853,14 +853,14 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</p></div><button class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-delete=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</p></div><button class=\"uk-btn uk-btn-destructive\" hx-delete=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/roles/%s/permissions/%d", role, perm.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 620, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 594, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
@@ -873,7 +873,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 				var templ_7745c5c3_Var32 string
 				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Revoke \"%s\" permission from %s role?", perm.Name, role))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 622, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 596, Col: 92}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 				if templ_7745c5c3_Err != nil {
@@ -889,7 +889,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</div><!-- Assign New Permission Section --><div class=\"bg-gray-50 rounded-lg p-4\"><h4 class=\"text-md font-medium text-gray-900 mb-3\">Assign New Permission</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</div><!-- Assign New Permission Section --><div class=\"bg-gray-50 rounded-lg p-4\"><h4 class=\"font-medium mb-3\">Assign New Permission</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -916,13 +916,13 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(role)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 662, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 636, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\"><div><label class=\"block text-sm font-medium text-gray-700 mb-2\">Choose Permission</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Choose Permission <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "\"><div><label class=\"block text-sm font-medium mb-2\">Choose Permission</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Choose Permission <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -935,7 +935,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 					var templ_7745c5c3_Var34 string
 					templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"role\": \"%s\", \"permission_id\": \"%d\"}", role, perm.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 675, Col: 149}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 649, Col: 149}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 					if templ_7745c5c3_Err != nil {
@@ -948,7 +948,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 					var templ_7745c5c3_Var35 string
 					templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 676, Col: 24}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 650, Col: 24}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 					if templ_7745c5c3_Err != nil {
@@ -973,7 +973,7 @@ func RolePermissionsList(role string, permissions []models.PermissionWithLibrari
 							}
 						}()))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 680, Col: 158}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 654, Col: 158}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 						if templ_7745c5c3_Err != nil {
@@ -1020,7 +1020,7 @@ func UserPermissionsEmpty() templ.Component {
 			templ_7745c5c3_Var37 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<div class=\"flex flex-col items-center justify-center py-8\"><uk-icon icon=\"user\" ratio=\"2\" class=\"text-gray-300\"></uk-icon><p class=\"mt-2 text-sm text-gray-500 text-center\">Select a user above to manage their permissions</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<div class=\"flex flex-col items-center justify-center py-8\"><uk-icon icon=\"user\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500 text-center\">Select a user above to manage their permissions</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1049,14 +1049,14 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 			templ_7745c5c3_Var38 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<div class=\"space-y-6\"><!-- Assigned Permissions Section --><div><div class=\"flex items-center justify-between mb-4\"><h4 class=\"text-lg font-medium text-gray-900\">Assigned to ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<div class=\"space-y-6\"><!-- Assigned Permissions Section --><div><div class=\"flex items-center justify-between mb-4\"><h4 class=\"text-lg font-medium\">Assigned to ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 709, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 683, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -1069,7 +1069,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(permissions)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 711, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 685, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -1080,7 +1080,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 			return templ_7745c5c3_Err
 		}
 		if len(permissions) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<div class=\"text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200\"><uk-icon icon=\"shield-off\" ratio=\"2\" class=\"text-gray-300\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">No permissions assigned to this user yet</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "<div class=\"text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed\"><uk-icon icon=\"shield-off\" ratio=\"2\"></uk-icon><p class=\"mt-2 text-sm text-gray-500\">No permissions assigned to this user yet</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1090,14 +1090,14 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 				return templ_7745c5c3_Err
 			}
 			for _, perm := range permissions {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<div class=\"uk-card uk-card-default uk-card-body w-full\"><div class=\"uk-card-body\"><div class=\"flex-1\"><div class=\"flex items-center space-x-3\"><h5 class=\"text-sm font-medium text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<div class=\"uk-card uk-card-default uk-card-body w-full\"><div class=\"uk-card-body\"><div class=\"flex-1\"><div class=\"flex items-center space-x-3\"><h5 class=\"text-sm font-medium\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var41 string
 				templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 728, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 702, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 				if templ_7745c5c3_Err != nil {
@@ -1130,14 +1130,14 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 						return templ_7745c5c3_Err
 					}
 				} else if len(perm.Libraries) > 0 {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<span class=\"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 126, "<span class=\"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var42 string
 					templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d libs", len(perm.Libraries)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 754, Col: 58}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 728, Col: 58}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 					if templ_7745c5c3_Err != nil {
@@ -1156,7 +1156,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 					var templ_7745c5c3_Var43 string
 					templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 761, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 735, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 					if templ_7745c5c3_Err != nil {
@@ -1168,14 +1168,14 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</p></div><button class=\"uk-btn uk-btn-destructive uk-btn-small\" hx-delete=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 130, "</p></div><button class=\"uk-btn uk-btn-destructive\" hx-delete=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var44 string
 				templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/users/%s/permissions/%d", username, perm.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 769, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 743, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 				if templ_7745c5c3_Err != nil {
@@ -1188,7 +1188,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 				var templ_7745c5c3_Var45 string
 				templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Revoke \"%s\" permission from %s?", perm.Name, username))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 771, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 745, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 				if templ_7745c5c3_Err != nil {
@@ -1204,7 +1204,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</div><!-- Assign New Permission Section --><div class=\"bg-gray-50 rounded-lg p-4\"><h4 class=\"text-md font-medium text-gray-900 mb-3\">Assign New Permission</h4>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "</div><!-- Assign New Permission Section --><div class=\"bg-gray-50 rounded-lg p-4\"><h4 class=\"font-medium mb-3\">Assign New Permission</h4>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1231,13 +1231,13 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 811, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 785, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "\"><div><label class=\"block text-sm font-medium text-gray-700 mb-2\">Choose Permission</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Choose Permission <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 137, "\"><div><label class=\"block text-sm font-medium mb-2\">Choose Permission</label><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default\" type=\"button\">Choose Permission <uk-icon icon=\"chevron-down\" ratio=\"0.8\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-52\" uk-dropdown=\"mode: click; animation: uk-animation-slide-top-small\"><ul class=\"uk-nav uk-dropdown-nav\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1250,7 +1250,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 					var templ_7745c5c3_Var47 string
 					templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"username\": \"%s\", \"permission_id\": \"%d\"}", username, perm.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 824, Col: 157}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 798, Col: 157}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 					if templ_7745c5c3_Err != nil {
@@ -1263,7 +1263,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 					var templ_7745c5c3_Var48 string
 					templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(perm.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 825, Col: 24}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 799, Col: 24}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 					if templ_7745c5c3_Err != nil {
@@ -1288,7 +1288,7 @@ func UserPermissionsList(username string, permissions []models.PermissionWithLib
 							}
 						}()))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 829, Col: 158}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 803, Col: 158}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 						if templ_7745c5c3_Err != nil {
@@ -1339,20 +1339,20 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 		for _, username := range usersWithPerm {
 			assignedMap[username] = true
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title uk-margin-remove\">Bulk Assign: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 145, "<div class=\"uk-modal-header permissions-modal-header\"><h2 class=\"uk-modal-title\">Bulk Assign: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var51 string
 		templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(permission.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 852, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 826, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><div class=\"uk-modal-body\"><div class=\"uk-margin-bottom\"><div class=\"uk-alert uk-alert-primary\"><uk-icon icon=\"info\" ratio=\"0.8\"></uk-icon> <strong>About this permission:</strong> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 146, "</h2><button class=\"uk-modal-close\" type=\"button\" uk-close></button></div><div class=\"uk-modal-body\"><div><div class=\"uk-alert uk-alert-primary\"><uk-icon icon=\"info\" ratio=\"0.8\"></uk-icon> <strong>About this permission:</strong> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1360,7 +1360,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 			var templ_7745c5c3_Var52 string
 			templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(permission.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 862, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 836, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 			if templ_7745c5c3_Err != nil {
@@ -1389,7 +1389,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Libraries", len(permission.Libraries)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 870, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 844, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1413,23 +1413,23 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 		var templ_7745c5c3_Var54 string
 		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/permissions/%d/bulk-assign", permission.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 883, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 857, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "\" hx-swap=\"none\"><div class=\"uk-margin\"><label class=\"uk-form-label uk-text-bold\"><uk-icon icon=\"users\" ratio=\"0.8\"></uk-icon> Select Users to Assign</label> <small class=\"uk-text-muted uk-margin-small-left\">Users who already have this permission are shown but cannot be modified</small> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 154, "\" hx-swap=\"none\"><div class=\"uk-margin\"><label class=\"uk-form-label\"><uk-icon icon=\"users\" ratio=\"0.8\"></uk-icon> Select Users to Assign</label> <small class=\"uk-text-muted uk-margin-small-left\">Users who already have this permission are shown but cannot be modified</small> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(users) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<div class=\"uk-alert uk-alert-warning uk-text-center\"><uk-icon icon=\"warning\" ratio=\"0.8\"></uk-icon> No users available</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 155, "<div class=\"uk-alert uk-text-center\"><uk-icon icon=\"warning\" ratio=\"0.8\"></uk-icon> No users available</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll-large\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex uk-flex-between uk-flex-middle\"><small class=\"uk-text-muted\">Choose users to grant this permission to</small><div><button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default\" onclick=\"selectAllUsers(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-small uk-btn-default uk-margin-small-left\" onclick=\"clearAllUsers(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 156, "<div class=\"uk-card uk-card-default uk-card-body permissions-card-scroll-large\"><div class=\"uk-margin-small-bottom\"><div class=\"uk-flex\"><small class=\"uk-text-muted\">Choose users to grant this permission to</small><div><button type=\"button\" class=\"uk-btn uk-btn-default\" onclick=\"selectAllUsers(this)\">Select All</button> <button type=\"button\" class=\"uk-btn uk-btn-default uk-margin-small-left\" onclick=\"clearAllUsers(this)\">Clear All</button></div></div></div><div class=\"uk-grid-small uk-child-width-1-2@m uk-child-width-1-1@s\" uk-grid>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1439,7 +1439,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var55 = []any{"uk-flex uk-flex-middle uk-padding-small hoverable-label", templ.KV("uk-text-muted", hasPermission), templ.KV("uk-background-muted", hasPermission)}
+				var templ_7745c5c3_Var55 = []any{"uk-flex uk-padding-small hoverable-label", templ.KV("uk-text-muted", hasPermission), templ.KV("uk-background-muted", hasPermission)}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var55...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1457,14 +1457,14 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\" style=\"border-radius: 4px; cursor: pointer;\"><input class=\"uk-checkbox uk-margin-small-right user-checkbox\" type=\"checkbox\" name=\"usernames[]\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 159, "\" style=\"border-radius: 4px; cursor: pointer;\"><input class=\"uk-checkbox user-checkbox\" type=\"checkbox\" name=\"usernames[]\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var57 string
 				templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 916, Col: 31}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 890, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 				if templ_7745c5c3_Err != nil {
@@ -1480,14 +1480,14 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "><div class=\"uk-flex uk-flex-middle uk-flex-wrap permissions-flex-gap\"><span class=\"uk-text-bold\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 162, "><div class=\"uk-flex uk-flex-wrap permissions-flex-gap\"><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var58 string
 				templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(user.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 923, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/permissions.templ`, Line: 897, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 				if templ_7745c5c3_Err != nil {
@@ -1509,7 +1509,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 					}
 				}
 				if hasPermission {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<span class=\"uk-label uk-label-success uk-label-small\">Assigned</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 166, "<span class=\"uk-label uk-label-small\">Assigned</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1524,7 +1524,7 @@ func BulkAssignForm(permission *models.PermissionWithLibraries, users []models.U
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close uk-margin-small-right\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> Assign to Selected Users</button></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div><div class=\"mt-4 uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\"><uk-icon icon=\"close\" ratio=\"0.8\"></uk-icon> Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\"><uk-icon icon=\"check\" ratio=\"0.8\"></uk-icon> Assign to Selected Users</button></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

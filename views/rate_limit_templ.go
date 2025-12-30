@@ -54,7 +54,7 @@ func RateLimit(seconds int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</strong>.</p><p class=\"mb-4 text-lg font-light text-on-surface-variant dark:text-on-surface-variant\">This helps protect the server from abuse.</p><a href=\"/\" class=\"inline-flex text-on-primary bg-primary hover:bg-primary focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-primary my-4\">Back to Homepage</a></div></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</strong>.</p><p class=\"mb-4 text-lg font-light text-on-surface-variant dark:text-on-surface-variant\">This helps protect the server from abuse.</p><a href=\"/\" class=\"inline-flex text-on-primary bg-primary hover:bg-primary focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-primary my-4\">Back to Homepage</a></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

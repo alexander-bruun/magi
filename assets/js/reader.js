@@ -63,6 +63,29 @@
         try { localStorage.removeItem(key); } catch (e) { console.warn(`Failed to remove ${key}:`, e); }
     };
 
+    // Mobile detection
+    const isMobile = () => window.innerWidth <= 768;
+
+    const updateContainerWidth = () => {
+        const ukContainer = containerElement.closest('.uk-container');
+        const mainContent = containerElement.closest('main');
+        if (containerElement) {
+            if (isMobile()) {
+                containerElement.style.width = '100vw';
+                containerElement.style.position = 'relative';
+                containerElement.style.left = '50%';
+                containerElement.style.transform = 'translateX(-50%)';
+                containerElement.style.maxWidth = 'none';
+            } else {
+                containerElement.style.width = '';
+                containerElement.style.position = '';
+                containerElement.style.left = '';
+                containerElement.style.transform = '';
+                containerElement.style.maxWidth = '';
+            }
+        }
+    };
+
     // Light novel functions
     const loadNovelSettings = () => {
         const saved = loadFromStorage(NOVEL_SETTINGS_KEY);
@@ -553,6 +576,8 @@
                 }
             });
         }
+        // Handle uk-container width on mobile for full-width images
+        updateContainerWidth();
         attachImageListeners();
         updatePageCounter();
         const pagination = document.getElementById('reader-pagination');
@@ -634,7 +659,15 @@
     const attachImageListeners = () => {
         containerElement.querySelectorAll('.reader-image').forEach(img => {
             if (!img.openFocusListener) {
-                img.openFocusListener = () => openFocusModal(img);
+                img.openFocusListener = () => {
+                    if (isMobile()) {
+                        // On mobile, scroll down slightly instead of opening focus modal
+                        const scrollAmount = window.innerHeight * 0.75; // Scroll down by 3/4 viewport height
+                        window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+                    } else {
+                        openFocusModal(img);
+                    }
+                };
                 img.addEventListener('click', img.openFocusListener);
             }
         });
@@ -714,7 +747,7 @@
             switch (e.key) {
                 case 'ArrowRight': case ' ': nextPage(); break;
                 case 'ArrowLeft': prevPage(); break;
-                case 'f': case 'F': openFocusModal(); break;
+                case 'f': case 'F': if (!isMobile()) openFocusModal(); break;
                 case 'Escape': if (focusModal && focusModal.classList.contains('active')) closeFocusModal(); break;
             }
         });
@@ -746,6 +779,7 @@
             if (currentMode !== MODES.WEBTOON) {
                 centerPaginationToContent();
             }
+            updateContainerWidth();
         });
 
         // Light novel controls

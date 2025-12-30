@@ -5,10 +5,9 @@ import (
 )
 
 templ MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
-    @PageTitle("All Series")
+    @PageTitle("Series")
     @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Series", Href: "/series" },
+        { Label: "Series" },
     })
     <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Series</span></h2>
     <div id="media-listing">

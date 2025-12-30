@@ -99,6 +99,9 @@ func main() {
 				log.SetLevel(log.LevelInfo)
 			}
 
+			// Initialize console log streaming for admin panel
+			utils.InitializeConsoleLogger()
+
 			log.Info("Starting Magi!")
 
 			// Ensure dataDirectory is absolute

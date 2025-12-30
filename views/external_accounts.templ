@@ -39,8 +39,8 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                         <button class="uk-btn uk-btn-primary" type="submit">Save Credentials</button>
                     </form>
                     <div class="uk-alert uk-alert-primary uk-margin-small">
-                        <p class="uk-text-small"><strong>Important:</strong> When creating your MAL application, set the redirect URI to:</p>
-                        <code class="uk-text-small">http://localhost:3000/external/callback/mal</code>
+                        <p ><strong>Important:</strong> When creating your MAL application, set the redirect URI to:</p>
+                        <code >http://localhost:3000/external/callback/mal</code>
                     </div>
                     <p><small>Get your Client ID and Secret from <a href="https://myanimelist.net/apiconfig" target="_blank">MAL API Config</a></small></p>
                 } else if malAccount.AccessToken == "" || len(malAccount.AccessToken) < 30 {
@@ -80,8 +80,8 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                         <button class="uk-btn uk-btn-primary" type="submit">Save Credentials</button>
                     </form>
                     <div class="uk-alert uk-alert-primary uk-margin-small">
-                        <p class="uk-text-small"><strong>Important:</strong> When creating your AniList application, set the redirect URI to:</p>
-                        <code class="uk-text-small">http://localhost:3000/external/callback/anilist</code>
+                        <p ><strong>Important:</strong> When creating your AniList application, set the redirect URI to:</p>
+                        <code >http://localhost:3000/external/callback/anilist</code>
                     </div>
                     <p><small>Get your Client ID and Secret from <a href="https://anilist.co/settings/developer" target="_blank">AniList Developer Settings</a></small></p>
                 } else if anilistAccount.AccessToken == "" || len(anilistAccount.AccessToken) < 30 {

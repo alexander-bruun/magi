@@ -14,8 +14,7 @@ import (
 
 // ConsoleLogManager manages WebSocket connections for console log streaming
 type ConsoleLogManager struct {
-	clients       []*websocket.Conn
-	mu            sync.RWMutex
+	clients       sync.Map // *websocket.Conn -> struct{}
 	buffer        *logBuffer
 	captureActive bool
 }
@@ -53,7 +52,7 @@ func (lb *logBuffer) GetAll() []string {
 }
 
 var consoleLogManager = &ConsoleLogManager{
-	clients: make([]*websocket.Conn, 0),
+	clients: sync.Map{},
 	buffer:  newLogBuffer(1000), // Keep last 1000 log entries
 }
 
@@ -66,11 +65,11 @@ func (lw *logWriter) Write(p []byte) (n int, err error) {
 	// Broadcast to websockets
 	message := string(p)
 	message = strings.TrimRight(message, "\n")
-	
+
 	if message != "" {
 		// Store in buffer (message already contains timestamp from logger)
 		lw.manager.buffer.Add(message)
-		
+
 		// Broadcast to connected clients
 		lw.manager.broadcastLog("info", message)
 	}
@@ -80,10 +79,7 @@ func (lw *logWriter) Write(p []byte) (n int, err error) {
 
 // InitializeConsoleLogger sets up console log capture and streaming
 func InitializeConsoleLogger() {
-	consoleLogManager.mu.Lock()
-	
 	if consoleLogManager.captureActive {
-		consoleLogManager.mu.Unlock()
 		return
 	}
 
@@ -94,13 +90,12 @@ func InitializeConsoleLogger() {
 
 	// Create a multi-writer that writes to both stdout and our broadcaster
 	multiWriter := io.MultiWriter(os.Stdout, writer)
-	
+
 	// Set the log output to use our multi-writer
 	log.SetOutput(multiWriter)
 
 	consoleLogManager.captureActive = true
-	consoleLogManager.mu.Unlock()
-	
+
 	log.Debug("Console log streaming initialized")
 }
 
@@ -113,7 +108,15 @@ func HandleConsoleLogsWebSocket(c *websocket.Conn) {
 
 	log.Debug("WebSocket client connected for console logs")
 
-	// Only stream new logs, do not send buffered logs
+	// Send buffered logs to the new client
+	bufferedLogs := consoleLogManager.buffer.GetAll()
+	for _, logEntry := range bufferedLogs {
+		payload := createLogPayload("info", logEntry)
+		if err := c.WriteMessage(websocket.TextMessage, payload); err != nil {
+			log.Debugf("Failed to send buffered log to client: %v", err)
+			return
+		}
+	}
 
 	// Keep connection alive and wait for close
 	for {
@@ -129,14 +132,15 @@ func HandleConsoleLogsWebSocket(c *websocket.Conn) {
 
 // broadcastLog sends a log message to all connected clients
 func (clm *ConsoleLogManager) broadcastLog(logType string, message string) {
-	clm.mu.RLock()
-	if len(clm.clients) == 0 {
-		clm.mu.RUnlock()
+	var conns []*websocket.Conn
+	clm.clients.Range(func(key, value interface{}) bool {
+		conn := key.(*websocket.Conn)
+		conns = append(conns, conn)
+		return true
+	})
+	if len(conns) == 0 {
 		return
 	}
-	conns := make([]*websocket.Conn, len(clm.clients))
-	copy(conns, clm.clients)
-	clm.mu.RUnlock()
 
 	payload := createLogPayload(logType, message)
 
@@ -170,20 +174,10 @@ func escapeJSON(s string) string {
 }
 
 func registerConsoleClient(conn *websocket.Conn) {
-	consoleLogManager.mu.Lock()
-	defer consoleLogManager.mu.Unlock()
-	consoleLogManager.clients = append(consoleLogManager.clients, conn)
+	consoleLogManager.clients.Store(conn, struct{}{})
 }
 
 func unregisterConsoleClient(conn *websocket.Conn) {
-	consoleLogManager.mu.Lock()
-	defer consoleLogManager.mu.Unlock()
-
-	for i, c := range consoleLogManager.clients {
-		if c == conn {
-			consoleLogManager.clients = append(consoleLogManager.clients[:i], consoleLogManager.clients[i+1:]...)
-			conn.Close() // Close the connection
-			break
-		}
-	}
+	consoleLogManager.clients.Delete(conn)
+	conn.Close() // Close the connection
 }

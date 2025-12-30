@@ -14,7 +14,7 @@ templ ErrorWithStatus(statusCode int, message string) {
 				<h1 class="mb-4 text-7xl tracking-tight font-extrabold lg:text-9xl text-primary-600 dark:text-primary-500">
 					{ strconv.Itoa(statusCode) }?
 				</h1>
-				<p class="mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white">
+				<p class="mb-4 text-3xl tracking-tight font-bold md:text-4xl dark:text-white">
 					if statusCode == 404 {
 						Not Found
 					} else if statusCode == 400 {
@@ -23,7 +23,7 @@ templ ErrorWithStatus(statusCode int, message string) {
 						Something went wrong
 					}
 				</p>
-				<p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">
+				<p class="mb-4 text-lg font-light">
 					if statusCode == 404 {
 						Sorry, we couldn't find that resource.
 					} else if statusCode == 400 {
@@ -32,7 +32,7 @@ templ ErrorWithStatus(statusCode int, message string) {
 						Sorry, we failed to handle that request, please try again.
 					}
 				</p>
-				<p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">
+				<p class="mb-4 text-lg font-light">
 					Error: { message }
 				</p>
 				<a

@@ -3,6 +3,7 @@ package views
 import (
     "github.com/alexander-bruun/magi/models"
     "fmt"
+    "runtime"
 )
 
 templ Config(cfg models.AppConfig) {
@@ -26,7 +27,7 @@ templ ConfigForm() {
     <form hx-post="/admin/config" hx-target="this" hx-trigger="submit" hx-swap="outerHTML" class="space-y-6">
         <!-- General Settings Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>General Settings</span></h4>
+            <h4 class="uk-heading-line mb-2"><span>General Settings</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="allow_registration" checked?={ cfg.AllowRegistration } class="uk-checkbox" />
@@ -34,27 +35,59 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Disable to prevent any new users from signing up.</p>
             </div>
-            <div>
-                <label class="block mb-1">Max users (0 = unlimited)</label>
-                <input type="number" min="0" class="uk-input" name="max_users" value={ fmt.Sprintf("%d", cfg.MaxUsers) } />
-                {{ userCount, _ := models.CountUsers() }}
-                <p class="text-xs text-muted-foreground mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
-            </div>
-            <div>
-                <label class="block mb-1">Maximum Content Rating</label>
-                <select name="content_rating_limit" class="uk-select">
-                    <option value="0" selected?={ cfg.ContentRatingLimit == 0 }>Safe only</option>
-                    <option value="1" selected?={ cfg.ContentRatingLimit == 1 }>Suggestive (includes safe)</option>
-                    <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
-                    <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
-                </select>
-                <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                    <label class="block mb-1">Max users (0 = unlimited)</label>
+                    <input type="number" min="0" class="uk-input" name="max_users" value={ fmt.Sprintf("%d", cfg.MaxUsers) } />
+                    {{ userCount, _ := models.CountUsers() }}
+                    <p class="text-xs text-muted-foreground mt-1">Current users: { fmt.Sprintf("%d", userCount) }</p>
+                </div>
+                <div>
+                    <label class="block mb-1">Maximum Content Rating</label>
+                    <select name="content_rating_limit" class="uk-select">
+                        <option value="0" selected?={ cfg.ContentRatingLimit == 0 }>Safe only</option>
+                        <option value="1" selected?={ cfg.ContentRatingLimit == 1 }>Suggestive (includes safe)</option>
+                        <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
+                        <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
+                    </select>
+                    <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">NEW badge duration (hours)</label>
+                    <input type="number" min="1" class="uk-input" name="new_badge_duration" value={ fmt.Sprintf("%d", cfg.NewBadgeDuration) } />
+                    <p class="text-xs text-muted-foreground mt-1">Time in hours that media is marked with a NEW badge after being updated.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">Metadata provider</label>
+                    <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
+                        <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
+                        <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
+                        <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
+                        <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
+                        <option value="mangaupdates" selected?={ cfg.MetadataProvider == "mangaupdates" }>MangaUpdates (Free, No Auth Required)</option>
+                        <option value="kitsu" selected?={ cfg.MetadataProvider == "kitsu" }>Kitsu (Free, No Auth Required)</option>
+                    </select>
+                    <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching media information.</p>
+                </div>
+                <!-- MAL API Token -->
+                <div id="mal-token-field" class="mt-4" style="display: none;">
+                    <label class="block mb-1 mt-2">MyAnimeList Client ID</label>
+                    <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
+                    <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
+                </div>
+                
+                <!-- AniList API Token -->
+                <div id="anilist-token-field" class="mt-4" style="display: none;">
+                    <label class="block mb-1 mt-2">AniList Access Token (Optional)</label>
+                    <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
+                    <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
+                </div>
             </div>
         </div>
         
         <!-- Maintenance Mode Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Maintenance Mode</span></h4>
+            <h4 class="uk-heading-line mb-2"><span>Maintenance Mode</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="maintenance_enabled" checked?={ cfg.MaintenanceEnabled } class="uk-checkbox" />
@@ -62,46 +95,16 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">When enabled, displays a maintenance page to all users (admins can still access the site).</p>
             </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Maintenance message</label>
+            <div>
+                <label class="block mb-1 mt-2">Maintenance message</label>
                 <textarea name="maintenance_message" class="uk-textarea" rows="6" placeholder="We are currently performing maintenance. Please check back later.">{ cfg.MaintenanceMessage }</textarea>
                 <p class="text-xs text-muted-foreground mt-1">Supports Markdown and raw HTML for rich formatting. This message will be displayed on the maintenance page.</p>
             </div>
         </div>
         
-        <!-- Metadata Provider Card -->
-        <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Metadata Provider</span></h4>
-            <div class="uk-margin">
-                <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
-                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
-                    <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
-                    <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
-                    <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
-                    <option value="mangaupdates" selected?={ cfg.MetadataProvider == "mangaupdates" }>MangaUpdates (Free, No Auth Required)</option>
-                    <option value="kitsu" selected?={ cfg.MetadataProvider == "kitsu" }>Kitsu (Free, No Auth Required)</option>
-                </select>
-                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching media information.</p>
-            </div>
-            
-            <!-- MAL API Token -->
-            <div id="mal-token-field" class="uk-margin" style="display: none;">
-                <label class="block mb-1">MyAnimeList Client ID</label>
-                <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
-                <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
-            </div>
-            
-            <!-- AniList API Token -->
-            <div id="anilist-token-field" class="uk-margin" style="display: none;">
-                <label class="block mb-1">AniList Access Token (Optional)</label>
-                <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
-                <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
-            </div>
-        </div>
-        
         <!-- Stripe Payment Settings Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Stripe Payment Settings</span></h4>
+            <h4 class="uk-heading-line mb-2"><span>Stripe Payment Settings</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="stripe_enabled" checked?={ cfg.StripeEnabled } class="uk-checkbox" />
@@ -109,26 +112,28 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Enable Stripe integration for premium subscriptions.</p>
             </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Stripe Publishable Key</label>
-                <input type="text" class="uk-input" name="stripe_publishable_key" value={ cfg.StripePublishableKey } placeholder="pk_test_..." />
-                <p class="text-xs text-muted-foreground mt-1">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Stripe Secret Key</label>
-                <input type="password" class="uk-input" name="stripe_secret_key" value={ cfg.StripeSecretKey } placeholder="sk_test_..." />
-                <p class="text-xs text-muted-foreground mt-1">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Stripe Webhook Secret</label>
-                <input type="password" class="uk-input" name="stripe_webhook_secret" value={ cfg.StripeWebhookSecret } placeholder="whsec_..." />
-                <p class="text-xs text-muted-foreground mt-1">Webhook endpoint secret for verifying Stripe webhook signatures.</p>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block mb-1 mt-2">Stripe Publishable Key</label>
+                    <input type="text" class="uk-input" name="stripe_publishable_key" value={ cfg.StripePublishableKey } placeholder="pk_test_..." />
+                    <p class="text-xs text-muted-foreground mt-1">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Stripe Secret Key</label>
+                    <input type="password" class="uk-input" name="stripe_secret_key" value={ cfg.StripeSecretKey } placeholder="sk_test_..." />
+                    <p class="text-xs text-muted-foreground mt-1">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Stripe Webhook Secret</label>
+                    <input type="password" class="uk-input" name="stripe_webhook_secret" value={ cfg.StripeWebhookSecret } placeholder="whsec_..." />
+                    <p class="text-xs text-muted-foreground mt-1">Webhook endpoint secret for verifying Stripe webhook signatures.</p>
+                </div>
             </div>
         </div>
         
         <!-- Rate Limiting Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Rate Limiting</span></h4>
+            <h4 class="uk-heading-line mb-2"><span>Rate Limiting</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="rate_limit_enabled" checked?={ cfg.RateLimitEnabled } class="uk-checkbox" />
@@ -136,21 +141,23 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Limit the number of requests per IP address to prevent abuse.</p>
             </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Requests per window</label>
-                <input type="number" min="1" class="uk-input" name="rate_limit_requests" value={ fmt.Sprintf("%d", cfg.RateLimitRequests) } />
-                <p class="text-xs text-muted-foreground mt-1">Maximum number of requests allowed per time window.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Time window (seconds)</label>
-                <input type="number" min="1" class="uk-input" name="rate_limit_window" value={ fmt.Sprintf("%d", cfg.RateLimitWindow) } />
-                <p class="text-xs text-muted-foreground mt-1">Time window in seconds for rate limiting.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 mt-2">Requests per window</label>
+                    <input type="number" min="1" class="uk-input" name="rate_limit_requests" value={ fmt.Sprintf("%d", cfg.RateLimitRequests) } />
+                    <p class="text-xs text-muted-foreground mt-1">Maximum number of requests allowed per time window.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Time window (seconds)</label>
+                    <input type="number" min="1" class="uk-input" name="rate_limit_window" value={ fmt.Sprintf("%d", cfg.RateLimitWindow) } />
+                    <p class="text-xs text-muted-foreground mt-1">Time window in seconds for rate limiting.</p>
+                </div>
             </div>
         </div>
         
         <!-- Bot Detection Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Bot Detection</span></h4>
+            <h4 class="uk-heading-line mb-2"><span>Bot Detection</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" name="bot_detection_enabled" checked?={ cfg.BotDetectionEnabled } class="uk-checkbox" />
@@ -158,121 +165,108 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Automatically detect and ban IPs that access too many series/chapters in sequence.</p>
             </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Series access threshold</label>
-                <input type="number" min="1" class="uk-input" name="bot_series_threshold" value={ fmt.Sprintf("%d", cfg.BotSeriesThreshold) } />
-                <p class="text-xs text-muted-foreground mt-1">Maximum series page accesses allowed per time window before banning.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Chapter access threshold</label>
-                <input type="number" min="1" class="uk-input" name="bot_chapter_threshold" value={ fmt.Sprintf("%d", cfg.BotChapterThreshold) } />
-                <p class="text-xs text-muted-foreground mt-1">Maximum chapter page accesses allowed per time window before banning.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Detection window (seconds)</label>
-                <input type="number" min="1" class="uk-input" name="bot_detection_window" value={ fmt.Sprintf("%d", cfg.BotDetectionWindow) } />
-                <p class="text-xs text-muted-foreground mt-1">Time window in seconds for bot detection monitoring.</p>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block mb-1 mt-2">Series access threshold</label>
+                    <input type="number" min="1" class="uk-input" name="bot_series_threshold" value={ fmt.Sprintf("%d", cfg.BotSeriesThreshold) } />
+                    <p class="text-xs text-muted-foreground mt-1">Maximum series page accesses allowed per time window before banning.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Chapter access threshold</label>
+                    <input type="number" min="1" class="uk-input" name="bot_chapter_threshold" value={ fmt.Sprintf("%d", cfg.BotChapterThreshold) } />
+                    <p class="text-xs text-muted-foreground mt-1">Maximum chapter page accesses allowed per time window before banning.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Detection window (seconds)</label>
+                    <input type="number" min="1" class="uk-input" name="bot_detection_window" value={ fmt.Sprintf("%d", cfg.BotDetectionWindow) } />
+                    <p class="text-xs text-muted-foreground mt-1">Time window in seconds for bot detection monitoring.</p>
+                </div>
             </div>
         </div>
         
         <!-- Compression Quality Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Compression Quality</span></h4>
-            <p class="text-sm text-muted-foreground mb-4">Configure image compression quality for different user roles. Higher values produce better image quality but larger file sizes.</p>
-            <div class="uk-margin">
-                <label class="block mb-2">Anonymous compression quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="anonymous-value">{ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) }</span>
-                </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p>
+            <h4 class="uk-heading-line mb-2"><span>Image Settings</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="disable_webp_conversion" checked?={ runtime.GOOS == "darwin" || cfg.DisableWebpConversion } class="uk-checkbox" if runtime.GOOS == "darwin" { disabled } />
+                    <span>Disable WebP conversion</span>
+                    if runtime.GOOS == "darwin" {
+                        <span class="text-xs text-amber-600 ml-2">(Required on macOS - no WebP support)</span>
+                    }
+                </label>
+                <p class="text-xs text-muted-foreground">When enabled, images will be stored in their original format instead of being converted to WebP.</p>
             </div>
-            <div class="uk-margin">
-                <label class="block mb-2">Reader compression quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="reader-value">{ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) }</span>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mt-2">Anonymous compression quality</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
+                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="anonymous-value">{ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) }</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Image quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for users with reader role. Higher values = better quality but larger files.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-2">Moderator compression quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="moderator-value">{ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) }</span>
+                <div>
+                    <label class="block mt-2">Reader compression quality</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
+                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="reader-value">{ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) }</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Image quality for users with reader role. Higher values = better quality but larger files.</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for users with moderator role. Higher values = better quality but larger files.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-2">Premium compression quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="premium-value">{ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) }</span>
+                <div>
+                    <label class="block mt-2">Moderator compression quality</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
+                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="moderator-value">{ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) }</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Image quality for users with moderator role. Higher values = better quality but larger files.</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for users with premium role. Higher values = better quality but larger files.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-2">Admin compression quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="admin-value">{ fmt.Sprintf("%d", cfg.AdminCompressionQuality) }</span>
+                <div>
+                    <label class="block mt-2">Premium compression quality</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
+                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="premium-value">{ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) }</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Image quality for users with premium role. Higher values = better quality but larger files.</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for users with admin role. Higher values = better quality but larger files.</p>
-            </div>
-        </div>
-        
-        <!-- Image Processing Settings Card -->
-        <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Image Processing Settings</span></h4>
-            <div class="uk-margin">
-                <label class="block mb-2">Processed image quality</label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" name="processed_image_quality" value={ fmt.Sprintf("%d", cfg.ProcessedImageQuality) } id="processed-slider" />
-                    <span class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[3rem] text-center" id="processed-value">{ fmt.Sprintf("%d", cfg.ProcessedImageQuality) }</span>
+                <div>
+                    <label class="block mt-2">Admin compression quality</label>
+                    <div class="flex items-center space-x-4">
+                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
+                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="admin-value">{ fmt.Sprintf("%d", cfg.AdminCompressionQuality) }</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">Image quality for users with admin role. Higher values = better quality but larger files.</p>
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">Image quality for processed images (thumbnails, covers) stored on disk. Higher values = better quality but larger files.</p>
-            </div>
-        </div>
-        
-        <!-- Image Access Settings Card -->
-        <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Image Access Settings</span></h4>
-            <div class="uk-margin">
-                <label class="block mb-1">Image token validity (minutes)</label>
-                <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
-                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
+                <div>
+                    <label class="block mb-1 mt-2">Image token validity (minutes)</label>
+                    <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
+                    <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
+                </div>
             </div>
         </div>
         
         <!-- Premium Features Card -->
         <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Premium Features</span></h4>
-            <div class="uk-margin">
-                <label class="block mb-1">Premium early access duration (seconds)</label>
-                <input type="number" min="0" class="uk-input" name="premium_early_access_duration" value={ fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration) } />
-                <p class="text-xs text-muted-foreground mt-1">Time in seconds that premium users can access chapters before their release time.</p>
-            </div>
-            <div class="uk-margin">
-                <label class="block mb-1">Maximum premium chapters</label>
-                <input type="number" min="0" class="uk-input" name="max_premium_chapters" value={ fmt.Sprintf("%d", cfg.MaxPremiumChapters) } />
-                <p class="text-xs text-muted-foreground mt-1">Maximum number of the most recent chapters that can be marked as premium.</p>
-            </div>
-            <div class="uk-margin">
+            <h4 class="uk-heading-line mb-2"><span>Premium Features</span></h4>
+            <div class="uk-margin mt-2">
                 <label class="uk-form-label">
                     <input type="checkbox" class="uk-checkbox" name="premium_cooldown_scaling_enabled" if cfg.PremiumCooldownScalingEnabled { checked } />
                     Enable premium cooldown scaling
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p>
             </div>
-        </div>
-        
-        <!-- Badge Display Settings Card -->
-        <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-4"><span>Badge Display Settings</span></h4>
-            <div class="uk-margin">
-                <label class="block mb-1">NEW badge duration (hours)</label>
-                <input type="number" min="1" class="uk-input" name="new_badge_duration" value={ fmt.Sprintf("%d", cfg.NewBadgeDuration) } />
-                <p class="text-xs text-muted-foreground mt-1">Time in hours that media is marked with a NEW badge after being updated.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 mt-2">Premium early access duration (seconds)</label>
+                    <input type="number" min="0" class="uk-input" name="premium_early_access_duration" value={ fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration) } />
+                    <p class="text-xs text-muted-foreground mt-1">Time in seconds that premium users can access chapters before their release time.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Maximum premium chapters</label>
+                    <input type="number" min="0" class="uk-input" name="max_premium_chapters" value={ fmt.Sprintf("%d", cfg.MaxPremiumChapters) } />
+                    <p class="text-xs text-muted-foreground mt-1">Maximum number of the most recent chapters that can be marked as premium.</p>
+                </div>
             </div>
         </div>
         
@@ -292,15 +286,37 @@ templ ConfigForm() {
         document.getElementById('moderator-slider').addEventListener('input', function() {
             document.getElementById('moderator-value').textContent = this.value;
         });
+        document.getElementById('premium-slider').addEventListener('input', function() {
+            document.getElementById('premium-value').textContent = this.value;
+        });
         document.getElementById('admin-slider').addEventListener('input', function() {
             document.getElementById('admin-value').textContent = this.value;
         });
         document.getElementById('anonymous-slider').addEventListener('input', function() {
             document.getElementById('anonymous-value').textContent = this.value;
         });
-        document.getElementById('processed-slider').addEventListener('input', function() {
-            document.getElementById('processed-value').textContent = this.value;
-        });
+
+        // Handle compression disable/enable
+        const compressionCheckbox = document.getElementById('disable-compression-checkbox');
+        const sliders = [
+            'reader-slider', 'moderator-slider', 'admin-slider', 'anonymous-slider', 'premium-slider'
+        ];
+
+        function toggleSliders() {
+            const disabled = compressionCheckbox.checked;
+            sliders.forEach(id => {
+                const slider = document.getElementById(id);
+                if (slider) {
+                    slider.disabled = disabled;
+                }
+            });
+        }
+
+        // Initial state
+        toggleSliders();
+
+        // Listen for changes
+        compressionCheckbox.addEventListener('change', toggleSliders);
     </script>
 }
 
@@ -310,7 +326,7 @@ templ ConsoleLogs() {
         <div class="flex place-content-center">
             <div class="w-full px-4">
                 <div class="uk-card p-4">
-                    <div id="console-logs-container" class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm h-96 overflow-y-auto">
+                    <div id="console-logs-container" class="p-4 rounded text-sm h-96 overflow-y-auto">
                         <div id="console-logs-output" class="config-console-logs"></div>
                     </div>
                 </div>

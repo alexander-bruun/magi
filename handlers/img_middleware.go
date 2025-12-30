@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	imgCache   = make(map[string]string) // path -> data URI
-	imgCacheMu sync.RWMutex
+	imgCache sync.Map // string -> []byte, concurrent
 )
 
 // InitImgCache pre-loads image files as base64 data URIs
@@ -29,11 +28,15 @@ func InitImgCache(assetsPath string) error {
 
 	dataURI := "data:image/webp;base64," + base64.StdEncoding.EncodeToString(content)
 
-	imgCacheMu.Lock()
-	imgCache["/assets/img/icon.webp"] = dataURI
-	imgCacheMu.Unlock()
+	imgCache.Store("/assets/img/icon.webp", dataURI)
 
-	log.Infof("Image cache initialized with %d files", len(imgCache))
+	// Count entries in sync.Map
+	count := 0
+	imgCache.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	log.Infof("Image cache initialized with %d files", count)
 	return nil
 }
 
@@ -63,11 +66,12 @@ func ImgMiddleware() fiber.Handler {
 
 		html := string(body)
 
-		imgCacheMu.RLock()
-		for urlPath, dataURI := range imgCache {
+		imgCache.Range(func(key, value interface{}) bool {
+			urlPath := key.(string)
+			dataURI := value.(string)
 			html = strings.ReplaceAll(html, `"`+urlPath+`"`, `"`+dataURI+`"`)
-		}
-		imgCacheMu.RUnlock()
+			return true
+		})
 
 		c.Response().SetBody([]byte(html))
 		return nil

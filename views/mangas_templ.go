@@ -33,13 +33,12 @@ func MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = PageTitle("All Series").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = PageTitle("Series").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{
-			{Label: "Home", Href: "/"},
-			{Label: "Series", Href: "/series"},
+			{Label: "Series"},
 		}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

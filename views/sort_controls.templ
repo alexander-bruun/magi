@@ -84,7 +84,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 </form>
             
             <div class="uk-inline mr-2">
-                <button class="uk-btn uk-btn-default uk-btn-small" type="button" uk-toggle="target: #sort-dropdown">
+                <button class="uk-btn uk-btn-default" type="button" uk-toggle="target: #sort-dropdown">
                     if currentSort == "" {
                         Sort by
                     } else if currentSort == "name" || currentSort == "title" {
@@ -130,7 +130,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
             <div class="uk-inline search-input-container">
                 <input
                     id="search-input"
-                    class="uk-input uk-form-small search-input"
+                    class="uk-input search-input"
                     type="text"
                     name="search"
                     placeholder="Search by title..."
@@ -145,7 +145,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 if searchFilter != "" {
                     <button
                         type="button"
-                        class="uk-btn uk-btn-icon uk-btn-small search-clear-btn"
+                        class="uk-btn uk-btn-icon search-clear-btn"
                         hx-get={ path }
                         hx-target={ "#" + targetID }
                         hx-include="#sort-controls-form"
@@ -177,7 +177,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 {{ toggled = "asc" }}
             }
             <button
-                class="uk-btn uk-btn-default uk-btn-small uk-btn-icon btn-circular"
+                class="uk-btn uk-btn-default uk-btn-icon btn-circular"
                 hx-get={ path }
                 hx-target={ "#" + parentID }
                 hx-include="#sort-controls-form, #search-input"
@@ -199,15 +199,15 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
 // TagsDropdownButton renders inline tag filter button with dropdown
 templ TagsDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string) {
     <div class="uk-inline filter-dropdown-inline">
-        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by tags">
+        <button id="tag-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by tags">
             <uk-icon icon="Tag"></uk-icon>
         </button>
-        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
-                <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center filter-controls-center">
+                <div class="uk-margin-small">
+                    <div class="uk-text-center filter-controls-center">
                         <div class="uk-inline">
-                            <div class="uk-btn-group uk-width-auto">
+                            <div class="uk-btn-group">
                                 @TagModeToggleButtonInline(path, targetID, parentID, tagMode)
                                 @TagApplyButton(path, targetID, parentID)
                                 @TagClearButton(path, targetID, parentID)
@@ -231,7 +231,7 @@ templ TagModeToggleButtonInline(path string, targetID string, parentID string, t
     } else {
         {{ nextMode = "any" }}
     }
-    <button type="button" class="uk-btn uk-btn-default uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-default uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + parentID }
         hx-include="#sort-controls-form, #tag-filter-form input[name=tags], #search-input"
@@ -250,7 +250,7 @@ templ TagModeToggleButtonInline(path string, targetID string, parentID string, t
 }
 
 templ TagApplyButton(path string, targetID string, parentID string) {
-    <button type="button" class="uk-btn uk-btn-primary uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-primary uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + parentID }
         hx-include="#sort-controls-form, #tag-filter-form"
@@ -266,7 +266,7 @@ templ TagApplyButton(path string, targetID string, parentID string) {
 }
 
 templ TagClearButton(path string, targetID string, parentID string) {
-    <button type="button" class="uk-btn uk-btn-destructive uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-destructive uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + parentID }
         hx-include="#sort-controls-form"
@@ -284,15 +284,15 @@ templ TagClearButton(path string, targetID string, parentID string) {
 // TypesDropdownButton renders inline type filter button with dropdown
 templ TypesDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTypes []string, allTypes []string) {
     <div class="uk-inline filter-dropdown-inline">
-        <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon uk-btn-small" type="button" aria-label="Filter by types">
+        <button id="type-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by types">
             <uk-icon icon="Filter"></uk-icon>
         </button>
-        <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 uk-border-rounded uk-box-shadow-small p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
+        <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="type-filter-form" class="uk-form">
-                <div class="uk-width-1-1 uk-margin-small">
-                    <div class="uk-flex-center uk-flex-middle uk-text-center filter-controls-center">
+                <div class="uk-margin-small">
+                    <div class="uk-text-center filter-controls-center">
                         <div class="uk-inline">
-                            <div class="uk-btn-group uk-width-auto">
+                            <div class="uk-btn-group">
                                 @TypeApplyButton(path, targetID, parentID)
                                 @TypeClearButton(path, targetID, parentID)
                             </div>
@@ -308,7 +308,7 @@ templ TypesDropdownButton(path string, targetID string, parentID string, current
 }
 
 templ TypeApplyButton(path string, targetID string, parentID string) {
-    <button type="button" class="uk-btn uk-btn-primary uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-primary uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + parentID }
         hx-include="#sort-controls-form, #type-filter-form"
@@ -324,7 +324,7 @@ templ TypeApplyButton(path string, targetID string, parentID string) {
 }
 
 templ TypeClearButton(path string, targetID string, parentID string) {
-    <button type="button" class="uk-btn uk-btn-destructive uk-btn-small uk-btn-icon"
+    <button type="button" class="uk-btn uk-btn-destructive uk-btn-icon"
         hx-get={ path }
         hx-target={ "#" + parentID }
         hx-include="#sort-controls-form"

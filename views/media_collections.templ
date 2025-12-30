@@ -13,7 +13,7 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 			if len(userCollections) == 0 {
 				<div class="text-center py-8">
 					<div class="flex items-center justify-center mb-4">
-						<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+						<uk-icon icon="folder" ratio="3" class="mr-4"></uk-icon>
 						<h2 class="text-xl font-semibold">No collections yet</h2>
 					</div>
 					<p class=" mb-4">Create your first collection to organize your favorite series.</p>
@@ -46,7 +46,7 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 							if inCollection {
 								<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" hx-ext="form-json" class="ml-4">
 									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
-									<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small">
+									<button type="submit" class="uk-btn uk-btn-destructive">
 										<uk-icon icon="x"></uk-icon>
 										Remove
 									</button>
@@ -54,7 +54,7 @@ templ MediaCollections(mediaSlug string, userCollections []models.Collection, me
 							} else {
 								<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" hx-ext="form-json" class="ml-4">
 									<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
-									<button type="submit" class="uk-btn uk-btn-primary uk-btn-small">
+									<button type="submit" class="uk-btn uk-btn-primary">
 										<uk-icon icon="plus"></uk-icon>
 										Add
 									</button>

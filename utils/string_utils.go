@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -20,32 +19,15 @@ import (
 
 // Pre-compiled regexes for performance
 var complexPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`v\d+\s*-\s*v\d+`),                // Removing patterns like 'v1 - v2' or 'v12 - v34'
-	regexp.MustCompile(`c\d+\s*-\s*c\d+`),                // Removing patterns like 'c1 - c2' or 'c10 - c20'
-	regexp.MustCompile(`v\d+\s*-\s*\d+`),                 // Removing patterns like 'v1 - 2' or 'v12 - 34'
-	regexp.MustCompile(`c\d+\s*-\s*\d+`),                 // Removing patterns like 'c1 - 2' or 'c10 - 34'
-	regexp.MustCompile(`\b\d{1,2}-\d{1,2}\b`),            // Removing patterns like '12-34' or '1-9'
-	regexp.MustCompile(`\b\d{3,}-\d{3,}\b`),              // Removing patterns like '000-305' or '123-456'
+	regexp.MustCompile(`[vc]\d+\s*-\s*[vc]?\d+`),         // Removing patterns like 'v1 - v2', 'c1 - c2', 'v1 - 2', 'c1 - 2'
+	regexp.MustCompile(`\b\d+-\d+\b`),                    // Removing patterns like '12-34', '000-305', '1-9', '123-456'
 	regexp.MustCompile(`Vol\.\s*\d+\s*\+\s*Vol\.\s*\d+`), // Removing patterns like 'Vol. 1 + Vol. 2'
 	regexp.MustCompile(`\sS\d+\b`),                       // Removing patterns like ' S1' or ' S12'
 	regexp.MustCompile(`\bVolumes?\d+-\d+\+\w+\b`),       // Removing patterns like 'Volume1-2+ABC'
 }
 
-// Simple cache for RemovePatterns results
-var removePatternsCache = make(map[string]string)
-var cacheMutex sync.RWMutex
-const maxCacheSize = 10000
-
 // RemovePatterns applies custom parsing to clean up the path string.
 func RemovePatterns(path string) string {
-	// Check cache first (read lock)
-	cacheMutex.RLock()
-	if cached, exists := removePatternsCache[path]; exists {
-		cacheMutex.RUnlock()
-		return cached
-	}
-	cacheMutex.RUnlock()
-
 	// Process the path
 	processed := path
 	processed = removeParenthesesContent(processed)
@@ -60,21 +42,6 @@ func RemovePatterns(path string) string {
 	if strings.HasSuffix(processed, ", The") {
 		processed = "The " + strings.TrimSuffix(processed, ", The")
 	}
-
-	// Cache the result (write lock)
-	cacheMutex.Lock()
-	defer cacheMutex.Unlock()
-	
-	// Double-check the cache in case another goroutine added it
-	if cached, exists := removePatternsCache[path]; exists {
-		return cached
-	}
-	
-	// Cache the result (simple eviction by clearing when full)
-	if len(removePatternsCache) >= maxCacheSize {
-		removePatternsCache = make(map[string]string)
-	}
-	removePatternsCache[path] = processed
 
 	return processed
 }
@@ -260,16 +227,16 @@ func SimilarityRatio(s1, s2 string) float64 {
 	// Normalize to lowercase for comparison
 	s1Lower := strings.ToLower(s1)
 	s2Lower := strings.ToLower(s2)
-	
+
 	maxLen := len(s1Lower)
 	if len(s2Lower) > maxLen {
 		maxLen = len(s2Lower)
 	}
-	
+
 	if maxLen == 0 {
 		return 1.0
 	}
-	
+
 	distance := LevenshteinDistance(s1Lower, s2Lower)
 	return 1.0 - float64(distance)/float64(maxLen)
 }
@@ -306,16 +273,16 @@ func MarkdownToHTML(markdown string) template.HTML {
 
 	md := goldmark.New(
 		goldmark.WithExtensions(
-			extension.GFM,        // GitHub Flavored Markdown
-			extension.Linkify,    // Auto-link URLs
+			extension.GFM,     // GitHub Flavored Markdown
+			extension.Linkify, // Auto-link URLs
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(), // Add IDs to headings
 		),
 		goldmark.WithRendererOptions(
-			html.WithHardWraps(),   // Convert newlines to <br>
-			html.WithXHTML(),       // Use XHTML-style tags
-			html.WithUnsafe(),      // Allow raw HTML (be careful with user input!)
+			html.WithHardWraps(), // Convert newlines to <br>
+			html.WithXHTML(),     // Use XHTML-style tags
+			html.WithUnsafe(),    // Allow raw HTML (be careful with user input!)
 		),
 	)
 

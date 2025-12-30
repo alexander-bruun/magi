@@ -115,7 +115,7 @@ templ Scraper(scripts []models.ScraperScript, activeID int64) {
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scraper Scripts</span></h2>
 		
 		<!-- Tabs Container -->
-		<div class="scraper-tabs-container border-b border-border mb-4">
+		<div class="border-b border-border mb-4">
 			<div class="flex items-center gap-1 overflow-x-auto pb-2">
 				<!-- Existing Script Tabs -->
 				<div id="script-tabs" class="flex items-center gap-1">
@@ -124,7 +124,7 @@ templ Scraper(scripts []models.ScraperScript, activeID int64) {
 				
 				<!-- Plus Button for New Script -->
 				<button 
-					class="uk-btn uk-btn-small uk-btn-default h-10 w-10 flex items-center justify-center"
+					class="uk-btn uk-btn-default h-10 w-10 flex items-center justify-center"
 					hx-get="/admin/scraper/new"
 					hx-target="#scraper-editor-container"
 					hx-swap="innerHTML"
@@ -166,7 +166,7 @@ templ ScraperEditorWithUpdatedTabs(script *models.ScraperScript, scripts []model
 
 // Helper function to get tab class
 func getTabClass(isActive bool) string {
-	base := "uk-tab px-3 py-2 rounded-t border-t border-l border-r border-border hover:bg-accent whitespace-nowrap text-sm flex items-center gap-2 transition-colors duration-200"
+	base := "uk-tab px-3 py-2 rounded-t border-t border-l border-r border-border hover:bg-accent text-sm flex items-center gap-2 duration-200"
 	if isActive {
 		return base + " active"
 	}
@@ -196,7 +196,7 @@ templ ScraperTab(script *models.ScraperScript, activeID int64) {
 		<!-- Delete button placed inside the tab to the right of the name -->
 		<button 
 			type="button"
-			class="uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2 cursor-pointer"
+			class="uk-btn uk-btn-destructive h-8 w-8 p-1 ml-2"
 			onclick="event.stopPropagation()"
 			hx-delete={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
 			hx-confirm={ fmt.Sprintf("Are you sure you want to delete '%s'?", script.Name) }
@@ -383,7 +383,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 // ScraperLogsTabContent renders the logs tab content
 templ ScraperLogsTabContent(script *models.ScraperScript) {
 	<!-- HTMX WebSocket extension for live log streaming -->
-	<div id="scraper-log-viewer" class="mb-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto" 
+	<div id="scraper-log-viewer" class="mb-6 uk-card uk-card-body bg-surface p-3 text-xs max-h-96 overflow-y-auto" 
 		hx-ext="ws" 
 		ws-connect={ fmt.Sprintf("/admin/scraper/%d/logs", script.ID) }>
 		<div class="text-muted-foreground mb-2">Live Output</div>
@@ -474,7 +474,7 @@ templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginati
 			<div class="flex justify-center items-center gap-2 mt-6">
 				if pagination["has_prev"].(bool) {
 					<button 
-						class="uk-btn uk-btn-default uk-btn-small"
+						class="uk-btn uk-btn-default"
 						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["prev_page"]) }
 						hx-target="#scraper-logs-container"
 						hx-swap="innerHTML"
@@ -482,7 +482,7 @@ templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginati
 						Previous
 					</button>
 				} else {
-					<button class="uk-btn uk-btn-default uk-btn-small" disabled>Previous</button>
+					<button class="uk-btn uk-btn-default" disabled>Previous</button>
 				}
 
 				<span class="text-sm text-muted-foreground px-4">
@@ -491,7 +491,7 @@ templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginati
 
 				if pagination["has_next"].(bool) {
 					<button 
-						class="uk-btn uk-btn-default uk-btn-small"
+						class="uk-btn uk-btn-default"
 						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["next_page"]) }
 						hx-target="#scraper-logs-container"
 						hx-swap="innerHTML"
@@ -499,7 +499,7 @@ templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, paginati
 						Next
 					</button>
 				} else {
-					<button class="uk-btn uk-btn-default uk-btn-small" disabled>Next</button>
+					<button class="uk-btn uk-btn-default" disabled>Next</button>
 				}
 			</div>
 		}
@@ -522,12 +522,12 @@ templ ScraperLogEntry(log *models.ScraperExecutionLog) {
 			} else {
 				<span class="inline-block w-2 h-2 rounded-full bg-muted"></span>
 			}
-				<span class="font-mono text-sm">{ log.FormatStartTime() }</span>
+				<span class="text-sm">{ log.FormatStartTime() }</span>
 				<span class="text-xs text-muted-foreground">({ log.FormatDuration() })</span>
 			</div>
 			<div class="flex items-center gap-2">
 				<button 
-					class="text-xs px-2 py-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors"
+					class="text-xs px-2 py-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30"
 					hx-delete={ fmt.Sprintf("/admin/scraper/%d/logs/%d", log.ScriptID, log.ID) }
 					hx-target="closest div"
 					hx-swap="outerHTML"
@@ -539,15 +539,15 @@ templ ScraperLogEntry(log *models.ScraperExecutionLog) {
 					</svg>
 				</button>
 			if log.Status == "success" {
-				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-success/20 text-success">{ log.Status }</span>
+				<span class="text-xs px-2 py-1 rounded bg-success/20 text-success">{ log.Status }</span>
 			} else if log.Status == "error" {
-				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-destructive/20 text-destructive">{ log.Status }</span>
+				<span class="text-xs px-2 py-1 rounded bg-destructive/20 text-destructive">{ log.Status }</span>
 			} else if log.Status == "running" {
-				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-yellow-500/20 text-yellow-500">{ log.Status }</span>
+				<span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-500">{ log.Status }</span>
 			} else if log.Status == "aborted" {
-				<span class="text-xs px-2 py-1 rounded whitespace-nowrap bg-gray-500/20 text-gray-500">{ log.Status }</span>
+				<span class="text-xs px-2 py-1 rounded bg-gray-500/20 text-gray-500">{ log.Status }</span>
 			} else {
-				<span class="text-xs px-2 py-1 rounded whitespace-nowrap">{ log.Status }</span>
+				<span class="text-xs px-2 py-1 rounded">{ log.Status }</span>
 			}
 			</div>
 		</div>
@@ -566,7 +566,7 @@ templ ScraperLogEntry(log *models.ScraperExecutionLog) {
 
 // ScraperLogViewer renders the real-time log viewer with WebSocket connection
 templ ScraperLogViewer(scriptID int64) {
-	<div id="scraper-log-viewer" class="mt-6 uk-card uk-card-body bg-surface p-3 font-mono text-xs max-h-96 overflow-y-auto">
+	<div id="scraper-log-viewer" class="mt-6 uk-card uk-card-body bg-surface p-3 text-xs max-h-96 overflow-y-auto">
 		<div class="text-muted-foreground mb-2">Live Output</div>
 		<div id="log-output-container" class="space-y-1"></div>
 	</div>
@@ -583,7 +583,7 @@ templ LanguageDependentSections(script *models.ScraperScript) {
 				name="script"
 				data-code-editor={ getCodeEditorLanguage(script.Language) }
 				data-code-editor-height="384px"
-				class="w-full h-96 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+				class="w-full h-96 p-3 text-sm bg-background text-foreground border-0 resize-none"
 				placeholder={ getScriptPlaceholder(script.Language) }
 			>{ script.Script }</textarea>
 		</div>
@@ -599,7 +599,7 @@ templ LanguageDependentSections(script *models.ScraperScript) {
 				name="shared_script"
 				data-code-editor="shell"
 				data-code-editor-height="200px"
-				class="w-full h-48 p-3 font-mono text-sm bg-background text-foreground border-0 resize-none"
+				class="w-full h-48 p-3 text-sm bg-background text-foreground border-0 resize-none"
 				placeholder="#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script"
 			>{ getSharedScriptContent(script.SharedScript) }</textarea>
 		</div>

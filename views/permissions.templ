@@ -11,212 +11,186 @@ templ PermissionsManagement() {
 	{{ roles := []string{"anonymous", "reader", "premium", "moderator", "admin"} }}
 
 	@PageTitle("Permissions")
-	<div class="permissions-page">
-		<!-- Header Section -->
-		<div class="permissions-header">
-			<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-				<div class="py-6">
-					@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Permissions", Href: "/admin/permissions" }})
-					<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row">
-						<div>
-							<h1 class="text-3xl font-bold text-gray-900">Permissions Management</h1>
-							<p class="mt-2 text-sm">Manage access permissions and user roles for your libraries</p>
+	<!-- Header Section -->
+	<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+		<div class="py-6">
+			@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Permissions", Href: "/admin/permissions" }})
+			<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row">
+				<div>
+					<h1 class="text-3xl font-bold">Permissions Management</h1>
+					<p class="mt-2 text-sm">Manage access permissions and user roles for your libraries</p>
+				</div>
+				<div class="flex items-center space-x-3 mt-4 sm:mt-0">
+					<div class="px-3 py-2 rounded-lg">
+						<div class="flex items-center space-x-2">
+							<uk-icon icon="users" ratio="0.8"></uk-icon>
+							<span class="text-sm font-medium">{ len(users) } Users</span>
 						</div>
-						<div class="flex items-center space-x-3 mt-4 sm:mt-0">
-							<div class="bg-blue-50 px-3 py-2 rounded-lg">
-								<div class="flex items-center space-x-2">
-									<uk-icon icon="users" ratio="0.8" class="text-blue-600"></uk-icon>
-									<span class="text-sm font-medium text-blue-700">{ len(users) } Users</span>
+					</div>
+					<button
+						class="uk-btn uk-btn-primary"
+						hx-get="/api/permissions/new/form"
+						hx-target="#modal-content"
+						uk-toggle="target: #permission-modal"
+					>
+						<uk-icon icon="plus" ratio="0.8" class="mr-2"></uk-icon>
+						New Permission
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Main Content -->
+	<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8">
+		<!-- Tab Navigation -->
+		<div class="mb-8">
+			<ul class="uk-tab" uk-tab>
+				<li class="uk-active"><a href="#">Permissions</a></li>
+				<li><a href="#">Roles</a></li>
+				<li><a href="#">Users</a></li>
+			</ul>
+
+			<ul class="uk-switcher mt-4">
+				<li class="uk-active">
+						<div
+							id="permissions-list"
+							hx-get="/api/permissions/list"
+							hx-trigger="load"
+							hx-swap="innerHTML"
+						>
+							<div class="flex items-center justify-center py-12">
+								<div class="text-center">
+									<uk-icon icon="spinner" ratio="2"></uk-icon>
+									<p class="mt-2 text-sm text-gray-500">Loading permissions...</p>
 								</div>
 							</div>
-							<button
-								class="uk-btn uk-btn-primary"
-								hx-get="/api/permissions/new/form"
-								hx-target="#modal-content"
-								uk-toggle="target: #permission-modal"
-							>
-								<uk-icon icon="plus" ratio="0.8" class="mr-2"></uk-icon>
-								New Permission
-							</button>
 						</div>
+				</li>
+
+				<!-- Roles Tab -->
+				<li>
+					<div class="uk-card uk-card-default uk-card-body w-full">
+						<!-- Role Assignment Card -->
+						<h3 class="text-lg font-medium">Role Permissions</h3>
+						<div class="p-4">
+							<div class="space-y-4">
+								<div>
+									<label class="block text-sm font-medium mb-2">Select Role</label>
+									<div class="uk-inline">
+										<button class="uk-btn uk-btn-default" type="button">
+											Select Role
+											<uk-icon icon="chevron-down" ratio="0.8"></uk-icon>
+										</button>
+										<div class="uk-drop uk-dropdown min-w-52" uk-dropdown="mode: click; animation: uk-animation-slide-top-small">
+											<ul class="uk-nav uk-dropdown-nav">
+												<li><a href="#" hx-get="/api/roles/permissions" hx-target="#role-permissions-list" hx-vals='{"role": ""}' hx-swap="innerHTML">-- Select a role --</a></li>
+												for _, role := range roles {
+													<li>
+														<a href="#" hx-get="/api/roles/permissions" hx-target="#role-permissions-list" hx-vals={ fmt.Sprintf("{\"role\": \"%s\"}", role) } hx-swap="innerHTML">
+															{ role }
+															if role == "anonymous" {
+																(Unauthenticated Users)
+															} else if role == "admin" {
+																(Administrator)
+															} else if role == "moderator" {
+																(Moderator)
+															} else {
+																(Reader)
+															}
+														</a>
+													</li>
+												}
+											</ul>
+										</div>
+									</div>
+								</div>
+								<div id="role-permissions-list">
+									@RolePermissionsEmpty()
+								</div>
+							</div>
+						</div>
+
+						<!-- Role Overview Card -->
+						<h3 class="text-lg font-medium">Role Overview</h3>
+						<div class="p-4">
+							<div class="space-y-4">
+								<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+									<div class="flex items-center space-x-3">
+										<h4>admin</h4>
+										<p>Full system access</p>
+									</div>
+									<uk-icon icon="crown" ratio="0.8"></uk-icon>
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+
+				<!-- Users Tab -->
+				<li>
+					<div class="uk-card uk-card-default uk-card-body w-full">
+						<h3 class="text-lg font-medium">User Permissions</h3>
+						<div class="p-4">
+							<div class="space-y-4">
+								<div>
+									<label class="block text-sm font-medium mb-2">Select User</label>
+									<div class="uk-inline">
+										<button class="uk-btn uk-btn-default" type="button">
+											Select User
+											<uk-icon icon="chevron-down" ratio="0.8"></uk-icon>
+										</button>
+										<div class="uk-drop uk-dropdown min-w-52" uk-dropdown="mode: click; animation: uk-animation-slide-top-small">
+											<ul class="uk-nav uk-dropdown-nav">
+												<li><a href="#" hx-get="/api/users/permissions" hx-target="#user-permissions-list" hx-vals='{"username": ""}' hx-swap="innerHTML">-- Select a user --</a></li>
+												for _, user := range users {
+													<li>
+														<a href="#" hx-get="/api/users/permissions" hx-target="#user-permissions-list" hx-vals={ fmt.Sprintf("{\"username\": \"%s\"}", user.Username) } hx-swap="innerHTML">
+															{ user.Username }
+															if user.Role == "admin" {
+																(Admin)
+															} else if user.Role == "moderator" {
+																(Moderator)
+															}
+														</a>
+													</li>
+												}
+											</ul>
+										</div>
+									</div>
+								</div>
+								<div id="user-permissions-list">
+									@UserPermissionsEmpty()
+								</div>
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- Modals -->
+	<div id="permission-modal" uk-modal>
+		<div class="uk-modal-dialog">
+			<div id="modal-content">
+				<div class="flex items-center justify-center py-12">
+					<div class="text-center">
+						<uk-icon icon="spinner" ratio="2"></uk-icon>
+						<p class="mt-2 text-sm text-gray-500">Loading...</p>
 					</div>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- Main Content -->
-		<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8">
-			<!-- Tab Navigation -->
-			<div class="permissions-tabs mb-8">
-				<ul class="uk-tab" uk-tab>
-					<li class="uk-active"><a href="#">Permissions</a></li>
-					<li><a href="#">Roles</a></li>
-					<li><a href="#">Users</a></li>
-				</ul>
-
-				<ul class="uk-switcher mt-4">
-					<li class="uk-active">
-							<div
-								id="permissions-list"
-								hx-get="/api/permissions/list"
-								hx-trigger="load"
-								hx-swap="innerHTML"
-								class="permissions-grid"
-							>
-								<div class="flex items-center justify-center py-12">
-									<div class="text-center">
-										<uk-icon icon="spinner" ratio="2" class="text-gray-400 animate-spin"></uk-icon>
-										<p class="mt-2 text-sm text-gray-500">Loading permissions...</p>
-									</div>
-								</div>
-							</div>
-					</li>
-
-					<!-- Roles Tab -->
-					<li>
-						<div class="roles-section uk-card uk-card-default uk-card-body w-full">
-							<div class="roles-grid">
-								<!-- Role Assignment Card -->
-								<div class="role-card">
-									<div class="role-header">
-										<h3 class="text-lg font-medium text-gray-900">Role Permissions</h3>
-									</div>
-									<div class="p-4">
-										<div class="space-y-4">
-											<div>
-												<label class="block text-sm font-medium text-gray-700 mb-2">Select Role</label>
-												<div class="uk-inline">
-													<button class="uk-btn uk-btn-default" type="button">
-														Select Role
-														<uk-icon icon="chevron-down" ratio="0.8"></uk-icon>
-													</button>
-													<div class="uk-drop uk-dropdown min-w-52" uk-dropdown="mode: click; animation: uk-animation-slide-top-small">
-														<ul class="uk-nav uk-dropdown-nav">
-															<li><a href="#" hx-get="/api/roles/permissions" hx-target="#role-permissions-list" hx-vals='{"role": ""}' hx-swap="innerHTML">-- Select a role --</a></li>
-															for _, role := range roles {
-																<li>
-																	<a href="#" hx-get="/api/roles/permissions" hx-target="#role-permissions-list" hx-vals={ fmt.Sprintf("{\"role\": \"%s\"}", role) } hx-swap="innerHTML">
-																		{ role }
-																		if role == "anonymous" {
-																			(Unauthenticated Users)
-																		} else if role == "admin" {
-																			(Administrator)
-																		} else if role == "moderator" {
-																			(Moderator)
-																		} else {
-																			(Reader)
-																		}
-																	</a>
-																</li>
-															}
-														</ul>
-													</div>
-												</div>
-											</div>
-											<div id="role-permissions-list">
-												@RolePermissionsEmpty()
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<!-- Role Overview Card -->
-								<div class="role-card">
-									<div class="role-header">
-										<h3 class="text-lg font-medium text-gray-900">Role Overview</h3>
-									</div>
-									<div class="p-4">
-										<div class="space-y-4">
-											<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-												<div class="flex items-center space-x-3">
-													<div class="role-indicator"></div>
-													<div>
-														<h4 class="role-name">admin</h4>
-														<p class="role-description">Full system access</p>
-													</div>
-												</div>
-												<div class="role-icon">
-													<uk-icon icon="crown" ratio="0.8"></uk-icon>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</li>
-
-					<!-- Users Tab -->
-					<li>
-						<div class="users-section uk-card uk-card-default uk-card-body w-full">
-							<div class="users-grid">
-								<div class="user-card">
-									<div class="user-header">
-										<h3 class="text-lg font-medium text-gray-900">User Permissions</h3>
-									</div>
-									<div class="p-4">
-										<div class="space-y-4">
-											<div>
-												<label class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
-												<div class="uk-inline">
-													<button class="uk-btn uk-btn-default" type="button">
-														Select User
-														<uk-icon icon="chevron-down" ratio="0.8"></uk-icon>
-													</button>
-													<div class="uk-drop uk-dropdown min-w-52" uk-dropdown="mode: click; animation: uk-animation-slide-top-small">
-														<ul class="uk-nav uk-dropdown-nav">
-															<li><a href="#" hx-get="/api/users/permissions" hx-target="#user-permissions-list" hx-vals='{"username": ""}' hx-swap="innerHTML">-- Select a user --</a></li>
-															for _, user := range users {
-																<li>
-																	<a href="#" hx-get="/api/users/permissions" hx-target="#user-permissions-list" hx-vals={ fmt.Sprintf("{\"username\": \"%s\"}", user.Username) } hx-swap="innerHTML">
-																		{ user.Username }
-																		if user.Role == "admin" {
-																			(Admin)
-																		} else if user.Role == "moderator" {
-																			(Moderator)
-																		}
-																	</a>
-																</li>
-															}
-														</ul>
-													</div>
-												</div>
-											</div>
-											<div id="user-permissions-list">
-												@UserPermissionsEmpty()
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</li>
-				</ul>
-			</div>
-		</div>
-
-		<!-- Modals -->
-		<div id="permission-modal" uk-modal>
-			<div class="uk-modal-dialog uk-modal-dialog-large">
-				<div id="modal-content">
-					<div class="flex items-center justify-center py-12">
-						<div class="text-center">
-							<uk-icon icon="spinner" ratio="2" class="text-gray-400 animate-spin"></uk-icon>
-							<p class="mt-2 text-sm text-gray-500">Loading...</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div id="bulk-assign-modal" uk-modal>
-			<div class="uk-modal-dialog uk-modal-dialog-large">
-				<div id="bulk-modal-content">
-					<div class="flex items-center justify-center py-12">
-						<div class="text-center">
-							<uk-icon icon="spinner" ratio="2" class="text-gray-400 animate-spin"></uk-icon>
-							<p class="mt-2 text-sm text-gray-500">Loading...</p>
-						</div>
+	<div id="bulk-assign-modal" uk-modal>
+		<div class="uk-modal-dialog">
+			<div id="bulk-modal-content">
+				<div class="flex items-center justify-center py-12">
+					<div class="text-center">
+						<uk-icon icon="spinner" ratio="2"></uk-icon>
+						<p class="mt-2 text-sm text-gray-500">Loading...</p>
 					</div>
 				</div>
 			</div>
@@ -227,8 +201,8 @@ templ PermissionsManagement() {
 templ PermissionsList(permissions []models.PermissionWithLibraries) {
 	if len(permissions) == 0 {
 		<div class="text-center py-12">
-			<uk-icon icon="shield-off" ratio="3" class="text-gray-300"></uk-icon>
-			<h3 class="mt-4 text-lg font-medium text-gray-900">No permissions defined yet</h3>
+			<uk-icon icon="shield-off" ratio="3"></uk-icon>
+			<h3 class="mt-4 text-lg font-medium">No permissions defined yet</h3>
 			<p class="mt-2 text-sm text-gray-500">Get started by creating your first permission to control access to your libraries.</p>
 		</div>
 	} else {
@@ -239,7 +213,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 							<div class="flex items-start justify-between">
 								<div class="flex-1">
 									<div class="flex items-center space-x-2 mb-2">
-										<h3 class="text-lg font-semibold text-gray-900">{ perm.Name }</h3>
+										<h3 class="text-lg font-semibold">{ perm.Name }</h3>
 										if perm.IsEnabled {
 											<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
 												<uk-icon icon="check-circle" ratio="0.6" class="mr-1"></uk-icon>
@@ -257,7 +231,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 										if perm.Description != "" {
 											{ perm.Description }
 										} else {
-											<span class="text-gray-400 italic">No description provided</span>
+											<span class="italic">No description provided</span>
 										}
 									</p>
 
@@ -268,7 +242,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 												All Libraries
 											</span>
 										} else {
-											<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+											<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
 												<uk-icon icon="folder" ratio="0.6" class="mr-1"></uk-icon>
 												{ fmt.Sprintf("%d", len(perm.Libraries)) }
 												if len(perm.Libraries) == 1 {
@@ -289,17 +263,17 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 								</div>
 							</div>
 
-							<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row pt-4 border-t border-gray-200">
+							<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row pt-4 border-t">
 								<div class="flex items-center space-x-2 mb-2 sm:mb-0">
 									<span class="text-xs text-gray-500">Last modified</span>
-									<time class="text-xs text-gray-400" datetime={ time.Unix(perm.UpdatedAt, 0).Format("2006-01-02T15:04:05Z") }>
+									<time class="text-xs" datetime={ time.Unix(perm.UpdatedAt, 0).Format("2006-01-02T15:04:05Z") }>
 										{ time.Unix(perm.UpdatedAt, 0).Format("Jan 02, 2006") }
 									</time>
 								</div>
 
 								<div class="flex items-center space-x-1">
 									<button
-										class="uk-btn uk-btn-default uk-btn-small"
+										class="uk-btn uk-btn-default"
 										hx-get={ fmt.Sprintf("/api/permissions/%d/form", perm.ID) }
 										hx-target="#modal-content"
 										uk-toggle="target: #permission-modal"
@@ -308,7 +282,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 										<uk-icon icon="pencil" ratio="0.7"></uk-icon>
 									</button>
 									<button
-										class="uk-btn uk-btn-default uk-btn-small"
+										class="uk-btn uk-btn-default"
 										hx-get={ fmt.Sprintf("/api/permissions/%d/bulk-assign", perm.ID) }
 										hx-target="#bulk-modal-content"
 										uk-toggle="target: #bulk-assign-modal"
@@ -317,7 +291,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 										<uk-icon icon="users" ratio="0.7"></uk-icon>
 									</button>
 									<button
-										class="uk-btn uk-btn-destructive uk-btn-small"
+										class="uk-btn uk-btn-destructive"
 										hx-delete={ fmt.Sprintf("/api/permissions/%d", perm.ID) }
 										hx-target="#permissions-list"
 										hx-confirm={ fmt.Sprintf("Delete permission \"%s\"?\n\nThis will remove the permission from all users and roles.", perm.Name) }
@@ -336,7 +310,7 @@ templ PermissionsList(permissions []models.PermissionWithLibraries) {
 
 templ PermissionForm(permission *models.PermissionWithLibraries, libraries []models.Library) {
 	<div class="uk-modal-header permissions-modal-header">
-		<h2 class="uk-modal-title uk-margin-remove">
+		<h2 class="uk-modal-title">
 			if permission != nil {
 				Edit Permission
 			} else {
@@ -359,13 +333,13 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 		>
 			<!-- Basic Information Section -->
 			<div class="mb-4">
-				<h4 class="text-lg font-semibold mb-2 border-b border-gray-200 pb-1">
+				<h4 class="text-lg font-semibold mb-2 border-b pb-1">
 					<span>Basic Information</span>
 				</h4>
 				
 				<div class="mb-4">
-					<label class="uk-form-label uk-text-bold">
-						<uk-icon icon="tag" ratio="0.8"></uk-icon> Permission Name <span class="uk-text-destructive">*</span>
+					<label class="uk-form-label">
+						<uk-icon icon="tag" ratio="0.8"></uk-icon> Permission Name <span>*</span>
 					</label>
 					<input 
 						class="uk-input" 
@@ -381,7 +355,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 				</div>
 				
 				<div class="mb-4">
-					<label class="uk-form-label uk-text-bold">
+					<label class="uk-form-label">
 						<uk-icon icon="file-text" ratio="0.8"></uk-icon> Description
 					</label>
 					<textarea 
@@ -397,16 +371,16 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 			</div>
 
 			<!-- Access Settings Section -->
-			<div class="uk-margin-bottom">
+			<div >
 				<h4 class="uk-heading-line uk-h5 uk-margin-small-bottom">
 					<span>Access Settings</span>
 				</h4>
 				
 				<div class="uk-margin">
 					<div class="uk-form-controls">
-						<label class="uk-flex uk-flex-middle">
+						<label class="uk-flex">
 							<input 
-								class="uk-checkbox uk-margin-small-right" 
+								class="uk-checkbox" 
 								type="checkbox" 
 								name="is_wildcard"
 								id="wildcard-checkbox"
@@ -415,7 +389,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 								}
 								onchange="document.getElementById('libraries-container').style.display = this.checked ? 'none' : 'block';"
 							/>
-							<span class="uk-text-bold">
+							<span >
 								<uk-icon icon="asterisk" ratio="0.7"></uk-icon> Wildcard Permission
 							</span>
 						</label>
@@ -425,16 +399,16 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 				
 				<div class="uk-margin">
 					<div class="uk-form-controls">
-						<label class="uk-flex uk-flex-middle">
+						<label class="uk-flex">
 							<input 
-								class="uk-checkbox uk-margin-small-right" 
+								class="uk-checkbox" 
 								type="checkbox" 
 								name="premium_chapter_access"
 								if permission != nil && permission.PremiumChapterAccess {
 									checked
 								}
 							/>
-							<span class="uk-text-bold">
+							<span >
 								<uk-icon icon="star" ratio="0.7"></uk-icon> Premium Chapter Access
 							</span>
 						</label>
@@ -445,16 +419,16 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 				if permission != nil {
 					<div class="uk-margin">
 						<div class="uk-form-controls">
-							<label class="uk-flex uk-flex-middle">
+							<label class="uk-flex">
 								<input 
-									class="uk-checkbox uk-margin-small-right" 
+									class="uk-checkbox" 
 									type="checkbox" 
 									name="is_enabled"
 									if permission.IsEnabled {
 										checked
 									}
 								/>
-								<span class="uk-text-bold">
+								<span >
 									<uk-icon icon="check" ratio="0.7"></uk-icon> Enabled
 								</span>
 							</label>
@@ -466,7 +440,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 
 			<!-- Library Selection Section -->
 			<div 
-				class="uk-margin-bottom" 
+				 
 				id="libraries-container"
 				if permission != nil && permission.IsWildcard {
 					style="display: none;"
@@ -476,21 +450,21 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 					<span>Library Access</span>
 				</h4>
 				
-				<label class="uk-form-label uk-text-bold">
+				<label class="uk-form-label">
 					<uk-icon icon="database" ratio="0.8"></uk-icon> Select Libraries
 				</label>
 				if len(libraries) == 0 {
-					<div class="uk-alert uk-alert-warning">
+					<div class="uk-alert">
 						<uk-icon icon="warning" ratio="0.8"></uk-icon> No libraries available. Create libraries first.
 					</div>
 				} else {
 					<div class="uk-card uk-card-default uk-card-body permissions-card-scroll">
 						<div class="uk-margin-small-bottom">
-							<div class="uk-flex uk-flex-between uk-flex-middle">
+							<div class="uk-flex">
 								<small class="uk-text-muted">Select the libraries this permission applies to</small>
 								<div>
-									<button type="button" class="uk-btn uk-btn-small uk-btn-default" onclick="selectAllLibraries(this)">Select All</button>
-									<button type="button" class="uk-btn uk-btn-small uk-btn-default uk-margin-small-left" onclick="clearAllLibraries(this)">Clear All</button>
+									<button type="button" class="uk-btn uk-btn-default" onclick="selectAllLibraries(this)">Select All</button>
+									<button type="button" class="uk-btn uk-btn-default uk-margin-small-left" onclick="clearAllLibraries(this)">Clear All</button>
 								</div>
 							</div>
 						</div>
@@ -505,9 +479,9 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 									}
 								}
 								<div>
-									<label class="uk-flex uk-flex-middle uk-padding-small uk-background-muted" style="border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background=''">
+									<label class="uk-flex uk-padding-small uk-background-muted" style="border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background=''">
 										<input 
-											class="uk-checkbox uk-margin-small-right library-checkbox" 
+											class="uk-checkbox library-checkbox" 
 											type="checkbox" 
 											name="libraries[]" 
 											value={ lib.Slug }
@@ -515,7 +489,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 												checked
 											}
 										/>
-										<span class="uk-text-small">{ lib.Name }</span>
+										<span >{ lib.Name }</span>
 									</label>
 								</div>
 							}
@@ -525,7 +499,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 			</div>
 			
 			<div class="mt-4 uk-text-right">
-				<button class="uk-btn uk-btn-default uk-modal-close uk-margin-small-right" type="button">
+				<button class="uk-btn uk-btn-default uk-modal-close" type="button">
 					<uk-icon icon="close" ratio="0.8"></uk-icon> Cancel
 				</button>
 				<button 
@@ -546,7 +520,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 
 templ RolePermissionsEmpty() {
 	<div class="flex flex-col items-center justify-center py-8">
-		<uk-icon icon="users" ratio="2" class="text-gray-300"></uk-icon>
+		<uk-icon icon="users" ratio="2"></uk-icon>
 		<p class="mt-2 text-sm text-gray-500 text-center">Select a role above to manage its permissions</p>
 	</div>
 }
@@ -556,7 +530,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 		<!-- Assigned Permissions Section -->
 		<div>
 			<div class="flex items-center justify-between mb-4">
-				<h4 class="text-lg font-medium text-gray-900">
+				<h4 class="text-lg font-medium">
 					Assigned to { role }
 					<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 						{ fmt.Sprintf("%d", len(permissions)) } permissions
@@ -565,8 +539,8 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 			</div>
 
 			if len(permissions) == 0 {
-				<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-					<uk-icon icon="shield-off" ratio="2" class="text-gray-300"></uk-icon>
+				<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed">
+					<uk-icon icon="shield-off" ratio="2"></uk-icon>
 					<p class="mt-2 text-sm text-gray-500">No permissions assigned to this role yet</p>
 				</div>
 			} else {
@@ -576,7 +550,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 							<div class="uk-card-body">
 								<div class="flex-1">
 									<div class="flex items-center space-x-3">
-										<h5 class="text-sm font-medium text-gray-900">{ perm.Name }</h5>
+										<h5 class="text-sm font-medium">{ perm.Name }</h5>
 										<div class="flex items-center space-x-1">
 											if perm.IsEnabled {
 												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -601,7 +575,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 													All Libraries
 												</span>
 											} else if len(perm.Libraries) > 0 {
-												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
 													{ fmt.Sprintf("%d libs", len(perm.Libraries)) }
 												</span>
 											}
@@ -616,7 +590,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 									</p>
 								</div>
 								<button
-									class="uk-btn uk-btn-destructive uk-btn-small"
+									class="uk-btn uk-btn-destructive"
 									hx-delete={ fmt.Sprintf("/api/roles/%s/permissions/%d", role, perm.ID) }
 									hx-target="#role-permissions-list"
 									hx-confirm={ fmt.Sprintf("Revoke \"%s\" permission from %s role?", perm.Name, role) }
@@ -633,7 +607,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 
 		<!-- Assign New Permission Section -->
 		<div class="bg-gray-50 rounded-lg p-4">
-			<h4 class="text-md font-medium text-gray-900 mb-3">Assign New Permission</h4>
+			<h4 class="font-medium mb-3">Assign New Permission</h4>
 
 			{{ assignedIds := make(map[int64]bool) }}
 			for _, perm := range permissions {
@@ -661,7 +635,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 				>
 					<input type="hidden" name="role" value={ role } />
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Choose Permission</label>
+						<label class="block text-sm font-medium mb-2">Choose Permission</label>
 						<div class="uk-inline">
 							<button class="uk-btn uk-btn-default" type="button">
 								Choose Permission
@@ -695,7 +669,7 @@ templ RolePermissionsList(role string, permissions []models.PermissionWithLibrar
 
 templ UserPermissionsEmpty() {
 	<div class="flex flex-col items-center justify-center py-8">
-		<uk-icon icon="user" ratio="2" class="text-gray-300"></uk-icon>
+		<uk-icon icon="user" ratio="2"></uk-icon>
 		<p class="mt-2 text-sm text-gray-500 text-center">Select a user above to manage their permissions</p>
 	</div>
 }
@@ -705,7 +679,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 		<!-- Assigned Permissions Section -->
 		<div>
 			<div class="flex items-center justify-between mb-4">
-				<h4 class="text-lg font-medium text-gray-900">
+				<h4 class="text-lg font-medium">
 					Assigned to { username }
 					<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 						{ fmt.Sprintf("%d", len(permissions)) } permissions
@@ -714,8 +688,8 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 			</div>
 
 			if len(permissions) == 0 {
-				<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-					<uk-icon icon="shield-off" ratio="2" class="text-gray-300"></uk-icon>
+				<div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed">
+					<uk-icon icon="shield-off" ratio="2"></uk-icon>
 					<p class="mt-2 text-sm text-gray-500">No permissions assigned to this user yet</p>
 				</div>
 			} else {
@@ -725,7 +699,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 							<div class="uk-card-body">
 								<div class="flex-1">
 									<div class="flex items-center space-x-3">
-										<h5 class="text-sm font-medium text-gray-900">{ perm.Name }</h5>
+										<h5 class="text-sm font-medium">{ perm.Name }</h5>
 										<div class="flex items-center space-x-1">
 											if perm.IsEnabled {
 												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -750,7 +724,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 													All Libraries
 												</span>
 											} else if len(perm.Libraries) > 0 {
-												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+												<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
 													{ fmt.Sprintf("%d libs", len(perm.Libraries)) }
 												</span>
 											}
@@ -765,7 +739,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 									</p>
 								</div>
 								<button
-									class="uk-btn uk-btn-destructive uk-btn-small"
+									class="uk-btn uk-btn-destructive"
 									hx-delete={ fmt.Sprintf("/api/users/%s/permissions/%d", username, perm.ID) }
 									hx-target="#user-permissions-list"
 									hx-confirm={ fmt.Sprintf("Revoke \"%s\" permission from %s?", perm.Name, username) }
@@ -782,7 +756,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 
 		<!-- Assign New Permission Section -->
 		<div class="bg-gray-50 rounded-lg p-4">
-			<h4 class="text-md font-medium text-gray-900 mb-3">Assign New Permission</h4>
+			<h4 class="font-medium mb-3">Assign New Permission</h4>
 
 			{{ assignedIds := make(map[int64]bool) }}
 			for _, perm := range permissions {
@@ -810,7 +784,7 @@ templ UserPermissionsList(username string, permissions []models.PermissionWithLi
 				>
 					<input type="hidden" name="username" value={ username } />
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Choose Permission</label>
+						<label class="block text-sm font-medium mb-2">Choose Permission</label>
 						<div class="uk-inline">
 							<button class="uk-btn uk-btn-default" type="button">
 								Choose Permission
@@ -849,12 +823,12 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 	}
 	
 	<div class="uk-modal-header permissions-modal-header">
-		<h2 class="uk-modal-title uk-margin-remove">Bulk Assign: { permission.Name }</h2>
+		<h2 class="uk-modal-title">Bulk Assign: { permission.Name }</h2>
 		<button class="uk-modal-close" type="button" uk-close></button>
 	</div>
 	<div class="uk-modal-body">
 	
-	<div class="uk-margin-bottom">
+	<div >
 		<div class="uk-alert uk-alert-primary">
 			<uk-icon icon="info" ratio="0.8"></uk-icon> 
 			<strong>About this permission:</strong>
@@ -884,23 +858,23 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 		hx-swap="none"
 	>
 		<div class="uk-margin">
-			<label class="uk-form-label uk-text-bold">
+			<label class="uk-form-label">
 				<uk-icon icon="users" ratio="0.8"></uk-icon> Select Users to Assign
 			</label>
 			<small class="uk-text-muted uk-margin-small-left">Users who already have this permission are shown but cannot be modified</small>
 			
 			if len(users) == 0 {
-				<div class="uk-alert uk-alert-warning uk-text-center">
+				<div class="uk-alert uk-text-center">
 					<uk-icon icon="warning" ratio="0.8"></uk-icon> No users available
 				</div>
 			} else {
 				<div class="uk-card uk-card-default uk-card-body permissions-card-scroll-large">
 					<div class="uk-margin-small-bottom">
-						<div class="uk-flex uk-flex-between uk-flex-middle">
+						<div class="uk-flex">
 							<small class="uk-text-muted">Choose users to grant this permission to</small>
 							<div>
-								<button type="button" class="uk-btn uk-btn-small uk-btn-default" onclick="selectAllUsers(this)">Select All</button>
-								<button type="button" class="uk-btn uk-btn-small uk-btn-default uk-margin-small-left" onclick="clearAllUsers(this)">Clear All</button>
+								<button type="button" class="uk-btn uk-btn-default" onclick="selectAllUsers(this)">Select All</button>
+								<button type="button" class="uk-btn uk-btn-default uk-margin-small-left" onclick="clearAllUsers(this)">Clear All</button>
 							</div>
 						</div>
 					</div>
@@ -908,9 +882,9 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 						for _, user := range users {
 							{{ hasPermission := assignedMap[user.Username] }}
 							<div>
-								<label class={ "uk-flex uk-flex-middle uk-padding-small hoverable-label", templ.KV("uk-text-muted", hasPermission), templ.KV("uk-background-muted", hasPermission) } style="border-radius: 4px; cursor: pointer;">
+								<label class={ "uk-flex uk-padding-small hoverable-label", templ.KV("uk-text-muted", hasPermission), templ.KV("uk-background-muted", hasPermission) } style="border-radius: 4px; cursor: pointer;">
 									<input 
-										class="uk-checkbox uk-margin-small-right user-checkbox" 
+										class="uk-checkbox user-checkbox" 
 										type="checkbox" 
 										name="usernames[]" 
 										value={ user.Username }
@@ -919,15 +893,15 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 											disabled
 										}
 									/>
-									<div class="uk-flex uk-flex-middle uk-flex-wrap permissions-flex-gap">
-										<span class="uk-text-bold">{ user.Username }</span>
+									<div class="uk-flex uk-flex-wrap permissions-flex-gap">
+										<span >{ user.Username }</span>
 										if user.Role == "admin" {
 											<span class="uk-label uk-label-destructive uk-label-small">Admin</span>
 										} else if user.Role == "moderator" {
 											<span class="uk-label uk-label-small permissions-label-mod">Mod</span>
 										}
 										if hasPermission {
-											<span class="uk-label uk-label-success uk-label-small">Assigned</span>
+											<span class="uk-label uk-label-small">Assigned</span>
 										}
 									</div>
 								</label>
@@ -939,7 +913,7 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 		</div>
 		
 		<div class="mt-4 uk-text-right">
-			<button class="uk-btn uk-btn-default uk-modal-close uk-margin-small-right" type="button">
+			<button class="uk-btn uk-btn-default uk-modal-close" type="button">
 				<uk-icon icon="close" ratio="0.8"></uk-icon> Cancel
 			</button>
 			<button 

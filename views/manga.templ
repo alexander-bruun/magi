@@ -23,7 +23,7 @@ templ MediaCollectionItem(mediaSlug string, collection models.Collection, inColl
 		if inCollection {
 			<form hx-post={ fmt.Sprintf("/series/%s/collections/remove", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
 				<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
-				<button type="submit" class="uk-btn uk-btn-destructive uk-btn-small">
+				<button type="submit" class="uk-btn uk-btn-destructive">
 					<uk-icon icon="x"></uk-icon>
 					Remove
 				</button>
@@ -31,7 +31,7 @@ templ MediaCollectionItem(mediaSlug string, collection models.Collection, inColl
 		} else {
 			<form hx-post={ fmt.Sprintf("/series/%s/collections/add", mediaSlug) } hx-target="closest .flex" hx-swap="outerHTML" class="ml-4">
 				<input type="hidden" name="collection_id" value={ fmt.Sprintf("%d", collection.ID) }>
-				<button type="submit" class="uk-btn uk-btn-primary uk-btn-small">
+				<button type="submit" class="uk-btn uk-btn-primary">
 					<uk-icon icon="plus"></uk-icon>
 					Add
 				</button>
@@ -49,7 +49,7 @@ templ MediaCollectionsModal(mediaSlug string, userCollections []models.Collectio
 	if len(userCollections) == 0 {
 		<div class="text-center py-8">
 			<div class="flex items-center justify-center mb-4">
-				<uk-icon icon="folder" ratio="3" class="text-gray-400 mr-4"></uk-icon>
+				<uk-icon icon="folder" ratio="3" class="mr-4"></uk-icon>
 				<h2 class="text-xl font-semibold">No collections yet</h2>
 			</div>
 			<p class=" mb-4">Create your first collection to organize your favorite series.</p>
@@ -76,12 +76,70 @@ templ MediaCollectionsModal(mediaSlug string, userCollections []models.Collectio
 	}
 }
 
+templ AdminButtonGroup(mediaSlug string, isHighlighted bool, buttonIdSuffix string) {
+	<div class="uk-btn-group">
+		<button
+			type="button"
+			class="uk-btn uk-btn-primary"
+			uk-toggle="target: #metadata-modal"
+			title="Search for Metadata"
+			aria-label="Search for Metadata"
+		>
+			<uk-icon icon="Search"></uk-icon>
+		</button>
+		<button
+			type="button"
+			class="uk-btn uk-btn-secondary"
+			uk-toggle="target: #edit-metadata-modal"
+			title="Edit Metadata"
+			aria-label="Edit Metadata"
+		>
+			<uk-icon icon="Pencil"></uk-icon>
+		</button>
+		<button
+			type="button"
+			class="uk-btn uk-btn-secondary"
+			uk-toggle="target: #refresh-metadata-modal"
+			title="Refresh Metadata"
+			aria-label="Refresh Metadata"
+		>
+			<uk-icon icon="FolderSync"></uk-icon>
+		</button>
+		<button
+			type="button"
+			class="uk-btn uk-btn-secondary"
+			uk-toggle="target: #reindex-chapters-modal"
+			title="Re-index chapters"
+			aria-label="Re-index chapters"
+		>
+			<uk-icon icon="RotateCcw"></uk-icon>
+		</button>
+		<button
+			type="button"
+			class="uk-btn uk-btn-destructive"
+			uk-toggle="target: #delete-media-modal"
+			title="Delete series"
+			aria-label="Delete series"
+		>
+			<uk-icon icon="Trash"></uk-icon>
+		</button>
+		if isHighlighted {
+			<button id={ fmt.Sprintf("highlight-btn%s", buttonIdSuffix) } type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", mediaSlug) } hx-target={ fmt.Sprintf("#highlight-btn%s", buttonIdSuffix) } hx-swap="outerHTML" class="uk-btn uk-btn-destructive" title="Remove from highlights" aria-label="Remove from highlights">
+				<uk-icon icon="StarOff"></uk-icon>
+			</button>
+		} else {
+			<button id={ fmt.Sprintf("highlight-btn%s", buttonIdSuffix) } type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", mediaSlug) } hx-target={ fmt.Sprintf("#highlight-btn%s", buttonIdSuffix) } hx-swap="outerHTML" class="uk-btn btn-favorite" title="Add to highlights" aria-label="Add to highlights">
+				<uk-icon icon="Star"></uk-icon>
+			</button>
+		}
+	</div>
+}
+
 templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool) {
 	{{ _ = userCollections }}
 	{{ _ = mediaCollections }}
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
-		{Label: "Home", Href: "/"},
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 	})
@@ -193,7 +251,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 } }}
 
 	<div class={ posterClass }>
-		<img loading="lazy" src={ media.CoverArtURL } alt={ media.Name } class="poster-image transition-opacity duration-300 w-full object-contain"/>
+		<img loading="lazy" src={ media.CoverArtURL } alt={ media.Name } class="poster-image w-full object-contain"/>
 		if userRole == "moderator" || userRole == "admin" {
 			<button
 				type="button"
@@ -219,87 +277,87 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 		}
 	</div>
 	<div class="mt-3">
-		<div class="uk-margin line-clamp-5 text-gray-700 leading-relaxed markdown-content">
+		<div class="uk-margin line-clamp-5 leading-relaxed markdown-content">
 			@templ.Raw(utils.MarkdownToHTML(media.Description))
 		</div>
 	</div>
 	<!-- Improved metadata grid with modern styling -->
 	<div class="mt-3 space-y-1.5">
 		if media.Year != 0 {
-			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="calendar"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Year</strong>
-					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(media.Year) }</span>
+					<span class="text-sm break-words">{ fmt.Sprint(media.Year) }</span>
 				</div>
 			</div>
 		}
 		if media.OriginalLanguage != "" {
-			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="globe"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Language</strong>
-					<span class="text-sm text-gray-800 break-words">{ media.OriginalLanguage }</span>
+					<span class="text-sm break-words">{ media.OriginalLanguage }</span>
 				</div>
 			</div>
 		}
 		if media.Type != "" {
-			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="book"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Type</strong>
-					<span class="text-sm text-gray-800 break-words">{ media.Type }</span>
+					<span class="text-sm break-words">{ media.Type }</span>
 				</div>
 			</div>
 		}
 		if media.ContentRating != "" {
-			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="star"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Rating</strong>
-					<span class="text-sm text-gray-800 break-words">{ media.ContentRating }</span>
+					<span class="text-sm break-words">{ media.ContentRating }</span>
 				</div>
 			</div>
 		}
 		if media.FileCount != 0 {
-			<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+			<div class="flex items-start p-2 rounded">
 				<div class="shrink-0 mt-0.5">
 					<uk-icon icon="file-text"></uk-icon>
 				</div>
 				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">{ strings.Title(unit) + "s" }</strong>
-					<span class="text-sm text-gray-800 break-words">{ fmt.Sprint(media.FileCount) }</span>
+					<span class="text-sm break-words">{ fmt.Sprint(media.FileCount) }</span>
 				</div>
 			</div>
 		}
 		if userRole == "moderator" || userRole == "admin" {
 			if !media.CreatedAt.IsZero() {
-				<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="flex items-start p-2 rounded">
 					<div class="shrink-0 mt-0.5">
 						<uk-icon icon="plus-circle"></uk-icon>
 					</div>
 					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Added</strong>
-						<span class="text-sm text-gray-800 break-words">{ media.CreatedAt.Format("2006-01-02") }</span>
+						<span class="text-sm break-words">{ media.CreatedAt.Format("2006-01-02") }</span>
 					</div>
 				</div>
 			}
 			if !media.UpdatedAt.IsZero() {
-				<div class="flex items-start p-2 rounded hover:bg-gray-50 transition-colors">
+				<div class="flex items-start p-2 rounded">
 					<div class="shrink-0 mt-0.5">
 						<uk-icon icon="calendar-clock"></uk-icon>
 					</div>
 					<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
 						<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Updated</strong>
-						<span class="text-sm text-gray-800 break-words">{ media.UpdatedAt.Format("2006-01-02") }</span>
+						<span class="text-sm break-words">{ media.UpdatedAt.Format("2006-01-02") }</span>
 					</div>
 				</div>
 			}
@@ -317,7 +375,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			<div class="flex flex-wrap gap-1.5 pl-7">
 				for _, tag := range media.Tags {
 					if tag != "" {
-						<a href={ templ.URL(fmt.Sprintf("/series?tags=%s", url.QueryEscape(tag))) } class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 no-underline">
+						<a href={ templ.URL(fmt.Sprintf("/series?tags=%s", url.QueryEscape(tag))) } class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200 no-underline">
 							{ tag }
 						</a>
 					}
@@ -388,10 +446,10 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				<div class="mb-5">
 					<label class="uk-form-label mb-2 block font-semibold" for="description">
 						Description
-						<span class="uk-text-meta uk-text-small ml-2">(Markdown supported)</span>
+						<span class="uk-text-meta ml-2">(Markdown supported)</span>
 					</label>
 					<textarea class="uk-textarea" id="description" name="description" rows="5" placeholder="Supports **bold**, *italic*, [links](url), lists, and more...">{ media.Description }</textarea>
-					<p class="uk-text-meta uk-text-small mt-1">
+					<p class="uk-text-meta mt-1">
 						Tip: Use markdown formatting for rich descriptions. 
 						<a href="https://www.markdownguide.org/basic-syntax/" target="_blank" class="uk-link-text">Markdown Guide</a>
 					</p>
@@ -595,7 +653,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 							hx-target="#poster-selector-content"
 							hx-swap="outerHTML"
 							hx-encoding="multipart/form-data"
-							class="uk-margin-bottom"
+							
 						>
 							<div class="uk-margin">
 								<input type="file" name="poster" accept="image/*" required class="uk-input"/>
@@ -666,11 +724,11 @@ templ MediaFavoriteFragmentAnonymous(mangaSlug string, favCount int) {
 // Highlight fragment for a media. Returned by HTMX when toggling highlight state.
 templ MediaHighlightFragment(mediaSlug string, isHighlighted bool) {
 	if isHighlighted {
-		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
+		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive" title="Remove from highlights" aria-label="Remove from highlights">
 			<uk-icon icon="StarOff"></uk-icon>
 		</button>
 	} else {
-		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
+		<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", mediaSlug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite" title="Add to highlights" aria-label="Add to highlights">
 			<uk-icon icon="Star"></uk-icon>
 		</button>
 	}
@@ -733,74 +791,80 @@ templ MediaVoteFragmentAnonymous(mangaSlug string, score int, upvotes int, downv
 }
 
 templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration int, userRole string) {
-	<ul class="uk-accordion" uk-accordion>
-		for _, chapter := range chapters {
-			<li class="uk-closed">
-				<!-- Row layout: left = link/title, right = optional icon -->
-				<div class="flex items-center justify-between w-full">
-					<div class="flex items-center flex-1 min-w-0">
-						<a
-							class={ "uk-accordion-title pr-2 truncate", templ.KV("brand-gradient", chapter.Read) }
-							href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-							if userRole != "anonymous" {
-								hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
-								hx-target="#content"
-								hx-push-url="true"
-							}
-						>
-							{ chapter.Name }
-							<span
-								class="uk-accordion-icon"
-								uk-icon="icon: chevron-down; ratio: 0.8"
-							></span>
-						</a>
-						if isNewUpdate(chapter.CreatedAt) {
-							<span class="uk-badge ml-2 badge-new-margin">
-								NEW
-							</span>
-						}
-					</div>
-					<div class="flex items-center">
-						if chapter.Read {
-							<div class="mr-3" title="Read">
-								@InlineEyeToggle(chapter.Read, media.Slug, chapter.Slug)
-							</div>
-						}
-						if chapter.IsPremium {
-							<div class="flex items-center mr-3">
-								<span class="uk-badge badge-premium">
-									<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
-										<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-									</svg>
-									{ chapter.PremiumCountdown }
-								</span>
-								if userRole == "moderator" || userRole == "admin" {
-									<button
-										type="button"
-										class="ml-2 uk-btn uk-btn-small uk-btn-default btn-circular"
-										hx-post={ fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug) }
-										hx-confirm="Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users."
-										title="Unmark as premium"
-										aria-label="Unmark chapter as premium"
-									>
-										<uk-icon icon="Unlock" ratio="0.8"></uk-icon>
-									</button>
+	if len(chapters) == 0 {
+		<div class="uk-text-center uk-text-muted py-8">
+			<p>No chapters have been indexed yet for this series.</p>
+		</div>
+	} else {
+		<ul class="uk-accordion" uk-accordion>
+			for _, chapter := range chapters {
+				<li class="uk-closed">
+					<!-- Row layout: left = link/title, right = optional icon -->
+					<div class="flex items-center justify-between w-full">
+						<div class="flex items-center flex-1 min-w-0">
+							<a
+								class={ "uk-accordion-title pr-2 truncate", templ.KV("brand-gradient", chapter.Read) }
+								href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+								if userRole != "anonymous" {
+									hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+									hx-target="#content"
+									hx-push-url="true"
 								}
-							</div>
-						}
-						if chapter.ReadCount > 0 {
-							<span class="text-xs text-blue-600 mr-2 flex items-center" title={ fmt.Sprintf("%d readers", chapter.ReadCount) }>
-								{ fmt.Sprint(chapter.ReadCount) }
-							</span>
-						}
-						if !chapter.CreatedAt.IsZero() {
-							<span class="text-xs text-gray-500">{ chapter.CreatedAt.Format("2006-01-02") }</span>
-						}
+							>
+								{ chapter.Name }
+								<span
+									class="uk-accordion-icon"
+									uk-icon="icon: chevron-down; ratio: 0.8"
+								></span>
+							</a>
+							if isNewUpdate(chapter.CreatedAt) {
+								<span class="uk-badge ml-2 badge-new-margin">
+									NEW
+								</span>
+							}
+						</div>
+						<div class="flex items-center">
+							if chapter.Read {
+								<div class="mr-3" title="Read">
+									@InlineEyeToggle(chapter.Read, media.Slug, chapter.Slug)
+								</div>
+							}
+							if chapter.IsPremium {
+								<div class="flex items-center mr-3">
+									<span class="uk-badge badge-premium">
+										<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
+											<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+										</svg>
+										{ chapter.PremiumCountdown }
+									</span>
+									if userRole == "moderator" || userRole == "admin" {
+										<button
+											type="button"
+											class="ml-2 uk-btn uk-btn-default btn-circular"
+											hx-post={ fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug) }
+											hx-confirm="Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users."
+											title="Unmark as premium"
+											aria-label="Unmark chapter as premium"
+										>
+											<uk-icon icon="Unlock" ratio="0.8"></uk-icon>
+										</button>
+									}
+								</div>
+							}
+							if chapter.ReadCount > 0 {
+								<span class="text-xs mr-2 flex items-center" title={ fmt.Sprintf("%d readers", chapter.ReadCount) }>
+									{ fmt.Sprint(chapter.ReadCount) }
+								</span>
+							}
+							if !chapter.CreatedAt.IsZero() {
+								<span class="text-xs text-gray-500">{ chapter.CreatedAt.Format("2006-01-02") }</span>
+							}
+						</div>
 					</div>
-				</div>
-			</li>
-		}
-	</ul>
+				</li>
+			}
+		</ul>
+	}
 }
 
 templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse bool, premiumDuration int, userRole string) {
@@ -848,68 +912,15 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 				<uk-icon icon="Play"></uk-icon>
 				<span class="ml-1">Resume</span>
 			</a>
+		} else if userRole == "moderator" || userRole == "admin" {
+			@AdminButtonGroup(media.Slug, isHighlighted, "")
 		}
 	</div>
-	<div class="flex justify-center mb-2 md:hidden">
-		if userRole == "moderator" || userRole == "admin" {
-			<div class="uk-btn-group">
-				<button
-					type="button"
-					class="uk-btn uk-btn-primary uk-btn-small"
-					uk-toggle="target: #metadata-modal"
-					title="Search for Metadata"
-					aria-label="Search for Metadata"
-				>
-					<uk-icon icon="Search"></uk-icon>
-				</button>
-				<button
-					type="button"
-					class="uk-btn uk-btn-secondary uk-btn-small"
-					uk-toggle="target: #edit-metadata-modal"
-					title="Edit Metadata"
-					aria-label="Edit Metadata"
-				>
-					<uk-icon icon="Pencil"></uk-icon>
-				</button>
-				<button
-					type="button"
-					class="uk-btn uk-btn-secondary uk-btn-small"
-					uk-toggle="target: #refresh-metadata-modal"
-					title="Refresh Metadata"
-					aria-label="Refresh Metadata"
-				>
-					<uk-icon icon="FolderSync"></uk-icon>
-				</button>
-				<button
-					type="button"
-					class="uk-btn uk-btn-secondary uk-btn-small"
-					uk-toggle="target: #reindex-chapters-modal"
-					title="Re-index chapters"
-					aria-label="Re-index chapters"
-				>
-					<uk-icon icon="RotateCcw"></uk-icon>
-				</button>
-				<button
-					type="button"
-					class="uk-btn uk-btn-destructive uk-btn-small"
-					uk-toggle="target: #delete-media-modal"
-					title="Delete series"
-					aria-label="Delete series"
-				>
-					<uk-icon icon="Trash"></uk-icon>
-				</button>
-				if isHighlighted {
-					<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
-						<uk-icon icon="StarOff"></uk-icon>
-					</button>
-				} else {
-					<button id="highlight-btn" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
-						<uk-icon icon="Star"></uk-icon>
-					</button>
-				}
-			</div>
-		}
-	</div>
+	if lastReadChapterSlug != "" && (userRole == "moderator" || userRole == "admin") {
+		<div class="flex justify-center mb-2 md:hidden">
+			@AdminButtonGroup(media.Slug, isHighlighted, "")
+		</div>
+	}
 	<!-- Desktop layout for medium screens -->
 	<div class="hidden md:flex xl:hidden flex-col gap-2 mb-4">
 		<div class="flex justify-between items-center">
@@ -935,66 +946,13 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 					<uk-icon icon="Play"></uk-icon>
 					<span class="ml-1">Resume</span>
 				</a>
+			} else if userRole == "moderator" || userRole == "admin" {
+				@AdminButtonGroup(media.Slug, isHighlighted, "-desktop")
 			}
 		</div>
-		if userRole == "moderator" || userRole == "admin" {
+		if lastReadChapterSlug != "" && (userRole == "moderator" || userRole == "admin") {
 			<div class="flex justify-center">
-				<div class="uk-btn-group">
-					<button
-						type="button"
-						class="uk-btn uk-btn-primary uk-btn-small"
-						uk-toggle="target: #metadata-modal"
-						title="Search for Metadata"
-						aria-label="Search for Metadata"
-					>
-						<uk-icon icon="Search"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #edit-metadata-modal"
-						title="Edit Metadata"
-						aria-label="Edit Metadata"
-					>
-						<uk-icon icon="Pencil"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #refresh-metadata-modal"
-						title="Refresh Metadata"
-						aria-label="Refresh Metadata"
-					>
-						<uk-icon icon="FolderSync"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #reindex-chapters-modal"
-						title="Re-index chapters"
-						aria-label="Re-index chapters"
-					>
-						<uk-icon icon="RotateCcw"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-destructive uk-btn-small"
-						uk-toggle="target: #delete-media-modal"
-						title="Delete series"
-						aria-label="Delete series"
-					>
-						<uk-icon icon="Trash"></uk-icon>
-					</button>
-					if isHighlighted {
-						<button id="highlight-btn-desktop" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-desktop" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
-							<uk-icon icon="StarOff"></uk-icon>
-						</button>
-					} else {
-						<button id="highlight-btn-desktop" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-desktop" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
-							<uk-icon icon="Star"></uk-icon>
-						</button>
-					}
-				</div>
+				@AdminButtonGroup(media.Slug, isHighlighted, "-desktop")
 			</div>
 		}
 	</div>
@@ -1011,67 +969,12 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<uk-icon icon={ buttonIcon }></uk-icon>
 			<span class="ml-1">{ buttonText }</span>
 		</button>
-		if userRole == "moderator" || userRole == "admin" {
-			<div class="flex justify-center flex-1">
-				<div class="uk-btn-group">
-					<button
-						type="button"
-						class="uk-btn uk-btn-primary uk-btn-small"
-						uk-toggle="target: #metadata-modal"
-						title="Search for Metadata"
-						aria-label="Search for Metadata"
-					>
-						<uk-icon icon="Search"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #edit-metadata-modal"
-						title="Edit Metadata"
-						aria-label="Edit Metadata"
-					>
-						<uk-icon icon="Pencil"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #refresh-metadata-modal"
-						title="Refresh Metadata"
-						aria-label="Refresh Metadata"
-					>
-						<uk-icon icon="FolderSync"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-secondary uk-btn-small"
-						uk-toggle="target: #reindex-chapters-modal"
-						title="Re-index chapters"
-						aria-label="Re-index chapters"
-					>
-						<uk-icon icon="RotateCcw"></uk-icon>
-					</button>
-					<button
-						type="button"
-						class="uk-btn uk-btn-destructive uk-btn-small"
-						uk-toggle="target: #delete-media-modal"
-						title="Delete series"
-						aria-label="Delete series"
-					>
-						<uk-icon icon="Trash"></uk-icon>
-					</button>
-					if isHighlighted {
-						<button id="highlight-btn-large" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/remove", media.Slug) } hx-target="#highlight-btn-large" hx-swap="outerHTML" class="uk-btn uk-btn-destructive uk-btn-small" title="Remove from highlights" aria-label="Remove from highlights">
-							<uk-icon icon="StarOff"></uk-icon>
-						</button>
-					} else {
-						<button id="highlight-btn-large" type="button" hx-post={ fmt.Sprintf("/series/%s/highlights/add", media.Slug) } hx-target="#highlight-btn-large" hx-swap="outerHTML" class="uk-btn btn-favorite uk-btn-small" title="Add to highlights" aria-label="Add to highlights">
-							<uk-icon icon="Star"></uk-icon>
-						</button>
-					}
-				</div>
-			</div>
-		}
 		if lastReadChapterSlug != "" {
+			<div class="flex justify-center flex-1">
+				if userRole == "moderator" || userRole == "admin" {
+					@AdminButtonGroup(media.Slug, isHighlighted, "-large")
+				}
+			</div>
 			<a
 				class="uk-btn uk-btn-primary"
 				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
@@ -1082,6 +985,10 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 				<uk-icon icon="Play"></uk-icon>
 				<span class="ml-1">Resume</span>
 			</a>
+		} else if userRole == "moderator" || userRole == "admin" {
+			<div class="flex justify-end flex-1">
+				@AdminButtonGroup(media.Slug, isHighlighted, "-large")
+			</div>
 		}
 	</div>
 	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
@@ -1092,9 +999,9 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 }
 
 templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+	<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-4">
 		for _, result := range results {
-			<div class="uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+			<div class="uk-card uk-card-default uk-card-body p-4 rounded-lg uk-shadow-sm flex flex-col h-full">
 				if result.CoverArtURL != "" {
 					<div class="mb-3 flex justify-center">
 						@MediaCover(result.CoverArtURL, result.Title, 120, 160, true)
@@ -1115,19 +1022,19 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 						</div>
 					}
 					if result.Description != "" {
-						<div class="text-sm text-gray-700 mb-3 overflow-hidden description-clamp" title={ result.Description }>
+						<div class="text-sm mb-3 overflow-hidden description-clamp" title={ result.Description }>
 							{ result.Description }
 						</div>
 					}
 					if len(result.Tags) > 0 {
-						<div class="text-sm text-blue-600 mb-3 text-center">
+						<div class="text-sm mb-3 text-center">
 							<strong>Tags:</strong> { strings.Join(result.Tags, ", ") }
 						</div>
 					}
 				</div>
 				<button
 					type="button"
-					class="uk-btn uk-btn-primary uk-btn-small w-full flex items-center justify-center mt-4"
+					class="uk-btn uk-btn-primary w-full flex items-center justify-center mt-4"
 					uk-toggle="target: #metadata-modal"
 					hx-post={ fmt.Sprintf("/series/%s/metadata/overwrite?id=%s&slug=%s", mangaSlug, result.ID, mangaSlug) }
 					hx-target="#content"
@@ -1143,7 +1050,6 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 templ Chapter(previousChapter string, currentChapter string, nextChapter string, media models.Media, images []string, chapter models.Chapter, chapters []models.Chapter, comments []models.Comment, userRole string, userName string) {
 	@PageTitle(media.Name + ": " + chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
-		{Label: "Home", Href: "/"},
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
@@ -1175,7 +1081,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			<button id="prev-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="Previous page">
 				<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
 			</button>
-			<span id="page-counter" class="uk-text-bold">1 / 1</span>
+			<span id="page-counter" >1 / 1</span>
 			<button id="next-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="Next page">
 				<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
 			</button>
@@ -1198,7 +1104,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('prev-page-btn').click()" title="Previous page">
 				<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
 			</button>
-			<span class="uk-text-bold" id="page-counter-bottom">1 / 1</span>
+			<span  id="page-counter-bottom">1 / 1</span>
 			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('next-page-btn').click()" title="Next page">
 				<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
 			</button>
@@ -1215,6 +1121,16 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
 templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
+	<style>
+		@media (max-width: 768px) {
+			.reader-controls {
+				padding-left: 0;
+				padding-right: 0;
+				margin-left: -1rem;
+				margin-right: -1rem;
+			}
+		}
+	</style>
 	<div class="flex items-center justify-between reader-controls">
 		if previousChapter != "" {
 			<a
@@ -1328,9 +1244,9 @@ templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
 // PosterEditor shows the poster editor with chapters and images
 templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlug string, imageCount int, currentImageIndex int, imageDataURI string, chapterPage int) {
 	<div id="poster-selector-content" class="poster-editor uk-margin">
-		<div class="uk-margin-bottom">
+		<div >
 			<label class="uk-form-label"><strong>Select a Chapter ({ fmt.Sprint(len(chapters)) } found):</strong></label>
-			<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4 uk-margin-bottom">
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
 				{{ chaptersPerPage := 10 }}
 				{{ totalPages := (len(chapters) + chaptersPerPage - 1) / chaptersPerPage }}
 				{{ start := (chapterPage - 1) * chaptersPerPage }}
@@ -1377,7 +1293,7 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 		</div>
 		if currentChapterSlug != "" {
 			<hr class="uk-divider-icon"/>
-			<div class="uk-margin-bottom">
+			<div >
 				<label class="uk-form-label"><strong>Select an Image ({ fmt.Sprint(imageCount) } found):</strong></label>
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-2 uk-margin">
 					for i := 0; i < imageCount; i++ {
@@ -1747,9 +1663,9 @@ templ PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSl
 // PosterPreviewAndCropper shows a preview of the selected image with crop selection using Cropper.js
 templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex int, imageDataURI string) {
 	<div class="poster-preview-cropper poster-cropper">
-		<div class="uk-margin-bottom">
+		<div >
 			<p><strong>Selected Image #{ fmt.Sprint(imageIndex + 1) }</strong></p>
-			<p class="uk-text-small uk-text-muted">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p>
+			<p class="uk-text-muted">Drag to move, use handles to resize the crop area (2:3 aspect ratio)</p>
 		</div>
 		<!-- Image container for Cropper.js -->
 		<div
@@ -1765,7 +1681,7 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 			/>
 		</div>
 		<!-- Buttons always visible at bottom -->
-		<div class="uk-flex uk-flex-center gap-2 mt-4 poster-buttons-container">
+		<div class="uk-flex gap-2 mt-4 poster-buttons-container">
 			<button
 				type="button"
 				class="uk-btn uk-btn-default"
@@ -1797,7 +1713,6 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 templ NovelChapter(previousChapter string, currentChapter string, nextChapter string, media models.Media, chapter models.Chapter, chapters []models.Chapter, toc string, content string) {
 	@PageTitle(chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
-		{Label: "Home", Href: "/"},
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
@@ -2065,7 +1980,7 @@ templ NovelChapter(previousChapter string, currentChapter string, nextChapter st
 templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
 	<div class="flex flex-col gap-2 mt-4">
 		<!-- Main Navigation Row -->
-		<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+		<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
 			<div class="flex items-center gap-2">
 				if previousChapter != "" {
 					<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter) } class="uk-btn uk-btn-default">
@@ -2116,65 +2031,65 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 						<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
 					</a>
 				} else {
-					<span class="text-gray-400">Next Chapter</span>
+					<span>Next Chapter</span>
 				}
 			</div>
 		</div>
 		<!-- Reader Controls Row -->
-		<div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+		<div class="p-3 bg-gray-50 rounded-lg">
 			<div class="flex flex-wrap justify-center items-center gap-4">
 				<!-- Font Size Controls -->
 				<div class="flex items-center gap-1">
-					<span class="text-sm dark:text-gray-400">Font Size:</span>
-					<button class="uk-btn uk-btn-small uk-btn-default font-size-btn" data-action="decrease" title="Decrease font size">
+					<span class="text-sm">Font Size:</span>
+					<button class="uk-btn uk-btn-default font-size-btn" data-action="decrease" title="Decrease font size">
 						<uk-icon icon="minus" ratio="0.7"></uk-icon>
 					</button>
 					<span class="text-sm px-3 font-medium min-w-12 text-center" id="current-font-size">18px</span>
-					<button class="uk-btn uk-btn-small uk-btn-default font-size-btn" data-action="increase" title="Increase font size">
+					<button class="uk-btn uk-btn-default font-size-btn" data-action="increase" title="Increase font size">
 						<uk-icon icon="plus" ratio="0.7"></uk-icon>
 					</button>
 				</div>
 				<!-- Font Color and Background Controls -->
 				<div class="flex items-center gap-2">
-					<span class="text-sm dark:text-gray-400">Text:</span>
-					<input type="color" id="font-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Font color"/>
+					<span class="text-sm">Text:</span>
+					<input type="color" id="font-color-picker" class="w-8 h-8 rounded border" title="Font color"/>
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="text-sm dark:text-gray-400">Background:</span>
-					<input type="color" id="bg-color-picker" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" title="Background color"/>
+					<span class="text-sm">Background:</span>
+					<input type="color" id="bg-color-picker" class="w-8 h-8 rounded border" title="Background color"/>
 				</div>
 				<!-- Text Alignment Controls -->
 				<div class="flex items-center gap-2">
-					<span class="text-sm dark:text-gray-400">Alignment:</span>
+					<span class="text-sm">Alignment:</span>
 					<div class="flex gap-1">
-						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="left" title="Align left">
+						<button class="uk-btn uk-btn-default text-align-btn" data-align="left" title="Align left">
 							<uk-icon icon="align-left" ratio="0.7"></uk-icon>
 						</button>
-						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="center" title="Align center">
+						<button class="uk-btn uk-btn-default text-align-btn" data-align="center" title="Align center">
 							<uk-icon icon="align-center" ratio="0.7"></uk-icon>
 						</button>
-						<button class="uk-btn uk-btn-small uk-btn-default text-align-btn" data-align="right" title="Align right">
+						<button class="uk-btn uk-btn-default text-align-btn" data-align="right" title="Align right">
 							<uk-icon icon="align-right" ratio="0.7"></uk-icon>
 						</button>
-						<button class="uk-btn uk-btn-small uk-btn-primary text-align-btn" data-align="justify" title="Justify">
+						<button class="uk-btn uk-btn-primary text-align-btn" data-align="justify" title="Justify">
 							<uk-icon icon="align-justify" ratio="0.7"></uk-icon>
 						</button>
 					</div>
 				</div>
 				<!-- Margin Controls -->
 				<div class="flex items-center gap-1">
-					<span class="text-sm dark:text-gray-400">Margins:</span>
-					<button class="uk-btn uk-btn-small uk-btn-default margin-btn" data-action="decrease" title="Decrease margins">
+					<span class="text-sm">Margins:</span>
+					<button class="uk-btn uk-btn-default margin-btn" data-action="decrease" title="Decrease margins">
 						<uk-icon icon="minus" ratio="0.7"></uk-icon>
 					</button>
 					<span class="text-sm px-3 font-medium min-w-12 text-center" id="current-margin">20px</span>
-					<button class="uk-btn uk-btn-small uk-btn-default margin-btn" data-action="increase" title="Increase margins">
+					<button class="uk-btn uk-btn-default margin-btn" data-action="increase" title="Increase margins">
 						<uk-icon icon="plus" ratio="0.7"></uk-icon>
 					</button>
 				</div>
 				<!-- Reset Button -->
 				<div class="flex items-center">
-					<button class="uk-btn uk-btn-small uk-btn-destructive" id="reset-btn" title="Reset all customizations">
+					<button class="uk-btn uk-btn-destructive" id="reset-btn" title="Reset all customizations">
 						<uk-icon icon="refresh-cw" ratio="0.7"></uk-icon>
 						<span class="ml-1">Reset</span>
 					</button>
@@ -2187,16 +2102,15 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDuration int) {
 	@PageTitle("Premium Chapter - " + media.Name + " - " + chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
-		{Label: "Home", Href: "/"},
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
 		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
 	})
 	<div class="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center px-4">
-		<div class="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+		<div class="max-w-md w-full rounded-2xl shadow-2xl overflow-hidden">
 			<!-- Header with lock icon -->
 			<div class="bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-center">
-				<div class="inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-full mb-4">
+				<div class="inline-flex items-center justify-center w-20 h-20 bg-opacity-20 rounded-full mb-4">
 					<svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
 						<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
 					</svg>
@@ -2207,7 +2121,7 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 			<!-- Content -->
 			<div class="p-8">
 				<div class="text-center mb-6">
-					<h2 class="text-xl font-semibold text-gray-800 mb-2">{ media.Name }</h2>
+					<h2 class="text-xl font-semibold mb-2">{ media.Name }</h2>
 					<p class="">{ chapter.Name }</p>
 				</div>
 				<!-- Countdown timer -->
@@ -2234,7 +2148,7 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 				</div>
 				<!-- Back to series link -->
 				<div class="text-center mt-6">
-					<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="text-gray-500 hover:text-gray-700 text-sm">
+					<a href={ templ.URL(fmt.Sprintf("/series/%s", media.Slug)) } class="text-gray-500  text-sm">
 						← Back to { media.Name }
 					</a>
 				</div>
@@ -2274,7 +2188,7 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 				<div>
 					<div class="flex space-x-1 star-rating">
 						for i := 1; i <= 10; i++ {
-							<button type="button" class="star bg-transparent border-none p-0 text-2xl cursor-pointer transition-colors" data-rating={ i }>★</button>
+							<button type="button" class="star bg-transparent border-none p-0 text-2xl" data-rating={ i }>★</button>
 						}
 					</div>
 					<input type="hidden" name="rating" value="0" />
@@ -2286,7 +2200,7 @@ templ MediaReviewsSection(media models.Media, reviews []models.Review, userRevie
 						id="review-content"
 						name="content"
 						rows="4"
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md"
 						placeholder="Share your thoughts about this series..."
 					></textarea>
 				</div>
@@ -2391,12 +2305,12 @@ templ ReviewsList(media models.Media, reviews []models.Review, page int, perPage
 						<span class="text-sm text-gray-500">{ review.CreatedAt.Format("Jan 2, 2006") }</span>
 					</div>
 					if review.Content != "" {
-						<p class="text-gray-700 mt-2">{ review.Content }</p>
+						<p class="mt-2">{ review.Content }</p>
 					}
 					if userRole == "admin" || userRole == "moderator" || review.UserUsername == userName {
 						<div class="mt-2">
-							<button type="button" class="uk-btn uk-btn-secondary uk-btn-small mr-2 edit-review-btn" data-review-id={ fmt.Sprint(review.ID) } data-review-rating={ fmt.Sprint(review.Rating) }>Edit</button>
-							<button type="button" class="uk-btn uk-btn-destructive uk-btn-small" hx-delete={ fmt.Sprintf("/series/%s/reviews/%d", media.Slug, review.ID) } hx-target="#reviews-section" hx-swap="outerHTML" hx-confirm="Are you sure you want to delete this review?">Delete</button>
+							<button type="button" class="uk-btn uk-btn-secondary mr-2 edit-review-btn" data-review-id={ fmt.Sprint(review.ID) } data-review-rating={ fmt.Sprint(review.Rating) }>Edit</button>
+							<button type="button" class="uk-btn uk-btn-destructive" hx-delete={ fmt.Sprintf("/series/%s/reviews/%d", media.Slug, review.ID) } hx-target="#reviews-section" hx-swap="outerHTML" hx-confirm="Are you sure you want to delete this review?">Delete</button>
 						</div>
 					}
 				</div>
@@ -2456,7 +2370,7 @@ templ ChapterCommentsSection(media models.Media, chapter models.Chapter, comment
 						id="comment-content"
 						name="content"
 						rows="4"
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md"
 						placeholder="Share your thoughts about this chapter..."
 						required
 					></textarea>
@@ -2488,12 +2402,12 @@ templ CommentsList(media models.Media, chapter models.Chapter, comments []models
 								<span class="font-semibold text-sm">{ comment.UserUsername }</span>
 								<span class="text-xs text-gray-500">{ comment.CreatedAt.Format("Jan 2, 2006 at 3:04 PM") }</span>
 							</div>
-							<p class="text-sm text-gray-700 whitespace-pre-wrap">{ comment.Content }</p>
+							<p class="text-sm whitespace-pre-wrap">{ comment.Content }</p>
 						</div>
 						if userRole == "moderator" || userRole == "admin" || comment.UserUsername == userName {
 							<button
 								type="button"
-								class="uk-btn uk-btn-small uk-btn-destructive"
+								class="uk-btn uk-btn-destructive"
 								hx-delete={ fmt.Sprintf("/api/comments/%d", comment.ID) }
 								hx-confirm="Are you sure you want to delete this comment?"
 								hx-target="closest .uk-card"

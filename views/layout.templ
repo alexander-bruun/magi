@@ -60,10 +60,10 @@ templ Layout(content templ.Component, userRole string, currentPath string, unrea
 					window.addEventListener('load', () => {
 						navigator.serviceWorker.register('/assets/js/sw.js')
 							.then(registration => {
-								console.log('Service Worker registered:', registration);
+								console.debug('Service Worker registered:', registration);
 							})
 							.catch(error => {
-								console.log('Service Worker registration failed:', error);
+								console.error('Service Worker registration failed:', error);
 							});
 					});
 				}

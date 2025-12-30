@@ -248,7 +248,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
-		imageData, err := utils.EncodeImageToBytes(img, "webp", models.GetProcessedImageQuality())
+		imageData, err := utils.EncodeImageToBytes(img, "webp", 100)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -258,13 +258,13 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		}
 
 		// Generate thumbnails
-		fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
-		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend(), models.GetProcessedImageQuality()); err != nil {
+		fullImagePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
+		if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
 
-		storedImageURL := fmt.Sprintf("/api/posters/%s.jpg?t=%d", mangaSlug, time.Now().Unix())
+		storedImageURL := fmt.Sprintf("/api/posters/%s.webp?t=%d", mangaSlug, time.Now().Unix())
 
 		// Update media with new cover art URL
 		media.CoverArtURL = storedImageURL
@@ -318,14 +318,14 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Extract crop from image and cache it
-	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, models.GetProcessedImageQuality())
+	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
 	fullImagePath := fmt.Sprintf("posters/%s.jpg", mangaSlug)
-	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend(), models.GetProcessedImageQuality()); err != nil {
+	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 	}

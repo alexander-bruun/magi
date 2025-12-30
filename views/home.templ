@@ -150,10 +150,10 @@ templ TopPopularFullFragment(media []models.Media, activePeriod string) {
 }
 
 templ Top10Card(topMedias []models.Media, topReadToday []models.Media) {
-	<div id="top-10-card" class="uk-card uk-card-default uk-card-body mt-6 bg-white">
+	<div id="top-10-card" class="uk-card uk-card-default uk-card-body mt-6">
 		<div class="flex justify-center gap-8 mb-4">
-			<button style="cursor: pointer !important;" class="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium cursor-pointer active-tab border-b-2 border-blue-500" hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
-			<button style="cursor: pointer !important;" class="px-4 py-2 text-gray-800 hover:text-gray-700 cursor-pointer" hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
+			<button style="cursor: pointer !important;" class="px-4 py-2 pb-1 font-bold border-b-2" hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
+			<button style="cursor: pointer !important; padding-bottom: 6px;" class="px-4 py-2  font-bold border-b-0" hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
 		</div>
 		<div id="top-content">
 			<div id="top-popular-full">
@@ -165,8 +165,8 @@ templ Top10Card(topMedias []models.Media, topReadToday []models.Media) {
 
 templ Top10CardContent(activeTab string, activePeriod string, topMedias []models.Media, topReadMedias []models.Media) {
 	<div class="flex justify-center gap-8 mb-4">
-		<button style="cursor: pointer !important;" class={templ.KV("px-4 py-2 font-medium cursor-pointer", true), templ.KV("text-blue-600 hover:text-blue-700 active-tab border-b-2 border-blue-500", activeTab == "popular"), templ.KV("text-gray-800 hover:text-gray-700", activeTab != "popular")} hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
-		<button style="cursor: pointer !important;" class={templ.KV("px-4 py-2 font-medium cursor-pointer", true), templ.KV("text-blue-600 hover:text-blue-700 active-tab border-b-2 border-blue-500", activeTab == "read"), templ.KV("text-gray-800 hover:text-gray-700", activeTab != "read")} hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
+		<button style={ templ.KV("cursor: pointer !important;", true), templ.KV("padding-bottom: 6px;", activeTab != "popular") } class={templ.KV("px-4 py-2 font-bold", true), templ.KV("pb-1 border-b-2", activeTab == "popular"), templ.KV("border-b-0", activeTab != "popular")} hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
+		<button style={ templ.KV("cursor: pointer !important;", true), templ.KV("padding-bottom: 6px;", activeTab != "read") } class={templ.KV("px-4 py-2 font-bold", true), templ.KV("pb-1 border-b-2", activeTab == "read"), templ.KV("border-b-0", activeTab != "read")} hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
 	</div>
 	<div id="top-content">
 		if activeTab == "popular" {
@@ -201,7 +201,7 @@ templ TopReadFullWrapper(media []models.Media, activePeriod string) {
 templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int) {
 	<ul class="space-y-2">
 		for _, chapter := range chapters {
-			<li class="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border">
+			<li class="flex items-center gap-3 p-3 rounded-lg uk-shadow-sm border">
 				<div class="w-12 h-16 overflow-hidden rounded">
 					@MediaCover(chapter.CoverArtURL, chapter.MediaName, 80, 112, true)
 				</div>
@@ -210,7 +210,7 @@ templ RecentChaptersList(chapters []models.ChapterWithMedia, premiumDuration int
 						<a href={ fmt.Sprintf("/series/%s", chapter.MediaSlug) } class="font-medium text-sm truncate">{ chapter.MediaName }</a>
 					</div>
 					<a href={ fmt.Sprintf("/series/%s/%s", chapter.MediaSlug, chapter.Slug) } class="text-sm truncate block">{ chapter.Name }</a>
-					<div class="text-xs text-gray-400 mt-1">
+					<div class="text-xs mt-1">
 						if chapter.IsPremium {
 							<span class="uk-badge badge-premium">
 								<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
@@ -261,8 +261,8 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 											<uk-icon icon="star" class="uk-icon"></uk-icon>
 											{ fmt.Sprint(score) }
 										</span>
-										<span class="uk-badge uk-background-primary">{ strings.ToUpper(highlight.Media.Type) }</span>
-										<span class="uk-badge uk-background-secondary">{ strings.ToUpper(highlight.Media.Status) }</span>
+										<span class="uk-badge">{ strings.ToUpper(highlight.Media.Type) }</span>
+										<span class="uk-badge">{ strings.ToUpper(highlight.Media.Status) }</span>
 									</div>
 									
 									<!-- Title -->
@@ -278,7 +278,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 									</p>
 									
 									<!-- CTA Button -->
-									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="uk-btn uk-btn-primary uk-border-rounded">
+									<a href={ fmt.Sprintf("/series/%s", highlight.Media.Slug) } class="uk-btn uk-btn-primary">
 										<span>📖</span> Read Now
 									</a>
 								</div>
@@ -368,7 +368,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 			@StatCard("Novel Chapters Read", stats.TotalNovelChaptersRead, stats.NovelChaptersReadChange)
 		</div>
 		<div class="text-center mt-2">
-			<small class="text-gray-500">Green badges show change in the last 24 hours</small>
+			<small>Green badges show change in the last 24 hours</small>
 		</div>
 	</div>
 
@@ -499,7 +499,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration int) {
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
 		for _, item := range series {
-			<div class="uk-card uk-card-default uk-card-body p-3 hover:shadow-lg transition-shadow">
+			<div class="uk-card uk-card-default uk-card-body p-3 hover:shadow-lg">
 				<div class="flex items-start gap-3">
 					<div class="flex-shrink-0 relative">
 									<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>
@@ -509,7 +509,7 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 						</a>
 					</div>
 					<div class="flex-1 min-w-0 overflow-hidden">
-						<h3 class="font-bold text-base mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight">
+						<h3 class="font-bold text-base mb-2 leading-tight">
 							<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>{ item.Media.Name }</a>
 						</h3>
 						<div class="space-y-1">
@@ -520,14 +520,14 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 								<div class="flex items-center justify-between gap-1">
 									<div class="flex items-center gap-2">
 										<span class="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0"></span>
-												<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } onclick="event.stopPropagation()" class={ "text-sm hover:text-blue-600 transition-colors truncate leading-tight", templ.KV("brand-gradient", chapter.Read) }>{ chapter.Name }</a>
+												<a href={ fmt.Sprintf("/series/%s/%s", item.Media.Slug, chapter.Slug) } onclick="event.stopPropagation()" class={ "text-sm truncate leading-tight", templ.KV("brand-gradient", chapter.Read) }>{ chapter.Name }</a>
 										if isNewUpdate(chapter.CreatedAt) {
 											<span class="uk-badge badge-new-margin">
 												NEW
 											</span>
 										}
 									</div>
-									<span class="text-sm text-gray-500 flex-shrink-0 whitespace-nowrap">
+									<span class="text-sm flex-shrink-0">
 										if chapter.IsPremium {
 											<span class="uk-badge badge-premium">
 												<svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">

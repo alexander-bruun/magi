@@ -380,7 +380,7 @@ func MediaCard(media models.Media, width int, height int, truncate bool, fixed b
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</h3><div class=\"uk-card-media-top flex justify-center items-center relative\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</h3><div class=\"flex justify-center items-center relative\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -680,7 +680,7 @@ func MediaCover(coverURL string, altText string, width int, height int, fixed bo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\" class=\"object-cover\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -724,7 +724,7 @@ func MediaCover(coverURL string, altText string, width int, height int, fixed bo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" class=\"w-full h-full object-cover\"></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "\" class=\"w-full h-full\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -755,14 +755,14 @@ func StatCard(label string, value int, change int) templ.Component {
 			templ_7745c5c3_Var37 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm text-center\"><div class=\"text-sm text-gray-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<div class=\"uk-card uk-card-default uk-card-body p-4 rounded-lg uk-shadow-sm text-center\"><div class=\"text-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var38 string
 		templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 222, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 222, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 		if templ_7745c5c3_Err != nil {
@@ -839,7 +839,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			templ_7745c5c3_Var41 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"relative flex justify-center items-center avatar-container\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "<div class=\"uk-card uk-card-default uk-card-body p-6 rounded-lg\"><div class=\"flex items-center space-x-6\"><!-- Avatar --><div class=\"relative flex justify-center items-center avatar-container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -857,12 +857,12 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "\" alt=\"avatar\" class=\"rounded-full w-32 h-32 object-cover border-2 border-gray-300 avatar-image transition-opacity duration-300\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, "\" alt=\"avatar\" class=\"rounded-full w-32 h-32 border-2 avatar-image\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<div class=\"rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold border-2 border-gray-300 avatar-image transition-opacity duration-300\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, "<div class=\"rounded-full w-32 h-32 flex items-center justify-center text-4xl font-bold border-2 avatar-image\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1008,7 +1008,7 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 						return templ_7745c5c3_Err
 					}
 					if i < len(favoriteGenres)-1 {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<span class=\"text-gray-400\">•</span>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "<span>•</span>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -1019,12 +1019,12 @@ func ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, re
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, " <div class=\"flex space-x-2\"><a href=\"/account/external\" hx-get=\"/account/external\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-secondary uk-btn-small\">Manage External Accounts</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, " <div class=\"flex space-x-2\"><a href=\"/account/external\" hx-get=\"/account/external\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-secondary\">Manage External Accounts</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div></div></div><!-- Avatar Upload Modal --><div id=\"avatar-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Change Avatar</h2><form hx-post=\"/account/avatar\" hx-target=\"#avatar-modal\" hx-swap=\"none\" enctype=\"multipart/form-data\"><div class=\"uk-margin\"><label class=\"uk-form-label\">Upload Avatar Image</label><div class=\"relative\"><input type=\"file\" name=\"avatar\" accept=\"image/*\" id=\"avatar-input\" class=\"absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 hidden-input\" required><div class=\"flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50\"><div class=\"text-center\"><svg class=\"mx-auto h-6 w-6 text-gray-400 mb-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12\"></path></svg> <span id=\"file-text\" class=\"text-sm\">Choose an image file...</span></div></div></div></div><p class=\"uk-text-meta\">Supported formats: JPG, PNG, GIF. Max size: 2MB</p><div class=\"uk-modal-footer uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\">Upload</button></div></form><script>\n                document.getElementById('avatar-input').addEventListener('change', function(e) {\n                    const file = e.target.files[0];\n                    const fileText = document.getElementById('file-text');\n                    if (file) {\n                        fileText.textContent = file.name;\n                        fileText.classList.remove('');\n                        fileText.classList.add('text-blue-600', 'font-medium');\n                    } else {\n                        fileText.textContent = 'Choose an image file...';\n                        fileText.classList.remove('text-blue-600', 'font-medium');\n                        fileText.classList.add('');\n                    }\n                });\n\n                // Handle HTMX avatar update trigger\n                document.addEventListener('avatarUpdated', function(evt) {\n                    // Show notification\n                    if (typeof showNotification === 'function') {\n                        showNotification(evt.detail.message, evt.detail.status);\n                    }\n\n                    // Close modal\n                    const modal = document.getElementById('avatar-modal');\n                    if (modal && typeof UIkit !== 'undefined') {\n                        UIkit.modal(modal).hide();\n                    }\n\n                    // Refresh avatar image\n                    const avatarImg = document.querySelector('img[alt=\"avatar\"]');\n                    if (avatarImg) {\n                        // Add timestamp to force reload\n                        const src = avatarImg.src;\n                        avatarImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();\n                    }\n                });\n            </script></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</div></div></div><!-- Avatar Upload Modal --><div id=\"avatar-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Change Avatar</h2><form hx-post=\"/account/avatar\" hx-target=\"#avatar-modal\" hx-swap=\"none\" enctype=\"multipart/form-data\"><div class=\"uk-margin\"><label class=\"uk-form-label\">Upload Avatar Image</label><div class=\"relative\"><input type=\"file\" name=\"avatar\" accept=\"image/*\" id=\"avatar-input\" class=\"absolute inset-0 w-full h-full hidden-input\" required><div class=\"flex items-center justify-center w-full h-12 px-4 border-2 border-dashed rounded-lg bg-gray-50 hover:bg-blue-50\"><div class=\"text-center\"><svg class=\"mx-auto h-6 w-6 mb-1\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12\"></path></svg> <span id=\"file-text\" class=\"text-sm\">Choose an image file...</span></div></div></div></div><p class=\"uk-text-meta\">Supported formats: JPG, PNG, GIF. Max size: 2MB</p><div class=\"uk-modal-footer uk-text-right\"><button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button> <button class=\"uk-btn uk-btn-primary\" type=\"submit\">Upload</button></div></form><script>\n                document.getElementById('avatar-input').addEventListener('change', function(e) {\n                    const file = e.target.files[0];\n                    const fileText = document.getElementById('file-text');\n                    if (file) {\n                        fileText.textContent = file.name;\n                        fileText.classList.remove('');\n                        fileText.classList.add('font-medium');\n                    } else {\n                        fileText.textContent = 'Choose an image file...';\n                        fileText.classList.remove('font-medium');\n                        fileText.classList.add('');\n                    }\n                });\n\n                // Handle HTMX avatar update trigger\n                document.addEventListener('avatarUpdated', function(evt) {\n                    // Show notification\n                    if (typeof showNotification === 'function') {\n                        showNotification(evt.detail.message, evt.detail.status);\n                    }\n\n                    // Close modal\n                    const modal = document.getElementById('avatar-modal');\n                    if (modal && typeof UIkit !== 'undefined') {\n                        UIkit.modal(modal).hide();\n                    }\n\n                    // Refresh avatar image\n                    const avatarImg = document.querySelector('img[alt=\"avatar\"]');\n                    if (avatarImg) {\n                        // Add timestamp to force reload\n                        const src = avatarImg.src;\n                        avatarImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();\n                    }\n                });\n            </script></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1102,7 +1102,7 @@ func MediaSlider(media []models.Media, width int, height int, truncate bool, fix
 			templ_7745c5c3_Var51 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto slider-items\" role=\"list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div uk-slider><div class=\"uk-position-relative\" tabindex=\"-1\"><ul class=\"uk-slider-items slider-items\" role=\"list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1120,7 +1120,7 @@ func MediaSlider(media []models.Media, width int, height int, truncate bool, fix
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</ul><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\" aria-label=\"Previous slide\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\" aria-label=\"Next slide\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4\" role=\"tablist\" aria-label=\"Slider pagination\"></ul></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</ul><a class=\"uk-position-center-left\" href uk-slidenav-previous uk-slider-item=\"previous\" aria-label=\"Previous slide\"></a> <a class=\"uk-position-center-right\" href uk-slidenav-next uk-slider-item=\"next\" aria-label=\"Next slide\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-margin place-content-center my-4\" role=\"tablist\" aria-label=\"Slider pagination\"></ul></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1157,7 +1157,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div uk-slider><div class=\"uk-position-relative uk-visible-toggle\" tabindex=\"-1\"><ul class=\"uk-slider-items uk-child-width-auto slider-items\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div uk-slider><div class=\"uk-position-relative\" tabindex=\"-1\"><ul class=\"uk-slider-items slider-items\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1189,7 +1189,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "\"><div class=\"uk-card uk-card-default uk-card-body p-2 showcase-card\"><div class=\"uk-card-media-top relative\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "\"><div class=\"uk-card uk-card-default uk-card-body p-2 showcase-card\"><div class=\"relative\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1201,14 +1201,14 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				if derived == "" {
 					derived = metadata.DetermineMediaTypeByLanguage(media.OriginalLanguage)
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"absolute left-2 top-2\"><span class=\"uk-badge shadow-sm showcase-type-badge\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"absolute left-2 top-2\"><span class=\"uk-badge uk-shadow-sm showcase-type-badge\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var55 string
 				templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToUpper(derived))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 446, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 446, Col: 126}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 				if templ_7745c5c3_Err != nil {
@@ -1250,7 +1250,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</h3><div class=\"flex items-center justify-between mt-1 text-sm text-gray-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</h3><div class=\"flex items-center justify-between mt-1 text-sm\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1268,14 +1268,14 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" onclick=\"event.stopPropagation()\" class=\"flex-1 text-left truncate text-sm text-gray-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "\" onclick=\"event.stopPropagation()\" class=\"flex-1 text-left truncate text-sm\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var59 string
 					templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(media.LatestChapterName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 460, Col: 248}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/components.templ`, Line: 460, Col: 234}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 					if templ_7745c5c3_Err != nil {
@@ -1286,7 +1286,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"flex-1 text-left truncate text-sm text-gray-400\">No chapters</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<span class=\"flex-1 text-left truncate text-sm\">No chapters</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1309,7 +1309,7 @@ func Showcase(media []models.EnrichedMedia) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</ul><a class=\"uk-position-center-left uk-position-small uk-hidden-hover\" href uk-slidenav-previous uk-slider-item=\"previous\" aria-label=\"Previous slide\"></a> <a class=\"uk-position-center-right uk-position-small uk-hidden-hover\" href uk-slidenav-next uk-slider-item=\"next\" aria-label=\"Next slide\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4\" role=\"tablist\" aria-label=\"Slider pagination\"></ul></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</ul><a class=\"uk-position-center-left\" href uk-slidenav-previous uk-slider-item=\"previous\" aria-label=\"Previous slide\"></a> <a class=\"uk-position-center-right\" href uk-slidenav-next uk-slider-item=\"next\" aria-label=\"Next slide\"></a></div><ul class=\"uk-slider-nav uk-dotnav uk-margin place-content-center my-4\" role=\"tablist\" aria-label=\"Slider pagination\"></ul></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1389,7 +1389,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div class=\"uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg\"><h3 class=\"uk-h4 mb-8\">Reading Timeline</h3><!-- Timeline Container --><div class=\"relative w-full timeline-container\"><!-- Horizontal Line (behind with low z-index) --><div class=\"absolute left-0 right-0 w-full bg-gray-300 z-0 timeline-line\"></div><!-- Timeline Points and Items --><div class=\"relative w-full h-full flex justify-between px-4 z-10 timeline-points\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div class=\"uk-card uk-card-default uk-card-body p-6 rounded-lg\"><h3 class=\"uk-h4 mb-8\">Reading Timeline</h3><!-- Timeline Container --><div class=\"relative w-full timeline-container\"><!-- Horizontal Line (behind with low z-index) --><div class=\"absolute left-0 right-0 w-full timeline-line\"></div><!-- Timeline Points and Items --><div class=\"relative w-full h-full flex justify-between px-4 timeline-points\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1413,7 +1413,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" class=\"font-semibold text-blue-600 hover:underline text-sm block\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "\" class=\"font-semibold hover:underline text-sm block\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -1449,7 +1449,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 							return templ_7745c5c3_Err
 						}
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<!-- Circle Point --><div class=\"w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-md z-20 flex-shrink-0\"></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<!-- Circle Point --><div class=\"w-5 h-5 rounded-full border-4 flex-shrink-0\"></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -1467,7 +1467,7 @@ func ReadingTimeline(activities []models.ReadingActivityItem) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" class=\"font-semibold text-blue-600 hover:underline text-sm block\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "\" class=\"font-semibold hover:underline text-sm block\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -1547,7 +1547,7 @@ func FileExplorer() templ.Component {
 			templ_7745c5c3_Var70 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" class=\"file-explorer-content\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex uk-flex-between mt-4\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary select-folder-btn\" type=\"button\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 128, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" class=\"file-explorer-content\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex mt-4\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary select-folder-btn\" type=\"button\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

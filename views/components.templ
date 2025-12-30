@@ -86,7 +86,7 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
 				{ media.Name }
 			</h3>
-			<div class="uk-card-media-top flex justify-center items-center relative">
+			<div class="flex justify-center items-center relative">
 				@MediaCover(media.CoverArtURL, media.Name, width, height, fixed)
 				if isNewUpdate(media.UpdatedAt) {
 					<span class="uk-badge absolute top-2 right-2 badge-new-margin">
@@ -208,18 +208,18 @@ templ MediaCover(coverURL string, altText string, width int, height int, fixed b
     }
     
     if fixed {
-        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText } class="object-cover"/>
+        <img src={ imageURL } width={ fmt.Sprint(width) } height={ fmt.Sprint(height) } alt={ altText }/>
     } else {
         <div class="w-full" style={ fmt.Sprintf("aspect-ratio: %d/%d; max-width: 100%%;", width, height) }>
-            <img src={ imageURL } alt={ altText } class="w-full h-full object-cover"/>
+            <img src={ imageURL } alt={ altText } class="w-full h-full"/>
         </div>
     }
 }
 
 // StatCard shows a small statistic with label and numeric value
 templ StatCard(label string, value int, change int) {
-    <div class="uk-card uk-card-default uk-card-body p-4 rounded-lg shadow-sm text-center">
-        <div class="text-sm text-gray-500">{ label }</div>
+    <div class="uk-card uk-card-default uk-card-body p-4 rounded-lg uk-shadow-sm text-center">
+        <div class="text-sm">{ label }</div>
         <div class="text-2xl font-bold mt-2 flex items-center justify-center gap-2">
             { fmt.Sprint(value) }
             if change > 0 {
@@ -237,14 +237,14 @@ templ StatCard(label string, value int, change int) {
 
 // ProfileCard renders a user's profile summary used on the account page
 templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, readingStreak int, favoriteGenres []string) {
-    <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
+    <div class="uk-card uk-card-default uk-card-body p-6 rounded-lg">
         <div class="flex items-center space-x-6">
             <!-- Avatar -->
             <div class="relative flex justify-center items-center avatar-container">
                 if user.Avatar != "" {
-                    <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 object-cover border-2 border-gray-300 avatar-image transition-opacity duration-300"/>
+                    <img src={ user.Avatar } alt="avatar" class="rounded-full w-32 h-32 border-2 avatar-image"/>
                 } else {
-                    <div class="rounded-full w-32 h-32 bg-gray-300 flex items-center justify-center text-4xl font-bold border-2 border-gray-300 avatar-image transition-opacity duration-300">
+                    <div class="rounded-full w-32 h-32 flex items-center justify-center text-4xl font-bold border-2 avatar-image">
                         { string(user.Username[0]) }
                     </div>
                 }
@@ -312,14 +312,14 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                             for i, genre := range favoriteGenres {
                                 <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">{ genre }</span>
                                 if i < len(favoriteGenres)-1 {
-                                    <span class="text-gray-400">•</span>
+                                    <span>•</span>
                                 }
                             }
                         </div>
                     }
                     
                     <div class="flex space-x-2">
-                        <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary uk-btn-small">Manage External Accounts</a>
+                        <a href="/account/external" hx-get="/account/external" hx-target="#content" hx-push-url="true" class="uk-btn uk-btn-secondary">Manage External Accounts</a>
                     </div>
                 }
             </div>
@@ -334,10 +334,10 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                 <div class="uk-margin">
                     <label class="uk-form-label">Upload Avatar Image</label>
                     <div class="relative">
-                        <input type="file" name="avatar" accept="image/*" id="avatar-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 hidden-input" required/>
-                        <div class="flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50">
+                        <input type="file" name="avatar" accept="image/*" id="avatar-input" class="absolute inset-0 w-full h-full hidden-input" required/>
+                        <div class="flex items-center justify-center w-full h-12 px-4 border-2 border-dashed rounded-lg bg-gray-50 hover:bg-blue-50">
                             <div class="text-center">
-                                <svg class="mx-auto h-6 w-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="mx-auto h-6 w-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
                                 <span id="file-text" class="text-sm">Choose an image file...</span>
@@ -358,10 +358,10 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
                     if (file) {
                         fileText.textContent = file.name;
                         fileText.classList.remove('');
-                        fileText.classList.add('text-blue-600', 'font-medium');
+                        fileText.classList.add('font-medium');
                     } else {
                         fileText.textContent = 'Choose an image file...';
-                        fileText.classList.remove('text-blue-600', 'font-medium');
+                        fileText.classList.remove('font-medium');
                         fileText.classList.add('');
                     }
                 });
@@ -407,18 +407,18 @@ templ MediaGrid(media []models.Media, width int, height int, truncate bool, fixe
 // MediaSlider renders a reusable UIkit slider for media.
 templ MediaSlider(media []models.Media, width int, height int, truncate bool, fixed bool, sort string) {
 	<div uk-slider>
-		<div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-			<ul class="uk-slider-items uk-child-width-auto slider-items" role="list">
+		<div class="uk-position-relative" tabindex="-1">
+			<ul class="uk-slider-items slider-items" role="list">
 				for _, media := range media {
 					<li role="listitem">
 						@MediaCard(media, width, height, truncate, fixed, sort)
 					</li>
 				}
 			</ul>
-			<a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
-			<a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
+			<a class="uk-position-center-left" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
+			<a class="uk-position-center-right" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
 		</div>
-		<ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+		<ul class="uk-slider-nav uk-dotnav uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
 	</div>
 }
 
@@ -429,21 +429,21 @@ templ Showcase(media []models.EnrichedMedia) {
         @EmptyState("No media have been indexed yet.")
     } else {
         <div uk-slider>
-            <div class="uk-position-relative uk-visible-toggle" tabindex="-1">
-                <ul class="uk-slider-items uk-child-width-auto slider-items">
+            <div class="uk-position-relative" tabindex="-1">
+                <ul class="uk-slider-items slider-items">
                     for _, media := range media {
                         {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
                         <li>
                             <a href={ fmt.Sprintf("/series/%s", media.Slug) } class="block" aria-label={ fmt.Sprintf("View %s", media.Name) }>
                                 <div class="uk-card uk-card-default uk-card-body p-2 showcase-card">
-                                    <div class="uk-card-media-top relative">
+                                    <div class="relative">
                                         @MediaCover(media.CoverArtURL, media.Name, 200, 300, true)
                                         {{ derived := media.Type }}
                                         if derived == "" {
                                             {{ derived = metadata.DetermineMediaTypeByLanguage(media.OriginalLanguage) }}
                                         }
                                         <div class="absolute left-2 top-2">
-                                            <span class="uk-badge shadow-sm showcase-type-badge">{ strings.ToUpper(derived) }</span>
+                                            <span class="uk-badge uk-shadow-sm showcase-type-badge">{ strings.ToUpper(derived) }</span>
                                             if media.PremiumCountdown != "" {
                                                 <span class="uk-badge showcase-premium-badge">
                                                     <svg class="w-3 h-3 inline-svg" fill="currentColor" viewBox="0 0 20 20">
@@ -455,11 +455,11 @@ templ Showcase(media []models.EnrichedMedia) {
                                         </div>
                                     </div>
                                     <h3 class="uk-card-title uk-h3 mt-2 truncate-header">{ media.Name }</h3>
-                                    <div class="flex items-center justify-between mt-1 text-sm text-gray-400">
+                                    <div class="flex items-center justify-between mt-1 text-sm">
                                         if media.LatestChapterSlug != "" {
-                                            <a href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)) } onclick="event.stopPropagation()" class="flex-1 text-left truncate text-sm text-gray-400">{ media.LatestChapterName }</a>
+                                            <a href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, media.LatestChapterSlug)) } onclick="event.stopPropagation()" class="flex-1 text-left truncate text-sm">{ media.LatestChapterName }</a>
                                         } else {
-                                            <span class="flex-1 text-left truncate text-sm text-gray-400">No chapters</span>
+                                            <span class="flex-1 text-left truncate text-sm">No chapters</span>
                                         }
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
@@ -471,10 +471,10 @@ templ Showcase(media []models.EnrichedMedia) {
                         </li>
                     }
                 </ul>
-                <a class="uk-position-center-left uk-position-small uk-hidden-hover" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
-                <a class="uk-position-center-right uk-position-small uk-hidden-hover" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
+                <a class="uk-position-center-left" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
+                <a class="uk-position-center-right" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
             </div>
-            <ul class="uk-slider-nav uk-dotnav uk-flex-center uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+            <ul class="uk-slider-nav uk-dotnav uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
         </div>
     }
 }
@@ -492,16 +492,16 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
     if len(activities) == 0 {
         <p class="role-reader">No reading history yet.</p>
     } else {
-        <div class="uk-card uk-card-default uk-card-body p-6 shadow-md rounded-lg">
+        <div class="uk-card uk-card-default uk-card-body p-6 rounded-lg">
             <h3 class="uk-h4 mb-8">Reading Timeline</h3>
             
             <!-- Timeline Container -->
             <div class="relative w-full timeline-container">
                 <!-- Horizontal Line (behind with low z-index) -->
-                <div class="absolute left-0 right-0 w-full bg-gray-300 z-0 timeline-line"></div>
+                <div class="absolute left-0 right-0 w-full timeline-line"></div>
                 
                 <!-- Timeline Points and Items -->
-                <div class="relative w-full h-full flex justify-between px-4 z-10 timeline-points">
+                <div class="relative w-full h-full flex justify-between px-4 timeline-points">
                     for i, activity := range activities {
                         if activity.Media != nil {
                             <div class="flex flex-col items-center flex-1 relative timeline-item">
@@ -509,7 +509,7 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                                     <!-- Item going up -->
                                     <div class="text-center mb-4 flex flex-col justify-end flex-1">
                                         <div class="mb-2">
-                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold hover:underline text-sm block">
                                                 { activity.Media.Name }
                                             </a>
                                             <p class="text-xs">
@@ -523,13 +523,13 @@ templ ReadingTimeline(activities []models.ReadingActivityItem) {
                                 }
                                 
                                 <!-- Circle Point -->
-                                <div class="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-md z-20 flex-shrink-0"></div>
+                                <div class="w-5 h-5 rounded-full border-4 flex-shrink-0"></div>
                                 
                                 if i%2 == 1 {
                                     <!-- Item going down -->
                                     <div class="text-center mt-4 flex flex-col justify-start flex-1">
                                         <div class="mt-2">
-                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold text-blue-600 hover:underline text-sm block">
+                                            <a href={ templ.URL("/series/" + activity.Media.Slug) } class="font-semibold hover:underline text-sm block">
                                                 { activity.Media.Name }
                                             </a>
                                             <p class="text-xs">
@@ -567,7 +567,7 @@ templ FileExplorer() {
 					<!-- Content will be populated by JavaScript -->
 				</div>
 			</div>
-			<div class="uk-flex uk-flex-between mt-4">
+			<div class="uk-flex mt-4">
 				<button id="select-folder-btn" class="uk-btn uk-btn-primary select-folder-btn" type="button">Select This Folder</button>
 				<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
 			</div>

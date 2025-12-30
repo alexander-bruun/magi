@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/adaptor/v2"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Prometheus metrics
@@ -42,8 +43,8 @@ var (
 
 	imageLoadDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "magi_image_load_duration_seconds",
-			Help: "Time taken to serve images by file type",
+			Name:    "magi_image_load_duration_seconds",
+			Help:    "Time taken to serve images by file type",
 			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"file_type"},
@@ -52,14 +53,14 @@ var (
 
 // Cached metric values with TTL to prevent continuous database scans
 var (
-	cachedTotalMedias        float64
-	cachedTotalChapters      float64
-	cachedTotalChaptersRead  float64
-	cachedTotalUsers         float64
-	cachedTotalLibraries     float64
-	metricsCacheMutex        sync.RWMutex
-	lastMetricsUpdate        time.Time
-	metricsCacheTTL          = 60 * time.Second // Cache metrics for 60 seconds
+	cachedTotalMedias       float64
+	cachedTotalChapters     float64
+	cachedTotalChaptersRead float64
+	cachedTotalUsers        float64
+	cachedTotalLibraries    float64
+	metricsCache            sync.Map // string -> *Metrics, concurrent
+	lastMetricsUpdate       time.Time
+	metricsCacheTTL         = 60 * time.Second // Cache metrics for 60 seconds
 )
 
 func init() {
@@ -74,8 +75,7 @@ func init() {
 
 // updateMetrics updates all Prometheus metrics with current database values (cached)
 func updateMetrics() {
-	metricsCacheMutex.Lock()
-	defer metricsCacheMutex.Unlock()
+	// No lock: lock-free update
 
 	// Skip update if cache is still fresh
 	if time.Since(lastMetricsUpdate) < metricsCacheTTL {

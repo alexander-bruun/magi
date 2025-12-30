@@ -12,26 +12,26 @@ import (
 
 // ScraperScript represents a scraper script stored in the database
 type ScraperScript struct {
-	ID              int64
-	Name            string
-	Script          string
-	Language        string // "bash", "python"
-	Schedule        string // Cron format (e.g., "0 0 * * *")
-	Variables       map[string]string // Key-value pairs for script variables
-	Packages        []string // Python packages to install for python scripts
-	SharedScript    *string // Shared bash script that can be sourced by scraper scripts
-	LastRun         *int64 // Unix timestamp
-	LastRunOutput   *string
-	LastRunError    *string
-	CreatedAt       int64
-	UpdatedAt       int64
-	Enabled         bool
+	ID            int64
+	Name          string
+	Script        string
+	Language      string            // "bash", "python"
+	Schedule      string            // Cron format (e.g., "0 0 * * *")
+	Variables     map[string]string // Key-value pairs for script variables
+	Packages      []string          // Python packages to install for python scripts
+	SharedScript  *string           // Shared bash script that can be sourced by scraper scripts
+	LastRun       *int64            // Unix timestamp
+	LastRunOutput *string
+	LastRunError  *string
+	CreatedAt     int64
+	UpdatedAt     int64
+	Enabled       bool
 }
 
 // CreateScraperScript creates a new scraper script in the database
 func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
-	
+
 	// Serialize variables to JSON
 	variablesJSON := "{}"
 	if len(variables) > 0 {
@@ -41,7 +41,7 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 		}
 		variablesJSON = string(data)
 	}
-	
+
 	// Serialize packages to JSON
 	packagesJSON := "[]"
 	if len(packages) > 0 {
@@ -51,7 +51,7 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 		}
 		packagesJSON = string(data)
 	}
-	
+
 	query := `
 		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, shared_script, created_at, updated_at, enabled)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
@@ -138,7 +138,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 // UpdateScraperScript updates a scraper script
 func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
-	
+
 	// Serialize variables to JSON
 	variablesJSON := "{}"
 	if len(variables) > 0 {
@@ -148,7 +148,7 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 		}
 		variablesJSON = string(data)
 	}
-	
+
 	// Serialize packages to JSON
 	packagesJSON := "[]"
 	if len(packages) > 0 {
@@ -158,7 +158,7 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 		}
 		packagesJSON = string(data)
 	}
-	
+
 	query := `
 		UPDATE scraper_scripts
 		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, shared_script = ?, updated_at = ?
@@ -426,16 +426,16 @@ func DeleteScraperLog(id int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete execution log: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("execution log with id %d not found", id)
 	}
-	
+
 	return nil
 }
 
@@ -446,12 +446,12 @@ func CleanupOldScraperLogs(scriptID int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to count logs: %w", err)
 	}
-	
+
 	// If we have 15 or fewer logs, no cleanup needed
 	if count <= 15 {
 		return nil
 	}
-	
+
 	// Delete logs beyond the most recent 15
 	// We need to keep the 15 most recent, so delete everything older than the 15th most recent
 	query := `
@@ -466,17 +466,17 @@ func CleanupOldScraperLogs(scriptID int64) error {
 			) AS recent_logs
 		)
 	`
-	
+
 	result, err := db.Exec(query, scriptID, scriptID)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup old logs: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err == nil && rowsAffected > 0 {
 		log.Infof("Cleaned up %d old log(s) for script %d", rowsAffected, scriptID)
 	}
-	
+
 	return nil
 }
 
@@ -592,10 +592,10 @@ func (l *ScraperExecutionLog) FormatOutputHTML() string {
 		return ""
 	}
 	output := *l.Output
-	
+
 	// Replace ANSI escape codes with HTML spans
 	// Common ANSI codes: \x1b[1;34m (bold blue), \x1b[1;32m (bold green), \x1b[1;33m (bold yellow), \x1b[1;31m (bold red), \x1b[0m (reset)
-	
+
 	// Bold blue for INFO
 	output = strings.ReplaceAll(output, "\x1b[1;34m", `<span style="color: #3b82f6; font-weight: bold;">`)
 	// Bold green for SUCCESS
@@ -606,7 +606,7 @@ func (l *ScraperExecutionLog) FormatOutputHTML() string {
 	output = strings.ReplaceAll(output, "\x1b[1;31m", `<span style="color: #ef4444; font-weight: bold;">`)
 	// Reset
 	output = strings.ReplaceAll(output, "\x1b[0m", `</span>`)
-	
+
 	return output
 }
 
@@ -625,11 +625,11 @@ func AbortOrphanedRunningLogs() error {
 	if err != nil {
 		return fmt.Errorf("failed to abort orphaned running logs: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err == nil && rowsAffected > 0 {
 		log.Infof("Marked %d orphaned running log(s) as aborted", rowsAffected)
 	}
-	
+
 	return nil
 }

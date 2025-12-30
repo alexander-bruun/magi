@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -20,8 +19,7 @@ import (
 // Other scripts are moved to end of <body> for better performance.
 
 var (
-	jsCache   = make(map[string]string) // path -> content
-	jsCacheMu sync.RWMutex
+	jsCache = make(map[string]string) // string -> string, no mutex
 
 	// Matches <script src="/assets/js/..."></script>
 	scriptTagRegex = regexp.MustCompile(`<script\s+[^>]*src="(/assets/js/[^"]+)"[^>]*>\s*</script>`)
@@ -56,9 +54,8 @@ func InitJSCache(assetsPath string) error {
 		relPath, _ := filepath.Rel(assetsPath, path)
 		urlPath := "/assets/" + filepath.ToSlash(relPath)
 
-		jsCacheMu.Lock()
+		// No need to lock with sync.Map
 		jsCache[urlPath] = string(content)
-		jsCacheMu.Unlock()
 
 		return nil
 	})
@@ -67,9 +64,7 @@ func InitJSCache(assetsPath string) error {
 		return err
 	}
 
-	jsCacheMu.RLock()
 	count := len(jsCache)
-	jsCacheMu.RUnlock()
 
 	log.Infof("JS cache initialized with %d files", count)
 	return nil
@@ -77,8 +72,6 @@ func InitJSCache(assetsPath string) error {
 
 // getJSContent returns cached JS content for a URL path
 func getJSContent(urlPath string) (string, bool) {
-	jsCacheMu.RLock()
-	defer jsCacheMu.RUnlock()
 	content, ok := jsCache[urlPath]
 	return content, ok
 }
@@ -234,9 +227,6 @@ type scriptInfo struct {
 
 // GetJSStats returns statistics about cached JavaScript
 func GetJSStats() map[string]interface{} {
-	jsCacheMu.RLock()
-	defer jsCacheMu.RUnlock()
-
 	totalSize := 0
 	vendorCount := 0
 	appCount := 0
