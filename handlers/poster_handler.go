@@ -234,6 +234,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	useWebP := !cfg.DisableWebpConversion
+	posterQuality := 100 // Use full quality for manually uploaded/cropped posters
 
 	// Check for file upload
 	if file, err := c.FormFile("poster"); err == nil {
@@ -265,7 +266,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 			cachePath = fmt.Sprintf("posters/%s.jpg", mangaSlug)
 		}
 
-		imageData, err := utils.EncodeImageToBytes(img, format, 100)
+		imageData, err := utils.EncodeImageToBytes(img, format, posterQuality)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -333,7 +334,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Extract crop from image and cache it
-	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, useWebP)
+	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, useWebP, posterQuality)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}

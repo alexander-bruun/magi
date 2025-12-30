@@ -540,6 +540,7 @@ func listImagesInRar(rarPath string) ([]string, error) {
 }
 
 // ExtractAndStoreImageWithCrop extracts an image (from a file path or archive) and stores it with optional cropping.
+// ExtractAndStoreImageWithCrop extracts an image (from a file path or archive) and stores it with optional cropping.
 func ExtractAndStoreImageWithCrop(imagePath string, slug string, cropData map[string]interface{}, quality int, useWebP bool) (string, error) {
 	dataDir := GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
@@ -772,7 +773,7 @@ func getImageFromRarAsDataURI(rarPath string, imageIndex int) (string, error) {
 }
 
 // ExtractAndStoreImageWithCropByIndex extracts an image by index with cropping
-func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, useWebP bool) (string, error) {
+func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int, cropData map[string]interface{}, useWebP bool, quality int) (string, error) {
 	dataDir := GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 	if err := os.MkdirAll(postersDir, 0755); err != nil {
@@ -827,7 +828,7 @@ func ExtractAndStoreImageWithCropByIndex(mangaPath, slug string, imageIndex int,
 		}
 	}
 
-	return processCroppedImage(imagePath, slug, postersDir, cropData, 100, useWebP)
+	return processCroppedImage(imagePath, slug, postersDir, cropData, quality, useWebP)
 }
 
 // extractImageFromZipToPath extracts a specific image from a zip archive

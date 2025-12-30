@@ -40,7 +40,6 @@ type AppConfig struct {
 	AdminCompressionQuality     int `json:"admin_compression_quality" form:"admin_compression_quality"`         // JPEG quality for admin role (0-100)
 	PremiumCompressionQuality   int `json:"premium_compression_quality" form:"premium_compression_quality"`     // JPEG quality for premium role (0-100)
 	AnonymousCompressionQuality int `json:"anonymous_compression_quality" form:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
-	ProcessedImageQuality       int `json:"processed_image_quality" form:"processed_image_quality"`             // Image quality for processed images (thumbnails, covers) (0-100)
 
 	// Image processing settings
 	DisableWebpConversion bool `json:"disable_webp_conversion" form:"disable_webp_conversion"` // whether to disable conversion of images to WebP format
@@ -141,7 +140,6 @@ func loadConfigFromDB() (AppConfig, error) {
 	var adminCompressionQuality int
 	var premiumCompressionQuality int
 	var anonymousCompressionQuality int
-	var processedImageQuality int
 	var disableWebpConversion int
 	var imageTokenValidityMinutes int
 	var premiumEarlyAccessDuration int
@@ -154,7 +152,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &processedImageQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
+		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
 			return AppConfig{
@@ -181,7 +179,6 @@ func loadConfigFromDB() (AppConfig, error) {
 				AdminCompressionQuality:       100,
 				PremiumCompressionQuality:     90,
 				AnonymousCompressionQuality:   70,
-				ProcessedImageQuality:         85,
 				DisableWebpConversion:         false,
 				ImageTokenValidityMinutes:     5,
 				PremiumEarlyAccessDuration:    3600,
@@ -219,7 +216,6 @@ func loadConfigFromDB() (AppConfig, error) {
 		AdminCompressionQuality:       adminCompressionQuality,
 		PremiumCompressionQuality:     premiumCompressionQuality,
 		AnonymousCompressionQuality:   anonymousCompressionQuality,
-		ProcessedImageQuality:         processedImageQuality,
 		DisableWebpConversion:         disableWebpConversion == 1,
 		ImageTokenValidityMinutes:     imageTokenValidityMinutes,
 		PremiumEarlyAccessDuration:    premiumEarlyAccessDuration,
