@@ -23,7 +23,7 @@ import (
 type SubscriptionExpiryJob struct{}
 
 func (j *SubscriptionExpiryJob) Execute() error {
-	log.Info("Running subscription expiry check")
+	log.Debug("Running subscription expiry check")
 
 	// Get all users with expired active subscriptions
 	expiredUsers, err := models.GetExpiredSubscriptions()
