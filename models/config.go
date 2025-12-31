@@ -60,7 +60,7 @@ type AppConfig struct {
 	NewBadgeDuration int `json:"new_badge_duration" form:"new_badge_duration"` // duration in hours that media is marked as NEW after update
 
 	// Parallel indexing settings
-	ParallelIndexingEnabled  bool `json:"parallel_indexing_enabled" form:"parallel_indexing_enabled"`   // whether parallel indexing is enabled
+	ParallelIndexingEnabled   bool `json:"parallel_indexing_enabled" form:"parallel_indexing_enabled"`     // whether parallel indexing is enabled
 	ParallelIndexingThreshold int  `json:"parallel_indexing_threshold" form:"parallel_indexing_threshold"` // minimum series count to trigger parallel processing
 }
 
