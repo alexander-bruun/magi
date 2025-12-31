@@ -16,14 +16,23 @@ convert_to_png="${convert_to_png:-true}"
 folder="${folder:-$(cd "$(dirname "$0")" && pwd)/DemonicScans}"
 default_suffix="${default_suffix:-[DemonicScans]}"
 
-# Extract series URLs from the updates page
+# Extract series URLs from the translations list page
+# Returns: series URLs (one per line) and sets global variable is_last_page
 extract_series_urls() {
-  local url="https://demonicscans.org/lastupdates.php"
-  log "Fetching series list from updates page..."
+  local page=$1
+  local url="https://demonicscans.org/translationlist.php?page=${page}"
+  log "Fetching series list from page $page..."
   
   local html=$(curl -s --max-time 30 "$url")
-
-  # Extract series URLs from the updates page
+  
+  # Check if this is the last page by looking for disabled "Next" button
+  if echo "$html" | grep -q 'pointer-events:\s*none.*Next'; then
+    is_last_page=true
+  else
+    is_last_page=false
+  fi
+  
+  # Extract series URLs
   echo "$html" | grep -oP 'href="/manga/[^\"]+"' | sed 's|href="||; s|"||' | sort -u
 }
 
@@ -97,9 +106,32 @@ success "Health check passed. Site is accessible."
 mkdir -p "${folder}"
 
 # Collect all series URLs
-all_series_urls=($(extract_series_urls))
+all_series_urls=()
+page=1
+is_last_page=false
 
-log "Found ${#all_series_urls[@]} series"
+while true; do
+  readarray -t page_series < <(extract_series_urls "$page")
+  
+  # If no series found on this page, we've reached the end
+  if [[ ${#page_series[@]} -eq 0 ]]; then
+    log "No series found on page $page, stopping."
+    break
+  fi
+  
+  all_series_urls+=("${page_series[@]}")
+  log "Found ${#page_series[@]} series on page $page"
+  
+  # Check if we've reached the last page (Next button is disabled)
+  if [[ "$is_last_page" == "true" ]]; then
+    log "Reached last page (page $page)."
+    break
+  fi
+  
+  ((page++))
+done
+
+log "Found ${#all_series_urls[@]} series across $page page(s)"
 
 # Process each series
 for series_url in "${all_series_urls[@]}"; do
