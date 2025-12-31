@@ -12,44 +12,28 @@ folder="${folder:-$(cd "$(dirname "$0")" && pwd)/HiveToons}"
 default_suffix="[HiveToons]"
 proxy="${proxy:-}"
 json_file="${json_file:-$(cd "$(dirname "$0")" && pwd)/hivetoons.json}" # Update the file when new stuff: https://api.hivetoons.org/api/query?page=1&perPage=99999 - they have ip abuse protection so can't do live scraping of series list
+user_agent="${user_agent:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36}"
 
 mkdir -p "$folder"
 
 command -v jq >/dev/null || { echo "ERROR: jq required → sudo apt install jq"; exit 1; }
-[[ -f "$json_file" ]] || { echo "ERROR: $json_file not found"; exit 1; }
+
+# Initialize cookies by visiting the main page
+init_cookies() {
+  log "Initializing cookies..."
+  curl -s -L -H "User-Agent: $user_agent" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9" -c "$cookie_file" -o /dev/null "$domain"
+}
 
 # ===================== JSON PARSERS =====================
 extract_series_urls()   { jq -r '.posts[] | select(.isNovel == false) | "/series/" + .slug' "$json_file"; }
 extract_series_title()  { local s="${1#/series/}"; jq -r --arg s "$s" '.posts[] | select(.slug == $s) | .postTitle' "$json_file" | head -n1; }
 
-extract_chapter_links_from_json() {
-    local s="${1#/series/}"
-    jq -r --arg s "$s" '
-        [.posts[] | select(.slug == $s) | .chapters[].number]
-        | sort_by(tonumber)
-        | reverse[]
-        | "/series/" + $s + "/chapter-" + tostring
-    ' "$json_file"
-}
-
-# ===================== GET HIGHEST FROM LIVE PAGE =====================
-get_highest_live() {
-    local series_url="$1"
-    curl -sf ${proxy:+-x "$proxy"} \
-        -H "User-Agent: Mozilla/5.0" \
-        -H "Referer: ${domain}/" \
-        "${domain}${series_url}" 2>/dev/null | \
-    grep -oE 'chapter-[0-9]+' | grep -oE '[0-9]+' | sort -nr | head -1 || echo "0"
-}
-
-# ===================== GENERATE ALL CHAPTER URLS 0 → HIGHEST =====================
-generate_all_chapters() {
-    local series_url="$1"
-    local highest="$2"
-    local slug="${series_url#/series/}"
-    for ((i=0; i<=highest; i++)); do
-        printf '/series/%s/chapter-%d\n' "$slug" "$i"
-    done
+extract_chapter_links() {
+  local series_slug="$1"
+  local series_url="${domain}/series/${series_slug}"
+  local html=$(curl -s -L -H "User-Agent: $user_agent" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.5" -H "Referer: ${domain}/" --compressed "$series_url")
+  local tmp_html=$(echo "$html" | tr -d '\n')
+  grep -o '\\"slug\\":\\"chapter-[^"]*\\"' <<< "$tmp_html" | sed 's/\\"slug\\":\\"//' | sed 's/\\"//' | sort | uniq
 }
 
 # ===================== IMAGE EXTRACTION =====================
@@ -58,15 +42,17 @@ extract_image_urls() {
     for i in {1..3}; do
         local html
         html=$(curl -sf ${proxy:+-x "$proxy"} \
-            -H "User-Agent: Mozilla/5.0" \
+            -H "User-Agent: $user_agent" \
+            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+            -H "Accept-Language: en-US,en;q=0.9" \
             -H "Referer: ${domain}/" \
             --compressed "$url" 2>/dev/null || true)
 
+        local tmp_html=$(mktemp)
+        echo "$html" | tr -d '\n' > "$tmp_html"
         local imgs
-        imgs=$(echo "$html" |
-            grep -oE 'https?://[^[:space:]"\''"]+\.(jpe?g|png|webp|avif)' |
-            grep -E '^https?://storage\.hivetoon\.com/public//upload/(series/|20[0-9]{2}/[01][0-9]/[0-3][0-9]/)' |
-            sort -u)
+        imgs=$(grep -o 'https://storage\.hivetoon\.com/public/*upload/series/[^"]*\.\(webp\|jpg\|png\|jpeg\|avif\)' "$tmp_html" | sort -u)
+        rm "$tmp_html"
 
         if (( $(wc -l <<<"$imgs") >= 1 )); then
             printf '%s\n' "$imgs"
@@ -79,7 +65,16 @@ extract_image_urls() {
 }
 
 # ===================== MAIN =====================
-log "HiveToons → FULL BRUTE-FORCE DOWNLOADER (gets EVERY chapter 0–latest)"
+log "HiveToons → SERIES SCRAPER"
+
+if [[ ! -f "$json_file" ]]; then
+  log "Fetching all series data..."
+  all_json=$(curl -s "https://api.hivetoons.org/api/query?page=1&perPage=99999")
+  echo "$all_json" > "$json_file"
+else
+  log "Loading series data from cache..."
+fi
+
 log "Found $(jq '.posts | length' "$json_file") series in JSON"
 
 readarray -t series_list < <(extract_series_urls)
@@ -91,30 +86,25 @@ for series_url in "${series_list[@]}"; do
     clean_title=$(html_unescape "$title" | tr -d '<>:"/\\|?*')
     log "Title → $clean_title"
 
+    series_slug="${series_url#/series/}"
     series_dir=$(find "$folder" -maxdepth 1 -type d -name "${clean_title}*" | head -n1 || echo "")
     series_dir="${series_dir:-$folder/$clean_title $default_suffix}"
     mkdir -p "$series_dir"
 
-    # === DETERMINE HIGHEST CHAPTER ===
-    readarray -t json_chapters < <(extract_chapter_links_from_json "$series_url")
-    highest_json=$(printf '%s\n' "${json_chapters[@]}" | grep -o '[0-9]*$' | sort -nr | head -1 || echo "0")
-    highest_live=$(get_highest_live "$series_url")
-    highest=$(( highest_json > highest_live ? highest_json : highest_live ))
+    # Extract chapter slugs from series page
+    chapter_links=$(extract_chapter_links "$series_slug")
 
-    log "Highest chapter: $highest (JSON: $highest_json | Live: $highest_live)"
-    log "Brute-forcing chapters 0 → $highest"
-
-    mapfile -t all_chapters < <(generate_all_chapters "$series_url" "$highest")
-    pad=${#highest}
-    (( pad < 2 )) && pad=2
-    log "Using $pad-digit padding"
-
-    normalize_chapter_numbers "$series_dir" "$pad"
+    normalize_chapter_numbers "$series_dir" "2"
 
     # === DOWNLOAD LOOP ===
-    for ch_url in "${all_chapters[@]}"; do
-        num=$(grep -o '[0-9]*$' <<<"$ch_url")
-        padded=$(printf "%0${pad}d" "$num")
+    for ch_slug in $chapter_links; do
+        ch_url="/series/${series_slug}/${ch_slug}"
+        num=$(echo "$ch_slug" | sed 's/chapter-//')
+        if [[ "$num" =~ ^[0-9]+$ ]]; then
+            padded=$(printf "%02d" "$num")
+        else
+            padded="$num"
+        fi
         name="${clean_title} Ch.${padded} ${default_suffix}"
 
         existing_cbz=$(ls "$series_dir"/*"Ch.${padded}"*.cbz 2>/dev/null | head -n1 || echo "")
@@ -168,4 +158,4 @@ for series_url in "${series_list[@]}"; do
     done
 done
 
-success "ALL DONE! Every existing chapter from 0 to latest is now in → $folder"
+success "ALL DONE! Every existing chapter is now in → $folder"
