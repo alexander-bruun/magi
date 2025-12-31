@@ -18,6 +18,8 @@ folder="${folder:-$(cd "$(dirname "$0")" && pwd)/VortexScans}"
 default_suffix="${default_suffix:-[VortexScans]}"
 user_agent="${user_agent:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36}"
 cookie_file="${cookie_file:-$(cd "$(dirname "$0")" && pwd)/cookies.txt}"
+api_cache_file="$(dirname "$cookie_file")/vortexscans.json"
+original_vshield=$(grep '_1__vShield_v' "$cookie_file" | awk '{print $7}')
 
 # Ensure folder exists
 mkdir -p "${folder}"
@@ -25,6 +27,8 @@ mkdir -p "${folder}"
 # Initialize cookies by visiting the main page
 # This sets the vShield cookie required to bypass rate limiting.
 # The vShield cookie is a session cookie that VortexScans uses to identify legitimate users.
+# Note: The vShield cookie value is dynamic and changes with each session/request.
+# The script will update it during execution but restore the original value at the end.
 # To get the vShield cookie manually:
 # 1. Open your browser and navigate to https://vortexscans.org
 # 2. Open Developer Tools (F12), go to the Network tab
@@ -42,43 +46,37 @@ init_cookies() {
 
 # Extract series slugs from API
 extract_series_urls() {
-  local url="https://api.vortexscans.org/api/query"
-  log "Fetching series from API..."
-  
-  local json=$(curl -s -b "$cookie_file" -c "$cookie_file" "$url")
-  
-  echo "$json" | jq -r '.posts[].slug' 2>/dev/null || echo "$json" | grep -oP '"slug":"[^"]*"' | sed 's/"slug":"//' | sed 's/"$//' | grep -v '^chapter-' | sort -u
+  echo "$all_json" | jq -r '.posts[].slug' 2>/dev/null || echo "$all_json" | grep -oP '"slug":"[^"]*"' | sed 's/"slug":"//' | sed 's/"$//' | grep -v '^chapter-' | sort -u
 }
 
 # Extract series title from API
 extract_series_title() {
   local series_slug="$1"
-  local url="https://api.vortexscans.org/api/query?slug=${series_slug}"
-  local json=$(curl -s -b "$cookie_file" -c "$cookie_file" "$url")
-  
-  echo "$json" | jq -r '.posts[] | select(.slug == "'$series_slug'") | .postTitle' 2>/dev/null
+  echo "$all_json" | jq -r '.posts[] | select(.slug == "'$series_slug'") | .postTitle' 2>/dev/null
 }
 
-# Extract chapter links by generating from 0 to max chapter number from API
+# Extract chapter links from series page JSON
 extract_chapter_links() {
   local series_slug="$1"
-  local url="https://api.vortexscans.org/api/query?slug=${series_slug}"
-  local json=$(curl -s -b "$cookie_file" -c "$cookie_file" "$url")
+  local series_url="https://vortexscans.org/series/${series_slug}"
+  local html=$(curl -s -L -H "User-Agent: $user_agent" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.5" -H "Referer: https://vortexscans.org/" -b "$cookie_file" -c "$cookie_file" "$series_url")
   
-  local max_chapter=$(echo "$json" | jq -r '.posts[] | select(.slug == "'$series_slug'") | .chapters[].number' 2>/dev/null | sort -n | tail -1)
-  
-  if [[ -z "$max_chapter" || "$max_chapter" == "null" ]]; then
-    max_chapter=0
-  fi
-  
-  for ((i=0; i<=max_chapter; i++)); do
-    echo "chapter-$i"
-  done
+  local tmp_html=$(echo "$html" | tr -d '\n')
+  grep -o '\\"slug\\":\\"chapter-[^"]*\\"' <<< "$tmp_html" | sed 's/\\"slug\\":\\"//' | sed 's/\\"//' | sort | uniq
 }
 
 log "Vortex Scans → ALL SERIES DOWNLOADER"
 
 init_cookies
+
+if [[ ! -f "$api_cache_file" ]]; then
+  log "Fetching all series data..."
+  all_json=$(curl -s -b "$cookie_file" -c "$cookie_file" "https://api.vortexscans.org/api/query?page=1&perPage=99999")
+  echo "$all_json" > "$api_cache_file"
+else
+  log "Loading series data from cache..."
+  all_json=$(cat "$api_cache_file")
+fi
 
 # Get all series slugs
 readarray -t series_slugs < <(extract_series_urls)
@@ -93,6 +91,12 @@ for series_slug in "${series_slugs[@]}"; do
   
   if [[ -z "$title" ]]; then
     warn "No title for ${series_slug}, skipping..."
+    continue
+  fi
+  
+  # Skip novels
+  if [[ "$title" == *"[Novel]"* ]]; then
+    log "Skipping novel: $title"
     continue
   fi
   
@@ -119,19 +123,6 @@ for series_slug in "${series_slugs[@]}"; do
   fi
   
   log "Found ${#chapter_links[@]} chapters"
-  
-  # Determine padding width based on max chapter number
-  # Get the last chapter in the sorted array (which is the highest)
-  last_chapter_link="${chapter_links[-1]}"
-  max_chapter_number=$(echo "$last_chapter_link" | grep -oP 'chapter-\K\d+')
-  max_chapter_number=$((10#$max_chapter_number))
-  
-  # Padding width is the number of digits in the max chapter number
-  padding_width=${#max_chapter_number}
-  log "Max chapter: $max_chapter_number, Padding width: $padding_width"
-
-  # Normalize existing files BEFORE downloading anything
-  normalize_chapter_numbers "$series_directory" "$padding_width"
 
   # Process each chapter
   for chapter_link in "${chapter_links[@]}"; do
@@ -142,15 +133,12 @@ for series_slug in "${series_slugs[@]}"; do
       continue
     fi
 
-    # Force decimal (fix octal issue)
-    decnum=$((10#$chapter_number))
-    formatted_chapter_number=$(printf "%0${padding_width}d" "$decnum")
-    chapter_name="${clean_title} Ch.${formatted_chapter_number} ${default_suffix}"
+    chapter_name="${clean_title} Ch.${chapter_number} ${default_suffix}"
     directory="${series_directory}/${chapter_name}"
 
     # Check if CBZ exists
     shopt -s nullglob
-    matches=( "${series_directory}"/*"Ch.${formatted_chapter_number}"*.cbz )
+    matches=( "${series_directory}"/*"Ch.${chapter_number}"*.cbz )
     if [ "${#matches[@]}" -gt 0 ]; then
       shopt -u nullglob
       # CBZ exists, skip download
@@ -162,10 +150,17 @@ for series_slug in "${series_slugs[@]}"; do
     
     # Extract series_slug and token from chapter page
     page_url="https://vortexscans.org/series/${series_slug}/${chapter_slug}"
+    log "Fetching images from: $page_url"
     html=$(curl -s -L -H "User-Agent: $user_agent" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9" -b "$cookie_file" -c "$cookie_file" "$page_url")
     
     if [[ -z "$html" ]]; then
       log "Failed to fetch chapter page for chapter $chapter_number → skipped"
+      continue
+    fi
+    
+    # Check for premium chapter
+    if echo "$html" | grep -q "This premium chapter is waiting to be unlocked."; then
+      log "Chapter $chapter_number is premium, skipping"
       continue
     fi
     
@@ -175,48 +170,58 @@ for series_slug in "${series_slugs[@]}"; do
       continue
     fi
     
-    # Extract img src from HTML
-    img_src=$(echo "$html" | grep -o '<img[^>]*src="https://storage\.vexmanga\.com/public//upload/series/[^"]*\.webp"' | head -1 | sed 's/.*src="//; s/".*//')
+    # Extract img tags with data-image-index
+    tmp_html=$(mktemp)
+    echo "$html" | tr -d '\n' > "$tmp_html"
+    img_urls=$(grep -o 'https://storage\.vexmanga\.com/public/*upload/series/[^"]*\.\(webp\|jpg\)' "$tmp_html" | sort -V | uniq)
+    rm "$tmp_html"
     
-    if [[ -z "$img_src" ]]; then
-      log "No img src found for chapter $chapter_number → skipped"
+    if [[ -z "$img_urls" ]]; then
+      log "No img URLs found for chapter $chapter_number → skipped"
       continue
     fi
     
-    # Extract series_slug and token from img_src
-    # img_src: https://storage.vexmanga.com/public//upload/series/{series_slug}/{token}/01.webp
-    chapter_series_slug=$(echo "$img_src" | sed 's|https://storage\.vexmanga\.com/public//upload/series/\([^/]*\)/.*|\1|')
-    token=$(echo "$img_src" | sed 's|https://storage\.vexmanga\.com/public//upload/series/[^/]*/\([^/]*\)/.*|\1|')
+    # Take the first URL for extraction
+    first_url=$(echo "$img_urls" | head -1)
     
-    if [[ -z "$chapter_series_slug" || -z "$token" ]]; then
-      log "Failed to extract series_slug or token for chapter $chapter_number → skipped"
+    # Extract series_slug and token from first_url
+    chapter_series_slug=$(echo "$first_url" | sed 's|.*/series/\([^/]*\)/.*|\1|')
+    token=$(echo "$first_url" | sed 's|.*/\([^/]*\)/[^/]*$|\1|')
+    
+    # Extract first_number from first_url
+    first_number=$(echo "$first_url" | sed 's|.*/\([0-9]*\)\.\(webp\|jpg\)$|\1|')
+    
+    # Ensure first_number is a valid number
+    if [[ ! "$first_number" =~ ^[0-9]+$ ]]; then
+      first_number=0
+    fi
+    
+    if [[ -z "$chapter_series_slug" || -z "$token" || -z "$first_number" ]]; then
+      if [[ -z "$chapter_series_slug" ]]; then log "Failed to extract series_slug from img_url: $first_url"; fi
+      if [[ -z "$token" ]]; then log "Failed to extract token from img_url: $first_url"; fi
+      if [[ -z "$first_number" ]]; then log "Failed to extract first_number from img_url: $first_url"; fi
+      log "Skipping chapter $chapter_number"
       continue
     fi
     
-    log "Extracted series_slug: $chapter_series_slug, token: $token"
+    log "Extracted series_slug: $chapter_series_slug, token: $token, first_number: $first_number"
     
     mkdir -p "${directory}"
     
     # Download each image
-    img_counter=1
+    img_counter=0
     download_failed=false
-    while true; do
-      # Generate image URL (using the token from the example)
-      i=$(printf "%02d" "$img_counter")
-      image_url="https://storage.vexmanga.com/public//upload/series/${chapter_series_slug}/${token}/${i}.webp"
+    for image_url in $img_urls; do
+      # URL encode spaces
+      image_url=$(printf '%s' "$image_url" | sed 's/ /%20/g')
       
-      # Check if image exists with HTTP HEAD request
-      http_code=$(curl -s -H "User-Agent: $user_agent" -b "$cookie_file" -o /dev/null -w "%{http_code}" "$image_url" || true)
-
-      if [ -z "$http_code" ] || [ "$http_code" = "404" ]; then
-        # No more images
-        break
-      fi
+      # Extract extension
+      ext=$(echo "$image_url" | sed 's/.*\.\(webp\|jpg\)$/\1/')
       
       if [ "$dry_run" = false ]; then
         printf "  [%03d] %-50s " "$img_counter" "$image_url"
         
-        if ! curl -s -H "User-Agent: $user_agent" -b "$cookie_file" "$image_url" -o "${directory}/$(printf "%03d.webp" "$img_counter")"; then
+        if ! curl -s -H "User-Agent: $user_agent" -b "$cookie_file" "$image_url" -o "${directory}/$(printf "%03d.%s" "$img_counter" "$ext")"; then
           echo -e "\033[1;31mFailed\033[0m"
           error "Failed to download ${image_url}"
           download_failed=true
@@ -227,25 +232,19 @@ for series_slug in "${series_slugs[@]}"; do
         
         # Convert all images to PNG if enabled
         if [ "$convert_to_png" = true ]; then
-          convert_to_png "${directory}/$(printf "%03d.webp" "$img_counter")"
+          convert_to_png "${directory}/$(printf "%03d.%s" "$img_counter" "$ext")" || true
         fi
       else
         # In dry run, just log
         log "  Would download: $image_url"
       fi
       
-      ((img_counter++))
-      
-      # Safety limit
-      if [ "$img_counter" -gt 999 ]; then
-        break
-      fi
+      img_counter=$((img_counter + 1))
     done
     
-    # Adjust img_counter to number of images
-    num_images=$((img_counter - 1))
+    num_images=$img_counter
     
-    if [ "$num_images" -eq 0 ]; then
+    if [ "$num_images" -le 0 ]; then
       log "Chapter $chapter_number does not exist → skipped"
       continue
     fi
@@ -266,5 +265,8 @@ done
 
 # Disable error trap for clean exit
 trap - ERR
+
+# Restore original vShield cookie
+sed -i "s/\(_1__vShield_v\t\)[^\t]*/\1$original_vshield/" "$cookie_file"
 
 success "ALL DONE! Every existing chapter for all series is now in → $folder"
