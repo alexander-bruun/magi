@@ -175,6 +175,16 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
+	// Update parallel indexing configuration
+	parallelIndexingEnabled := config.ParallelIndexingEnabled
+	parallelIndexingThreshold := config.ParallelIndexingThreshold
+	if parallelIndexingThreshold < 1 {
+		parallelIndexingThreshold = 100 // default to 100 series
+	}
+	if _, err := models.UpdateParallelIndexingConfig(parallelIndexingEnabled, parallelIndexingThreshold); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
 	return HandleView(c, views.ConfigForm())
 }
 

@@ -333,31 +333,110 @@ func (idx *Indexer) runIndexingJob() bool {
 	BroadcastLog("indexer_"+idx.Library.Slug, "info", fmt.Sprintf("Starting indexing for library '%s' (metadata provider: %s)", idx.Library.Name, providerName))
 	start := time.Now()
 
-	for _, folder := range idx.Library.Folders {
-		// Validate that the folder path looks reasonable
-		if !filepath.IsAbs(folder) {
-			log.Warnf("Library '%s' has relative folder path '%s', skipping", idx.Library.Name, folder)
-			continue
+	// Count series in the library to determine if we should process in parallel
+	seriesCount, err := models.CountRecords("SELECT COUNT(*) FROM media WHERE library_slug = ?", idx.Library.Slug)
+	if err != nil {
+		log.Warnf("Failed to count series for library '%s', defaulting to sequential processing: %s", idx.Library.Name, err)
+		seriesCount = 0
+	}
+
+	// Get parallel indexing configuration
+	config, configErr := models.GetAppConfig()
+	parallelEnabled := true
+	parallelThreshold := int64(100)
+	if configErr == nil {
+		parallelEnabled = config.ParallelIndexingEnabled
+		parallelThreshold = int64(config.ParallelIndexingThreshold)
+	} else {
+		log.Warnf("Failed to get app config for parallel indexing settings, using defaults: %s", configErr)
+	}
+
+	parallelProcessing := parallelEnabled && seriesCount > parallelThreshold
+	if parallelProcessing {
+		log.Debugf("Library '%s' has %d series, enabling parallel folder processing", idx.Library.Name, seriesCount)
+		BroadcastLog("indexer_"+idx.Library.Slug, "info", fmt.Sprintf("Large library detected (%d series), processing folders in parallel", seriesCount))
+	}
+
+	if parallelProcessing {
+		// Process folders in parallel
+		var wg sync.WaitGroup
+		errChan := make(chan error, len(idx.Library.Folders))
+
+		for _, folder := range idx.Library.Folders {
+			wg.Add(1)
+			go func(f string) {
+				defer wg.Done()
+
+				// Validate that the folder path looks reasonable
+				if !filepath.IsAbs(f) {
+					errChan <- fmt.Errorf("library '%s' has relative folder path '%s', skipping", idx.Library.Name, f)
+					return
+				}
+
+				absFolder, err := filepath.Abs(f)
+				if err != nil {
+					errChan <- fmt.Errorf("failed to resolve folder path '%s' for library '%s': %s", f, idx.Library.Name, err)
+					return
+				}
+
+				// Processing folder - don't log to avoid spam
+				if err := idx.processFolder(absFolder); err != nil {
+					errChan <- fmt.Errorf("error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
+					return
+				}
+
+				errChan <- nil
+			}(folder)
 		}
 
-		absFolder, err := filepath.Abs(folder)
-		if err != nil {
-			log.Errorf("Failed to resolve folder path '%s' for library '%s': %s", folder, idx.Library.Name, err)
-			continue
-		}
+		// Wait for all goroutines to complete or stop signal
+		go func() {
+			wg.Wait()
+			close(errChan)
+		}()
 
-		// Processing folder - don't log to avoid spam
-		if err := idx.processFolder(absFolder); err != nil {
-			log.Errorf("Error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
-			BroadcastLog("indexer_"+idx.Library.Slug, "error", fmt.Sprintf("Error processing folder '%s': %s", absFolder, err))
-		}
+		for err := range errChan {
+			if err != nil {
+				log.Errorf("Parallel processing error: %s", err)
+				BroadcastLog("indexer_"+idx.Library.Slug, "error", err.Error())
+			}
 
-		select {
-		case <-idx.stop:
-			log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
-			BroadcastLog("indexer_"+idx.Library.Slug, "info", "Indexing interrupted")
-			return true
-		default:
+			select {
+			case <-idx.stop:
+				log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
+				BroadcastLog("indexer_"+idx.Library.Slug, "info", "Indexing interrupted")
+				return true
+			default:
+			}
+		}
+	} else {
+		// Process folders sequentially (original behavior)
+		for _, folder := range idx.Library.Folders {
+			// Validate that the folder path looks reasonable
+			if !filepath.IsAbs(folder) {
+				log.Warnf("Library '%s' has relative folder path '%s', skipping", idx.Library.Name, folder)
+				continue
+			}
+
+			absFolder, err := filepath.Abs(folder)
+			if err != nil {
+				log.Errorf("Failed to resolve folder path '%s' for library '%s': %s", folder, idx.Library.Name, err)
+				continue
+			}
+
+			// Processing folder - don't log to avoid spam
+			if err := idx.processFolder(absFolder); err != nil {
+				log.Errorf("Error processing folder '%s' for library '%s': %s", absFolder, idx.Library.Name, err)
+				BroadcastLog("indexer_"+idx.Library.Slug, "error", fmt.Sprintf("Error processing folder '%s': %s", absFolder, err))
+			}
+
+			select {
+			case <-idx.stop:
+				log.Infof("Indexing for library '%s' interrupted", idx.Library.Name)
+				BroadcastLog("indexer_"+idx.Library.Slug, "info", "Indexing interrupted")
+				return true
+			default:
+			}
 		}
 	}
 

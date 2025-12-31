@@ -102,6 +102,23 @@ templ ConfigForm() {
             </div>
         </div>
         
+        <!-- Parallel Indexing Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Parallel Indexing Settings</span></h4>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="parallel_indexing_enabled" checked?={ cfg.ParallelIndexingEnabled } class="uk-checkbox" />
+                    <span>Enable parallel indexing for large libraries</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">When enabled, libraries with many series will process folders in parallel to speed up indexing.</p>
+            </div>
+            <div class="mt-2">
+                <label class="block mb-1">Parallel indexing threshold (series count)</label>
+                <input type="number" min="1" class="uk-input" name="parallel_indexing_threshold" value={ fmt.Sprintf("%d", cfg.ParallelIndexingThreshold) } />
+                <p class="text-xs text-muted-foreground mt-1">Minimum number of series required to trigger parallel folder processing. Default: 100</p>
+            </div>
+        </div>
+        
         <!-- Stripe Payment Settings Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Stripe Payment Settings</span></h4>

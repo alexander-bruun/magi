@@ -58,6 +58,10 @@ type AppConfig struct {
 
 	// New media badge settings
 	NewBadgeDuration int `json:"new_badge_duration" form:"new_badge_duration"` // duration in hours that media is marked as NEW after update
+
+	// Parallel indexing settings
+	ParallelIndexingEnabled  bool `json:"parallel_indexing_enabled" form:"parallel_indexing_enabled"`   // whether parallel indexing is enabled
+	ParallelIndexingThreshold int  `json:"parallel_indexing_threshold" form:"parallel_indexing_threshold"` // minimum series count to trigger parallel processing
 }
 
 // Implement metadata.ConfigProvider interface
@@ -114,7 +118,9 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(premium_cooldown_scaling_enabled, 0),
         COALESCE(maintenance_enabled, 0),
         COALESCE(maintenance_message, 'We are currently performing maintenance. Please check back later.'),
-        COALESCE(new_badge_duration, 48)
+        COALESCE(new_badge_duration, 48),
+        COALESCE(parallel_indexing_enabled, 1),
+        COALESCE(parallel_indexing_threshold, 100)
         FROM app_config WHERE id = 1`)
 	var allowInt int
 	var maxUsers int64
@@ -147,11 +153,13 @@ func loadConfigFromDB() (AppConfig, error) {
 	var maintenanceEnabled int
 	var maintenanceMessage string
 	var newBadgeDuration int
+	var parallelIndexingEnabled int
+	var parallelIndexingThreshold int
 
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
-		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration); err != nil {
+		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
 			return AppConfig{
@@ -186,6 +194,8 @@ func loadConfigFromDB() (AppConfig, error) {
 				MaintenanceEnabled:            false,
 				MaintenanceMessage:            "We are currently performing maintenance. Please check back later.",
 				NewBadgeDuration:              48,
+				ParallelIndexingEnabled:       true,
+				ParallelIndexingThreshold:     100,
 			}, nil
 		}
 		return AppConfig{}, err
@@ -223,6 +233,8 @@ func loadConfigFromDB() (AppConfig, error) {
 		MaintenanceEnabled:            maintenanceEnabled == 1,
 		MaintenanceMessage:            maintenanceMessage,
 		NewBadgeDuration:              newBadgeDuration,
+		ParallelIndexingEnabled:       parallelIndexingEnabled == 1,
+		ParallelIndexingThreshold:     parallelIndexingThreshold,
 	}, nil
 }
 
@@ -446,6 +458,18 @@ func UpdateNewBadgeDurationConfig(hours int) (AppConfig, error) {
 		hours = 1
 	}
 	_, err := db.Exec(`UPDATE app_config SET new_badge_duration = ? WHERE id = 1`, hours)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+func UpdateParallelIndexingConfig(enabled bool, threshold int) (AppConfig, error) {
+	// Ensure threshold is at least 1
+	if threshold < 1 {
+		threshold = 1
+	}
+	_, err := db.Exec(`UPDATE app_config SET parallel_indexing_enabled = ?, parallel_indexing_threshold = ? WHERE id = 1`, enabled, threshold)
 	if err != nil {
 		return AppConfig{}, err
 	}
