@@ -246,21 +246,17 @@ func SimilarityRatio(s1, s2 string) float64 {
 func ExtractChapterName(filename string) string {
 	// Look for volume patterns (v01, vol.1, volume 1, etc.)
 	if vol := regexp.MustCompile(`(?i)(?:v(?:ol(?:ume)?)?)\.?\s*(\d+)`).FindStringSubmatch(filename); vol != nil {
-		num, _ := strconv.Atoi(vol[1])
-		return fmt.Sprintf("Volume %d", num)
+		return fmt.Sprintf("Volume %s", vol[1]) // Preserve original number format
 	}
-	// Look for chapter patterns (c01, ch.1, chapter 1, etc.)
-	if ch := regexp.MustCompile(`(?i)c(h)?\.?\s*(\d+)`).FindStringSubmatch(filename); ch != nil {
-		num, _ := strconv.Atoi(ch[2])
-		return fmt.Sprintf("Chapter %d", num)
+	// Look for chapter patterns (chapter 01, c01, ch.1, etc.)
+	if ch := regexp.MustCompile(`(?i)(?:chapter|c(?:h(?:apter)?)?)\.?\s*(\d+)`).FindStringSubmatch(filename); ch != nil {
+		return fmt.Sprintf("Chapter %s", ch[1]) // Preserve original number format
 	}
 	// Otherwise, return the cleaned filename
 	cleaned := RemovePatterns(strings.TrimSuffix(filename, filepath.Ext(filename)))
 	// If the cleaned name is just digits, assume it's a chapter number
 	if regexp.MustCompile(`^\d+$`).MatchString(cleaned) {
-		if num, err := strconv.Atoi(cleaned); err == nil {
-			return fmt.Sprintf("Chapter %d", num)
-		}
+		return fmt.Sprintf("Chapter %s", cleaned) // Preserve original number format
 	}
 	return cleaned
 }
