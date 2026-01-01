@@ -30,7 +30,7 @@ def extract_series_urls(session, page_num):
     html = response.text
     
     # Extract series slugs from quoted strings, filter out common terms
-    slugs = re.findall(r'"([a-z0-9-]+(?:-[a-z0-9-]+)*)"', html)
+    slugs = re.findall(r'"([a-z0-9-]+)"', html)
     # Filter out common HTML/CSS terms
     exclude_terms = {
         'css', 'js', 'png', 'jpg', 'webp', 'svg', 'ico', 'woff', 'ttf', 'eot', 'px', 'app', 'button', 'alert', 'all', 
