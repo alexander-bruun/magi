@@ -102,8 +102,9 @@ SCRAPERS = {
     '7': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
     '8': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
     '9': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
-    '10': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
-    '11': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
+    '10': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
+    '11': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
+    '12': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
 }
 
 def load_config():
@@ -142,7 +143,7 @@ def print_scraper_menu():
     for key, scraper in SCRAPERS.items():
         print(f"{key}. {scraper['name']}")
     print()
-    print("12. Run all scrapers in parallel")
+    print("13. Run all scrapers in parallel")
     print("0. Exit")
     print()
 
@@ -162,7 +163,7 @@ def get_scraper_choice_curses(stdscr):
     menu_items = []
     for key, scraper in SCRAPERS.items():
         menu_items.append((key, scraper['name']))
-    menu_items.append(('12', 'Run all scrapers in parallel'))
+    menu_items.append(('13', 'Run all scrapers in parallel'))
     menu_items.append(('0', 'Exit'))
 
     current_row = 0
@@ -207,7 +208,7 @@ def get_scraper_choice_curses(stdscr):
             selected_key = menu_items[current_row][0]
             if selected_key == '0':
                 return None
-            elif selected_key == '12':
+            elif selected_key == '13':
                 return 'all'
             return selected_key
         elif key == ord('q') or key == 27:  # 'q' or ESC
@@ -221,15 +222,15 @@ def get_scraper_choice_text():
         print_scraper_menu()
 
         try:
-            choice = input("Enter your choice (0-12): ").strip()
+            choice = input("Enter your choice (0-13): ").strip()
             if choice == '0':
                 return None
-            elif choice == '12':
+            elif choice == '13':
                 return 'all'
             elif choice in SCRAPERS:
                 return choice
             else:
-                print("Invalid choice. Please enter a number between 0 and 12.")
+                print("Invalid choice. Please enter a number between 0 and 13.")
                 input("Press Enter to continue...")
         except KeyboardInterrupt:
             return None
