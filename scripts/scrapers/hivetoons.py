@@ -107,7 +107,7 @@ def extract_image_urls(session, chapter_url):
                 
                 # If still no images, try broader patterns
                 if not images:
-                    images = re.findall(r'https://storage\.hivetoon\.com/[^"]*\.(?:webp|jpg|png|jpeg|avif)', html)
+                    images = re.findall(r'https://storage\.hivetoon\.com/[^\s"]*\.(?:webp|jpg|png|jpeg|avif)', html)
             
             # Filter out UI elements like logos - only keep images from series folders
             filtered_images = [url for url in images if '/upload/series/' in url and 'logo' not in url.lower()]
