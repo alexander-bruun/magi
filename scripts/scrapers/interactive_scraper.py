@@ -94,13 +94,14 @@ SCRAPERS = {
     '6': {'name': 'LHTranslation', 'file': 'lhtranslation.py', 'default_folder': 'LHTranslation'},
     '7': {'name': 'Manga18', 'file': 'manga18.py', 'default_folder': 'Manga18'},
     '8': {'name': 'MangaKatana', 'file': 'mangakatana.py', 'default_folder': 'MangaKatana'},
-    '9': {'name': 'Omega Scans', 'file': 'omegascans.py', 'default_folder': 'OmegaScans'},
-    '10': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
-    '11': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
-    '12': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
-    '13': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
-    '14': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
-    '15': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
+    '9': {'name': 'ManhwaGalaxy', 'file': 'manhwagalaxy.py', 'default_folder': 'ManhwaGalaxy'},
+    '10': {'name': 'Omega Scans', 'file': 'omegascans.py', 'default_folder': 'OmegaScans'},
+    '11': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
+    '12': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
+    '13': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
+    '14': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
+    '15': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
+    '16': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
 }
 
 def load_config():

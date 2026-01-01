@@ -14,6 +14,7 @@ Interactive manga/comic scraper with support for multiple sources.
 | lhtranslation | LHTranslation |
 | manga18 | Manga18 |
 | mangakatana | MangaKatana |
+| manhwagalaxy | ManhwaGalaxy |
 | omegascans | Omega Scans |
 | qiscans | Qi Scans |
 | resetscans | Reset Scans |

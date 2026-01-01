@@ -12,18 +12,14 @@ from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz
 # Configuration
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
-FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'Manga18'))
-DEFAULT_SUFFIX = os.getenv('default_suffix', '[Manga18]')
-ALLOWED_DOMAINS = ['manga18.me', 'manga18.com']
-BASE_URL = 'https://manga18.me'
+FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'ManhwaGalaxy'))
+DEFAULT_SUFFIX = os.getenv('default_suffix', '[ManhwaGalaxy]')
+ALLOWED_DOMAINS = ['manhwagalaxy.com']
+BASE_URL = 'https://manhwagalaxy.com'
 
 # Extract series URLs from listing page with pagination
 def extract_series_urls(session, page_num):
-    if page_num == 1:
-        url = "https://manga18.me/manga/"
-    else:
-        url = f"https://manga18.me/manga/{page_num}/"
-    
+    url = f"https://manhwagalaxy.com/page/{page_num}/"
     response = session.get(url, timeout=30)
     
     # Check if page exists (404 means no more pages)
@@ -34,18 +30,14 @@ def extract_series_urls(session, page_num):
     html = response.text
     
     # Extract series URLs (both absolute and relative)
-    series_urls = re.findall(r'href="([^"]*manga/[^"]*)/?"', html)
+    series_urls = re.findall(r'href="([^"]*manhwa/[^"]*)/?"', html)
     
     # Convert relative URLs to absolute and filter
     processed_urls = []
     for url in series_urls:
         if url.startswith('/'):
-            url = f"https://manga18.me{url}"
-        if (url.startswith('https://manga18.me/manga/') and 
-            '/chapter-' not in url and 
-            not url.endswith('/manga/') and 
-            not url.endswith('/manga') and
-            not re.search(r'/manga/\d+/?$', url)):  # Exclude numeric-only URLs like /manga/2
+            url = f"https://manhwagalaxy.com{url}"
+        if url.startswith('https://manhwagalaxy.com/manhwa/') and '/chapter-' not in url and not url.endswith('/manhwa/') and not url.endswith('/manhwa'):
             processed_urls.append(url)
     
     is_last_page = len(processed_urls) == 0
@@ -79,7 +71,7 @@ def extract_series_title(session, series_url):
             # Fallback to title tag
             title_match = re.search(r'<title>([^<]+)', html)
             if title_match:
-                title = title_match.group(1).replace(' &#8211; Manga18', '').strip()
+                title = title_match.group(1).replace(' &#8211; ManhwaGalaxy', '').strip()
                 if title:
                     return title
         except Exception as e:
@@ -103,8 +95,8 @@ def extract_chapter_urls(session, series_url):
     processed_urls = []
     for url in chapter_urls:
         if url.startswith('/'):
-            url = f"https://manga18.me{url}"
-        if url.startswith(series_url) and 'chapter-' in url:
+            url = f"https://manhwagalaxy.com{url}"
+        if url.startswith('https://manhwagalaxy.com/manhwa/') and 'chapter-' in url:
             processed_urls.append(url)
     
     return sorted(set(processed_urls))
@@ -115,38 +107,27 @@ def extract_image_urls(session, chapter_url):
     response.raise_for_status()
     html = response.text.replace('\n', ' ')
     
-    # Extract image URLs from chapter_preloaded_images script
-    script_match = re.search(r'chapter_preloaded_images = (\[[\s\S]*?\])', html)
-    if script_match:
-        import json
-        try:
-            image_urls = json.loads(script_match.group(1))
-            # Remove duplicates while preserving order
-            return list(dict.fromkeys(image_urls))
-        except json.JSONDecodeError:
-            pass
-    
-    # Fallback: Extract image URLs from data-src attributes
-    image_urls = re.findall(r'data-src=[\'"](https?://img\d*\.manga18\.(?:me|com)/[^\'"]*\.(?:jpg|jpeg|png|webp))[\'"]', html)
+    # Extract image URLs from data-src attributes
+    image_urls = re.findall(r'data-src=[\'"](https?://img-\d*\.manhwagalaxy\.com/[^\'"]*\.(?:jpg|jpeg|png|webp))[\'"]', html)
     # Remove duplicates while preserving order
     image_urls = list(dict.fromkeys(image_urls))
     
     # If no data-src images found, try src attributes
     if not image_urls:
-        image_urls = re.findall(r'src=[\'"](https?://img\d*\.manga18\.(?:me|com)/[^\'"]*\.(?:jpg|jpeg|png|webp))[\'"]', html)
+        image_urls = re.findall(r'src=[\'"](https?://img-\d*\.manhwagalaxy\.com/[^\'"]*\.(?:jpg|jpeg|png|webp))[\'"]', html)
         image_urls = list(dict.fromkeys(image_urls))
     
     return image_urls
 
 def main():
-    log("Starting Manga18 scraper")
+    log("Starting ManhwaGalaxy scraper")
     log("Mode: Full Downloader")
 
     # Health check (no Cloudflare bypass needed)
-    log("Performing health check on https://manga18.me...")
+    log("Performing health check on https://manhwagalaxy.com...")
     try:
         session = requests.Session()
-        response = session.get("https://manga18.me", timeout=30)
+        response = session.get("https://manhwagalaxy.com", timeout=30)
         if response.status_code != 200:
             error(f"Health check failed. Returned {response.status_code}")
             return
@@ -243,7 +224,7 @@ def main():
                 # Scan existing CBZ files to determine which chapters are already downloaded
                 existing_chapters = set()
                 for cbz_file in series_directory.glob("*.cbz"):
-                    # Extract chapter number from filename like "Title Chapter 001 [Manga18].cbz"
+                    # Extract chapter number from filename like "Title Chapter 001 [ManhwaGalaxy].cbz"
                     match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
                     if match:
                         existing_chapters.add(float(match.group(1)))
