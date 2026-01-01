@@ -32,6 +32,7 @@ RUN if [ "$VERSION" != "develop" ]; then \
         mkdir -p assets/js/obfuscated; \
         npx --yes javascript-obfuscator assets/js/magi.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/magi.js || echo "Failed to obfuscate magi.js"; \
         npx --yes javascript-obfuscator assets/js/reader.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/reader.js || echo "Failed to obfuscate reader.js"; \
+        npx --yes javascript-obfuscator assets/js/browser-challenge.js --options-preset high-obfuscation --debug-protection true --debug-protection-interval 4000 --output assets/js/obfuscated/browser-challenge.js || echo "Failed to obfuscate browser-challenge.js"; \
         mv assets/js/obfuscated/* assets/js/ 2>/dev/null || true; \
         rm -rf assets/js/obfuscated; \
     fi
