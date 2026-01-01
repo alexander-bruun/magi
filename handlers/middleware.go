@@ -36,10 +36,12 @@ const (
 // Rate limiting tracking with memory management
 // Using fixed-size ring buffer per IP to prevent unbounded memory growth
 type RateLimitTracker struct {
-	Requests [10]time.Time // Fixed-size ring buffer (last 10 requests)
-	Index    int           // Current write position
-	Count    int           // Actual number of requests tracked
-	mu       sync.Mutex    // Per-IP mutex for thread safety
+	Requests   [10]time.Time // Fixed-size ring buffer (last 10 requests)
+	Index      int           // Current write position
+	Count      int           // Actual number of requests tracked
+	BlockedAt  time.Time     // When the IP was blocked
+	BlockUntil time.Time     // When the block expires
+	mu         sync.Mutex    // Per-IP mutex for thread safety
 }
 
 var (
@@ -335,6 +337,33 @@ func RateLimitingMiddleware() fiber.Handler {
 		tracker.mu.Lock()
 		defer tracker.mu.Unlock()
 
+		// Check if IP is currently blocked
+		if !tracker.BlockUntil.IsZero() && now.Before(tracker.BlockUntil) {
+			seconds := int(tracker.BlockUntil.Sub(now).Seconds())
+			if seconds < 0 {
+				seconds = 0
+			}
+			log.Infof("Rate limit: blocked IP %s for %d more seconds", ip, seconds)
+
+			// For HTMX requests, return rate limit notification
+			if IsHTMXRequest(c) {
+				message := "You are temporarily blocked. Please wait before trying again."
+				triggerNotification(c, message, "warning")
+				return c.Status(fiber.StatusTooManyRequests).SendString("")
+			}
+
+			// Return rate limit error page for regular requests
+			return HandleView(c, views.RateLimit(seconds))
+		}
+
+		// Clear expired block
+		if !tracker.BlockUntil.IsZero() && now.After(tracker.BlockUntil) {
+			tracker.BlockedAt = time.Time{}
+			tracker.BlockUntil = time.Time{}
+			tracker.Count = 0
+			tracker.Index = 0
+		}
+
 		// Count valid requests within the window (using ring buffer)
 		windowStart := now.Add(-time.Duration(cfg.RateLimitWindow) * time.Second)
 		validCount := 0
@@ -351,24 +380,25 @@ func RateLimitingMiddleware() fiber.Handler {
 
 		// Check if limit exceeded
 		if validCount >= cfg.RateLimitRequests {
-			log.Infof("Rate limit exceeded for IP: %s", ip)
-
-			resetTime := oldestValid.Add(time.Duration(cfg.RateLimitWindow) * time.Second)
-			timeRemaining := resetTime.Sub(now)
-			seconds := int(timeRemaining.Seconds())
-			if seconds < 0 {
-				seconds = 0
+			// Apply block duration
+			blockDuration := cfg.RateLimitBlockDuration
+			if blockDuration <= 0 {
+				blockDuration = 300 // Default 5 minutes
 			}
+			tracker.BlockedAt = now
+			tracker.BlockUntil = now.Add(time.Duration(blockDuration) * time.Second)
+
+			log.Infof("Rate limit exceeded for IP: %s, blocked for %d seconds", ip, blockDuration)
 
 			// For HTMX requests, return rate limit notification
 			if IsHTMXRequest(c) {
-				message := "Too many requests. Please wait before trying again."
+				message := "Too many requests. You are temporarily blocked."
 				triggerNotification(c, message, "warning")
 				return c.Status(fiber.StatusTooManyRequests).SendString("")
 			}
 
 			// Return rate limit error page for regular requests
-			return HandleView(c, views.RateLimit(seconds))
+			return HandleView(c, views.RateLimit(blockDuration))
 		}
 
 		// Add current request to ring buffer (fixed size)

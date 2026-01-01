@@ -121,6 +121,31 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Use(MaintenanceModeMiddleware())
 	app.Use(healthcheck.New())
 
+	// Browser Challenge Middleware - serves challenge page for unverified HTML requests
+	// This must come before other middlewares to intercept requests early
+	app.Use(BrowserChallengePageMiddleware())
+
+	// Referer Validation Middleware - validates request origins
+	app.Use(RefererValidationMiddleware())
+
+	// Tarpit Middleware - slows responses for suspected bots
+	app.Use(TarpitMiddleware())
+
+	// Request Timing Analysis Middleware - detects bot-like timing patterns
+	app.Use(RequestTimingMiddleware())
+
+	// TLS Fingerprint Middleware - analyzes TLS characteristics
+	app.Use(TLSFingerprintMiddleware())
+
+	// Behavioral Analysis Middleware - tracks user behavior patterns
+	app.Use(BehavioralAnalysisMiddleware())
+
+	// Header Analysis Middleware - checks HTTP headers for bot patterns
+	app.Use(HeaderAnalysisMiddleware())
+
+	// Honeypot Middleware - catches scrapers probing for exploits
+	app.Use(HoneypotMiddleware())
+
 	// CSS Middleware - dynamically injects only required CSS
 	app.Use(CSSMiddleware())
 
@@ -200,9 +225,16 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	api := app.Group("/api")
 
-	api.Get("/comic", BotDetectionMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
-	api.Get("/image", ImageProtectionMiddleware(), BotDetectionMiddleware(), ConditionalAuthMiddleware(), ImageHandler)
+	api.Get("/comic", BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
+	api.Get("/image", ImageProtectionMiddleware(), BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ImageHandler)
 	api.Get("/config/stripe", HandleGetStripeConfig)
+
+	// Browser Challenge API (invisible JS/cookie challenge)
+	api.Get("/browser-challenge/init", HandleBrowserChallengeInit)
+	api.Post("/browser-challenge/verify", HandleBrowserChallengeVerify)
+
+	// Behavioral Analysis API
+	api.Post("/behavior-signal", HandleBehaviorSignal)
 
 	// Comments
 	api.Delete("/comments/:id", AuthMiddleware("reader"), HandleDeleteComment)
