@@ -23,6 +23,27 @@ Interactive manga/comic scraper with support for multiple sources.
 | utoon | UToon |
 | vortexscans | Vortex Scans |
 | zscans | Z Scans |
+| genzupdates | GenzUpdates |
+
+## Planned Sources
+
+The following sources are planned for future implementation:
+
+
+- **luacomic.org** - Shares software with HiveToons  
+- **nexcomic.com** - Shares software with HiveToons
+- **stonescape.xyz** - Shares software with HiveToons
+- **ezmanga.org** - Shares software with HiveToons
+- **asmotoon.com** - Shares software with HiveToons
+- **https://drakecomic.org** - Shares software with HiveToons
+- **spiderscans.xyz** - Shares software with Reset Scans
+- **https://mangayy.org** - Shares software with Reset Scans
+- **https://manhuafast.net/** - Shares software with Reset Scans
+- **https://setsuscans.com/** - Shares software with Reset Scans
+- **https://inkedscans.com** - Doesnt share software with previous sites
+- **https://www.natomanga.com/genre/all**  - Doesnt share software with previous sites
+- **https://www.mangago.me/list/new/all/1/**  - Doesnt share software with previous sites
+- **https://templetoons.com/**  - Doesnt share software with previous sites
 
 ## Installation
 
