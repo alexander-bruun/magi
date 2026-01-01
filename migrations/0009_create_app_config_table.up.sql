@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS app_config (
     rate_limit_enabled INTEGER NOT NULL DEFAULT 1,      -- 1 = enabled, 0 = disabled
     rate_limit_requests INTEGER NOT NULL DEFAULT 100,   -- requests per window
     rate_limit_window INTEGER NOT NULL DEFAULT 60,      -- window in seconds
+    rate_limit_block_duration INTEGER NOT NULL DEFAULT 300, -- block duration in seconds
     bot_detection_enabled INTEGER NOT NULL DEFAULT 1,   -- 1 = enabled, 0 = disabled
     bot_series_threshold INTEGER NOT NULL DEFAULT 5,    -- max series accesses per time window
     bot_chapter_threshold INTEGER NOT NULL DEFAULT 10,  -- max chapter accesses per time window
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS app_config (
 
 -- Ensure exactly one row exists (id = 1)
 INSERT INTO app_config (id, allow_registration, max_users, content_rating_limit, metadata_provider, mal_api_token, anilist_api_token, 
-    rate_limit_enabled, rate_limit_requests, rate_limit_window, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window,
+    rate_limit_enabled, rate_limit_requests, rate_limit_window, rate_limit_block_duration, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window,
     image_access_secret, reader_compression_quality, moderator_compression_quality, admin_compression_quality, premium_compression_quality, anonymous_compression_quality, processed_image_quality, disable_webp_conversion, disable_image_compression, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret)
-SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 1, 5, 10, 60, '', 70, 85, 100, 90, 70, 85, 0, 0, 5, 3600, 3, 0, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', ''
+SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 300, 1, 5, 10, 60, '', 70, 85, 100, 90, 70, 85, 0, 0, 5, 3600, 3, 0, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', ''
 WHERE NOT EXISTS (SELECT 1 FROM app_config WHERE id = 1);

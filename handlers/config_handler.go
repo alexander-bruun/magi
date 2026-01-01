@@ -79,7 +79,11 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	if rateLimitWindow <= 0 {
 		rateLimitWindow = 60
 	}
-	if _, err := models.UpdateRateLimitConfig(rateLimitEnabled, rateLimitRequests, rateLimitWindow); err != nil {
+	rateLimitBlockDuration := config.RateLimitBlockDuration
+	if rateLimitBlockDuration <= 0 {
+		rateLimitBlockDuration = 300
+	}
+	if _, err := models.UpdateRateLimitConfig(rateLimitEnabled, rateLimitRequests, rateLimitWindow, rateLimitBlockDuration); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
@@ -98,6 +102,91 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		botDetectionWindow = 60
 	}
 	if _, err := models.UpdateBotDetectionConfig(botDetectionEnabled, botSeriesThreshold, botChapterThreshold, botDetectionWindow); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update browser challenge configuration
+	browserChallengeEnabled := config.BrowserChallengeEnabled
+	browserChallengeDifficulty := config.BrowserChallengeDifficulty
+	if browserChallengeDifficulty < 1 || browserChallengeDifficulty > 6 {
+		browserChallengeDifficulty = 3
+	}
+	browserChallengeValidityHours := config.BrowserChallengeValidityHours
+	if browserChallengeValidityHours < 1 || browserChallengeValidityHours > 168 {
+		browserChallengeValidityHours = 24
+	}
+	browserChallengeIPBound := config.BrowserChallengeIPBound
+	if _, err := models.UpdateBrowserChallengeConfig(browserChallengeEnabled, browserChallengeDifficulty, browserChallengeValidityHours, browserChallengeIPBound); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update referer validation configuration
+	if _, err := models.UpdateRefererValidationConfig(config.RefererValidationEnabled); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update tarpit configuration
+	tarpitMaxDelay := config.TarpitMaxDelay
+	if tarpitMaxDelay < 100 {
+		tarpitMaxDelay = 100
+	}
+	if tarpitMaxDelay > 30000 {
+		tarpitMaxDelay = 30000
+	}
+	if _, err := models.UpdateTarpitConfig(config.TarpitEnabled, tarpitMaxDelay); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update timing analysis configuration
+	timingVarianceThreshold := config.TimingVarianceThreshold
+	if timingVarianceThreshold < 0.01 {
+		timingVarianceThreshold = 0.01
+	}
+	if timingVarianceThreshold > 1.0 {
+		timingVarianceThreshold = 1.0
+	}
+	if _, err := models.UpdateTimingAnalysisConfig(config.TimingAnalysisEnabled, timingVarianceThreshold); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update TLS fingerprint configuration
+	if _, err := models.UpdateTLSFingerprintConfig(config.TLSFingerprintEnabled, config.TLSFingerprintStrict); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update behavioral analysis configuration
+	behavioralScoreThreshold := config.BehavioralScoreThreshold
+	if behavioralScoreThreshold < 0 {
+		behavioralScoreThreshold = 0
+	}
+	if behavioralScoreThreshold > 100 {
+		behavioralScoreThreshold = 100
+	}
+	if _, err := models.UpdateBehavioralAnalysisConfig(config.BehavioralAnalysisEnabled, behavioralScoreThreshold); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update header analysis configuration
+	headerAnalysisThreshold := config.HeaderAnalysisThreshold
+	if headerAnalysisThreshold < 1 {
+		headerAnalysisThreshold = 1
+	}
+	if headerAnalysisThreshold > 20 {
+		headerAnalysisThreshold = 20
+	}
+	if _, err := models.UpdateHeaderAnalysisConfig(config.HeaderAnalysisEnabled, headerAnalysisThreshold, config.HeaderAnalysisStrict); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
+	// Update honeypot configuration
+	honeypotBlockDuration := config.HoneypotBlockDuration
+	if honeypotBlockDuration < 1 {
+		honeypotBlockDuration = 1
+	}
+	if honeypotBlockDuration > 1440 {
+		honeypotBlockDuration = 1440
+	}
+	if _, err := models.UpdateHoneypotConfig(config.HoneypotEnabled, config.HoneypotAutoBlock, honeypotBlockDuration); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 

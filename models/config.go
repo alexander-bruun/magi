@@ -24,15 +24,51 @@ type AppConfig struct {
 	StripeWebhookSecret  string `json:"stripe_webhook_secret" form:"stripe_webhook_secret"`   // Stripe webhook secret for verification
 
 	// Rate limiting settings
-	RateLimitEnabled  bool `json:"rate_limit_enabled" form:"rate_limit_enabled"`
-	RateLimitRequests int  `json:"rate_limit_requests" form:"rate_limit_requests"` // requests per window
-	RateLimitWindow   int  `json:"rate_limit_window" form:"rate_limit_window"`     // window in seconds
+	RateLimitEnabled       bool `json:"rate_limit_enabled" form:"rate_limit_enabled"`
+	RateLimitRequests      int  `json:"rate_limit_requests" form:"rate_limit_requests"`             // requests per window
+	RateLimitWindow        int  `json:"rate_limit_window" form:"rate_limit_window"`                 // window in seconds
+	RateLimitBlockDuration int  `json:"rate_limit_block_duration" form:"rate_limit_block_duration"` // block duration in seconds
 
 	// Bot detection settings
 	BotDetectionEnabled bool `json:"bot_detection_enabled" form:"bot_detection_enabled"`
 	BotSeriesThreshold  int  `json:"bot_series_threshold" form:"bot_series_threshold"`   // max series accesses per time window
 	BotChapterThreshold int  `json:"bot_chapter_threshold" form:"bot_chapter_threshold"` // max chapter accesses per time window
 	BotDetectionWindow  int  `json:"bot_detection_window" form:"bot_detection_window"`   // time window in seconds for bot detection
+
+	// Browser challenge settings (invisible JS/cookie challenge)
+	BrowserChallengeEnabled       bool `json:"browser_challenge_enabled" form:"browser_challenge_enabled"`               // whether browser challenge is enabled
+	BrowserChallengeDifficulty    int  `json:"browser_challenge_difficulty" form:"browser_challenge_difficulty"`         // proof-of-work difficulty (number of leading zeros)
+	BrowserChallengeValidityHours int  `json:"browser_challenge_validity_hours" form:"browser_challenge_validity_hours"` // how long the challenge verification is valid
+	BrowserChallengeIPBound       bool `json:"browser_challenge_ip_bound" form:"browser_challenge_ip_bound"`             // whether to bind verification to IP address
+
+	// Referer validation settings
+	RefererValidationEnabled bool `json:"referer_validation_enabled" form:"referer_validation_enabled"` // whether to validate Referer headers
+
+	// Tarpit settings
+	TarpitEnabled  bool `json:"tarpit_enabled" form:"tarpit_enabled"`     // whether tarpit is enabled
+	TarpitMaxDelay int  `json:"tarpit_max_delay" form:"tarpit_max_delay"` // maximum delay in milliseconds
+
+	// Timing analysis settings
+	TimingAnalysisEnabled   bool    `json:"timing_analysis_enabled" form:"timing_analysis_enabled"`     // whether timing analysis is enabled
+	TimingVarianceThreshold float64 `json:"timing_variance_threshold" form:"timing_variance_threshold"` // coefficient of variation threshold
+
+	// TLS fingerprint settings
+	TLSFingerprintEnabled bool `json:"tls_fingerprint_enabled" form:"tls_fingerprint_enabled"` // whether TLS fingerprinting is enabled
+	TLSFingerprintStrict  bool `json:"tls_fingerprint_strict" form:"tls_fingerprint_strict"`   // whether to block suspicious fingerprints
+
+	// Behavioral analysis settings
+	BehavioralAnalysisEnabled bool `json:"behavioral_analysis_enabled" form:"behavioral_analysis_enabled"` // whether behavioral analysis is enabled
+	BehavioralScoreThreshold  int  `json:"behavioral_score_threshold" form:"behavioral_score_threshold"`   // score below which to flag as suspicious
+
+	// Header analysis settings
+	HeaderAnalysisEnabled   bool `json:"header_analysis_enabled" form:"header_analysis_enabled"`     // whether header analysis is enabled
+	HeaderAnalysisThreshold int  `json:"header_analysis_threshold" form:"header_analysis_threshold"` // suspicion score threshold
+	HeaderAnalysisStrict    bool `json:"header_analysis_strict" form:"header_analysis_strict"`       // whether to block suspicious requests
+
+	// Honeypot settings
+	HoneypotEnabled       bool `json:"honeypot_enabled" form:"honeypot_enabled"`               // whether honeypot is enabled
+	HoneypotAutoBlock     bool `json:"honeypot_auto_block" form:"honeypot_auto_block"`         // whether to auto-block IPs that trigger honeypots
+	HoneypotBlockDuration int  `json:"honeypot_block_duration" form:"honeypot_block_duration"` // block duration in minutes
 
 	// Compression quality settings per role
 	ReaderCompressionQuality    int `json:"reader_compression_quality" form:"reader_compression_quality"`       // JPEG quality for reader role (0-100)
@@ -102,10 +138,30 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(rate_limit_enabled, 1),
         COALESCE(rate_limit_requests, 100),
         COALESCE(rate_limit_window, 60),
+        COALESCE(rate_limit_block_duration, 300),
         COALESCE(bot_detection_enabled, 1),
         COALESCE(bot_series_threshold, 5),
         COALESCE(bot_chapter_threshold, 10),
         COALESCE(bot_detection_window, 60),
+        COALESCE(browser_challenge_enabled, 0),
+        COALESCE(browser_challenge_difficulty, 3),
+        COALESCE(browser_challenge_validity_hours, 24),
+        COALESCE(browser_challenge_ip_bound, 0),
+        COALESCE(referer_validation_enabled, 0),
+        COALESCE(tarpit_enabled, 0),
+        COALESCE(tarpit_max_delay, 5000),
+        COALESCE(timing_analysis_enabled, 0),
+        COALESCE(timing_variance_threshold, 0.1),
+        COALESCE(tls_fingerprint_enabled, 0),
+        COALESCE(tls_fingerprint_strict, 0),
+        COALESCE(behavioral_analysis_enabled, 0),
+        COALESCE(behavioral_score_threshold, 40),
+        COALESCE(header_analysis_enabled, 0),
+        COALESCE(header_analysis_threshold, 5),
+        COALESCE(header_analysis_strict, 0),
+        COALESCE(honeypot_enabled, 0),
+        COALESCE(honeypot_auto_block, 1),
+        COALESCE(honeypot_block_duration, 60),
         COALESCE(reader_compression_quality, 70),
         COALESCE(moderator_compression_quality, 85),
         COALESCE(admin_compression_quality, 100),
@@ -136,10 +192,30 @@ func loadConfigFromDB() (AppConfig, error) {
 	var rateLimitEnabled int
 	var rateLimitRequests int
 	var rateLimitWindow int
+	var rateLimitBlockDuration int
 	var botDetectionEnabled int
 	var botSeriesThreshold int
 	var botChapterThreshold int
 	var botDetectionWindow int
+	var browserChallengeEnabled int
+	var browserChallengeDifficulty int
+	var browserChallengeValidityHours int
+	var browserChallengeIPBound int
+	var refererValidationEnabled int
+	var tarpitEnabled int
+	var tarpitMaxDelay int
+	var timingAnalysisEnabled int
+	var timingVarianceThreshold float64
+	var tlsFingerprintEnabled int
+	var tlsFingerprintStrict int
+	var behavioralAnalysisEnabled int
+	var behavioralScoreThreshold int
+	var headerAnalysisEnabled int
+	var headerAnalysisThreshold int
+	var headerAnalysisStrict int
+	var honeypotEnabled int
+	var honeypotAutoBlock int
+	var honeypotBlockDuration int
 	var readerCompressionQuality int
 	var moderatorCompressionQuality int
 	var adminCompressionQuality int
@@ -158,7 +234,9 @@ func loadConfigFromDB() (AppConfig, error) {
 
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
-		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
+		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
+		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
+		&tarpitEnabled, &tarpitMaxDelay, &timingAnalysisEnabled, &timingVarianceThreshold, &tlsFingerprintEnabled, &tlsFingerprintStrict, &behavioralAnalysisEnabled, &behavioralScoreThreshold, &headerAnalysisEnabled, &headerAnalysisThreshold, &headerAnalysisStrict, &honeypotEnabled, &honeypotAutoBlock, &honeypotBlockDuration,
 		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
@@ -177,10 +255,30 @@ func loadConfigFromDB() (AppConfig, error) {
 				RateLimitEnabled:              true,
 				RateLimitRequests:             100,
 				RateLimitWindow:               60,
+				RateLimitBlockDuration:        300,
 				BotDetectionEnabled:           true,
 				BotSeriesThreshold:            5,
 				BotChapterThreshold:           10,
 				BotDetectionWindow:            60,
+				BrowserChallengeEnabled:       false,
+				BrowserChallengeDifficulty:    3,
+				BrowserChallengeValidityHours: 24,
+				BrowserChallengeIPBound:       false,
+				RefererValidationEnabled:      false,
+				TarpitEnabled:                 false,
+				TarpitMaxDelay:                5000,
+				TimingAnalysisEnabled:         false,
+				TimingVarianceThreshold:       0.1,
+				TLSFingerprintEnabled:         false,
+				TLSFingerprintStrict:          false,
+				BehavioralAnalysisEnabled:     false,
+				BehavioralScoreThreshold:      40,
+				HeaderAnalysisEnabled:         false,
+				HeaderAnalysisThreshold:       5,
+				HeaderAnalysisStrict:          false,
+				HoneypotEnabled:               false,
+				HoneypotAutoBlock:             true,
+				HoneypotBlockDuration:         60,
 				ReaderCompressionQuality:      70,
 				ModeratorCompressionQuality:   85,
 				AdminCompressionQuality:       100,
@@ -216,10 +314,30 @@ func loadConfigFromDB() (AppConfig, error) {
 		RateLimitEnabled:              rateLimitEnabled == 1,
 		RateLimitRequests:             rateLimitRequests,
 		RateLimitWindow:               rateLimitWindow,
+		RateLimitBlockDuration:        rateLimitBlockDuration,
 		BotDetectionEnabled:           botDetectionEnabled == 1,
 		BotSeriesThreshold:            botSeriesThreshold,
 		BotChapterThreshold:           botChapterThreshold,
 		BotDetectionWindow:            botDetectionWindow,
+		BrowserChallengeEnabled:       browserChallengeEnabled == 1,
+		BrowserChallengeDifficulty:    browserChallengeDifficulty,
+		BrowserChallengeValidityHours: browserChallengeValidityHours,
+		BrowserChallengeIPBound:       browserChallengeIPBound == 1,
+		RefererValidationEnabled:      refererValidationEnabled == 1,
+		TarpitEnabled:                 tarpitEnabled == 1,
+		TarpitMaxDelay:                tarpitMaxDelay,
+		TimingAnalysisEnabled:         timingAnalysisEnabled == 1,
+		TimingVarianceThreshold:       timingVarianceThreshold,
+		TLSFingerprintEnabled:         tlsFingerprintEnabled == 1,
+		TLSFingerprintStrict:          tlsFingerprintStrict == 1,
+		BehavioralAnalysisEnabled:     behavioralAnalysisEnabled == 1,
+		BehavioralScoreThreshold:      behavioralScoreThreshold,
+		HeaderAnalysisEnabled:         headerAnalysisEnabled == 1,
+		HeaderAnalysisThreshold:       headerAnalysisThreshold,
+		HeaderAnalysisStrict:          headerAnalysisStrict == 1,
+		HoneypotEnabled:               honeypotEnabled == 1,
+		HoneypotAutoBlock:             honeypotAutoBlock == 1,
+		HoneypotBlockDuration:         honeypotBlockDuration,
 		ReaderCompressionQuality:      readerCompressionQuality,
 		ModeratorCompressionQuality:   moderatorCompressionQuality,
 		AdminCompressionQuality:       adminCompressionQuality,
@@ -291,13 +409,13 @@ func UpdateAppConfig(allowRegistration bool, maxUsers int64, contentRatingLimit 
 }
 
 // UpdateRateLimitConfig updates the rate limiting configuration
-func UpdateRateLimitConfig(enabled bool, requests, window int) (AppConfig, error) {
+func UpdateRateLimitConfig(enabled bool, requests, window, blockDuration int) (AppConfig, error) {
 	enabledInt := 0
 	if enabled {
 		enabledInt = 1
 	}
-	_, err := db.Exec(`UPDATE app_config SET rate_limit_enabled = ?, rate_limit_requests = ?, rate_limit_window = ? WHERE id = 1`,
-		enabledInt, requests, window)
+	_, err := db.Exec(`UPDATE app_config SET rate_limit_enabled = ?, rate_limit_requests = ?, rate_limit_window = ?, rate_limit_block_duration = ? WHERE id = 1`,
+		enabledInt, requests, window, blockDuration)
 	if err != nil {
 		return AppConfig{}, err
 	}
@@ -429,6 +547,176 @@ func UpdateBotDetectionConfig(enabled bool, seriesThreshold, chapterThreshold, d
 	}
 	_, err := db.Exec(`UPDATE app_config SET bot_detection_enabled = ?, bot_series_threshold = ?, bot_chapter_threshold = ?, bot_detection_window = ? WHERE id = 1`,
 		enabledInt, seriesThreshold, chapterThreshold, detectionWindow)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateBrowserChallengeConfig updates the browser challenge configuration
+func UpdateBrowserChallengeConfig(enabled bool, difficulty, validityHours int, ipBound bool) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	ipBoundInt := 0
+	if ipBound {
+		ipBoundInt = 1
+	}
+	// Ensure difficulty is within reasonable range (1-6)
+	if difficulty < 1 {
+		difficulty = 1
+	}
+	if difficulty > 6 {
+		difficulty = 6
+	}
+	// Ensure validity hours is within reasonable range (1-168 = 1 week)
+	if validityHours < 1 {
+		validityHours = 1
+	}
+	if validityHours > 168 {
+		validityHours = 168
+	}
+	_, err := db.Exec(`UPDATE app_config SET browser_challenge_enabled = ?, browser_challenge_difficulty = ?, browser_challenge_validity_hours = ?, browser_challenge_ip_bound = ? WHERE id = 1`,
+		enabledInt, difficulty, validityHours, ipBoundInt)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateRefererValidationConfig updates the referer validation configuration
+func UpdateRefererValidationConfig(enabled bool) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	_, err := db.Exec(`UPDATE app_config SET referer_validation_enabled = ? WHERE id = 1`, enabledInt)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateTarpitConfig updates the tarpit configuration
+func UpdateTarpitConfig(enabled bool, maxDelay int) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	// Ensure max delay is within reasonable range (100ms - 30 seconds)
+	if maxDelay < 100 {
+		maxDelay = 100
+	}
+	if maxDelay > 30000 {
+		maxDelay = 30000
+	}
+	_, err := db.Exec(`UPDATE app_config SET tarpit_enabled = ?, tarpit_max_delay = ? WHERE id = 1`, enabledInt, maxDelay)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateTimingAnalysisConfig updates the timing analysis configuration
+func UpdateTimingAnalysisConfig(enabled bool, varianceThreshold float64) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	// Ensure threshold is within reasonable range (0.01 - 1.0)
+	if varianceThreshold < 0.01 {
+		varianceThreshold = 0.01
+	}
+	if varianceThreshold > 1.0 {
+		varianceThreshold = 1.0
+	}
+	_, err := db.Exec(`UPDATE app_config SET timing_analysis_enabled = ?, timing_variance_threshold = ? WHERE id = 1`, enabledInt, varianceThreshold)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateTLSFingerprintConfig updates the TLS fingerprint configuration
+func UpdateTLSFingerprintConfig(enabled, strict bool) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	strictInt := 0
+	if strict {
+		strictInt = 1
+	}
+	_, err := db.Exec(`UPDATE app_config SET tls_fingerprint_enabled = ?, tls_fingerprint_strict = ? WHERE id = 1`, enabledInt, strictInt)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateBehavioralAnalysisConfig updates the behavioral analysis configuration
+func UpdateBehavioralAnalysisConfig(enabled bool, scoreThreshold int) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	// Ensure threshold is within reasonable range (0-100)
+	if scoreThreshold < 0 {
+		scoreThreshold = 0
+	}
+	if scoreThreshold > 100 {
+		scoreThreshold = 100
+	}
+	_, err := db.Exec(`UPDATE app_config SET behavioral_analysis_enabled = ?, behavioral_score_threshold = ? WHERE id = 1`, enabledInt, scoreThreshold)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateHeaderAnalysisConfig updates the header analysis configuration
+func UpdateHeaderAnalysisConfig(enabled bool, threshold int, strict bool) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	strictInt := 0
+	if strict {
+		strictInt = 1
+	}
+	// Ensure threshold is within reasonable range (1-20)
+	if threshold < 1 {
+		threshold = 1
+	}
+	if threshold > 20 {
+		threshold = 20
+	}
+	_, err := db.Exec(`UPDATE app_config SET header_analysis_enabled = ?, header_analysis_threshold = ?, header_analysis_strict = ? WHERE id = 1`, enabledInt, threshold, strictInt)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
+}
+
+// UpdateHoneypotConfig updates the honeypot configuration
+func UpdateHoneypotConfig(enabled, autoBlock bool, blockDuration int) (AppConfig, error) {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	autoBlockInt := 0
+	if autoBlock {
+		autoBlockInt = 1
+	}
+	// Ensure block duration is within reasonable range (1-1440 minutes = 1 min to 24 hours)
+	if blockDuration < 1 {
+		blockDuration = 1
+	}
+	if blockDuration > 1440 {
+		blockDuration = 1440
+	}
+	_, err := db.Exec(`UPDATE app_config SET honeypot_enabled = ?, honeypot_auto_block = ?, honeypot_block_duration = ? WHERE id = 1`, enabledInt, autoBlockInt, blockDuration)
 	if err != nil {
 		return AppConfig{}, err
 	}
