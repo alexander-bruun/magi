@@ -158,7 +158,7 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Limit the number of requests per IP address to prevent abuse.</p>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block mb-1 mt-2">Requests per window</label>
                     <input type="number" min="1" class="uk-input" name="rate_limit_requests" value={ fmt.Sprintf("%d", cfg.RateLimitRequests) } />
@@ -168,6 +168,11 @@ templ ConfigForm() {
                     <label class="block mb-1 mt-2">Time window (seconds)</label>
                     <input type="number" min="1" class="uk-input" name="rate_limit_window" value={ fmt.Sprintf("%d", cfg.RateLimitWindow) } />
                     <p class="text-xs text-muted-foreground mt-1">Time window in seconds for rate limiting.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Block duration (seconds)</label>
+                    <input type="number" min="1" class="uk-input" name="rate_limit_block_duration" value={ fmt.Sprintf("%d", cfg.RateLimitBlockDuration) } />
+                    <p class="text-xs text-muted-foreground mt-1">How long to block IPs that exceed the limit.</p>
                 </div>
             </div>
         </div>
@@ -201,12 +206,195 @@ templ ConfigForm() {
             </div>
         </div>
         
+        <!-- Browser Challenge Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Browser Challenge</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Invisible JavaScript challenge that verifies clients are running in a real browser environment. Blocks automated scripts and bots.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="browser_challenge_enabled" checked?={ cfg.BrowserChallengeEnabled } class="uk-checkbox" />
+                        <span>Enable browser challenge</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, clients must solve a proof-of-work challenge to access protected content.</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="browser_challenge_ip_bound" checked?={ cfg.BrowserChallengeIPBound } class="uk-checkbox" />
+                        <span>Bind to IP</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">Bind challenge verification to the client's IP address.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 mt-2">Difficulty (1-6)</label>
+                    <input type="number" min="1" max="6" class="uk-input" name="browser_challenge_difficulty" value={ fmt.Sprintf("%d", cfg.BrowserChallengeDifficulty) } />
+                    <p class="text-xs text-muted-foreground mt-1">Number of leading zeros required in hash. Higher = harder to solve (3 recommended).</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Validity (hours)</label>
+                    <input type="number" min="1" max="168" class="uk-input" name="browser_challenge_validity_hours" value={ fmt.Sprintf("%d", cfg.BrowserChallengeValidityHours) } />
+                    <p class="text-xs text-muted-foreground mt-1">How long the verification cookie remains valid (1-168 hours).</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Referer Validation Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Referer Validation</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Validates that requests have proper Referer headers from your domain. Helps prevent direct access by scripts that don't simulate browser navigation.</p>
+            <div>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="referer_validation_enabled" checked?={ cfg.RefererValidationEnabled } class="uk-checkbox" />
+                    <span>Enable referer validation</span>
+                </label>
+                <p class="text-xs text-muted-foreground mt-1">When enabled, non-GET requests without a valid Referer header will be blocked. Entry points (home, media pages) are exempt.</p>
+            </div>
+        </div>
+        
+        <!-- Tarpit Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Tarpit / Slow Response</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Progressively slows responses for suspected bots. Tracks suspicious behavior patterns and applies increasing delays to repeat offenders.</p>
+            <div class="grid grid-cols-2 gap-4">    
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="tarpit_enabled" checked?={ cfg.TarpitEnabled } class="uk-checkbox" />
+                        <span>Enable tarpit</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, suspicious requests receive progressively slower responses.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">Max delay (ms)</label>
+                    <input type="number" min="100" max="30000" class="uk-input" name="tarpit_max_delay" value={ fmt.Sprintf("%d", cfg.TarpitMaxDelay) } />
+                    <p class="text-xs text-muted-foreground mt-1">Maximum response delay for highly suspicious requests (100-30000ms).</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timing Analysis Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Request Timing Analysis</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Analyzes request timing patterns to detect automated scripts. Bots often have unnaturally consistent request intervals.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="timing_analysis_enabled" checked?={ cfg.TimingAnalysisEnabled } class="uk-checkbox" />
+                        <span>Enable timing analysis</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, requests with machine-like timing patterns are flagged as suspicious.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">Variance threshold</label>
+                    <input type="number" min="0.01" max="1.0" step="0.01" class="uk-input" name="timing_variance_threshold" value={ fmt.Sprintf("%.2f", cfg.TimingVarianceThreshold) } />
+                    <p class="text-xs text-muted-foreground mt-1">Lower values are stricter. Requests with coefficient of variation below this are suspicious (0.1 recommended).</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TLS Fingerprint Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>TLS Fingerprinting</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Analyzes TLS handshake characteristics (JA3/JA4) to identify non-browser clients. Requires reverse proxy to pass fingerprint headers.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="tls_fingerprint_enabled" checked?={ cfg.TLSFingerprintEnabled } class="uk-checkbox" />
+                        <span>Enable TLS fingerprinting</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, TLS fingerprints are analyzed to detect non-browser clients.</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="tls_fingerprint_strict" checked?={ cfg.TLSFingerprintStrict } class="uk-checkbox" />
+                        <span>Strict mode</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, requests with suspicious fingerprints are blocked (otherwise just flagged).</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Behavioral Analysis Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Behavioral Analysis</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Tracks client-side behavior (mouse movement, scrolling, clicks) to distinguish humans from bots. Injects tracking JavaScript.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="behavioral_analysis_enabled" checked?={ cfg.BehavioralAnalysisEnabled } class="uk-checkbox" />
+                        <span>Enable behavioral analysis</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, client-side behavior is tracked and analyzed.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">Score threshold</label>
+                    <input type="number" min="0" max="100" class="uk-input" name="behavioral_score_threshold" value={ fmt.Sprintf("%d", cfg.BehavioralScoreThreshold) } />
+                    <p class="text-xs text-muted-foreground mt-1">Sessions with a human score below this are flagged as suspicious (0-100, 40 recommended).</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Header Analysis Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Header Analysis</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Analyzes HTTP headers for bot-like patterns. Checks User-Agent, Accept headers, and other browser fingerprints.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="header_analysis_enabled" checked?={ cfg.HeaderAnalysisEnabled } class="uk-checkbox" />
+                        <span>Enable header analysis</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, HTTP headers are analyzed for suspicious patterns.</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="header_analysis_strict" checked?={ cfg.HeaderAnalysisStrict } class="uk-checkbox" />
+                        <span>Strict mode</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">Block requests that exceed the threshold instead of just flagging.</p>
+                </div>
+            </div>
+            <div>
+                <label class="block mb-1 mt-2">Suspicion threshold</label>
+                <input type="number" min="1" max="20" class="uk-input" name="header_analysis_threshold" value={ fmt.Sprintf("%d", cfg.HeaderAnalysisThreshold) } />
+                <p class="text-xs text-muted-foreground mt-1">Score above which to flag as suspicious (1-20, 5 recommended).</p>
+            </div>
+        </div>
+        
+        <!-- Honeypot Traps Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Honeypot Traps</span></h4>
+            <p class="text-xs text-muted-foreground mb-2">Hidden trap paths that catch scrapers and vulnerability scanners. Detects bots probing for common exploits.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="honeypot_enabled" checked?={ cfg.HoneypotEnabled } class="uk-checkbox" />
+                        <span>Enable honeypot traps</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, trap paths are monitored for suspicious access.</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="honeypot_auto_block" checked?={ cfg.HoneypotAutoBlock } class="uk-checkbox" />
+                        <span>Auto-block triggered IPs</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">Automatically block IPs that access honeypot trap paths.</p>
+                </div>
+            </div>
+            <div>
+                <label class="block mb-1 mt-2">Block duration (minutes)</label>
+                <input type="number" min="1" max="1440" class="uk-input" name="honeypot_block_duration" value={ fmt.Sprintf("%d", cfg.HoneypotBlockDuration) } />
+                <p class="text-xs text-muted-foreground mt-1">How long to block IPs that trigger traps (1-1440 min).</p>
+            </div>
+        </div>
+        
         <!-- Compression Quality Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Image Settings</span></h4>
             <div>
                 <label class="flex items-center space-x-2">
-                    <input type="checkbox" name="disable_webp_conversion" checked?={ runtime.GOOS == "darwin" || cfg.DisableWebpConversion } class="uk-checkbox" if runtime.GOOS == "darwin" { disabled } />
+                    <input type="checkbox" id="disable-compression-checkbox" name="disable_webp_conversion" checked?={ runtime.GOOS == "darwin" || cfg.DisableWebpConversion } class="uk-checkbox" if runtime.GOOS == "darwin" { disabled } />
                     <span>Disable WebP conversion</span>
                     if runtime.GOOS == "darwin" {
                         <span class="text-xs text-amber-600 ml-2">(Required on macOS - no WebP support)</span>
