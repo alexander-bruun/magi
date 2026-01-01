@@ -4,5 +4,5 @@ __pycache__/
 builds/
 magi
 node_modules/
-scripts/scrapers/config.json
+scripts/scrapers/*.json
 scripts/scrapers/old/

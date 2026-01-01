@@ -58,22 +58,39 @@ def extract_series_title(session, series_slug):
     
     return ''
 
-# Extract chapter links from series page
-def extract_chapter_urls(session, series_slug):
-    series_url = f"https://qiscans.org/series/{series_slug}"
-    response = session.get(series_url, timeout=30)
-    response.raise_for_status()
-    html = response.text.replace('\n', '')
+# Get series ID from cached API data
+def get_series_id(series_slug):
+    with open(API_CACHE_FILE, 'r') as f:
+        data = json.load(f)
     
-    # Extract chapter slugs
-    slugs = re.findall(r'\\"slug\\":\\"chapter-[^"]*\\"', html)
+    for post in data.get('posts', []):
+        if post.get('slug') == series_slug:
+            return post.get('id')
+    
+    return None
+
+# Extract chapter links from API
+def extract_chapter_urls(session, series_slug):
+    series_id = get_series_id(series_slug)
+    if not series_id:
+        warn(f"Could not find series ID for {series_slug}")
+        return []
+    
+    # Use v2 API to get all chapters
+    api_url = f"https://api.qiscans.org/api/v2/posts/{series_id}/chapters?page=1&perPage=9999&sortOrder=asc"
+    response = session.get(api_url, timeout=30)
+    response.raise_for_status()
+    data = response.json()
+    
     chapter_slugs = []
-    for slug_match in slugs:
-        slug = slug_match.replace('\\"slug\\":\\"', '').replace('\\', '').rstrip('"')
-        if slug not in chapter_slugs:
+    for chapter in data.get('data', []):
+        slug = chapter.get('slug')
+        if slug and slug not in chapter_slugs:
+            # Skip locked/inaccessible chapters
+            if chapter.get('isLocked') or not chapter.get('isAccessible', True):
+                continue
             chapter_slugs.append(slug)
     
-    chapter_slugs.sort()
     return chapter_slugs
 
 # Extract image URLs from chapter page
@@ -99,8 +116,8 @@ def extract_image_urls(session, series_slug, chapter_slug):
     img_urls = re.findall(r'https://media\.qiscans\.org/file/qiscans/upload/series/[^"]*\.webp', html)
     # Remove /file/qiscans
     img_urls = [url.replace('/file/qiscans', '') for url in img_urls]
-    # Exclude thumbnail images
-    img_urls = [url for url in img_urls if 'thumbnail.webp' not in url]
+    # Exclude thumbnail images (case-insensitive)
+    img_urls = [url for url in img_urls if 'thumbnail.webp' not in url.lower()]
     img_urls = list(set(img_urls))
     img_urls.sort()
     
