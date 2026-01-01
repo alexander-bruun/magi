@@ -3,18 +3,11 @@
 import os
 import sys
 import subprocess
-import shutil
 import json
 import signal
 import threading
-import time
-import importlib
-import io
-from contextlib import redirect_stdout, redirect_stderr
-import io
 from pathlib import Path
 import curses
-from contextlib import redirect_stdout, redirect_stderr
 import re
 
 # Global log storage for parallel scraping
@@ -98,13 +91,14 @@ SCRAPERS = {
     '3': {'name': 'Flame Comics', 'file': 'flamecomics.py', 'default_folder': 'FlameComics'},
     '4': {'name': 'HiveToons', 'file': 'hivetoons.py', 'default_folder': 'HiveToons'},
     '5': {'name': 'LHTranslation', 'file': 'lhtranslation.py', 'default_folder': 'LHTranslation'},
-    '6': {'name': 'Omega Scans', 'file': 'omegascans.py', 'default_folder': 'OmegaScans'},
-    '7': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
-    '8': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
-    '9': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
-    '10': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
-    '11': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
-    '12': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
+    '6': {'name': 'MangaKatana', 'file': 'mangakatana.py', 'default_folder': 'MangaKatana'},
+    '7': {'name': 'Omega Scans', 'file': 'omegascans.py', 'default_folder': 'OmegaScans'},
+    '8': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
+    '9': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
+    '10': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
+    '11': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
+    '12': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
+    '13': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
 }
 
 def load_config():
