@@ -226,6 +226,15 @@ templ FormContent(library models.Library, editing bool) {
 				<option value="kitsu" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "kitsu" }>Kitsu</option>
 			</select>
 		</div>
+		<div class="uk-margin">
+			<label class="uk-form-label">Enabled</label>
+			<input
+				class="uk-checkbox"
+				type="checkbox"
+				name="enabled"
+				checked?={ library.Enabled }
+			/>
+		</div>
 		@FolderInputs(library.Folders, editing)
 		<div id="response" class="mt-8"></div>
 	</fieldset>

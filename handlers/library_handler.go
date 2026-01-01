@@ -24,6 +24,7 @@ type LibraryFormData struct {
 	Cron             string   `form:"cron"`
 	Folders          []string `form:"folders"`
 	MetadataProvider string   `form:"metadata_provider"`
+	Enabled          bool     `form:"enabled"`
 }
 
 // validateLibraryFormData validates the parsed library form data
@@ -203,6 +204,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
+		Enabled:     formData.Enabled,
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
