@@ -103,7 +103,7 @@ def extract_image_urls(session, chapter_url):
             # If no images found, extract from src attributes like bash script
             if not images:
                 src_matches = re.findall(r'src="([^"]*)"', html)
-                images = [url for url in src_matches if 'storage.hivetoon.com' in url and any(url.endswith(ext) for ext in ['.webp', '.jpg', '.png', '.jpeg', '.avif'])]
+                images = [url for url in src_matches if urlparse(url).netloc == 'storage.hivetoon.com' and any(url.endswith(ext) for ext in ['.webp', '.jpg', '.png', '.jpeg', '.avif'])]
                 
                 # If still no images, try broader patterns
                 if not images:
