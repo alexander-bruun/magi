@@ -91,9 +91,19 @@ func HoneypotMiddleware() fiber.Handler {
 		ip := getRealIP(c)
 		path := c.Path()
 
-		// Check if IP is already blocked
+		// Check if IP is already blocked temporarily
 		if isBlockedByHoneypot(ip) {
 			log.Warnf("Honeypot: Blocked request from previously trapped IP %s", ip)
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Access denied",
+			})
+		}
+
+		// Check if IP is permanently banned
+		if banned, err := models.IsIPBanned(ip); err != nil {
+			log.Errorf("Error checking if IP %s is banned: %v", ip, err)
+		} else if banned {
+			log.Warnf("Honeypot: Blocked request from banned IP %s", ip)
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "Access denied",
 			})
@@ -110,12 +120,19 @@ func HoneypotMiddleware() fiber.Handler {
 				Path:        path,
 				TriggeredAt: time.Now(),
 				UserAgent:   c.Get("User-Agent"),
-				Blocked:     cfg.HoneypotAutoBlock,
+				Blocked:     cfg.HoneypotAutoBan || cfg.HoneypotAutoBlock,
 			}
 			honeypotMu.Unlock()
 
-			// Auto-block if enabled
-			if cfg.HoneypotAutoBlock {
+			// Auto-ban if enabled
+			if cfg.HoneypotAutoBan {
+				if err := models.BanIP(ip, "Triggered honeypot"); err != nil {
+					log.Errorf("Failed to ban IP %s: %v", ip, err)
+				} else {
+					log.Warnf("Honeypot: IP %s permanently banned for triggering honeypot", ip)
+				}
+			} else if cfg.HoneypotAutoBlock {
+				// Auto-block temporarily if enabled
 				blockDuration := time.Duration(cfg.HoneypotBlockDuration) * time.Minute
 				blockedByHoneypotMu.Lock()
 				blockedByHoneypot[ip] = time.Now().Add(blockDuration)

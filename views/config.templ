@@ -366,7 +366,7 @@ templ ConfigForm() {
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Honeypot Traps</span></h4>
             <p class="text-xs text-muted-foreground mb-2">Hidden trap paths that catch scrapers and vulnerability scanners. Detects bots probing for common exploits.</p>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" name="honeypot_enabled" checked?={ cfg.HoneypotEnabled } class="uk-checkbox" />
@@ -380,6 +380,13 @@ templ ConfigForm() {
                         <span>Auto-block triggered IPs</span>
                     </label>
                     <p class="text-xs text-muted-foreground mt-1">Automatically block IPs that access honeypot trap paths.</p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="honeypot_auto_ban" checked?={ cfg.HoneypotAutoBan } class="uk-checkbox" />
+                        <span>Auto-ban triggered IPs</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">Automatically ban IPs that access honeypot trap paths permanently.</p>
                 </div>
             </div>
             <div>

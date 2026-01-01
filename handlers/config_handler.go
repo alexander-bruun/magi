@@ -186,7 +186,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	if honeypotBlockDuration > 1440 {
 		honeypotBlockDuration = 1440
 	}
-	if _, err := models.UpdateHoneypotConfig(config.HoneypotEnabled, config.HoneypotAutoBlock, honeypotBlockDuration); err != nil {
+	if _, err := models.UpdateHoneypotConfig(config.HoneypotEnabled, config.HoneypotAutoBlock, config.HoneypotAutoBan, honeypotBlockDuration); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 

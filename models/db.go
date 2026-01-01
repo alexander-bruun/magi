@@ -258,6 +258,12 @@ func MigrateDown(migrationsDir string, version int) error {
 	return rollbackMigration(migrationsDir, version)
 }
 
+// ClearMigrationVersions clears all migration versions from the schema_migrations table
+func ClearMigrationVersions() error {
+	_, err := db.Exec("DELETE FROM schema_migrations")
+	return err
+}
+
 // ExistsChecker is a generic function to check if a record exists
 func ExistsChecker(query string, args ...interface{}) (bool, error) {
 	var exists int

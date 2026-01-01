@@ -67,7 +67,8 @@ type AppConfig struct {
 
 	// Honeypot settings
 	HoneypotEnabled       bool `json:"honeypot_enabled" form:"honeypot_enabled"`               // whether honeypot is enabled
-	HoneypotAutoBlock     bool `json:"honeypot_auto_block" form:"honeypot_auto_block"`         // whether to auto-block IPs that trigger honeypots
+	HoneypotAutoBlock     bool `json:"honeypot_auto_block" form:"honeypot_auto_block"`         // whether to auto-block IPs that trigger honeypots temporarily
+	HoneypotAutoBan       bool `json:"honeypot_auto_ban" form:"honeypot_auto_ban"`             // whether to auto-ban IPs that trigger honeypots permanently
 	HoneypotBlockDuration int  `json:"honeypot_block_duration" form:"honeypot_block_duration"` // block duration in minutes
 
 	// Compression quality settings per role
@@ -161,6 +162,7 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(header_analysis_strict, 0),
         COALESCE(honeypot_enabled, 0),
         COALESCE(honeypot_auto_block, 1),
+        COALESCE(honeypot_auto_ban, 0),
         COALESCE(honeypot_block_duration, 60),
         COALESCE(reader_compression_quality, 70),
         COALESCE(moderator_compression_quality, 85),
@@ -215,6 +217,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var headerAnalysisStrict int
 	var honeypotEnabled int
 	var honeypotAutoBlock int
+	var honeypotAutoBan int
 	var honeypotBlockDuration int
 	var readerCompressionQuality int
 	var moderatorCompressionQuality int
@@ -236,7 +239,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
-		&tarpitEnabled, &tarpitMaxDelay, &timingAnalysisEnabled, &timingVarianceThreshold, &tlsFingerprintEnabled, &tlsFingerprintStrict, &behavioralAnalysisEnabled, &behavioralScoreThreshold, &headerAnalysisEnabled, &headerAnalysisThreshold, &headerAnalysisStrict, &honeypotEnabled, &honeypotAutoBlock, &honeypotBlockDuration,
+		&tarpitEnabled, &tarpitMaxDelay, &timingAnalysisEnabled, &timingVarianceThreshold, &tlsFingerprintEnabled, &tlsFingerprintStrict, &behavioralAnalysisEnabled, &behavioralScoreThreshold, &headerAnalysisEnabled, &headerAnalysisThreshold, &headerAnalysisStrict, &honeypotEnabled, &honeypotAutoBlock, &honeypotAutoBan, &honeypotBlockDuration,
 		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
@@ -278,6 +281,7 @@ func loadConfigFromDB() (AppConfig, error) {
 				HeaderAnalysisStrict:          false,
 				HoneypotEnabled:               false,
 				HoneypotAutoBlock:             true,
+				HoneypotAutoBan:               false,
 				HoneypotBlockDuration:         60,
 				ReaderCompressionQuality:      70,
 				ModeratorCompressionQuality:   85,
@@ -337,6 +341,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		HeaderAnalysisStrict:          headerAnalysisStrict == 1,
 		HoneypotEnabled:               honeypotEnabled == 1,
 		HoneypotAutoBlock:             honeypotAutoBlock == 1,
+		HoneypotAutoBan:               honeypotAutoBan == 1,
 		HoneypotBlockDuration:         honeypotBlockDuration,
 		ReaderCompressionQuality:      readerCompressionQuality,
 		ModeratorCompressionQuality:   moderatorCompressionQuality,
@@ -700,7 +705,7 @@ func UpdateHeaderAnalysisConfig(enabled bool, threshold int, strict bool) (AppCo
 }
 
 // UpdateHoneypotConfig updates the honeypot configuration
-func UpdateHoneypotConfig(enabled, autoBlock bool, blockDuration int) (AppConfig, error) {
+func UpdateHoneypotConfig(enabled, autoBlock, autoBan bool, blockDuration int) (AppConfig, error) {
 	enabledInt := 0
 	if enabled {
 		enabledInt = 1
@@ -709,6 +714,10 @@ func UpdateHoneypotConfig(enabled, autoBlock bool, blockDuration int) (AppConfig
 	if autoBlock {
 		autoBlockInt = 1
 	}
+	autoBanInt := 0
+	if autoBan {
+		autoBanInt = 1
+	}
 	// Ensure block duration is within reasonable range (1-1440 minutes = 1 min to 24 hours)
 	if blockDuration < 1 {
 		blockDuration = 1
@@ -716,7 +725,7 @@ func UpdateHoneypotConfig(enabled, autoBlock bool, blockDuration int) (AppConfig
 	if blockDuration > 1440 {
 		blockDuration = 1440
 	}
-	_, err := db.Exec(`UPDATE app_config SET honeypot_enabled = ?, honeypot_auto_block = ?, honeypot_block_duration = ? WHERE id = 1`, enabledInt, autoBlockInt, blockDuration)
+	_, err := db.Exec(`UPDATE app_config SET honeypot_enabled = ?, honeypot_auto_block = ?, honeypot_auto_ban = ?, honeypot_block_duration = ? WHERE id = 1`, enabledInt, autoBlockInt, autoBanInt, blockDuration)
 	if err != nil {
 		return AppConfig{}, err
 	}

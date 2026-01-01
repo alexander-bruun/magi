@@ -18,6 +18,7 @@ func NewMigrateCmd(dataDirectory *string) *cobra.Command {
 	cmd.AddCommand(
 		newMigrateUpCmd(dataDirectory),
 		newMigrateDownCmd(dataDirectory),
+		newMigrateClearCmd(dataDirectory),
 	)
 
 	return cmd
@@ -120,6 +121,33 @@ func newMigrateDownCmd(dataDirectory *string) *cobra.Command {
 			}
 
 			cmd.Printf("Migration down %d completed successfully\n", version)
+		},
+	}
+}
+
+func newMigrateClearCmd(dataDirectory *string) *cobra.Command {
+	return &cobra.Command{
+		Use:   "clear",
+		Short: "Clear all migration schema versions from the database",
+		Long:  "This will clear the schema_migrations table, making the system think no migrations have been applied. Use with caution!",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Initialize database without auto-migrations
+			err := models.InitializeWithMigration(*dataDirectory, false)
+			if err != nil {
+				cmd.PrintErrf("Failed to connect to database: %v\n", err)
+				os.Exit(1)
+			}
+			defer models.Close()
+
+			// Clear all migration versions
+			err = models.ClearMigrationVersions()
+			if err != nil {
+				cmd.PrintErrf("Failed to clear migration versions: %v\n", err)
+				os.Exit(1)
+			}
+
+			cmd.Println("Migration schema versions cleared successfully")
+			cmd.Println("WARNING: The database schema has not been modified. Run 'migrate up all' to reapply all migrations.")
 		},
 	}
 }
