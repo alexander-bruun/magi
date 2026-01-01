@@ -698,7 +698,7 @@ def log_viewer_curses(stdscr):
         render_nav_bar(stdscr, nav_rows, nav_y, width, has_colors)
         
         # Display help text
-        help_text = "←→: Switch | ↑↓: Scroll | q: Quit | r: Refresh"
+        help_text = "←→: Switch | q: Quit | r: Refresh"
         stdscr.addstr(height - 1, 0, help_text[:width-1])
         
         stdscr.refresh()
@@ -712,10 +712,6 @@ def log_viewer_curses(stdscr):
         elif key == curses.KEY_RIGHT and current_scraper_idx < len(scraper_names) - 1:
             current_scraper_idx += 1
             scroll_offset = max_scroll
-        elif key == curses.KEY_UP and scroll_offset > 0:
-            scroll_offset -= 1
-        elif key == curses.KEY_DOWN and scroll_offset < max_scroll:
-            scroll_offset += 1
         elif key == ord('q') or key == 27:  # q or ESC
             break
         elif key == ord('r'):
@@ -879,9 +875,9 @@ def log_viewer_curses_realtime(stdscr, threads):
         
         # Display help text
         if all_done:
-            help_text = "←→: Switch | ↑↓: Scroll | q: Quit"
+            help_text = "←→: Switch | q: Quit"
         else:
-            help_text = "←→: Switch | ↑↓: Scroll | q: Quit (wait for completion)"
+            help_text = "←→: Switch | q: Quit (wait for completion)"
         stdscr.addstr(height - 1, 0, help_text[:width-1])
         
         stdscr.refresh()
@@ -899,10 +895,6 @@ def log_viewer_curses_realtime(stdscr, threads):
         elif key == curses.KEY_RIGHT and current_scraper_idx < len(scraper_names) - 1:
             current_scraper_idx += 1
             scroll_offset = max_scroll
-        elif key == curses.KEY_UP and scroll_offset > 0:
-            scroll_offset -= 1
-        elif key == curses.KEY_DOWN and scroll_offset < max_scroll:
-            scroll_offset += 1
         elif key == ord('q') or key == 27:  # q or ESC
             if all_done:
                 break
