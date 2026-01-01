@@ -1,8 +1,8 @@
+__pycache__/
 .tmp/
 *.out
 builds/
 magi
 node_modules/
-scripts/scrapers/*.json
-scripts/scrapers/cookies.txt
-scripts/scrapers/start_all_scrapers.sh
+scripts/scrapers/config.json
+scripts/scrapers/old/

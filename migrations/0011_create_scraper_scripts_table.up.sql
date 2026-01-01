@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS scraper_scripts (
     enabled BOOLEAN DEFAULT 1,
     variables TEXT DEFAULT '{}',
     packages TEXT DEFAULT '[]',
-    shared_script TEXT DEFAULT NULL
+    shared_script TEXT DEFAULT NULL,
+    index_library_slug TEXT DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_scraper_scripts_name ON scraper_scripts(name);

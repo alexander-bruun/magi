@@ -261,7 +261,7 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			</div>
 
 			<!-- Language Selection -->
-			<div class="grid grid-cols-2 gap-4">
+			<div class="grid grid-cols-3 gap-4">
 				<div>
 					<label for="script-language" class="uk-form-label">Language</label>
 					<select 
@@ -291,6 +291,23 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 						class="uk-input"
 					/>
 					<p class="text-xs text-muted-foreground mt-1">Format: minute hour day month weekday</p>
+				</div>
+
+				<!-- Library Selection for Indexing -->
+				<div>
+					<label for="script-index-library" class="uk-form-label">Index Library After Run (optional)</label>
+					<select 
+						id="script-index-library" 
+						name="index_library_slug" 
+						class="uk-select"
+					>
+						<option value="">No indexing</option>
+						{{ libraries, _ := models.GetLibraries() }}
+						for _, library := range libraries {
+							<option value={ library.Slug } selected?={ script.IndexLibrarySlug != nil && *script.IndexLibrarySlug == library.Slug }>{ library.Name }</option>
+						}
+					</select>
+					<p class="text-xs text-muted-foreground mt-1">Automatically index this library after successful script execution</p>
 				</div>
 			</div>
 

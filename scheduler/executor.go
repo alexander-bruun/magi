@@ -444,6 +444,31 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 			BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "error", errMsg)
 		}
 
+		// Trigger library indexing if script completed successfully and index_library_slug is set
+		if status == "success" && s.IndexLibrarySlug != nil && *s.IndexLibrarySlug != "" {
+			BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Triggering library indexing for '%s'", *s.IndexLibrarySlug))
+			log.Infof("Triggering library indexing for '%s' after successful scraper execution", *s.IndexLibrarySlug)
+
+			// Get the library by slug
+			library, err := models.GetLibrary(*s.IndexLibrarySlug)
+			if err != nil {
+				log.Errorf("Failed to get library '%s' for indexing: %v", *s.IndexLibrarySlug, err)
+				BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "error", fmt.Sprintf("Failed to get library '%s' for indexing", *s.IndexLibrarySlug))
+			} else if library == nil {
+				log.Errorf("Library '%s' not found for indexing", *s.IndexLibrarySlug)
+				BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "error", fmt.Sprintf("Library '%s' not found for indexing", *s.IndexLibrarySlug))
+			} else {
+				// Create indexer and trigger indexing
+				idx := NewIndexer(*library)
+				if ran := idx.RunIndexingJob(); !ran {
+					log.Warnf("Library indexing for '%s' is already in progress", *s.IndexLibrarySlug)
+					BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "warning", fmt.Sprintf("Library indexing for '%s' is already in progress", *s.IndexLibrarySlug))
+				} else {
+					BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Library indexing started for '%s'", *s.IndexLibrarySlug))
+				}
+			}
+		}
+
 		if l != nil {
 			if err := models.UpdateScraperLogFinal(l.ID, status, outputBuf.String(), errMsg, duration.Milliseconds()); err != nil {
 				log.Errorf("Failed to update execution log: %v", err)

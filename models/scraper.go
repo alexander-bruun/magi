@@ -12,24 +12,25 @@ import (
 
 // ScraperScript represents a scraper script stored in the database
 type ScraperScript struct {
-	ID            int64
-	Name          string
-	Script        string
-	Language      string            // "bash", "python"
-	Schedule      string            // Cron format (e.g., "0 0 * * *")
-	Variables     map[string]string // Key-value pairs for script variables
-	Packages      []string          // Python packages to install for python scripts
-	SharedScript  *string           // Shared bash script that can be sourced by scraper scripts
-	LastRun       *int64            // Unix timestamp
-	LastRunOutput *string
-	LastRunError  *string
-	CreatedAt     int64
-	UpdatedAt     int64
-	Enabled       bool
+	ID               int64
+	Name             string
+	Script           string
+	Language         string            // "bash", "python"
+	Schedule         string            // Cron format (e.g., "0 0 * * *")
+	Variables        map[string]string // Key-value pairs for script variables
+	Packages         []string          // Python packages to install for python scripts
+	SharedScript     *string           // Shared bash script that can be sourced by scraper scripts
+	IndexLibrarySlug *string           // Library slug to index after successful execution
+	LastRun          *int64            // Unix timestamp
+	LastRunOutput    *string
+	LastRunError     *string
+	CreatedAt        int64
+	UpdatedAt        int64
+	Enabled          bool
 }
 
 // CreateScraperScript creates a new scraper script in the database
-func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
+func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string, indexLibrarySlug *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 
 	// Serialize variables to JSON
@@ -53,10 +54,10 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 	}
 
 	query := `
-		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, shared_script, created_at, updated_at, enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, shared_script, index_library_slug, created_at, updated_at, enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 	`
-	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, now, now)
+	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, indexLibrarySlug, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scraper script: %w", err)
 	}
@@ -67,24 +68,25 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 	}
 
 	return &ScraperScript{
-		ID:           id,
-		Name:         name,
-		Script:       script,
-		Language:     language,
-		Schedule:     schedule,
-		Variables:    variables,
-		Packages:     packages,
-		SharedScript: sharedScript,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-		Enabled:      true,
+		ID:               id,
+		Name:             name,
+		Script:           script,
+		Language:         language,
+		Schedule:         schedule,
+		Variables:        variables,
+		Packages:         packages,
+		SharedScript:     sharedScript,
+		IndexLibrarySlug: indexLibrarySlug,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		Enabled:          true,
 	}, nil
 }
 
 // GetScraperScript retrieves a script by ID
 func GetScraperScript(id int64) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
 		FROM scraper_scripts
 		WHERE id = ?
 	`
@@ -95,7 +97,7 @@ func GetScraperScript(id int64) (*ScraperScript, error) {
 // GetScraperScriptByName retrieves a script by name
 func GetScraperScriptByName(name string) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
 		FROM scraper_scripts
 		WHERE name = ?
 	`
@@ -106,7 +108,7 @@ func GetScraperScriptByName(name string) (*ScraperScript, error) {
 // ListScraperScripts retrieves all scraper scripts, optionally filtered by enabled status
 func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script
+		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
 		FROM scraper_scripts
 	`
 	args := []interface{}{}
@@ -136,7 +138,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 }
 
 // UpdateScraperScript updates a scraper script
-func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string) (*ScraperScript, error) {
+func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string, indexLibrarySlug *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 
 	// Serialize variables to JSON
@@ -161,10 +163,10 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 
 	query := `
 		UPDATE scraper_scripts
-		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, shared_script = ?, updated_at = ?
+		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, shared_script = ?, index_library_slug = ?, updated_at = ?
 		WHERE id = ?
 	`
-	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, now, id)
+	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, indexLibrarySlug, now, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update scraper script: %w", err)
 	}
@@ -215,23 +217,24 @@ func EnableScraperScript(id int64, enabled bool) error {
 // scanScraperScript scans a row into a ScraperScript
 func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScript, error) {
 	var (
-		id            int64
-		name          string
-		script        string
-		language      string
-		schedule      string
-		lastRun       sql.NullInt64
-		lastRunOutput sql.NullString
-		lastRunError  sql.NullString
-		createdAt     int64
-		updatedAt     int64
-		enabled       bool
-		variablesJSON sql.NullString
-		packagesJSON  sql.NullString
-		sharedScript  sql.NullString
+		id               int64
+		name             string
+		script           string
+		language         string
+		schedule         string
+		lastRun          sql.NullInt64
+		lastRunOutput    sql.NullString
+		lastRunError     sql.NullString
+		createdAt        int64
+		updatedAt        int64
+		enabled          bool
+		variablesJSON    sql.NullString
+		packagesJSON     sql.NullString
+		sharedScript     sql.NullString
+		indexLibrarySlug sql.NullString
 	)
 
-	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON, &sharedScript)
+	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON, &sharedScript, &indexLibrarySlug)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("scraper script not found")
@@ -274,6 +277,9 @@ func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScr
 
 	if sharedScript.Valid {
 		ss.SharedScript = &sharedScript.String
+	}
+	if indexLibrarySlug.Valid {
+		ss.IndexLibrarySlug = &indexLibrarySlug.String
 	}
 	if lastRun.Valid {
 		ss.LastRun = &lastRun.Int64

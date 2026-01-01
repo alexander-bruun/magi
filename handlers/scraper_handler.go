@@ -13,14 +13,15 @@ import (
 
 // ScraperFormData represents form data for creating/updating scraper scripts
 type ScraperFormData struct {
-	Name          string      `json:"name" form:"name"`
-	Script        string      `json:"script" form:"script"`
-	Language      string      `json:"language" form:"language"`
-	Schedule      string      `json:"schedule" form:"schedule"`
-	SharedScript  string      `json:"shared_script" form:"shared_script"`
-	VariableName  interface{} `json:"variable_name" form:"variable_name"`
-	VariableValue interface{} `json:"variable_value" form:"variable_value"`
-	Package       interface{} `json:"package" form:"package"`
+	Name             string      `json:"name" form:"name"`
+	Script           string      `json:"script" form:"script"`
+	Language         string      `json:"language" form:"language"`
+	Schedule         string      `json:"schedule" form:"schedule"`
+	SharedScript     string      `json:"shared_script" form:"shared_script"`
+	IndexLibrarySlug string      `json:"index_library_slug" form:"index_library_slug"`
+	VariableName     interface{} `json:"variable_name" form:"variable_name"`
+	VariableValue    interface{} `json:"variable_value" form:"variable_value"`
+	Package          interface{} `json:"package" form:"package"`
 }
 
 // normalizeToStringSlice converts interface{} to []string, handling both single values and arrays
@@ -144,6 +145,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
 		formData.SharedScript = c.FormValue("shared_script")
+		formData.IndexLibrarySlug = c.FormValue("index_library_slug")
 
 		// For traditional form data, we need to manually collect arrays
 		varNames := c.Request().PostArgs().PeekMulti("variable_name")
@@ -205,7 +207,13 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 		sharedScript = &sharedScriptContent
 	}
 
-	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, extractedPackages, sharedScript)
+	// Handle index library slug
+	var indexLibrarySlug *string
+	if strings.TrimSpace(formData.IndexLibrarySlug) != "" {
+		indexLibrarySlug = &formData.IndexLibrarySlug
+	}
+
+	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, extractedPackages, sharedScript, indexLibrarySlug)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -244,6 +252,7 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
 		formData.SharedScript = c.FormValue("shared_script")
+		formData.IndexLibrarySlug = c.FormValue("index_library_slug")
 
 		// For traditional form data, we need to manually collect arrays
 		varNames := c.Request().PostArgs().PeekMulti("variable_name")
@@ -305,7 +314,13 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 		sharedScript = &sharedScriptContent
 	}
 
-	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, extractedPackages, sharedScript)
+	// Handle index library slug
+	var indexLibrarySlug *string
+	if strings.TrimSpace(formData.IndexLibrarySlug) != "" {
+		indexLibrarySlug = &formData.IndexLibrarySlug
+	}
+
+	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, extractedPackages, sharedScript, indexLibrarySlug)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
