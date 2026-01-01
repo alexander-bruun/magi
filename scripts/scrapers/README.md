@@ -7,16 +7,21 @@ Interactive manga/comic scraper with support for multiple sources.
 | Scraper | Site |
 |---------|------|
 | asurascans | Asura Scans |
+| demonicscans | Demonic Scans |
 | flamecomics | Flame Comics |
 | hivetoons | HiveToons |
+| kunmanga | KunManga |
 | lhtranslation | LHTranslation |
+| manga18 | Manga18 |
+| mangakatana | MangaKatana |
 | omegascans | Omega Scans |
 | qiscans | Qi Scans |
+| resetscans | Reset Scans |
 | thunderscans | Thunder Scans |
+| tritinia | Tritinia |
+| utoon | UToon |
 | vortexscans | Vortex Scans |
 | zscans | Z Scans |
-| demonicscans | Demonic Scans |
-| resetscans | Reset Scans |
 
 ## Installation
 
