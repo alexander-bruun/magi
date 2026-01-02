@@ -129,32 +129,6 @@ def get_available_scrapers():
 
 def generate_display_name(scraper_name):
     """Generate a proper display name from the scraper filename."""
-    # Special cases
-    special_names = {
-        'asurascans': 'Asura Scans',
-        'demonicscans': 'Demonic Scans',
-        'flamecomics': 'Flame Comics',
-        'genzupdates': 'GenzUpdates',
-        'hivetoons': 'HiveToons',
-        'kunmanga': 'KunManga',
-        'lhtranslation': 'LHTranslation',
-        'luacomic': 'LuaComic',
-        'nexcomic': 'NexComic',
-        'manga18': 'Manga18',
-        'mangakatana': 'MangaKatana',
-        'manhwagalaxy': 'ManhwaGalaxy',
-        'omegascans': 'Omega Scans',
-        'qiscans': 'Qi Scans',
-        'resetscans': 'Reset Scans',
-        'thunderscans': 'Thunder Scans',
-        'utoon': 'UToon',
-        'vortexscans': 'Vortex Scans',
-        'zscans': 'Z Scans'
-    }
-    
-    if scraper_name in special_names:
-        return special_names[scraper_name]
-    
     # Default: capitalize and add spaces before numbers/caps
     import re
     name = re.sub(r'(\d+|[A-Z])', r' \1', scraper_name).strip()
@@ -180,6 +154,59 @@ def get_scraper_config(config, scraper_key):
     """Get scraper-specific configuration."""
     scraper_file = SCRAPERS[scraper_key]['file'].replace('.py', '')
     return config.get('scrapers', {}).get(scraper_file, {})
+
+def run_scraper_directly(scraper_name):
+    """Run a specific scraper directly from command line."""
+    config = load_config()
+    
+    # Find the scraper by name (case-insensitive)
+    scraper_key = None
+    for key, scraper in SCRAPERS.items():
+        if scraper['name'].lower().replace(' ', '') == scraper_name.lower():
+            scraper_key = key
+            break
+    
+    if not scraper_key:
+        print(f"Error: Scraper '{scraper_name}' not found.")
+        print("Available scrapers:")
+        for key, scraper in SCRAPERS.items():
+            print(f"  {scraper['name'].lower().replace(' ', '')}")
+        return False
+    
+    scraper = SCRAPERS[scraper_key]
+    scraper_config = get_scraper_config(config, scraper_key)
+    
+    print(f"Running: {scraper['name']}")
+    print(f"Config loaded: {bool(scraper_config)}")
+    
+    # Get folder location (use config or default)
+    folder_path = scraper_config.get('folder') if scraper_config else None
+    if not folder_path:
+        folder_path = scraper['default_folder']
+        print(f"Using default folder: {folder_path}")
+    
+    # Set up environment variables for the scraper
+    env = os.environ.copy()
+    env['folder'] = folder_path
+    
+    if scraper_config:
+        if 'dry_run' in scraper_config:
+            env['dry_run'] = str(scraper_config['dry_run']).lower()
+        if 'convert_to_webp' in scraper_config:
+            env['convert_to_webp'] = str(scraper_config['convert_to_webp']).lower()
+        if 'webp_quality' in scraper_config:
+            env['webp_quality'] = str(scraper_config['webp_quality'])
+    
+    # Run the scraper
+    try:
+        result = subprocess.run([sys.executable, scraper['file']], 
+                              cwd=os.path.dirname(__file__),
+                              env=env,
+                              capture_output=False)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Error running scraper: {e}")
+        return False
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -1259,7 +1286,32 @@ def run_all_scrapers_parallel(config):
     return 'menu'
 
 def main():
-    """Main application loop."""
+    """Main application loop with CLI support."""
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        scraper_name = sys.argv[1].lower()
+        
+        # Handle special cases
+        if scraper_name == 'test':
+            # Run test mode
+            print("Running in test mode...")
+            test_log_viewer()
+            return
+        elif scraper_name in ['help', '-h', '--help']:
+            print("Usage: python interactive_scraper.py [scraper_name]")
+            print("\nAvailable scrapers:")
+            for key, scraper in SCRAPERS.items():
+                print(f"  {scraper['name'].lower().replace(' ', '')} - {scraper['description']}")
+            print("\nExamples:")
+            print("  python interactive_scraper.py stonescape")
+            print("  python interactive_scraper.py nexcomic")
+            return
+        else:
+            # Try to run the specified scraper directly
+            success = run_scraper_directly(scraper_name)
+            sys.exit(0 if success else 1)
+    
+    # Interactive mode (original menu)
     config = load_config()
 
     while True:
@@ -1349,15 +1401,11 @@ def test_log_viewer():
     show_log_viewer()
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        test_log_viewer()
-    else:
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("\n\nGoodbye!")
-            sys.exit(0)
-        except Exception as e:
-            print(f"\nUnexpected error: {e}")
-            sys.exit(1)
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\nGoodbye!")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        sys.exit(1)

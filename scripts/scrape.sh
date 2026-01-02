@@ -12,4 +12,4 @@ source "$SCRIPT_DIR/../.venv/bin/activate"
 cd "$SCRIPT_DIR/scrapers"
 
 # Run the interactive scraper
-python interactive_scraper.py
+python interactive_scraper.py "$@"
