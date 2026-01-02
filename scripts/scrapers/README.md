@@ -6,8 +6,11 @@ Interactive manga/comic scraper with support for multiple sources.
 
 | Scraper | Site |
 |---------|------|
+| asmotoon | AsmoToon |
 | asurascans | Asura Scans |
 | demonicscans | Demonic Scans |
+| drakecomic | DrakeComic |
+| ezmanga | EzManga |
 | flamecomics | Flame Comics |
 | hivetoons | HiveToons |
 | kunmanga | KunManga |
@@ -18,33 +21,16 @@ Interactive manga/comic scraper with support for multiple sources.
 | omegascans | Omega Scans |
 | qiscans | Qi Scans |
 | resetscans | Reset Scans |
+| spiderscans | Spider Scans |
+| stonescape | StoneScape |
 | thunderscans | Thunder Scans |
 | tritinia | Tritinia |
 | utoon | UToon |
 | vortexscans | Vortex Scans |
 | zscans | Z Scans |
+| nexcomic | NexComic |
 | genzupdates | GenzUpdates |
 | luacomic | LuaComic |
-
-## Planned Sources
-
-The following sources are planned for future implementation:
-
-
-- **nexcomic.com** - Shares software with HiveToons
-- **stonescape.xyz** - Shares software with HiveToons
-- **ezmanga.org** - Shares software with HiveToons
-- **asmotoon.com** - Shares software with HiveToons
-- **https://drakecomic.org** - Shares software with HiveToons
-- **spiderscans.xyz** - Shares software with Reset Scans
-- **https://mangayy.org** - Shares software with Reset Scans
-- **https://manhuafast.net/** - Shares software with Reset Scans
-- **https://setsuscans.com/** - Shares software with Reset Scans
-- **https://inkedscans.com** - Doesnt share software with previous sites
-- **https://www.natomanga.com/genre/all**  - Doesnt share software with previous sites
-- **https://www.mangago.me/list/new/all/1/**  - Doesnt share software with previous sites
-- **https://templetoons.com/**  - Doesnt share software with previous sites
-- **https://mangapill.com/mangas/new** - Doesnt share software with previous sites
 
 ## Installation
 
