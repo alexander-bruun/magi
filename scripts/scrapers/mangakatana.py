@@ -334,7 +334,7 @@ def main():
                         log(f"Chapter {chapter_num} [{len(image_urls)} images]")
                         continue
 
-                    log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
+                    log(f"Downloading: {chapter_name} [{len(image_urls)} images]")
 
                     # Create chapter directory - use chapter name for consistency with other scrapers
                     chapter_folder = series_directory / chapter_name

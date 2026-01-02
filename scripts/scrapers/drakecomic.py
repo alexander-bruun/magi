@@ -397,7 +397,7 @@ def main():
                 log(f"Chapter {num} [{len(imgs)} images]")
                 continue
 
-            log(f"Downloading: Chapter {num} [{len(imgs)} images]")
+            log(f"Downloading: {chapter_name} [{len(imgs)} images]")
 
             # Create chapter directory within series directory
             chapter_folder = series_directory / name

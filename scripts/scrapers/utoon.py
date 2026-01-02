@@ -419,7 +419,7 @@ async def process_chapter(ch_url, series_directory, clean_title, num, browser_fa
                 log(f"Chapter {num} [{len(unique_images)} images]")
                 return 1
             
-            log(f"Downloading: Chapter {num} [{len(unique_images)} images]")
+            log(f"Downloading: {chapter_name} [{len(unique_images)} images]")
             
             # Create chapter directory
             chapter_folder = series_directory / name
@@ -815,7 +815,7 @@ async def main_async():
                         log(f"Chapter {num} [{len(unique_images)} images]")
                         continue
 
-                    log(f"Downloading: Chapter {num} [{len(unique_images)} images]")
+                    log(f"Downloading: {chapter_name} [{len(unique_images)} images]")
 
                     # Download images
                     chapter_folder = series_directory / name
@@ -967,7 +967,7 @@ def main_requests():
                 log(f"Chapter {num} [{len(imgs)} images]")
                 continue
 
-            log(f"Downloading: Chapter {num} [{len(imgs)} images]")
+            log(f"Downloading: {chapter_name} [{len(imgs)} images]")
 
             # Create chapter directory within series directory
             chapter_folder = series_directory / name

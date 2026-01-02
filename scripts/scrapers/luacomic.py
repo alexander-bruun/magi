@@ -443,7 +443,7 @@ def main():
                     log(f"[DRY RUN] Would download {len(image_urls)} images for Chapter {chapter_num}")
                     continue
                 
-                log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
+                log(f"Downloading: {chapter_name} [{len(image_urls)} images]")
                 
                 # Download images
                 chapter_folder = series_directory / f"{chapter_name_full}"

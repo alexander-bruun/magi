@@ -337,7 +337,7 @@ def download_chapter(session, series_info, chapter_info, chapter_dir):
         log(f"Skipping: Chapter {chapter_num} (no images)")
         return False
     
-    log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
+    log(f"Downloading: {chapter_name} [{len(image_urls)} images]")
     
     # Download images
     downloaded_count = 0
