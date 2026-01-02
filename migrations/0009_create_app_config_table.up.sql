@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     behavioral_score_threshold INTEGER NOT NULL DEFAULT 40, -- score threshold for flagging
     header_analysis_enabled BOOLEAN NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
     header_analysis_threshold INTEGER NOT NULL DEFAULT 5, -- suspicion score threshold
-    header_analysis_strict BOOLEAN NOT NULL DEFAULT 0 -- 1 = block suspicious, 0 = don't block
+    header_analysis_strict BOOLEAN NOT NULL DEFAULT 0, -- 1 = block suspicious, 0 = don't block
+    discord_invite_link TEXT NOT NULL DEFAULT ''
 );
 
 -- Ensure exactly one row exists (id = 1)

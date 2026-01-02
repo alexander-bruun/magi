@@ -274,6 +274,12 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
+	// Update Discord invite link configuration
+	discordInviteLink := config.DiscordInviteLink
+	if _, err := models.UpdateDiscordInviteLinkConfig(discordInviteLink); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
 	return HandleView(c, views.ConfigForm())
 }
 

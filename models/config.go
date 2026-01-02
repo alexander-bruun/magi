@@ -99,6 +99,9 @@ type AppConfig struct {
 	// Parallel indexing settings
 	ParallelIndexingEnabled   bool `json:"parallel_indexing_enabled" form:"parallel_indexing_enabled"`     // whether parallel indexing is enabled
 	ParallelIndexingThreshold int  `json:"parallel_indexing_threshold" form:"parallel_indexing_threshold"` // minimum series count to trigger parallel processing
+
+	// Discord settings
+	DiscordInviteLink string `json:"discord_invite_link" form:"discord_invite_link"` // Discord invite link for community access
 }
 
 // Implement metadata.ConfigProvider interface
@@ -178,7 +181,8 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(maintenance_message, 'We are currently performing maintenance. Please check back later.'),
         COALESCE(new_badge_duration, 48),
         COALESCE(parallel_indexing_enabled, 1),
-        COALESCE(parallel_indexing_threshold, 100)
+        COALESCE(parallel_indexing_threshold, 100),
+        COALESCE(discord_invite_link, '')
         FROM app_config WHERE id = 1`)
 	var allowInt int
 	var maxUsers int64
@@ -234,13 +238,14 @@ func loadConfigFromDB() (AppConfig, error) {
 	var newBadgeDuration int
 	var parallelIndexingEnabled int
 	var parallelIndexingThreshold int
+	var discordInviteLink string
 
 	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
 		&tarpitEnabled, &tarpitMaxDelay, &timingAnalysisEnabled, &timingVarianceThreshold, &tlsFingerprintEnabled, &tlsFingerprintStrict, &behavioralAnalysisEnabled, &behavioralScoreThreshold, &headerAnalysisEnabled, &headerAnalysisThreshold, &headerAnalysisStrict, &honeypotEnabled, &honeypotAutoBlock, &honeypotAutoBan, &honeypotBlockDuration,
-		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold); err != nil {
+		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold, &discordInviteLink); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
 			return AppConfig{
@@ -298,6 +303,7 @@ func loadConfigFromDB() (AppConfig, error) {
 				NewBadgeDuration:              48,
 				ParallelIndexingEnabled:       true,
 				ParallelIndexingThreshold:     100,
+				DiscordInviteLink:             "",
 			}, nil
 		}
 		return AppConfig{}, err
@@ -358,6 +364,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		NewBadgeDuration:              newBadgeDuration,
 		ParallelIndexingEnabled:       parallelIndexingEnabled == 1,
 		ParallelIndexingThreshold:     parallelIndexingThreshold,
+		DiscordInviteLink:             discordInviteLink,
 	}, nil
 }
 
@@ -872,6 +879,15 @@ func UpdateStripeConfig(enabled bool, publishableKey, secretKey, webhookSecret s
 	}
 
 	return GetAppConfig()
+}
+
+// UpdateDiscordInviteLinkConfig updates the Discord invite link configuration
+func UpdateDiscordInviteLinkConfig(inviteLink string) (AppConfig, error) {
+	_, err := db.Exec(`UPDATE app_config SET discord_invite_link = ? WHERE id = 1`, inviteLink)
+	if err != nil {
+		return AppConfig{}, err
+	}
+	return RefreshAppConfig()
 }
 
 // GetMaintenanceStatus returns whether maintenance mode is active and the message

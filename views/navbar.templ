@@ -256,6 +256,15 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 				@NavItem("/", "home", "Home", currentPath)
 				@NavItem("/series", "book", "Series", currentPath)
 				@NavItem("/collections", "folder", "Collections", currentPath)
+				{{ cfg, _ := models.GetAppConfig() }}
+				if cfg.DiscordInviteLink != "" {
+					<li>
+						<a href={ templ.SafeURL(cfg.DiscordInviteLink) } target="_blank" rel="noopener noreferrer">
+							<uk-icon icon="message-circle"></uk-icon>
+							<span class="nav-text">Discord</span>
+						</a>
+					</li>
+				}
 			</ul>
 		</nav>
 		<div class="sidebar-footer">
