@@ -13,9 +13,6 @@ import sys
 import time
 from pathlib import Path
 
-# Third-party imports
-import requests
-
 # Local imports
 from scraper_utils import (
     MAX_RETRIES,
@@ -23,6 +20,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -44,6 +43,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'AsuraScans
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[AsuraScans]')
 ALLOWED_DOMAINS = ['gg.asuracomic.net']
 BASE_URL = 'https://asuracomic.net'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('asurascans')
 
 
 # =============================================================================
@@ -246,6 +246,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter URLs
         try:

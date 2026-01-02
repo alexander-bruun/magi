@@ -7,6 +7,7 @@ Provides logging, image processing, CBZ creation, and common patterns.
 """
 
 # Standard library imports
+import json
 import os
 import re
 import sys
@@ -78,7 +79,7 @@ def sanitize_title(title):
     Sanitize a title for use as a filename.
 
     Removes invalid characters, replaces underscores with spaces,
-    and normalizes whitespace.
+    removes common genre words, and normalizes whitespace.
 
     Args:
         title: The title string to sanitize
@@ -87,7 +88,114 @@ def sanitize_title(title):
         str: Sanitized title safe for filesystem use
     """
     clean = re.sub(r'[<>:"\/\\|?*]', '', html_unescape(title)).replace('_', ' ').strip()
-    return re.sub(r'\s+', ' ', clean)
+    clean = clean.replace('\u2018', "'").replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"')
+    clean = re.sub(r'\b(manhwa|manhua|manga|free|raw|scan|comic|novel|webtoon)\b', '', clean, flags=re.IGNORECASE)
+    return re.sub(r'\s+', ' ', clean).strip()
+
+
+def load_config():
+    """
+    Load configuration from config.json file.
+    
+    Returns:
+        dict: Configuration dictionary, or empty dict if file not found
+    """
+    config_path = Path(__file__).parent / 'config.json'
+    if config_path.exists():
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+
+def get_priority_config(scraper_name):
+    """
+    Get priority and higher priority folders for a scraper.
+    
+    First tries environment variables, then falls back to config.json.
+    
+    Args:
+        scraper_name: Name of the scraper (e.g., 'toongod')
+        
+    Returns:
+        tuple: (priority, higher_priority_folders)
+    """
+    priority = int(os.getenv('priority', '1'))
+    higher_folders = json.loads(os.getenv('higher_priority_folders', '[]'))
+    
+    if priority == 1 and not higher_folders:
+        config = load_config()
+        scrapers_config = config.get('scrapers', {})
+        scraper_config = scrapers_config.get(scraper_name, {})
+        priority = scraper_config.get('priority', 1)
+        higher_folders = [conf.get('folder') for name, conf in scrapers_config.items() 
+                         if conf.get('priority', 1) > priority and conf.get('folder')]
+    
+    return priority, higher_folders
+
+
+def check_duplicate_series(clean_title, higher_priority_folders, priority=None):
+    """
+    Check if a series already exists in higher priority provider folders.
+    
+    Args:
+        clean_title: Sanitized series title
+        higher_priority_folders: List of folders with higher priority
+        priority: Current scraper's priority level (optional, for compatibility)
+        
+    Returns:
+        bool: True if series exists in higher priority folder (should skip), False otherwise
+    """
+    for folder_path in higher_priority_folders:
+        folder = Path(folder_path)
+        if not folder.exists():
+            continue
+            
+        # Look for directories that match the clean title (case-insensitive)
+        for existing_dir in folder.iterdir():
+            if existing_dir.is_dir():
+                # Remove suffix like [SourceName] for comparison
+                dir_name = existing_dir.name
+                # Extract title part before the suffix
+                title_match = re.match(r'^(.+?)\s*\[.*\]$', dir_name)
+                if title_match:
+                    existing_title = title_match.group(1).strip()
+                else:
+                    existing_title = dir_name
+                
+                # Compare normalized titles
+                if existing_title.lower() == clean_title.lower():
+                    log(f"Skipping {clean_title} - already exists in higher priority provider")
+                    return True
+    
+    return False
+
+
+# =============================================================================
+# Logging Functions
+# =============================================================================
+    """
+    Get priority and higher priority folders for a scraper.
+    
+    First tries environment variables, then falls back to config.json.
+    
+    Args:
+        scraper_name: Name of the scraper (e.g., 'toongod')
+        
+    Returns:
+        tuple: (priority, higher_priority_folders)
+    """
+    priority = int(os.getenv('priority', '1'))
+    higher_folders = json.loads(os.getenv('higher_priority_folders', '[]'))
+    
+    if priority == 1 and not higher_folders:
+        config = load_config()
+        scrapers_config = config.get('scrapers', {})
+        scraper_config = scrapers_config.get(scraper_name, {})
+        priority = scraper_config.get('priority', 1)
+        higher_folders = [conf.get('folder') for name, conf in scrapers_config.items() 
+                         if conf.get('priority', 1) > priority and conf.get('folder')]
+    
+    return priority, higher_folders
 
 
 # =============================================================================

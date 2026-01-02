@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 GenzUpdates scraper for MAGI.
 
@@ -22,6 +23,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -45,6 +48,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'GenzUpdate
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[GenzUpdates]')
 ALLOWED_DOMAINS = ['cdn.meowing.org']
 BASE_URL = 'https://genzupdates.com'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('genzupdates')
 
 
 # =============================================================================
@@ -259,6 +263,9 @@ def main():
                         continue
                     
                     clean_title = sanitize_title(title)
+                    if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS, PRIORITY):
+                        log(f"Skipping {clean_title} due to duplicate in higher priority provider")
+                        continue
                     log(f"Title: {title}")
                     
                     chapter_urls = extract_chapter_urls(session, series_url)

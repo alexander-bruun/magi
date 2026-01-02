@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 MangaKatana scraper for MAGI.
 
@@ -21,6 +22,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -44,6 +47,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'MangaKatan
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[MangaKatana]')
 ALLOWED_DOMAINS = ['mangakatana.com', 'i1.mangakatana.com', 'i2.mangakatana.com', 'i3.mangakatana.com', 'i4.mangakatana.com', 'i5.mangakatana.com', 'i6.mangakatana.com', 'i7.mangakatana.com']
 BASE_URL = 'https://mangakatana.com'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('mangakatana')
 
 
 # =============================================================================
@@ -267,6 +271,9 @@ def main():
 
                 clean_title = sanitize_title(title)
                 log(f"Title: {clean_title}")
+                # Check for duplicate in higher priority providers
+                if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                    continue
 
                 # Extract chapter URLs
                 try:

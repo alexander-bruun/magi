@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 NexComic scraper for MAGI.
 
@@ -25,6 +26,8 @@ from scraper_utils import (
     bypass_cloudflare,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     get_existing_chapters,
     get_session,
@@ -45,6 +48,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[NexComic]')
 ALLOWED_DOMAINS = ['nexcomic.com', 'storage.nexcomic.com']
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://nexcomic.com'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('nexcomic')
 
 
 # =============================================================================
@@ -308,6 +312,9 @@ def main():
 
         clean_title = sanitize_title(title)
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter URLs
         try:

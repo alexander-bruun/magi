@@ -73,11 +73,6 @@ Create `config.json` for default settings (optional):
       "dry_run": false,
       "convert_to_webp": true
     }
-  },
-  "defaults": {
-    "folder_base": "/media",
-    "dry_run": false,
-    "convert_to_webp": true
   }
 }
 ```
@@ -90,6 +85,35 @@ Create `config.json` for default settings (optional):
 | `dry_run` | Skip downloads, show what would happen | `false` |
 | `convert_to_webp` | Convert images to WebP | `true` |
 | `webp_quality` | WebP quality (env var) | `100` |
+| `priority` | Priority level for duplicate prevention (higher = preferred source) | `1` |
+
+### Priority System
+
+The priority system prevents duplicate downloads by allowing higher priority scrapers to download series, while lower priority scrapers skip series that already exist in higher priority providers.
+
+**Use Cases:**
+- Set high priority (e.g., 1000) for original/official sources
+- Set low priority (e.g., 1) for aggregator sites
+- This ensures you get content from preferred sources instead of copies
+
+**How it works:**
+- When a scraper encounters a series, it checks if the same series exists in any folder with higher priority
+- If found, the scraper skips that series
+- Series titles are normalized for matching (removes special characters, handles variations)
+
+**Example Configuration:**
+```json
+{
+  "scrapers": {
+    "asurascans": {
+      "priority": 1000  // Original source - highest priority
+    },
+    "manhwahub": {
+      "priority": 1     // Aggregator - low priority
+    }
+  }
+}
+```
 
 ## Output
 

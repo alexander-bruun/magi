@@ -7,7 +7,6 @@ Downloads manga/manhwa/manhua from ezmanga.org using API and browser automation.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -18,14 +17,14 @@ from pathlib import Path
 
 # Third-party imports
 import requests
-from camoufox import AsyncCamoufox
-from camoufox_captcha import solve_captcha
 
 # Local imports
 from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     encode_image_url,
     encode_url_path,
     error,
@@ -52,6 +51,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[EzManga]')
 ALLOWED_DOMAINS = ['media.ezmanga.org', 'storage.ezmanga.org']
 API_BASE = os.getenv('api', 'https://vapi.ezmanga.org')
 BASE_URL = 'https://ezmanga.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('ezmanga')
 EZMANGA_CF_CLEARANCE = os.getenv('EZMANGA_CF_CLEARANCE')
 
 
@@ -763,6 +763,10 @@ async def main_async():
 
             clean_title = sanitize_title(title)
             log(f"Processing: {clean_title}")
+
+            # Check for duplicate in higher priority providers
+            if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                continue
 
             # Get chapters from the series data (reuse browser page)
             chapters = await extract_chapter_urls_with_page(session, series_data, page)

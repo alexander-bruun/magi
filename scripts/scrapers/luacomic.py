@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 LuaComic scraper for MAGI.
 
@@ -24,6 +25,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -48,6 +51,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[LuaComic]')
 ALLOWED_DOMAINS = ['media.luacomic.org']
 API_BASE = os.getenv('api', 'https://api.luacomic.org')
 BASE_URL = 'https://luacomic.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('luacomic')
 LUACOMIC_SESSION = os.getenv('LUACOMIC_SESSION')
 LUACOMIC_CF_CLEARANCE = os.getenv('LUACOMIC_CF_CLEARANCE')
 
@@ -355,6 +359,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Fetch chapters
         try:

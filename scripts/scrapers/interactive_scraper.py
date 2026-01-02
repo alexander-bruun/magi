@@ -185,9 +185,25 @@ def run_scraper_directly(scraper_name):
         folder_path = scraper['default_folder']
         print(f"Using default folder: {folder_path}")
     
+    # Get priority
+    priority = scraper_config.get('priority', 1)
+    print(f"Priority: {priority}")
+    
+    # Get higher priority folders
+    all_scrapers_config = config.get('scrapers', {})
+    higher_priority_folders = []
+    for name, conf in all_scrapers_config.items():
+        if conf.get('priority', 1) > priority:
+            h_folder = conf.get('folder')
+            if h_folder:
+                higher_priority_folders.append(h_folder)
+    print(f"Higher priority folders: {higher_priority_folders}")
+    
     # Set up environment variables for the scraper
     env = os.environ.copy()
     env['folder'] = folder_path
+    env['priority'] = str(priority)
+    env['higher_priority_folders'] = json.dumps(higher_priority_folders)
     
     if scraper_config:
         if 'dry_run' in scraper_config:
@@ -337,7 +353,7 @@ def get_scraper_choice():
         print(f"Warning: Interactive menu not available ({e}), using text menu...")
         return get_scraper_choice_text()
 
-def get_folder_location(scraper, config, scraper_config):
+def get_folder_location(scraper, config, scraper_config, print_output=True):
     """Get folder location from user or config."""
     default_folder = scraper['default_folder']
     current_dir = os.getcwd()
@@ -348,7 +364,8 @@ def get_folder_location(scraper, config, scraper_config):
         if not os.path.isabs(configured_folder):
             configured_folder = os.path.join(current_dir, configured_folder)
         folder_path = configured_folder
-        print(f"\nConfigured folder: {folder_path}")
+        if print_output:
+            print(f"\nConfigured folder: {folder_path}")
     else:
         # Use defaults folder_base + scraper name, or current_dir + scraper name
         folder_base = config.get('defaults', {}).get('folder_base')
@@ -358,18 +375,21 @@ def get_folder_location(scraper, config, scraper_config):
             folder_path = os.path.join(folder_base, default_folder)
         else:
             folder_path = os.path.join(current_dir, default_folder)
-        print(f"\nDefault folder: {default_folder}")
-        print(f"Current directory: {current_dir}")
+        if print_output:
+            print(f"\nDefault folder: {default_folder}")
+            print(f"Current directory: {current_dir}")
 
     # Use the determined folder
     Path(folder_path).mkdir(parents=True, exist_ok=True)
-    print(f"Using folder: {folder_path}")
+    if print_output:
+        print(f"Using folder: {folder_path}")
     return folder_path
 
-def get_additional_options(config, scraper_config, parallel=False):
+def get_additional_options(config, scraper_config, parallel=False, print_output=True):
     """Get additional scraper options from config or user."""
-    print("\nAdditional Options:")
-    print("-" * 20)
+    if print_output:
+        print("\nAdditional Options:")
+        print("-" * 20)
 
     options = {}
 
@@ -377,27 +397,32 @@ def get_additional_options(config, scraper_config, parallel=False):
     dry_run_config = scraper_config.get('dry_run')
     if dry_run_config is not None:
         options['dry_run'] = 'true' if dry_run_config else 'false'
-        print(f"Dry Run: {'Enabled' if dry_run_config else 'Disabled'} (from config)")
+        if print_output:
+            print(f"Dry Run: {'Enabled' if dry_run_config else 'Disabled'} (from config)")
     else:
         default_dry_run = config.get('defaults', {}).get('dry_run', False)
         options['dry_run'] = 'true' if default_dry_run else 'false'
-        print(f"Dry Run: {'Enabled' if default_dry_run else 'Disabled'} (default)")
+        if print_output:
+            print(f"Dry Run: {'Enabled' if default_dry_run else 'Disabled'} (default)")
 
     # Convert to WebP - check config first
     convert_webp_config = scraper_config.get('convert_to_webp')
     if convert_webp_config is not None:
         options['convert_to_webp'] = 'true' if convert_webp_config else 'false'
-        print(f"Convert to WebP: {'Enabled' if convert_webp_config else 'Disabled'} (from config)")
+        if print_output:
+            print(f"Convert to WebP: {'Enabled' if convert_webp_config else 'Disabled'} (from config)")
     else:
         default_convert_webp = config.get('defaults', {}).get('convert_to_webp', True)
         options['convert_to_webp'] = 'true' if default_convert_webp else 'false'
-        print(f"Convert to WebP: {'Enabled' if default_convert_webp else 'Disabled'} (default)")
+        if print_output:
+            print(f"Convert to WebP: {'Enabled' if default_convert_webp else 'Disabled'} (default)")
 
     # If all options are from config or parallel mode, skip prompting
     if (dry_run_config is not None and convert_webp_config is not None) or parallel:
         return options
 
-    print("\nModify options? (press Enter to keep current values)")
+    if print_output:
+        print("\nModify options? (press Enter to keep current values)")
 
     # Dry run
     if dry_run_config is None:
@@ -438,15 +463,7 @@ def get_additional_options(config, scraper_config, parallel=False):
 def confirm_and_run(scraper, folder_path, options, config, scraper_config, parallel=False):
     """Confirm settings and run the scraper."""
     scraper_name = scraper['name']
-    print("\n" + "=" * 60)
-    print("CONFIRMATION")
-    print("=" * 60)
-    print(f"Scraper: {scraper['name']}")
-    print(f"Folder: {folder_path}")
-    print(f"Dry Run: {options['dry_run']}")
-    print(f"Convert to WebP: {options['convert_to_webp']}")
-    print()
-
+    
     # Check if auto-confirm is enabled
     auto_confirm = scraper_config.get('auto_confirm', False) or config.get('defaults', {}).get('auto_confirm', False)
     if auto_confirm or parallel:
@@ -471,6 +488,19 @@ def confirm_and_run(scraper, folder_path, options, config, scraper_config, paral
     env['folder'] = folder_path
     env['dry_run'] = options['dry_run']
     env['convert_to_webp'] = options['convert_to_webp']
+    
+    # Add priority information
+    priority = scraper_config.get('priority', 1)
+    env['priority'] = str(priority)
+    
+    all_scrapers_config = config.get('scrapers', {})
+    higher_priority_folders = []
+    for name, conf in all_scrapers_config.items():
+        if conf.get('priority', 1) > priority:
+            h_folder = conf.get('folder')
+            if h_folder:
+                higher_priority_folders.append(h_folder)
+    env['higher_priority_folders'] = json.dumps(higher_priority_folders)
 
     # Run the scraper
     scraper_path = os.path.join(os.path.dirname(__file__), scraper['file'])
@@ -543,12 +573,19 @@ def confirm_and_run(scraper, folder_path, options, config, scraper_config, paral
                                    cwd=os.path.dirname(scraper_path),
                                    preexec_fn=os.setsid)
             result = proc.wait()
+
             print("\n" + "-" * 50)
             if result == 0:
                 print(f"✓ {scraper_name} completed successfully!")
             else:
                 print(f"✗ {scraper_name} failed with exit code {result}")
             
+            # Pause to let user see results
+            try:
+                input("\nPress Enter to continue...")
+            except KeyboardInterrupt:
+                pass
+
             return result
 
     except KeyboardInterrupt:
@@ -579,12 +616,6 @@ def confirm_and_run(scraper, folder_path, options, config, scraper_config, paral
     print("\n" + "=" * 50)
     if not parallel:
         print("Returning to main menu...")
-    
-        # Pause to let user see results
-        try:
-            input("Press Enter to continue...")
-        except KeyboardInterrupt:
-            pass
     
     return 'menu'
 
@@ -1304,24 +1335,49 @@ def main():
         scraper = SCRAPERS[choice]
         scraper_config = get_scraper_config(config, choice)
         
-        print(f"\nSelected: {scraper['name']}")
-        print(f"Config loaded: {bool(scraper_config)}")
-        if scraper_config:
-            print(f"  Folder: {scraper_config.get('folder', 'Not set')}")
-            print(f"  Auto-confirm: {scraper_config.get('auto_confirm', 'Not set')}")
-        else:
-            print("  No scraper-specific config found")
-        print(f"Global auto-confirm: {config.get('defaults', {}).get('auto_confirm', 'Not set')}")
-
-        # Get folder location
-        folder_path = get_folder_location(scraper, config, scraper_config)
+        # Get folder location (but don't print yet)
+        folder_path = get_folder_location(scraper, config, scraper_config, print_output=False)
         if folder_path is None:
             continue
 
-        # Get additional options
-        options = get_additional_options(config, scraper_config)
+        # Get additional options (but don't print yet)
+        options = get_additional_options(config, scraper_config, print_output=False)
         if options is None:
             continue
+
+        # Get priority information
+        priority = scraper_config.get('priority', 1)
+        all_scrapers_config = config.get('scrapers', {})
+        higher_priority_folders = []
+        higher_priority_scrapers = []
+        for config_name, conf in all_scrapers_config.items():
+            if conf.get('priority', 1) > priority:
+                h_folder = conf.get('folder')
+                if h_folder:
+                    higher_priority_folders.append(h_folder)
+                # Find the scraper name by matching config name with scraper name
+                for key, scraper_info in SCRAPERS.items():
+                    scraper_name_clean = scraper_info['name'].lower().replace(' ', '')
+                    if scraper_name_clean == config_name.lower():
+                        higher_priority_scrapers.append(scraper_info['name'])
+                        break
+
+        # Consolidated configuration display
+        print(f"\nSelected: {scraper['name']}")
+        print("=" * 50)
+        print("CONFIGURATION")
+        print("=" * 50)
+        print(f"Scraper: {scraper['name']}")
+        print(f"Folder: {folder_path}")
+        print(f"Priority: {priority}")
+        if higher_priority_scrapers:
+            print(f"Higher Priority Scrapers: {', '.join(higher_priority_scrapers)}")
+        print(f"Dry Run: {'Enabled' if options['dry_run'] == 'true' else 'Disabled'}")
+        print(f"Convert to WebP: {'Enabled' if options['convert_to_webp'] == 'true' else 'Disabled'}")
+        
+        auto_confirm = scraper_config.get('auto_confirm', False) or config.get('defaults', {}).get('auto_confirm', False)
+        print(f"Auto-confirm: {'Enabled' if auto_confirm else 'Disabled'}")
+        print()
 
         # Confirm and run scraper
         result = confirm_and_run(scraper, folder_path, options, config, scraper_config)

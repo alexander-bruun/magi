@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 UToon scraper for MAGI.
 
@@ -35,6 +36,8 @@ from scraper_utils import (
     RETRY_DELAY,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     get_default_headers,
     get_existing_chapters,
@@ -55,6 +58,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'UToon'))
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[UToon]')
 ALLOWED_DOMAINS = ['utoon.net']
 BASE_URL = 'https://utoon.net'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('utoon')
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 
 # Performance settings
@@ -745,6 +749,9 @@ async def main_async():
 
                 clean_title = sanitize_title(title)
                 log(f"Title: {clean_title}")
+                # Check for duplicate in higher priority providers
+                if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                    continue
 
                 series_slug = series_url.strip('/').split('/')[-1]
 
@@ -902,6 +909,9 @@ def main_requests():
 
         clean_title = sanitize_title(title)
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         series_slug = series_url.strip('/').split('/')[-1]
 

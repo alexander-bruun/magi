@@ -13,15 +13,14 @@ import shutil
 import sys
 from pathlib import Path
 
-# Third-party imports
-import requests
-
 # Local imports
 from scraper_utils import (
     bypass_cloudflare,
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -32,8 +31,6 @@ from scraper_utils import (
     sanitize_title,
     success,
     warn,
-    MAX_RETRIES,
-    RETRY_DELAY,
 )
 
 # =============================================================================
@@ -45,6 +42,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'DemonicSca
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[DemonicScans]')
 ALLOWED_DOMAINS = ['demoniclibs.com', 'mangareadon.org', 'readermc.org', 'mangafirst.org']
 BASE_URL = 'https://demonicscans.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('demonicscans')
 
 
 # =============================================================================
@@ -209,6 +207,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter URLs
         try:

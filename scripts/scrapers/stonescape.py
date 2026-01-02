@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 StoneScape scraper for MAGI.
 
@@ -26,6 +27,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -48,6 +51,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[StoneScape]')
 ALLOWED_DOMAINS = ['stonescape.xyz']
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://stonescape.xyz'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('stonescape')
 
 
 # =============================================================================
@@ -466,6 +470,9 @@ def main():
 
         clean_title = sanitize_title(title)
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter URLs
         try:

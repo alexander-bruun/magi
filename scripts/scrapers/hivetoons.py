@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 HiveToons scraper for MAGI.
 
@@ -7,7 +8,6 @@ Downloads manga/manhwa/manhua from hivetoons.org.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -25,6 +25,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -50,6 +52,7 @@ ALLOWED_DOMAINS = ['storage.hivetoon.com']
 JSON_FILE = os.getenv('json_file', os.path.join(os.path.dirname(__file__), 'hivetoons.json'))
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://hivetoons.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('hivetoons')
 
 
 # =============================================================================
@@ -247,6 +250,9 @@ def main():
 
         clean_title = sanitize_title(title)
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         series_slug = series_url.replace('/series/', '')
 

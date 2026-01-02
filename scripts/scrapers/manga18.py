@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 Manga18 scraper for MAGI.
 
@@ -7,7 +8,6 @@ Downloads manga/manhwa/manhua from manga18.me.
 
 # Standard library imports
 import concurrent.futures
-import json
 import os
 import re
 import shutil
@@ -24,6 +24,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -46,6 +48,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'Manga18'))
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[Manga18]')
 ALLOWED_DOMAINS = ['manga18.me', 'manga18.com']
 BASE_URL = 'https://manga18.me'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('manga18')
 
 
 # =============================================================================
@@ -270,6 +273,9 @@ def main():
                 total_series += 1
 
                 log(f"Title: {clean_title}")
+                # Check for duplicate in higher priority providers
+                if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                    continue
 
                 # Extract chapter URLs
                 try:

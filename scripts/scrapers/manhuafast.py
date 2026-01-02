@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 ManhuaFast scraper for MAGI.
 
@@ -20,6 +21,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_image_extension,
@@ -38,6 +41,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'ManhuaFast
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[ManhuaFast]')
 ALLOWED_DOMAINS = ['manhuafast.net', 'cdn.manhuafast.net']
 BASE_URL = 'https://manhuafast.net'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('manhuafast')
 
 
 # =============================================================================
@@ -227,6 +231,9 @@ def main():
                     continue
                 
                 title = sanitize_title(title)
+                if check_duplicate_series(title, PRIORITY, HIGHER_PRIORITY_FOLDERS):
+                    log(f"Skipping {title} due to duplicate in higher priority provider")
+                    continue
                 series_folder = os.path.join(FOLDER, f"{title} {DEFAULT_SUFFIX}")
                 Path(series_folder).mkdir(parents=True, exist_ok=True)
                 

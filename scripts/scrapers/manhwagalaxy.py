@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 ManhwaGalaxy scraper for MAGI.
 
@@ -25,6 +26,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -45,6 +48,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'ManhwaGala
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[ManhwaGalaxy]')
 ALLOWED_DOMAINS = ['manhwagalaxy.com']
 BASE_URL = 'https://manhwagalaxy.com'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('manhwagalaxy')
 
 
 # =============================================================================
@@ -245,6 +249,9 @@ def main():
                 total_series += 1
 
                 log(f"Title: {clean_title}")
+                # Check for duplicate in higher priority providers
+                if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                    continue
 
                 # Extract chapter URLs
                 try:

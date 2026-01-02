@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 Tritinia scraper for MAGI.
 
@@ -21,6 +22,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -42,6 +45,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'Tritinia')
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[Tritinia]')
 ALLOWED_DOMAINS = ['tritinia.org']
 BASE_URL = 'https://tritinia.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('tritinia')
 
 
 # =============================================================================
@@ -263,6 +267,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter URLs
         try:

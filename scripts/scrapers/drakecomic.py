@@ -14,27 +14,21 @@ import sys
 import time
 from pathlib import Path
 
-# Third-party imports
-import requests
-
 # Local imports
 from scraper_utils import (
     bypass_cloudflare,
-    calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
-    format_chapter_name,
     get_existing_chapters,
-    get_image_extension,
     get_session,
     log,
     log_existing_chapters,
     sanitize_title,
     success,
     warn,
-    MAX_RETRIES,
-    RETRY_DELAY,
 )
 
 # =============================================================================
@@ -47,6 +41,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[DrakeComic]')
 ALLOWED_DOMAINS = ['drakecomic.org']
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://drakecomic.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('drakecomic')
 
 
 # =============================================================================
@@ -340,6 +335,9 @@ def main():
             continue
 
         clean_title = sanitize_title(title)
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS, PRIORITY):
+            log(f"Skipping {clean_title} due to duplicate in higher priority provider")
+            continue
         log(f"Processing: {clean_title}")
 
         # Extract chapter URLs

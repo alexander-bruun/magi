@@ -6,7 +6,6 @@ Downloads manga/manhwa/manhua from flamecomics.xyz.
 """
 
 # Standard library imports
-import json
 import os
 import re
 import shutil
@@ -14,20 +13,18 @@ import sys
 import time
 from pathlib import Path
 
-# Third-party imports
-import requests
-
 # Local imports
 from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_default_headers,
     get_existing_chapters,
     get_image_extension,
-    get_session,
     log,
     log_existing_chapters,
     sanitize_title,
@@ -46,6 +43,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'FlameComic
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[FlameComics]')
 ALLOWED_DOMAINS = ['cdn.flamecomics.xyz']
 BASE_URL = 'https://flamecomics.xyz'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('flamecomics')
 
 
 # =============================================================================
@@ -261,6 +259,9 @@ def main():
             clean_title = sanitize_title(title)
 
             log(f"Title: {clean_title}")
+            # Check for duplicate in higher priority providers
+            if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                continue
 
             # Extract chapter URLs
             try:

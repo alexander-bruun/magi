@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 Kunmanga scraper for MAGI.
 
@@ -7,7 +8,6 @@ Downloads manga/manhwa/manhua from kunmanga.com.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -24,6 +24,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -47,6 +49,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'Kunmanga')
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[Kunmanga]')
 ALLOWED_DOMAINS = ['kunmanga.com', 'kunsv1.com', 'manimg24.com']
 BASE_URL = 'https://kunmanga.com'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('kunmanga')
 
 
 # =============================================================================
@@ -241,6 +244,9 @@ def main():
                 total_series += 1
 
                 log(f"Title: {clean_title}")
+                # Check for duplicate in higher priority providers
+                if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+                    continue
 
                 # Extract chapter URLs
                 try:

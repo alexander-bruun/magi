@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 Omega Scans scraper for MAGI.
 
@@ -7,7 +8,6 @@ Downloads manga/manhwa/manhua from omegascans.org.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -23,6 +23,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -46,6 +48,7 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'OmegaScans
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[OmegaScans]')
 ALLOWED_DOMAINS = ['api.omegascans.org', 'media.omegascans.org']
 BASE_URL = 'https://omegascans.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('omegascans')
 API_BASE = os.getenv('api', 'https://api.omegascans.org')
 
 
@@ -209,6 +212,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Fetch chapters
         try:

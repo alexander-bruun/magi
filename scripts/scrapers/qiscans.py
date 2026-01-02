@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 QiScans scraper for MAGI.
 
@@ -7,7 +8,6 @@ Downloads manga/manhwa/manhua from qiscans.org via their API.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -23,6 +23,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -45,6 +47,7 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[QiScans]')
 ALLOWED_DOMAINS = ['media.qiscans.org']
 API_CACHE_FILE = os.path.join(os.path.dirname(__file__), 'qiscans.json')
 BASE_URL = 'https://qiscans.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('qiscans')
 
 
 # =============================================================================
@@ -254,6 +257,9 @@ def main():
         clean_title = sanitize_title(title)
 
         log(f"Title: {clean_title}")
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
+            continue
 
         # Extract chapter links
         try:

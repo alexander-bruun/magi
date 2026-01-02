@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 """
 MagusToon scraper for MAGI.
 
@@ -8,7 +9,6 @@ Uses API for series listing and chapter metadata.
 
 # Standard library imports
 import asyncio
-import json
 import os
 import re
 import shutil
@@ -31,6 +31,8 @@ from scraper_utils import (
     calculate_padding_width,
     convert_to_webp,
     create_cbz,
+    check_duplicate_series,
+    get_priority_config,
     error,
     format_chapter_name,
     get_existing_chapters,
@@ -54,7 +56,9 @@ FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'MagusToon'
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[MagusToon]')
 ALLOWED_DOMAINS = ['storage.magustoon.org']
 BASE_URL = 'https://magustoon.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('magustoon')
 API_BASE_URL = 'https://api.magustoon.org'
+PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('magustoon')
 
 
 # =============================================================================
@@ -430,7 +434,11 @@ def scrape_series(session, series_urls, output_dir):
         
         title = sanitize_title(title)
         log(f"Title: {title}")
-        
+
+        # Check for duplicate in higher priority providers
+        if check_duplicate_series(title, HIGHER_PRIORITY_FOLDERS):
+            continue
+
         series_info = {'slug': series_slug, 'title': title, 'url': f"{BASE_URL}{series_url}"}
         
         # Extract chapters using requests
