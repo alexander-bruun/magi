@@ -23,6 +23,7 @@ Interactive manga/comic scraper with support for multiple sources.
 | omegascans | Omega Scans |
 | qiscans | Qi Scans |
 | resetscans | Reset Scans |
+| setsuscans | Setsu Scans |
 | spiderscans | Spider Scans |
 | stonescape | StoneScape |
 | thunderscans | Thunder Scans |
