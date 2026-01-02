@@ -18,6 +18,7 @@ Interactive manga/comic scraper with support for multiple sources.
 | manga18 | Manga18 |
 | mangakatana | MangaKatana |
 | mangayy | MangaYY |
+| manhuafast | ManhuaFast |
 | manhwagalaxy | ManhwaGalaxy |
 | omegascans | Omega Scans |
 | qiscans | Qi Scans |
