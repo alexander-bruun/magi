@@ -24,13 +24,13 @@ Interactive manga/comic scraper with support for multiple sources.
 | vortexscans | Vortex Scans |
 | zscans | Z Scans |
 | genzupdates | GenzUpdates |
+| luacomic | LuaComic |
 
 ## Planned Sources
 
 The following sources are planned for future implementation:
 
 
-- **luacomic.org** - Shares software with HiveToons  
 - **nexcomic.com** - Shares software with HiveToons
 - **stonescape.xyz** - Shares software with HiveToons
 - **ezmanga.org** - Shares software with HiveToons
@@ -44,6 +44,7 @@ The following sources are planned for future implementation:
 - **https://www.natomanga.com/genre/all**  - Doesnt share software with previous sites
 - **https://www.mangago.me/list/new/all/1/**  - Doesnt share software with previous sites
 - **https://templetoons.com/**  - Doesnt share software with previous sites
+- **https://mangapill.com/mangas/new** - Doesnt share software with previous sites
 
 ## Installation
 

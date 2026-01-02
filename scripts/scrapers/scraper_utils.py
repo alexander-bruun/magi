@@ -64,6 +64,9 @@ async def bypass_cloudflare(url):
 
         log("Cloudflare bypass successful")
 
+        # Wait a bit for any JavaScript to set session cookies
+        await page.wait_for_timeout(2000)
+
         # Extract cookies
         cookies = {}
         for cookie in await page.context.cookies():
