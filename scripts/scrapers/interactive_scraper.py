@@ -84,27 +84,84 @@ def ansi_to_curses_attr(fg, bg, bold, has_colors):
     
     return attr
 
-# Available scrapers
-SCRAPERS = {
-    '1': {'name': 'Asura Scans', 'file': 'asurascans.py', 'default_folder': 'AsuraScans'},
-    '2': {'name': 'Demonic Scans', 'file': 'demonicscans.py', 'default_folder': 'DemonicScans'},
-    '3': {'name': 'Flame Comics', 'file': 'flamecomics.py', 'default_folder': 'FlameComics'},
-    '4': {'name': 'GenzUpdates', 'file': 'genzupdates.py', 'default_folder': 'GenzUpdates'},
-    '5': {'name': 'HiveToons', 'file': 'hivetoons.py', 'default_folder': 'HiveToons'},
-    '6': {'name': 'KunManga', 'file': 'kunmanga.py', 'default_folder': 'KunManga'},
-    '7': {'name': 'LHTranslation', 'file': 'lhtranslation.py', 'default_folder': 'LHTranslation'},
-    '8': {'name': 'LuaComic', 'file': 'luacomic.py', 'default_folder': 'LuaComic'},
-    '9': {'name': 'Manga18', 'file': 'manga18.py', 'default_folder': 'Manga18'},
-    '10': {'name': 'MangaKatana', 'file': 'mangakatana.py', 'default_folder': 'MangaKatana'},
-    '11': {'name': 'ManhwaGalaxy', 'file': 'manhwagalaxy.py', 'default_folder': 'ManhwaGalaxy'},
-    '12': {'name': 'Omega Scans', 'file': 'omegascans.py', 'default_folder': 'OmegaScans'},
-    '13': {'name': 'Qi Scans', 'file': 'qiscans.py', 'default_folder': 'QiScans'},
-    '14': {'name': 'Reset Scans', 'file': 'resetscans.py', 'default_folder': 'ResetScans'},
-    '15': {'name': 'Thunder Scans', 'file': 'thunderscans.py', 'default_folder': 'ThunderScans'},
-    '16': {'name': 'UToon', 'file': 'utoon.py', 'default_folder': 'UToon'},
-    '17': {'name': 'Vortex Scans', 'file': 'vortexscans.py', 'default_folder': 'VortexScans'},
-    '18': {'name': 'Z Scans', 'file': 'zscans.py', 'default_folder': 'ZScans'},
-}
+# Available scrapers - dynamically generated
+def get_available_scrapers():
+    """Dynamically generate the scrapers dictionary by scanning for .py files."""
+    import os
+    from pathlib import Path
+    
+    scrapers = {}
+    script_dir = Path(__file__).parent
+    
+    # List of files to exclude (not scrapers)
+    exclude_files = {
+        'interactive_scraper.py',
+        'scraper_utils.py',
+        '__pycache__',
+        'config.json',
+        'requirements.txt',
+        'README.md'
+    }
+    
+    # Find all .py files that are scrapers
+    scraper_files = []
+    for file_path in script_dir.glob('*.py'):
+        if file_path.name not in exclude_files:
+            scraper_files.append(file_path.name)
+    
+    # Sort alphabetically
+    scraper_files.sort()
+    
+    # Generate scraper entries
+    for i, filename in enumerate(scraper_files, 1):
+        scraper_name = filename.replace('.py', '')
+        
+        # Generate display name
+        display_name = generate_display_name(scraper_name)
+        
+        scrapers[str(i)] = {
+            'name': display_name,
+            'file': filename,
+            'default_folder': display_name.replace(' ', '')
+        }
+    
+    return scrapers
+
+def generate_display_name(scraper_name):
+    """Generate a proper display name from the scraper filename."""
+    # Special cases
+    special_names = {
+        'asurascans': 'Asura Scans',
+        'demonicscans': 'Demonic Scans',
+        'flamecomics': 'Flame Comics',
+        'genzupdates': 'GenzUpdates',
+        'hivetoons': 'HiveToons',
+        'kunmanga': 'KunManga',
+        'lhtranslation': 'LHTranslation',
+        'luacomic': 'LuaComic',
+        'nexcomic': 'NexComic',
+        'manga18': 'Manga18',
+        'mangakatana': 'MangaKatana',
+        'manhwagalaxy': 'ManhwaGalaxy',
+        'omegascans': 'Omega Scans',
+        'qiscans': 'Qi Scans',
+        'resetscans': 'Reset Scans',
+        'thunderscans': 'Thunder Scans',
+        'utoon': 'UToon',
+        'vortexscans': 'Vortex Scans',
+        'zscans': 'Z Scans'
+    }
+    
+    if scraper_name in special_names:
+        return special_names[scraper_name]
+    
+    # Default: capitalize and add spaces before numbers/caps
+    import re
+    name = re.sub(r'(\d+|[A-Z])', r' \1', scraper_name).strip()
+    return name.title()
+
+# Initialize scrapers dynamically
+SCRAPERS = get_available_scrapers()
 
 def load_config():
     """Load configuration from config.json file."""
@@ -142,7 +199,8 @@ def print_scraper_menu():
     for key, scraper in SCRAPERS.items():
         print(f"{key}. {scraper['name']}")
     print()
-    print("13. Run all scrapers in parallel")
+    all_option = str(len(SCRAPERS) + 1)
+    print(f"{all_option}. Run all scrapers in parallel")
     print("0. Exit")
     print()
 
@@ -162,7 +220,8 @@ def get_scraper_choice_curses(stdscr):
     menu_items = []
     for key, scraper in SCRAPERS.items():
         menu_items.append((key, scraper['name']))
-    menu_items.append(('13', 'Run all scrapers in parallel'))
+    all_option = str(len(SCRAPERS) + 1)
+    menu_items.append((all_option, 'Run all scrapers in parallel'))
     menu_items.append(('0', 'Exit'))
 
     current_row = 0
@@ -221,15 +280,16 @@ def get_scraper_choice_text():
         print_scraper_menu()
 
         try:
-            choice = input("Enter your choice (0-13): ").strip()
+            max_choice = len(SCRAPERS) + 1
+            choice = input(f"Enter your choice (0-{max_choice}): ").strip()
             if choice == '0':
                 return None
-            elif choice == '13':
+            elif choice == str(max_choice):
                 return 'all'
             elif choice in SCRAPERS:
                 return choice
             else:
-                print("Invalid choice. Please enter a number between 0 and 13.")
+                print(f"Invalid choice. Please enter a number between 0 and {max_choice}.")
                 input("Press Enter to continue...")
         except KeyboardInterrupt:
             return None
@@ -933,18 +993,19 @@ def show_log_viewer_fallback():
         print()
         
         try:
-            choice = input("Select scraper to view logs (0-13): ").strip()
+            max_choice = len(scraper_list) + 1
+            choice = input(f"Select scraper to view logs (0-{max_choice}): ").strip()
             
             if choice == '0':
                 break
-            elif choice == '13':
+            elif choice == str(max_choice):
                 # Show combined logs
                 view_combined_logs()
             elif choice.isdigit() and 1 <= int(choice) <= len(scraper_list):
                 scraper_name = scraper_list[int(choice) - 1]
                 view_scraper_logs(scraper_name)
             else:
-                print("Invalid choice. Please enter a number between 0 and 13.")
+                print(f"Invalid choice. Please enter a number between 0 and {max_choice}.")
                 input("Press Enter to continue...")
         except KeyboardInterrupt:
             break
