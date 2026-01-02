@@ -1,34 +1,74 @@
 #!/usr/bin/env python3
+"""
+NexComic scraper for MAGI.
 
+Downloads manga/manhwa/manhua from nexcomic.com.
+"""
+
+# Standard library imports
 import asyncio
 import os
 import re
+import shutil
 import sys
-import requests
-import zipfile
-import json
-from urllib.parse import urljoin, quote, urlparse
+import time
 from pathlib import Path
-from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz, bypass_cloudflare, get_session, sanitize_title
+from urllib.parse import urljoin, urlparse
 
+# Third-party imports
+import requests
+
+# Local imports
+from scraper_utils import (
+    MAX_RETRIES,
+    RETRY_DELAY,
+    bypass_cloudflare,
+    convert_to_webp,
+    create_cbz,
+    error,
+    get_existing_chapters,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'NexComic'))
 DEFAULT_SUFFIX = os.getenv('default_suffix', '[NexComic]')
-ALLOWED_DOMAINS = ['nexcomic.com', 'storage.nexcomic.com']  # Adjust if they use external storage
+ALLOWED_DOMAINS = ['nexcomic.com', 'storage.nexcomic.com']
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://nexcomic.com'
 
-def retry_request(url, session, max_retries=3, timeout=60):
-    """Make a request with retry logic and exponential backoff for rate limiting."""
+
+# =============================================================================
+# Utility Functions
+# =============================================================================
+def retry_request(url, session, max_retries=MAX_RETRIES, timeout=60):
+    """
+    Make a request with retry logic and exponential backoff.
+
+    Args:
+        url: URL to request
+        session: requests.Session object
+        max_retries: Maximum number of retry attempts
+        timeout: Request timeout in seconds
+
+    Returns:
+        requests.Response object
+    """
     for attempt in range(max_retries):
         try:
             response = session.get(url, timeout=timeout)
             if response.status_code == 429:
                 wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
                 warn(f"Rate limited (429). Retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
-                import time
                 time.sleep(wait_time)
                 continue
             response.raise_for_status()
@@ -37,13 +77,25 @@ def retry_request(url, session, max_retries=3, timeout=60):
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt
                 warn(f"Request failed: {e}. Retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
-                import time
                 time.sleep(wait_time)
             else:
                 raise e
 
-# Extract series URLs from manga listing page
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
+    """
+    Extract series URLs from the manga listing page.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number (only page 1 is used)
+
+    Returns:
+        tuple: (list of series URLs, bool is_last_page)
+    """
     if page_num > 1:
         # For now, assume single page - can be extended for pagination
         return [], True
@@ -68,8 +120,17 @@ def extract_series_urls(session, page_num):
     
     return series_urls, True  # is_last_page = True for now
 
-# Extract series title from series page
 def extract_series_title(session, series_url):
+    """
+    Extract series title from the series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        str: Series title, or None if not found
+    """
     full_url = urljoin(BASE_URL, series_url)
     
     response = retry_request(full_url, session)
@@ -93,8 +154,20 @@ def extract_series_title(session, series_url):
     
     return None
 
-# Extract chapter links from series page
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, series_url):
+    """
+    Extract chapter URLs from the series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        list: Sorted list of chapter URLs
+    """
     full_url = urljoin(BASE_URL, series_url)
     
     response = retry_request(full_url, session)
@@ -124,11 +197,20 @@ def extract_chapter_urls(session, series_url):
     
     return chapter_urls
 
-# Extract image URLs from chapter page
 def extract_image_urls(session, chapter_url):
+    """
+    Extract image URLs from a chapter page.
+
+    Args:
+        session: requests.Session object
+        chapter_url: Relative URL of the chapter
+
+    Returns:
+        list: List of image URLs, None if locked, empty list if not found
+    """
     full_url = urljoin(BASE_URL, chapter_url)
     
-    for attempt in range(3):
+    for attempt in range(MAX_RETRIES):
         try:
             response = retry_request(full_url, session)
             if response.status_code == 404:
@@ -172,18 +254,22 @@ def extract_image_urls(session, chapter_url):
             if len(unique_images) >= 1:
                 return unique_images
         except Exception as e:
-            if attempt < 2:
-                import time
+            if attempt < MAX_RETRIES - 1:
                 time.sleep(4)
     
     return []
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting NexComic scraper")
     log("Mode: Full Downloader")
 
     # Health check
-    log("Performing health check on https://nexcomic.com...")
+    log(f"Performing health check on {BASE_URL}...")
     try:
         cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
         if not cookies:
@@ -223,9 +309,6 @@ def main():
         clean_title = sanitize_title(title)
         log(f"Title: {clean_title}")
 
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
         # Extract chapter URLs
         try:
             chapter_urls = extract_chapter_urls(session, series_url)
@@ -233,25 +316,19 @@ def main():
             error(f"Error extracting chapters for {series_url}: {e}")
             continue
 
+        if not chapter_urls:
+            warn(f"No chapters found for {clean_title}, skipping...")
+            continue
+
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
+
         log(f"Found {len(chapter_urls)} chapters")
 
-        # Scan existing CBZ files to determine which chapters are already downloaded
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            # Extract chapter number from filename like "Title Ch.01 [NexComic].cbz"
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                existing_chapters.add(float(match.group(1)))
-
-        if existing_chapters:
-            skipped_count = len(existing_chapters)
-            if skipped_count <= 5:
-                skipped_list = sorted(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-            else:
-                min_chapter = min(existing_chapters)
-                max_chapter = max(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
+        # Check for existing chapters
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
 
         # Process each chapter
         for ch_url in chapter_urls:
@@ -290,6 +367,8 @@ def main():
                 log(f"Chapter {num} [{len(imgs)} images]")
                 continue
 
+            log(f"Downloading: Chapter {num} [{len(imgs)} images]")
+
             # Create chapter directory within series directory
             chapter_folder = series_directory / name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -313,16 +392,15 @@ def main():
                     response = retry_request(url, session, timeout=120)
                     with open(file, 'wb') as f:
                         f.write(response.content)
-                    print(f"  [{idx:03d}/{total:03d}] {url} Success")
+                    print(f"  [{idx:03d}/{total:03d}] {url} Success", file=sys.stderr, flush=True)
                     downloaded += 1
 
                     # Convert to WebP if enabled
                     if CONVERT_TO_WEBP and ext != '.webp':
                         convert_to_webp(file)
                 except Exception as e:
-                    print(f"  [{idx:03d}/{total:03d}] {url} Failed: {e}")
+                    print(f"  [{idx:03d}/{total:03d}] {url} Failed: {e}", file=sys.stderr, flush=True)
                     # Clean up and break
-                    import shutil
                     shutil.rmtree(chapter_folder)
                     break
 
@@ -330,25 +408,21 @@ def main():
                 warn("Incomplete → skipped")
                 continue
 
-            log(f"Downloaded: Chapter {num} [{downloaded}/{len(imgs)} images]")
-            
             # Add small delay between chapters to prevent rate limiting
-            import time
             time.sleep(0.2)
             
             if create_cbz(chapter_folder, name, series_directory):
-                import shutil
                 shutil.rmtree(chapter_folder)
             else:
                 warn(f"CBZ creation failed for Chapter {num}, keeping folder")
 
         # Add delay between series to prevent rate limiting
-        import time
         time.sleep(0.5)
 
     log(f"Total series processed: {total_series}")
     log(f"Total chapters downloaded: {total_chapters}")
     success(f"Completed! Output: {FOLDER}")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

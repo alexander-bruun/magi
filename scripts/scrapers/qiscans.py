@@ -1,17 +1,43 @@
 #!/usr/bin/env python3
+"""
+QiScans scraper for MAGI.
 
+Downloads manga/manhwa/manhua from qiscans.org via their API.
+"""
+
+# Standard library imports
 import asyncio
+import json
 import os
 import re
+import shutil
 import sys
-import requests
-import zipfile
-import json
-from urllib.parse import urljoin, quote, urlparse
 from pathlib import Path
-from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz, bypass_cloudflare, get_session, sanitize_title
 
+# Third-party imports
+import requests
+
+# Local imports
+from scraper_utils import (
+    bypass_cloudflare,
+    calculate_padding_width,
+    convert_to_webp,
+    create_cbz,
+    error,
+    format_chapter_name,
+    get_existing_chapters,
+    get_image_extension,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'QiScans'))
@@ -20,8 +46,21 @@ ALLOWED_DOMAINS = ['media.qiscans.org']
 API_CACHE_FILE = os.path.join(os.path.dirname(__file__), 'qiscans.json')
 BASE_URL = 'https://qiscans.org'
 
-# Extract series slugs from API
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
+    """
+    Extract series slugs from the API.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number (only page 1 is used)
+
+    Returns:
+        tuple: (list of series slugs, bool is_last_page)
+    """
     # Fetch all series in one go
     if page_num > 1:
         return [], True
@@ -47,8 +86,17 @@ def extract_series_urls(session, page_num):
     
     return series_slugs, True  # is_last_page = True
 
-# Extract series title from API data
 def extract_series_title(session, series_slug):
+    """
+    Extract series title from cached API data.
+
+    Args:
+        session: requests.Session object (not used)
+        series_slug: Slug of the series
+
+    Returns:
+        str: Series title, or empty string if not found
+    """
     with open(API_CACHE_FILE, 'r') as f:
         data = json.load(f)
     
@@ -58,8 +106,16 @@ def extract_series_title(session, series_slug):
     
     return ''
 
-# Get series ID from cached API data
 def get_series_id(series_slug):
+    """
+    Get series ID from cached API data.
+
+    Args:
+        series_slug: Slug of the series
+
+    Returns:
+        int: Series ID, or None if not found
+    """
     with open(API_CACHE_FILE, 'r') as f:
         data = json.load(f)
     
@@ -69,8 +125,20 @@ def get_series_id(series_slug):
     
     return None
 
-# Extract chapter links from API
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, series_slug):
+    """
+    Extract chapter URLs from the API.
+
+    Args:
+        session: requests.Session object
+        series_slug: Slug of the series
+
+    Returns:
+        list: List of chapter slugs
+    """
     series_id = get_series_id(series_slug)
     if not series_id:
         warn(f"Could not find series ID for {series_slug}")
@@ -93,9 +161,19 @@ def extract_chapter_urls(session, series_slug):
     
     return chapter_slugs
 
-# Extract image URLs from chapter page
 def extract_image_urls(session, series_slug, chapter_slug):
-    page_url = f"https://qiscans.org/series/{series_slug}/{chapter_slug}"
+    """
+    Extract image URLs from a chapter page.
+
+    Args:
+        session: requests.Session object
+        series_slug: Slug of the series
+        chapter_slug: Slug of the chapter
+
+    Returns:
+        list: List of image URLs
+    """
+    page_url = f"{BASE_URL}/series/{series_slug}/{chapter_slug}"
     response = session.get(page_url, timeout=30)
     response.raise_for_status()
     html = response.text
@@ -123,12 +201,17 @@ def extract_image_urls(session, series_slug, chapter_slug):
     
     return img_urls
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting Qi Scans scraper")
     log("Mode: Full Downloader")
 
     # Health check
-    log("Performing health check on https://qiscans.org...")
+    log(f"Performing health check on {BASE_URL}...")
     try:
         cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
         if not cookies:
@@ -172,10 +255,6 @@ def main():
 
         log(f"Title: {clean_title}")
 
-        # Create series directory
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
         # Extract chapter links
         try:
             chapter_slugs = extract_chapter_urls(session, series_slug)
@@ -186,6 +265,10 @@ def main():
         if not chapter_slugs:
             warn(f"No chapters found for {title}, skipping...")
             continue
+
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
 
         # Extract chapter numbers for padding and skipping logic
         chapter_nums = []
@@ -199,28 +282,12 @@ def main():
             continue
 
         max_chapter = max(chapter_nums)
-        padding_width = len(str(max_chapter))
+        padding_width = calculate_padding_width(max_chapter)
         log(f"Found {len(chapter_slugs)} chapters (max: {max_chapter}, padding: {padding_width})")
 
-        # Scan existing CBZ files to determine which chapters are already downloaded
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            # Extract chapter number from filename like "Title Ch.001 [QiScans].cbz"
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                existing_chapters.add(float(match.group(1)))
-
-        if existing_chapters:
-            skipped_count = len(existing_chapters)
-            if skipped_count <= 5:
-                skipped_list = sorted(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-            else:
-                min_chapter = min(existing_chapters)
-                max_chapter = max(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
-        else:
-            log("No existing chapters found, downloading all")
+        # Check for existing chapters
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
 
         for chapter_slug in chapter_slugs:
             chapter_number_match = re.search(r'chapter-(\d+)', chapter_slug)
@@ -232,8 +299,7 @@ def main():
             if chapter_number in existing_chapters:
                 continue
 
-            formatted_chapter_number = f"{chapter_number:0{padding_width}d}"
-            chapter_name = f"{clean_title} Ch.{formatted_chapter_number} {DEFAULT_SUFFIX}"
+            chapter_name = format_chapter_name(clean_title, chapter_number, padding_width, DEFAULT_SUFFIX)
 
             try:
                 image_urls = extract_image_urls(session, series_slug, chapter_slug)
@@ -256,6 +322,8 @@ def main():
                 log(f"Chapter {chapter_number} [{len(image_urls)} images]")
                 continue
 
+            log(f"Downloading: Chapter {chapter_number} [{len(image_urls)} images]")
+
             # Create chapter directory
             chapter_folder = series_directory / chapter_name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -267,40 +335,36 @@ def main():
                     continue
                 # URL encode spaces
                 img_url = img_url.replace(' ', '%20')
-                # Get extension
-                ext = 'webp'  # from regex
+                ext = get_image_extension(img_url, 'webp')
                 filename = chapter_folder / f"{i:03d}.{ext}"
                 try:
                     response = session.get(img_url, timeout=30)
                     response.raise_for_status()
                     with open(filename, 'wb') as f:
                         f.write(response.content)
-                    print(f"  [{i:03d}] {img_url} Success")
+                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Success", file=sys.stderr, flush=True)
                     downloaded_count += 1
                     if CONVERT_TO_WEBP and ext != 'webp':
                         convert_to_webp(filename)
                 except Exception as e:
-                    print(f"  [{i:03d}] {img_url} Failed: {e}")
-
-            log(f"Downloaded: Chapter {chapter_number} [{downloaded_count}/{len(image_urls)} images]")
+                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Failed: {e}", file=sys.stderr, flush=True)
 
             # Only create CBZ if more than 1 image was downloaded
             if downloaded_count > 1:
                 if create_cbz(chapter_folder, chapter_name):
                     # Remove temp folder
-                    import shutil
                     shutil.rmtree(chapter_folder)
                 else:
                     warn(f"CBZ creation failed for Chapter {chapter_number}, keeping folder")
             else:
                 log(f"Skipping CBZ creation for Chapter {chapter_number} - only {downloaded_count} image(s) downloaded")
                 # Remove temp folder
-                import shutil
                 shutil.rmtree(chapter_folder)
 
     log(f"Total series processed: {total_series}")
     log(f"Total chapters downloaded: {total_chapters}")
     success(f"Completed! Output: {FOLDER}")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

@@ -1,18 +1,46 @@
 #!/usr/bin/env python3
+"""
+LuaComic scraper for MAGI.
 
+Downloads manga/manhwa/manhua from luacomic.org.
+"""
+
+# Standard library imports
 import asyncio
 import os
 import re
+import shutil
 import sys
 import time
-import requests
-import zipfile
-import json
-from urllib.parse import urljoin, quote, urlparse
+import urllib.parse
 from pathlib import Path
-from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz, bypass_cloudflare, get_session, sanitize_title
 
+# Third-party imports
+import requests
+
+# Local imports
+from scraper_utils import (
+    bypass_cloudflare,
+    calculate_padding_width,
+    convert_to_webp,
+    create_cbz,
+    error,
+    format_chapter_name,
+    get_existing_chapters,
+    get_image_extension,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+    MAX_RETRIES,
+    RETRY_DELAY,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'LuaComic'))
@@ -23,10 +51,20 @@ BASE_URL = 'https://luacomic.org'
 LUACOMIC_SESSION = os.getenv('LUACOMIC_SESSION')
 LUACOMIC_CF_CLEARANCE = os.getenv('LUACOMIC_CF_CLEARANCE')
 
+
+# =============================================================================
+# Authentication Helpers
+# =============================================================================
 def get_auth_cookies(bypass_cookies=None):
-    """Get authentication cookies from bypass cookies or environment variables"""
-    import urllib.parse
-    
+    """
+    Get authentication cookies from bypass cookies or environment variables.
+
+    Args:
+        bypass_cookies: Optional dict of cookies from Cloudflare bypass
+
+    Returns:
+        dict: Authentication cookies
+    """
     # First try to get from bypass cookies
     if bypass_cookies:
         ts_session = bypass_cookies.get('ts-session')
@@ -48,8 +86,25 @@ def get_auth_cookies(bypass_cookies=None):
     # No cookies available
     return {}
 
-def retry_request(session, method, url, max_retries=3, base_delay=1, **kwargs):
-    """Retry a request with exponential backoff for rate limiting"""
+
+def retry_request(session, method, url, max_retries=MAX_RETRIES, base_delay=1, **kwargs):
+    """
+    Retry a request with exponential backoff for rate limiting.
+
+    Args:
+        session: requests.Session object
+        method: HTTP method (get, post, etc.)
+        url: URL to request
+        max_retries: Maximum number of retries
+        base_delay: Base delay for exponential backoff
+        **kwargs: Additional arguments for the request
+
+    Returns:
+        requests.Response object
+
+    Raises:
+        requests.exceptions.RequestException: If all retries fail
+    """
     for attempt in range(max_retries):
         try:
             response = getattr(session, method.lower())(url, **kwargs)
@@ -78,9 +133,21 @@ def retry_request(session, method, url, max_retries=3, base_delay=1, **kwargs):
                 error(f"Request failed after {max_retries} attempts: {url}")
                 raise
 
-# Extract series data from API
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
-    """Extract series data from the API with pagination support"""
+    """
+    Extract series data from the API with pagination support.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number to fetch
+
+    Returns:
+        tuple: (list of series data dicts, bool is_last_page)
+    """
     url = f"{API_BASE}/query?page={page_num}&perPage=20&series_type=Comic&query_string=&orderBy=created_at&adult=true&status=All&tags_ids=%5B%5D"
     
     # Set the required headers from the curl command
@@ -127,13 +194,35 @@ def extract_series_urls(session, page_num):
     log(f"Found {len(series_data)} series on page {page_num} (total pages: {last_page})")
     return series_data, is_last_page
 
-# Extract series title from series data
+
 def extract_series_title(session, series_data):
+    """
+    Extract series title from series data.
+
+    Args:
+        session: requests.Session object (unused but kept for consistency)
+        series_data: Series data dict from API
+
+    Returns:
+        str: Series title
+    """
     return series_data.get('title', '')
 
-# Extract chapter data from series API data
+
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, series_data):
-    """Extract chapter data from the series data already fetched from API"""
+    """
+    Extract chapter data from the series data already fetched from API.
+
+    Args:
+        session: requests.Session object (unused but kept for consistency)
+        series_data: Series data dict from API
+
+    Returns:
+        list: Chapter data dicts sorted by index
+    """
     chapters = []
     
     # Add free chapters
@@ -167,8 +256,19 @@ def extract_chapter_urls(session, series_data):
     
     return chapters
 
-# Extract image URLs from chapter page
+
 def extract_image_urls(session, chapter_data, series_data):
+    """
+    Extract image URLs from chapter page.
+
+    Args:
+        session: requests.Session object
+        chapter_data: Chapter data dict
+        series_data: Series data dict
+
+    Returns:
+        list: Image URLs
+    """
     series_slug = series_data.get('series_slug')
     chapter_slug = chapter_data.get('chapter_slug')
     chapter_url = f"https://luacomic.org/series/{series_slug}/{chapter_slug}"
@@ -193,7 +293,12 @@ def extract_image_urls(session, chapter_data, series_data):
     
     return image_urls
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting LuaComic scraper")
     log("Mode: Full Downloader")
 
@@ -251,10 +356,6 @@ def main():
 
         log(f"Title: {clean_title}")
 
-        # Create series directory
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
         # Fetch chapters
         try:
             chapters = extract_chapter_urls(session, series_data)
@@ -265,6 +366,10 @@ def main():
         if not chapters:
             warn(f"No chapters found for {title}, skipping...")
             continue
+
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
 
         # Determine max chapter number for padding
         chapter_numbers = []
@@ -282,20 +387,15 @@ def main():
         
         if chapter_numbers:
             max_chapter = max(chapter_numbers)
-            padding_width = len(str(max_chapter))
+            padding_width = calculate_padding_width(max_chapter)
         else:
             padding_width = 3  # Default padding
         
         log(f"Found {len(chapters)} chapters (max: {max_chapter if chapter_numbers else 'unknown'}, padding: {padding_width})")
         
         # Scan existing CBZ files
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                existing_chapters.add(float(match.group(1)))
-        
-        log(f"No existing chapters found, downloading all" if not existing_chapters else f"Found {len(existing_chapters)} existing chapters")
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
         
         for chapter in chapters:
             try:
@@ -318,25 +418,25 @@ def main():
                 if chapter_num in existing_chapters:
                     continue
                 
-                formatted_chapter_number = f"{chapter_num:0{padding_width}d}"
-                chapter_title = f"Chapter {formatted_chapter_number}"
-                chapter_name_full = f"{clean_title} {chapter_title} {DEFAULT_SUFFIX}"
+                chapter_name_full = format_chapter_name(clean_title, chapter_num, padding_width, DEFAULT_SUFFIX)
                 
-                log(f"Processing: {chapter_title}")
+                log(f"Processing: Chapter {chapter_num}")
                 
                 image_urls = extract_image_urls(session, chapter, series_data)
                 if not image_urls:
                     if chapter.get('is_premium', False):
-                        log(f"Skipping premium chapter: {chapter_title}")
+                        log(f"Skipping premium chapter: Chapter {chapter_num}")
                     else:
-                        warn(f"No images found for {chapter_title}, skipping...")
+                        warn(f"No images found for Chapter {chapter_num}, skipping...")
                     continue
                 
                 log(f"Found {len(image_urls)} images")
                 
                 if DRY_RUN:
-                    log(f"[DRY RUN] Would download {len(image_urls)} images for {chapter_title}")
+                    log(f"[DRY RUN] Would download {len(image_urls)} images for Chapter {chapter_num}")
                     continue
+                
+                log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
                 
                 # Download images
                 chapter_folder = series_directory / f"{chapter_name_full}"
@@ -364,7 +464,7 @@ def main():
                             f.write(img_response.content)
                         
                         downloaded_count += 1
-                        print(f"  [{j+1:03d}] {img_url} Success")
+                        print(f"  [{j+1:03d}/{len(image_urls):03d}] {img_url} Success", file=sys.stderr, flush=True)
                         
                         # Convert to WebP if needed
                         if CONVERT_TO_WEBP and ext != '.webp':
@@ -377,14 +477,11 @@ def main():
                     except Exception as e:
                         error(f"Failed to download image {j+1}: {e}")
                 
-                log(f"Downloaded: {chapter_title} [{downloaded_count}/{len(image_urls)} images]")
-                
                 # Create CBZ
                 if create_cbz(chapter_folder, chapter_name_full):
                     success(f"Created {chapter_name_full}.cbz ({downloaded_count} files)")
                 
                 # Clean up
-                import shutil
                 shutil.rmtree(chapter_folder)
                 
             except Exception as e:
@@ -400,5 +497,6 @@ def main():
     
     log(f"Processed {total_series} series with {total_chapters} total chapters")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

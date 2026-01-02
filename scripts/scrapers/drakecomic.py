@@ -1,17 +1,45 @@
 #!/usr/bin/env python3
+"""
+DrakeComic scraper for MAGI.
 
+Downloads manga/manhwa/manhua from drakecomic.org.
+"""
+
+# Standard library imports
 import asyncio
 import os
 import re
+import shutil
 import sys
-import requests
-import zipfile
-import json
-from urllib.parse import urljoin, quote, urlparse
+import time
 from pathlib import Path
-from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz, bypass_cloudflare, get_session, sanitize_title
 
+# Third-party imports
+import requests
+
+# Local imports
+from scraper_utils import (
+    bypass_cloudflare,
+    calculate_padding_width,
+    convert_to_webp,
+    create_cbz,
+    error,
+    format_chapter_name,
+    get_existing_chapters,
+    get_image_extension,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+    MAX_RETRIES,
+    RETRY_DELAY,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'DrakeComic'))
@@ -20,9 +48,22 @@ ALLOWED_DOMAINS = ['drakecomic.org']
 USER_AGENT = os.getenv('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36')
 BASE_URL = 'https://drakecomic.org'
 
-# Extract series URLs from pagination
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
-    url = f"https://drakecomic.org/manga/?page={page_num}&status=&type=&order="
+    """
+    Extract series URLs from pagination.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number to fetch (1-indexed)
+
+    Returns:
+        tuple: (list of series URLs, bool is_last_page)
+    """
+    url = f"{BASE_URL}/manga/?page={page_num}&status=&type=&order="
     
     try:
         response = session.get(url, timeout=30)
@@ -45,8 +86,18 @@ def extract_series_urls(session, page_num):
         error(f"Error extracting series from page {page_num}: {e}")
         return [], True
 
-# Extract series title from series page
+
 def extract_series_title(session, series_url):
+    """
+    Extract series title from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Full URL of the series
+
+    Returns:
+        str: Series title, or None if extraction failed
+    """
     try:
         response = session.get(series_url, timeout=30)
         response.raise_for_status()
@@ -68,8 +119,21 @@ def extract_series_title(session, series_url):
         error(f"Error extracting title from {series_url}: {e}")
         return None
 
-# Extract chapter links from series page
+
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, series_url):
+    """
+    Extract chapter links from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Full URL of the series
+
+    Returns:
+        list: Chapter URLs sorted by chapter number
+    """
     try:
         response = session.get(series_url, timeout=30)
         response.raise_for_status()
@@ -94,11 +158,21 @@ def extract_chapter_urls(session, series_url):
         error(f"Error extracting chapters from {series_url}: {e}")
         return []
 
-# Extract image URLs from chapter page
+
 def extract_image_urls(session, chapter_url):
+    """
+    Extract image URLs from chapter page.
+
+    Args:
+        session: requests.Session object
+        chapter_url: Full URL of the chapter
+
+    Returns:
+        list: Image URLs in reading order, None if locked, empty list if no images
+    """
     full_url = chapter_url
     
-    for attempt in range(3):
+    for attempt in range(MAX_RETRIES):
         try:
             response = session.get(full_url, timeout=30)
             if response.status_code == 404:
@@ -190,18 +264,22 @@ def extract_image_urls(session, chapter_url):
                 return []
                 
         except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(4)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
     
     return []
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting DrakeComic scraper")
     log("Mode: Full Downloader")
 
     # Health check
-    log("Performing health check on https://drakecomic.org...")
+    log(f"Performing health check on {BASE_URL}...")
     try:
         # Try without Cloudflare bypass first
         session = requests.Session()
@@ -214,14 +292,14 @@ def main():
             'Upgrade-Insecure-Requests': '1',
         })
         
-        response = session.get("https://drakecomic.org", timeout=30)
+        response = session.get(BASE_URL, timeout=30)
         if response.status_code != 200:
             log("Direct access failed, trying Cloudflare bypass...")
             cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
             if not cookies:
                 return
             session = get_session(cookies, headers)
-            response = session.get("https://drakecomic.org", timeout=30)
+            response = session.get(BASE_URL, timeout=30)
             if response.status_code != 200:
                 error(f"Health check failed. Returned {response.status_code}")
                 return
@@ -264,9 +342,6 @@ def main():
         clean_title = sanitize_title(title)
         log(f"Processing: {clean_title}")
 
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
         # Extract chapter URLs
         try:
             chapter_urls = extract_chapter_urls(session, series_url)
@@ -274,25 +349,19 @@ def main():
             error(f"Error extracting chapters for {series_url}: {e}")
             continue
 
+        if not chapter_urls:
+            warn(f"No chapters found for {clean_title}, skipping...")
+            continue
+
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
+
         log(f"Found {len(chapter_urls)} chapters")
 
         # Scan existing CBZ files to determine which chapters are already downloaded
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            # Extract chapter number from filename like "Title Ch.01 [DrakeComic].cbz"
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                existing_chapters.add(float(match.group(1)))
-
-        if existing_chapters:
-            skipped_count = len(existing_chapters)
-            if skipped_count <= 5:
-                skipped_list = sorted(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-            else:
-                min_chapter = min(existing_chapters)
-                max_chapter = max(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
 
         for ch_url in chapter_urls:
             # Extract chapter number from URL
@@ -330,6 +399,8 @@ def main():
                 log(f"Chapter {num} [{len(imgs)} images]")
                 continue
 
+            log(f"Downloading: Chapter {num} [{len(imgs)} images]")
+
             # Create chapter directory within series directory
             chapter_folder = series_directory / name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -348,7 +419,7 @@ def main():
                     response.raise_for_status()
                     with open(file, 'wb') as f:
                         f.write(response.content)
-                    print(f"  [{idx:03d}/{total:03d}] {url} Success")
+                    print(f"  [{idx:03d}/{total:03d}] {url} Success", file=sys.stderr, flush=True)
                     downloaded += 1
 
                     # Convert to WebP if enabled
@@ -356,9 +427,8 @@ def main():
                     if CONVERT_TO_WEBP and ext != '.webp':
                         convert_to_webp(file)
                 except Exception as e:
-                    print(f"  [{idx:03d}/{total:03d}] {url} Failed: {e}")
+                    print(f"  [{idx:03d}/{total:03d}] {url} Failed: {e}", file=sys.stderr, flush=True)
                     # Clean up and break
-                    import shutil
                     shutil.rmtree(chapter_folder)
                     break
 
@@ -366,9 +436,7 @@ def main():
                 warn(f"Incomplete download for Chapter {num} → skipped")
                 continue
 
-            log(f"Downloaded: Chapter {num} [{downloaded}/{len(imgs)} images]")
             if create_cbz(chapter_folder, name, series_directory):
-                import shutil
                 shutil.rmtree(chapter_folder)
             else:
                 warn(f"CBZ creation failed for Chapter {num}, keeping folder")
@@ -377,5 +445,6 @@ def main():
     log(f"Total chapters downloaded: {total_chapters}")
     success(f"Completed! Output: {FOLDER}")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

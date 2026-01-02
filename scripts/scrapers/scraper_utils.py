@@ -1,45 +1,243 @@
 #!/usr/bin/env python3
 """
 Common utilities for MAGI scrapers.
+
 Shared functions to reduce code duplication across scraper modules.
+Provides logging, image processing, CBZ creation, and common patterns.
 """
 
+# Standard library imports
+import os
 import re
 import sys
 import zipfile
-import os
-from pathlib import Path
 from html import unescape as html_unescape
+from pathlib import Path
+from urllib.parse import urlparse, quote as url_quote
 
-# Configuration
+# =============================================================================
+# Constants
+# =============================================================================
 WEBP_QUALITY = int(os.getenv('webp_quality', '100'))
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds
 
-# Text processing
+DEFAULT_USER_AGENT = (
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+)
+
+# =============================================================================
+# Text Processing
+# =============================================================================
+def encode_url_path(path, safe='-/_'):
+    """
+    URL-encode a path component for use in URLs.
+    
+    Handles special characters like apostrophes, spaces, and unicode
+    that may cause issues in HTTP requests.
+    
+    Args:
+        path: The path string to encode
+        safe: Characters that should NOT be encoded (default: -/_)
+    
+    Returns:
+        str: URL-encoded path
+    
+    Examples:
+        >>> encode_url_path("chapter-1")
+        'chapter-1'
+        >>> encode_url_path("i-carry-the-enemy-'s-child")
+        'i-carry-the-enemy-%27s-child'
+        >>> encode_url_path("file name.jpg")
+        'file%20name.jpg'
+    """
+    return url_quote(path, safe=safe)
+
+
+def encode_image_url(url):
+    """
+    Encode an image URL for HTTP requests.
+    
+    Specifically handles spaces and special characters in filenames
+    that may appear in image URLs.
+    
+    Args:
+        url: The full image URL
+    
+    Returns:
+        str: URL with encoded path components
+    """
+    # Simple space replacement is usually sufficient for image URLs
+    # More complex cases can use full URL parsing if needed
+    return url.replace(' ', '%20')
+
+
 def sanitize_title(title):
-    """Sanitize a title for use as a filename. Removes invalid characters, replaces underscores, and normalizes whitespace."""
+    """
+    Sanitize a title for use as a filename.
+
+    Removes invalid characters, replaces underscores with spaces,
+    and normalizes whitespace.
+
+    Args:
+        title: The title string to sanitize
+
+    Returns:
+        str: Sanitized title safe for filesystem use
+    """
     clean = re.sub(r'[<>:"\/\\|?*]', '', html_unescape(title)).replace('_', ' ').strip()
     return re.sub(r'\s+', ' ', clean)
 
-# Logging functions
+
+# =============================================================================
+# Logging Functions
+# =============================================================================
 def log(msg):
     """Log an info message."""
     print(f"\033[1;34m[INFO]\033[0m    {msg}", file=sys.stderr)
 
+
 def success(msg):
     """Log a success message."""
-    print(f"\033[1;32m[SUCCESS]\033[0m  {msg}", file=sys.stderr)
+    print(f"\033[1;32m[SUCCESS]\033[0m {msg}", file=sys.stderr)
+
 
 def warn(msg):
     """Log a warning message."""
     print(f"\033[1;33m[WARNING]\033[0m {msg}", file=sys.stderr)
 
+
 def error(msg):
     """Log an error message."""
     print(f"\033[1;31m[ERROR]\033[0m   {msg}", file=sys.stderr)
 
-# Cloudflare bypass
+
+# =============================================================================
+# Chapter Tracking Utilities
+# =============================================================================
+def get_existing_chapters(series_directory, pattern=r'Ch\.([\d.]+)'):
+    """
+    Scan directory for existing CBZ files and return set of chapter numbers.
+
+    Args:
+        series_directory: Path to series directory
+        pattern: Regex pattern to extract chapter number from filename
+
+    Returns:
+        set: Chapter numbers (as floats) already downloaded
+    """
+    existing = set()
+    for cbz_file in Path(series_directory).glob("*.cbz"):
+        match = re.search(pattern, cbz_file.stem)
+        if match:
+            existing.add(float(match.group(1)))
+    return existing
+
+
+def log_existing_chapters(existing_chapters):
+    """
+    Log skipped chapters in a standardized format.
+
+    Args:
+        existing_chapters: Set of chapter numbers already downloaded
+    """
+    if not existing_chapters:
+        log("No existing chapters found, downloading all")
+        return
+
+    skipped_count = len(existing_chapters)
+    if skipped_count <= 5:
+        skipped_list = sorted(existing_chapters)
+        log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
+    else:
+        min_chapter = min(existing_chapters)
+        max_chapter = max(existing_chapters)
+        log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
+
+
+# =============================================================================
+# Chapter Formatting Utilities
+# =============================================================================
+def format_chapter_name(title, chapter_num, padding_width, suffix):
+    """
+    Format a standardized chapter name for CBZ files.
+
+    Args:
+        title: Clean series title
+        chapter_num: Chapter number (int or float)
+        padding_width: Number of digits for zero-padding
+        suffix: Group/source suffix (e.g., '[AsuraScans]')
+
+    Returns:
+        str: Formatted chapter name like "Title Ch.001 [Suffix]"
+    """
+    if isinstance(chapter_num, float) and chapter_num == int(chapter_num):
+        chapter_num = int(chapter_num)
+    formatted = f"{chapter_num:0{padding_width}d}" if isinstance(chapter_num, int) else f"{chapter_num:0{padding_width}.1f}"
+    return f"{title} Ch.{formatted} {suffix}"
+
+
+def calculate_padding_width(max_chapter):
+    """
+    Calculate zero-padding width for chapter numbers.
+
+    Args:
+        max_chapter: Maximum chapter number in series
+
+    Returns:
+        int: Number of digits needed for padding
+    """
+    return len(str(int(max_chapter)))
+
+
+def get_image_extension(url, default='webp'):
+    """
+    Extract and validate image extension from URL.
+
+    Args:
+        url: Image URL
+        default: Default extension if none found or invalid
+
+    Returns:
+        str: Validated image extension (without dot)
+    """
+    parsed = urlparse(url)
+    path = parsed.path
+    ext = path.split('.')[-1].lower() if '.' in path else default
+    return ext if ext in ['jpg', 'jpeg', 'png', 'webp', 'gif'] else default
+
+
+def extract_chapter_number(text, pattern=r'chapter-(\d+)'):
+    """
+    Extract chapter number from text using regex pattern.
+
+    Args:
+        text: String containing chapter number
+        pattern: Regex pattern with capture group for the number
+
+    Returns:
+        int: Chapter number, or None if not found
+    """
+    match = re.search(pattern, text, re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+# =============================================================================
+# Cloudflare Bypass
+# =============================================================================
 async def bypass_cloudflare(url):
-    """Bypass Cloudflare protection for a given URL."""
+    """
+    Bypass Cloudflare protection for a given URL.
+
+    Uses camoufox browser automation to solve Cloudflare challenges.
+
+    Args:
+        url: The URL to bypass Cloudflare protection for
+
+    Returns:
+        tuple: (cookies dict, headers dict) or (None, None) on failure
+    """
     try:
         from camoufox import AsyncCamoufox
         from camoufox_captcha import solve_captcha
@@ -86,8 +284,21 @@ async def bypass_cloudflare(url):
 
         return cookies, headers
 
+
+# =============================================================================
+# Session Management
+# =============================================================================
 def get_session(cookies=None, headers=None):
-    """Create a requests session with optional cookies and headers."""
+    """
+    Create a requests session with optional cookies and headers.
+
+    Args:
+        cookies: Optional dict of cookies to add to session
+        headers: Optional dict of headers to add to session
+
+    Returns:
+        requests.Session: Configured session object
+    """
     import requests
     session = requests.Session()
     if cookies:
@@ -96,9 +307,42 @@ def get_session(cookies=None, headers=None):
         session.headers.update(headers)
     return session
 
-# Image processing
+
+def get_default_headers(user_agent=None):
+    """
+    Get default HTTP headers for scraping.
+
+    Args:
+        user_agent: Optional custom user agent string
+
+    Returns:
+        dict: HTTP headers suitable for web scraping
+    """
+    return {
+        'User-Agent': user_agent or DEFAULT_USER_AGENT,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    }
+
+
+# =============================================================================
+# Image Processing
+# =============================================================================
 def convert_to_webp(filepath):
-    """Convert an image file to WebP format if it's not already WebP."""
+    """
+    Convert an image file to WebP format if it's not already WebP.
+
+    Handles large images by splitting them if they exceed WebP dimension limits.
+
+    Args:
+        filepath: Path object to the image file
+
+    Returns:
+        bool: True if conversion successful, False otherwise
+    """
     from PIL import Image
     if filepath.suffix.lower() == '.webp':
         return True
@@ -140,8 +384,20 @@ def convert_to_webp(filepath):
             filepath.unlink()
         return False
 
+
 def split_and_convert_to_webp(img, filepath):
-    """Split tall image into WebP chunks."""
+    """
+    Split tall image into WebP chunks.
+
+    Used when an image exceeds WebP's maximum dimension of 16383 pixels.
+
+    Args:
+        img: PIL Image object (already opened)
+        filepath: Path object to the original image file
+
+    Returns:
+        bool: True if split and conversion successful, False otherwise
+    """
     try:
         width, height = img.size
         max_chunk_height = 16383  # WebP max height
@@ -191,9 +447,23 @@ def split_and_convert_to_webp(img, filepath):
         error(f"Failed to split {filepath.name}: {e}")
         return False
 
-# CBZ creation
+
+# =============================================================================
+# CBZ Creation
+# =============================================================================
 def create_cbz(temp_dir, name, dest_dir=None, expected_count=None):
-    """Create a CBZ file from images in temp_dir."""
+    """
+    Create a CBZ file from images in temp_dir.
+
+    Args:
+        temp_dir: Path to directory containing images
+        name: Name for the CBZ file (without extension)
+        dest_dir: Optional destination directory (defaults to temp_dir.parent)
+        expected_count: Optional expected number of files (for validation)
+
+    Returns:
+        bool: True if CBZ created successfully, False otherwise
+    """
     if dest_dir is None:
         dest_dir = temp_dir.parent
     cbz_file = dest_dir / f"{name}.cbz"
@@ -226,17 +496,3 @@ def create_cbz(temp_dir, name, dest_dir=None, expected_count=None):
         for file in files_sorted:
             zf.write(file, file.name)
     return True
-
-# Common scraper configuration
-DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-
-def get_default_headers(user_agent=None):
-    """Get default HTTP headers for scraping."""
-    return {
-        'User-Agent': user_agent or DEFAULT_USER_AGENT,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-    }

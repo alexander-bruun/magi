@@ -1,17 +1,43 @@
 #!/usr/bin/env python3
+"""
+MangaKatana scraper for MAGI.
 
+Downloads manga/manhwa/manhua from mangakatana.com.
+"""
+
+# Standard library imports
 import os
 import re
+import shutil
 import sys
-import requests
-import zipfile
-from urllib.parse import urljoin, quote, urlparse
+import time
 from pathlib import Path
 
-# Import common utilities
-from scraper_utils import log, success, warn, error, get_session, convert_to_webp, create_cbz, sanitize_title
+# Third-party imports
+import requests
 
+# Local imports
+from scraper_utils import (
+    calculate_padding_width,
+    convert_to_webp,
+    create_cbz,
+    error,
+    format_chapter_name,
+    get_existing_chapters,
+    get_image_extension,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+    MAX_RETRIES,
+    RETRY_DELAY,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'MangaKatana'))
@@ -19,8 +45,21 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[MangaKatana]')
 ALLOWED_DOMAINS = ['mangakatana.com', 'i1.mangakatana.com', 'i2.mangakatana.com', 'i3.mangakatana.com', 'i4.mangakatana.com', 'i5.mangakatana.com', 'i6.mangakatana.com', 'i7.mangakatana.com']
 BASE_URL = 'https://mangakatana.com'
 
-# Extract series URLs from listing page
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
+    """
+    Extract series URLs from listing page.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number to fetch
+
+    Returns:
+        tuple: (list of series URLs, bool is_last_page)
+    """
     if page_num == 1:
         url = f"{BASE_URL}/latest"
     else:
@@ -43,13 +82,21 @@ def extract_series_urls(session, page_num):
     series_urls = [url for url in series_urls if '/c' not in url]
     return sorted(set(series_urls)), is_last_page
 
-# Extract series title from series page
+
 def extract_series_title(session, series_url):
+    """
+    Extract series title from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        str: Series title, or None if not found
+    """
     url = f"{BASE_URL}{series_url}"
-    max_retries = 3
-    retry_delay = 5
     
-    for attempt in range(1, max_retries + 1):
+    for attempt in range(MAX_RETRIES):
         try:
             response = session.get(url, timeout=30)
             response.raise_for_status()
@@ -68,18 +115,30 @@ def extract_series_title(session, series_url):
                 return h1_match.group(1).strip()
                 
         except Exception as e:
-            if attempt < max_retries:
-                warn(f"Failed to extract title (attempt {attempt}/{max_retries}), retrying in {retry_delay}s... Error: {e}")
-                import time
-                time.sleep(retry_delay)
+            if attempt < MAX_RETRIES - 1:
+                warn(f"Failed to extract title (attempt {attempt + 1}/{MAX_RETRIES}), retrying in {RETRY_DELAY}s... Error: {e}")
+                time.sleep(RETRY_DELAY)
             else:
-                error(f"Failed to extract title after {max_retries} attempts: {e}")
+                error(f"Failed to extract title after {MAX_RETRIES} attempts: {e}")
                 return None
     
     return None
 
-# Extract chapter URLs from series page
+
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, series_url):
+    """
+    Extract chapter URLs from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        list: Chapter URLs sorted by chapter number
+    """
     full_url = f"{BASE_URL}{series_url}"
     response = session.get(full_url, timeout=30)
     response.raise_for_status()
@@ -89,22 +148,32 @@ def extract_chapter_urls(session, series_url):
     chapter_urls = re.findall(r'href="(https://mangakatana\.com/manga/[^"]+/c[\d.]+[^"]*)"', html)
     # Convert to relative URLs
     chapter_urls = [url.replace('https://mangakatana.com', '') for url in chapter_urls]
+    
     # Sort by chapter number (handle decimals)
     def chapter_key(url):
         match = re.search(r'/c([\d.]+)', url)
         if match:
             return float(match.group(1))
         return 0
+    
     chapter_urls.sort(key=chapter_key)
     return list(dict.fromkeys(chapter_urls))  # unique
 
-# Extract image URLs from chapter page
+
 def extract_image_urls(session, chapter_url):
+    """
+    Extract image URLs from chapter page.
+
+    Args:
+        session: requests.Session object
+        chapter_url: Relative URL of the chapter
+
+    Returns:
+        list: Image URLs
+    """
     full_url = f"{BASE_URL}{chapter_url}"
-    max_retries = 3
-    retry_delay = 5
     
-    for attempt in range(1, max_retries + 1):
+    for attempt in range(MAX_RETRIES):
         try:
             response = session.get(full_url, timeout=30)
             response.raise_for_status()
@@ -138,17 +207,21 @@ def extract_image_urls(session, chapter_url):
             return list(dict.fromkeys(filtered_urls))  # unique
             
         except Exception as e:
-            if attempt < max_retries:
-                warn(f"Failed to extract images (attempt {attempt}/{max_retries}), retrying in {retry_delay}s... Error: {e}")
-                import time
-                time.sleep(retry_delay)
+            if attempt < MAX_RETRIES - 1:
+                warn(f"Failed to extract images (attempt {attempt + 1}/{MAX_RETRIES}), retrying in {RETRY_DELAY}s... Error: {e}")
+                time.sleep(RETRY_DELAY)
             else:
-                error(f"Failed to extract images after {max_retries} attempts: {e}")
+                error(f"Failed to extract images after {MAX_RETRIES} attempts: {e}")
                 return []
     
     return []
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting MangaKatana scraper")
     log("Mode: Full Downloader")
 
@@ -195,14 +268,6 @@ def main():
                 clean_title = sanitize_title(title)
                 log(f"Title: {clean_title}")
 
-                # Add delay after extracting title
-                import time
-                # time.sleep(1)
-
-                # Create series directory
-                series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-                series_directory.mkdir(parents=True, exist_ok=True)
-
                 # Extract chapter URLs
                 try:
                     chapter_urls = extract_chapter_urls(session, series_url)
@@ -214,33 +279,18 @@ def main():
                     warn(f"No chapters found for {title}, skipping...")
                     continue
 
+                # Create series directory (only after confirming chapters exist)
+                series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+                series_directory.mkdir(parents=True, exist_ok=True)
+
                 # Determine padding width
                 max_chapter = max(int(re.search(r'/c(\d+)', url).group(1)) for url in chapter_urls)
-                padding_width = len(str(max_chapter))
+                padding_width = calculate_padding_width(max_chapter)
                 log(f"Found {len(chapter_urls)} chapters (max: {max_chapter}, padding: {padding_width})")
 
-                # Add delay after extracting chapters
-                # time.sleep(1)
-
                 # Scan existing CBZ files to determine which chapters are already downloaded
-                existing_chapters = set()
-                for cbz_file in series_directory.glob("*.cbz"):
-                    # Extract chapter number from filename like "Title Ch.001 [MangaKatana].cbz"
-                    match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-                    if match:
-                        existing_chapters.add(float(match.group(1)))
-
-                if existing_chapters:
-                    skipped_count = len(existing_chapters)
-                    if skipped_count <= 5:
-                        skipped_list = sorted(existing_chapters)
-                        log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-                    else:
-                        min_chapter = min(existing_chapters)
-                        max_chapter = max(existing_chapters)
-                        log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
-                else:
-                    log("No existing chapters found, downloading all")
+                existing_chapters = get_existing_chapters(series_directory)
+                log_existing_chapters(existing_chapters)
 
                 consecutive_skips = 0
                 for chapter_url in chapter_urls:
@@ -255,9 +305,7 @@ def main():
 
                     total_chapters += 1
 
-                    formatted_chapter_number = f"{chapter_num:0{padding_width}d}"
-
-                    chapter_name = f"{clean_title} Ch.{formatted_chapter_number} {DEFAULT_SUFFIX}"
+                    chapter_name = format_chapter_name(clean_title, chapter_num, padding_width, DEFAULT_SUFFIX)
 
                     try:
                         image_urls = extract_image_urls(session, chapter_url)
@@ -275,12 +323,11 @@ def main():
 
                     consecutive_skips = 0  # Reset on successful find
 
-                    # Add delay after extracting images
-                    # time.sleep(0.5)
-
                     if DRY_RUN:
                         log(f"Chapter {chapter_num} [{len(image_urls)} images]")
                         continue
+
+                    log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
 
                     # Create chapter directory - use chapter name for consistency with other scrapers
                     chapter_folder = series_directory / chapter_name
@@ -290,12 +337,7 @@ def main():
                     for i, img_url in enumerate(image_urls, 1):
                         if not img_url:
                             continue
-                        # Get extension
-                        parsed = urlparse(img_url)
-                        path = parsed.path
-                        ext = path.split('.')[-1].lower() if '.' in path else 'jpg'
-                        if ext not in ['jpg', 'jpeg', 'png', 'webp']:
-                            ext = 'jpg'  # default
+                        ext = get_image_extension(img_url, 'jpg')
                         filename = chapter_folder / f"{i:03d}.{ext}"
                         try:
                             response = session.get(img_url, timeout=30)
@@ -309,37 +351,26 @@ def main():
                         except Exception as e:
                             print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Failed: {e}", file=sys.stderr, flush=True)
 
-                    log(f"Downloaded: Chapter {chapter_num} [{downloaded_count}/{len(image_urls)} images]")
-
                     # Only create CBZ if more than 1 image was downloaded
                     if downloaded_count > 1:
                         if create_cbz(chapter_folder, chapter_name):
                             # Remove temp folder
-                            import shutil
                             shutil.rmtree(chapter_folder)
                         else:
                             warn(f"CBZ creation failed for Chapter {chapter_num}, keeping folder")
                     else:
                         log(f"Skipping CBZ creation for Chapter {chapter_num} - only {downloaded_count} image(s) downloaded")
                         # Remove temp folder
-                        import shutil
                         shutil.rmtree(chapter_folder)
-
-                    # Add delay between chapters
-                    # time.sleep(0.5)
-
-                # Add delay between series
-                # time.sleep(2)
 
             if is_last_page:
                 log(f"Reached last page (page {page}).")
                 break
             page += 1
-            # Add delay between pages
-            # time.sleep(2)
         except Exception as e:
             error(f"Error processing page {page}: {e}")
             break
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

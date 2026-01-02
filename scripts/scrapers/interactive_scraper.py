@@ -293,7 +293,7 @@ def get_scraper_choice_curses(stdscr):
             selected_key = menu_items[current_row][0]
             if selected_key == '0':
                 return None
-            elif selected_key == '13':
+            elif selected_key == all_option:
                 return 'all'
             return selected_key
         elif key == ord('q') or key == 27:  # 'q' or ESC
@@ -365,32 +365,6 @@ def get_folder_location(scraper, config, scraper_config):
     Path(folder_path).mkdir(parents=True, exist_ok=True)
     print(f"Using folder: {folder_path}")
     return folder_path
-
-    # Otherwise, prompt user
-    while True:
-        try:
-            folder_input = input(f"Enter folder path (press Enter for default '{default_folder}'): ").strip()
-
-            if not folder_input:
-                folder_path = os.path.join(current_dir, 'scripts', 'scrapers', default_folder)
-            else:
-                if os.path.isabs(folder_input):
-                    folder_path = folder_input
-                else:
-                    folder_path = os.path.join(current_dir, folder_input)
-
-            # Create folder if it doesn't exist
-            Path(folder_path).mkdir(parents=True, exist_ok=True)
-
-            print(f"Using folder: {folder_path}")
-            return folder_path
-
-        except KeyboardInterrupt:
-            print("\nOperation cancelled.")
-            return None
-        except Exception as e:
-            print(f"Error with folder path: {e}")
-            continue
 
 def get_additional_options(config, scraper_config, parallel=False):
     """Get additional scraper options from config or user."""

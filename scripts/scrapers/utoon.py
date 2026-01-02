@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
+"""
+UToon scraper for MAGI.
 
+Downloads manga/manhwa/manhua from utoon.net.
+Supports both async browser-based downloads (with Camoufox) and fallback requests-based downloads.
+"""
+
+# Standard library imports
 import asyncio
 import os
 import re
+import shutil
 import sys
+import time
 import zipfile
-import aiohttp
-from urllib.parse import urljoin, quote, urlparse
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from urllib.parse import quote, urljoin, urlparse
+
+# Third-party imports
+import aiohttp
 
 try:
     from camoufox import AsyncCamoufox
@@ -18,10 +29,26 @@ except ImportError:
     HAS_CAMOUFOX = False
     import requests
 
-# Import common utilities
-from scraper_utils import log, success, warn, error, get_session, convert_to_webp, create_cbz, sanitize_title, get_default_headers, bypass_cloudflare
+# Local imports
+from scraper_utils import (
+    MAX_RETRIES,
+    RETRY_DELAY,
+    convert_to_webp,
+    create_cbz,
+    error,
+    get_default_headers,
+    get_existing_chapters,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+)
 
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'UToon'))
@@ -31,12 +58,25 @@ BASE_URL = 'https://utoon.net'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 
 # Performance settings
-MAX_CONCURRENT_SERIES = int(os.getenv('max_concurrent_series', '1'))  # Process this many series at once
-MAX_CONCURRENT_CHAPTERS = int(os.getenv('max_concurrent_chapters', '2'))  # Process this many chapters per series at once
-MAX_CONCURRENT_DOWNLOADS = int(os.getenv('max_concurrent_downloads', '3'))  # Download this many images at once
+MAX_CONCURRENT_SERIES = int(os.getenv('max_concurrent_series', '1'))
+MAX_CONCURRENT_CHAPTERS = int(os.getenv('max_concurrent_chapters', '2'))
+MAX_CONCURRENT_DOWNLOADS = int(os.getenv('max_concurrent_downloads', '3'))
 
-# Extract series URLs from listing page
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
+
 def extract_series_urls(session, page_num):
+    """Extract series URLs from a listing page.
+    
+    Args:
+        session: requests.Session object
+        page_num: Page number to fetch
+        
+    Returns:
+        tuple: (list of series URL paths, bool is_last_page)
+    """
     if page_num == 1:
         url = f"{BASE_URL}/manga/"
     else:
@@ -69,8 +109,16 @@ def extract_series_urls(session, page_num):
     
     return series_urls, is_last_page
 
-# Extract series URLs from listing page (async version for browser)
 async def extract_series_urls_async(page, page_num):
+    """Extract series URLs from a listing page using browser.
+    
+    Args:
+        page: Browser page object
+        page_num: Page number to fetch
+        
+    Returns:
+        tuple: (list of series URL paths, bool is_last_page)
+    """
     if page_num == 1:
         url = f"{BASE_URL}/manga/"
     else:
@@ -120,13 +168,19 @@ async def extract_series_urls_async(page, page_num):
     
     return filtered_urls, is_last_page
 
-# Extract series title from series page
 def extract_series_title(session, series_url):
-    url = f"{BASE_URL}{series_url}"
-    max_retries = 3
-    retry_delay = 5
+    """Extract the series title from a series page.
     
-    for attempt in range(1, max_retries + 1):
+    Args:
+        session: requests.Session object
+        series_url: URL path to the series page
+        
+    Returns:
+        str: The series title, or None if extraction failed
+    """
+    url = f"{BASE_URL}{series_url}"
+    
+    for attempt in range(1, MAX_RETRIES + 1):
         try:
             response = session.get(url, timeout=30)
             response.raise_for_status()
@@ -148,18 +202,30 @@ def extract_series_title(session, series_url):
                 return heading_match.group(1).strip()
                 
         except Exception as e:
-            if attempt < max_retries:
-                warn(f"Failed to extract title (attempt {attempt}/{max_retries}), retrying in {retry_delay}s... Error: {e}")
-                import time
-                time.sleep(retry_delay)
+            if attempt < MAX_RETRIES:
+                warn(f"Failed to extract title (attempt {attempt}/{MAX_RETRIES}), retrying in {RETRY_DELAY}s... Error: {e}")
+                time.sleep(RETRY_DELAY)
             else:
-                error(f"Failed to extract title after {max_retries} attempts: {e}")
+                error(f"Failed to extract title after {MAX_RETRIES} attempts: {e}")
                 return None
     
     return None
 
-# Extract chapter URLs from series page
+
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
+
 def extract_chapter_urls(session, series_url):
+    """Extract chapter URLs from a series page.
+    
+    Args:
+        session: requests.Session object
+        series_url: URL path to the series page
+        
+    Returns:
+        list: List of chapter URL paths
+    """
     full_url = f"{BASE_URL}{series_url}"
     response = session.get(full_url, timeout=30)
     response.raise_for_status()
@@ -180,13 +246,19 @@ def extract_chapter_urls(session, series_url):
     chapter_urls.sort(key=get_chapter_num)
     return list(dict.fromkeys(chapter_urls))  # unique
 
-# Extract image URLs from chapter page
 def extract_image_urls(session, chapter_url):
-    full_url = f"{BASE_URL}{chapter_url}"
-    max_retries = 3
-    retry_delay = 5
+    """Extract image URLs from a chapter page.
     
-    for attempt in range(1, max_retries + 1):
+    Args:
+        session: requests.Session object
+        chapter_url: URL path to the chapter page
+        
+    Returns:
+        list: List of image URLs
+    """
+    full_url = f"{BASE_URL}{chapter_url}"
+    
+    for attempt in range(1, MAX_RETRIES + 1):
         try:
             response = session.get(full_url, timeout=30)
             if response.status_code == 404:
@@ -205,12 +277,11 @@ def extract_image_urls(session, chapter_url):
                 return unique_images
                 
         except Exception as e:
-            if attempt < max_retries:
-                warn(f"Failed to extract images (attempt {attempt}/{max_retries}), retrying in {retry_delay}s... Error: {e}")
-                import time
-                time.sleep(retry_delay)
+            if attempt < MAX_RETRIES:
+                warn(f"Failed to extract images (attempt {attempt}/{MAX_RETRIES}), retrying in {RETRY_DELAY}s... Error: {e}")
+                time.sleep(RETRY_DELAY)
             else:
-                error(f"Failed to extract images after {max_retries} attempts: {e}")
+                error(f"Failed to extract images after {MAX_RETRIES} attempts: {e}")
                 return []
     
     return []
@@ -344,6 +415,8 @@ async def process_chapter(ch_url, series_directory, clean_title, num, browser_fa
                 log(f"Chapter {num} [{len(unique_images)} images]")
                 return 1
             
+            log(f"Downloading: Chapter {num} [{len(unique_images)} images]")
+            
             # Create chapter directory
             chapter_folder = series_directory / name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -353,12 +426,9 @@ async def process_chapter(ch_url, series_directory, clean_title, num, browser_fa
             
             if downloaded != len(unique_images):
                 # Clean up on failure
-                import shutil
                 shutil.rmtree(chapter_folder)
                 log(f"Failed to download all images for chapter {num}: {downloaded}/{len(unique_images)}")
                 return 0
-            
-            log(f"Downloaded: Chapter {num} [{downloaded}/{len(unique_images)} images]")
             
             # Convert to WebP if enabled
             if CONVERT_TO_WEBP:
@@ -368,7 +438,6 @@ async def process_chapter(ch_url, series_directory, clean_title, num, browser_fa
             
             # Create CBZ
             if create_cbz(chapter_folder, name, series_directory):
-                import shutil
                 shutil.rmtree(chapter_folder)
             
             log(f"Completed chapter {num}")
@@ -496,7 +565,16 @@ async def process_series(series_url, browser_factory, series_semaphore, download
                 error(f"Error processing series {series_url}: {e}")
                 return 0
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
+
 def main():
+    """Main entry point for the UToon scraper.
+    
+    Routes to either async browser-based or sync requests-based scraper.
+    """
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         asyncio.run(test_cloudflare_bypass())
         return
@@ -669,8 +747,6 @@ async def main_async():
                 log(f"Title: {clean_title}")
 
                 series_slug = series_url.strip('/').split('/')[-1]
-                series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-                series_directory.mkdir(parents=True, exist_ok=True)
 
                 # Extract chapter URLs from the HTML
                 chapter_patterns = re.findall(rf'{re.escape(series_slug)}/chapter-[\d]+/', html)
@@ -687,22 +763,13 @@ async def main_async():
                     log(f"No chapters found → skip")
                     continue
 
-                # Scan existing CBZ files
-                existing_chapters = set()
-                for cbz_file in series_directory.glob("*.cbz"):
-                    match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-                    if match:
-                        existing_chapters.add(float(match.group(1)))
+                # Create series directory (only after confirming chapters exist)
+                series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+                series_directory.mkdir(parents=True, exist_ok=True)
 
-                if existing_chapters:
-                    skipped_count = len(existing_chapters)
-                    if skipped_count <= 5:
-                        skipped_list = sorted(existing_chapters)
-                        log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-                    else:
-                        min_chapter = min(existing_chapters)
-                        max_chapter = max(existing_chapters)
-                        log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
+                # Scan existing CBZ files
+                existing_chapters = get_existing_chapters(series_directory)
+                log_existing_chapters(existing_chapters)
 
                 chapter_count = 0
                 for ch_url in chapter_urls:
@@ -741,6 +808,8 @@ async def main_async():
                         log(f"Chapter {num} [{len(unique_images)} images]")
                         continue
 
+                    log(f"Downloading: Chapter {num} [{len(unique_images)} images]")
+
                     # Download images
                     chapter_folder = series_directory / name
                     chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -770,7 +839,6 @@ async def main_async():
                                 convert_to_webp(file)
                         except Exception as e:
                             # Clean up and break
-                            import shutil
                             shutil.rmtree(chapter_folder)
                             break
 
@@ -778,9 +846,7 @@ async def main_async():
                         warn("Incomplete → skipped")
                         continue
 
-                    log(f"Downloaded: Chapter {num} [{downloaded}/{len(unique_images)} images]")
                     if create_cbz(chapter_folder, name, series_directory):
-                        import shutil
                         shutil.rmtree(chapter_folder)
                     else:
                         warn(f"CBZ creation failed for Chapter {num}, keeping folder")
@@ -838,8 +904,6 @@ def main_requests():
         log(f"Title: {clean_title}")
 
         series_slug = series_url.strip('/').split('/')[-1]
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
 
         # Extract chapter URLs
         try:
@@ -852,23 +916,13 @@ def main_requests():
             log(f"No chapters found → skip")
             continue
 
-        # Scan existing CBZ files to determine which chapters are already downloaded
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            # Extract chapter number from filename like "Title Ch.01 [UToon].cbz"
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                existing_chapters.add(float(match.group(1)))
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
 
-        if existing_chapters:
-            skipped_count = len(existing_chapters)
-            if skipped_count <= 5:
-                skipped_list = sorted(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-            else:
-                min_chapter = min(existing_chapters)
-                max_chapter = max(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
+        # Scan existing CBZ files to determine which chapters are already downloaded
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
 
         for ch_url in chapter_urls:
             # Extract chapter number from URL like /manga/series-slug/chapter-01/
@@ -903,6 +957,8 @@ def main_requests():
                 log(f"Chapter {num} [{len(imgs)} images]")
                 continue
 
+            log(f"Downloading: Chapter {num} [{len(imgs)} images]")
+
             # Create chapter directory within series directory
             chapter_folder = series_directory / name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -929,7 +985,6 @@ def main_requests():
                         convert_to_webp(file)
                 except Exception as e:
                     # Clean up and break
-                    import shutil
                     shutil.rmtree(chapter_folder)
                     break
 
@@ -937,9 +992,7 @@ def main_requests():
                 warn("Incomplete → skipped")
                 continue
 
-            log(f"Downloaded: Chapter {num} [{downloaded}/{len(imgs)} images]")
             if create_cbz(chapter_folder, name, series_directory):
-                import shutil
                 shutil.rmtree(chapter_folder)
             else:
                 warn(f"CBZ creation failed for Chapter {num}, keeping folder")
@@ -948,5 +1001,5 @@ def main_requests():
     log(f"Total chapters downloaded: {total_chapters}")
     success(f"Completed! Output: {FOLDER}")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

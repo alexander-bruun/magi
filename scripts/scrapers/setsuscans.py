@@ -1,16 +1,43 @@
 #!/usr/bin/env python3
+"""
+SetsuScans scraper for MAGI.
 
+Downloads manga/manhwa/manhua from setsuscans.com via AJAX endpoints.
+"""
+
+# Standard library imports
 import asyncio
-import json
 import os
 import re
+import shutil
 import sys
-import requests
-from urllib.parse import urljoin, quote, urlparse
 from pathlib import Path
-from scraper_utils import log, success, warn, error, convert_to_webp, create_cbz, bypass_cloudflare, get_session, sanitize_title
+from urllib.parse import quote
 
+# Third-party imports
+import requests
+
+# Local imports
+from scraper_utils import (
+    bypass_cloudflare,
+    calculate_padding_width,
+    convert_to_webp,
+    create_cbz,
+    error,
+    format_chapter_name,
+    get_existing_chapters,
+    get_image_extension,
+    get_session,
+    log,
+    log_existing_chapters,
+    sanitize_title,
+    success,
+    warn,
+)
+
+# =============================================================================
 # Configuration
+# =============================================================================
 DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
 CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
 FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'SetsuScans'))
@@ -18,8 +45,21 @@ DEFAULT_SUFFIX = os.getenv('default_suffix', '[SetsuScans]')
 ALLOWED_DOMAINS = ['setsuscans.com']
 BASE_URL = 'https://setsuscans.com'
 
-# Extract series URLs using AJAX pagination
+
+# =============================================================================
+# Series Extraction
+# =============================================================================
 def extract_series_urls(session, page_num):
+    """
+    Extract series URLs using AJAX pagination.
+
+    Args:
+        session: requests.Session object
+        page_num: Page number to fetch
+
+    Returns:
+        tuple: (list of series URLs, bool is_last_page)
+    """
     url = "https://setsuscans.com/wp-admin/admin-ajax.php"
     data = {
         'action': 'madara_load_more',
@@ -62,9 +102,18 @@ def extract_series_urls(session, page_num):
         error(f"Error fetching page {page_num}: {e}")
         return [], True
 
-# Extract series title from series page
 def extract_series_title(session, series_url):
-    url = f"https://setsuscans.com{series_url}"
+    """
+    Extract series title from the series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        str: Series title, or None if not found
+    """
+    url = f"{BASE_URL}{series_url}"
     try:
         response = session.get(url, timeout=30)
         response.raise_for_status()
@@ -83,15 +132,27 @@ def extract_series_title(session, series_url):
 
     return None
 
-# Extract chapter URLs using AJAX endpoint
+# =============================================================================
+# Chapter Extraction
+# =============================================================================
 def extract_chapter_urls(session, manga_url):
+    """
+    Extract chapter URLs using AJAX endpoint.
+
+    Args:
+        session: requests.Session object
+        manga_url: Relative URL of the manga
+
+    Returns:
+        list: Sorted list of chapter URLs
+    """
     # Extract manga slug from URL
     slug_match = re.search(r'/manga/([^/]+)/', manga_url)
     if not slug_match:
         return []
 
     slug = slug_match.group(1)
-    url = f"https://setsuscans.com/manga/{slug}/ajax/chapters/"
+    url = f"{BASE_URL}/manga/{slug}/ajax/chapters/"
 
     headers = {
         'X-Requested-With': 'XMLHttpRequest',
@@ -114,15 +175,32 @@ def extract_chapter_urls(session, manga_url):
         return []
 
 def extract_chapter_number(url):
-    """Extract chapter number for sorting"""
+    """
+    Extract chapter number from URL for sorting.
+
+    Args:
+        url: Chapter URL
+
+    Returns:
+        int: Chapter number, or 0 if not found
+    """
     match = re.search(r'chapter-(\d+)', url)
     if match:
         return int(match.group(1))
     return 0
 
-# Extract image URLs for a given chapter
 def extract_image_urls(session, chapter_url):
-    full_url = f"https://setsuscans.com{chapter_url}"
+    """
+    Extract image URLs for a given chapter.
+
+    Args:
+        session: requests.Session object
+        chapter_url: Relative URL of the chapter
+
+    Returns:
+        list: List of image URLs
+    """
+    full_url = f"{BASE_URL}{chapter_url}"
     try:
         response = session.get(full_url, timeout=30)
         response.raise_for_status()
@@ -147,12 +225,17 @@ def extract_image_urls(session, chapter_url):
         error(f"Error extracting images from {chapter_url}: {e}")
         return []
 
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 def main():
+    """Main entry point for the scraper."""
     log("Starting Setsu Scans scraper")
     log("Mode: Full Downloader")
 
     # Health check
-    log("Performing health check on https://setsuscans.com...")
+    log(f"Performing health check on {BASE_URL}...")
     try:
         cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
         if not cookies:
@@ -211,10 +294,6 @@ def main():
 
         log(f"Title: {clean_title}")
 
-        # Create series directory
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
         # Extract chapter URLs
         try:
             chapter_urls = extract_chapter_urls(session, series_url)
@@ -226,37 +305,22 @@ def main():
             warn(f"No chapters found for {title}, skipping...")
             continue
 
+        # Create series directory (only after confirming chapters exist)
+        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
+        series_directory.mkdir(parents=True, exist_ok=True)
+
         # Determine padding width
         chapter_numbers = [extract_chapter_number(url) for url in chapter_urls]
         if chapter_numbers:
             max_chapter = max(chapter_numbers)
-            padding_width = len(str(max_chapter))
+            padding_width = calculate_padding_width(max_chapter)
         else:
             padding_width = 3
         log(f"Found {len(chapter_urls)} chapters (max: {max_chapter}, padding: {padding_width})")
 
-        # Scan existing CBZ files to determine which chapters are already downloaded
-        existing_chapters = set()
-        for cbz_file in series_directory.glob("*.cbz"):
-            # Extract chapter number from filename like "Title Ch.001 [SetsuScans].cbz"
-            match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
-            if match:
-                try:
-                    existing_chapters.add(float(match.group(1)))
-                except ValueError:
-                    pass
-
-        if existing_chapters:
-            skipped_count = len(existing_chapters)
-            if skipped_count <= 5:
-                skipped_list = sorted(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {skipped_list}")
-            else:
-                min_chapter = min(existing_chapters)
-                max_chapter = max(existing_chapters)
-                log(f"Skipping {skipped_count} existing chapters: {min_chapter}-{max_chapter}")
-        else:
-            log("No existing chapters found, downloading all")
+        # Check for existing chapters
+        existing_chapters = get_existing_chapters(series_directory)
+        log_existing_chapters(existing_chapters)
 
         for chapter_url in chapter_urls:
             chapter_num = extract_chapter_number(chapter_url)
@@ -265,9 +329,7 @@ def main():
             if chapter_num in existing_chapters:
                 continue
 
-            formatted_chapter_number = f"{chapter_num:0{padding_width}d}"
-
-            chapter_name = f"{clean_title} Ch.{formatted_chapter_number} {DEFAULT_SUFFIX}"
+            chapter_name = format_chapter_name(clean_title, chapter_num, padding_width, DEFAULT_SUFFIX)
 
             try:
                 image_urls = extract_image_urls(session, chapter_url)
@@ -285,6 +347,8 @@ def main():
                 log(f"Chapter {chapter_num} [{len(image_urls)} images]")
                 continue
 
+            log(f"Downloading: Chapter {chapter_num} [{len(image_urls)} images]")
+
             # Create chapter directory
             chapter_folder = series_directory / chapter_name
             chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -295,44 +359,36 @@ def main():
                 if not img_url or not any(domain in img_url for domain in ALLOWED_DOMAINS):
                     continue
                 img_url = quote(img_url, safe=':/')
-                # Get extension
-                parsed = urlparse(img_url)
-                path = parsed.path
-                ext = path.split('.')[-1].lower()
-                if ext not in ['jpg', 'jpeg', 'png', 'webp']:
-                    ext = 'jpg'  # default
+                ext = get_image_extension(img_url, 'jpg')
                 filename = chapter_folder / f"{i:03d}"
                 try:
                     response = session.get(img_url, timeout=30)
                     response.raise_for_status()
                     with open(filename, 'wb') as f:
                         f.write(response.content)
-                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Success")
+                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Success", file=sys.stderr, flush=True)
                     downloaded_count += 1
                     if CONVERT_TO_WEBP and ext != 'webp':
                         convert_to_webp(filename)
                 except Exception as e:
-                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Failed: {e}")
-
-            log(f"Downloaded: Chapter {chapter_num} [{downloaded_count}/{len(image_urls)} images]")
+                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Failed: {e}", file=sys.stderr, flush=True)
 
             # Only create CBZ if more than 1 image was downloaded
             if downloaded_count > 1:
                 if create_cbz(chapter_folder, chapter_name):
                     # Remove temp folder
-                    import shutil
                     shutil.rmtree(chapter_folder)
                 else:
                     warn(f"CBZ creation failed for Chapter {chapter_num}, keeping folder")
             else:
                 log(f"Skipping CBZ creation for Chapter {chapter_num} - only {downloaded_count} image(s) downloaded")
                 # Remove temp folder
-                import shutil
                 shutil.rmtree(chapter_folder)
 
     log(f"Total series processed: {total_series}")
     log(f"Total chapters downloaded: {total_chapters}")
     success(f"Completed! Output: {FOLDER}")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
