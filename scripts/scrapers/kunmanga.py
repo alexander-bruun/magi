@@ -14,6 +14,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Third-party imports
 import requests
@@ -166,7 +167,7 @@ def extract_image_urls(session, chapter_url):
         try:
             image_urls = json.loads(script_match.group(1))
             # Filter to only include chapter images (kunsv1.com or manimg24.com)
-            image_urls = [url for url in image_urls if 'kunsv1.com' in url or 'manimg24.com' in url]
+            image_urls = [url for url in image_urls if urlparse(url).netloc.endswith(('kunsv1.com', 'manimg24.com'))]
             # Remove duplicates while preserving order
             return list(dict.fromkeys(image_urls))
         except json.JSONDecodeError:
@@ -175,7 +176,7 @@ def extract_image_urls(session, chapter_url):
     # Fallback: Extract image URLs from data-src attributes (multiple domains)
     image_urls = re.findall(r'data-src="\s*(https?://(?:kunmanga\.com|sv\d*\.kunsv1\.com|h\d*\.manimg24\.com)/[^"]*\.(?:jpg|jpeg|png|webp))', html)
     # Filter to only include chapter images (kunsv1.com or manimg24.com)
-    image_urls = [url for url in image_urls if 'kunsv1.com' in url or 'manimg24.com' in url]
+    image_urls = [url for url in image_urls if urlparse(url).netloc.endswith(('kunsv1.com', 'manimg24.com'))]
     # Remove duplicates while preserving order
     image_urls = list(dict.fromkeys(image_urls))
     
@@ -183,7 +184,7 @@ def extract_image_urls(session, chapter_url):
     if not image_urls:
         image_urls = re.findall(r'src="\s*(https?://(?:kunmanga\.com|sv\d*\.kunsv1\.com|h\d*\.manimg24\.com)/[^"]*\.(?:jpg|jpeg|png|webp))', html)
         # Filter to only include chapter images (kunsv1.com or manimg24.com)
-        image_urls = [url for url in image_urls if 'kunsv1.com' in url or 'manimg24.com' in url]
+        image_urls = [url for url in image_urls if urlparse(url).netloc.endswith(('kunsv1.com', 'manimg24.com'))]
         image_urls = list(dict.fromkeys(image_urls))
     
     return image_urls

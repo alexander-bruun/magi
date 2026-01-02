@@ -399,11 +399,12 @@ async def process_chapter(ch_url, series_directory, clean_title, num, browser_fa
             wp_manga_images = []
             for img_src in all_img_tags:
                 img_src = img_src.strip()  # Remove leading/trailing whitespace
-                if 'WP-manga' in img_src and ('utoon.net' in img_src or img_src.startswith('/')):
+                if 'WP-manga' in img_src:
                     # Convert relative URLs to absolute
-                    if img_src.startswith('/'):
-                        img_src = f"https://utoon.net{img_src}"
-                    wp_manga_images.append(img_src)
+                    img_src = urljoin("https://utoon.net", img_src)
+                    parsed = urlparse(img_src)
+                    if parsed.scheme == 'https' and parsed.netloc == 'utoon.net':
+                        wp_manga_images.append(img_src)
             
             unique_images = list(dict.fromkeys(wp_manga_images))
             

@@ -12,6 +12,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 # Third-party imports
 import requests
@@ -175,10 +176,11 @@ def extract_image_urls(session, chapter_url):
         if url.startswith('//'):
             url = 'https:' + url
         elif url.startswith('/'):
-            url = 'https://cdn.manhuafast.net' + url
+            url = urljoin('https://cdn.manhuafast.net', url)
         elif not url.startswith('http'):
             continue
-        if ('cdn.manhuafast.net' in url or 'WP-manga' in url) and 'thumbnails' not in url:
+        parsed = urlparse(url)
+        if parsed.scheme in ('http', 'https') and (parsed.netloc == 'cdn.manhuafast.net' or 'WP-manga' in url) and 'thumbnails' not in parsed.path:
             cleaned_urls.append(url)
     return list(dict.fromkeys(cleaned_urls))  # unique
 

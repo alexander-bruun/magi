@@ -13,7 +13,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 # Third-party imports
 import requests
@@ -153,11 +153,9 @@ def extract_image_urls(session, chapter_url):
     cleaned_urls = []
     for url in image_urls:
         url = url.strip()
-        if ('cdn.manhwahub.net' in url or 'manhwahub.net' in url) and 'assets/images' not in url:
-            # Remove any leading/trailing whitespace or encoded characters
-            url = re.sub(r'^[^h]*', '', url)  # Remove anything before 'http'
-            if url.startswith('http'):
-                cleaned_urls.append(url)
+        parsed = urlparse(url)
+        if parsed.scheme in ('http', 'https') and parsed.netloc in ('cdn.manhwahub.net', 'manhwahub.net') and 'assets/images' not in parsed.path:
+            cleaned_urls.append(url)
     return list(dict.fromkeys(cleaned_urls))  # unique
 
 
