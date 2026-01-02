@@ -15,6 +15,7 @@ Interactive manga/comic scraper with support for multiple sources.
 | hivetoons | HiveToons |
 | kunmanga | KunManga |
 | lhtranslation | LHTranslation |
+| magustoon | MagusToon |
 | manga18 | Manga18 |
 | mangakatana | MangaKatana |
 | mangayy | MangaYY |
