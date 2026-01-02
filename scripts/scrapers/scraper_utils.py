@@ -247,7 +247,7 @@ async def bypass_cloudflare(url):
 
     async with AsyncCamoufox(
         headless=True,
-        geoip=True,
+        geoip=False,
         humanize=False,
         i_know_what_im_doing=True,
         config={'forceScopeAccess': True},

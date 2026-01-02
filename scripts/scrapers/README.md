@@ -29,6 +29,7 @@ Interactive manga/comic scraper with support for multiple sources.
 | spiderscans | Spider Scans |
 | stonescape | StoneScape |
 | thunderscans | Thunder Scans |
+| toongod | ToonGod |
 | tritinia | Tritinia |
 | utoon | UToon |
 | vortexscans | Vortex Scans |
