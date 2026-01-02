@@ -208,7 +208,7 @@ def main():
                     # Scan existing CBZ files
                     existing_chapters = set()
                     for cbz_file in series_directory.glob("*.cbz"):
-                        match = re.search(r'Ch\.([\d.]+)', cbz_file.stem)
+                        match = re.search(r'Chapter ([\d.]+)', cbz_file.stem)
                         if match:
                             existing_chapters.add(float(match.group(1)))
                     
