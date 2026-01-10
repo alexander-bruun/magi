@@ -1,0 +1,51 @@
+package views
+
+templ BrowserChallengePage(challenge string, signature string, difficulty int) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>Checking your browser...</title>
+			<style>
+				* { margin: 0; padding: 0; box-sizing: border-box; }
+				body {
+					font-family: system-ui, -apple-system, sans-serif;
+					background: #0a0a0a;
+					color: #fafafa;
+					min-height: 100vh;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+				}
+				.container { text-align: center; padding: 2rem; }
+				.spinner {
+					width: 40px;
+					height: 40px;
+					border: 3px solid #333;
+					border-top-color: #3b82f6;
+					border-radius: 50%;
+					animation: spin 1s linear infinite;
+					margin: 0 auto 1rem;
+				}
+				@keyframes spin { to { transform: rotate(360deg); } }
+				h1 { font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem; }
+				p { color: #a1a1aa; font-size: 0.875rem; }
+				.error { color: #ef4444; margin-top: 1rem; display: none; }
+			</style>
+		</head>
+		<body data-challenge={ challenge } data-signature={ signature } data-difficulty={ difficulty }>
+			<div class="container">
+				<div class="spinner" id="spinner"></div>
+				<h1>Checking your browser</h1>
+				<p>This will only take a moment...</p>
+				<p class="error" id="error">JavaScript is required to view this site.</p>
+			</div>
+			<script src="/assets/js/browser-challenge-page.js"></script>
+			<noscript>
+				<style>.spinner { display: none; }</style>
+				<p class="error" style="display: block;">JavaScript is required to view this site.</p>
+			</noscript>
+		</body>
+	</html>
+}
