@@ -29,8 +29,6 @@ func CreateReview(review Review) error {
 	`
 
 	timestamps := NewTimestamps()
-	review.CreatedAt = timestamps.CreatedAt
-	review.UpdatedAt = timestamps.UpdatedAt
 
 	_, err := db.Exec(query, review.UserUsername, review.MediaSlug, review.Rating, review.Content, timestamps.CreatedAt.Unix(), timestamps.UpdatedAt.Unix())
 	return err

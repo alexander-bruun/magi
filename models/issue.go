@@ -28,8 +28,6 @@ func CreateIssue(issue Issue) error {
 	`
 
 	timestamps := NewTimestamps()
-	issue.CreatedAt = timestamps.CreatedAt
-	issue.UpdatedAt = timestamps.UpdatedAt
 
 	_, err := db.Exec(query, issue.UserUsername, issue.Title, issue.Description, issue.Status, issue.Priority, issue.Category, issue.UserAgent, issue.URL, timestamps.CreatedAt.Unix(), timestamps.UpdatedAt.Unix())
 	return err
@@ -42,7 +40,7 @@ func GetIssues(status, category string, limit, offset int) ([]Issue, error) {
 	FROM issues
 	WHERE 1=1
 	`
-	args := []interface{}{}
+	args := []any{}
 
 	if status != "" {
 		query += " AND status = ?"

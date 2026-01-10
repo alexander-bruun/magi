@@ -311,7 +311,7 @@ func UserHasLibraryAccess(username, librarySlug string) (bool, error) {
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR (lp.library_slug = ? AND l.enabled = 1)
+	    OR (lp.library_slug = ?)
 	  )
 	`
 
@@ -336,7 +336,7 @@ func UserHasLibraryAccess(username, librarySlug string) (bool, error) {
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR (lp.library_slug = ? AND l.enabled = 1)
+	    OR (lp.library_slug = ?)
 	  )
 	`
 
@@ -370,9 +370,7 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			if lib.Enabled {
-				slugs = append(slugs, lib.Slug)
-			}
+			slugs = append(slugs, lib.Slug)
 		}
 		return slugs, nil
 	}
@@ -392,9 +390,7 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			if lib.Enabled {
-				slugs = append(slugs, lib.Slug)
-			}
+			slugs = append(slugs, lib.Slug)
 		}
 		return slugs, nil
 	}
@@ -410,7 +406,7 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 	JOIN permissions p ON combined.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
 	JOIN libraries l ON lp.library_slug = l.slug
-	WHERE p.is_enabled = 1 AND l.enabled = 1
+	WHERE p.is_enabled = 1
 	ORDER BY lp.library_slug
 	`
 
@@ -430,26 +426,6 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 	}
 
 	return libraries, rows.Err()
-}
-
-// userHasWildcardPermission checks if a user has any enabled wildcard permission
-func userHasWildcardPermission(username string) (bool, error) {
-	query := `
-	SELECT COUNT(*)
-	FROM user_permissions up
-	JOIN permissions p ON up.permission_id = p.id
-	WHERE up.username = ?
-	  AND p.is_wildcard = 1
-	  AND p.is_enabled = 1
-	`
-
-	var count int
-	err := db.QueryRow(query, username).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
 }
 
 // userOrRoleHasWildcardPermission checks if a user or their role has any enabled wildcard permission
@@ -627,7 +603,7 @@ func AnonymousHasLibraryAccess(librarySlug string) (bool, error) {
 	  AND p.is_enabled = 1
 	  AND (
 	    p.is_wildcard = 1
-	    OR (lp.library_slug = ? AND l.enabled = 1)
+	    OR (lp.library_slug = ?)
 	  )
 	`
 
@@ -649,7 +625,7 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 		return nil, err
 	}
 
-	// If anonymous has wildcard, return all enabled libraries
+	// If anonymous has wildcard, return all libraries
 	if hasWildcard {
 		libraries, err := GetLibraries()
 		if err != nil {
@@ -658,9 +634,7 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			if lib.Enabled {
-				slugs = append(slugs, lib.Slug)
-			}
+			slugs = append(slugs, lib.Slug)
 		}
 		return slugs, nil
 	}
@@ -671,10 +645,8 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 	FROM role_permissions rp
 	JOIN permissions p ON rp.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
-	JOIN libraries l ON lp.library_slug = l.slug
 	WHERE rp.role = 'anonymous'
 	  AND p.is_enabled = 1
-	  AND l.enabled = 1
 	ORDER BY lp.library_slug
 	`
 
@@ -693,7 +665,7 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 		libraries = append(libraries, slug)
 	}
 
-	// If no specific permissions found for anonymous, allow access to all enabled libraries
+	// If no specific permissions found for anonymous, allow access to all libraries
 	if len(libraries) == 0 {
 		allLibraries, err := GetLibraries()
 		if err != nil {
@@ -701,16 +673,14 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 		}
 
 		for _, lib := range allLibraries {
-			if lib.Enabled {
-				libraries = append(libraries, lib.Slug)
-			}
+			libraries = append(libraries, lib.Slug)
 		}
 	}
 
 	return libraries, rows.Err()
 }
 
-// roleHasWildcardPermission checks if a role has any enabled wildcard permission
+// roleHasWildcardPermission checks if a role has any wildcard permission
 func roleHasWildcardPermission(role string) (bool, error) {
 	query := `
 	SELECT COUNT(*)
@@ -718,7 +688,6 @@ func roleHasWildcardPermission(role string) (bool, error) {
 	JOIN permissions p ON rp.permission_id = p.id
 	WHERE rp.role = ?
 	  AND p.is_wildcard = 1
-	  AND p.is_enabled = 1
 	`
 
 	var count int
@@ -730,13 +699,13 @@ func roleHasWildcardPermission(role string) (bool, error) {
 	return count > 0, nil
 }
 
-// RoleHasWildcardPermission checks if a role has any enabled wildcard permission
+// RoleHasWildcardPermission checks if a role has any wildcard permission
 func RoleHasWildcardPermission(role string) (bool, error) {
 	return roleHasWildcardPermission(role)
 }
 
 // RoleHasAccess checks if a role has access to premium chapters
-// Returns true if the role has any enabled permission with premium_chapter_access = true
+// Returns true if the role has any permission with premium_chapter_access = true
 func RoleHasAccess(role string) (bool, error) {
 	query := `
 	SELECT COUNT(*)
@@ -744,7 +713,6 @@ func RoleHasAccess(role string) (bool, error) {
 	JOIN permissions p ON rp.permission_id = p.id
 	WHERE rp.role = ?
 	  AND p.premium_chapter_access = 1
-	  AND p.is_enabled = 1
 	`
 
 	var count int
@@ -758,7 +726,7 @@ func RoleHasAccess(role string) (bool, error) {
 
 // UserHasPremiumChapterAccess checks if a user has access to premium chapters
 // Returns true if:
-// 1. User has an enabled permission with premium_chapter_access = true (direct or role-based)
+// 1. User has an permission with premium_chapter_access = true (direct or role-based)
 func UserHasPremiumChapterAccess(username string) (bool, error) {
 	// Get user's role
 	user, err := FindUserByUsername(username)
@@ -776,7 +744,6 @@ func UserHasPremiumChapterAccess(username string) (bool, error) {
 	JOIN permissions p ON up.permission_id = p.id
 	WHERE up.username = ?
 	  AND p.premium_chapter_access = 1
-	  AND p.is_enabled = 1
 	`
 
 	var directCount int

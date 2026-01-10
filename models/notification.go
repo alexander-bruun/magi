@@ -11,8 +11,8 @@ import (
 
 // Notification represents a notification object
 type Notification struct {
-	Type    string      // Type of notification (e.g., "library_created", "library_updated", etc.)
-	Payload interface{} // Data associated with the notification
+	Type    string // Type of notification (e.g., "library_created", "library_updated", etc.)
+	Payload any    // Data associated with the notification
 }
 
 // Listener defines the interface for objects that want to listen to notifications
@@ -49,13 +49,13 @@ type UserNotification struct {
 	Type        string    `json:"type"` // "chapter" or "admin_issue"
 }
 
-// CreateUserNotification creates a new notification for a user about a new chapter
-func CreateUserNotification(userName, mangaSlug, chapterSlug, message string) error {
-	return CreateUserNotificationWithType(userName, mangaSlug, chapterSlug, message, "chapter")
+// createUserNotification creates a new notification for a user about a new chapter
+func createUserNotification(userName, mangaSlug, chapterSlug, message string) error {
+	return createUserNotificationWithType(userName, mangaSlug, chapterSlug, message, "chapter")
 }
 
-// CreateUserNotificationWithType creates a new notification for a user with a specific type
-func CreateUserNotificationWithType(userName, mediaSlug, chapterSlug, message, notificationType string) error {
+// createUserNotificationWithType creates a new notification for a user with a specific type
+func createUserNotificationWithType(userName, mediaSlug, chapterSlug, message, notificationType string) error {
 	query := `
 	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at, type)
 	VALUES (?, ?, ?, ?, 0, ?, ?)
@@ -68,23 +68,23 @@ func CreateUserNotificationWithType(userName, mediaSlug, chapterSlug, message, n
 
 // CreateAdminNotification creates a new admin notification for moderators/admins
 func CreateAdminNotification(userName, message string) error {
-	return CreateUserNotificationWithType(userName, "admin", "", message, "admin_issue")
+	return createUserNotificationWithType(userName, "admin", "", message, "admin_issue")
 }
 
-// CreateUserNotificationTx creates a new notification for a user about a new chapter within a transaction
-func CreateUserNotificationTx(tx *sql.Tx, userName, mangaSlug, chapterSlug, message string) error {
-	return CreateUserNotificationTxWithType(tx, userName, mangaSlug, chapterSlug, message, "chapter")
+// createUserNotificationTx creates a new notification for a user about a new chapter within a transaction
+func createUserNotificationTx(tx *sql.Tx, userName, mangaSlug, librarySlug, chapterSlug, message string) error {
+	return createUserNotificationTxWithType(tx, userName, mangaSlug, librarySlug, chapterSlug, message, "chapter")
 }
 
-// CreateUserNotificationTxWithType creates a new notification for a user with a specific type within a transaction
-func CreateUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, chapterSlug, message, notificationType string) error {
+// createUserNotificationTxWithType creates a new notification for a user with a specific type within a transaction
+func createUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, librarySlug, chapterSlug, message, notificationType string) error {
 	query := `
-	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at, type)
-	VALUES (?, ?, ?, ?, 0, ?, ?)
+	INSERT INTO user_notifications (user_name, media_slug, library_slug, chapter_slug, message, is_read, created_at, type)
+	VALUES (?, ?, ?, ?, ?, 0, ?, ?)
 	`
 
 	createdAt := time.Now().Unix()
-	_, err := tx.Exec(query, userName, mediaSlug, chapterSlug, message, createdAt, notificationType)
+	_, err := tx.Exec(query, userName, mediaSlug, librarySlug, chapterSlug, message, createdAt, notificationType)
 	return err
 }
 
@@ -103,7 +103,7 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 		query += " AND n.is_read = 0"
 	}
 
-	query += " ORDER BY n.created_at DESC LIMIT 50"
+	query += " ORDER BY n.created_at DESC LIMIT 10"
 
 	rows, err := db.Query(query, userName)
 	if err != nil {
@@ -178,6 +178,13 @@ func ClearReadNotifications(userName string) error {
 	return err
 }
 
+// DeleteNotificationsForChapter deletes all notifications for a specific chapter
+func DeleteNotificationsForChapter(mediaSlug, librarySlug, chapterSlug string) error {
+	query := `DELETE FROM user_notifications WHERE media_slug = ? AND library_slug = ? AND chapter_slug = ?`
+	_, err := db.Exec(query, mediaSlug, librarySlug, chapterSlug)
+	return err
+}
+
 // NotifyUsersOfNewChapters creates notifications for users reading a manga when new chapters are added
 func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error {
 	if len(newChapterSlugs) == 0 {
@@ -194,7 +201,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 
 	// Get chapter details for the new chapters
 	placeholders := make([]string, len(newChapterSlugs))
-	args := make([]interface{}, len(newChapterSlugs)+1)
+	args := make([]any, len(newChapterSlugs)+1)
 	args[0] = mangaSlug
 	for i, slug := range newChapterSlugs {
 		placeholders[i] = "?"
@@ -202,7 +209,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	}
 
 	query := fmt.Sprintf(`
-	SELECT c.slug, c.name
+	SELECT c.slug, c.name, c.library_slug
 	FROM chapters c
 	WHERE c.media_slug = ? AND c.slug IN (%s)
 	`, strings.Join(placeholders, ","))
@@ -215,14 +222,15 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	defer rows.Close()
 
 	type chapterInfo struct {
-		slug string
-		name string
+		slug        string
+		name        string
+		librarySlug string
 	}
 
 	var newChapters []chapterInfo
 	for rows.Next() {
 		var ch chapterInfo
-		if err := rows.Scan(&ch.slug, &ch.name); err != nil {
+		if err := rows.Scan(&ch.slug, &ch.name, &ch.librarySlug); err != nil {
 			continue
 		}
 		newChapters = append(newChapters, ch)
@@ -300,7 +308,7 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 			continue // Skip if recent notification exists
 		}
 
-		if err := CreateUserNotificationTx(tx, user, mangaSlug, firstChapterSlug, message); err != nil {
+		if err := createUserNotificationTx(tx, user, mangaSlug, newChapters[0].librarySlug, firstChapterSlug, message); err != nil {
 			log.Errorf("Failed to create notification: %v", err)
 			continue
 		}
@@ -383,7 +391,7 @@ func BundleNotificationsForUser(userName string) error {
 
 		// Get chapter names
 		placeholders := make([]string, len(chapterSlugs))
-		args := make([]interface{}, len(chapterSlugs)+1)
+		args := make([]any, len(chapterSlugs)+1)
 		args[0] = mangaSlug
 		for i, slug := range chapterSlugs {
 			placeholders[i] = "?"
@@ -418,7 +426,7 @@ func BundleNotificationsForUser(userName string) error {
 
 		// Delete old notifications
 		deleteQuery := `DELETE FROM user_notifications WHERE id IN (` + strings.Repeat("?,", len(ids)-1) + "?)"
-		deleteArgs := make([]interface{}, len(ids))
+		deleteArgs := make([]any, len(ids))
 		for i, id := range ids {
 			deleteArgs[i] = id
 		}
@@ -429,7 +437,7 @@ func BundleNotificationsForUser(userName string) error {
 		}
 
 		// Create new bundled notification
-		if err := CreateUserNotification(userName, mangaSlug, chapterSlugs[0], message); err != nil {
+		if err := createUserNotification(userName, mangaSlug, chapterSlugs[0], message); err != nil {
 			log.Errorf("Failed to create bundled notification: %v", err)
 		}
 	}
@@ -501,26 +509,30 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 
 		// Get chapter names
 		placeholders := make([]string, len(chapterSlugs))
-		args := make([]interface{}, len(chapterSlugs)+1)
+		args := make([]any, len(chapterSlugs)+1)
 		args[0] = mangaSlug
 		for i, slug := range chapterSlugs {
 			placeholders[i] = "?"
 			args[i+1] = slug
 		}
 		chapQuery := fmt.Sprintf(`
-		SELECT name FROM chapters WHERE media_slug = ? AND slug IN (%s)
+		SELECT name, library_slug FROM chapters WHERE media_slug = ? AND slug IN (%s)
 		`, strings.Join(placeholders, ","))
 		chapRows, err := tx.Query(chapQuery, args...)
 		if err != nil {
 			continue
 		}
 		var chapterNames []string
+		var librarySlug string
 		for chapRows.Next() {
-			var name string
-			if err := chapRows.Scan(&name); err != nil {
+			var name, libSlug string
+			if err := chapRows.Scan(&name, &libSlug); err != nil {
 				continue
 			}
 			chapterNames = append(chapterNames, name)
+			if librarySlug == "" {
+				librarySlug = libSlug
+			}
 		}
 		chapRows.Close()
 
@@ -536,7 +548,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 
 		// Delete old notifications
 		deleteQuery := `DELETE FROM user_notifications WHERE id IN (` + strings.Repeat("?,", len(ids)-1) + "?)"
-		deleteArgs := make([]interface{}, len(ids))
+		deleteArgs := make([]any, len(ids))
 		for i, id := range ids {
 			deleteArgs[i] = id
 		}
@@ -547,7 +559,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		}
 
 		// Create new bundled notification
-		if err := CreateUserNotificationTx(tx, userName, mangaSlug, chapterSlugs[0], message); err != nil {
+		if err := createUserNotificationTx(tx, userName, mangaSlug, librarySlug, chapterSlugs[0], message); err != nil {
 			log.Errorf("Failed to create bundled notification: %v", err)
 		}
 	}

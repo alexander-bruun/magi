@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -161,10 +162,7 @@ func paginateUsers(users []User, page, pageSize int) []User {
 	if pageSize <= 0 {
 		return users
 	}
-	start := (page - 1) * pageSize
-	if start < 0 {
-		start = 0
-	}
+	start := max((page-1)*pageSize, 0)
 	end := start + pageSize
 	if start > len(users) {
 		return []User{}
@@ -349,12 +347,7 @@ func CountUsers() (int64, error) {
 
 // isValidRole checks if the provided role is valid.
 func isValidRole(role string) bool {
-	for _, r := range roleHierarchy {
-		if r == role {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(roleHierarchy, role)
 }
 
 // getNextRole finds the next role in the hierarchy.

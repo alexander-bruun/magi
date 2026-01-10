@@ -530,17 +530,18 @@ func DeleteDuplicateFolder(duplicateID int64, folderPath string) error {
 	// If we deleted the primary media path, update it to the remaining folder
 	media, err := GetMediaUnfiltered(mangaSlug)
 	if err == nil && media != nil {
-		if media.Path == folderPath {
-			// Update to the other folder
-			remainingFolder := folder1
-			if folderPath == folder1 {
-				remainingFolder = folder2
-			}
-			media.Path = remainingFolder
-			if err := UpdateMedia(media); err != nil {
-				log.Errorf("Failed to update media path after folder deletion: %v", err)
-			}
-		}
+		// Media are now path-agnostic, no need to update path
+		// if media.Path == folderPath {
+		// 	// Update to the other folder
+		// 	remainingFolder := folder1
+		// 	if folderPath == folder1 {
+		// 		remainingFolder = folder2
+		// 	}
+		// 	media.Path = remainingFolder
+		// 	if err := UpdateMedia(media); err != nil {
+		// 		log.Errorf("Failed to update media path after folder deletion: %v", err)
+		// 	}
+		// }
 	}
 
 	return nil
