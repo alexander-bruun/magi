@@ -16,7 +16,7 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/sync"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 )
@@ -65,8 +65,8 @@ type ChapterData struct {
 	Media    *models.Media
 	Chapter  *models.Chapter
 	Chapters []models.Chapter
-	PrevSlug string
-	NextSlug string
+	PrevID   string
+	NextID   string
 	Images   []string
 	TOC      string
 	Content  string
@@ -74,13 +74,39 @@ type ChapterData struct {
 }
 
 // GetChapterData retrieves all data needed for displaying a chapter
-func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, error) {
-	// Get media and chapters
-	media, chapters, err := models.GetMediaAndChapters(mediaSlug)
+func GetChapterData(hash, userName string) (*ChapterData, error) {
+	// Determine content rating limit based on user
+	cfg, err := models.GetAppConfig()
 	if err != nil {
 		return nil, err
 	}
+	contentRatingLimit := cfg.ContentRatingLimit
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil && user.Role == "admin" {
+			contentRatingLimit = 3 // Admins can see all content
+		}
+	}
+
+	// Get chapter by ID
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		log.Errorf("GetChapterData: Failed to get chapter %s: %v", hash, err)
+		return nil, err
+	}
+	if chapter == nil {
+		log.Warnf("GetChapterData: Chapter %s not found", hash)
+		return nil, nil // Not found
+	}
+
+	// Get media with user-specific limit
+	media, err := models.GetMediaWithContentLimit(chapter.MediaSlug, contentRatingLimit)
+	if err != nil {
+		log.Errorf("GetChapterData: Failed to get media %s: %v", chapter.MediaSlug, err)
+		return nil, err
+	}
 	if media == nil {
+		log.Warnf("GetChapterData: Media %s not found", chapter.MediaSlug)
 		return nil, nil // Not found
 	}
 
@@ -88,38 +114,38 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 	var hasAccess bool
 	if userName == "" {
 		// Anonymous user
-		accessibleLibs, err := models.GetAccessibleLibrariesForAnonymous()
+		hasAccess, err = models.AnonymousHasLibraryAccess(chapter.LibrarySlug)
 		if err != nil {
+			log.Errorf("GetChapterData: Failed to check anonymous access for library %s: %v", chapter.LibrarySlug, err)
 			return nil, err
 		}
-		for _, lib := range accessibleLibs {
-			if lib == media.LibrarySlug {
-				hasAccess = true
-				break
-			}
-		}
-		log.Debugf("Anonymous library access for %s: hasAccess=%v, accessibleLibs=%v, media.LibrarySlug=%s", mediaSlug, hasAccess, accessibleLibs, media.LibrarySlug)
 	} else {
-		hasAccess, err = models.UserHasLibraryAccess(userName, media.LibrarySlug)
+		hasAccess, err = models.UserHasLibraryAccess(userName, chapter.LibrarySlug)
 		if err != nil {
+			log.Errorf("GetChapterData: Failed to check user access for user %s library %s: %v", userName, chapter.LibrarySlug, err)
 			return nil, err
 		}
 	}
 	if !hasAccess {
+		log.Warnf("GetChapterData: Access denied for user %s to library %s", userName, chapter.LibrarySlug)
 		return nil, nil // Access denied
 	}
 
-	// Get chapter from the chapters array (which has IsPremium set correctly)
-	var chapter *models.Chapter
-	for i := range chapters {
-		if chapters[i].Slug == chapterSlug {
-			chapter = &chapters[i]
-			break
+	// Get all chapters for the media
+	chapters, err := models.GetChapters(chapter.MediaSlug)
+	if err != nil {
+		log.Errorf("GetChapterData: Failed to get chapters for media %s: %v", chapter.MediaSlug, err)
+		return nil, err
+	}
+
+	// Filter chapters to only those from the same library
+	var filteredChapters []models.Chapter
+	for _, c := range chapters {
+		if c.LibrarySlug == chapter.LibrarySlug {
+			filteredChapters = append(filteredChapters, c)
 		}
 	}
-	if chapter == nil {
-		return nil, nil // Not found
-	}
+	chapters = filteredChapters
 
 	// Check if chapter is released or user has early access
 	if !isChapterAccessible(chapter, userName) {
@@ -127,7 +153,7 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 	}
 
 	// Get adjacent chapters
-	prevSlug, nextSlug, err := models.GetAdjacentChapters(chapters, chapter.Slug, userName)
+	prevID, nextID, err := models.GetAdjacentChapters(chapters, chapter.ID, userName)
 	if err != nil {
 		return nil, err
 	}
@@ -136,39 +162,45 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 		Media:    media,
 		Chapter:  chapter,
 		Chapters: chapters,
-		PrevSlug: prevSlug,
-		NextSlug: nextSlug,
+		PrevID:   prevID,
+		NextID:   nextID,
 		IsNovel:  media.Type == "novel",
 	}
 
 	if data.IsNovel {
 		// Handle novel-specific logic
-		chapterFilePath := media.Path
-		if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-			chapterFilePath = filepath.Join(media.Path, chapter.File)
+		library, err := models.GetLibrary(chapter.LibrarySlug)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
 		}
+		chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 		// Check if file exists
 		if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 			return nil, nil // File not found
 		}
 
-		data.TOC = utils.GetTOC(chapterFilePath)
+		data.TOC = files.GetTOC(chapterFilePath)
 		validityMinutes := models.GetImageTokenValidityMinutes()
-		data.Content = utils.GetBookContentWithValidity(chapterFilePath, mediaSlug, chapterSlug, validityMinutes)
+		data.Content = files.GetBookContentWithValidity(chapterFilePath, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug, validityMinutes)
 	} else {
 		// Determine the chapter file path for comics
-		chapterFilePath := media.Path
-		if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-			chapterFilePath = filepath.Join(media.Path, chapter.File)
+		library, err := models.GetLibrary(chapter.LibrarySlug)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
 		}
+		chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 		// Check if chapter file path exists
 		if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 			// Chapter file missing, delete the chapter
-			log.Warnf("Chapter file '%s' for media '%s' chapter '%s' does not exist, deleting chapter", chapterFilePath, mediaSlug, chapterSlug)
-			if delErr := models.DeleteChapter(mediaSlug, chapterSlug); delErr != nil {
-				log.Errorf("Failed to delete missing chapter '%s' for media '%s': %v", chapterSlug, mediaSlug, delErr)
+			log.Warnf("Chapter file '%s' for media '%s' chapter '%s' does not exist, deleting chapter", chapterFilePath, chapter.MediaSlug, chapter.Slug)
+			// First delete notifications to avoid foreign key issues
+			if err := models.DeleteNotificationsForChapter(chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug); err != nil {
+				log.Errorf("Failed to delete notifications for chapter '%s': %v", chapter.Slug, err)
+			}
+			if delErr := models.DeleteChapter(chapter.MediaSlug, chapter.Slug, chapter.LibrarySlug); delErr != nil {
+				log.Errorf("Failed to delete missing chapter '%s' for media '%s': %v", chapter.Slug, chapter.MediaSlug, delErr)
 			}
 			return nil, fmt.Errorf("chapter_not_found")
 		}
@@ -184,22 +216,22 @@ func GetChapterData(mediaSlug, chapterSlug, userName string) (*ChapterData, erro
 	return data, nil
 }
 
-// MarkChapterReadIfNeeded marks a chapter as read for the logged-in user
-func MarkChapterReadIfNeeded(userName, mediaSlug, chapterSlug string, isHTMX bool) error {
-	if userName != "" {
-		err := models.MarkChapterRead(userName, mediaSlug, chapterSlug)
-		if err != nil {
-			return err
-		}
-		sync.SyncReadingProgressForUser(userName, mediaSlug, chapterSlug)
-		return nil
-	}
-	return nil
-}
-
 // GetChapterAndMediaData retrieves chapter and media data with access check
-func GetChapterAndMediaData(mediaSlug, chapterSlug, userName string) (*models.Chapter, *models.Media, error) {
-	chapter, err := models.GetChapter(mediaSlug, chapterSlug)
+func GetChapterAndMediaData(mediaSlug, librarySlug, chapterSlug, userName string) (*models.Chapter, *models.Media, error) {
+	// Determine content rating limit based on user
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+	contentRatingLimit := cfg.ContentRatingLimit
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil && user.Role == "admin" {
+			contentRatingLimit = 3 // Admins can see all content
+		}
+	}
+
+	chapter, err := models.GetChapter(mediaSlug, librarySlug, chapterSlug)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -216,7 +248,7 @@ func GetChapterAndMediaData(mediaSlug, chapterSlug, userName string) (*models.Ch
 		return nil, nil, nil
 	}
 
-	media, err := models.GetMedia(mediaSlug)
+	media, err := models.GetMediaWithContentLimit(mediaSlug, contentRatingLimit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -229,12 +261,12 @@ func GetChapterAndMediaData(mediaSlug, chapterSlug, userName string) (*models.Ch
 
 // HandleChapter shows a chapter reader with navigation and optional read tracking.
 func HandleChapter(c *fiber.Ctx) error {
-	mangaSlug := string([]byte(c.Params("media")))
-	chapterSlug := string([]byte(c.Params("chapter")))
+	hash := string([]byte(c.Params("hash")))
 
-	// Validate media slug to prevent malformed URLs
-	if strings.ContainsAny(mangaSlug, "/,") {
-		return sendBadRequestError(c, ErrInvalidMediaSlug)
+	// Validate hash to prevent malformed URLs
+	if strings.ContainsAny(hash, "/,") {
+		log.Warnf("Invalid hash detected: %s", hash)
+		return SendBadRequestError(c, ErrInvalidMediaSlug)
 	}
 
 	userName := GetUserContext(c)
@@ -249,50 +281,53 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 
 	// Get chapter data from service
-	data, err := GetChapterData(mangaSlug, chapterSlug, userName)
+	data, err := GetChapterData(hash, userName)
 	if err != nil {
 		if err.Error() == "premium_required" {
 			// Show notification
 			triggerNotification(c, "This chapter is in premium early access. Please wait for it to be released or upgrade your account.", "destructive")
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				// For HTMX requests, just show notification without modifying the page
 				return c.Status(fiber.StatusNoContent).SendString("")
 			} else {
-				// For regular requests, redirect to manga page
-				return c.Redirect(fmt.Sprintf("/series/%s", mangaSlug), fiber.StatusSeeOther)
+				// For regular requests, redirect to home page
+				return c.Redirect("/", fiber.StatusSeeOther)
 			}
 		}
 		if err.Error() == "chapter_not_found" {
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				triggerNotification(c, "This chapter is no longer available and has been removed.", "warning")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")
 			}
-			return sendNotFoundError(c, ErrChapterRemoved)
+			return SendNotFoundError(c, ErrChapterRemoved)
 		}
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if data == nil {
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			triggerNotification(c, "Chapter or media not found.", "warning")
 			// Return 204 No Content to prevent navigation/swap but show notification
 			return c.Status(fiber.StatusNoContent).SendString("")
 		}
-		return sendNotFoundError(c, "Chapter or media not found.")
+		return SendNotFoundError(c, "Chapter or media not found.")
 	}
 
 	// Fetch comments for the chapter
-	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapterSlug, mangaSlug)
+	comments, err := models.GetCommentsByTargetAndMedia("chapter", data.Chapter.Slug, data.Media.Slug)
 	if err != nil {
-		log.Errorf("Failed to fetch comments for chapter %s: %v", chapterSlug, err)
+		log.Errorf("Failed to fetch comments for chapter %s: %v", data.Chapter.ID, err)
 		comments = []models.Comment{} // Initialize empty slice on error
 	}
 
 	// Mark read if needed
-	err = MarkChapterReadIfNeeded(userName, mangaSlug, chapterSlug, IsHTMXRequest(c))
-	if err != nil {
-		// Log error but don't fail the request
-		log.Errorf("Failed to mark chapter read: %v", err)
+	if userName != "" {
+		err = models.MarkChapterRead(userName, data.Media.Slug, data.Chapter.LibrarySlug, data.Chapter.Slug)
+		if err != nil {
+			// Log error but don't fail the request
+			log.Errorf("Failed to mark chapter read: %v", err)
+		}
+		sync.SyncReadingProgressForUser(userName, data.Media.Slug, data.Chapter.LibrarySlug, data.Chapter.Slug)
 	}
 
 	// Provide chapters in reverse order for dropdown (newest first) to avoid view-side reversing
@@ -302,93 +337,110 @@ func HandleChapter(c *fiber.Ctx) error {
 	}
 
 	if data.IsNovel {
-		return HandleView(c, views.NovelChapter(data.PrevSlug, data.Chapter.Slug, data.NextSlug, *data.Media, *data.Chapter, rev, data.TOC, data.Content))
+		return handleView(c, views.NovelChapter(data.PrevID, data.Chapter.Slug, data.NextID, *data.Media, *data.Chapter, rev, data.TOC, data.Content))
 	}
 
-	return HandleView(c, views.Chapter(data.PrevSlug, data.Chapter.Slug, data.NextSlug, *data.Media, data.Images, *data.Chapter, rev, comments, userRole, userName))
+	return handleView(c, views.Chapter(data.PrevID, data.Chapter.Slug, data.NextID, *data.Media, data.Images, *data.Chapter, data.Chapters, comments, userRole, userName))
 }
 
 // HandleMediaChapterTOC handles TOC requests for media chapters
 func HandleMediaChapterTOC(c *fiber.Ctx) error {
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 
-	chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+	chapter, err := models.GetChapterByID(hash)
 	if err != nil {
-		log.Errorf("Failed to get chapter %s/%s: %v", mangaSlug, chapterSlug, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
+		log.Errorf("Failed to get chapter %s: %v", hash, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if chapter == nil {
-		return c.Status(fiber.StatusNotFound).SendString("Chapter not found")
+		return SendNotFoundError(c, ErrChapterNotFound)
 	}
 
 	// Check library access permission
 	hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if !hasAccess {
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
 			return c.Status(fiber.StatusForbidden).SendString("")
 		}
-		return sendForbiddenError(c, ErrChapterAccessDenied)
+		return SendForbiddenError(c, ErrChapterAccessDenied)
 	}
 
 	// Get media to construct full path
-	media, err := models.GetMedia(mangaSlug)
+	media, err := models.GetMedia(chapter.MediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if media == nil {
-		return c.Status(fiber.StatusNotFound).SendString("Media not found")
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Determine the actual chapter file path
-	chapterFilePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		chapterFilePath = filepath.Join(media.Path, chapter.File)
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
+	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 	// Check if the file exists
 	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
-		return c.Status(fiber.StatusNotFound).SendString("EPUB file not found")
+		return SendNotFoundError(c, ErrEPUBNotFound)
 	}
 
-	toc := utils.GetTOC(chapterFilePath)
+	toc := files.GetTOC(chapterFilePath)
 	c.Set("Content-Type", "text/html")
 	return c.SendString(toc)
 }
 
 // HandleMediaChapterContent handles book content requests for media chapters
 func HandleMediaChapterContent(c *fiber.Ctx) error {
-	mangaSlug := string([]byte(c.Params("media")))
-	chapterSlug := string([]byte(c.Params("chapter")))
+	hash := string([]byte(c.Params("hash")))
 
 	userName := GetUserContext(c)
 
-	chapter, media, err := GetChapterAndMediaData(mangaSlug, chapterSlug, userName)
+	chapter, err := models.GetChapterByID(hash)
 	if err != nil {
-		log.Errorf("Failed to get chapter data %s/%s: %v", mangaSlug, chapterSlug, err)
+		log.Errorf("Failed to get chapter %s: %v", hash, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 	}
-	if chapter == nil || media == nil {
+	if chapter == nil {
 		return c.Status(fiber.StatusNotFound).SendString("Chapter not found")
 	}
 
-	// Determine the actual chapter file path
-	chapterFilePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		chapterFilePath = filepath.Join(media.Path, chapter.File)
+	// Check access
+	hasAccess, err := models.UserHasLibraryAccess(userName, chapter.LibrarySlug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
 	}
+	if !hasAccess {
+		return c.Status(fiber.StatusForbidden).SendString("Access denied")
+	}
+
+	media, err := models.GetMedia(chapter.MediaSlug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
+	}
+	if media == nil {
+		return c.Status(fiber.StatusNotFound).SendString("Media not found")
+	}
+
+	// Determine the actual chapter file path
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
+	}
+	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 	// Check if the file exists
 	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
-		return c.Status(fiber.StatusNotFound).SendString("EPUB file not found")
+		return SendNotFoundError(c, ErrEPUBNotFound)
 	}
 
 	validityMinutes := models.GetImageTokenValidityMinutes()
-	content := utils.GetBookContentWithValidity(chapterFilePath, mangaSlug, chapterSlug, validityMinutes)
+	content := files.GetBookContentWithValidity(chapterFilePath, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug, validityMinutes)
 
 	c.Set("Content-Type", "text/html")
 	return c.SendString(content)
@@ -399,46 +451,52 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 	token := c.Query("token")
 
 	if token == "" {
-		return sendBadRequestError(c, "Token parameter is required")
+		return SendBadRequestError(c, ErrImageTokenRequired)
 	}
 
 	// Validate the token
-	tokenInfo, err := utils.ValidateImageToken(token)
+	tokenInfo, err := files.ValidateImageToken(token)
 	if err != nil {
-		return sendForbiddenError(c, "Invalid or expired token")
+		return SendForbiddenError(c, "Invalid or expired token")
 	}
 
 	// Consume the token after the response is sent
-	defer utils.ConsumeImageToken(token)
+	defer files.ConsumeImageToken(token)
 
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 	assetPath := c.Params("*")
 
-	log.Debugf("Asset request: media=%s, chapter=%s, assetPath=%s", mangaSlug, chapterSlug, assetPath)
+	log.Debugf("Asset request: hash=%s, assetPath=%s", hash, assetPath)
+
+	// Get chapter to verify
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if chapter == nil {
+		return SendNotFoundError(c, ErrChapterNotFound)
+	}
 
 	// Verify token matches the requested resource
-	if tokenInfo.MediaSlug != mangaSlug || tokenInfo.ChapterSlug != chapterSlug {
-		return sendForbiddenError(c, "Token does not match requested resource")
+	if tokenInfo.MediaSlug != chapter.MediaSlug || tokenInfo.LibrarySlug != chapter.LibrarySlug || tokenInfo.ChapterSlug != chapter.Slug {
+		return SendForbiddenError(c, "Token does not match requested resource")
 	}
 
-	userName := GetUserContext(c)
-
-	chapter, media, err := GetChapterAndMediaData(mangaSlug, chapterSlug, userName)
+	// Get media
+	media, err := models.GetMedia(chapter.MediaSlug)
 	if err != nil {
-		log.Errorf("Failed to get chapter data %s/%s: %v", mangaSlug, chapterSlug, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal server error")
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
-	if chapter == nil || media == nil {
-		log.Errorf("Chapter not found: %s/%s", mangaSlug, chapterSlug)
-		return c.Status(fiber.StatusNotFound).SendString("Chapter not found")
+	if media == nil {
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Determine the actual chapter file path
-	chapterFilePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		chapterFilePath = filepath.Join(media.Path, chapter.File)
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
+	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 	log.Debugf("Chapter file path: %s", chapterFilePath)
 
@@ -457,7 +515,7 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 	defer r.Close()
 
 	// Get the OPF directory
-	opfDir, err := utils.GetOPFDir(chapterFilePath)
+	opfDir, err := files.GetOPFDir(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error getting OPF dir for %s: %v", chapterFilePath, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error parsing EPUB")
@@ -518,19 +576,8 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 
 	// For image assets, apply compression based on user role
 	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
-		// Get user role for compression quality
-		userName, _ := c.Locals("user_name").(string)
-		var quality int
-		if userName != "" {
-			user, err := models.FindUserByUsername(userName)
-			if err == nil && user != nil {
-				quality = models.GetCompressionQualityForRole(user.Role)
-			} else {
-				quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
-			}
-		} else {
-			quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
-		}
+		// Always encode to WebP at 100% quality
+		quality := 100
 
 		// Decode the image
 		imageReader := bytes.NewReader(assetData)
@@ -544,10 +591,7 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 		// Encode all images as JPEG for better performance and consistent compression
 		var buf bytes.Buffer
 		// Ensure quality is at least 1 for JPEG encoding (Go's jpeg.Encode requires 1-100)
-		jpegQuality := quality
-		if jpegQuality < 1 {
-			jpegQuality = 1
-		}
+		jpegQuality := max(quality, 1)
 		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: jpegQuality})
 		if err != nil {
 			// If encoding fails, serve original data
@@ -565,56 +609,71 @@ func HandleMediaChapterAsset(c *fiber.Ctx) error {
 
 // HandleMarkRead marks a chapter as read for the logged-in user via HTMX
 func HandleMarkRead(c *fiber.Ctx) error {
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
-	if err := models.MarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
-	sync.SyncReadingProgressForUser(userName, mangaSlug, chapterSlug)
+	if chapter == nil {
+		return SendNotFoundError(c, ErrChapterNotFound)
+	}
+
+	if err := models.MarkChapterRead(userName, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug); err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	sync.SyncReadingProgressForUser(userName, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug)
 	// Return the inline eye toggle fragment so HTMX will swap the icon in-place.
-	return HandleView(c, views.InlineEyeToggle(true, mangaSlug, chapterSlug))
+	return handleView(c, views.InlineEyeToggle(true, chapter.ID))
 }
 
 // HandleMarkUnread unmarks a chapter as read for the logged-in user via HTMX
 func HandleMarkUnread(c *fiber.Ctx) error {
-	mangaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
-	if err := models.UnmarkChapterRead(userName, mangaSlug, chapterSlug); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if chapter == nil {
+		return SendNotFoundError(c, ErrChapterNotFound)
+	}
+
+	if err := models.UnmarkChapterRead(userName, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug); err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	// Return the inline eye toggle fragment with read=false so HTMX swaps to the closed-eye.
-	return HandleView(c, views.InlineEyeToggle(false, mangaSlug, chapterSlug))
+	return handleView(c, views.InlineEyeToggle(false, chapter.ID))
 }
 
 // HandleUnmarkChapterPremium unmarks a chapter as premium by updating its created_at to release it immediately
 // HandleUnmarkChapterPremium handles unmarking a chapter as premium (making it immediately available)
 func HandleUnmarkChapterPremium(c *fiber.Ctx) error {
-	mediaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 
 	// Get the chapter to check if it exists
-	chapter, err := models.GetChapter(mediaSlug, chapterSlug)
+	chapter, err := models.GetChapterByID(hash)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if chapter == nil {
-		return sendNotFoundError(c, ErrChapterNotFound)
+		return SendNotFoundError(c, ErrChapterNotFound)
 	}
 
 	// Set released_at to now to mark as released
-	if err := models.UpdateChapterReleasedAt(mediaSlug, chapterSlug, time.Now()); err != nil {
-		return sendInternalServerError(c, ErrChapterReleaseFailed, err)
+	if err := models.UpdateChapterReleasedAt(chapter.MediaSlug, chapter.Slug, chapter.LibrarySlug, time.Now()); err != nil {
+		return SendInternalServerError(c, ErrChapterReleaseFailed, err)
 	}
 
 	// Redirect back to the media page to refresh the chapters list
-	c.Set("HX-Redirect", fmt.Sprintf("/series/%s", mediaSlug))
+	c.Set("HX-Redirect", fmt.Sprintf("/series/%s", chapter.MediaSlug))
 	return c.SendStatus(fiber.StatusOK)
 }

@@ -9,11 +9,32 @@ import (
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
+
+// getMediaPathFromChapters returns a representative path for a media by using the first chapter's path
+func getMediaPathFromChapters(mediaSlug string) (string, error) {
+	chapters, err := models.GetChapters(mediaSlug)
+	if err != nil || len(chapters) == 0 {
+		return "", fmt.Errorf("no chapters found for media '%s'", mediaSlug)
+	}
+
+	// Get the library for the first chapter
+	library, err := models.GetLibrary(chapters[0].LibrarySlug)
+	if err != nil {
+		return "", fmt.Errorf("failed to get library '%s': %w", chapters[0].LibrarySlug, err)
+	}
+
+	// Use the first library folder as root
+	if len(library.Folders) == 0 {
+		return "", fmt.Errorf("library '%s' has no folders configured", chapters[0].LibrarySlug)
+	}
+
+	// Return the directory containing the first chapter
+	return filepath.Dir(filepath.Join(library.Folders[0], chapters[0].File)), nil
+}
 
 // MetadataFormData represents form data for editing media metadata
 type MetadataFormData struct {
@@ -55,7 +76,7 @@ func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
 		return results[i].SimilarityScore > results[j].SimilarityScore
 	})
 
-	return HandleView(c, views.UpdateMetadataResults(results, mangaSlug))
+	return handleView(c, views.UpdateMetadataResults(results, mangaSlug))
 }
 
 // HandleEditMetadataMedia applies selected metadata to an existing media.
@@ -98,7 +119,10 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 		if err != nil {
 			log.Warnf("Failed to download cover art: %v", err)
 			// Try local images as fallback
-			storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
+			mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+			if pathErr == nil {
+				storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, mediaPath)
+			}
 		}
 	}
 
@@ -107,7 +131,11 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	metadata.UpdateMedia(existingMedia, meta, storedImageURL)
 
 	// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
-	detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
+	mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+	detectedType := ""
+	if pathErr == nil {
+		detectedType = scheduler.DetectWebtoonFromImages(mediaPath, existingMedia.Slug)
+	}
 	if detectedType != "" {
 		if originalType == "media" && detectedType == "webtoon" {
 			log.Infof("Overriding media type from 'media' to 'webtoon' for '%s' based on image aspect ratio", existingMedia.Slug)
@@ -175,7 +203,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 
 	// Process tags (comma-separated list)
 	var tags []string
-	for _, tag := range strings.Split(formData.Tags, ",") {
+	for tag := range strings.SplitSeq(formData.Tags, ",") {
 		trimmed := strings.TrimSpace(tag)
 		if trimmed != "" {
 			tags = append(tags, trimmed)
@@ -221,8 +249,55 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
+	// Find the library that contains this media
+	mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+	if pathErr != nil {
+		return sendInternalServerError(c, "Could not determine media path", pathErr)
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	var librarySlug string
+	for _, lib := range libraries {
+		for _, folder := range lib.Folders {
+			if strings.HasPrefix(mediaPath, folder) {
+				librarySlug = lib.Slug
+				break
+			}
+		}
+		if librarySlug != "" {
+			break
+		}
+	}
+	if librarySlug == "" {
+		return sendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
+	}
+
+	// Get the library to find the root path
+	library, err := models.GetLibrary(librarySlug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if len(library.Folders) == 0 {
+		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("library has no folders"))
+	}
+
+	// Find the root path that contains the media path
+	var rootPath string
+	for _, folder := range library.Folders {
+		if strings.HasPrefix(mediaPath, folder) {
+			rootPath = folder
+			break
+		}
+	}
+	if rootPath == "" {
+		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("could not find root path for %s in library %s", mediaPath, librarySlug))
+	}
+
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
-	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
+	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, mediaPath, librarySlug, false)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -266,44 +341,41 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
-	// Get the configured metadata provider
-	config, err := models.GetAppConfig()
-	if err != nil {
-		log.Warnf("Failed to get app config: %v", err)
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	provider, err := metadata.GetProviderFromConfig(&config)
-	if err != nil {
-		log.Warnf("Failed to get metadata provider: %v", err)
-		return sendInternalServerError(c, ErrMetadataProviderError, err)
-	}
-
-	// Fetch fresh metadata from the configured provider
-	meta, err := provider.FindBestMatch(existingMedia.Name)
+	// Fetch fresh aggregated metadata from all providers
+	aggregatedMeta, err := metadata.QueryAllProviders(existingMedia.Name)
 	if err != nil {
 		// Log the warning but don't fail - fall back to local metadata
-		log.Warnf("Failed to fetch metadata from %s for '%s': %v. Falling back to local metadata.", provider.Name(), existingMedia.Name, err)
+		log.Warnf("Failed to fetch aggregated metadata for '%s': %v. Falling back to local metadata.", existingMedia.Name, err)
 	}
 
-	if meta != nil {
-		// Get the cover art URL from the provider
-		coverURL := provider.GetCoverImageURL(meta)
+	if aggregatedMeta != nil {
+		// Get the cover art URL from the aggregated metadata
+		var coverURL string
+		if len(aggregatedMeta.CoverArtURLs) > 0 {
+			coverURL = aggregatedMeta.CoverArtURLs[0] // Use first cover URL
+		}
 
 		// Download and store the new cover art if available
 		var storedImageURL string
 		if coverURL != "" {
-			log.Debugf("Attempting to download cover art from provider for media '%s': %s", mangaSlug, coverURL)
+			log.Debugf("Attempting to download cover art from aggregated metadata for media '%s': %s", mangaSlug, coverURL)
 			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL)
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
 				log.Debugf("Falling back to local images for poster generation for media '%s'", mangaSlug)
-				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
+				mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
+				if pathErr == nil {
+					storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath)
+				}
 			}
 		} else {
-			// No cover URL from provider, try local images
-			log.Debugf("No cover URL from provider for media '%s', trying local images", mangaSlug)
-			storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, existingMedia.Path)
+			// No cover URL from aggregated metadata, try local images
+			log.Debugf("No cover URL from aggregated metadata for media '%s', trying local images", mangaSlug)
+			mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
+			if pathErr == nil {
+				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath)
+			}
 		}
 
 		if storedImageURL != "" {
@@ -313,12 +385,16 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 			log.Warnf("No poster URL could be generated for media '%s' during metadata refresh", mangaSlug)
 		}
 
-		// Update metadata from provider while preserving creation date
+		// Update metadata from aggregated metadata while preserving creation date
 		originalType := existingMedia.Type
-		metadata.UpdateMedia(existingMedia, meta, existingMedia.CoverArtURL)
+		metadata.UpdateMediaFromAggregated(existingMedia, aggregatedMeta, existingMedia.CoverArtURL)
 
 		// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
-		detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
+		mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+		detectedType := ""
+		if pathErr == nil {
+			detectedType = scheduler.DetectWebtoonFromImages(mediaPath, existingMedia.Slug)
+		}
 		if detectedType != "" {
 			if originalType == "media" && detectedType == "webtoon" {
 				log.Infof("Overriding media type from 'media' to 'webtoon' for '%s' based on image aspect ratio", existingMedia.Slug)
@@ -327,8 +403,8 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 
 		// Persist tags
-		if len(meta.Tags) > 0 {
-			if err := models.SetTagsForMedia(existingMedia.Slug, meta.Tags); err != nil {
+		if len(aggregatedMeta.Tags) > 0 {
+			if err := models.SetTagsForMedia(existingMedia.Slug, aggregatedMeta.Tags); err != nil {
 				log.Warnf("Failed to persist tags for media '%s': %v", mangaSlug, err)
 			}
 		}
@@ -339,25 +415,21 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 	} else {
 		// No metadata match - update with local metadata
-		log.Debugf("No metadata match found for '%s' from %s. Updating with local metadata.", existingMedia.Name, provider.Name())
+		log.Debugf("No aggregated metadata match found for '%s'. Updating with local metadata.", existingMedia.Name)
 
-		// Update name from path
-		baseName := filepath.Base(existingMedia.Path)
-		cleanedName := utils.RemovePatterns(baseName)
-		if cleanedName != "" {
-			existingMedia.Name = cleanedName
-		}
+		// Try to detect type from images
+		mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+		if pathErr == nil {
+			detectedType := scheduler.DetectWebtoonFromImages(mediaPath, existingMedia.Slug)
+			if detectedType != "" {
+				existingMedia.SetType(detectedType)
+			}
 
-		// Detect type from images
-		detectedType := scheduler.DetectWebtoonFromImages(existingMedia.Path, existingMedia.Slug)
-		if detectedType != "" {
-			existingMedia.SetType(detectedType)
-		}
-
-		// Try to set poster from local images
-		storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, existingMedia.Path)
-		if storedImageURL != "" {
-			existingMedia.CoverArtURL = storedImageURL
+			// Try to set poster from local images
+			storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, mediaPath)
+			if storedImageURL != "" {
+				existingMedia.CoverArtURL = storedImageURL
+			}
 		}
 
 		// Update media metadata without changing created_at
@@ -366,8 +438,34 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 	}
 
+	// Find the library that contains this media
+	mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
+	if pathErr != nil {
+		return sendInternalServerError(c, "Could not determine media path", pathErr)
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	var librarySlug string
+	for _, lib := range libraries {
+		for _, folder := range lib.Folders {
+			if strings.HasPrefix(mediaPath, folder) {
+				librarySlug = lib.Slug
+				break
+			}
+		}
+		if librarySlug != "" {
+			break
+		}
+	}
+	if librarySlug == "" {
+		return sendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
+	}
+
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
-	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, existingMedia.Path, false)
+	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, mediaPath, librarySlug, false)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}

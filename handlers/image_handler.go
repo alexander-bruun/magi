@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -63,47 +63,6 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	}
 	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
-	}
-
-	// Get user role for compression quality
-	userName, _ := c.Locals("user_name").(string)
-	var quality int
-	if userName != "" {
-		user, err := models.FindUserByUsername(userName)
-		if err == nil && user != nil {
-			quality = models.GetCompressionQualityForRole(user.Role)
-		} else {
-			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
-		}
-	} else {
-		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
-	}
-
-	// Check if image compression is disabled
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to get config")
-	}
-	if cfg.DisableWebpConversion {
-		// Serve original image without compression or conversion
-		switch strings.ToLower(filepath.Ext(imagePath)) {
-		case ".jpg", ".jpeg":
-			c.Set("Content-Type", "image/jpeg")
-		case ".png":
-			c.Set("Content-Type", "image/png")
-		case ".gif":
-			c.Set("Content-Type", "image/gif")
-		case ".webp":
-			c.Set("Content-Type", "image/webp")
-		default:
-			c.Set("Content-Type", "application/octet-stream")
-		}
-		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
-		}
-		return c.Send(data)
 	}
 
 	// Load the image
@@ -163,163 +122,7 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 
 	// Encode all images as WebP for better compression
-	data, err := utils.EncodeImageToBytes(img, "webp", quality)
-	c.Set("Content-Type", "image/webp")
-
-	if err != nil {
-		// If encoding fails, serve original file
-		switch strings.ToLower(filepath.Ext(imagePath)) {
-		case ".jpg", ".jpeg":
-			c.Set("Content-Type", "image/jpeg")
-		case ".png":
-			c.Set("Content-Type", "image/png")
-		case ".gif":
-			c.Set("Content-Type", "image/gif")
-		case ".webp":
-			c.Set("Content-Type", "image/webp")
-		default:
-			c.Set("Content-Type", "application/octet-stream")
-		}
-		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
-		}
-		return c.Send(data)
-	}
-
-	c.Set("Cache-Control", "public, max-age=31536000, immutable")
-	return c.Send(data)
-}
-
-// handleImageRequest serves images with quality based on user role
-func handleImageRequest(c *fiber.Ctx) error {
-	if dataManager == nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Cache not initialized")
-	}
-
-	// Get the requested path (remove /api/images/ or /api/posters/ prefix)
-	imagePath := ""
-	if strings.HasPrefix(c.Path(), "/api/images/") {
-		imagePath = filepath.Join("images", strings.TrimPrefix(c.Path(), "/api/images/"))
-	} else if strings.HasPrefix(c.Path(), "/api/posters/") {
-		imagePath = filepath.Join("posters", strings.TrimPrefix(c.Path(), "/api/posters/"))
-	} else if strings.HasPrefix(c.Path(), "/api/avatars/") {
-		imagePath = filepath.Join("avatars", strings.TrimPrefix(c.Path(), "/api/avatars/"))
-	}
-
-	if imagePath == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid image path")
-	}
-
-	// Check if the file exists in data manager
-	exists, err := dataManager.Exists(imagePath)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
-	}
-	if !exists {
-		return c.Status(fiber.StatusNotFound).SendString("Image not found")
-	}
-
-	// Get user role for compression quality
-	userName, _ := c.Locals("user_name").(string)
-	var quality int
-	if userName != "" {
-		user, err := models.FindUserByUsername(userName)
-		if err == nil && user != nil {
-			quality = models.GetCompressionQualityForRole(user.Role)
-		} else {
-			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
-		}
-	} else {
-		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
-	}
-
-	// Check if image compression is disabled
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to get config")
-	}
-	if cfg.DisableWebpConversion {
-		// Serve original image without compression or conversion
-		switch strings.ToLower(filepath.Ext(imagePath)) {
-		case ".jpg", ".jpeg":
-			c.Set("Content-Type", "image/jpeg")
-		case ".png":
-			c.Set("Content-Type", "image/png")
-		case ".gif":
-			c.Set("Content-Type", "image/gif")
-		case ".webp":
-			c.Set("Content-Type", "image/webp")
-		default:
-			c.Set("Content-Type", "application/octet-stream")
-		}
-		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
-		}
-		return c.Send(data)
-	}
-
-	// Load the image
-	start := time.Now()
-	reader, err := dataManager.LoadReader(imagePath)
-	if err != nil {
-		// If loading fails, serve original file
-		switch strings.ToLower(filepath.Ext(imagePath)) {
-		case ".jpg", ".jpeg":
-			c.Set("Content-Type", "image/jpeg")
-		case ".png":
-			c.Set("Content-Type", "image/png")
-		case ".gif":
-			c.Set("Content-Type", "image/gif")
-		case ".webp":
-			c.Set("Content-Type", "image/webp")
-		default:
-			c.Set("Content-Type", "application/octet-stream")
-		}
-		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
-		}
-		return c.Send(data)
-	}
-	defer reader.Close()
-	img, _, err := image.Decode(reader)
-	if err != nil {
-		// If loading fails, serve original file
-		switch strings.ToLower(filepath.Ext(imagePath)) {
-		case ".jpg", ".jpeg":
-			c.Set("Content-Type", "image/jpeg")
-		case ".png":
-			c.Set("Content-Type", "image/png")
-		case ".gif":
-			c.Set("Content-Type", "image/gif")
-		case ".webp":
-			c.Set("Content-Type", "image/webp")
-		default:
-			c.Set("Content-Type", "application/octet-stream")
-		}
-		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
-		}
-		return c.Send(data)
-	}
-
-	// Record load time
-	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
-	if ext == "" {
-		ext = "unknown"
-	}
-	log.Debugf("Recording image load time for %s: %v", ext, time.Since(start).Seconds())
-	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
-
-	// Encode all images as WebP for better compression
-	data, err := utils.EncodeImageToBytes(img, "webp", quality)
+	data, err := files.EncodeImageToBytes(img, "webp", 100)
 	c.Set("Content-Type", "image/webp")
 
 	if err != nil {
@@ -350,9 +153,6 @@ func handleImageRequest(c *fiber.Ctx) error {
 
 // ImageHandler serves images for both comics and light novels using token-based authentication
 func ImageHandler(c *fiber.Ctx) error {
-	// log.Infof("ImageHandler called with token: %s", c.Query("token"))
-	// log.Infof("ImageHandler: request from IP %s, User-Agent: %s, Referer: %s", c.IP(), c.Get("User-Agent"), c.Get("Referer"))
-
 	token := c.Query("token")
 	log.Debugf("ImageHandler: received token %s", token)
 
@@ -361,25 +161,18 @@ func ImageHandler(c *fiber.Ctx) error {
 		return sendBadRequestError(c, ErrImageTokenRequired)
 	}
 
-	// log.Infof("ImageHandler: validating token %s", token)
 	// Validate the token
-	tokenInfo, err := utils.ValidateImageToken(token)
+	tokenInfo, err := files.ValidateImageToken(token)
 	if err != nil {
 		log.Errorf("ImageHandler: Token validation failed for token %s: %v", token, err)
 		return sendForbiddenError(c, ErrImageTokenInvalid)
 	}
-
-	// log.Infof("ImageHandler: token %s validated successfully, consuming", token)
-	// Consume the token
-	utils.ConsumeImageToken(token)
-	// log.Infof("ImageHandler: token %s consumed", token)
 
 	// Validate MediaSlug to prevent malformed tokens
 	if strings.ContainsAny(tokenInfo.MediaSlug, "/,") {
 		log.Errorf("ImageHandler: Invalid MediaSlug in token: %s", tokenInfo.MediaSlug)
 		return sendForbiddenError(c, ErrImageTokenInvalid)
 	}
-	// log.Infof("ImageHandler: MediaSlug validated: %s", tokenInfo.MediaSlug)
 
 	media, err := models.GetMedia(tokenInfo.MediaSlug)
 	if err != nil {
@@ -390,7 +183,6 @@ func ImageHandler(c *fiber.Ctx) error {
 		log.Errorf("ImageHandler: Media not found for slug: %s", tokenInfo.MediaSlug)
 		return sendNotFoundError(c, ErrImageNotFound)
 	}
-	// log.Infof("ImageHandler: Media found: %s", media.Slug)
 
 	var chapter *models.Chapter
 	if tokenInfo.AssetPath != "" {
@@ -398,7 +190,6 @@ func ImageHandler(c *fiber.Ctx) error {
 		// Light novel asset: chapterSlug may be 0 or empty, but should be valid for asset lookup
 		chapterSlug := tokenInfo.ChapterSlug
 		if chapterSlug == "" || strings.ContainsAny(chapterSlug, "./ ") {
-			// log.Infof("ImageHandler: ChapterSlug empty or invalid, checking Referer")
 			// Fallback: try to extract from Referer if possible
 			referer := c.Get("Referer")
 			if referer != "" {
@@ -411,8 +202,7 @@ func ImageHandler(c *fiber.Ctx) error {
 				}
 			}
 		}
-		// log.Infof("ImageHandler: Using chapterSlug: %s", chapterSlug)
-		chapter, err = models.GetChapter(tokenInfo.MediaSlug, chapterSlug)
+		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.LibrarySlug, chapterSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, chapterSlug, err)
 			return sendInternalServerError(c, ErrInternalServerError, err)
@@ -421,7 +211,6 @@ func ImageHandler(c *fiber.Ctx) error {
 			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, chapterSlug)
 			return sendNotFoundError(c, ErrChapterNotFound)
 		}
-		// log.Infof("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Error checking access: %v", err)
@@ -429,19 +218,17 @@ func ImageHandler(c *fiber.Ctx) error {
 		}
 		if !hasAccess {
 			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")
 			}
 			return sendForbiddenError(c, ErrImageAccessDenied)
 		}
-		// log.Infof("ImageHandler: Access granted, serving light novel asset")
 		return serveLightNovelAsset(c, media, chapter, tokenInfo.AssetPath)
 	} else {
-		// log.Infof("ImageHandler: Handling comic page: %d", tokenInfo.Page)
 		// Comic page
-		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
+		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.LibrarySlug, tokenInfo.ChapterSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, err)
 			return sendInternalServerError(c, ErrInternalServerError, err)
@@ -450,7 +237,6 @@ func ImageHandler(c *fiber.Ctx) error {
 			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
 			return sendNotFoundError(c, ErrChapterNotFound)
 		}
-		// log.Debugf("ImageHandler: Chapter found: %s", chapter.Slug)
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
 			log.Errorf("ImageHandler: Error checking access: %v", err)
@@ -458,53 +244,31 @@ func ImageHandler(c *fiber.Ctx) error {
 		}
 		if !hasAccess {
 			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")
 			}
 			return sendForbiddenError(c, ErrImageAccessDenied)
 		}
-		// log.Debugf("ImageHandler: Access granted, serving comic page")
-		return serveComicPage(c, media, chapter, tokenInfo.Page)
+		return serveComicPage(c, chapter, tokenInfo.Page)
 	}
 }
 
 // serveComicPage serves a comic page image
-func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, page int) error {
+func serveComicPage(c *fiber.Ctx, chapter *models.Chapter, page int) error {
 	start := time.Now()
 	// log.Infof("serveComicPage: serving page %d for media %s chapter %s", page, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
-	// For single-file media (cbz/cbr), media.Path is the file itself
-	// For directory-based media, we need to join path and chapter file
-	filePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		filePath = filepath.Join(media.Path, chapter.File)
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
+	filePath := filepath.Join(library.Folders[0], chapter.File)
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return sendNotFoundError(c, ErrImageNotFound)
-	}
-
-	// Get app config for compression settings
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	// Get user role for compression quality
-	userName, _ := c.Locals("user_name").(string)
-	var quality int
-	if userName != "" {
-		user, err := models.FindUserByUsername(userName)
-		if err == nil && user != nil {
-			quality = models.GetCompressionQualityForRole(user.Role)
-		} else {
-			quality = models.GetCompressionQualityForRole("reader") // default for authenticated but error
-		}
-	} else {
-		quality = models.GetCompressionQualityForRole("anonymous") // default for anonymous
 	}
 
 	// If the path is a directory, serve images from within it
@@ -520,12 +284,26 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 	case strings.HasSuffix(lowerFileName, ".jpg"), strings.HasSuffix(lowerFileName, ".jpeg"),
 		strings.HasSuffix(lowerFileName, ".png"), strings.HasSuffix(lowerFileName, ".webp"),
 		strings.HasSuffix(lowerFileName, ".gif"):
+		// Serve raw image bytes
+		switch strings.ToLower(filepath.Ext(filePath)) {
+		case ".jpg", ".jpeg":
+			c.Set("Content-Type", "image/jpeg")
+		case ".png":
+			c.Set("Content-Type", "image/png")
+		case ".gif":
+			c.Set("Content-Type", "image/gif")
+		case ".webp":
+			c.Set("Content-Type", "image/webp")
+		default:
+			c.Set("Content-Type", "application/octet-stream")
+		}
+		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(filePath), "."))
 		imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
 		return c.SendFile(filePath)
 	case strings.HasSuffix(lowerFileName, ".cbr"), strings.HasSuffix(lowerFileName, ".rar"):
 		imageLoadDuration.WithLabelValues("cbr").Observe(time.Since(start).Seconds())
-		imageBytes, contentType, err := ServeComicArchiveFromRAR(filePath, page, quality, cfg.DisableWebpConversion)
+		imageBytes, contentType, err := ServeComicArchiveFromRAR(filePath, page)
 		if err != nil {
 			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
@@ -533,7 +311,7 @@ func serveComicPage(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, 
 		return c.Send(imageBytes)
 	case strings.HasSuffix(lowerFileName, ".cbz"), strings.HasSuffix(lowerFileName, ".zip"):
 		imageLoadDuration.WithLabelValues("cbz").Observe(time.Since(start).Seconds())
-		imageBytes, contentType, err := ServeComicArchiveFromZIP(filePath, page, quality, cfg.DisableWebpConversion)
+		imageBytes, contentType, err := ServeComicArchiveFromZIP(filePath, page)
 		if err != nil {
 			return sendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
@@ -549,10 +327,11 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	start := time.Now()
 	log.Debugf("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
-	chapterFilePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		chapterFilePath = filepath.Join(media.Path, chapter.File)
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
+	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
 	log.Debugf("Light novel asset request: media=%s, chapter=%s, asset=%s, file=%s", media.Slug, chapter.Slug, assetPath, chapterFilePath)
 
@@ -573,7 +352,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	defer r.Close()
 
 	// Get the OPF directory
-	opfDir, err := utils.GetOPFDir(chapterFilePath)
+	opfDir, err := files.GetOPFDir(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error getting OPF dir for %s: %v", chapterFilePath, err)
 		return sendInternalServerError(c, ErrImageProcessingFailed, err)
@@ -643,21 +422,21 @@ func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int)
 		return sendNotFoundError(c, ErrImageNotFound)
 	}
 
-	// Get user role for compression quality
-	userName, _ := c.Locals("user_name").(string)
-	quality := GetCompressionQualityForUser(userName)
-
-	// Process image for serving
-	imageBytes, contentType, err := ProcessImageForServing(imagePath, quality)
-	c.Set("Content-Type", contentType)
-	var ext string
-	if err != nil {
-		// If encoding fails, serve original
-		ext = strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
-		imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
-		return c.SendFile(imagePath)
+	// Serve raw image bytes
+	switch strings.ToLower(filepath.Ext(imagePath)) {
+	case ".jpg", ".jpeg":
+		c.Set("Content-Type", "image/jpeg")
+	case ".png":
+		c.Set("Content-Type", "image/png")
+	case ".gif":
+		c.Set("Content-Type", "image/gif")
+	case ".webp":
+		c.Set("Content-Type", "image/webp")
+	default:
+		c.Set("Content-Type", "application/octet-stream")
 	}
-	ext = strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), ".")) // Use original file extension for metrics
+	c.Set("Cache-Control", "public, max-age=31536000, immutable")
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(imagePath), "."))
 	imageLoadDuration.WithLabelValues(ext).Observe(time.Since(start).Seconds())
-	return c.Send(imageBytes)
+	return c.SendFile(imagePath)
 }

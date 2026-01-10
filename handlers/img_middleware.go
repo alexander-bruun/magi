@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/base64"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,12 +16,12 @@ var (
 )
 
 // InitImgCache pre-loads image files as base64 data URIs
-func InitImgCache(assetsPath string) error {
+func InitImgCache(assetsFS fs.FS, assetsPath string) error {
 	imgDir := filepath.Join(assetsPath, "img")
 
 	// For now, just cache icon.webp - expand as needed
 	iconPath := filepath.Join(imgDir, "icon.webp")
-	content, err := os.ReadFile(iconPath)
+	content, err := fs.ReadFile(assetsFS, iconPath)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func ImgMiddleware() fiber.Handler {
 
 		html := string(body)
 
-		imgCache.Range(func(key, value interface{}) bool {
+		imgCache.Range(func(key, value any) bool {
 			urlPath := key.(string)
 			dataURI := value.(string)
 			html = strings.ReplaceAll(html, `"`+urlPath+`"`, `"`+dataURI+`"`)

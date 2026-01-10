@@ -35,7 +35,7 @@ type AssignPermissionToRoleFormData struct {
 // HandleGetPermissions retrieves all permissions and renders the fragment
 func HandleGetPermissions(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/permissions")
 	}
 
@@ -45,13 +45,13 @@ func HandleGetPermissions(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.PermissionsList(permissions))
+	return handleView(c, views.PermissionsList(permissions))
 }
 
 // HandleGetPermissionForm renders the create/edit form for a permission
 func HandleGetPermissionForm(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/permissions")
 	}
 
@@ -64,7 +64,7 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 
 	// If ID is "new", render create form
 	if idParam == "new" {
-		return HandleView(c, views.PermissionForm(nil, libraries))
+		return handleView(c, views.PermissionForm(nil, libraries))
 	}
 
 	// Otherwise, load existing permission for editing
@@ -83,7 +83,7 @@ func HandleGetPermissionForm(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrPermissionNotFound)
 	}
 
-	return HandleView(c, views.PermissionForm(permission, libraries))
+	return handleView(c, views.PermissionForm(permission, libraries))
 }
 
 // HandleCreatePermission creates a new permission
@@ -205,7 +205,7 @@ func HandleDeletePermission(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.PermissionsList(permissions))
+	return handleView(c, views.PermissionsList(permissions))
 }
 
 // HandleAssignPermissionToUser assigns a permission to a user
@@ -253,7 +253,7 @@ func HandleAssignPermissionToUser(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.UserPermissionsList(formData.Username, permissions, allPermissions))
+	return handleView(c, views.UserPermissionsList(formData.Username, permissions, allPermissions))
 }
 
 // HandleRevokePermissionFromUser removes a permission from a user
@@ -283,19 +283,19 @@ func HandleRevokePermissionFromUser(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.UserPermissionsList(username, permissions, allPermissions))
+	return handleView(c, views.UserPermissionsList(username, permissions, allPermissions))
 }
 
 // HandleGetUserPermissions retrieves all permissions for a user and renders fragment
 func HandleGetUserPermissions(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/permissions")
 	}
 
 	username := c.Query("username")
 	if username == "" {
-		return HandleView(c, views.UserPermissionsEmpty())
+		return handleView(c, views.UserPermissionsEmpty())
 	}
 
 	// Verify user exists
@@ -315,13 +315,13 @@ func HandleGetUserPermissions(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.UserPermissionsList(username, permissions, allPermissions))
+	return handleView(c, views.UserPermissionsList(username, permissions, allPermissions))
 }
 
 // HandleGetBulkAssignForm returns a form for bulk assigning a permission to multiple users
 func HandleGetBulkAssignForm(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/permissions")
 	}
 
@@ -347,7 +347,7 @@ func HandleGetBulkAssignForm(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.BulkAssignForm(permission, users, usersWithPerm))
+	return handleView(c, views.BulkAssignForm(permission, users, usersWithPerm))
 }
 
 // HandleBulkAssignPermission assigns a permission to multiple users at once
@@ -366,7 +366,7 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 	selectedUsernames := form.Value["usernames[]"]
 	if len(selectedUsernames) == 0 {
 		// No users selected, just close modal
-		triggerCustomNotification(c, "", map[string]interface{}{
+		triggerCustomNotification(c, "", map[string]any{
 			"closeModal": true,
 			"showNotification": map[string]string{
 				"message": "No users selected",
@@ -395,7 +395,7 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 		message += fmt.Sprintf(" (%d failed)", failCount)
 	}
 
-	triggerCustomNotification(c, "", map[string]interface{}{
+	triggerCustomNotification(c, "", map[string]any{
 		"closeModal":         true,
 		"refreshPermissions": true,
 		"showNotification": map[string]string{
@@ -409,13 +409,13 @@ func HandleBulkAssignPermission(c *fiber.Ctx) error {
 // HandleGetRolePermissions retrieves all permissions for a role and renders fragment
 func HandleGetRolePermissions(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the permissions management page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/permissions")
 	}
 
 	role := c.Query("role")
 	if role == "" {
-		return HandleView(c, views.RolePermissionsEmpty())
+		return handleView(c, views.RolePermissionsEmpty())
 	}
 
 	permissions, err := models.GetRolePermissionDetails(role)
@@ -429,7 +429,7 @@ func HandleGetRolePermissions(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.RolePermissionsList(role, permissions, allPermissions))
+	return handleView(c, views.RolePermissionsList(role, permissions, allPermissions))
 }
 
 // HandleAssignPermissionToRole assigns a permission to a role
@@ -471,7 +471,7 @@ func HandleAssignPermissionToRole(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.RolePermissionsList(formData.Role, permissions, allPermissions))
+	return handleView(c, views.RolePermissionsList(formData.Role, permissions, allPermissions))
 }
 
 // HandleRevokePermissionFromRole removes a permission from a role
@@ -501,5 +501,5 @@ func HandleRevokePermissionFromRole(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrPermissionOperationFailed, err)
 	}
 
-	return HandleView(c, views.RolePermissionsList(role, permissions, allPermissions))
+	return handleView(c, views.RolePermissionsList(role, permissions, allPermissions))
 }

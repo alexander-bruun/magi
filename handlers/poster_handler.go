@@ -6,11 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 )
@@ -23,35 +22,20 @@ func getFirstChapterFilePath(media *models.Media) (string, error) {
 		return "", fmt.Errorf("no chapters found")
 	}
 
-	// Try to construct path from first chapter slug
-	chapterPath := filepath.Join(media.Path, chapters[0].Slug+".cbz")
-	if _, err := os.Stat(chapterPath); err == nil {
-		return chapterPath, nil
-	}
-
-	// Fallback: search directory for first archive file
-	entries, err := os.ReadDir(media.Path)
+	// Get the library for the first chapter
+	library, err := models.GetLibrary(chapters[0].LibrarySlug)
 	if err != nil {
-		return "", fmt.Errorf("cannot access media directory: %w", err)
-	}
-	if len(entries) == 0 {
-		return "", fmt.Errorf("no files found in media directory")
+		return "", fmt.Errorf("failed to get library '%s': %w", chapters[0].LibrarySlug, err)
 	}
 
-	// Find first archive file
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			name := strings.ToLower(entry.Name())
-			if strings.HasSuffix(name, ".cbz") ||
-				strings.HasSuffix(name, ".cbr") ||
-				strings.HasSuffix(name, ".zip") ||
-				strings.HasSuffix(name, ".rar") {
-				return filepath.Join(media.Path, entry.Name()), nil
-			}
-		}
+	// Use the first library folder as root
+	if len(library.Folders) == 0 {
+		return "", fmt.Errorf("library '%s' has no folders configured", chapters[0].LibrarySlug)
 	}
 
-	return "", fmt.Errorf("no archive files found in media directory")
+	// Construct the full path using the chapter's file path
+	chapterPath := filepath.Join(library.Folders[0], chapters[0].File)
+	return chapterPath, nil
 }
 
 // HandlePosterChapterSelect renders a list of chapters to select from
@@ -66,10 +50,10 @@ func HandlePosterChapterSelect(c *fiber.Ctx) error {
 	// Get all chapters
 	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil || len(chapters) == 0 {
-		return HandleView(c, views.EmptyState("No chapters found."))
+		return handleView(c, views.EmptyState("No chapters found."))
 	}
 
-	return HandleView(c, views.PosterEditor(mangaSlug, chapters, "", 0, -1, "", 1))
+	return handleView(c, views.PosterEditor(mangaSlug, chapters, "", 0, -1, "", 1))
 }
 
 // HandlePosterSelector renders the image selector for a chapter
@@ -84,7 +68,7 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 
 	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil {
-		return HandleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
+		return handleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
 	}
 
 	var chapterPage int
@@ -107,7 +91,7 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 	var chapterPath string
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
-		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -115,28 +99,37 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 			return sendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
-			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: chapter file not found")))
+			return handleView(c, views.EmptyState("Error: chapter file not found"))
 		}
-		chapterPath = filepath.Join(media.Path, chapter.File)
+		// Get the library for the chapter
+		library, err := models.GetLibrary(chapter.LibrarySlug)
+		if err != nil {
+			return handleView(c, views.EmptyState(fmt.Sprintf("Error: failed to get library '%s': %v", chapter.LibrarySlug, err)))
+		}
+		if len(library.Folders) == 0 {
+			return handleView(c, views.EmptyState(fmt.Sprintf("Error: library '%s' has no folders configured", chapter.LibrarySlug)))
+		}
+		// Construct the full path using the chapter's file path
+		chapterPath = filepath.Join(library.Folders[0], chapter.File)
 	} else {
 		// Fallback to first chapter if not specified
 		var err error
 		chapterPath, err = getFirstChapterFilePath(media)
 		if err != nil {
-			return HandleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
+			return handleView(c, views.EmptyState(fmt.Sprintf("Error: %v", err)))
 		}
 	}
 
 	// Get count of images in the chapter file
-	imageCount, err := utils.CountImageFiles(chapterPath)
+	imageCount, err := files.CountImageFiles(chapterPath)
 	if err != nil {
-		return HandleView(c, views.EmptyState(fmt.Sprintf("Error counting images: %v", err)))
+		return handleView(c, views.EmptyState(fmt.Sprintf("Error counting images: %v", err)))
 	}
 	if imageCount == 0 {
-		return HandleView(c, views.EmptyState("No images found in the chapter."))
+		return handleView(c, views.EmptyState("No images found in the chapter."))
 	}
 
-	return HandleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, -1, "", chapterPage))
+	return handleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, -1, "", chapterPage))
 }
 
 // HandlePosterPreview renders a preview of a selected image with crop selector
@@ -178,7 +171,7 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 	var chapterPath string
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
-		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -188,7 +181,16 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		if chapter.File == "" {
 			return sendNotFoundError(c, ErrChapterFileReadFailed)
 		}
-		chapterPath = filepath.Join(media.Path, chapter.File)
+		// Get the library for the chapter
+		library, err := models.GetLibrary(chapter.LibrarySlug)
+		if err != nil {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
+		}
+		if len(library.Folders) == 0 {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
+		}
+		// Construct the full path using the chapter's file path
+		chapterPath = filepath.Join(library.Folders[0], chapter.File)
 	} else {
 		// Fallback to first chapter if not specified
 		var err error
@@ -199,17 +201,17 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 	}
 
 	// Extract and get the image data URI
-	imageDataURI, err := utils.GetImageDataURIByIndex(chapterPath, imageIndex)
+	imageDataURI, err := files.GetImageDataURIByIndex(chapterPath, imageIndex)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
-	imageCount, err := utils.CountImageFiles(chapterPath)
+	imageCount, err := files.CountImageFiles(chapterPath)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
-	return HandleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, imageIndex, imageDataURI, chapterPage))
+	return handleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, imageIndex, imageDataURI, chapterPage))
 }
 
 // HandlePosterSet sets a custom poster image based on user selection or upload
@@ -225,15 +227,8 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrMediaNotFound)
 	}
 
-	dataDir := utils.GetDataDirectory()
+	dataDir := files.GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
-
-	// Get config to determine WebP support
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	useWebP := !cfg.DisableWebpConversion
 	posterQuality := 100 // Use full quality for manually uploaded/cropped posters
 
 	// Check for file upload
@@ -251,22 +246,15 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		defer os.Remove(tempPath) // Clean up temp file
 
 		// Load and convert to appropriate format
-		img, err := utils.OpenImage(tempPath)
+		img, err := files.OpenImage(tempPath)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
-		var format string
-		var cachePath string
-		if useWebP {
-			format = "webp"
-			cachePath = fmt.Sprintf("posters/%s.webp", mangaSlug)
-		} else {
-			format = "jpeg"
-			cachePath = fmt.Sprintf("posters/%s.jpg", mangaSlug)
-		}
+		format := "webp"
+		cachePath := fmt.Sprintf("posters/%s.%s", mangaSlug, format)
 
-		imageData, err := utils.EncodeImageToBytes(img, format, posterQuality)
+		imageData, err := files.EncodeImageToBytes(img, format, posterQuality)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -275,7 +263,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		}
 
 		// Generate thumbnails
-		if err := utils.GenerateThumbnails(cachePath, mangaSlug, dataManager.Backend()); err != nil {
+		if err := files.GenerateThumbnails(cachePath, mangaSlug, dataManager.Backend()); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
@@ -290,7 +278,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 
 		// Return success message
 		successMsg := "Poster updated successfully!"
-		return HandleView(c, views.SuccessAlert(successMsg))
+		return handleView(c, views.SuccessAlert(successMsg))
 	}
 
 	// Existing logic for cropping from existing images
@@ -307,7 +295,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	var chapterPath string
 	if chapterSlug != "" {
 		// Look up chapter by slug to get the actual file
-		chapter, err := models.GetChapter(mangaSlug, chapterSlug)
+		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
 			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -317,7 +305,16 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		if chapter.File == "" {
 			return sendNotFoundError(c, ErrChapterFileReadFailed)
 		}
-		chapterPath = filepath.Join(media.Path, chapter.File)
+		// Get the library for the chapter
+		library, err := models.GetLibrary(chapter.LibrarySlug)
+		if err != nil {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
+		}
+		if len(library.Folders) == 0 {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
+		}
+		// Construct the full path using the chapter's file path
+		chapterPath = filepath.Join(library.Folders[0], chapter.File)
 	} else {
 		// Fallback to first chapter if not specified
 		var err error
@@ -328,25 +325,20 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Parse crop data
-	var cropData map[string]interface{}
+	var cropData map[string]any
 	if err := json.Unmarshal([]byte(cropDataStr), &cropData); err != nil {
-		cropData = map[string]interface{}{"x": 0, "y": 0, "width": 0, "height": 0}
+		cropData = map[string]any{"x": 0, "y": 0, "width": 0, "height": 0}
 	}
 
 	// Extract crop from image and cache it
-	storedImageURL, err := utils.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, useWebP, posterQuality)
+	storedImageURL, err := files.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, true, posterQuality)
 	if err != nil {
 		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
-	var fullImagePath string
-	if useWebP {
-		fullImagePath = fmt.Sprintf("posters/%s.webp", mangaSlug)
-	} else {
-		fullImagePath = fmt.Sprintf("posters/%s.jpg", mangaSlug)
-	}
-	if err := utils.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
+	fullImagePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
+	if err := files.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 	}
@@ -358,6 +350,6 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	}
 
 	// Return success message
-	successMsg := fmt.Sprintf("Poster updated successfully!")
-	return HandleView(c, views.SuccessAlert(successMsg))
+	successMsg := "Poster updated successfully!"
+	return handleView(c, views.SuccessAlert(successMsg))
 }

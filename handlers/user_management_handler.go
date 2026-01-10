@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -73,7 +73,7 @@ type AccountListData struct {
 }
 
 // GetAccountListData retrieves data for user account lists (favorites, upvoted, etc.)
-func GetAccountListData(listType AccountListType, params models.QueryParams, userName string) (*AccountListData, error) {
+func GetAccountListData(listType AccountListType, params QueryParams, userName string) (*AccountListData, error) {
 	title, _, emptyMessage, path := GetAccountListConfig(string(listType))
 
 	var getMediasFunc func(models.UserMediaListOptions) ([]models.Media, int, error)
@@ -206,15 +206,16 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 		}
 
 		// HTMX fragment support
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			target := GetHTMXTarget(c)
-			if target == "account-listing" {
-				return HandleView(c, views.AccountMediaListingWithTags(
+			switch target {
+			case "account-listing":
+				return handleView(c, views.AccountMediaListingWithTags(
 					data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
 					data.Path, data.EmptyMessage, params.Tags, params.TagMode, data.AllTags, params.SearchFilter,
 				))
-			} else if target == "account-media-list-results" {
-				return HandleView(c, views.MediaListingFragment(
+			case "account-media-list-results":
+				return handleView(c, views.MediaListingFragment(
 					data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
 					data.EmptyMessage, data.Path, "account-media-list-results",
 					params.Tags, params.TagMode, nil, params.SearchFilter,
@@ -224,7 +225,7 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 
 		// All views now call the standard AccountPageLayout function
 		title, breadcrumbLabel, _, _ := GetAccountListConfig(string(listType))
-		return HandleView(c, views.AccountPageLayout(
+		return handleView(c, views.AccountPageLayout(
 			title, breadcrumbLabel, data.Path, data.Media, params.Page, data.TotalPages, params.Sort, params.Order,
 			data.EmptyMessage, data.AllTags, params.Tags, params.TagMode, params.SearchFilter,
 		))
@@ -260,7 +261,7 @@ func HandleUsers(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersWithData(users, 1, 10, total, ""))
+	return handleView(c, views.UsersWithData(users, 1, 10, total, ""))
 }
 
 // HandleUsersTable renders the users table fragment with pagination and search.
@@ -290,12 +291,12 @@ func HandleUsersTable(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandlePermissionsManagement renders the permissions management page
 func HandlePermissionsManagement(c *fiber.Ctx) error {
-	return HandleView(c, views.PermissionsManagement())
+	return handleView(c, views.PermissionsManagement())
 }
 
 // HandleUserBan demotes and bans the specified user before returning the updated table.
@@ -331,7 +332,7 @@ func HandleUserBan(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserUnban lifts a user's ban and refreshes the table fragment.
@@ -365,7 +366,7 @@ func HandleUserUnban(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserPromote upgrades a user's role and returns the updated table.
@@ -375,7 +376,7 @@ func HandleUserPromote(c *fiber.Ctx) error {
 	if err := models.PromoteUser(username); err != nil {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			page := 1
 			pageSize := 10
 			filter := ""
@@ -400,7 +401,7 @@ func HandleUserPromote(c *fiber.Ctx) error {
 			if err != nil {
 				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 			}
-			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+			return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
@@ -430,7 +431,7 @@ func HandleUserPromote(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleUserDemote reduces a user's role and refreshes the table view.
@@ -440,7 +441,7 @@ func HandleUserDemote(c *fiber.Ctx) error {
 	if err := models.DemoteUser(username); err != nil {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			page := 1
 			pageSize := 10
 			filter := ""
@@ -465,7 +466,7 @@ func HandleUserDemote(c *fiber.Ctx) error {
 			if err != nil {
 				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 			}
-			return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+			return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 		}
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
@@ -495,7 +496,7 @@ func HandleUserDemote(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
 // HandleAccount renders the current user's account page showing favorites, reading lists and liked media
@@ -505,12 +506,12 @@ func HandleAccount(c *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	return HandleView(c, views.Account(userName))
+	return handleView(c, views.Account(userName))
 }
 
 // HandleBannedIPs displays the list of banned IPs
 func HandleBannedIPs(c *fiber.Ctx) error {
-	return HandleView(c, views.BannedIPs())
+	return handleView(c, views.BannedIPs())
 }
 
 // HandleUnbanIP removes an IP from the banned list
@@ -530,7 +531,7 @@ func HandleUnbanIP(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.BannedIPsTable(bannedIPs))
+	return handleView(c, views.BannedIPsTable(bannedIPs))
 }
 
 // HandleExternalAccounts shows the external accounts page
@@ -546,7 +547,7 @@ func HandleExternalAccounts(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleConnectMAL saves MAL credentials
@@ -585,7 +586,7 @@ func HandleConnectMAL(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleAuthorizeMAL redirects to MAL for OAuth authorization
@@ -670,7 +671,7 @@ func HandleConnectAniList(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleAuthorizeAniList redirects to AniList for OAuth authorization
@@ -733,7 +734,7 @@ func HandleDisconnectAniList(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleDisconnectMAL disconnects the MAL account
@@ -754,7 +755,7 @@ func HandleDisconnectMAL(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleMALCallback handles OAuth callback from MAL
@@ -878,7 +879,7 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // exchangeAniListToken exchanges authorization code for AniList access token
@@ -929,7 +930,7 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return HandleView(c, views.ExternalAccountsPage(accounts))
+	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleUploadAvatar handles avatar image uploads
@@ -951,7 +952,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	// Delete old avatar file if exists
 	if currentUser.Avatar != "" {
 		oldFilename := strings.TrimPrefix(currentUser.Avatar, "/api/avatars/")
-		oldFilepath := filepath.Join(utils.GetDataDirectory(), "avatars", oldFilename)
+		oldFilepath := filepath.Join(files.GetDataDirectory(), "avatars", oldFilename)
 		if err := os.Remove(oldFilepath); err != nil && !os.IsNotExist(err) {
 			// Log but don't fail the request
 			log.Warnf("Failed to delete old avatar file %s: %v", oldFilepath, err)
@@ -984,10 +985,10 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 		ext = ".gif"
 	}
 	filename := fmt.Sprintf("%s_%d%s", userName, time.Now().Unix(), ext)
-	filePath := filepath.Join(utils.GetDataDirectory(), "avatars", filename)
+	filePath := filepath.Join(files.GetDataDirectory(), "avatars", filename)
 
 	// Ensure avatars directory exists
-	avatarsDir := filepath.Join(utils.GetDataDirectory(), "avatars")
+	avatarsDir := filepath.Join(files.GetDataDirectory(), "avatars")
 	if err := os.MkdirAll(avatarsDir, 0755); err != nil {
 		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
@@ -1007,7 +1008,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 
 	// Return success response for HTMX
 	if c.Get("HX-Request") == "true" {
-		triggerCustomNotification(c, "avatarUpdated", map[string]interface{}{
+		triggerCustomNotification(c, "avatarUpdated", map[string]any{
 			"message": "Avatar updated successfully",
 			"status":  "success",
 		})

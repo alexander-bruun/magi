@@ -20,7 +20,7 @@ func HandleCaptchaPage(c *fiber.Ctx) error {
 		errorMsg = "Invalid captcha. Please try again."
 	}
 
-	return HandleView(c, views.Captcha(errorMsg, id))
+	return handleView(c, views.Captcha(errorMsg, id))
 }
 
 // HandleCaptchaImage serves captcha images

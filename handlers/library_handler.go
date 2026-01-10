@@ -10,7 +10,7 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -78,7 +78,7 @@ func GetLibraries() ([]models.Library, error) {
 
 // HandleLibraries renders the libraries dashboard with the current library list.
 func HandleLibraries(c *fiber.Ctx) error {
-	return HandleView(c, views.Libraries())
+	return handleView(c, views.Libraries())
 }
 
 func renderLibraryTable(libraries []models.Library) (string, error) {
@@ -204,7 +204,6 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
-		Enabled:     formData.Enabled,
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
@@ -294,75 +293,27 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
 func HandleAddFolder(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/libraries")
 	}
 
-	return HandleView(c, views.Folder(""))
+	return handleView(c, views.Folder(""))
 }
 
 // HandleRemoveFolder acknowledges folder removal requests without returning content.
 func HandleRemoveFolder(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/libraries")
 	}
 
 	return c.SendString("")
 }
 
-// HandleEnableLibrary enables a library
-func HandleEnableLibrary(c *fiber.Ctx) error {
-	slug := c.Params("slug")
-
-	err := models.EnableLibrary(slug)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to enable library")
-	}
-
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	tableContent, err := renderLibraryTable(libraries)
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	triggerNotification(c, "Library enabled successfully", "success")
-	setCommonHeaders(c)
-	return c.SendString(tableContent)
-}
-
-// HandleDisableLibrary disables a library
-func HandleDisableLibrary(c *fiber.Ctx) error {
-	slug := c.Params("slug")
-
-	err := models.DisableLibrary(slug)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to disable library")
-	}
-
-	libraries, err := models.GetLibraries()
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	tableContent, err := renderLibraryTable(libraries)
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	triggerNotification(c, "Library disabled successfully", "success")
-	setCommonHeaders(c)
-	return c.SendString(tableContent)
-}
-
 // HandleCancelEdit resets the library form to its default state.
 func HandleCancelEdit(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/libraries")
 	}
 
@@ -384,7 +335,7 @@ func HandleBetter(c *fiber.Ctx) error {
 		page = 1
 	}
 
-	return HandleView(c, views.Better(page))
+	return handleView(c, views.Better(page))
 }
 
 // HandleDismissDuplicate dismisses a media duplicate entry
@@ -488,7 +439,7 @@ func findDuplicatesInLibrary(library models.Library, threshold float64) [][]mode
 				continue
 			}
 
-			similarity := utils.SimilarityRatio(allFolders[i], allFolders[j])
+			similarity := text.SimilarityRatio(allFolders[i], allFolders[j])
 			if similarity >= threshold {
 				group = append(group, models.DuplicateFolder{
 					Name:       allFolders[j],

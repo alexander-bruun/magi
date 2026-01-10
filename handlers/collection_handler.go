@@ -44,7 +44,7 @@ func HandleCollections(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	return HandleView(c, views.Collections(collections))
+	return handleView(c, views.Collections(collections))
 }
 
 // HandleUserCollections displays collections created by the current user
@@ -66,7 +66,7 @@ func HandleUserCollections(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	return HandleView(c, views.Collections(collections))
+	return handleView(c, views.Collections(collections))
 }
 
 // HandleCollection displays a specific collection
@@ -116,17 +116,17 @@ func HandleCollection(c *fiber.Ctx) error {
 
 	canEdit := userName != "" && (userName == collection.CreatedBy || userName == "admin" || userName == "moderator")
 
-	return HandleView(c, views.Collection(collectionWithMedia, canEdit))
+	return handleView(c, views.Collection(collectionWithMedia, canEdit))
 }
 
 // HandleCreateCollectionForm displays the create collection form
 func HandleCreateCollectionForm(c *fiber.Ctx) error {
-	return HandleView(c, views.CreateCollection())
+	return handleView(c, views.CreateCollection())
 }
 
 // HandleCreateCollectionModal displays the create collection form as a modal
 func HandleCreateCollectionModal(c *fiber.Ctx) error {
-	return HandleView(c, views.CreateCollectionModal())
+	return handleView(c, views.CreateCollectionModal())
 }
 
 // HandleCreateCollection processes collection creation
@@ -186,7 +186,7 @@ func HandleEditCollectionForm(c *fiber.Ctx) error {
 		return sendForbiddenError(c, ErrForbidden)
 	}
 
-	return HandleView(c, views.EditCollection(*collection))
+	return handleView(c, views.EditCollection(*collection))
 }
 
 // HandleEditCollectionModal displays the edit collection form as a modal
@@ -210,7 +210,7 @@ func HandleEditCollectionModal(c *fiber.Ctx) error {
 		return sendForbiddenError(c, ErrForbidden)
 	}
 
-	return HandleView(c, views.EditCollectionModal(*collection))
+	return handleView(c, views.EditCollectionModal(*collection))
 }
 
 // HandleUpdateCollection processes collection updates
@@ -402,7 +402,7 @@ func HandleGetMediaCollections(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.MediaCollections(mediaSlug, collections, mediaCollections))
+	return handleView(c, views.MediaCollections(mediaSlug, collections, mediaCollections))
 }
 
 // HandleGetMediaCollectionsModal gets collections modal content for a specific media
@@ -442,7 +442,7 @@ func HandleGetMediaCollectionsModal(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.MediaCollectionsModal(mediaSlug, collections))
+	return handleView(c, views.MediaCollectionsModal(mediaSlug, collections))
 }
 
 // HandleAddMediaToCollectionFromMedia adds media to a collection from the media page
@@ -489,7 +489,7 @@ func HandleAddMediaToCollectionFromMedia(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.MediaCollectionItem(mediaSlug, *collection, true))
+	return handleView(c, views.MediaCollectionItem(mediaSlug, *collection, true))
 }
 
 // HandleRemoveMediaFromCollectionFromMedia removes media from a collection from the media page
@@ -536,5 +536,5 @@ func HandleRemoveMediaFromCollectionFromMedia(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.MediaCollectionItem(mediaSlug, *collection, false))
+	return handleView(c, views.MediaCollectionItem(mediaSlug, *collection, false))
 }

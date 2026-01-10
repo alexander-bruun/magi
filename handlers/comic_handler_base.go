@@ -19,7 +19,17 @@ import (
 )
 
 // ProcessImageForServing processes an image for serving with PNG compression (fallback)
-func ProcessImageForServing(filePath string, quality int) ([]byte, string, error) {
+func ProcessImageForServing(filePath string) ([]byte, string, error) {
+	// Check if the file is already WebP
+	if strings.ToLower(filepath.Ext(filePath)) == ".webp" {
+		// Serve WebP as is
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, "", err
+		}
+		return data, "image/webp", nil
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, "", err
@@ -42,7 +52,7 @@ func ProcessImageForServing(filePath string, quality int) ([]byte, string, error
 }
 
 // ServeComicArchiveFromZIP serves an image from a ZIP archive with PNG fallback
-func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
+func ServeComicArchiveFromZIP(filePath string, page int) ([]byte, string, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, "", err
@@ -73,30 +83,30 @@ func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWeb
 	}
 	defer rc.Close()
 
-	if disableWebpConversion {
-		// Serve original image without recompression
-		data, err := io.ReadAll(rc)
-		if err != nil {
-			return nil, "", err
-		}
-		return data, getContentType(file.Name), nil
-	}
-
-	img, _, err := image.Decode(rc)
+	// Serve raw image bytes without processing
+	data, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, "", err
 	}
-
-	var buf bytes.Buffer
-	// Fallback to PNG when WebP is not available
-	if err := png.Encode(&buf, img); err != nil {
-		return nil, "", err
+	// Determine content type from file extension
+	var contentType string
+	switch strings.ToLower(filepath.Ext(file.Name)) {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	case ".gif":
+		contentType = "image/gif"
+	case ".webp":
+		contentType = "image/webp"
+	default:
+		contentType = "application/octet-stream"
 	}
-	return buf.Bytes(), "image/png", nil
+	return data, contentType, nil
 }
 
 // ServeComicArchiveFromRAR serves an image from a RAR archive with PNG fallback
-func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
+func ServeComicArchiveFromRAR(filePath string, page int) ([]byte, string, error) {
 	r, err := rardecode.OpenReader(filePath)
 	if err != nil {
 		return nil, "", err
@@ -140,26 +150,13 @@ func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWeb
 		}
 	}
 
-	if disableWebpConversion {
-		// Serve original image without recompression
-		data, err := io.ReadAll(r)
-		if err != nil {
-			return nil, "", err
-		}
-		return data, getContentType(imageFiles[page-1].Name), nil
-	}
-
-	img, _, err := image.Decode(r)
+	// Serve raw image bytes without processing
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, "", err
 	}
-
-	var buf bytes.Buffer
-	// Fallback to PNG when WebP is not available
-	if err := png.Encode(&buf, img); err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), "image/png", nil
+	contentType := getContentType(imageFiles[page-1].Name)
+	return data, contentType, nil
 }
 
 // getContentType returns the content type for a file extension

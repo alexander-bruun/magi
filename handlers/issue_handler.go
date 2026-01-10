@@ -11,7 +11,7 @@ import (
 
 // HandleReportIssue displays the issue reporting form
 func HandleReportIssue(c *fiber.Ctx) error {
-	return HandleView(c, views.ReportIssue())
+	return handleView(c, views.ReportIssue())
 }
 
 // HandleCreateIssue processes the issue report submission
@@ -120,10 +120,10 @@ func HandleIssuesAdmin(c *fiber.Ctx) error {
 
 	// Check if this is an HTMX request (for filtering/sorting)
 	if c.Get("HX-Request") == "true" {
-		return HandleView(c, views.IssuesTable(issues, status, category, limit, offset))
+		return handleView(c, views.IssuesTable(issues, status, category, limit, offset))
 	}
 
-	return HandleView(c, views.Issues(issues, stats, status, category, limit, offset))
+	return handleView(c, views.Issues(issues, stats, status, category, limit, offset))
 }
 
 // HandleUpdateIssueStatus updates the status of an issue

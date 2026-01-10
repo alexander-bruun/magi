@@ -27,10 +27,8 @@ var roleHierarchy = map[string]int{
 
 // Bot detection constants
 const (
-	maxSeriesAccesses  = 5   // Max series accesses per time window
-	maxChapterAccesses = 10  // Max chapter accesses per time window
-	accessTimeWindow   = 60  // Time window in seconds
-	cleanupInterval    = 300 // Cleanup old entries every 5 minutes
+	accessTimeWindow = 60  // Time window in seconds
+	cleanupInterval  = 300 // Cleanup old entries every 5 minutes
 )
 
 // Rate limiting tracking with memory management
@@ -168,7 +166,7 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			if err == nil {
 				return c.Next()
 			}
-			if IsHTMXRequest(c) && err == fiber.ErrForbidden {
+			if isHTMXRequest(c) && err == fiber.ErrForbidden {
 				triggerNotification(c, "You don't have permission to access this resource.", "destructive")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")
@@ -178,14 +176,14 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 		// Calculate target URL, adjusting for series sub-pages
 		originalURL := c.OriginalURL()
 		target := originalURL
-		if strings.HasPrefix(originalURL, "/series/") {
-			parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
+		if after, ok := strings.CutPrefix(originalURL, "/series/"); ok {
+			parts := strings.Split(after, "/")
 			if len(parts) > 1 {
 				target = "/series/" + parts[0]
 			}
 		}
 
-		if IsHTMXRequest(c) {
+		if isHTMXRequest(c) {
 			// For unauthenticated HTMX requests, we might want to redirect to login
 			// But if we want to avoid redirecting, we can show a notification
 			// However, usually unauthenticated access should redirect to login.
@@ -231,7 +229,7 @@ func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 	return nil
 }
 
-func clearSessionCookie(c *fiber.Ctx) {
+func ClearSessionCookie(c *fiber.Ctx) {
 	expiredTime := time.Now().Add(-time.Hour)
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
@@ -245,7 +243,7 @@ func clearSessionCookie(c *fiber.Ctx) {
 	})
 }
 
-func setSessionCookie(c *fiber.Ctx, sessionToken string) {
+func SetSessionCookie(c *fiber.Ctx, sessionToken string) {
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",
@@ -304,6 +302,7 @@ func RequestIDMiddleware() fiber.Handler {
 // RateLimitingMiddleware limits the number of requests per IP
 func RateLimitingMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		log.Debugf("RateLimitingMiddleware: checking request to %s", c.Path())
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			log.Errorf("Failed to get app config for rate limiting: %v", err)
@@ -311,11 +310,13 @@ func RateLimitingMiddleware() fiber.Handler {
 		}
 
 		if !cfg.RateLimitEnabled {
+			log.Debugf("RateLimitingMiddleware: rate limiting disabled")
 			return c.Next()
 		}
 
 		// Bypass rate limiting for moderators and admins
 		if isPrivilegedUser(c) {
+			log.Debugf("RateLimitingMiddleware: bypassing for privileged user")
 			return c.Next()
 		}
 
@@ -339,21 +340,18 @@ func RateLimitingMiddleware() fiber.Handler {
 
 		// Check if IP is currently blocked
 		if !tracker.BlockUntil.IsZero() && now.Before(tracker.BlockUntil) {
-			seconds := int(tracker.BlockUntil.Sub(now).Seconds())
-			if seconds < 0 {
-				seconds = 0
-			}
+			seconds := max(int(tracker.BlockUntil.Sub(now).Seconds()), 0)
 			log.Infof("Rate limit: blocked IP %s for %d more seconds", ip, seconds)
 
 			// For HTMX requests, return rate limit notification
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				message := "You are temporarily blocked. Please wait before trying again."
 				triggerNotification(c, message, "warning")
 				return c.Status(fiber.StatusTooManyRequests).SendString("")
 			}
 
 			// Return rate limit error page for regular requests
-			return HandleView(c, views.RateLimit(seconds))
+			return handleView(c, views.RateLimit(seconds))
 		}
 
 		// Clear expired block
@@ -391,14 +389,14 @@ func RateLimitingMiddleware() fiber.Handler {
 			log.Infof("Rate limit exceeded for IP: %s, blocked for %d seconds", ip, blockDuration)
 
 			// For HTMX requests, return rate limit notification
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				message := "Too many requests. You are temporarily blocked."
 				triggerNotification(c, message, "warning")
 				return c.Status(fiber.StatusTooManyRequests).SendString("")
 			}
 
 			// Return rate limit error page for regular requests
-			return HandleView(c, views.RateLimit(blockDuration))
+			return handleView(c, views.RateLimit(blockDuration))
 		}
 
 		// Add current request to ring buffer (fixed size)
@@ -472,7 +470,7 @@ func BotDetectionMiddleware() fiber.Handler {
 			c.Locals("bot_check_error", err)
 		} else if banned {
 			log.Infof("Blocking banned IP: %s", ip)
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				triggerNotification(c, "Access denied: Your IP address has been blocked.", "destructive")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")
@@ -623,8 +621,8 @@ func ConditionalAuthMiddleware() fiber.Handler {
 		// If anonymous has no permissions, require authentication
 		originalURL := c.OriginalURL()
 		target := originalURL
-		if strings.HasPrefix(originalURL, "/series/") {
-			parts := strings.Split(strings.TrimPrefix(originalURL, "/series/"), "/")
+		if after, ok := strings.CutPrefix(originalURL, "/series/"); ok {
+			parts := strings.Split(after, "/")
 			if len(parts) > 1 {
 				target = "/series/" + parts[0]
 			}
@@ -725,7 +723,7 @@ func ImageProtectionMiddleware() fiber.Handler {
 		// If score is very high, block outright
 		if score >= 80 {
 			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
-			if IsHTMXRequest(c) {
+			if isHTMXRequest(c) {
 				triggerNotification(c, "Access denied: suspicious activity detected", "destructive")
 				// Return 204 No Content to prevent navigation/swap but show notification
 				return c.Status(fiber.StatusNoContent).SendString("")

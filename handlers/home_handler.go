@@ -1,47 +1,11 @@
 package handlers
 
 import (
-	"fmt"
-
-	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
-
-const (
-	sessionTokenCookie = "session_token"
-)
-
-// HandleView wraps a page component with the layout unless the request is an HTMX fragment.
-func HandleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotifications ...interface{}) error {
-	// Return partial content if HTMX request
-	if IsHTMXRequest(c) {
-		return renderComponent(c, content)
-	}
-
-	userRole, err := getUserRole(c)
-	if err != nil {
-		// Log the error, but continue with an empty user role
-		// This allows the page to render for non-authenticated users
-		log.Errorf("Error getting user role: %v", err)
-	}
-
-	unreadCount := 0
-	notifications := []models.UserNotification{}
-	if len(unreadCountAndNotifications) > 0 {
-		unreadCount = unreadCountAndNotifications[0].(int)
-	}
-	if len(unreadCountAndNotifications) > 1 {
-		notifications = unreadCountAndNotifications[1].([]models.UserNotification)
-	}
-
-	// pass current request path so templates can mark active nav items
-	base := views.Layout(content, userRole, c.Path(), unreadCount, notifications)
-	return renderComponent(c, base)
-}
 
 // HandleHome renders the landing page with recent media activity and aggregate stats.
 func HandleHome(c *fiber.Ctx) error {
@@ -68,23 +32,34 @@ func HandleHome(c *fiber.Ctx) error {
 
 	log.Debugf("User %s has access to libraries: %v", userName, accessibleLibraries)
 
-	// Fetch data for the home page
-	opts := models.SearchOptions{
-		Filter:              "",
-		Page:                1,
-		PageSize:            20,
-		SortBy:              "created_at",
-		SortOrder:           "desc",
-		AccessibleLibraries: accessibleLibraries,
+	// For admins, allow access to all without library filter
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil && user.Role == "admin" {
+			accessibleLibraries = []string{} // Admins can see all
+		}
 	}
-	recentlyAdded, _, _ := models.SearchMediasWithOptions(opts)
+
 	cfg, err := models.GetAppConfig()
 	if err != nil {
 		log.Errorf("Failed to get app config: %v", err)
 	}
 
+	// Fetch data for the home page
+	opts := models.SearchOptions{
+		Filter:              "",
+		Page:                1,
+		PageSize:            12, // Reduced from 20
+		SortBy:              "created_at",
+		SortOrder:           "desc",
+		AccessibleLibraries: accessibleLibraries,
+		ContentRatingLimit:  cfg.ContentRatingLimit,
+	}
+
+	recentlyAdded, _, _ := models.SearchMediasWithOptions(opts)
+
 	// Fetch latest updates data
-	latestUpdates, err := models.GetRecentSeriesWithChapters(18, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries)
+	latestUpdates, err := models.GetRecentSeriesWithChapters(12, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries) // Reduced from 18
 	if err != nil {
 		log.Errorf("Failed to get latest updates: %v", err)
 		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error
@@ -115,10 +90,18 @@ func HandleHome(c *fiber.Ctx) error {
 		enrichmentData = make(map[string]models.MediaEnrichmentData) // Empty map if error
 	}
 
+	// Batch fetch vote data
+	voteData, err := models.BatchGetMediaVotes(allSlugs)
+	if err != nil {
+		log.Errorf("Error fetching vote data: %v", err)
+		voteData = make(map[string][3]int) // Empty map if error
+	}
+
 	// Enrich recently added media
 	enrichedRecentlyAdded := make([]models.EnrichedMedia, len(recentlyAdded))
 	for i, m := range recentlyAdded {
 		enrichData := enrichmentData[m.Slug]
+		votes := voteData[m.Slug]
 		enrichedRecentlyAdded[i] = models.EnrichedMedia{
 			Media:             m,
 			PremiumCountdown:  enrichData.PremiumCountdown,
@@ -126,6 +109,9 @@ func HandleHome(c *fiber.Ctx) error {
 			LatestChapterName: enrichData.LatestChapterName,
 			AverageRating:     enrichData.AverageRating,
 			ReviewCount:       enrichData.ReviewCount,
+			VoteScore:         votes[0],
+			Upvotes:           votes[1],
+			Downvotes:         votes[2],
 		}
 	}
 
@@ -133,6 +119,7 @@ func HandleHome(c *fiber.Ctx) error {
 	enrichedRecentlyUpdated := make([]models.EnrichedMedia, len(recentlyUpdated))
 	for i, m := range recentlyUpdated {
 		enrichData := enrichmentData[m.Slug]
+		votes := voteData[m.Slug]
 		enrichedRecentlyUpdated[i] = models.EnrichedMedia{
 			Media:             m,
 			PremiumCountdown:  enrichData.PremiumCountdown,
@@ -140,24 +127,25 @@ func HandleHome(c *fiber.Ctx) error {
 			LatestChapterName: enrichData.LatestChapterName,
 			AverageRating:     enrichData.AverageRating,
 			ReviewCount:       enrichData.ReviewCount,
+			VoteScore:         votes[0],
+			Upvotes:           votes[1],
+			Downvotes:         votes[2],
 		}
 	}
 
-	topMedias, err := models.GetTopMedias(10, accessibleLibraries)
+	topMedias, err := models.GetTopMedias(3, accessibleLibraries) // Reduced from 6
 	if err != nil {
 		log.Errorf("Error getting top medias: %v", err)
 	}
 	log.Debugf("Got %d top medias for libraries %v", len(topMedias), accessibleLibraries)
 
-	topReadToday, err := models.GetTopReadMedias("today", 10, accessibleLibraries)
+	topReadToday, err := models.GetTopReadMedias("today", 3, accessibleLibraries) // Reduced from 6
 	if err != nil {
 		log.Errorf("Error getting top read today: %v", err)
 	}
 	log.Debugf("Got %d top read today for libraries %v", len(topReadToday), accessibleLibraries)
-	topReadWeek, _ := models.GetTopReadMedias("week", 10, accessibleLibraries)
-	topReadMonth, _ := models.GetTopReadMedias("month", 10, accessibleLibraries)
-	topReadYear, _ := models.GetTopReadMedias("year", 10, accessibleLibraries)
-	topReadAll, _ := models.GetTopReadMedias("all", 10, accessibleLibraries)
+	topReadWeek, _ := models.GetTopReadMedias("week", 3, accessibleLibraries)
+	topReadAll, _ := models.GetTopReadMedias("all", 3, accessibleLibraries)
 
 	// No need to filter top media lists anymore - already filtered at database level
 
@@ -186,26 +174,6 @@ func HandleHome(c *fiber.Ctx) error {
 		highlights = []models.HighlightWithMedia{} // Empty slice if error
 	}
 
-	// Filter highlights to only include accessible libraries
-	if len(accessibleLibraries) > 0 {
-		// Create a set for O(1) lookup
-		librarySet := make(map[string]struct{}, len(accessibleLibraries))
-		for _, slug := range accessibleLibraries {
-			librarySet[slug] = struct{}{}
-		}
-
-		filteredHighlights := make([]models.HighlightWithMedia, 0, len(highlights))
-		for _, highlight := range highlights {
-			if _, ok := librarySet[highlight.Media.LibrarySlug]; ok {
-				filteredHighlights = append(filteredHighlights, highlight)
-			}
-		}
-		highlights = filteredHighlights
-	} else if len(accessibleLibraries) == 0 && userName != "" {
-		// If user has no accessible libraries, clear highlights
-		highlights = []models.HighlightWithMedia{}
-	}
-
 	// Fetch notifications for logged-in users
 	var notifications []models.UserNotification
 	if userName != "" {
@@ -222,13 +190,13 @@ func HandleHome(c *fiber.Ctx) error {
 		stats = models.HomePageStats{}
 	}
 
-	return HandleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadMonth, topReadYear, topReadAll, latestUpdates, highlights, stats, unreadCount, notifications), unreadCount, notifications)
+	return handleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadAll, latestUpdates, highlights, stats, unreadCount, notifications), unreadCount, notifications)
 }
 
 // HandleTopPopularFull renders the Popular section with sub-navigation
 func HandleTopPopularFull(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/")
 	}
 
@@ -284,7 +252,7 @@ func HandleTopPopularFull(c *fiber.Ctx) error {
 // HandleTopReadFull renders the Most Read section with sub-navigation
 func HandleTopReadFull(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/")
 	}
 
@@ -340,7 +308,7 @@ func HandleTopReadFull(c *fiber.Ctx) error {
 // HandleTopPopularCard renders the full top 10 card with popular content and correct active tab
 func HandleTopPopularCard(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/")
 	}
 
@@ -403,7 +371,7 @@ func HandleTopPopularCard(c *fiber.Ctx) error {
 // HandleTopReadCard renders the full top 10 card with read content and correct active tab
 func HandleTopReadCard(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the home page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/")
 	}
 
@@ -465,70 +433,5 @@ func HandleTopReadCard(c *fiber.Ctx) error {
 
 // HandleNotFound renders the generic not-found page for unrouted paths.
 func HandleNotFound(c *fiber.Ctx) error {
-	return HandleView(c, views.NotFound())
-}
-
-// Helper functions
-
-func renderComponent(c *fiber.Ctx, component templ.Component) error {
-	// Preserve the status code if it was already set
-	statusCode := c.Response().StatusCode()
-	if statusCode == 0 {
-		statusCode = fiber.StatusOK
-	}
-
-	handler := adaptor.HTTPHandler(templ.Handler(component))
-	err := handler(c)
-
-	// Restore the status code after rendering
-	c.Status(statusCode)
-	return err
-}
-
-func getUserRole(c *fiber.Ctx) (string, error) {
-	sessionToken := c.Cookies(sessionTokenCookie)
-	if sessionToken == "" {
-		return "", nil
-	}
-
-	userName, err := models.ValidateSessionToken(sessionToken)
-	if err != nil {
-		return "", fmt.Errorf("invalid session token")
-	}
-
-	user, err := models.FindUserByUsername(userName)
-	if err != nil {
-		return "", fmt.Errorf("failed to find user: %s", userName)
-	}
-	if user == nil {
-		return "", fmt.Errorf("user not found: %s", userName)
-	}
-
-	return user.Role, nil
-}
-
-// handleError renders an error view with an appropriate HTTP status code
-func handleError(c *fiber.Ctx, err error) error {
-	return handleErrorWithStatus(c, err, fiber.StatusInternalServerError)
-}
-
-// handleErrorWithStatus renders an error view with a custom HTTP status code
-func handleErrorWithStatus(c *fiber.Ctx, err error, status int) error {
-	c.Status(status)
-	return HandleView(c, views.ErrorWithStatus(status, err.Error()))
-}
-
-// filterMediaByAccessibleLibraries filters a slice of media to only include those from accessible libraries
-func filterMediaByAccessibleLibraries(media []models.Media, librarySet map[string]struct{}) []models.Media {
-	if len(librarySet) == 0 {
-		return []models.Media{}
-	}
-
-	filtered := make([]models.Media, 0, len(media))
-	for _, m := range media {
-		if _, ok := librarySet[m.LibrarySlug]; ok {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
+	return handleView(c, views.NotFound())
 }

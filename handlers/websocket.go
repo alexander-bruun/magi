@@ -155,7 +155,7 @@ func (m *JobStatusManager) sendActiveJobsToClient(conn *websocket.Conn) {
 	m.mu.RUnlock()
 
 	if len(jobs) > 0 {
-		message := map[string]interface{}{
+		message := map[string]any{
 			"action": "jobs_update",
 			"jobs":   jobs,
 		}
@@ -180,7 +180,7 @@ func (m *JobStatusManager) broadcastJobUpdate() {
 	}
 	m.mu.RUnlock()
 
-	message := map[string]interface{}{
+	message := map[string]any{
 		"action": "jobs_update",
 		"jobs":   jobs,
 	}

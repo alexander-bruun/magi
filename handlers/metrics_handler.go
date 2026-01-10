@@ -413,5 +413,5 @@ func HandleMonitoring(c *fiber.Ctx) error {
 	}
 	data.DiskStats = marshallIfOk("disk stats", diskStats)
 
-	return HandleView(c, views.Monitoring(data))
+	return handleView(c, views.Monitoring(data))
 }

@@ -101,14 +101,14 @@ func HandleMediaVote(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrMediaVoteFailed, err)
 	}
 
-	return HandleView(c, views.MediaVoteFragment(mangaSlug, data.Score, data.UpVotes, data.DownVotes, data.UserVote))
+	return handleView(c, views.MediaVoteFragment(mangaSlug, data.Score, data.UpVotes, data.DownVotes, data.UserVote))
 }
 
 // HandleMediaVoteFragment returns the vote UI fragment for a media. If user is logged in,
 // it will show their current selection highlighted.
 func HandleMediaVoteFragment(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the media page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		mangaSlug := c.Params("media")
 		return c.Redirect("/series/" + mangaSlug)
 	}
@@ -126,9 +126,9 @@ func HandleMediaVoteFragment(c *fiber.Ctx) error {
 	}
 	if userName == "" {
 		// For anonymous users, show only the stats without buttons
-		return HandleView(c, views.MediaVoteFragmentAnonymous(mangaSlug, score, up, down))
+		return handleView(c, views.MediaVoteFragmentAnonymous(mangaSlug, score, up, down))
 	}
-	return HandleView(c, views.MediaVoteFragment(mangaSlug, score, up, down, userVote))
+	return handleView(c, views.MediaVoteFragment(mangaSlug, score, up, down, userVote))
 }
 
 // HandleMediaFavorite handles a user's favorite/unfavorite action for a media via HTMX.
@@ -166,13 +166,13 @@ func HandleMediaFavorite(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrMediaFavoriteFailed, err)
 	}
 	isFav, _ := models.IsFavoriteForUser(userName, mangaSlug)
-	return HandleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
+	return handleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
 }
 
 // HandleMediaFavoriteFragment returns the favorite UI fragment for a media.
 func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the media page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		mangaSlug := c.Params("media")
 		return c.Redirect("/series/" + mangaSlug)
 	}
@@ -190,9 +190,9 @@ func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
 	}
 	if userName == "" {
 		// For anonymous users, show only the count without buttons
-		return HandleView(c, views.MediaFavoriteFragmentAnonymous(mangaSlug, favCount))
+		return handleView(c, views.MediaFavoriteFragmentAnonymous(mangaSlug, favCount))
 	}
-	return HandleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
+	return handleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
 }
 
 // HandleAddHighlight handles adding a media to highlights via HTMX.
@@ -243,7 +243,7 @@ func HandleAddHighlight(c *fiber.Ctx) error {
 	}
 
 	triggerNotification(c, "Series added to highlights successfully", "success")
-	return HandleView(c, views.MediaHighlightFragment(mediaSlug, true))
+	return handleView(c, views.MediaHighlightFragment(mediaSlug, true))
 }
 
 // HandleRemoveHighlight handles removing a media from highlights via HTMX.
@@ -272,5 +272,5 @@ func HandleRemoveHighlight(c *fiber.Ctx) error {
 	}
 
 	triggerNotification(c, "Series removed from highlights successfully", "success")
-	return HandleView(c, views.MediaHighlightFragment(mediaSlug, false))
+	return handleView(c, views.MediaHighlightFragment(mediaSlug, false))
 }

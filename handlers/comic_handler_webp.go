@@ -19,7 +19,17 @@ import (
 )
 
 // ProcessImageForServing processes an image for serving with WebP compression
-func ProcessImageForServing(filePath string, quality int) ([]byte, string, error) {
+func ProcessImageForServing(filePath string) ([]byte, string, error) {
+	// Check if the file is already WebP
+	if strings.ToLower(filepath.Ext(filePath)) == ".webp" {
+		// Serve WebP as is
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, "", err
+		}
+		return data, "image/webp", nil
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, "", err
@@ -32,14 +42,8 @@ func ProcessImageForServing(filePath string, quality int) ([]byte, string, error
 	}
 
 	var buf bytes.Buffer
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	err = webp.Encode(&buf, img, &webp.Options{Quality: webpQuality})
+	// Use WebP at full quality
+	err = webp.Encode(&buf, img, &webp.Options{Quality: 100})
 	if err != nil {
 		return nil, "", err
 	}
@@ -48,7 +52,7 @@ func ProcessImageForServing(filePath string, quality int) ([]byte, string, error
 }
 
 // ServeComicArchiveFromZIP serves an image from a ZIP archive with WebP encoding
-func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
+func ServeComicArchiveFromZIP(filePath string, page int) ([]byte, string, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, "", err
@@ -79,13 +83,14 @@ func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWeb
 	}
 	defer rc.Close()
 
-	if disableWebpConversion {
-		// Serve original image without recompression
+	// Check if the file is already WebP
+	if strings.ToLower(filepath.Ext(file.Name)) == ".webp" {
+		// Serve WebP as is
 		data, err := io.ReadAll(rc)
 		if err != nil {
 			return nil, "", err
 		}
-		return data, getContentType(file.Name), nil
+		return data, "image/webp", nil
 	}
 
 	img, _, err := image.Decode(rc)
@@ -94,22 +99,15 @@ func ServeComicArchiveFromZIP(filePath string, page int, quality int, disableWeb
 	}
 
 	var buf bytes.Buffer
-	// Use WebP
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
+	// Use WebP at full quality
+	if err := webp.Encode(&buf, img, &webp.Options{Quality: 100}); err != nil {
 		return nil, "", err
 	}
 	return buf.Bytes(), "image/webp", nil
 }
 
 // ServeComicArchiveFromRAR serves an image from a RAR archive with WebP encoding
-func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWebpConversion bool) ([]byte, string, error) {
+func ServeComicArchiveFromRAR(filePath string, page int) ([]byte, string, error) {
 	r, err := rardecode.OpenReader(filePath)
 	if err != nil {
 		return nil, "", err
@@ -153,33 +151,13 @@ func ServeComicArchiveFromRAR(filePath string, page int, quality int, disableWeb
 		}
 	}
 
-	if disableWebpConversion {
-		// Serve original image without recompression
-		data, err := io.ReadAll(r)
-		if err != nil {
-			return nil, "", err
-		}
-		return data, getContentType(imageFiles[page-1].Name), nil
-	}
-
-	img, _, err := image.Decode(r)
+	// Serve raw image bytes without processing
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, "", err
 	}
-
-	var buf bytes.Buffer
-	// Use WebP
-	webpQuality := float32(quality)
-	if webpQuality < 0 {
-		webpQuality = 0
-	}
-	if webpQuality > 100 {
-		webpQuality = 100
-	}
-	if err := webp.Encode(&buf, img, &webp.Options{Quality: webpQuality}); err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), "image/webp", nil
+	contentType := getContentType(imageFiles[page-1].Name)
+	return data, contentType, nil
 }
 
 // getContentType returns the content type for a file extension

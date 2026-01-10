@@ -13,29 +13,19 @@ import (
 
 // HandleGetComments retrieves comments for a target (media or chapter)
 func HandleGetComments(c *fiber.Ctx) error {
-	mediaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 
-	var targetType, targetSlug string
-	if chapterSlug != "" {
-		targetType = "chapter"
-		targetSlug = chapterSlug
-	} else {
-		targetType = "media"
-		targetSlug = mediaSlug
+	// Get chapter by ID
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if chapter == nil {
+		return sendNotFoundError(c, ErrChapterNotFound)
 	}
 
-	var comments []models.Comment
-	var err error
-
-	if targetType == "chapter" {
-		// For chapter comments, filter by media_slug too
-		comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
-	} else {
-		// For media comments, just use target
-		comments, err = models.GetCommentsByTarget(targetType, targetSlug)
-	}
-
+	// Get comments for the chapter
+	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -45,16 +35,15 @@ func HandleGetComments(c *fiber.Ctx) error {
 
 // HandleCreateComment creates a new comment
 func HandleCreateComment(c *fiber.Ctx) error {
-	mediaSlug := c.Params("media")
-	chapterSlug := c.Params("chapter")
+	hash := c.Params("hash")
 
-	var targetType, targetSlug string
-	if chapterSlug != "" {
-		targetType = "chapter"
-		targetSlug = chapterSlug
-	} else {
-		targetType = "media"
-		targetSlug = mediaSlug
+	// Get chapter by ID
+	chapter, err := models.GetChapterByID(hash)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if chapter == nil {
+		return sendNotFoundError(c, ErrChapterNotFound)
 	}
 
 	// Get user from context (set by auth middleware)
@@ -82,9 +71,9 @@ func HandleCreateComment(c *fiber.Ctx) error {
 
 	comment := models.Comment{
 		UserUsername: user.Username,
-		TargetType:   targetType,
-		TargetSlug:   targetSlug,
-		MediaSlug:    mediaSlug,
+		TargetType:   "chapter",
+		TargetSlug:   chapter.Slug,
+		MediaSlug:    chapter.MediaSlug,
 		Content:      req.Content,
 	}
 
@@ -96,41 +85,15 @@ func HandleCreateComment(c *fiber.Ctx) error {
 	// If HTMX request, return updated comments section
 	if c.Get("HX-Request") == "true" {
 		// Fetch updated comments
-		var comments []models.Comment
-		var err error
-
-		if targetType == "chapter" {
-			// For chapter comments, filter by media_slug too
-			comments, err = models.GetCommentsByTargetAndMedia(targetType, targetSlug, mediaSlug)
-		} else {
-			// For media comments, just use target
-			comments, err = models.GetCommentsByTarget(targetType, targetSlug)
-		}
-
+		comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
 		if err != nil {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
-		// Get media and chapter for the template
-		var media *models.Media
-		var chapter *models.Chapter
-		if targetType == "chapter" {
-			// For chapter comments, get both media and chapter
-			chapter, err = models.GetChapter(mediaSlug, targetSlug)
-			if err != nil || chapter == nil {
-				return sendInternalServerError(c, ErrInternalServerError, err)
-			}
-			media, err = models.GetMedia(mediaSlug)
-			if err != nil || media == nil {
-				return sendInternalServerError(c, ErrInternalServerError, err)
-			}
-		} else {
-			// For media comments, get media
-			media, err = models.GetMedia(targetSlug)
-			if err != nil || media == nil {
-				return sendInternalServerError(c, ErrInternalServerError, err)
-			}
-			chapter = &models.Chapter{} // Empty chapter for media comments
+		// Get media for the template
+		media, err := models.GetMedia(chapter.MediaSlug)
+		if err != nil || media == nil {
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Render the component to HTML

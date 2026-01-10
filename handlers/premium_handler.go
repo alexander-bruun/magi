@@ -23,7 +23,7 @@ func HandlePremiumPage(c *fiber.Ctx) error {
 
 	// Check if Stripe is enabled
 	if !cfg.StripeEnabled {
-		return HandleView(c, views.Error("Premium subscriptions are currently unavailable."))
+		return handleView(c, views.Error("Premium subscriptions are currently unavailable."))
 	}
 
 	// Get current user
@@ -40,11 +40,11 @@ func HandlePremiumPage(c *fiber.Ctx) error {
 
 	// Check if user already has premium
 	if user.Role == "premium" {
-		return HandleView(c, views.Error("You already have premium access."))
+		return handleView(c, views.Error("You already have premium access."))
 	}
 
 	plans := models.GetSubscriptionPlans()
-	return HandleView(c, views.PremiumPage(plans))
+	return handleView(c, views.PremiumPage(plans))
 }
 
 // HandleCreateCheckoutSession creates a Stripe checkout session
@@ -225,7 +225,7 @@ func HandlePremiumSuccess(c *fiber.Ctx) error {
 		}
 	}
 
-	return HandleView(c, views.PremiumSuccess())
+	return handleView(c, views.PremiumSuccess())
 }
 
 // HandleStripeWebhook handles Stripe webhook events

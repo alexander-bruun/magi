@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	websocket "github.com/gofiber/websocket/v2"
@@ -14,7 +14,7 @@ func HandleConfiguration(c *fiber.Ctx) error {
 	if err != nil {
 		return sendInternalServerError(c, ErrConfigLoadFailed, err)
 	}
-	return HandleView(c, views.Config(cfg))
+	return handleView(c, views.Config(cfg))
 }
 
 // HandleConfigurationUpdate processes updates to the global configuration.
@@ -31,10 +31,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	}
 
 	// Process max_users
-	maxUsers := config.MaxUsers
-	if maxUsers < 0 {
-		maxUsers = 0
-	}
+	maxUsers := max(config.MaxUsers, 0)
 
 	if _, err := models.UpdateAppConfig(config.AllowRegistration, maxUsers, contentRatingLimit); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
@@ -48,16 +45,6 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	}
 	if _, err := models.UpdateMaintenanceConfig(maintenanceEnabled, maintenanceMessage); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-	}
-
-	// Update metadata provider configuration if provided
-	metadataProvider := config.MetadataProvider
-	if metadataProvider != "" {
-		malToken := config.MALApiToken
-		anilistToken := config.AniListApiToken
-		if _, err := models.UpdateMetadataConfig(metadataProvider, malToken, anilistToken); err != nil {
-			return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-		}
 	}
 
 	// Update Stripe configuration
@@ -126,13 +113,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	}
 
 	// Update tarpit configuration
-	tarpitMaxDelay := config.TarpitMaxDelay
-	if tarpitMaxDelay < 100 {
-		tarpitMaxDelay = 100
-	}
-	if tarpitMaxDelay > 30000 {
-		tarpitMaxDelay = 30000
-	}
+	tarpitMaxDelay := min(max(config.TarpitMaxDelay, 100), 30000)
 	if _, err := models.UpdateTarpitConfig(config.TarpitEnabled, tarpitMaxDelay); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
@@ -155,70 +136,20 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	}
 
 	// Update behavioral analysis configuration
-	behavioralScoreThreshold := config.BehavioralScoreThreshold
-	if behavioralScoreThreshold < 0 {
-		behavioralScoreThreshold = 0
-	}
-	if behavioralScoreThreshold > 100 {
-		behavioralScoreThreshold = 100
-	}
+	behavioralScoreThreshold := min(max(config.BehavioralScoreThreshold, 0), 100)
 	if _, err := models.UpdateBehavioralAnalysisConfig(config.BehavioralAnalysisEnabled, behavioralScoreThreshold); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
 	// Update header analysis configuration
-	headerAnalysisThreshold := config.HeaderAnalysisThreshold
-	if headerAnalysisThreshold < 1 {
-		headerAnalysisThreshold = 1
-	}
-	if headerAnalysisThreshold > 20 {
-		headerAnalysisThreshold = 20
-	}
+	headerAnalysisThreshold := min(max(config.HeaderAnalysisThreshold, 1), 20)
 	if _, err := models.UpdateHeaderAnalysisConfig(config.HeaderAnalysisEnabled, headerAnalysisThreshold, config.HeaderAnalysisStrict); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
 	// Update honeypot configuration
-	honeypotBlockDuration := config.HoneypotBlockDuration
-	if honeypotBlockDuration < 1 {
-		honeypotBlockDuration = 1
-	}
-	if honeypotBlockDuration > 1440 {
-		honeypotBlockDuration = 1440
-	}
+	honeypotBlockDuration := min(max(config.HoneypotBlockDuration, 1), 1440)
 	if _, err := models.UpdateHoneypotConfig(config.HoneypotEnabled, config.HoneypotAutoBlock, config.HoneypotAutoBan, honeypotBlockDuration); err != nil {
-		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-	}
-
-	// Update compression quality configuration
-	readerQuality := config.ReaderCompressionQuality
-	moderatorQuality := config.ModeratorCompressionQuality
-	adminQuality := config.AdminCompressionQuality
-	premiumQuality := config.PremiumCompressionQuality
-	anonymousQuality := config.AnonymousCompressionQuality
-	if readerQuality < 0 || readerQuality > 100 {
-		readerQuality = 70
-	}
-	if moderatorQuality < 0 || moderatorQuality > 100 {
-		moderatorQuality = 85
-	}
-	if adminQuality < 0 || adminQuality > 100 {
-		adminQuality = 100
-	}
-	if premiumQuality < 0 || premiumQuality > 100 {
-		premiumQuality = 90
-	}
-	if anonymousQuality < 0 || anonymousQuality > 100 {
-		anonymousQuality = 70
-	}
-	// processedQuality is now deprecated - always use 100 for processed images
-	if _, err := models.UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality); err != nil {
-		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
-	}
-
-	// Update image processing configuration
-	disableWebpConversion := config.DisableWebpConversion
-	if _, err := models.UpdateImageProcessingConfig(disableWebpConversion); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
@@ -280,7 +211,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
-	return HandleView(c, views.ConfigForm())
+	return handleView(c, views.ConfigForm())
 }
 
 // HandleConsoleLogsWebSocketUpgrade upgrades the connection to WebSocket for console logs
@@ -304,7 +235,7 @@ func HandleConsoleLogsWebSocketUpgrade(c *fiber.Ctx) error {
 			}
 
 			// Authentication passed, handle WebSocket connection
-			utils.HandleConsoleLogsWebSocket(conn)
+			text.HandleConsoleLogsWebSocket(conn)
 		})(c)
 	}
 	return c.Status(fiber.StatusUpgradeRequired).SendString("WebSocket upgrade required")

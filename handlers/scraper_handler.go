@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -13,25 +14,25 @@ import (
 
 // ScraperFormData represents form data for creating/updating scraper scripts
 type ScraperFormData struct {
-	Name             string      `json:"name" form:"name"`
-	Script           string      `json:"script" form:"script"`
-	Language         string      `json:"language" form:"language"`
-	Schedule         string      `json:"schedule" form:"schedule"`
-	SharedScript     string      `json:"shared_script" form:"shared_script"`
-	IndexLibrarySlug string      `json:"index_library_slug" form:"index_library_slug"`
-	VariableName     interface{} `json:"variable_name" form:"variable_name"`
-	VariableValue    interface{} `json:"variable_value" form:"variable_value"`
-	Package          interface{} `json:"package" form:"package"`
+	Name             string `json:"name" form:"name"`
+	Script           string `json:"script" form:"script"`
+	Language         string `json:"language" form:"language"`
+	Schedule         string `json:"schedule" form:"schedule"`
+	SharedScript     string `json:"shared_script" form:"shared_script"`
+	IndexLibrarySlug string `json:"index_library_slug" form:"index_library_slug"`
+	VariableName     any    `json:"variable_name" form:"variable_name"`
+	VariableValue    any    `json:"variable_value" form:"variable_value"`
+	Package          any    `json:"package" form:"package"`
 }
 
 // normalizeToStringSlice converts interface{} to []string, handling both single values and arrays
-func normalizeToStringSlice(data interface{}) []string {
+func normalizeToStringSlice(data any) []string {
 	if data == nil {
 		return []string{}
 	}
 
 	switch v := data.(type) {
-	case []interface{}:
+	case []any:
 		result := make([]string, len(v))
 		for i, item := range v {
 			if str, ok := item.(string); ok {
@@ -58,7 +59,7 @@ func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 	values := normalizeToStringSlice(formData.VariableValue)
 
 	// Pair them up
-	for i := 0; i < len(names); i++ {
+	for i := range names {
 		name := string(names[i])
 		name = strings.TrimSpace(name)
 		if name != "" {
@@ -101,7 +102,7 @@ func HandleScraper(c *fiber.Ctx) error {
 	if len(scripts) > 0 {
 		activeID = scripts[0].ID
 	}
-	return HandleView(c, views.Scraper(scripts, activeID))
+	return handleView(c, views.Scraper(scripts, activeID))
 }
 
 // HandleScraperScriptDetail renders a specific script for editing
@@ -124,7 +125,7 @@ func HandleScraperScriptDetail(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	return HandleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
+	return handleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
 }
 
 // HandleScraperScriptCreate creates a new script
@@ -225,7 +226,7 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	}
 
 	// Return the new script in editor view with updated tabs
-	return HandleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
+	return handleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
 }
 
 // HandleScraperScriptUpdate updates an existing script
@@ -331,7 +332,7 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	}
 
-	return HandleView(c, views.ScraperScriptEditor(script))
+	return handleView(c, views.ScraperScriptEditor(script))
 }
 
 // HandleScraperScriptDelete deletes a script
@@ -398,7 +399,7 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	return HandleView(c, views.ScraperScriptRow(updated))
+	return handleView(c, views.ScraperScriptRow(updated))
 }
 
 // HandleScraperScriptRun manually runs a script
@@ -448,15 +449,11 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 
 	// Start with stored variables, then override with form values
 	variables := make(map[string]string)
-	for k, v := range script.Variables {
-		variables[k] = v
-	}
+	maps.Copy(variables, script.Variables)
 
 	// Override with form values if provided
 	formVariables := extractVariablesFromForm(formData)
-	for k, v := range formVariables {
-		variables[k] = v
-	}
+	maps.Copy(variables, formVariables)
 
 	// Start execution via shared executor (creates DB log and streams logs)
 	if _, err := scheduler.StartScriptExecution(script, variables, true); err != nil {
@@ -475,7 +472,7 @@ func HandleScraperScriptRun(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	return HandleView(c, views.ScraperScriptEditor(updated))
+	return handleView(c, views.ScraperScriptEditor(updated))
 }
 
 // Execution implementation moved to `executor` package; handlers call into that shared package.
@@ -488,7 +485,7 @@ func HandleScraperScriptsList(c *fiber.Ctx) error {
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
-	return HandleView(c, views.ScraperScriptsList(scripts))
+	return handleView(c, views.ScraperScriptsList(scripts))
 }
 
 // HandleScraperNewForm returns the form for creating a new script
@@ -504,7 +501,7 @@ func HandleScraperNewForm(c *fiber.Ctx) error {
 		Packages:  []string{},
 		Enabled:   true,
 	}
-	return HandleView(c, views.ScraperScriptEditor(emptyScript))
+	return handleView(c, views.ScraperScriptEditor(emptyScript))
 }
 
 // HandleScraperLogs returns the logs view for a script
@@ -541,7 +538,7 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 		totalPages = 1
 	}
 
-	pagination := map[string]interface{}{
+	pagination := map[string]any{
 		"current_page": page,
 		"total_pages":  totalPages,
 		"per_page":     perPage,
@@ -553,23 +550,23 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 		"script_id":    id,
 	}
 
-	return HandleView(c, views.ScraperLogsPanelWithPagination(logs, pagination))
+	return handleView(c, views.ScraperLogsPanelWithPagination(logs, pagination))
 }
 
 // HandleScraperVariableAdd returns an empty variable input row for HTMX inserts
 func HandleScraperVariableAdd(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
-	return HandleView(c, views.Variable("", "", false))
+	return handleView(c, views.Variable("", "", false))
 }
 
 // HandleScraperVariableRemove acknowledges variable removal requests without returning content
 func HandleScraperVariableRemove(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
@@ -579,17 +576,17 @@ func HandleScraperVariableRemove(c *fiber.Ctx) error {
 // HandleScraperPackageAdd returns an empty package input row for HTMX inserts
 func HandleScraperPackageAdd(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
-	return HandleView(c, views.Package("", false))
+	return handleView(c, views.Package("", false))
 }
 
 // HandleScraperPackageRemove acknowledges package removal requests without returning content
 func HandleScraperPackageRemove(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
@@ -599,7 +596,7 @@ func HandleScraperPackageRemove(c *fiber.Ctx) error {
 // HandleScraperUpdateLanguage returns updated language-dependent sections for HTMX requests
 func HandleScraperUpdateLanguage(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
-	if !IsHTMXRequest(c) {
+	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
@@ -615,7 +612,7 @@ func HandleScraperUpdateLanguage(c *fiber.Ctx) error {
 	}
 
 	// Return the updated language-dependent sections
-	return HandleView(c, views.LanguageDependentSections(script))
+	return handleView(c, views.LanguageDependentSections(script))
 }
 
 // HandleScraperLogDelete deletes a specific execution log
@@ -637,7 +634,7 @@ func HandleScraperLogDelete(c *fiber.Ctx) error {
 	}
 
 	// If this is an HTMX request, return a success notification
-	if IsHTMXRequest(c) {
+	if isHTMXRequest(c) {
 		triggerNotification(c, "Log deleted successfully", "success")
 		return c.SendString("")
 	}

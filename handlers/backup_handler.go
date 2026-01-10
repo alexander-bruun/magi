@@ -22,23 +22,23 @@ type BackupInfo struct {
 	Created  time.Time
 }
 
-// HandleBackups renders the backups page
-func HandleBackups(c *fiber.Ctx) error {
+// handleBackups renders the backups page
+func handleBackups(c *fiber.Ctx) error {
 	backups, err := getBackupList()
 	if err != nil {
 		log.Errorf("Failed to get backup list: %v", err)
-		return sendInternalServerError(c, ErrBackupListFailed, err)
+		return SendInternalServerError(c, ErrBackupListFailed, err)
 	}
 
-	return HandleView(c, views.Backups(backups))
+	return handleView(c, views.Backups(backups))
 }
 
-// HandleCreateBackup creates a new database backup
-func HandleCreateBackup(c *fiber.Ctx) error {
+// handleCreateBackup creates a new database backup
+func handleCreateBackup(c *fiber.Ctx) error {
 	backupPath, err := createBackup()
 	if err != nil {
 		log.Errorf("Failed to create backup: %v", err)
-		return sendInternalServerError(c, ErrBackupCreateFailed, err)
+		return SendInternalServerError(c, ErrBackupCreateFailed, err)
 	}
 
 	log.Infof("Backup created successfully: %s", backupPath)
@@ -47,15 +47,15 @@ func HandleCreateBackup(c *fiber.Ctx) error {
 	backups, err := getBackupList()
 	if err != nil {
 		log.Errorf("Failed to get updated backup list: %v", err)
-		return sendInternalServerError(c, ErrBackupListFailed, err)
+		return SendInternalServerError(c, ErrBackupListFailed, err)
 	}
 
 	// Return the updated backup list
-	return HandleView(c, views.BackupList(backups))
+	return handleView(c, views.BackupList(backups))
 }
 
-// HandleRestoreBackup restores the database from a backup
-func HandleRestoreBackup(c *fiber.Ctx) error {
+// handleRestoreBackup restores the database from a backup
+func handleRestoreBackup(c *fiber.Ctx) error {
 	filename := c.Params("filename")
 	if filename == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Backup filename is required")
@@ -76,7 +76,7 @@ func HandleRestoreBackup(c *fiber.Ctx) error {
 	err := restoreBackup(backupPath)
 	if err != nil {
 		log.Errorf("Failed to restore backup: %v", err)
-		return sendInternalServerError(c, ErrBackupRestoreFailed, err)
+		return SendInternalServerError(c, ErrBackupRestoreFailed, err)
 	}
 
 	log.Infof("Backup restored successfully from: %s", backupPath)

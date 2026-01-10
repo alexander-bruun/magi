@@ -195,7 +195,7 @@ func HandleDeleteReview(c *fiber.Ctx) error {
 			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
 
-		return HandleView(c, views.MediaReviewsSection(*media, reviews, nil, user.Role, user.Username))
+		return handleView(c, views.MediaReviewsSection(*media, reviews, nil, user.Role, user.Username))
 	}
 
 	return c.JSON(fiber.Map{
