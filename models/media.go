@@ -882,14 +882,20 @@ func GetTopMediasByPeriod(period string, limit int, accessibleLibraries []string
 	var libraryFilter string
 	var args []any
 
+	// Add content rating args first
+	for _, rating := range allowedRatings {
+		args = append(args, rating)
+	}
+
 	if len(accessibleLibraries) > 0 {
 		libraryPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
 		libraryPlaceholders = libraryPlaceholders[:len(libraryPlaceholders)-1] // remove trailing comma
 		libraryFilter = fmt.Sprintf("AND EXISTS (SELECT 1 FROM chapters c WHERE c.media_slug = m.slug AND c.library_slug IN (%s))", libraryPlaceholders)
-	} else {
-		// No accessible libraries - return empty result
-		return []Media{}, nil
+		for _, lib := range accessibleLibraries {
+			args = append(args, lib)
+		}
 	}
+	// Note: If no accessible libraries specified, we don't filter by library, allowing all media to be included
 
 	query := fmt.Sprintf(`
 	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at
@@ -908,14 +914,6 @@ func GetTopMediasByPeriod(period string, limit int, accessibleLibraries []string
 	LIMIT ?
 	`, dateFilter, placeholders, libraryFilter)
 
-	// Add content rating args first
-	for _, rating := range allowedRatings {
-		args = append(args, rating)
-	}
-	// Then library args
-	for _, lib := range accessibleLibraries {
-		args = append(args, lib)
-	}
 	// Then limit
 	args = append(args, limit)
 

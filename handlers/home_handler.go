@@ -133,19 +133,19 @@ func HandleHome(c *fiber.Ctx) error {
 		}
 	}
 
-	topMedias, err := models.GetTopMedias(3, accessibleLibraries) // Reduced from 6
+	topMedias, err := models.GetTopMedias(10, accessibleLibraries)
 	if err != nil {
 		log.Errorf("Error getting top medias: %v", err)
 	}
 	log.Debugf("Got %d top medias for libraries %v", len(topMedias), accessibleLibraries)
 
-	topReadToday, err := models.GetTopReadMedias("today", 3, accessibleLibraries) // Reduced from 6
+	topReadToday, err := models.GetTopReadMedias("today", 10, accessibleLibraries)
 	if err != nil {
 		log.Errorf("Error getting top read today: %v", err)
 	}
 	log.Debugf("Got %d top read today for libraries %v", len(topReadToday), accessibleLibraries)
-	topReadWeek, _ := models.GetTopReadMedias("week", 3, accessibleLibraries)
-	topReadAll, _ := models.GetTopReadMedias("all", 3, accessibleLibraries)
+	topReadWeek, _ := models.GetTopReadMedias("week", 10, accessibleLibraries)
+	topReadAll, _ := models.GetTopReadMedias("all", 10, accessibleLibraries)
 
 	// No need to filter top media lists anymore - already filtered at database level
 

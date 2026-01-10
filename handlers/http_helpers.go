@@ -283,7 +283,11 @@ func handleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotificatio
 	if err != nil {
 		// Log the error, but continue with an empty user role
 		// This allows the page to render for non-authenticated users
-		log.Errorf("Error getting user role: %v", err)
+		log.Errorf("Error getting user role (clearing session cookie): %v", err)
+		// Clear the session cookie if the token is invalid
+		if err.Error() == "invalid session token" {
+			ClearSessionCookie(c)
+		}
 	}
 
 	unreadCount := 0

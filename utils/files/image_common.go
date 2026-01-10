@@ -709,6 +709,6 @@ func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBa
 		useWebp = true
 	}
 
-	sizes := []ThumbnailSize{{"_thumb", thumbWidth, thumbHeight}, {"_small", smallWidth, smallHeight}}
+	sizes := []ThumbnailSize{{"_thumb", thumbWidth, thumbHeight}, {"_small", smallWidth, smallHeight}, {"_tiny", tinyWidth, tinyHeight}, {"_display", displayWidth, displayHeight}}
 	return generateAndSaveThumbnails(img, slug, dataBackend, useWebp, sizes, format)
 }
