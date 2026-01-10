@@ -442,7 +442,6 @@ templ Showcase(media []models.EnrichedMedia) {
             <div class="uk-position-relative" tabindex="-1">
                 <ul class="uk-slider-items slider-items">
                     for i, media := range media {
-                        {{ score, _, _, _ := models.GetMediaVotes(media.Slug) }}
                         {{ fetchPriority := "" }}
                         if i == 0 {
                             {{ fetchPriority = "high" }}
@@ -477,7 +476,7 @@ templ Showcase(media []models.EnrichedMedia) {
                                         }
                                         <div class="flex items-center ml-2">
                                             <uk-icon icon="Star"></uk-icon>
-                                            <span class="ml-2">{ fmt.Sprint(score) }</span>
+                                            <span class="ml-2">{ fmt.Sprint(media.VoteScore) }</span>
                                         </div>
                                     </div>
                                 </div>

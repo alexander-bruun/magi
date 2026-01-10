@@ -3,7 +3,6 @@ package views
 import (
     "github.com/alexander-bruun/magi/models"
     "fmt"
-    "runtime"
 )
 
 templ Config(cfg models.AppConfig) {
@@ -62,31 +61,6 @@ templ ConfigForm() {
                     <input type="url" class="uk-input" name="discord_invite_link" value={ cfg.DiscordInviteLink } placeholder="https://discord.gg/..." />
                     <p class="text-xs text-muted-foreground mt-1">Discord server invite link. If set, a Discord button will appear in the sidebar below collections.</p>
                 </div>
-            </div>
-            <div>
-                <label class="block mb-1">Metadata provider</label>
-                <select name="metadata_provider" id="metadata-provider-select" class="uk-select">
-                    <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" || cfg.MetadataProvider == "" }>MangaDex (Free, No Auth Required)</option>
-                    <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList (Requires API Token)</option>
-                    <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList (Optional Auth)</option>
-                    <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan API (Free, No Auth Required)</option>
-                    <option value="mangaupdates" selected?={ cfg.MetadataProvider == "mangaupdates" }>MangaUpdates (Free, No Auth Required)</option>
-                    <option value="kitsu" selected?={ cfg.MetadataProvider == "kitsu" }>Kitsu (Free, No Auth Required)</option>
-                </select>
-                <p class="text-xs text-muted-foreground mt-1">Select which metadata provider to use for fetching media information.</p>
-            </div>
-            <!-- MAL API Token -->
-            <div id="mal-token-field" class="mt-4" style="display: none;">
-                <label class="block mb-1 mt-2">MyAnimeList Client ID</label>
-                <input type="text" class="uk-input" name="mal_api_token" value={ cfg.MALApiToken } placeholder="dbe0d49546f15aa428f64323bbfcbd9a" />
-                <p class="text-xs text-muted-foreground mt-1">Enter only your <strong>Client ID</strong> (not the Client Secret). Get it from <a href="https://myanimelist.net/apiconfig" target="_blank" class="uk-link">MAL API Config</a></p>
-            </div>
-            
-            <!-- AniList API Token -->
-            <div id="anilist-token-field" class="mt-4" style="display: none;">
-                <label class="block mb-1 mt-2">AniList Access Token (Optional)</label>
-                <input type="text" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Enter your AniList access token (optional)" />
-                <p class="text-xs text-muted-foreground mt-1">Optional: Increases rate limits. Get token from <a href="https://anilist.co/settings/developer" target="_blank" class="uk-link">AniList Developer Settings</a></p>
             </div>
         </div>
         
@@ -401,65 +375,13 @@ templ ConfigForm() {
             </div>
         </div>
         
-        <!-- Compression Quality Card -->
+        <!-- Image Settings Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Image Settings</span></h4>
             <div>
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="disable-compression-checkbox" name="disable_webp_conversion" checked?={ runtime.GOOS == "darwin" || cfg.DisableWebpConversion } class="uk-checkbox" if runtime.GOOS == "darwin" { disabled } />
-                    <span>Disable WebP conversion</span>
-                    if runtime.GOOS == "darwin" {
-                        <span class="text-xs text-amber-600 ml-2">(Required on macOS - no WebP support)</span>
-                    }
-                </label>
-                <p class="text-xs text-muted-foreground">When enabled, images will be served in their original format instead of being converted to WebP.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block mt-2">Anonymous compression quality</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="anonymous_compression_quality" value={ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) } id="anonymous-slider" />
-                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="anonymous-value">{ fmt.Sprintf("%d", cfg.AnonymousCompressionQuality) }</span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">Image quality for anonymous (non-logged-in) users. Higher values = better quality but larger files.</p>
-                </div>
-                <div>
-                    <label class="block mt-2">Reader compression quality</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="reader_compression_quality" value={ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) } id="reader-slider" />
-                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="reader-value">{ fmt.Sprintf("%d", cfg.ReaderCompressionQuality) }</span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">Image quality for users with reader role. Higher values = better quality but larger files.</p>
-                </div>
-                <div>
-                    <label class="block mt-2">Moderator compression quality</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="moderator_compression_quality" value={ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) } id="moderator-slider" />
-                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="moderator-value">{ fmt.Sprintf("%d", cfg.ModeratorCompressionQuality) }</span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">Image quality for users with moderator role. Higher values = better quality but larger files.</p>
-                </div>
-                <div>
-                    <label class="block mt-2">Premium compression quality</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="premium_compression_quality" value={ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) } id="premium-slider" />
-                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="premium-value">{ fmt.Sprintf("%d", cfg.PremiumCompressionQuality) }</span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">Image quality for users with premium role. Higher values = better quality but larger files.</p>
-                </div>
-                <div>
-                    <label class="block mt-2">Admin compression quality</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="range" min="1" max="100" class="flex-1 h-2 rounded-lg slider" name="admin_compression_quality" value={ fmt.Sprintf("%d", cfg.AdminCompressionQuality) } id="admin-slider" />
-                        <span class="text-sm px-2 py-1 rounded min-w-[3rem] text-center" id="admin-value">{ fmt.Sprintf("%d", cfg.AdminCompressionQuality) }</span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">Image quality for users with admin role. Higher values = better quality but larger files.</p>
-                </div>
-                <div>
-                    <label class="block mb-1 mt-2">Image token validity (minutes)</label>
-                    <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
-                    <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
-                </div>
+                <label class="block mb-1 mt-2">Image token validity (minutes)</label>
+                <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
+                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
             </div>
         </div>
         

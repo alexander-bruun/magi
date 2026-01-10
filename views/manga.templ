@@ -6,9 +6,33 @@ import (
 	"net/url"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
-	"github.com/alexander-bruun/magi/utils"
 	"strings"
+	"github.com/alexander-bruun/magi/utils/text"
 )
+
+// hasDuplicateChapters checks if there are multiple chapters with the same extracted number
+func hasDuplicateChapters(chapters []models.Chapter, index int) bool {
+	if index < 0 || index >= len(chapters) {
+		return false
+	}
+	currentNum, err := text.ExtractNumber(chapters[index].Name)
+	if err != nil {
+		return false
+	}
+	for i, ch := range chapters {
+		if i == index {
+			continue
+		}
+		num, err := text.ExtractNumber(ch.Name)
+		if err != nil {
+			continue
+		}
+		if num == currentNum {
+			return true
+		}
+	}
+	return false
+}
 
 templ MediaCollectionItem(mediaSlug string, collection models.Collection, inCollection bool) {
 	<div class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
@@ -135,9 +159,7 @@ templ AdminButtonGroup(mediaSlug string, isHighlighted bool, buttonIdSuffix stri
 	</div>
 }
 
-templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug string, lastChapterSlug string, chapterCount int, userRole string, lastReadChapterSlug string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool) {
-	{{ _ = userCollections }}
-	{{ _ = mediaCollections }}
+templ Media(media models.Media, chapters []models.Chapter, firstChapterID string, lastChapterID string, firstLibrarySlug string, lastLibrarySlug string, chapterCount int, userRole string, lastReadChapterID string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool) {
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Series", Href: "/series"},
@@ -145,27 +167,27 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 	})
 	{{ unit := "chapter" }}
 	{{ for _, ch := range chapters {
-	if strings.HasPrefix(ch.Name, "Volume ") {
-		unit = "volume"
-		break
-	}
-} }}
+		if strings.HasPrefix(ch.Name, "Volume ") {
+			unit = "volume"
+			break
+		}
+	} }}
 	<h1 class="uk-heading-divider uk-h2 uk-margin mt-4">{ media.Name }</h1>
 	<div class="flex flex-col lg:flex-row mt-2">
 		<div id="form-column" class="w-full lg:w-1/4 m-2">
 			<div class="uk-card p-2">
-				@Info(media, userRole, lastReadChapterSlug, unit)
+				@Info(media, userRole, lastReadChapterID, unit)
 			</div>
 		</div>
 		<div id="table-column" class="w-full lg:w-3/4 m-2">
 			<div class="flex justify-between px-4">
-				@ChapterJumpButton(media.Slug, firstChapterSlug, fmt.Sprintf("Go to first %s", unit), "MoveLeft", false)
+				@ChapterJumpButton(firstChapterID, fmt.Sprintf("Go to first %s", unit), "MoveLeft", false)
 				<h2 class="text-xl font-bold uk-h2 text-center m-auto"><span>{ strings.Title(unit) + "s" } ({ fmt.Sprint(chapterCount) })</span></h2>
-				@ChapterJumpButton(media.Slug, lastChapterSlug, fmt.Sprintf("Go to last %s", unit), "MoveRight", false)
+				@ChapterJumpButton(lastChapterID, fmt.Sprintf("Go to last %s", unit), "MoveRight", false)
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
 			<div id="chapters-section">
-				@MediaChaptersSection(media, chapters, reverse, lastReadChapterSlug, premiumDuration, userRole, isHighlighted)
+				@MediaChaptersSection(media, chapters, reverse, lastReadChapterID, premiumDuration, userRole, isHighlighted)
 			</div>
 			<div id="reviews-section" class="mt-8">
 				@MediaReviewsSection(media, reviews, userReview, userRole, userName)
@@ -175,9 +197,9 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 }
 
 // ChapterJumpButton renders a button to jump to first/last chapter
-templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon string, hideOnMobile bool) {
-	{{ href := fmt.Sprintf("/series/%s/%s", mangaSlug, chapterSlug) }}
-	if chapterSlug != "" {
+templ ChapterJumpButton(chapterID string, label string, icon string, hideOnMobile bool) {
+	{{ href := fmt.Sprintf("/chapter/%s", chapterID) }}
+	if chapterID != "" {
 		<a
 			class="uk-btn uk-btn-default"
 			href={ href }
@@ -214,11 +236,11 @@ templ ChapterJumpButton(mangaSlug string, chapterSlug string, label string, icon
 
 // Inline eye toggle used in the chapters list. Returns a small fragment that HTMX
 // can swap when toggling unread/read.
-templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
+templ InlineEyeToggle(read bool, chapterID string) {
 	if read {
 		<div class="chapter-read-icon text-green-600 inline-flex items-center" title="Read">
 			<form
-				hx-post={ fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-post={ fmt.Sprintf("/chapter/%s/unread", chapterID) }
 				hx-target="this"
 				hx-swap="outerHTML"
 			>
@@ -231,7 +253,7 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 	} else {
 		<div class="chapter-read-icon text-gray-500 inline-flex items-center" title="Unread">
 			<form
-				hx-post={ fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-post={ fmt.Sprintf("/chapter/%s/read", chapterID) }
 				hx-target="this"
 				hx-swap="outerHTML"
 			>
@@ -244,7 +266,7 @@ templ InlineEyeToggle(read bool, mangaSlug string, chapterSlug string) {
 	}
 }
 
-templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit string) {
+templ Info(media models.Media, userRole string, lastReadChapterID string, unit string) {
 	{{ posterClass := "relative flex justify-center items-center poster-container" }}
 	{{ if userRole == "moderator" || userRole == "admin" {
 	posterClass += " admin-hover"
@@ -278,7 +300,7 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 	</div>
 	<div class="mt-3">
 		<div class="uk-margin line-clamp-5 leading-relaxed markdown-content">
-			@templ.Raw(utils.MarkdownToHTML(media.Description))
+			@templ.Raw(text.MarkdownToHTML(media.Description))
 		</div>
 	</div>
 	<!-- Improved metadata grid with modern styling -->
@@ -338,6 +360,214 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 				</div>
 			</div>
 		}
+		<!-- Enhanced metadata fields -->
+		if len(media.Authors) > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="user"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">
+						Authors
+					</strong>
+					<span class="text-sm break-words">
+						for i, author := range media.Authors {
+							if i > 0 {
+								,
+							}
+							{ author.Name }
+							if author.Role != "" && author.Role != "author" {
+								<span class="text-xs text-gray-400">({ author.Role })</span>
+							}
+						}
+					</span>
+				</div>
+			</div>
+		}
+		if len(media.Artists) > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="palette"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">
+						Artists
+					</strong>
+					<span class="text-sm break-words">
+						for i, artist := range media.Artists {
+							if i > 0 {
+								,
+							}
+							{ artist.Name }
+							if artist.Role != "" && artist.Role != "artist" {
+								<span class="text-xs text-gray-400">({ artist.Role })</span>
+							}
+						}
+					</span>
+				</div>
+			</div>
+		}
+		if media.StartDate != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="calendar-days"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Start Date</strong>
+					<span class="text-sm break-words">{ media.StartDate }</span>
+				</div>
+			</div>
+		}
+		if media.EndDate != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="calendar-check"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">End Date</strong>
+					<span class="text-sm break-words">{ media.EndDate }</span>
+				</div>
+			</div>
+		}
+		if media.ChapterCount > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="hash"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Chapters</strong>
+					<span class="text-sm break-words">{ fmt.Sprint(media.ChapterCount) }</span>
+				</div>
+			</div>
+		}
+		if media.VolumeCount > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="package"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Volumes</strong>
+					<span class="text-sm break-words">{ fmt.Sprint(media.VolumeCount) }</span>
+				</div>
+			</div>
+		}
+		if media.AverageScore > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="star-half"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Score</strong>
+					<span class="text-sm break-words">{ fmt.Sprintf("%.1f", media.AverageScore) }</span>
+				</div>
+			</div>
+		}
+		if media.Popularity > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="trending-up"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Popularity</strong>
+					<span class="text-sm break-words">{ fmt.Sprintf("#%d", media.Popularity) }</span>
+				</div>
+			</div>
+		}
+		if media.Favorites > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="heart"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Favorites</strong>
+					<span class="text-sm break-words">{ fmt.Sprint(media.Favorites) }</span>
+				</div>
+			</div>
+		}
+		if media.Demographic != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="users"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Demographic</strong>
+					<span class="text-sm break-words">{ media.Demographic }</span>
+				</div>
+			</div>
+		}
+		if media.Publisher != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="building"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Publisher</strong>
+					<span class="text-sm break-words">{ media.Publisher }</span>
+				</div>
+			</div>
+		}
+		if media.Magazine != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="newspaper"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Magazine</strong>
+					<span class="text-sm break-words">{ media.Magazine }</span>
+				</div>
+			</div>
+		}
+		if media.Serialization != "" {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="scroll"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">Serialization</strong>
+					<span class="text-sm break-words">{ media.Serialization }</span>
+				</div>
+			</div>
+		}
+		if len(media.Genres) > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="tags"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">
+						Genres
+					</strong>
+					<span class="text-sm break-words">
+						for i, genre := range media.Genres {
+							if i > 0 {
+								,
+							}
+							{ genre }
+						}
+					</span>
+				</div>
+			</div>
+		}
+		if len(media.Characters) > 0 {
+			<div class="flex items-start p-2 rounded">
+				<div class="shrink-0 mt-0.5">
+					<uk-icon icon="user-circle"></uk-icon>
+				</div>
+				<div class="flex flex-wrap items-baseline gap-x-2 min-w-0 ml-2">
+					<strong class="text-xs text-gray-500 uppercase tracking-wide shrink-0">
+						Characters
+					</strong>
+					<span class="text-sm break-words">
+						for i, character := range media.Characters {
+							if i > 0 {
+								,
+							}
+							{ character }
+						}
+					</span>
+				</div>
+			</div>
+		}
 		if userRole == "moderator" || userRole == "admin" {
 			if !media.CreatedAt.IsZero() {
 				<div class="flex items-start p-2 rounded">
@@ -379,6 +609,27 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 							{ tag }
 						</a>
 					}
+				}
+			</div>
+		</div>
+	}
+	<!-- Attribution links section -->
+	if len(media.AttributionLinks) > 0 {
+		<div class="mt-4 p-2 rounded">
+			<div class="flex items-center gap-2 mb-2">
+				<div class="shrink-0">
+					<uk-icon icon="external-link"></uk-icon>
+				</div>
+				<strong class="text-xs text-gray-500 uppercase tracking-wide">
+					Sources
+				</strong>
+			</div>
+			<div class="flex flex-wrap gap-1.5 pl-7">
+				for _, link := range media.AttributionLinks {
+					<a href={ link.URL } target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-green-200 no-underline hover:bg-green-50 transition-colors">
+						<uk-icon icon="external-link" class="mr-1 w-3 h-3"></uk-icon>
+						{ link.Title }
+					</a>
 				}
 			</div>
 		</div>
@@ -526,10 +777,6 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			<p class="uk-text-muted mb-4">
 				This will fetch fresh metadata from MangaDex and re-scan the folder for new or removed chapters.
 			</p>
-			<div class="mb-4">
-				<p class="text-sm"><strong>Media Path:</strong></p>
-				<p class="text-sm uk-text-muted break-all">{ media.Path }</p>
-			</div>
 			<div class="uk-alert uk-alert-primary text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
 					<uk-icon icon="Info" class="shrink-0 mt-0.5"></uk-icon>
@@ -565,10 +812,6 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			<p class="uk-text-muted mb-4">
 				This will re-scan the media folder and update the chapter list. Missing chapters will be removed, and new chapters will be added.
 			</p>
-			<div class="mb-4">
-				<p class="text-sm"><strong>Media Path:</strong></p>
-				<p class="text-sm uk-text-muted break-all">{ media.Path }</p>
-			</div>
 			<div class="uk-alert uk-alert-primary text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
 					<uk-icon icon="Info" class="shrink-0 mt-0.5"></uk-icon>
@@ -605,7 +848,6 @@ templ Info(media models.Media, userRole string, lastReadChapterSlug string, unit
 			</p>
 			<div class="mb-4">
 				<p class="text-sm"><strong>Media:</strong> { media.Name }</p>
-				<p class="text-sm"><strong>Path:</strong> { media.Path }</p>
 			</div>
 			<div class="uk-alert uk-alert-destructive text-sm mb-4 alert-padding">
 				<div class="flex items-start gap-2">
@@ -797,21 +1039,24 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 		</div>
 	} else {
 		<ul class="uk-accordion" uk-accordion>
-			for _, chapter := range chapters {
+			for i, chapter := range chapters {
 				<li class="uk-closed">
 					<!-- Row layout: left = link/title, right = optional icon -->
 					<div class="flex items-center justify-between w-full">
 						<div class="flex items-center flex-1 min-w-0">
 							<a
 								class={ "uk-accordion-title pr-2 truncate", templ.KV("brand-gradient", chapter.Read) }
-								href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+								href={ templ.URL(fmt.Sprintf("/chapter/%s", chapter.ID)) }
 								if userRole != "anonymous" {
-									hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)) }
+									hx-get={ templ.URL(fmt.Sprintf("/chapter/%s", chapter.ID)) }
 									hx-target="#content"
 									hx-push-url="true"
 								}
 							>
 								{ chapter.Name }
+								if hasDuplicateChapters(chapters, i) {
+									<span class="ml-2 uk-badge uk-badge-primary uk-badge-small">{ chapter.LibraryName }</span>
+								}
 								<span
 									class="uk-accordion-icon"
 									uk-icon="icon: chevron-down; ratio: 0.8"
@@ -826,7 +1071,7 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 						<div class="flex items-center">
 							if chapter.Read {
 								<div class="mr-3" title="Read">
-									@InlineEyeToggle(chapter.Read, media.Slug, chapter.Slug)
+									@InlineEyeToggle(chapter.Read, chapter.ID)
 								</div>
 							}
 							if chapter.IsPremium {
@@ -841,7 +1086,7 @@ templ Chapters(media models.Media, chapters []models.Chapter, premiumDuration in
 										<button
 											type="button"
 											class="ml-2 uk-btn uk-btn-default btn-circular"
-											hx-post={ fmt.Sprintf("/series/%s/%s/unmark-premium", media.Slug, chapter.Slug) }
+											hx-post={ fmt.Sprintf("/chapter/%s/unmark-premium", chapter.ID) }
 											hx-confirm="Are you sure you want to unmark this chapter as premium? This will make it immediately available to all users."
 											title="Unmark as premium"
 											aria-label="Unmark chapter as premium"
@@ -871,7 +1116,7 @@ templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse b
 	@Chapters(media, chapters, premiumDuration, userRole)
 }
 
-templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterSlug string, premiumDuration int, userRole string, isHighlighted bool) {
+templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterID string, premiumDuration int, userRole string, isHighlighted bool) {
 	{{ toggleURL := fmt.Sprintf("/series/%s", media.Slug) }}
 	{{ buttonText := "" }}
 	{{ buttonIcon := "" }}
@@ -900,11 +1145,11 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<uk-icon icon={ buttonIcon }></uk-icon>
 			<span class="ml-1">{ buttonText }</span>
 		</button>
-		if lastReadChapterSlug != "" {
+		if lastReadChapterID != "" {
 			<a
-				href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				href={ templ.URL(fmt.Sprintf("/chapter/%s", lastReadChapterID)) }
 				class="uk-btn uk-btn-primary"
-				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				hx-get={ templ.URL(fmt.Sprintf("/chapter/%s", lastReadChapterID)) }
 				hx-target="#content"
 				hx-push-url="true"
 				title="Resume reading from where you left off"
@@ -916,7 +1161,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			@AdminButtonGroup(media.Slug, isHighlighted, "")
 		}
 	</div>
-	if lastReadChapterSlug != "" && (userRole == "moderator" || userRole == "admin") {
+	if lastReadChapterID != "" && (userRole == "moderator" || userRole == "admin") {
 		<div class="flex justify-center mb-2 md:hidden">
 			@AdminButtonGroup(media.Slug, isHighlighted, "")
 		</div>
@@ -935,10 +1180,10 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 				<uk-icon icon={ buttonIcon }></uk-icon>
 				<span class="ml-1">{ buttonText }</span>
 			</button>
-			if lastReadChapterSlug != "" {
+			if lastReadChapterID != "" {
 				<a
 					class="uk-btn uk-btn-primary"
-					hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+					hx-get={ templ.URL(fmt.Sprintf("/chapter/%s", lastReadChapterID)) }
 					hx-target="#content"
 					hx-push-url="true"
 					title="Resume reading from where you left off"
@@ -950,7 +1195,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 				@AdminButtonGroup(media.Slug, isHighlighted, "-desktop")
 			}
 		</div>
-		if lastReadChapterSlug != "" && (userRole == "moderator" || userRole == "admin") {
+		if lastReadChapterID != "" && (userRole == "moderator" || userRole == "admin") {
 			<div class="flex justify-center">
 				@AdminButtonGroup(media.Slug, isHighlighted, "-desktop")
 			</div>
@@ -969,7 +1214,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			<uk-icon icon={ buttonIcon }></uk-icon>
 			<span class="ml-1">{ buttonText }</span>
 		</button>
-		if lastReadChapterSlug != "" {
+		if lastReadChapterID != "" {
 			<div class="flex justify-center flex-1">
 				if userRole == "moderator" || userRole == "admin" {
 					@AdminButtonGroup(media.Slug, isHighlighted, "-large")
@@ -977,7 +1222,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			</div>
 			<a
 				class="uk-btn uk-btn-primary"
-				hx-get={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, lastReadChapterSlug)) }
+				hx-get={ templ.URL(fmt.Sprintf("/chapter/%s", lastReadChapterID)) }
 				hx-target="#content"
 				hx-push-url="true"
 				title="Resume reading from where you left off"
@@ -1047,12 +1292,12 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 	</div>
 }
 
-templ Chapter(previousChapter string, currentChapter string, nextChapter string, media models.Media, images []string, chapter models.Chapter, chapters []models.Chapter, comments []models.Comment, userRole string, userName string) {
+templ Chapter(prevID string, chapterSlug string, nextID string, media models.Media, images []string, chapter models.Chapter, chapters []models.Chapter, comments []models.Comment, userRole string, userName string) {
 	@PageTitle(media.Name + ": " + chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
-		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
+		{Label: chapter.Name, Href: fmt.Sprintf("/chapter/%s", chapter.ID)},
 	})
 	<button
 		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
@@ -1062,7 +1307,7 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
 	</button>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
-	@ChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
+	@ChapterNavigation(media, chapter, chapters, prevID, nextID)
 	<!-- Pagination Controls (hidden in webtoon mode) -->
 	<div id="reader-pagination" class="reader-pagination">
 		<div class="pagination-controls">
@@ -1082,8 +1327,8 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 		</div>
 	</div>
 	<div id="reader-images-container" data-media-type={ media.Type }>
-		for _, image := range images {
-			<img data-src={ image } class="reader-image lazy" alt="Chapter image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy"/>
+		for _, token := range images {
+			<div class="reader-token" data-token={ token }></div>
 		}
 	</div>
 	<!-- Pagination Controls (bottom, hidden in webtoon mode) -->
@@ -1104,14 +1349,14 @@ templ Chapter(previousChapter string, currentChapter string, nextChapter string,
 			</button>
 		</div>
 	</div>
-	@ChapterNavigation(media, chapter, nil, previousChapter, nextChapter)
+	@ChapterNavigation(media, chapter, chapters, prevID, nextID)
 	<div id="comments-section" class="mt-8">
 		@ChapterCommentsSection(media, chapter, comments, userRole, userName)
 	</div>
 }
 
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
-templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
+templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, prevID string, nextID string) {
 	<style>
 		@media (max-width: 768px) {
 			.reader-controls {
@@ -1123,10 +1368,10 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 		}
 	</style>
 	<div class="flex items-center justify-between reader-controls">
-		if previousChapter != "" {
+		if prevID != "" {
 			<a
 				class="uk-btn uk-btn-default"
-				href={ fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter) }
+				href={ fmt.Sprintf("/chapter/%s", prevID) }
 				onclick="scrollToTopInstant()"
 			>
 				<uk-icon icon="MoveLeft"></uk-icon>
@@ -1149,14 +1394,19 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 						</button>
 						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-justify; offset: 5; flip: false; boundary: false; auto-update: false; animation: uk-anmt-slide-top-sm; duration: 100">
 							<ul class="uk-dropdown-nav uk-nav dropdown-nav">
-								for _, ch := range chapters {
-									<li class={ templ.KV("active-chapter", ch.Slug == chapter.Slug) }>
+								for i, ch := range chapters {
+									<li class={ templ.KV("active-chapter", ch.ID == chapter.ID) }>
 										<a
 											class="flex justify-between items-center w-full"
-											href={ templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)) }
+											href={ templ.URL(fmt.Sprintf("/chapter/%s", ch.ID)) }
 											onclick="event.preventDefault(); window.location.href=this.href; return false;"
 										>
-											<span class={ templ.KV("font-semibold", ch.Slug == chapter.Slug) }>{ ch.Name }</span>
+											<span class={ templ.KV("font-semibold", ch.ID == chapter.ID) }>
+												{ ch.Name }
+												if hasDuplicateChapters(chapters, i) {
+													<span class="ml-1 uk-badge uk-badge-primary uk-badge-small">{ ch.LibraryName }</span>
+												}
+											</span>
 											if ch.IsPremium {
 												<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
 											}
@@ -1183,10 +1433,10 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 				</div>
 			</div>
 		}
-		if nextChapter != "" {
+		if nextID != "" {
 			<a
 				class="uk-btn uk-btn-default"
-				href={ fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter) }
+				href={ fmt.Sprintf("/chapter/%s", nextID) }
 				onclick="scrollToTopInstant()"
 			>
 				<uk-icon icon="MoveRight"></uk-icon>
@@ -1701,12 +1951,12 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 }
 
 // NovelChapter renders a full page for reading a novel chapter
-templ NovelChapter(previousChapter string, currentChapter string, nextChapter string, media models.Media, chapter models.Chapter, chapters []models.Chapter, toc string, content string) {
+templ NovelChapter(prevID string, chapterSlug string, nextID string, media models.Media, chapter models.Chapter, chapters []models.Chapter, toc string, content string) {
 	@PageTitle(chapter.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
-		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
+		{Label: chapter.Name, Href: fmt.Sprintf("/chapter/%s", chapter.ID)},
 	})
 	<button
 		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
@@ -1723,7 +1973,7 @@ templ NovelChapter(previousChapter string, currentChapter string, nextChapter st
 		hx-swap="none"
 		class="hidden"
 	></div>
-	@NovelChapterNavigation(media, chapter, chapters, previousChapter, nextChapter)
+	@NovelChapterNavigation(media, chapter, chapters, prevID, nextID)
 	<div class="flex flex-col gap-4 mt-4">
 		<!-- Reader Content -->
 		<div class="w-full">
@@ -1968,13 +2218,13 @@ templ NovelChapter(previousChapter string, currentChapter string, nextChapter st
 }
 
 // NovelChapterNavigation renders navigation controls for novel chapters
-templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, previousChapter string, nextChapter string) {
+templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters []models.Chapter, prevID string, nextID string) {
 	<div class="flex flex-col gap-2 mt-4">
 		<!-- Main Navigation Row -->
 		<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
 			<div class="flex items-center gap-2">
-				if previousChapter != "" {
-					<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, previousChapter) } class="uk-btn uk-btn-default">
+				if prevID != "" {
+					<a href={ fmt.Sprintf("/chapter/%s", prevID) } class="uk-btn uk-btn-default">
 						<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
 						<span class="ml-1">Previous Chapter</span>
 					</a>
@@ -1999,8 +2249,8 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 					<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
 						<ul class="uk-dropdown-nav uk-nav chapter-dropdown-nav">
 							for _, ch := range chapters {
-								<li class={ templ.KV("uk-active", ch.Slug == chapter.Slug) }>
-									<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug) }>{ ch.Name }</a>
+								<li class={ templ.KV("uk-active", ch.ID == chapter.ID) }>
+									<a href={ fmt.Sprintf("/chapter/%s", ch.ID) }>{ ch.Name }</a>
 									if ch.Read {
 										<span class="ml-2 brand-gradient inline-flex items-center" title="Read">
 											<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
@@ -2016,8 +2266,8 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 				</a>
 			</div>
 			<div class="flex items-center gap-2">
-				if nextChapter != "" {
-					<a href={ fmt.Sprintf("/series/%s/%s", media.Slug, nextChapter) } class="uk-btn uk-btn-default">
+				if nextID != "" {
+					<a href={ fmt.Sprintf("/chapter/%s", nextID) } class="uk-btn uk-btn-default">
 						<span class="mr-1">Next Chapter</span>
 						<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
 					</a>
@@ -2095,7 +2345,7 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Series", Href: "/series"},
 		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
-		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
+		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/chapter/%s/%s", media.Slug, chapter.LibrarySlug, chapter.Slug)},
 	})
 	<div class="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center px-4">
 		<div class="max-w-md w-full rounded-2xl shadow-2xl overflow-hidden">

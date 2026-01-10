@@ -315,7 +315,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 	</div>
 }
 
-templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadMonth []models.Media, topReadYear []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification) {
+templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
