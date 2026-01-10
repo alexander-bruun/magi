@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,9 +11,160 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/gofiber/fiber/v2/log"
 )
+
+// AuthorInfo represents author/artist information
+type AuthorInfo struct {
+	Name string `json:"name"`
+	Role string `json:"role"`
+}
+
+// AttributionLink represents a link to the source metadata page
+type AttributionLink struct {
+	Provider string `json:"provider"`
+	URL      string `json:"url"`
+	Title    string `json:"title"`
+}
+
+// SortOption describes a single allowed sort field and optional alias list.
+type SortOption struct {
+	Key     string   // canonical key used internally
+	Aliases []string // accepted alternative names
+}
+
+// MediaSortConfigType holds configuration for validating and applying sorts.
+type MediaSortConfigType struct {
+	Allowed      []SortOption
+	DefaultKey   string
+	DefaultOrder string // "asc" or "desc"
+}
+
+// NormalizeSort resolves user supplied sortBy & order into a canonical (key, order).
+// Unknown keys fall back to DefaultKey. Unknown order falls back to DefaultOrder.
+func (c MediaSortConfigType) NormalizeSort(sortBy, order string) (key string, ord string) {
+	sb := strings.ToLower(strings.TrimSpace(sortBy))
+	ob := strings.ToLower(strings.TrimSpace(order))
+
+	// Determine default order based on sort key
+	defaultOrder := c.DefaultOrder
+	if sb == "popularity" || sb == "read_count" {
+		defaultOrder = "desc"
+	}
+
+	if ob != "asc" && ob != "desc" {
+		ob = defaultOrder
+	}
+	key = c.DefaultKey
+	for _, opt := range c.Allowed {
+		if sb == opt.Key {
+			key = opt.Key
+			break
+		}
+		for _, a := range opt.Aliases {
+			if sb == strings.ToLower(a) {
+				key = opt.Key
+				break
+			}
+		}
+	}
+	return key, ob
+}
+
+var MediaSortConfig = MediaSortConfigType{
+	Allowed: []SortOption{
+		{Key: "name", Aliases: []string{"title"}},
+		{Key: "type"},
+		{Key: "year"},
+		{Key: "status"},
+		{Key: "content_rating", Aliases: []string{"contentrating"}},
+		{Key: "created_at", Aliases: []string{"createdat"}},
+		{Key: "updated_at", Aliases: []string{"updatedat"}},
+		{Key: "read_count", Aliases: []string{"readcount"}},
+		{Key: "popularity"},
+	},
+	DefaultKey:   "name",
+	DefaultOrder: "asc",
+}
+
+// GetAllowedMediaSortOptions returns sort options
+func GetAllowedMediaSortOptions() []SortOption {
+	return MediaSortConfig.Allowed
+}
+
+// SortMedias applies the given normalized key & order (use MediaSortConfig.NormalizeSort)
+// to the slice in-place.
+func SortMedias(media []Media, key, order string) {
+	asc := strings.ToLower(order) != "desc"
+	switch key {
+	case "name":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) })
+		}
+	case "type":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) < strings.ToLower(media[j].Type) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Type) > strings.ToLower(media[j].Type) })
+		}
+	case "year":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].Year < media[j].Year })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].Year > media[j].Year })
+		}
+	case "status":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) < strings.ToLower(media[j].Status) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Status) > strings.ToLower(media[j].Status) })
+		}
+	case "content_rating":
+		if asc {
+			sort.Slice(media, func(i, j int) bool {
+				return strings.ToLower(media[i].ContentRating) < strings.ToLower(media[j].ContentRating)
+			})
+		} else {
+			sort.Slice(media, func(i, j int) bool {
+				return strings.ToLower(media[i].ContentRating) > strings.ToLower(media[j].ContentRating)
+			})
+		}
+	case "created_at":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.Before(media[j].CreatedAt) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].CreatedAt.After(media[j].CreatedAt) })
+		}
+	case "updated_at":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.Before(media[j].UpdatedAt) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].UpdatedAt.After(media[j].UpdatedAt) })
+		}
+	case "read_count":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].ReadCount < media[j].ReadCount })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].ReadCount > media[j].ReadCount })
+		}
+	case "popularity":
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return media[i].VoteScore < media[j].VoteScore })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return media[i].VoteScore > media[j].VoteScore })
+		}
+	default:
+		// default already handled by NormalizeSort -> name
+		if asc {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) < strings.ToLower(media[j].Name) })
+		} else {
+			sort.Slice(media, func(i, j int) bool { return strings.ToLower(media[i].Name) > strings.ToLower(media[j].Name) })
+		}
+	}
+}
 
 // Media represents the media table schema
 type Media struct {
@@ -25,9 +177,7 @@ type Media struct {
 	Type             string    `json:"type"`
 	Status           string    `json:"status"`
 	ContentRating    string    `json:"content_rating"`
-	LibrarySlug      string    `json:"library_slug"`
 	CoverArtURL      string    `json:"cover_art_url"`
-	Path             string    `json:"path"`
 	FileCount        int       `json:"file_count"`
 	ReadCount        int       `json:"read_count"`
 	VoteScore        int       `json:"vote_score"`
@@ -35,6 +185,25 @@ type Media struct {
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 	PremiumCountdown string    `json:"premium_countdown,omitempty"`
+
+	// Enhanced metadata fields
+	Authors           []AuthorInfo      `json:"authors,omitempty"`
+	Artists           []AuthorInfo      `json:"artists,omitempty"`
+	StartDate         string            `json:"start_date,omitempty"`
+	EndDate           string            `json:"end_date,omitempty"`
+	ChapterCount      int               `json:"chapter_count,omitempty"`
+	VolumeCount       int               `json:"volume_count,omitempty"`
+	AverageScore      float64           `json:"average_score,omitempty"`
+	Popularity        int               `json:"popularity,omitempty"`
+	Favorites         int               `json:"favorites,omitempty"`
+	Demographic       string            `json:"demographic,omitempty"`
+	Publisher         string            `json:"publisher,omitempty"`
+	Magazine          string            `json:"magazine,omitempty"`
+	Serialization     string            `json:"serialization,omitempty"`
+	Genres            []string          `json:"genres,omitempty"`
+	Characters        []string          `json:"characters,omitempty"`
+	AlternativeTitles []string          `json:"alternative_titles,omitempty"`
+	AttributionLinks  []AttributionLink `json:"attribution_links,omitempty"`
 }
 
 // EnrichedMedia extends Media with premium countdown information
@@ -45,6 +214,9 @@ type EnrichedMedia struct {
 	LatestChapterName string
 	AverageRating     float64
 	ReviewCount       int
+	VoteScore         int
+	Upvotes           int
+	Downvotes         int
 }
 
 // CreateMedia adds a new media to the database
@@ -58,63 +230,118 @@ func CreateMedia(media Media) error {
 	}
 
 	timestamps := NewTimestamps()
-	media.CreatedAt = timestamps.CreatedAt
-	media.UpdatedAt = timestamps.UpdatedAt
+
+	// Marshal JSON fields
+	authorsJSON, _ := json.Marshal(media.Authors)
+	artistsJSON, _ := json.Marshal(media.Artists)
+	genresJSON, _ := json.Marshal(media.Genres)
+	charactersJSON, _ := json.Marshal(media.Characters)
+	alternativeTitlesJSON, _ := json.Marshal(media.AlternativeTitles)
+	attributionLinksJSON, _ := json.Marshal(media.AttributionLinks)
 
 	query := `
-	INSERT INTO media (slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO media (slug, name, author, description, year, original_language, type, status, content_rating, cover_art_url, file_count, created_at, updated_at,
+		start_date, end_date, chapter_count, volume_count, average_score, popularity, favorites, demographic, publisher, magazine, serialization,
+		authors, artists, genres, characters, alternative_titles, attribution_links)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	createdAt, updatedAt := timestamps.UnixTimestamps()
-	_, err = db.Exec(query, media.Slug, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.LibrarySlug, media.CoverArtURL, media.Path, media.FileCount, createdAt, updatedAt)
+	_, err = db.Exec(query,
+		media.Slug, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.FileCount, createdAt, updatedAt,
+		media.StartDate, media.EndDate, media.ChapterCount, media.VolumeCount, media.AverageScore, media.Popularity, media.Favorites, media.Demographic, media.Publisher, media.Magazine, media.Serialization,
+		string(authorsJSON), string(artistsJSON), string(genresJSON), string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON))
 	return err
 }
 
 // GetMedia retrieves a single media by slug from enabled libraries
 func GetMedia(slug string) (*Media, error) {
-	return getMedia(slug, true, true)
+	cfg, err := GetAppConfig()
+	contentRatingLimit := 3 // default to show all
+	if err == nil {
+		contentRatingLimit = cfg.ContentRatingLimit
+	}
+	return getMedia(slug, true, contentRatingLimit)
 }
 
 // GetMediaUnfiltered retrieves a single media by slug without content rating filtering.
 // This should only be used for internal operations like indexing, updates, etc.
 func GetMediaUnfiltered(slug string) (*Media, error) {
-	return getMedia(slug, false, true)
+	return getMedia(slug, false, 0)
+}
+
+// GetMediaWithContentLimit retrieves a single media by slug with specified content rating limit
+func GetMediaWithContentLimit(slug string, contentRatingLimit int) (*Media, error) {
+	return getMedia(slug, true, contentRatingLimit)
 }
 
 // GetMediaBySlugAndLibrary retrieves a single media by slug and library slug without content rating filtering.
 // This should only be used for internal operations like indexing, updates, etc.
 func GetMediaBySlugAndLibrary(slug, librarySlug string) (*Media, error) {
-	return getMediaBySlugAndLibrary(slug, librarySlug, false)
+	return getMediaBySlugAndLibrary(slug, librarySlug, false, 0)
+}
+
+// GetMediaBySlugAndLibraryUnfiltered retrieves a single media by slug and library slug without content filtering.
+func GetMediaBySlugAndLibraryUnfiltered(slug, librarySlug string) (*Media, error) {
+	return getMediaBySlugAndLibrary(slug, librarySlug, false, 0)
 }
 
 // GetMediaBySlugAndLibraryFiltered retrieves a single media by slug and library slug with content rating filtering.
 func GetMediaBySlugAndLibraryFiltered(slug, librarySlug string) (*Media, error) {
-	return getMediaBySlugAndLibrary(slug, librarySlug, true)
+	cfg, err := GetAppConfig()
+	contentRatingLimit := 3 // default to show all
+	if err == nil {
+		contentRatingLimit = cfg.ContentRatingLimit
+	}
+	return getMediaBySlugAndLibrary(slug, librarySlug, true, contentRatingLimit)
 }
 
-// getMedia is the internal implementation that optionally applies content rating filtering and library enabled check
-func getMedia(slug string, applyContentFilter bool, checkLibraryEnabled bool) (*Media, error) {
-	var query string
-	if checkLibraryEnabled {
-		query = `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at 
-		         FROM media m 
-		         JOIN libraries l ON m.library_slug = l.slug 
-		         WHERE m.slug = ? AND l.enabled = 1`
-	} else {
-		query = `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug = ?`
-	}
+// getMedia is the internal implementation that optionally applies content rating filtering
+func getMedia(slug string, applyContentFilter bool, contentRatingLimit int) (*Media, error) {
+	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, cover_art_url, file_count, created_at, updated_at,
+		COALESCE(start_date, '') as start_date, COALESCE(end_date, '') as end_date, COALESCE(chapter_count, 0) as chapter_count, COALESCE(volume_count, 0) as volume_count,
+		COALESCE(average_score, 0.0) as average_score, COALESCE(popularity, 0) as popularity, COALESCE(favorites, 0) as favorites,
+		COALESCE(demographic, '') as demographic, COALESCE(publisher, '') as publisher, COALESCE(magazine, '') as magazine, COALESCE(serialization, '') as serialization,
+		COALESCE(authors, '[]') as authors, COALESCE(artists, '[]') as artists, COALESCE(genres, '[]') as genres, COALESCE(characters, '[]') as characters,
+		COALESCE(alternative_titles, '[]') as alternative_titles, COALESCE(attribution_links, '[]') as attribution_links FROM media WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
 
 	var m Media
 	var createdAt, updatedAt int64
-	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt)
+	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+
+	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
+		&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
+		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			log.Debugf("getMedia: no rows for slug=%s", slug)
 			return nil, nil // No media found
 		}
 		return nil, err
+	}
+
+	log.Debugf("getMedia: found media slug=%s, content_rating=%s", m.Slug, m.ContentRating)
+
+	m.CreatedAt = time.Unix(createdAt, 0)
+	m.UpdatedAt = time.Unix(updatedAt, 0)
+
+	// Unmarshal JSON fields
+	json.Unmarshal(authorsJSON, &m.Authors)
+	json.Unmarshal(artistsJSON, &m.Artists)
+	json.Unmarshal(genresJSON, &m.Genres)
+	json.Unmarshal(charactersJSON, &m.Characters)
+	json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
+	json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+
+	// Apply content rating filter only if requested (for user-facing operations)
+	if applyContentFilter {
+		allowed := IsContentRatingAllowed(m.ContentRating, contentRatingLimit)
+		log.Debugf("getMedia: content filter apply, rating=%s, limit=%d, allowed=%v", m.ContentRating, contentRatingLimit, allowed)
+		if !allowed {
+			return nil, nil // Return nil to indicate media not found/accessible
+		}
 	}
 
 	m.CreatedAt = time.Unix(createdAt, 0)
@@ -122,11 +349,9 @@ func getMedia(slug string, applyContentFilter bool, checkLibraryEnabled bool) (*
 
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
-		cfg, err := GetAppConfig()
-		if err != nil {
-			log.Errorf("Failed to get app config for content rating check: %v", err)
-			// On error, default to showing content
-		} else if !IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
+		allowed := IsContentRatingAllowed(m.ContentRating, contentRatingLimit)
+		log.Debugf("getMedia: content filter apply, rating=%s, limit=%d, allowed=%v", m.ContentRating, contentRatingLimit, allowed)
+		if !allowed {
 			return nil, nil // Return nil to indicate media not found/accessible
 		}
 	}
@@ -142,17 +367,25 @@ func getMedia(slug string, applyContentFilter bool, checkLibraryEnabled bool) (*
 }
 
 // getMediaBySlugAndLibrary is the internal implementation for getting media by slug and library
-func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool) (*Media, error) {
-	query := `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at 
+func getMediaBySlugAndLibrary(slug, _ string, applyContentFilter bool, contentRatingLimit int) (*Media, error) {
+	query := `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at,
+		COALESCE(m.start_date, '') as start_date, COALESCE(m.end_date, '') as end_date, COALESCE(m.chapter_count, 0) as chapter_count, COALESCE(m.volume_count, 0) as volume_count,
+		COALESCE(m.average_score, 0.0) as average_score, COALESCE(m.popularity, 0) as popularity, COALESCE(m.favorites, 0) as favorites,
+		COALESCE(m.demographic, '') as demographic, COALESCE(m.publisher, '') as publisher, COALESCE(m.magazine, '') as magazine, COALESCE(m.serialization, '') as serialization,
+		COALESCE(m.authors, '[]') as authors, COALESCE(m.artists, '[]') as artists, COALESCE(m.genres, '[]') as genres, COALESCE(m.characters, '[]') as characters,
+		COALESCE(m.alternative_titles, '[]') as alternative_titles, COALESCE(m.attribution_links, '[]') as attribution_links
 	          FROM media m 
-	          JOIN libraries l ON m.library_slug = l.slug 
-	          WHERE m.slug = ? AND m.library_slug = ? AND l.enabled = 1`
+	          WHERE m.slug = ?`
 
-	row := db.QueryRow(query, slug, librarySlug)
+	row := db.QueryRow(query, slug)
 
 	var m Media
 	var createdAt, updatedAt int64
-	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt)
+	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+
+	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
+		&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
+		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No media found
@@ -163,13 +396,17 @@ func getMediaBySlugAndLibrary(slug, librarySlug string, applyContentFilter bool)
 	m.CreatedAt = time.Unix(createdAt, 0)
 	m.UpdatedAt = time.Unix(updatedAt, 0)
 
+	// Unmarshal JSON fields
+	json.Unmarshal(authorsJSON, &m.Authors)
+	json.Unmarshal(artistsJSON, &m.Artists)
+	json.Unmarshal(genresJSON, &m.Genres)
+	json.Unmarshal(charactersJSON, &m.Characters)
+	json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
+	json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
-		cfg, err := GetAppConfig()
-		if err != nil {
-			log.Errorf("Failed to get app config for content rating check: %v", err)
-			// On error, default to showing content
-		} else if !IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
+		if !IsContentRatingAllowed(m.ContentRating, contentRatingLimit) {
 			return nil, nil // Return nil to indicate media not found/accessible
 		}
 	}
@@ -191,17 +428,36 @@ func (m *Media) SetContentRating(rating string)  { m.ContentRating = rating }
 func (m *Media) SetType(mangaType string)        { m.Type = mangaType }
 func (m *Media) SetCoverArtURL(url string)       { m.CoverArtURL = url }
 
+// Enhanced metadata setters
+func (m *Media) SetAuthors(authors []AuthorInfo)             { m.Authors = authors }
+func (m *Media) SetArtists(artists []AuthorInfo)             { m.Artists = artists }
+func (m *Media) SetStartDate(date string)                    { m.StartDate = date }
+func (m *Media) SetEndDate(date string)                      { m.EndDate = date }
+func (m *Media) SetChapterCount(count int)                   { m.ChapterCount = count }
+func (m *Media) SetVolumeCount(count int)                    { m.VolumeCount = count }
+func (m *Media) SetAverageScore(score float64)               { m.AverageScore = score }
+func (m *Media) SetPopularity(pop int)                       { m.Popularity = pop }
+func (m *Media) SetFavorites(fav int)                        { m.Favorites = fav }
+func (m *Media) SetDemographic(demo string)                  { m.Demographic = demo }
+func (m *Media) SetPublisher(pub string)                     { m.Publisher = pub }
+func (m *Media) SetMagazine(mag string)                      { m.Magazine = mag }
+func (m *Media) SetSerialization(serial string)              { m.Serialization = serial }
+func (m *Media) SetGenres(genres []string)                   { m.Genres = genres }
+func (m *Media) SetCharacters(chars []string)                { m.Characters = chars }
+func (m *Media) SetAlternativeTitles(titles []string)        { m.AlternativeTitles = titles }
+func (m *Media) SetAttributionLinks(links []AttributionLink) { m.AttributionLinks = links }
+
 // UpdateMedia modifies an existing media and always updates the updated_at timestamp to the current time
 func UpdateMedia(media *Media) error {
 	media.UpdatedAt = time.Now()
 
 	query := `
 	UPDATE media
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, library_slug = ?, cover_art_url = ?, path = ?, file_count = ?, updated_at = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?, file_count = ?, updated_at = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.LibrarySlug, media.CoverArtURL, media.Path, media.FileCount, media.UpdatedAt.Unix(), media.Slug)
+	_, err := db.Exec(query, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.FileCount, media.UpdatedAt.Unix(), media.Slug)
 	if err != nil {
 		return err
 	}
@@ -213,13 +469,28 @@ func UpdateMedia(media *Media) error {
 // This is useful for refresh operations where we want to preserve the original creation date.
 // It does not update the updated_at timestamp.
 func UpdateMediaMetadata(media *Media) error {
+	// Marshal JSON fields
+	authorsJSON, _ := json.Marshal(media.Authors)
+	artistsJSON, _ := json.Marshal(media.Artists)
+	genresJSON, _ := json.Marshal(media.Genres)
+	charactersJSON, _ := json.Marshal(media.Characters)
+	alternativeTitlesJSON, _ := json.Marshal(media.AlternativeTitles)
+	attributionLinksJSON, _ := json.Marshal(media.AttributionLinks)
+
 	query := `
 	UPDATE media
-	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?
+	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?,
+		start_date = ?, end_date = ?, chapter_count = ?, volume_count = ?, average_score = ?, popularity = ?, favorites = ?,
+		demographic = ?, publisher = ?, magazine = ?, serialization = ?, authors = ?, artists = ?, genres = ?,
+		characters = ?, alternative_titles = ?, attribution_links = ?
 	WHERE slug = ?
 	`
 
-	_, err := db.Exec(query, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.Slug)
+	_, err := db.Exec(query,
+		media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL,
+		media.StartDate, media.EndDate, media.ChapterCount, media.VolumeCount, media.AverageScore, media.Popularity, media.Favorites,
+		media.Demographic, media.Publisher, media.Magazine, media.Serialization, string(authorsJSON), string(artistsJSON), string(genresJSON),
+		string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON), media.Slug)
 	if err != nil {
 		return err
 	}
@@ -247,7 +518,7 @@ func DeleteMedia(slug string) error {
 
 // deletePosterImages deletes the poster image files for a media
 func deletePosterImages(slug string) {
-	dataDir := utils.GetDataDirectory()
+	dataDir := files.GetDataDirectory()
 	postersDir := filepath.Join(dataDir, "posters")
 
 	// Delete main poster image
@@ -353,12 +624,8 @@ func MediaCount(filterBy, filter string) (int, error) {
 				value = media.Status
 			case "ContentRating":
 				value = media.ContentRating
-			case "LibrarySlug":
-				value = media.LibrarySlug
 			case "CoverArtURL":
 				value = media.CoverArtURL
-			case "Path":
-				value = media.Path
 			case "FileCount":
 				value = fmt.Sprintf("%d", media.FileCount)
 			case "Tags":
@@ -383,7 +650,8 @@ func MediaCount(filterBy, filter string) (int, error) {
 
 // DeleteMediasByLibrarySlug removes all media associated with a specific library
 func DeleteMediasByLibrarySlug(librarySlug string) error {
-	query := `SELECT slug FROM media WHERE library_slug = ?`
+	// Get all media slugs that have chapters in this library
+	query := `SELECT DISTINCT media_slug FROM chapters WHERE library_slug = ?`
 
 	rows, err := db.Query(query, librarySlug)
 	if err != nil {
@@ -402,10 +670,27 @@ func DeleteMediasByLibrarySlug(librarySlug string) error {
 		slugs = append(slugs, slug)
 	}
 
-	for _, slug := range slugs {
-		if err := DeleteMedia(slug); err != nil {
-			log.Errorf("Failed to delete media with slug '%s': %s", slug, err.Error())
-			return err
+	// Delete chapters for this library
+	deleteChaptersQuery := `DELETE FROM chapters WHERE library_slug = ?`
+	_, err = db.Exec(deleteChaptersQuery, librarySlug)
+	if err != nil {
+		log.Errorf("Failed to delete chapters for library '%s': %v", librarySlug, err)
+		return err
+	}
+
+	// For each affected media, check if it has any remaining chapters, if not, delete the media
+	for _, mediaSlug := range slugs {
+		var count int
+		err = db.QueryRow(`SELECT COUNT(*) FROM chapters WHERE media_slug = ?`, mediaSlug).Scan(&count)
+		if err != nil {
+			log.Errorf("Failed to check remaining chapters for media '%s': %v", mediaSlug, err)
+			continue
+		}
+		if count == 0 {
+			// No chapters left, delete the media
+			if err := DeleteMedia(mediaSlug); err != nil {
+				log.Errorf("Failed to delete orphaned media '%s': %v", mediaSlug, err)
+			}
 		}
 	}
 
@@ -422,9 +707,11 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 	placeholders := strings.Repeat("?,", len(slugs))
 	placeholders = placeholders[:len(placeholders)-1] // Remove trailing comma
 
-	query := fmt.Sprintf(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE slug IN (%s)`, placeholders)
+	query := fmt.Sprintf(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, cover_art_url, file_count, created_at, updated_at,
+		start_date, end_date, chapter_count, volume_count, average_score, popularity, favorites, demographic, publisher, magazine, serialization,
+		authors, artists, genres, characters, alternative_titles, attribution_links FROM media WHERE slug IN (%s)`, placeholders)
 
-	args := make([]interface{}, len(slugs))
+	args := make([]any, len(slugs))
 	for i, slug := range slugs {
 		args[i] = slug
 	}
@@ -446,13 +733,25 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt)
+		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
+			&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
+			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
 		if err != nil {
 			return nil, err
 		}
 
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
+
+		// Unmarshal JSON fields
+		json.Unmarshal(authorsJSON, &m.Authors)
+		json.Unmarshal(artistsJSON, &m.Artists)
+		json.Unmarshal(genresJSON, &m.Genres)
+		json.Unmarshal(charactersJSON, &m.Characters)
+		json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
+		json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
 
 		// Apply content rating filter
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
@@ -485,7 +784,9 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 // GetMediasByLibrarySlug returns all media that belong to a specific library
 func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 	var mediaList []Media
-	query := `SELECT slug, name, author, description, year, original_language, type, status, content_rating, library_slug, cover_art_url, path, file_count, created_at, updated_at FROM media WHERE library_slug = ?`
+	query := `SELECT DISTINCT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at,
+		m.start_date, m.end_date, m.chapter_count, m.volume_count, m.average_score, m.popularity, m.favorites, m.demographic, m.publisher, m.magazine, m.serialization,
+		m.authors, m.artists, m.genres, m.characters, m.alternative_titles, m.attribution_links FROM media m INNER JOIN chapters c ON m.slug = c.media_slug WHERE c.library_slug = ?`
 
 	rows, err := db.Query(query, librarySlug)
 	if err != nil {
@@ -504,12 +805,24 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt); err != nil {
+		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+
+		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
+			&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
+			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON); err != nil {
 			log.Errorf("Failed to scan media row: %v", err)
 			return nil, err
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
 		m.UpdatedAt = time.Unix(updatedAt, 0)
+
+		// Unmarshal JSON fields
+		json.Unmarshal(authorsJSON, &m.Authors)
+		json.Unmarshal(artistsJSON, &m.Artists)
+		json.Unmarshal(genresJSON, &m.Genres)
+		json.Unmarshal(charactersJSON, &m.Characters)
+		json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
+		json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
 
 		// Filter based on content rating limit
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
@@ -567,19 +880,19 @@ func GetTopMediasByPeriod(period string, limit int, accessibleLibraries []string
 	}
 
 	var libraryFilter string
-	var args []interface{}
+	var args []any
 
 	if len(accessibleLibraries) > 0 {
 		libraryPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
 		libraryPlaceholders = libraryPlaceholders[:len(libraryPlaceholders)-1] // remove trailing comma
-		libraryFilter = fmt.Sprintf("AND m.library_slug IN (%s)", libraryPlaceholders)
+		libraryFilter = fmt.Sprintf("AND EXISTS (SELECT 1 FROM chapters c WHERE c.media_slug = m.slug AND c.library_slug IN (%s))", libraryPlaceholders)
 	} else {
 		// No accessible libraries - return empty result
 		return []Media{}, nil
 	}
 
 	query := fmt.Sprintf(`
-	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
+	SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at
 	FROM media m
 	LEFT JOIN (
 		SELECT media_slug, 
@@ -616,7 +929,7 @@ func GetTopMediasByPeriod(period string, limit int, accessibleLibraries []string
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
@@ -654,12 +967,13 @@ func loadAllMedias(media *[]Media) error {
 
 // loadAllMediasWithTags loads all media with optional tag loading to avoid N+1 queries when tags are needed
 func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
-	query := `SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, 
+	query := `SELECT DISTINCT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, 
 		COALESCE(read_counts.read_count, 0) as read_count,
 		COALESCE(vote_scores.score, 0) as vote_score,
 		m.created_at, m.updated_at 
 	FROM media m
-	INNER JOIN libraries l ON m.library_slug = l.slug
+	INNER JOIN chapters c ON m.slug = c.media_slug
+	INNER JOIN libraries l ON c.library_slug = l.slug
 	LEFT JOIN (
 		SELECT media_slug, COUNT(*) as read_count
 		FROM reading_states
@@ -672,8 +986,7 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 			ELSE 0 END as score
 		FROM votes
 		GROUP BY media_slug
-	) vote_scores ON m.slug = vote_scores.media_slug
-	WHERE l.enabled = 1`
+	) vote_scores ON m.slug = vote_scores.media_slug`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -693,7 +1006,7 @@ func loadAllMediasWithTags(media *[]Media, loadTags bool) error {
 		var m Media
 		var createdAt, updatedAt int64
 		var voteScore int
-		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt); err != nil {
 			return err
 		}
 		m.CreatedAt = time.Unix(createdAt, 0)
@@ -748,27 +1061,6 @@ func GetAllMediaTypes() ([]string, error) {
 	return types, nil
 }
 
-func applyBigramSearch(filter string, mediaList []Media) []Media {
-	var mediaNames []string
-	nameToMedia := make(map[string]Media, len(mediaList))
-
-	for _, media := range mediaList {
-		mediaNames = append(mediaNames, media.Name)
-		nameToMedia[media.Name] = media
-	}
-
-	matchingNames := utils.BigramSearch(filter, mediaNames)
-
-	filtered := make([]Media, 0, len(matchingNames))
-	for _, name := range matchingNames {
-		if media, ok := nameToMedia[name]; ok {
-			filtered = append(filtered, media)
-		}
-	}
-
-	return filtered
-}
-
 // sortMedias moved to sorting.go (exported as SortMedias) for reuse across account pages.
 
 // Vote represents a user's vote on a media
@@ -796,6 +1088,45 @@ func GetMediaVotes(mangaSlug string) (score int, upvotes int, downvotes int, err
 		return 0, 0, 0, err
 	}
 	return score, upvotes, downvotes, nil
+}
+
+// BatchGetMediaVotes gets vote data for multiple media slugs in one query
+func BatchGetMediaVotes(mediaSlugs []string) (map[string][3]int, error) {
+	if len(mediaSlugs) == 0 {
+		return make(map[string][3]int), nil
+	}
+
+	placeholders := strings.Repeat("?,", len(mediaSlugs)-1) + "?"
+	query := fmt.Sprintf(`SELECT media_slug,
+		CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+		THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+		ELSE 0 END as score,
+		COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) as upvotes, 
+		COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) as downvotes 
+		FROM votes WHERE media_slug IN (%s) GROUP BY media_slug`, placeholders)
+
+	args := make([]any, len(mediaSlugs))
+	for i, slug := range mediaSlugs {
+		args[i] = slug
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][3]int)
+	for rows.Next() {
+		var slug string
+		var score, upvotes, downvotes int
+		if err := rows.Scan(&slug, &score, &upvotes, &downvotes); err != nil {
+			return nil, err
+		}
+		result[slug] = [3]int{score, upvotes, downvotes}
+	}
+
+	return result, nil
 }
 
 // GetUserVoteForMedia returns the vote value (1, -1) for a user on a media. If none, returns 0.
@@ -1067,22 +1398,6 @@ func processUserMediaList(slugs []string, opts UserMediaListOptions) ([]Media, i
 		return nil, 0, err
 	}
 
-	// Filter by accessible libraries (permission system)
-	if len(opts.AccessibleLibraries) > 0 {
-		librarySet := make(map[string]struct{}, len(opts.AccessibleLibraries))
-		for _, lib := range opts.AccessibleLibraries {
-			librarySet[lib] = struct{}{}
-		}
-
-		filtered := make([]Media, 0, len(allMedias))
-		for _, m := range allMedias {
-			if _, ok := librarySet[m.LibrarySlug]; ok {
-				filtered = append(filtered, m)
-			}
-		}
-		allMedias = filtered
-	}
-
 	// Filter by tags if specified
 	if len(opts.Tags) > 0 {
 		allMedias = FilterMediasByTags(allMedias, opts.Tags, opts.TagMode)
@@ -1265,22 +1580,29 @@ func GetMediaAndChapters(mangaSlug string) (*Media, []Chapter, error) {
 
 // GetChapterImages generates URLs for all images in a chapter
 func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
-	// Determine the actual chapter file path
-	// For single-file media (cbz/cbr), media.Path is the file itself
-	// For directory-based media, we need to join path and chapter file
-	chapterFilePath := media.Path
-	if fileInfo, err := os.Stat(media.Path); err == nil && fileInfo.IsDir() {
-		chapterFilePath = filepath.Join(media.Path, chapter.File)
-	} else if err != nil {
-		return nil, fmt.Errorf("media path '%s' does not exist: %w", media.Path, err)
+	// Get the library to determine the root path
+	library, err := GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
 	}
+
+	// Use the first library folder as the root (since media are path-agnostic now)
+	var rootPath string
+	if len(library.Folders) > 0 {
+		rootPath = library.Folders[0]
+	} else {
+		return nil, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug)
+	}
+
+	// Determine the actual chapter file path using the library root + relative chapter file path
+	chapterFilePath := filepath.Join(rootPath, chapter.File)
 
 	// Check if chapter file path exists
 	if _, err := os.Stat(chapterFilePath); err != nil {
 		return nil, fmt.Errorf("chapter file path '%s' does not exist: %w", chapterFilePath, err)
 	}
 
-	pageCount, err := utils.CountImageFiles(chapterFilePath)
+	pageCount, err := files.CountImageFiles(chapterFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -1290,11 +1612,11 @@ func GetChapterImages(media *Media, chapter *Chapter) ([]string, error) {
 	}
 
 	images := make([]string, pageCount)
-	for i := 0; i < pageCount; i++ {
+	for i := range pageCount {
 		// Generate one-time use token
 		validityMinutes := GetImageTokenValidityMinutes()
-		token := utils.GenerateImageAccessTokenWithValidity(media.Slug, chapter.Slug, i+1, validityMinutes)
-		images[i] = fmt.Sprintf("/api/image?token=%s", token)
+		token := files.GenerateImageAccessTokenWithValidity(media.Slug, chapter.LibrarySlug, chapter.Slug, i+1, validityMinutes)
+		images[i] = token
 	}
 
 	return images, nil
@@ -1326,228 +1648,308 @@ type SearchOptions struct {
 	SearchFilter        string   // lenient search filter
 }
 
-// SearchMediasWithOptions performs a flexible media search using options
+// SearchMediasWithOptions performs a flexible media search using options with SQL-based filtering and sorting
 func SearchMediasWithOptions(opts SearchOptions) ([]Media, int64, error) {
-	var mangas []Media
-	if err := loadAllMedias(&mangas); err != nil {
-		return nil, 0, err
+	// Get content rating limit from config
+	cfg, err := GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config, defaulting to show all content: %v", err)
+		cfg.ContentRatingLimit = 3 // default to show all if config fails
 	}
+
+	// Build the base query
+	baseQuery := `SELECT DISTINCT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, 
+		COALESCE(read_counts.read_count, 0) as read_count,
+		COALESCE(vote_scores.score, 0) as vote_score,
+		m.created_at, m.updated_at 
+	FROM media m
+	LEFT JOIN (
+		SELECT media_slug, COUNT(*) as read_count
+		FROM reading_states
+		GROUP BY media_slug
+	) read_counts ON m.slug = read_counts.media_slug
+	LEFT JOIN (
+		SELECT media_slug, 
+			CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
+			THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
+			ELSE 0 END as score
+		FROM votes
+		GROUP BY media_slug
+	) vote_scores ON m.slug = vote_scores.media_slug
+	WHERE 1=1`
+
+	var whereConditions []string
+	var args []any
 
 	// Filter by accessible libraries (permission system)
 	if len(opts.AccessibleLibraries) > 0 {
-		mangas = filterByAccessibleLibraries(mangas, opts.AccessibleLibraries)
+		placeholders := strings.Repeat("?,", len(opts.AccessibleLibraries))
+		placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
+		whereConditions = append(whereConditions, fmt.Sprintf("EXISTS (SELECT 1 FROM chapters c WHERE c.media_slug = m.slug AND c.library_slug IN (%s))", placeholders))
+		for _, lib := range opts.AccessibleLibraries {
+			args = append(args, lib)
+		}
 	}
+	// Note: If no accessible libraries specified, we don't filter by library, allowing media without chapters to be included
 
 	// Filter by library
 	if opts.LibrarySlug != "" {
-		mangas = filterByLibrarySlug(mangas, opts.LibrarySlug)
+		whereConditions = append(whereConditions, "c.library_slug = ?")
+		args = append(args, opts.LibrarySlug)
 	}
 
 	// Filter by content rating
-	mangas = filterByContentRating(mangas, opts.ContentRatingLimit)
-
-	// Filter by tags if provided
-	if len(opts.Tags) > 0 {
-		tagMap, err := GetAllMediaTagsMap()
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if opts.TagMode == "any" {
-			mangas = filterByAnyTag(mangas, opts.Tags, tagMap)
-		} else {
-			mangas = filterByAllTags(mangas, opts.Tags, tagMap)
-		}
+	contentLimit := cfg.ContentRatingLimit
+	if opts.ContentRatingLimit > 0 {
+		contentLimit = opts.ContentRatingLimit
 	}
+	whereConditions = append(whereConditions, `CASE LOWER(TRIM(m.content_rating))
+		WHEN 'safe' THEN 0
+		WHEN 'suggestive' THEN 1
+		WHEN 'erotica' THEN 2
+		WHEN 'pornographic' THEN 3
+		ELSE 3 END <= ?`)
+	args = append(args, contentLimit)
 
-	// Filter by types if provided (any match)
-	if len(opts.Types) > 0 {
-		typeSet := normalizeStringSet(opts.Types)
-		filtered := make([]Media, 0, len(mangas))
-		for _, m := range mangas {
-			if _, ok := typeSet[strings.ToLower(strings.TrimSpace(m.Type))]; ok {
-				filtered = append(filtered, m)
+	// Filter by tags
+	if len(opts.Tags) > 0 {
+		normalizedTags := make([]string, len(opts.Tags))
+		for i, tag := range opts.Tags {
+			normalizedTags[i] = strings.TrimSpace(strings.ToLower(tag))
+		}
+		if opts.TagMode == "any" {
+			placeholders := strings.Repeat("?,", len(normalizedTags))
+			placeholders = placeholders[:len(placeholders)-1]
+			whereConditions = append(whereConditions, fmt.Sprintf("EXISTS (SELECT 1 FROM media_tags mt WHERE mt.media_slug = m.slug AND LOWER(TRIM(mt.tag)) IN (%s))", placeholders))
+			for _, tag := range normalizedTags {
+				args = append(args, tag)
+			}
+		} else { // "all"
+			for _, tag := range normalizedTags {
+				whereConditions = append(whereConditions, "EXISTS (SELECT 1 FROM media_tags mt WHERE mt.media_slug = m.slug AND LOWER(TRIM(mt.tag)) = ?)")
+				args = append(args, tag)
 			}
 		}
-		mangas = filtered
 	}
 
-	total := int64(len(mangas))
+	// Filter by types
+	if len(opts.Types) > 0 {
+		normalizedTypes := make([]string, len(opts.Types))
+		for i, t := range opts.Types {
+			normalizedTypes[i] = strings.TrimSpace(strings.ToLower(t))
+		}
+		placeholders := strings.Repeat("?,", len(normalizedTypes))
+		placeholders = placeholders[:len(placeholders)-1]
+		whereConditions = append(whereConditions, fmt.Sprintf("LOWER(TRIM(m.type)) IN (%s)", placeholders))
+		for _, t := range normalizedTypes {
+			args = append(args, t)
+		}
+	}
 
 	// Apply text search filter
 	if opts.SearchFilter != "" {
-		mangas = FilterMediasBySearch(mangas, opts.SearchFilter)
-		total = int64(len(mangas))
+		// Split search term into words and create LIKE conditions
+		searchWords := strings.Fields(strings.ToLower(strings.TrimSpace(opts.SearchFilter)))
+		if len(searchWords) > 0 {
+			var likeConditions []string
+			for _, word := range searchWords {
+				if word != "" {
+					likeConditions = append(likeConditions, "LOWER(m.name) LIKE ?")
+					args = append(args, "%"+word+"%")
+				}
+			}
+			if len(likeConditions) > 0 {
+				whereConditions = append(whereConditions, "("+strings.Join(likeConditions, " AND ")+")")
+			}
+		}
 	} else if opts.Filter != "" {
-		mangas = applyBigramSearch(opts.Filter, mangas)
-		total = int64(len(mangas))
+		// Similar for Filter
+		filterWords := strings.Fields(strings.ToLower(strings.TrimSpace(opts.Filter)))
+		if len(filterWords) > 0 {
+			var likeConditions []string
+			for _, word := range filterWords {
+				if word != "" {
+					likeConditions = append(likeConditions, "LOWER(m.name) LIKE ?")
+					args = append(args, "%"+word+"%")
+				}
+			}
+			if len(likeConditions) > 0 {
+				whereConditions = append(whereConditions, "("+strings.Join(likeConditions, " AND ")+")")
+			}
+		}
 	}
 
-	// Sort results
-	key, ord := MediaSortConfig.NormalizeSort(opts.SortBy, opts.SortOrder)
-	SortMedias(mangas, key, ord)
+	// Combine WHERE conditions
+	query := baseQuery
+	if len(whereConditions) > 0 {
+		query += " AND " + strings.Join(whereConditions, " AND ")
+	}
 
-	// Paginate
-	return paginateMedias(mangas, opts.Page, opts.PageSize), total, nil
+	// Get total count
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as subquery"
+	var total int64
+	err = db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get total count: %v", err)
+	}
+
+	// Add sorting
+	key, ord := MediaSortConfig.NormalizeSort(opts.SortBy, opts.SortOrder)
+	var orderBy string
+	switch key {
+	case "name":
+		orderBy = "LOWER(m.name)"
+	case "type":
+		orderBy = "LOWER(m.type)"
+	case "year":
+		orderBy = "m.year"
+	case "status":
+		orderBy = "LOWER(m.status)"
+	case "content_rating":
+		orderBy = "LOWER(m.content_rating)"
+	case "created_at":
+		orderBy = "m.created_at"
+	case "updated_at":
+		orderBy = "m.updated_at"
+	case "read_count":
+		orderBy = "COALESCE(read_counts.read_count, 0)"
+	case "popularity":
+		orderBy = "COALESCE(vote_scores.score, 0)"
+	default:
+		orderBy = "LOWER(m.name)"
+	}
+	if ord == "desc" {
+		orderBy += " DESC"
+	} else {
+		orderBy += " ASC"
+	}
+	query += " ORDER BY " + orderBy
+
+	// Add pagination
+	if opts.PageSize > 0 {
+		offset := max((opts.Page-1)*opts.PageSize, 0)
+		query += " LIMIT ? OFFSET ?"
+		args = append(args, opts.PageSize, offset)
+	}
+
+	// Execute query
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to execute search query: %v", err)
+	}
+	defer rows.Close()
+
+	var medias []Media
+	for rows.Next() {
+		var m Media
+		var createdAt, updatedAt int64
+		var voteScore int
+		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan media: %v", err)
+		}
+		m.CreatedAt = time.Unix(createdAt, 0)
+		m.UpdatedAt = time.Unix(updatedAt, 0)
+		m.VoteScore = voteScore
+		medias = append(medias, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating rows: %v", err)
+	}
+
+	// Load tags if needed for display (only if tags were filtered)
+	if len(opts.Tags) > 0 && len(medias) > 0 {
+		tagMap, err := GetAllMediaTagsMap()
+		if err != nil {
+			log.Errorf("Failed to load tags for media: %v", err)
+		} else {
+			for i := range medias {
+				if tags, ok := tagMap[medias[i].Slug]; ok {
+					medias[i].Tags = tags
+				}
+			}
+		}
+	}
+
+	return medias, total, nil
 }
+
 func filterByAccessibleLibraries(mangas []Media, accessibleLibraries []string) []Media {
 	if len(accessibleLibraries) == 0 {
 		return []Media{} // No accessible libraries means no media
 	}
 
-	// Create a set for O(1) lookup
-	librarySet := make(map[string]struct{}, len(accessibleLibraries))
-	for _, slug := range accessibleLibraries {
-		librarySet[slug] = struct{}{}
-	}
-
-	filtered := make([]Media, 0, len(mangas))
-	for _, m := range mangas {
-		if _, ok := librarySet[m.LibrarySlug]; ok {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-// filterByLibrarySlug filters mangas by library slug
-func filterByLibrarySlug(mangas []Media, librarySlug string) []Media {
-	filtered := make([]Media, 0, len(mangas))
-	for _, m := range mangas {
-		if m.LibrarySlug == librarySlug {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-// filterByAllTags keeps only mangas that have all selected tags
-func filterByAllTags(mangas []Media, selectedTags []string, tagMap map[string][]string) []Media {
-	selectedSet := normalizeTagSet(selectedTags)
-	filtered := make([]Media, 0, len(mangas))
-
-	for _, m := range mangas {
-		if hasAllTags(tagMap[m.Slug], selectedSet) {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-// filterByAnyTag keeps only mangas that have at least one of the selected tags
-func filterByAnyTag(mangas []Media, selectedTags []string, tagMap map[string][]string) []Media {
-	selectedSet := normalizeTagSet(selectedTags)
-	filtered := make([]Media, 0, len(mangas))
-
-	for _, m := range mangas {
-		if hasAnyTag(tagMap[m.Slug], selectedSet) {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-// normalizeTagSet creates a set of normalized (trimmed, lowercase) tags
-func normalizeTagSet(tags []string) map[string]struct{} {
-	set := make(map[string]struct{}, len(tags))
-	for _, t := range tags {
-		t = strings.TrimSpace(strings.ToLower(t))
-		if t != "" {
-			set[t] = struct{}{}
-		}
-	}
-	return set
-}
-
-// normalizeStringSet lowercases and trims a slice of strings into a set map
-func normalizeStringSet(values []string) map[string]struct{} {
-	set := make(map[string]struct{}, len(values))
-	for _, v := range values {
-		v = strings.TrimSpace(strings.ToLower(v))
-		if v != "" {
-			set[v] = struct{}{}
-		}
-	}
-	return set
-}
-
-// hasAllTags checks if tags slice contains all required tags
-func hasAllTags(tags []string, required map[string]struct{}) bool {
-	if len(required) == 0 {
-		return true
-	}
-	if len(tags) == 0 {
-		return false
-	}
-
-	present := normalizeTagSet(tags)
-	for t := range required {
-		if _, ok := present[t]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// hasAnyTag checks if tags slice contains at least one tag from the set
-func hasAnyTag(tags []string, anySet map[string]struct{}) bool {
-	if len(anySet) == 0 {
-		return true
-	}
-
-	for _, t := range tags {
-		lt := strings.TrimSpace(strings.ToLower(t))
-		if lt == "" {
-			continue
-		}
-		if _, ok := anySet[lt]; ok {
-			return true
-		}
-	}
-	return false
-}
-
-// filterByContentRating keeps only mangas that are allowed by content rating limit
-func filterByContentRating(mangas []Media, contentRatingLimit int) []Media {
-	if contentRatingLimit < 0 {
-		return mangas // No filtering if limit is negative
-	}
-	filtered := make([]Media, 0, len(mangas))
-	for _, m := range mangas {
-		if IsContentRatingAllowed(m.ContentRating, contentRatingLimit) {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
-}
-
-// paginateMedias returns a paginated slice of mangas
-func paginateMedias(mangas []Media, page, pageSize int) []Media {
-	if pageSize <= 0 {
+	if len(mangas) == 0 {
 		return mangas
 	}
-	start := (page - 1) * pageSize
-	if start < 0 {
-		start = 0
+
+	// Collect media slugs
+	mediaSlugs := make([]string, len(mangas))
+	for i, m := range mangas {
+		mediaSlugs[i] = m.Slug
 	}
-	end := start + pageSize
-	if start > len(mangas) {
+
+	// Create placeholders for IN clause
+	placeholders := strings.Repeat("?,", len(mediaSlugs))
+	placeholders = placeholders[:len(placeholders)-1]
+	libPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
+	libPlaceholders = libPlaceholders[:len(libPlaceholders)-1]
+
+	query := fmt.Sprintf("SELECT DISTINCT media_slug FROM chapters WHERE media_slug IN (%s) AND library_slug IN (%s)", placeholders, libPlaceholders)
+
+	args := make([]any, 0, len(mediaSlugs)+len(accessibleLibraries))
+	for _, slug := range mediaSlugs {
+		args = append(args, slug)
+	}
+	for _, lib := range accessibleLibraries {
+		args = append(args, lib)
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Errorf("Failed to query accessible media: %v", err)
+		return []Media{} // On error, return empty to be safe
+	}
+	defer rows.Close()
+
+	accessibleMediaSet := make(map[string]struct{})
+	for rows.Next() {
+		var slug string
+		if err := rows.Scan(&slug); err != nil {
+			log.Errorf("Failed to scan media slug: %v", err)
+			continue
+		}
+		accessibleMediaSet[slug] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		log.Errorf("Error iterating rows: %v", err)
 		return []Media{}
 	}
-	if end > len(mangas) {
-		end = len(mangas)
+
+	// Filter mangas
+	filtered := make([]Media, 0, len(mangas))
+	for _, m := range mangas {
+		if _, ok := accessibleMediaSet[m.Slug]; ok {
+			filtered = append(filtered, m)
+		}
 	}
-	return mangas[start:end]
+	return filtered
 }
 
-// QueryParams holds parsed query parameters for media listings
-type QueryParams struct {
-	Page         int
-	Sort         string
-	Order        string
-	Tags         []string
-	TagMode      string
-	Types        []string
-	LibrarySlug  string
-	SearchFilter string
+// DetermineMangaTypeByLanguage returns a suggested type (manga/manhwa/manhua/etc.)
+// based on the original language code.
+func DetermineMangaTypeByLanguage(lang string) string {
+	switch strings.ToLower(strings.TrimSpace(lang)) {
+	case "ja", "jp":
+		return "manga"
+	case "ko":
+		return "manhwa"
+	case "zh", "cn", "zh-cn", "zh-hk", "zh-tw":
+		return "manhua"
+	case "fr":
+		return "manfra"
+	case "en":
+		return "oel"
+	default:
+		return "manga"
+	}
 }
