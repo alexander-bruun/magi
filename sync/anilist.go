@@ -39,7 +39,7 @@ func (a *AniListProvider) SetAuthToken(token string) {
 	a.accessToken = token
 }
 
-func (a *AniListProvider) SyncReadingProgress(userName string, mediaSlug string, chapterSlug string) error {
+func (a *AniListProvider) SyncReadingProgress(userName string, mediaSlug string, librarySlug string, chapterSlug string) error {
 	// Check if account exists
 	account, err := models.GetUserExternalAccount(userName, "anilist")
 	if err != nil {
@@ -75,7 +75,7 @@ func (a *AniListProvider) SyncReadingProgress(userName string, mediaSlug string,
 	log.Debugf("AniList sync: user has read up to chapter %d", maxChapterNum)
 
 	// Parse volume number from the current chapter (if available)
-	chapter, err := models.GetChapter(mediaSlug, chapterSlug)
+	chapter, err := models.GetChapter(mediaSlug, librarySlug, chapterSlug)
 	volumeNum := 0
 	if err == nil {
 		volumeNum, err = parseVolumeNumber(chapter.Name)
@@ -114,11 +114,11 @@ func (a *AniListProvider) findMangaOnAniList(mediaSlug string) (int, error) {
 		}
 	}`
 
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"search": title,
 	}
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"query":     query,
 		"variables": variables,
 	}
@@ -175,13 +175,13 @@ func (a *AniListProvider) updateProgress(accessToken string, mangaID int, chapte
 		}
 	}`
 
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"mediaId":         mangaID,
 		"progress":        chapterNum,
 		"progressVolumes": volumeNum,
 	}
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"query":     mutation,
 		"variables": variables,
 	}

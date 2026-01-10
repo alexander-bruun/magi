@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -82,7 +82,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 		}
 	`
 
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"search": title,
 	}
 
@@ -91,12 +91,12 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 		return nil, err
 	}
 
-	page, ok := response["Page"].(map[string]interface{})
+	page, ok := response["Page"].(map[string]any)
 	if !ok {
 		return nil, ErrNoResults
 	}
 
-	mediaList, ok := page["media"].([]interface{})
+	mediaList, ok := page["media"].([]any)
 	if !ok || len(mediaList) == 0 {
 		return nil, ErrNoResults
 	}
@@ -105,14 +105,14 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 	titleLower := strings.ToLower(title)
 
 	for _, item := range mediaList {
-		media, ok := item.(map[string]interface{})
+		media, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
 
 		id := fmt.Sprintf("%v", media["id"])
 
-		titleData := media["title"].(map[string]interface{})
+		titleData := media["title"].(map[string]any)
 		mangaTitle := extractAniListTitle(titleData)
 
 		description := ""
@@ -121,7 +121,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 		}
 
 		coverURL := ""
-		if coverImage, ok := media["coverImage"].(map[string]interface{}); ok {
+		if coverImage, ok := media["coverImage"].(map[string]any); ok {
 			if large, ok := coverImage["large"].(string); ok {
 				coverURL = large
 			} else if medium, ok := coverImage["medium"].(string); ok {
@@ -130,7 +130,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 		}
 
 		year := 0
-		if startDate, ok := media["startDate"].(map[string]interface{}); ok {
+		if startDate, ok := media["startDate"].(map[string]any); ok {
 			if yearFloat, ok := startDate["year"].(float64); ok {
 				year = int(yearFloat)
 			}
@@ -138,16 +138,16 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 
 		// Extract tags
 		var tags []string
-		if genres, ok := media["genres"].([]interface{}); ok {
+		if genres, ok := media["genres"].([]any); ok {
 			for _, genre := range genres {
 				if genreStr, ok := genre.(string); ok {
 					tags = append(tags, genreStr)
 				}
 			}
 		}
-		if tagList, ok := media["tags"].([]interface{}); ok {
+		if tagList, ok := media["tags"].([]any); ok {
 			for _, tag := range tagList {
-				if tagMap, ok := tag.(map[string]interface{}); ok {
+				if tagMap, ok := tag.(map[string]any); ok {
 					if name, ok := tagMap["name"].(string); ok {
 						tags = append(tags, name)
 					}
@@ -161,7 +161,7 @@ func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
 			Description:     description,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
 			Tags:            tags,
 		})
 	}
@@ -182,9 +182,13 @@ func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 				description
 				startDate {
 					year
+					month
+					day
 				}
 				endDate {
 					year
+					month
+					day
 				}
 				status
 				countryOfOrigin
@@ -199,6 +203,45 @@ func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 					large
 					extraLarge
 				}
+				chapters
+				volumes
+				averageScore
+				popularity
+				favourites
+				staff(sort: RELEVANCE) {
+					edges {
+						role
+						node {
+							name {
+								full
+							}
+						}
+					}
+				}
+				characters(sort: ROLE) {
+					edges {
+						role
+						node {
+							name {
+								full
+							}
+						}
+					}
+				}
+				relations {
+					edges {
+						relationType
+						node {
+							id
+							title {
+								english
+								romaji
+								native
+							}
+							type
+						}
+					}
+				}
 			}
 		}
 	`
@@ -206,7 +249,7 @@ func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	idInt := 0
 	fmt.Sscanf(id, "%d", &idInt)
 
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"id": idInt,
 	}
 
@@ -215,7 +258,7 @@ func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 		return nil, err
 	}
 
-	media, ok := response["Media"].(map[string]interface{})
+	media, ok := response["Media"].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("invalid AniList response format")
 	}
@@ -245,8 +288,8 @@ func (a *AniListProvider) FindBestMatch(title string) (*MediaMetadata, error) {
 	return a.GetMetadata(bestMatch.ID)
 }
 
-func (a *AniListProvider) executeQuery(query string, variables map[string]interface{}) (map[string]interface{}, error) {
-	requestBody := map[string]interface{}{
+func (a *AniListProvider) executeQuery(query string, variables map[string]any) (map[string]any, error) {
+	requestBody := map[string]any{
 		"query":     query,
 		"variables": variables,
 	}
@@ -283,7 +326,7 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]interf
 	}
 
 	var result struct {
-		Data   map[string]interface{} `json:"data"`
+		Data   map[string]any `json:"data"`
 		Errors []struct {
 			Message string `json:"message"`
 		} `json:"errors"`
@@ -300,8 +343,8 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]interf
 	return result.Data, nil
 }
 
-func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *MediaMetadata {
-	titleData := media["title"].(map[string]interface{})
+func (a *AniListProvider) convertToMediaMetadata(media map[string]any) *MediaMetadata {
+	titleData := media["title"].(map[string]any)
 	title := extractAniListTitle(titleData)
 
 	description := ""
@@ -310,9 +353,30 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 	}
 
 	year := 0
-	if startDate, ok := media["startDate"].(map[string]interface{}); ok {
+	startDateStr := ""
+	if startDate, ok := media["startDate"].(map[string]any); ok {
 		if yearFloat, ok := startDate["year"].(float64); ok {
 			year = int(yearFloat)
+			startDateStr = fmt.Sprintf("%04d", year)
+			if monthFloat, ok := startDate["month"].(float64); ok && monthFloat > 0 {
+				startDateStr += fmt.Sprintf("-%02d", int(monthFloat))
+				if dayFloat, ok := startDate["day"].(float64); ok && dayFloat > 0 {
+					startDateStr += fmt.Sprintf("-%02d", int(dayFloat))
+				}
+			}
+		}
+	}
+
+	endDateStr := ""
+	if endDate, ok := media["endDate"].(map[string]any); ok {
+		if yearFloat, ok := endDate["year"].(float64); ok {
+			endDateStr = fmt.Sprintf("%04d", int(yearFloat))
+			if monthFloat, ok := endDate["month"].(float64); ok && monthFloat > 0 {
+				endDateStr += fmt.Sprintf("-%02d", int(monthFloat))
+				if dayFloat, ok := endDate["day"].(float64); ok && dayFloat > 0 {
+					endDateStr += fmt.Sprintf("-%02d", int(dayFloat))
+				}
+			}
 		}
 	}
 
@@ -337,12 +401,38 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 	}
 
 	coverURL := ""
-	if coverImage, ok := media["coverImage"].(map[string]interface{}); ok {
+	if coverImage, ok := media["coverImage"].(map[string]any); ok {
 		if extraLarge, ok := coverImage["extraLarge"].(string); ok {
 			coverURL = extraLarge
 		} else if large, ok := coverImage["large"].(string); ok {
 			coverURL = large
 		}
+	}
+
+	// Extract additional metadata
+	chapterCount := 0
+	if chapters, ok := media["chapters"].(float64); ok {
+		chapterCount = int(chapters)
+	}
+
+	volumeCount := 0
+	if volumes, ok := media["volumes"].(float64); ok {
+		volumeCount = int(volumes)
+	}
+
+	averageScore := 0.0
+	if score, ok := media["averageScore"].(float64); ok {
+		averageScore = score
+	}
+
+	popularity := 0
+	if pop, ok := media["popularity"].(float64); ok {
+		popularity = int(pop)
+	}
+
+	favorites := 0
+	if fav, ok := media["favourites"].(float64); ok {
+		favorites = int(fav)
 	}
 
 	metadata := &MediaMetadata{
@@ -355,21 +445,29 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 		ExternalID:       fmt.Sprintf("%v", media["id"]),
 		Type:             convertAniListFormat(format),
 		OriginalLanguage: convertCountryToLanguage(countryOfOrigin),
+		StartDate:        startDateStr,
+		EndDate:          endDateStr,
+		ChapterCount:     chapterCount,
+		VolumeCount:      volumeCount,
+		AverageScore:     averageScore,
+		Popularity:       popularity,
+		Favorites:        favorites,
 	}
 
-	// Extract genres as tags
-	if genres, ok := media["genres"].([]interface{}); ok {
+	// Extract genres as structured genres
+	if genres, ok := media["genres"].([]any); ok {
 		for _, genre := range genres {
 			if genreStr, ok := genre.(string); ok {
-				metadata.Tags = append(metadata.Tags, genreStr)
+				metadata.Genres = append(metadata.Genres, genreStr)
+				metadata.Tags = append(metadata.Tags, genreStr) // Also add to tags for compatibility
 			}
 		}
 	}
 
 	// Extract tags
-	if tags, ok := media["tags"].([]interface{}); ok {
+	if tags, ok := media["tags"].([]any); ok {
 		for _, tag := range tags {
-			if tagMap, ok := tag.(map[string]interface{}); ok {
+			if tagMap, ok := tag.(map[string]any); ok {
 				if name, ok := tagMap["name"].(string); ok {
 					metadata.Tags = append(metadata.Tags, name)
 				}
@@ -380,7 +478,7 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 	log.Debugf("Extracted %d tags for AniList media %v: %v", len(metadata.Tags), media["id"], metadata.Tags)
 
 	// Extract synonyms
-	if synonyms, ok := media["synonyms"].([]interface{}); ok {
+	if synonyms, ok := media["synonyms"].([]any); ok {
 		for _, syn := range synonyms {
 			if synStr, ok := syn.(string); ok && synStr != "" && synStr != title {
 				metadata.AlternativeTitles = append(metadata.AlternativeTitles, synStr)
@@ -396,11 +494,104 @@ func (a *AniListProvider) convertToMediaMetadata(media map[string]interface{}) *
 		metadata.AlternativeTitles = append(metadata.AlternativeTitles, native)
 	}
 
+	// Extract staff (authors/artists)
+	if staff, ok := media["staff"].(map[string]any); ok {
+		if edges, ok := staff["edges"].([]any); ok {
+			for _, edge := range edges {
+				if edgeMap, ok := edge.(map[string]any); ok {
+					role := ""
+					if roleStr, ok := edgeMap["role"].(string); ok {
+						role = roleStr
+					}
+
+					if node, ok := edgeMap["node"].(map[string]any); ok {
+						if nameData, ok := node["name"].(map[string]any); ok {
+							if fullName, ok := nameData["full"].(string); ok {
+								authorInfo := AuthorInfo{
+									Name: fullName,
+									Role: role,
+								}
+
+								// Categorize by role
+								roleLower := strings.ToLower(role)
+								if strings.Contains(roleLower, "author") || strings.Contains(roleLower, "writer") || strings.Contains(roleLower, "story") {
+									metadata.Authors = append(metadata.Authors, authorInfo)
+									if metadata.Author == "" {
+										metadata.Author = fullName // Keep backward compatibility
+									}
+								} else if strings.Contains(roleLower, "artist") || strings.Contains(roleLower, "illustrator") || strings.Contains(roleLower, "art") {
+									metadata.Artists = append(metadata.Artists, authorInfo)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Extract main characters
+	if characters, ok := media["characters"].(map[string]any); ok {
+		if edges, ok := characters["edges"].([]any); ok {
+			for _, edge := range edges {
+				if edgeMap, ok := edge.(map[string]any); ok {
+					if node, ok := edgeMap["node"].(map[string]any); ok {
+						if nameData, ok := node["name"].(map[string]any); ok {
+							if fullName, ok := nameData["full"].(string); ok {
+								metadata.Characters = append(metadata.Characters, fullName)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Extract relations
+	if relations, ok := media["relations"].(map[string]any); ok {
+		if edges, ok := relations["edges"].([]any); ok {
+			for _, edge := range edges {
+				if edgeMap, ok := edge.(map[string]any); ok {
+					relationType := ""
+					if typeStr, ok := edgeMap["relationType"].(string); ok {
+						relationType = strings.ToUpper(typeStr)
+					}
+
+					if node, ok := edgeMap["node"].(map[string]any); ok {
+						relationTitle := ""
+						if titleData, ok := node["title"].(map[string]any); ok {
+							if english, ok := titleData["english"].(string); ok && english != "" {
+								relationTitle = english
+							} else if romaji, ok := titleData["romaji"].(string); ok && romaji != "" {
+								relationTitle = romaji
+							} else if native, ok := titleData["native"].(string); ok && native != "" {
+								relationTitle = native
+							}
+						}
+
+						relationID := ""
+						if idFloat, ok := node["id"].(float64); ok {
+							relationID = fmt.Sprintf("%d", int(idFloat))
+						}
+
+						if relationTitle != "" {
+							metadata.Relations = append(metadata.Relations, Relation{
+								Type:  relationType,
+								Title: relationTitle,
+								ID:    relationID,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return metadata
 }
 
 // Helper functions
-func extractAniListTitle(titleData map[string]interface{}) string {
+func extractAniListTitle(titleData map[string]any) string {
 	if english, ok := titleData["english"].(string); ok && english != "" {
 		return english
 	}

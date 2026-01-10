@@ -193,7 +193,6 @@ var (
 
 var (
 	DataDirectory    = ""
-	dataDirMutex     sync.RWMutex
 	activeIndexers   sync.Map
 	scannedPathCount int
 	scanMutex        sync.Mutex
@@ -334,7 +333,7 @@ func (idx *Indexer) runIndexingJob() bool {
 	start := time.Now()
 
 	// Count series in the library to determine if we should process in parallel
-	seriesCount, err := models.CountRecords("SELECT COUNT(*) FROM media WHERE library_slug = ?", idx.Library.Slug)
+	seriesCount, err := models.CountRecords("SELECT COUNT(DISTINCT media_slug) FROM chapters WHERE library_slug = ?", idx.Library.Slug)
 	if err != nil {
 		log.Warnf("Failed to count series for library '%s', defaulting to sequential processing: %s", idx.Library.Name, err)
 		seriesCount = 0
@@ -461,51 +460,9 @@ func (idx *Indexer) runIndexingJob() bool {
 			return
 		}
 
-		for _, m := range mangas {
-			if m.Path == "" {
-				continue
-			}
-
-			// Check if the path no longer exists on disk
-			if _, err := os.Stat(m.Path); os.IsNotExist(err) {
-				log.Infof("Media path missing on disk, deleting media '%s' (slug=%s)", m.Name, m.Slug)
-				if err := models.DeleteMedia(m.Slug); err != nil {
-					log.Errorf("Failed to delete media '%s': %s", m.Slug, err)
-				}
-				continue
-			}
-
-			// Check if the path is still within one of the library's configured folders
-			pathInLibrary := false
-			for _, folder := range library.Folders {
-				absFolder, err := filepath.Abs(folder)
-				if err != nil {
-					log.Warnf("Failed to get absolute path for folder '%s': %s", folder, err)
-					continue
-				}
-				absMediaPath, err := filepath.Abs(m.Path)
-				if err != nil {
-					log.Warnf("Failed to get absolute path for media '%s': %s", m.Path, err)
-					continue
-				}
-
-				relPath, err := filepath.Rel(absFolder, absMediaPath)
-				if err == nil && !strings.HasPrefix(relPath, "..") {
-					pathInLibrary = true
-					break
-				}
-			}
-
-			if !pathInLibrary {
-				log.Infof("Media path '%s' no longer in library folders, deleting media '%s' (slug=%s)", m.Path, m.Name, m.Slug)
-				if err := models.DeleteMedia(m.Slug); err != nil {
-					log.Errorf("Failed to delete media '%s': %s", m.Slug, err)
-				}
-			}
-		}
-
-		if err := cleanupOrphanedDuplicates(); err != nil {
-			log.Errorf("Failed to cleanup orphaned duplicates for library '%s': %s", library.Name, err)
+		for range mangas {
+			// Media are now path-agnostic, skip path-based cleanup
+			continue
 		}
 	}(idx.Library)
 
@@ -549,7 +506,7 @@ func (idx *Indexer) processFolder(folder string) error {
 		return err
 	}
 
-	// ✅ Sort entries alphabetically by name
+	// Sort entries alphabetically by name
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Name() < entries[j].Name()
 	})
@@ -580,7 +537,7 @@ func (idx *Indexer) processFolder(folder string) error {
 	results := make(chan error, len(mediaPaths))
 
 	// Start workers
-	for w := 0; w < numWorkers; w++ {
+	for range numWorkers {
 		go func() {
 			for path := range jobs {
 				select {
@@ -621,48 +578,6 @@ func (idx *Indexer) processFolder(folder string) error {
 }
 
 // cleanupOrphanedDuplicates removes duplicate entries where one or both folders no longer exist on disk
-func cleanupOrphanedDuplicates() error {
-	duplicates, err := models.GetAllMediaDuplicates()
-	if err != nil {
-		return err
-	}
-
-	deletedCount := 0
-	for _, dup := range duplicates {
-		folder1Exists := true
-		folder2Exists := true
-
-		if dup.FolderPath1 != "" {
-			if _, err := os.Stat(dup.FolderPath1); os.IsNotExist(err) {
-				folder1Exists = false
-			}
-		}
-
-		if dup.FolderPath2 != "" {
-			if _, err := os.Stat(dup.FolderPath2); os.IsNotExist(err) {
-				folder2Exists = false
-			}
-		}
-
-		if !folder1Exists || !folder2Exists {
-			log.Infof("Deleting orphaned duplicate entry for media '%s' (ID=%d): folder1_exists=%v, folder2_exists=%v",
-				dup.MediaSlug, dup.ID, folder1Exists, folder2Exists)
-
-			if err := models.DeleteMediaDuplicateByID(dup.ID); err != nil {
-				log.Errorf("Failed to delete orphaned duplicate %d: %v", dup.ID, err)
-			} else {
-				deletedCount++
-			}
-		}
-	}
-
-	if deletedCount > 0 {
-		log.Infof("Cleaned up %d orphaned duplicate entries", deletedCount)
-	}
-
-	return nil
-}
-
 // NotificationListener listens for notifications and handles them
 type NotificationListener struct {
 	notifications chan models.Notification
@@ -775,7 +690,7 @@ func ContainsEPUBFiles(dirPath string) bool {
 
 // StopAllIndexers stops all running indexers
 func StopAllIndexers() {
-	activeIndexers.Range(func(key, value interface{}) bool {
+	activeIndexers.Range(func(key, value any) bool {
 		indexer := value.(*Indexer)
 		if indexer != nil {
 			log.Infof("Stopping indexer for library: %s", key.(string))

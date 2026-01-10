@@ -3,9 +3,6 @@
 # HTTP requests
 requests>=2.28.0
 
-# Image processing
-Pillow>=9.0.0
-
 # Cloudflare bypass (for sites with protection)
 camoufox>=0.4.0
 camoufox-captcha>=0.1.0

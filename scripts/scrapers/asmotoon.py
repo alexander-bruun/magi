@@ -7,41 +7,25 @@ Downloads manga/manhwa/manhua from asmotoon.com.
 
 # Standard library imports
 import asyncio
-import os
 import re
-import shutil
-import sys
-from pathlib import Path
+import urllib.parse
 
 # Local imports
 from scraper_utils import (
     bypass_cloudflare,
-    calculate_padding_width,
-    convert_to_webp,
-    create_cbz,
-    check_duplicate_series,
-    get_priority_config,
-    error,
-    format_chapter_name,
-    get_existing_chapters,
+    get_scraper_config,
     get_session,
     log,
-    log_existing_chapters,
-    sanitize_title,
-    success,
+    run_scraper,
     warn,
 )
 
 # =============================================================================
 # Configuration
 # =============================================================================
-DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
-CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
-FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'AsmoToon'))
-DEFAULT_SUFFIX = os.getenv('default_suffix', '[AsmoToon]')
+CONFIG = get_scraper_config("asmotoon", "AsmoToon", "[AsmoToon]")
 ALLOWED_DOMAINS = ['cdn.meowing.org']
 BASE_URL = 'https://asmotoon.com'
-PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('asmotoon')
 
 
 # =============================================================================
@@ -49,32 +33,52 @@ PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('asmotoon')
 # =============================================================================
 def extract_series_urls(session, page_num):
     """
-    Extract series URLs from listing page with pagination.
+    Extract series data from listing page.
 
     Args:
         session: requests.Session object
         page_num: Page number to fetch (1-indexed)
 
     Returns:
-        tuple: (list of series URLs, bool is_last_page)
+        tuple: (list of series data dicts, total_pages)
     """
-    if page_num == 1:
-        url = f"{BASE_URL}/series"
-    else:
-        url = f"{BASE_URL}/series/page/{page_num}/"
+    if page_num > 1:
+        return [], 1  # Only fetch on first page
 
-    log(f"Fetching series list from page {page_num}...")
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    all_series_urls = []
+    current_page = 1
+    max_pages = 100  # Safety limit
+    while current_page <= max_pages:
+        if current_page == 1:
+            url = f"{BASE_URL}/series"
+        else:
+            url = f"{BASE_URL}/series/page/{current_page}/"
 
-    # Check if this is the last page
-    is_last_page = 'next page-numbers' not in html and 'Next' not in html and '>' not in html
+        log(f"Fetching series list from page {current_page}...")
+        response = session.get(url, timeout=30)
+        response.raise_for_status()
+        html = response.text
 
-    # Extract series URLs
-    series_urls = re.findall(r'href="(/series/[^/]+/)"', html)
+        # Check if this is the last page
+        is_last_page = 'next page-numbers' not in html and 'Next' not in html and '>' not in html
 
-    return sorted(set(series_urls)), is_last_page
+        # Extract series URLs
+        series_urls = re.findall(r'href="(/series/[^/]+/)"', html)
+        all_series_urls.extend(series_urls)
+        log(f"Found {len(series_urls)} series on page {current_page}")
+
+        if is_last_page or not series_urls:
+            log(f"Reached last page or no more series (page {current_page}).")
+            break
+        current_page += 1
+
+    # Remove duplicates
+    all_series_urls = sorted(set(all_series_urls))
+    log(f"Found {len(all_series_urls)} total series")
+
+    # Convert to dicts with series_url
+    series_data = [{'series_url': url} for url in all_series_urls]
+    return series_data, current_page
 
 
 def extract_series_title(session, series_url):
@@ -106,6 +110,36 @@ def extract_series_title(session, series_url):
     return None
 
 
+def extract_poster_url(session, series_url):
+    """
+    Extract poster URL from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        str: Poster URL or None
+    """
+    url = f"{BASE_URL}{series_url}"
+    response = session.get(url, timeout=30)
+    response.raise_for_status()
+    html = response.text
+
+    # Look for poster image in style attribute
+    poster_match = re.search(r'style="--photoURL:url\(([^)]+)\)"', html)
+    if poster_match:
+        poster_url = poster_match.group(1)
+        # Parse the URL to extract the actual image URL from query parameter
+        parsed = urllib.parse.urlparse(poster_url)
+        query_params = urllib.parse.parse_qs(parsed.query)
+        actual_url = query_params.get('url', [None])[0]
+        if actual_url:
+            return actual_url
+
+    return None
+
+
 # =============================================================================
 # Chapter Extraction
 # =============================================================================
@@ -118,7 +152,7 @@ def extract_chapter_urls(session, series_url):
         series_url: Relative URL of the series
 
     Returns:
-        list: List of tuples (chapter_url, chapter_number) sorted by chapter number
+        list: Chapter info dicts with 'url' and 'num' keys, sorted by chapter number
     """
     url = f"{BASE_URL}{series_url}"
     response = session.get(url, timeout=30)
@@ -129,35 +163,16 @@ def extract_chapter_urls(session, series_url):
     chapter_urls = re.findall(r'/chapter/[^\"]+', html)
     chapter_urls = list(set(chapter_urls))  # Remove duplicates
     
-    chapters = []
-    for chapter_url in chapter_urls:
-        # Visit the chapter page to get the actual chapter number
-        chapter_page_url = f"{BASE_URL}{chapter_url}"
-        try:
-            chapter_response = session.get(chapter_page_url, timeout=30)
-            chapter_response.raise_for_status()
-            chapter_html = chapter_response.text
-            
-            # Look for chapter number in the page title or content
-            title_match = re.search(r'<title>([^<]+)', chapter_html)
-            if title_match:
-                title = title_match.group(1)
-                # Extract number from title like "Series Name - Chapter 7.1"
-                number_match = re.search(r'Chapter\s+(\d+(?:\.\d+)?)', title, re.IGNORECASE)
-                if number_match:
-                    try:
-                        chapter_num = float(number_match.group(1))
-                        chapters.append((chapter_url, chapter_num))
-                    except ValueError:
-                        continue
-        except Exception as e:
-            # If we can't get the chapter page, skip this chapter
-            continue
+    chapter_info = []
+    for url in chapter_urls:
+        match = re.search(r'/chapter/(\d+(?:\.\d+)?)', url)
+        if match:
+            num = float(match.group(1))
+            chapter_info.append({'url': url, 'num': num})
     
     # Sort by chapter number
-    chapters.sort(key=lambda x: x[1])
-    
-    return chapters
+    chapter_info.sort(key=lambda x: x['num'])
+    return chapter_info
 
 
 def extract_image_urls(session, chapter_url):
@@ -249,159 +264,21 @@ def main():
         warn(f"Cloudflare bypass failed: {e}, trying without bypass...")
         session = get_session()
 
-    # Health check
-    try:
-        response = session.get(BASE_URL, timeout=30)
-        response.raise_for_status()
-        success("Health check passed")
-    except Exception as e:
-        warn(f"Health check failed: {e}, continuing anyway...")
-
-    # Create output directory
-    output_dir = Path(FOLDER)
-    output_dir.mkdir(exist_ok=True)
-
-    page_num = 1
-    processed_series = 0
-
-    while True:
-        try:
-            series_urls, is_last_page = extract_series_urls(session, page_num)
-            if not series_urls:
-                if is_last_page:
-                    log("No more series found, finishing...")
-                    break
-                else:
-                    page_num += 1
-                    continue
-
-            log(f"Found {len(series_urls)} series on page {page_num}")
-
-            for series_url in series_urls:
-                try:
-                    title = extract_series_title(session, series_url)
-                    if not title:
-                        warn(f"Could not extract title for {series_url}, skipping...")
-                        continue
-
-                    clean_title = sanitize_title(title)
-                    log(f"Title: {title}")
-
-                    # Check for duplicate in higher priority providers
-                    if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
-                        continue
-
-                    chapters = extract_chapter_urls(session, series_url)
-                    if not chapters:
-                        warn(f"No chapters found for {title}, skipping...")
-                        continue
-
-                    # Create series directory (only after confirming chapters exist)
-                    series_directory = output_dir / f"{clean_title} {DEFAULT_SUFFIX}"
-                    series_directory.mkdir(exist_ok=True)
-
-                    # Extract chapter numbers for padding
-                    chapter_nums = [chapter[1] for chapter in chapters]
-
-                    if not chapter_nums:
-                        # Fallback: use sequential numbering
-                        chapter_nums = list(range(1, len(chapters) + 1))
-
-                    max_chapter = max(chapter_nums)
-                    # Calculate padding based on the integer part of the largest chapter number
-                    padding_width = calculate_padding_width(int(max_chapter))
-                    log(f"Found {len(chapters)} chapters (max: {max_chapter}, padding: {padding_width})")
-
-                    # Scan existing CBZ files
-                    existing_chapters = get_existing_chapters(series_directory, pattern=r'Chapter ([\d.]+)')
-                    log_existing_chapters(existing_chapters)
-
-                    for chapter_url, chapter_num in chapters:
-                        try:
-                            if chapter_num in existing_chapters:
-                                continue
-
-                            chapter_name = format_chapter_name(clean_title, chapter_num, padding_width, DEFAULT_SUFFIX)
-
-                            log(f"Processing: Chapter {chapter_num}")
-
-                            image_urls = extract_image_urls(session, chapter_url)
-                            if not image_urls:
-                                warn(f"No images found for Chapter {chapter_num}, skipping...")
-                                continue
-
-                            log(f"Found {len(image_urls)} images")
-
-                            if DRY_RUN:
-                                log(f"[DRY RUN] Would download {len(image_urls)} images for Chapter {chapter_num}")
-                                continue
-
-                            log(f"Downloading: {chapter_name} [{len(image_urls)} images]")
-
-                            # Download images
-                            chapter_folder = series_directory / f"{chapter_name}"
-                            chapter_folder.mkdir(exist_ok=True)
-
-                            downloaded_count = 0
-                            for j, img_url in enumerate(image_urls):
-                                try:
-                                    img_response = session.get(img_url, timeout=30)
-                                    img_response.raise_for_status()
-
-                                    # Determine file extension
-                                    content_type = img_response.headers.get('content-type', '')
-                                    if 'webp' in content_type:
-                                        ext = '.webp'
-                                    elif 'png' in content_type:
-                                        ext = '.png'
-                                    else:
-                                        ext = '.jpg'
-
-                                    img_filename = f"{j+1:03d}{ext}"
-                                    img_path = chapter_folder / img_filename
-
-                                    with open(img_path, 'wb') as f:
-                                        f.write(img_response.content)
-
-                                    downloaded_count += 1
-                                    print(f"  [{j+1:03d}/{len(image_urls):03d}] {img_url} Success", file=sys.stderr, flush=True)
-
-                                    # Convert to WebP if needed
-                                    if CONVERT_TO_WEBP and ext != '.webp':
-                                        try:
-                                            convert_to_webp(img_path)
-                                        except Exception as e:
-                                            # WebP conversion failed, keep original file
-                                            pass
-
-                                except Exception as e:
-                                    error(f"Failed to download image {j+1}: {e}")
-
-                            # Create CBZ
-                            if create_cbz(chapter_folder, chapter_name):
-                                success(f"Created {chapter_name}.cbz ({downloaded_count} files)")
-
-                            # Clean up
-                            shutil.rmtree(chapter_folder)
-
-                        except Exception as e:
-                            error(f"Failed to process chapter: {e}")
-
-                    processed_series += 1
-
-                except Exception as e:
-                    error(f"Failed to process series {series_url}: {e}")
-
-            if is_last_page:
-                break
-            page_num += 1
-
-        except Exception as e:
-            error(f"Failed to process page {page_num}: {e}")
-            break
-
-    log(f"Processed {processed_series} series")
+    # Run the scraper
+    run_scraper(
+        session=session,
+        config=CONFIG,
+        extract_series_func=extract_series_urls,
+        extract_series_title_func=extract_series_title,
+        extract_chapter_urls_func=extract_chapter_urls,
+        extract_image_urls_func=extract_image_urls,
+        extract_poster_func=extract_poster_url,
+        allowed_domains=ALLOWED_DOMAINS,
+        base_url=BASE_URL,
+        series_url_builder=lambda data: data['series_url']  # data has 'series_url' key
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    main()
     main()

@@ -252,7 +252,8 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 		outputBuf := bytes.Buffer{}
 		errMsg := ""
 
-		if s.Language == "bash" {
+		switch s.Language {
+		case "bash":
 			tmpFile, err := os.CreateTemp("", "scraper_*.sh")
 			if err != nil {
 				errMsg = fmt.Sprintf("Failed to create temporary script file: %v", err)
@@ -309,9 +310,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 						} else {
 							log.Debugf("Started bash script execution for script ID %d", s.ID)
 							var wg sync.WaitGroup
-							wg.Add(1)
-							go func() {
-								defer wg.Done()
+							wg.Go(func() {
 								scanner := bufio.NewScanner(stdoutPipe)
 								log.Debugf("[STDOUT] Starting to read combined output for script ID %d", s.ID)
 								for scanner.Scan() {
@@ -324,7 +323,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 									log.Errorf("[STDOUT] Scanner error for script ID %d: %v", s.ID, err)
 								}
 								log.Debugf("[STDOUT] Finished reading combined output for script ID %d", s.ID)
-							}()
+							})
 
 							// Combined stdout and stderr, no separate stderr goroutine needed
 
@@ -343,7 +342,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 					}
 				}
 			}
-		} else if s.Language == "python" {
+		case "python":
 			// Create temporary directory for virtual environment
 			tmpDir, err := os.MkdirTemp("", "scraper_venv_")
 			if err != nil {
@@ -433,7 +432,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 					}
 				}
 			}
-		} else {
+		default:
 			errMsg = fmt.Sprintf("Unsupported language: %s (only 'bash' and 'python' are supported)", s.Language)
 		}
 

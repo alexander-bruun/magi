@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 )
 
 const jikanBaseURL = "https://api.jikan.moe/v4"
@@ -121,7 +121,7 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 			Description:     media.Synopsis,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(media.Title)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(media.Title)),
 			Tags:            tags,
 		})
 	}

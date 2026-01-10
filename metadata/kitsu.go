@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -117,7 +117,7 @@ func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 			Description:     description,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
 			Tags:            tags,
 		})
 	}

@@ -9,28 +9,108 @@
     const NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
     const MODES = { WEBTOON: 'webtoon', SINGLE: 'single', SIDE_BY_SIDE: 'side-by-side' };
 
-    // Lazy loading setup
-    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.classList.remove('lazy');
-                observer.unobserve(img);
-            }
-        });
-    }, { rootMargin: '50px' }); // Load 50px before entering viewport
+    // Lazy loading setup - check scroll position to load more canvases
+    let scrollCheckTimeout = null;
+    
+    const checkScrollForLazyLoading = () => {
+        if (lazyTokens.length === 0) return;
+        
+        const canvases = containerElement.querySelectorAll('.reader-canvas');
+        if (canvases.length === 0) return;
+        
+        const lastCanvas = canvases[canvases.length - 1];
+        const rect = lastCanvas.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        
+        // Load next canvas if top of last canvas is within 0.5 viewport heights of viewport bottom
+        if (rect.top <= viewportHeight + viewportHeight * 0.5) {
+            loadNextCanvas();
+        }
+    };
 
-    const observeLazyImages = () => {
-        document.querySelectorAll('img.lazy').forEach(img => {
-            lazyLoadObserver.observe(img);
-        });
+    const observeLazyCanvases = () => {
+        const scrollElement = document.querySelector('main.site-main') || window;
+        // Remove previous scroll listener if exists
+        scrollElement.removeEventListener('scroll', handleScroll);
+        // Add scroll listener
+        scrollElement.addEventListener('scroll', handleScroll, { passive: true });
+    };
+
+    const handleScroll = () => {
+        checkScrollForLazyLoading();
+    };
+
+    const loadInitialCanvases = async () => {
+        const initialTokens = images.slice(0, 2);
+        lazyTokens = images.slice(2);
+        currentLoadedIndex = 1;
+
+        // Load first 2 canvases
+        for (let i = 0; i < initialTokens.length; i++) {
+            const token = initialTokens[i];
+            const canvas = document.createElement('canvas');
+            canvas.className = 'reader-canvas';
+            canvas.width = 100; // placeholder
+            canvas.height = 100; // placeholder
+            canvas.style.width = '100%';
+            canvas.style.height = 'auto';
+            canvas.style.display = 'block';
+            containerElement.appendChild(canvas);
+            await loadImageToCanvas(canvas, `/api/image?token=${token}`);
+        }
+
+        // Now start observing for lazy loading
+        updateModeVisibility();
+        observeLazyCanvases();
+    };
+
+    const loadImageToCanvas = async (canvas, url) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            const bitmap = await createImageBitmap(blob);
+            
+            // Set canvas dimensions to bitmap size
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0);
+            
+            // Update canvas style to maintain aspect ratio and respect container width
+            canvas.style.width = '100%';
+            canvas.style.height = 'auto';
+            canvas.style.maxWidth = '100%';
+            canvas.style.objectFit = 'contain';
+        } catch (error) {
+            console.error('Failed to load image to canvas:', error);
+        }
+    };
+
+    const loadNextCanvas = async () => {
+        if (lazyTokens.length === 0) return;
+        
+        const token = lazyTokens.shift(); // Take the next token
+        const canvas = document.createElement('canvas');
+        canvas.className = 'reader-canvas';
+        canvas.width = 100; // placeholder
+        canvas.height = 100; // placeholder
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
+        canvas.style.display = 'block';
+        containerElement.appendChild(canvas);
+        await loadImageToCanvas(canvas, `/api/image?token=${token}`);
+        currentLoadedIndex++;
     };
 
     // State
     let currentMode = MODES.WEBTOON;
     let currentPage = 0;
     let images = [];
+    let lazyTokens = [];
+    let currentLoadedIndex = -1;
     let containerElement = null;
     let focusModal = null;
     let scrollPositionBeforeFocus = 0;
@@ -217,18 +297,18 @@
 
     const clearFocusState = () => removeFromStorage(FOCUS_STATE_KEY);
 
-    const handleFocusModalImageClick = (e) => {
+    const handleFocusModalCanvasClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
         closeFocusModal();
     };
 
-    const openFocusModal = (clickedImg) => {
+    const openFocusModal = (clickedCanvas) => {
         const modal = getFocusModal();
         const scrollContainer = modal.querySelector('.webtoon-focus-modal-scroll');
 
         const savedState = getSavedFocusState();
-        const shouldRestoreScroll = savedState && clickedImg === undefined;
+        const shouldRestoreScroll = savedState && clickedCanvas === undefined;
 
         scrollPositionBeforeFocus = document.querySelector('main.site-main')?.scrollTop ?? document.documentElement.scrollTop;
 
@@ -237,75 +317,97 @@
         const effectiveScrollPosition = scrollPositionBeforeFocus + navbarHeight;
 
         let clickedIndex = -1;
-        const mainImages = containerElement.querySelectorAll('.reader-image');
-        mainImages.forEach((img, index) => { if (img === clickedImg) clickedIndex = index; });
-        if (clickedIndex === -1 && clickedImg && clickedImg.src) clickedIndex = Array.from(mainImages).findIndex(img => img.src === clickedImg.src);
+        const mainCanvases = containerElement.querySelectorAll('.reader-canvas');
+        mainCanvases.forEach((canvas, index) => { if (canvas === clickedCanvas) clickedIndex = index; });
         if (clickedIndex === -1) clickedIndex = 0;
 
-        const mainImageWidth = clickedImg.offsetWidth;
-        const mainImageHeight = clickedImg.offsetHeight;
+        const mainCanvasWidth = clickedCanvas.offsetWidth;
+        const mainCanvasHeight = clickedCanvas.offsetHeight;
 
-        let imageTopPosition = 0;
-        for (let i = 0; i < clickedIndex; i++) imageTopPosition += mainImages[i].offsetHeight;
+        let canvasTopPosition = 0;
+        for (let i = 0; i < clickedIndex; i++) canvasTopPosition += mainCanvases[i].offsetHeight;
 
         const containerStyles = window.getComputedStyle(containerElement);
         const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
-        const scrollOffsetFromImageStart = effectiveScrollPosition - (imageTopPosition + containerElement.offsetTop + containerPaddingTop);
-        const naturalAspectRatio = clickedImg.naturalWidth / clickedImg.naturalHeight;
+        const scrollOffsetFromCanvasStart = effectiveScrollPosition - (canvasTopPosition + containerElement.offsetTop + containerPaddingTop);
+        const naturalAspectRatio = clickedCanvas.width / clickedCanvas.height;
 
-        focusStateData = { imageIndex: clickedIndex, mainImageWidth, mainImageHeight, viewportScrollOffset: scrollOffsetFromImageStart, naturalAspectRatio };
+        focusStateData = { imageIndex: clickedIndex, mainImageWidth: mainCanvasWidth, mainImageHeight: mainCanvasHeight, viewportScrollOffset: scrollOffsetFromCanvasStart, naturalAspectRatio };
 
         scrollContainer.innerHTML = '';
         if (currentMode === MODES.WEBTOON) {
             originalImageParents = [];
-            mainImages.forEach((img, index) => {
-                originalImageParents.push(img.parentNode);
-                scrollContainer.appendChild(img);
-                img.addEventListener('click', handleFocusModalImageClick);
-                // Load lazy images immediately when opening focus modal
-                if (img.classList.contains('lazy')) {
-                    img.src = img.dataset.src;
-                    img.classList.remove('lazy');
-                    lazyLoadObserver.unobserve(img);
-                }
+            mainCanvases.forEach((canvas, index) => {
+                originalImageParents.push(canvas.parentNode);
+                scrollContainer.appendChild(canvas);
+                canvas.addEventListener('click', handleFocusModalCanvasClick);
                 // Remove the open focus listener while in modal
-                if (img.openFocusListener) {
-                    img.removeEventListener('click', img.openFocusListener);
+                if (canvas.openFocusListener) {
+                    canvas.removeEventListener('click', canvas.openFocusListener);
                 }
             });
+            // Set up lazy loading in focus modal
+            let modalLazyTokens = [...lazyTokens];
+            const checkScrollForLazyLoadingModal = () => {
+                if (modalLazyTokens.length === 0) return;
+                const canvases = scrollContainer.querySelectorAll('.reader-canvas');
+                if (canvases.length === 0) return;
+                const lastCanvas = canvases[canvases.length - 1];
+                const scrollTop = scrollContainer.scrollTop;
+                const modalHeight = scrollContainer.clientHeight;
+                const lastCanvasTop = lastCanvas.offsetTop;
+                // Load next if last canvas top is within 0.5 modal heights from bottom
+                if (lastCanvasTop - scrollTop <= modalHeight + modalHeight * 0.5) {
+                    const token = modalLazyTokens.shift();
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'reader-canvas';
+                    canvas.width = 100;
+                    canvas.height = 100;
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.display = 'block';
+                    scrollContainer.appendChild(canvas);
+                    loadImageToCanvas(canvas, `/api/image?token=${token}`);
+                    canvas.addEventListener('click', handleFocusModalCanvasClick);
+                }
+            };
+            const handleModalScroll = () => checkScrollForLazyLoadingModal();
+            scrollContainer.addEventListener('scroll', handleModalScroll);
+            // Store to remove later
+            scrollContainer.modalScrollHandler = handleModalScroll;
         } else {
             // For single/double, create enlarged copies of current page
             if (currentMode === MODES.SINGLE) {
                 const currentSrc = images[currentPage];
                 if (currentSrc) {
-                    const img = document.createElement('img');
-                    img.src = currentSrc;
-                    img.className = 'reader-image';
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
-                    scrollContainer.appendChild(img);
-                    img.addEventListener('click', handleFocusModalImageClick);
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'reader-canvas';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+                    scrollContainer.appendChild(canvas);
+                    loadImageToCanvas(canvas, currentSrc);
+                    canvas.addEventListener('click', handleFocusModalCanvasClick);
                 }
             } else if (currentMode === MODES.SIDE_BY_SIDE) {
                 const leftSrc = images[currentPage * 2];
                 const rightSrc = images[currentPage * 2 + 1];
                 if (leftSrc) {
-                    const img = document.createElement('img');
-                    img.src = leftSrc;
-                    img.className = 'reader-image';
-                    img.style.setProperty('width', '50%', 'important');
-                    img.style.setProperty('height', 'auto', 'important');
-                    scrollContainer.appendChild(img);
-                    img.addEventListener('click', handleFocusModalImageClick);
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'reader-canvas';
+                    canvas.style.setProperty('width', '50%', 'important');
+                    canvas.style.setProperty('height', 'auto', 'important');
+                    scrollContainer.appendChild(canvas);
+                    loadImageToCanvas(canvas, leftSrc);
+                    canvas.addEventListener('click', handleFocusModalCanvasClick);
                 }
                 if (rightSrc) {
-                    const img = document.createElement('img');
-                    img.src = rightSrc;
-                    img.className = 'reader-image';
-                    img.style.setProperty('width', '50%', 'important');
-                    img.style.setProperty('height', 'auto', 'important');
-                    scrollContainer.appendChild(img);
-                    img.addEventListener('click', handleFocusModalImageClick);
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'reader-canvas';
+                    canvas.style.setProperty('width', '50%', 'important');
+                    canvas.style.setProperty('height', 'auto', 'important');
+                    scrollContainer.appendChild(canvas);
+                    loadImageToCanvas(canvas, rightSrc);
+                    canvas.addEventListener('click', handleFocusModalCanvasClick);
                 }
                 // Set container to flex for side by side
                 scrollContainer.style.setProperty('display', 'flex', 'important');
@@ -319,13 +421,13 @@
         modal.style.display = 'flex';
         document.body.classList.add('webtoon-focus-open');
 
-        const focusImages = scrollContainer.querySelectorAll('.reader-image');
-        if (focusImages[clickedIndex]) {
-            const focusImage = focusImages[clickedIndex];
+        const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
+        if (focusCanvases[clickedIndex]) {
+            const focusCanvas = focusCanvases[clickedIndex];
             let targetScrollTop = 0;
-            for (let i = 0; i < clickedIndex; i++) targetScrollTop += focusImages[i].offsetHeight;
-            const heightRatio = focusImage.offsetHeight / mainImageHeight;
-            targetScrollTop += scrollOffsetFromImageStart * heightRatio;
+            for (let i = 0; i < clickedIndex; i++) targetScrollTop += focusCanvases[i].offsetHeight;
+            const heightRatio = focusCanvas.offsetHeight / mainCanvasHeight;
+            targetScrollTop += scrollOffsetFromCanvasStart * heightRatio;
             scrollContainer.scrollTop = targetScrollTop;
         }
 
@@ -361,51 +463,56 @@
         const currentModalScrollTop = scrollContainer.scrollTop;
         saveFocusState(currentModalScrollTop);
 
-        if (currentMode === MODES.WEBTOON) {
-            const focusImages = scrollContainer.querySelectorAll('.reader-image');
+        // Remove modal lazy loading scroll handler
+        if (scrollContainer.modalScrollHandler) {
+            scrollContainer.removeEventListener('scroll', scrollContainer.modalScrollHandler);
+            delete scrollContainer.modalScrollHandler;
+        }
 
-        // Store modal heights before moving images back
-        const modalHeights = Array.from(focusImages).map(img => img.offsetHeight);
+        if (currentMode === MODES.WEBTOON) {
+            const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
+
+        // Store modal heights before moving canvases back
+        const modalHeights = Array.from(focusCanvases).map(canvas => canvas.offsetHeight);
 
         // Calculate the current position in the modal
-        let currentImageIndex = 0;
+        let currentCanvasIndex = 0;
         let cumulativeModalHeight = 0;
-        for (let i = 0; i < focusImages.length; i++) {
-            const imgHeight = modalHeights[i];
-            if (cumulativeModalHeight + imgHeight > currentModalScrollTop) {
-                currentImageIndex = i;
+        for (let i = 0; i < focusCanvases.length; i++) {
+            const canvasHeight = modalHeights[i];
+            if (cumulativeModalHeight + canvasHeight > currentModalScrollTop) {
+                currentCanvasIndex = i;
                 break;
             }
-            cumulativeModalHeight += imgHeight;
+            cumulativeModalHeight += canvasHeight;
         }
         const offsetInModal = currentModalScrollTop - cumulativeModalHeight;
 
-        // Move images back
-        focusImages.forEach((img, index) => {
-            if (originalImageParents[index]) {
-                originalImageParents[index].appendChild(img);
-                img.removeEventListener('click', handleFocusModalImageClick);
-                // Restore the open focus listener
-                if (img.openFocusListener) {
-                    img.addEventListener('click', img.openFocusListener);
-                }
+        // Move canvases back
+        focusCanvases.forEach((canvas, index) => {
+            const parent = originalImageParents[index] || containerElement;
+            parent.appendChild(canvas);
+            canvas.removeEventListener('click', handleFocusModalCanvasClick);
+            // Restore the open focus listener
+            if (canvas.openFocusListener) {
+                canvas.addEventListener('click', canvas.openFocusListener);
             }
         });
 
         // Restore scroll position with proper mapping
         requestAnimationFrame(() => {
             const mainElement = document.querySelector('main.site-main');
-            const mainImages = containerElement.querySelectorAll('.reader-image');
+            const mainCanvases = containerElement.querySelectorAll('.reader-canvas');
             const containerStyles = window.getComputedStyle(containerElement);
             const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
 
             let mainScrollTop = containerElement.offsetTop + containerPaddingTop;
-            for (let i = 0; i < currentImageIndex; i++) {
-                mainScrollTop += mainImages[i].offsetHeight;
+            for (let i = 0; i < currentCanvasIndex; i++) {
+                mainScrollTop += mainCanvases[i].offsetHeight;
             }
 
-            const heightRatio = (currentImageIndex < mainImages.length && modalHeights[currentImageIndex]) ?
-                mainImages[currentImageIndex].offsetHeight / modalHeights[currentImageIndex] : 1;
+            const heightRatio = (currentCanvasIndex < mainCanvases.length && modalHeights[currentCanvasIndex]) ?
+                mainCanvases[currentCanvasIndex].offsetHeight / modalHeights[currentCanvasIndex] : 1;
             mainScrollTop += offsetInModal * heightRatio;
 
             // Adjust for navbar height to match perceived position
@@ -442,6 +549,8 @@
 
             // Update visibility after modal is hidden
             updateModeVisibility();
+            // Re-observe for lazy loading in main view
+            observeLazyCanvases();
         });
         } else {
             // For single/double, just hide the modal
@@ -477,10 +586,10 @@
         const scrollContainer = focusModal ? focusModal.querySelector('.webtoon-focus-modal-scroll') : null;
         if (!scrollContainer) return;
 
-        const focusImages = scrollContainer.querySelectorAll('.reader-image');
-        focusImages.forEach(img => {
-            img.style.transform = `scale(${focusModalZoom})`;
-            img.style.transformOrigin = 'top center';
+        const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
+        focusCanvases.forEach(canvas => {
+            canvas.style.transform = `scale(${focusModalZoom})`;
+            canvas.style.transformOrigin = 'top center';
         });
     };
 
@@ -522,13 +631,13 @@
 
     const updateModeVisibility = () => {
         if (isLightNovel) return;
-        const allImgs = containerElement.querySelectorAll('.reader-image');
+        const allCanvases = containerElement.querySelectorAll('.reader-canvas');
         const wrappers = containerElement.querySelectorAll('.webtoon-image-wrapper');
-        allImgs.forEach(img => {
-            img.style.display = 'none';
-            img.style.maxWidth = '';
-            img.style.height = '';
-            img.style.width = '';
+        allCanvases.forEach(canvas => {
+            canvas.style.display = 'none';
+            canvas.style.maxWidth = '';
+            canvas.style.height = '';
+            canvas.style.width = '';
         });
         wrappers.forEach(wrapper => wrapper.style.display = 'none');
         if (currentMode === MODES.WEBTOON) {
@@ -539,11 +648,11 @@
             containerElement.style.alignItems = '';
             containerElement.style.gap = '';
             wrappers.forEach(wrapper => wrapper.style.display = 'block');
-            allImgs.forEach(img => {
-                img.style.display = 'block';
-                img.style.maxWidth = '';
-                img.style.height = 'auto';
-                img.style.width = '';
+            allCanvases.forEach(canvas => {
+                canvas.style.display = 'block';
+                canvas.style.maxWidth = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.width = '100%';
             });
         } else if (currentMode === MODES.SINGLE) {
             containerElement.className = 'reader-single-page-container';
@@ -552,12 +661,12 @@
             containerElement.style.alignItems = '';
             containerElement.style.gap = '';
             containerElement.style.maxWidth = '';
-            allImgs.forEach((img, index) => {
+            allCanvases.forEach((canvas, index) => {
                 if (index === currentPage) {
-                    img.style.display = 'block';
-                    img.style.maxWidth = '100%';
-                    img.style.height = 'auto';
-                    img.style.width = '';
+                    canvas.style.display = 'block';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.width = '';
                 }
             });
         } else if (currentMode === MODES.SIDE_BY_SIDE) {
@@ -567,18 +676,18 @@
             containerElement.style.alignItems = 'flex-start';
             containerElement.style.gap = '0';
             containerElement.style.maxWidth = '';
-            allImgs.forEach((img, index) => {
+            allCanvases.forEach((canvas, index) => {
                 if (index === currentPage * 2 || index === currentPage * 2 + 1) {
-                    img.style.display = 'block';
-                    img.style.maxWidth = '50%';
-                    img.style.height = 'auto';
-                    img.style.width = '';
+                    canvas.style.display = 'block';
+                    canvas.style.maxWidth = '50%';
+                    canvas.style.height = 'auto';
+                    canvas.style.width = '';
                 }
             });
         }
         // Handle uk-container width on mobile for full-width images
         updateContainerWidth();
-        attachImageListeners();
+        attachCanvasListeners();
         updatePageCounter();
         const pagination = document.getElementById('reader-pagination');
         const paginationBottom = document.getElementById('reader-pagination-bottom');
@@ -595,11 +704,11 @@
         if (focusModal && focusModal.classList.contains('active')) {
             if (currentMode === MODES.WEBTOON) {
                 const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-                const focusImages = scrollContainer.querySelectorAll('.reader-image');
+                const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
                 let targetScrollTop = 0;
                 let targetIndex = currentPage; // For webtoon, currentPage is 0
-                for (let i = 0; i < targetIndex && i < focusImages.length; i++) {
-                    targetScrollTop += focusImages[i].offsetHeight;
+                for (let i = 0; i < targetIndex && i < focusCanvases.length; i++) {
+                    targetScrollTop += focusCanvases[i].offsetHeight;
                 }
                 scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
             } else {
@@ -609,34 +718,34 @@
                 if (currentMode === MODES.SINGLE) {
                     const currentSrc = images[currentPage];
                     if (currentSrc) {
-                        const img = document.createElement('img');
-                        img.src = currentSrc;
-                        img.className = 'reader-image';
-                        img.style.maxWidth = '100%';
-                        img.style.height = 'auto';
-                        scrollContainer.appendChild(img);
-                        img.addEventListener('click', handleFocusModalImageClick);
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'reader-canvas';
+                        canvas.style.maxWidth = '100%';
+                        canvas.style.height = 'auto';
+                        scrollContainer.appendChild(canvas);
+                        loadImageToCanvas(canvas, currentSrc);
+                        canvas.addEventListener('click', handleFocusModalCanvasClick);
                     }
                 } else if (currentMode === MODES.SIDE_BY_SIDE) {
                     const leftSrc = images[currentPage * 2];
                     const rightSrc = images[currentPage * 2 + 1];
                     if (leftSrc) {
-                        const img = document.createElement('img');
-                        img.src = leftSrc;
-                        img.className = 'reader-image';
-                        img.style.setProperty('width', '50%', 'important');
-                        img.style.setProperty('height', 'auto', 'important');
-                        scrollContainer.appendChild(img);
-                        img.addEventListener('click', handleFocusModalImageClick);
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'reader-canvas';
+                        canvas.style.setProperty('width', '50%', 'important');
+                        canvas.style.setProperty('height', 'auto', 'important');
+                        scrollContainer.appendChild(canvas);
+                        loadImageToCanvas(canvas, leftSrc);
+                        canvas.addEventListener('click', handleFocusModalCanvasClick);
                     }
                     if (rightSrc) {
-                        const img = document.createElement('img');
-                        img.src = rightSrc;
-                        img.className = 'reader-image';
-                        img.style.setProperty('width', '50%', 'important');
-                        img.style.setProperty('height', 'auto', 'important');
-                        scrollContainer.appendChild(img);
-                        img.addEventListener('click', handleFocusModalImageClick);
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'reader-canvas';
+                        canvas.style.setProperty('width', '50%', 'important');
+                        canvas.style.setProperty('height', 'auto', 'important');
+                        scrollContainer.appendChild(canvas);
+                        loadImageToCanvas(canvas, rightSrc);
+                        canvas.addEventListener('click', handleFocusModalCanvasClick);
                     }
                     // Set container to flex for side by side
                     scrollContainer.style.setProperty('display', 'flex', 'important');
@@ -656,19 +765,19 @@
         });
     };
 
-    const attachImageListeners = () => {
-        containerElement.querySelectorAll('.reader-image').forEach(img => {
-            if (!img.openFocusListener) {
-                img.openFocusListener = () => {
+    const attachCanvasListeners = () => {
+        containerElement.querySelectorAll('.reader-canvas').forEach(canvas => {
+            if (!canvas.openFocusListener) {
+                canvas.openFocusListener = () => {
                     if (isMobile()) {
                         // On mobile, scroll down slightly instead of opening focus modal
                         const scrollAmount = window.innerHeight * 0.75; // Scroll down by 3/4 viewport height
                         window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
                     } else {
-                        openFocusModal(img);
+                        openFocusModal(canvas);
                     }
                 };
-                img.addEventListener('click', img.openFocusListener);
+                canvas.addEventListener('click', canvas.openFocusListener);
             }
         });
     };
@@ -735,10 +844,16 @@
         const savedMode = localStorage.getItem(STORAGE_KEY);
         if (savedMode && Object.values(MODES).includes(savedMode)) currentMode = savedMode;
 
-        images = Array.from(containerElement.querySelectorAll('.reader-image')).map(img => img.dataset.src);
-        currentPage = 0;
-        observeLazyImages();
-        updateModeVisibility();
+        // Collect tokens from divs and remove them
+        const tokenDivs = Array.from(containerElement.querySelectorAll('.reader-token'));
+        images = tokenDivs.map(div => div.dataset.token);
+        
+        // Remove all token divs
+        tokenDivs.forEach(div => div.remove());
+
+        // Load initial 2 canvases asynchronously
+        loadInitialCanvases();
+
         updateModeButtons();
 
         // Event listeners

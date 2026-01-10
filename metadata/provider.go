@@ -18,6 +18,37 @@ type MediaMetadata struct {
 	AlternativeTitles []string
 	Author            string
 	ExternalID        string // Provider-specific ID
+
+	// Additional rich metadata fields
+	Authors       []AuthorInfo // Multiple authors/creators
+	Artists       []AuthorInfo // Separate from authors for some media
+	StartDate     string       // Full start date (YYYY-MM-DD)
+	EndDate       string       // Full end date (YYYY-MM-DD)
+	ChapterCount  int          // Total chapters
+	VolumeCount   int          // Total volumes
+	AverageScore  float64      // Average rating/score
+	Popularity    int          // Popularity rank
+	Favorites     int          // Number of favorites
+	Demographic   string       // Target demographic (shonen, seinen, josei, etc.)
+	Publisher     string       // Publishing company
+	Magazine      string       // Serialization magazine
+	Serialization string       // Serialization info
+	Genres        []string     // Separate from tags for structured genres
+	Characters    []string     // Main characters
+	Relations     []Relation   // Related works (prequels, sequels, etc.)
+}
+
+// AuthorInfo represents author/artist information
+type AuthorInfo struct {
+	Name string
+	Role string // author, artist, illustrator, etc.
+}
+
+// Relation represents a related work
+type Relation struct {
+	Type  string // prequel, sequel, adaptation, etc.
+	Title string
+	ID    string // External ID
 }
 
 // SearchResult represents a single media search result

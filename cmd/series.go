@@ -118,12 +118,10 @@ func newSeriesInfoCmd(dataDirectory *string) *cobra.Command {
 			cmd.Printf("  Type: %s\n", media.Type)
 			cmd.Printf("  Status: %s\n", media.Status)
 			cmd.Printf("  Content Rating: %s\n", media.ContentRating)
-			cmd.Printf("  Library: %s\n", media.LibrarySlug)
 			cmd.Printf("  Chapters: %d\n", media.FileCount)
 			cmd.Printf("  Read Count: %d\n", media.ReadCount)
 			cmd.Printf("  Vote Score: %d\n", media.VoteScore)
 			cmd.Printf("  Tags: %s\n", strings.Join(media.Tags, ", "))
-			cmd.Printf("  Path: %s\n", media.Path)
 			cmd.Printf("  Cover Art: %s\n", media.CoverArtURL)
 		},
 	}

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 )
 
 const malBaseURL = "https://api.myanimelist.net/v2"
@@ -129,7 +129,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 			Description:     node.Synopsis,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(node.Title)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(node.Title)),
 			Tags:            tags,
 		})
 	}
@@ -142,7 +142,7 @@ func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
 		return nil, ErrAuthRequired
 	}
 
-	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters", m.baseURL, id)
+	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters,num_volumes,authors,serialization,demographics,recommendations", m.baseURL, id)
 
 	req, err := http.NewRequest("GET", fetchURL, nil)
 	if err != nil {
@@ -204,8 +204,17 @@ func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata 
 	}
 
 	year := 0
+	startDate := ""
 	if node.StartDate != "" {
-		fmt.Sscanf(node.StartDate, "%d", &year)
+		startDate = node.StartDate
+		if len(node.StartDate) >= 4 {
+			fmt.Sscanf(node.StartDate[:4], "%d", &year)
+		}
+	}
+
+	endDate := ""
+	if node.EndDate != "" {
+		endDate = node.EndDate
 	}
 
 	metadata := &MediaMetadata{
@@ -217,11 +226,58 @@ func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata 
 		CoverArtURL:   coverURL,
 		ExternalID:    fmt.Sprintf("%d", node.ID),
 		Type:          convertMALMediaType(node.MediaType),
+		StartDate:     startDate,
+		EndDate:       endDate,
+		ChapterCount:  node.NumChapters,
+		VolumeCount:   node.NumVolumes,
+		AverageScore:  node.Mean,
 	}
 
 	// Extract tags from genres
 	for _, genre := range node.Genres {
+		metadata.Genres = append(metadata.Genres, genre.Name)
 		metadata.Tags = append(metadata.Tags, genre.Name)
+	}
+
+	// Extract authors
+	for _, author := range node.Authors {
+		fullName := strings.TrimSpace(author.FirstName + " " + author.LastName)
+		if fullName == " " {
+			fullName = author.FirstName + author.LastName
+		}
+
+		authorInfo := AuthorInfo{
+			Name: fullName,
+			Role: author.Role,
+		}
+
+		roleLower := strings.ToLower(author.Role)
+		if strings.Contains(roleLower, "author") || strings.Contains(roleLower, "writer") || strings.Contains(roleLower, "story") {
+			metadata.Authors = append(metadata.Authors, authorInfo)
+			if metadata.Author == "" {
+				metadata.Author = fullName
+			}
+		} else if strings.Contains(roleLower, "artist") || strings.Contains(roleLower, "illustrator") {
+			metadata.Artists = append(metadata.Artists, authorInfo)
+		}
+	}
+
+	// Extract serialization information
+	for _, serial := range node.Serialization {
+		if metadata.Magazine == "" {
+			metadata.Magazine = serial.Name
+		} else {
+			metadata.Magazine += ", " + serial.Name
+		}
+	}
+
+	// Extract demographics
+	for _, demo := range node.Demographics {
+		if metadata.Demographic == "" {
+			metadata.Demographic = demo.Name
+		} else {
+			metadata.Demographic += ", " + demo.Name
+		}
 	}
 
 	// Extract alternative titles
@@ -254,15 +310,17 @@ func (m *MALProvider) convertToMediaMetadata(node *malMediaNode) *MediaMetadata 
 
 // MAL API response structures
 type malMediaNode struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Synopsis    string `json:"synopsis"`
-	StartDate   string `json:"start_date"`
-	EndDate     string `json:"end_date"`
-	Status      string `json:"status"`
-	MediaType   string `json:"media_type"`
-	NSFW        string `json:"nsfw"`
-	NumChapters int    `json:"num_chapters"`
+	ID          int     `json:"id"`
+	Title       string  `json:"title"`
+	Synopsis    string  `json:"synopsis"`
+	StartDate   string  `json:"start_date"`
+	EndDate     string  `json:"end_date"`
+	Status      string  `json:"status"`
+	MediaType   string  `json:"media_type"`
+	NSFW        string  `json:"nsfw"`
+	NumChapters int     `json:"num_chapters"`
+	NumVolumes  int     `json:"num_volumes"`
+	Mean        float64 `json:"mean"`
 	MainPicture struct {
 		Medium string `json:"medium"`
 		Large  string `json:"large"`
@@ -276,6 +334,24 @@ type malMediaNode struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"genres"`
+	Authors []struct {
+		ID        int    `json:"id"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Role      string `json:"role"`
+	} `json:"authors"`
+	Serialization []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"serialization"`
+	Demographics []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"demographics"`
+	Recommendations []struct {
+		ID    int    `json:"id"`
+		Title string `json:"title"`
+	} `json:"recommendations"`
 }
 
 // Helper functions to convert MAL formats to our standard

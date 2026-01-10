@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 """
 SetsuScans scraper for MAGI.
 
@@ -8,103 +7,104 @@ Downloads manga/manhwa/manhua from setsuscans.com via AJAX endpoints.
 
 # Standard library imports
 import asyncio
-import os
 import re
-import shutil
-import sys
-from pathlib import Path
-from urllib.parse import quote
-
-# Third-party imports
-import requests
 
 # Local imports
 from scraper_utils import (
     bypass_cloudflare,
-    calculate_padding_width,
-    convert_to_webp,
-    create_cbz,
-    check_duplicate_series,
-    get_priority_config,
     error,
-    format_chapter_name,
-    get_existing_chapters,
-    get_image_extension,
+    get_scraper_config,
     get_session,
     log,
-    log_existing_chapters,
-    sanitize_title,
+    run_scraper,
     success,
-    warn,
 )
 
 # =============================================================================
 # Configuration
 # =============================================================================
-DRY_RUN = os.getenv('dry_run', 'false').lower() == 'true'
-CONVERT_TO_WEBP = os.getenv('convert_to_webp', 'true').lower() == 'true'
-FOLDER = os.getenv('folder', os.path.join(os.path.dirname(__file__), 'SetsuScans'))
-DEFAULT_SUFFIX = os.getenv('default_suffix', '[SetsuScans]')
-ALLOWED_DOMAINS = ['setsuscans.com']
-BASE_URL = 'https://setsuscans.com'
-PRIORITY, HIGHER_PRIORITY_FOLDERS = get_priority_config('setsuscans')
+CONFIG = get_scraper_config("setsuscans", "SetsuScans", "[SetsuScans]")
+ALLOWED_DOMAINS = ["setsuscans.com"]
+BASE_URL = "https://setsuscans.com"
 
 
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session, page_num):
+def extract_series_urls(session):
     """
-    Extract series URLs using AJAX pagination.
+    Extract all series URLs using AJAX pagination.
 
     Args:
         session: requests.Session object
-        page_num: Page number to fetch
 
     Returns:
-        tuple: (list of series URLs, bool is_last_page)
+        list: List of dicts with 'series_url' key
     """
-    url = "https://setsuscans.com/wp-admin/admin-ajax.php"
-    data = {
-        'action': 'madara_load_more',
-        'page': page_num,
-        'template': 'madara-core/content/content-archive',
-        'vars[paged]': page_num,
-        'vars[orderby]': 'date',
-        'vars[template]': 'archive',
-        'vars[sidebar]': 'right',
-        'vars[post_type]': 'wp-manga',
-        'vars[post_status]': 'publish',
-        'vars[meta_query][relation]': 'AND',
-        'vars[manga_archives_item_layout]': 'big_thumbnail'
-    }
+    all_series_urls = []
+    page = 1
+    
+    while True:
+        url = "https://setsuscans.com/wp-admin/admin-ajax.php"
+        data = {
+            "action": "madara_load_more",
+            "page": page,
+            "template": "madara-core/content/content-archive",
+            "vars[paged]": page,
+            "vars[orderby]": "date",
+            "vars[template]": "archive",
+            "vars[sidebar]": "right",
+            "vars[post_type]": "wp-manga",
+            "vars[post_status]": "publish",
+            "vars[meta_query][relation]": "AND",
+            "vars[manga_archives_item_layout]": "big_thumbnail",
+        }
 
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': 'https://setsuscans.com/?m_orderby=new-manga'
-    }
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "https://setsuscans.com/?m_orderby=new-manga",
+        }
 
-    log(f"Fetching series list from page {page_num}...")
+        log(f"Fetching series list from page {page}...")
 
-    try:
-        response = session.post(url, data=data, headers=headers, timeout=30)
-        response.raise_for_status()
-        html = response.text
+        try:
+            response = session.post(url, data=data, headers=headers, timeout=30)
+            response.raise_for_status()
+            html = response.text
 
-        # Check if this is the last page (no more content)
-        is_last_page = len(html.strip()) < 100  # Empty or minimal response
+            # Check if this is the last page (no more content)
+            is_last_page = len(html.strip()) < 100  # Empty or minimal response
 
-        # Extract series URLs from the HTML response
-        series_urls = re.findall(r'href="https://setsuscans\.com(/manga/[^/]+/)"', html)
-        # Filter out chapter URLs and other non-series URLs
-        series_urls = [url for url in series_urls if 'chapter' not in url and 'feed' not in url and 'genre' not in url]
+            # Extract series URLs from the HTML response
+            series_urls = re.findall(r'href="https://setsuscans\.com(/manga/[^/]+/)"', html)
+            # Filter out chapter URLs and other non-series URLs
+            series_urls = [
+                url
+                for url in series_urls
+                if "chapter" not in url and "feed" not in url and "genre" not in url
+            ]
+            
+            if not series_urls:
+                break
+                
+            # Add to all series as dicts
+            for url in series_urls:
+                all_series_urls.append({'series_url': url})
+                
+            if is_last_page:
+                break
+            page += 1
+            if page > 50:  # Safety limit
+                log("Reached safety limit of 50 pages, stopping.")
+                break
+                
+        except Exception as e:
+            error(f"Error fetching page {page}: {e}")
+            break
+    
+    return sorted(set(all_series_urls), key=lambda x: x['series_url'])
 
-        return sorted(set(series_urls)), is_last_page
-
-    except Exception as e:
-        error(f"Error fetching page {page_num}: {e}")
-        return [], True
 
 def extract_series_title(session, series_url):
     """
@@ -124,17 +124,25 @@ def extract_series_title(session, series_url):
         html = response.text
 
         # Try multiple selectors for title
-        title_match = re.search(r'<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([^<]+)</h1>', html)
+        title_match = re.search(
+            r'<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([^<]+)</h1>', html
+        )
         if not title_match:
-            title_match = re.search(r'<title>([^<]+)', html)
+            title_match = re.search(r"<title>([^<]+)", html)
 
         if title_match:
-            title = title_match.group(1).replace(' – Setsu Scans', '').replace(' | Setsu Scans', '').strip()
+            title = (
+                title_match.group(1)
+                .replace(" – Setsu Scans", "")
+                .replace(" | Setsu Scans", "")
+                .strip()
+            )
             return title
     except Exception as e:
         error(f"Error extracting title from {url}: {e}")
 
     return None
+
 
 # =============================================================================
 # Chapter Extraction
@@ -148,10 +156,10 @@ def extract_chapter_urls(session, manga_url):
         manga_url: Relative URL of the manga
 
     Returns:
-        list: Sorted list of chapter URLs
+        list: List of dicts with 'url' and 'num' keys
     """
     # Extract manga slug from URL
-    slug_match = re.search(r'/manga/([^/]+)/', manga_url)
+    slug_match = re.search(r"/manga/([^/]+)/", manga_url)
     if not slug_match:
         return []
 
@@ -159,8 +167,8 @@ def extract_chapter_urls(session, manga_url):
     url = f"{BASE_URL}/manga/{slug}/ajax/chapters/"
 
     headers = {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': f"https://setsuscans.com/manga/{slug}/"
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": f"https://setsuscans.com/manga/{slug}/",
     }
 
     try:
@@ -169,14 +177,31 @@ def extract_chapter_urls(session, manga_url):
         html = response.text
 
         # Extract chapter URLs from the AJAX response
-        chapter_urls = re.findall(r'href="https://setsuscans\.com(/manga/[^/]+/chapter-[^/]+/)"', html)
+        chapter_urls = re.findall(
+            r'href="https://setsuscans\.com(/manga/[^/]+/chapter-[^/]+/)"', html
+        )
+        
+        # Convert to dicts with url and num
+        chapter_dicts = []
+        for url in chapter_urls:
+            chapter_num = extract_chapter_number(url)
+            if chapter_num > 0:
+                chapter_dicts.append({'url': url, 'num': chapter_num})
+        
         # Remove duplicates and sort by chapter number
-        unique_urls = sorted(set(chapter_urls), key=lambda x: extract_chapter_number(x))
-        return unique_urls
+        unique_dicts = []
+        seen_urls = set()
+        for chapter in sorted(chapter_dicts, key=lambda x: x['num']):
+            if chapter['url'] not in seen_urls:
+                unique_dicts.append(chapter)
+                seen_urls.add(chapter['url'])
+        
+        return unique_dicts
 
     except Exception as e:
         error(f"Error extracting chapters for {manga_url}: {e}")
         return []
+
 
 def extract_chapter_number(url):
     """
@@ -188,10 +213,11 @@ def extract_chapter_number(url):
     Returns:
         int: Chapter number, or 0 if not found
     """
-    match = re.search(r'chapter-(\d+)', url)
+    match = re.search(r"chapter-(\d+)", url)
     if match:
         return int(match.group(1))
     return 0
+
 
 def extract_image_urls(session, chapter_url):
     """
@@ -208,19 +234,21 @@ def extract_image_urls(session, chapter_url):
     try:
         response = session.get(full_url, timeout=30)
         response.raise_for_status()
-        html = response.text.replace('\0', '')
+        html = response.text.replace("\0", "")
 
         # Look for img src attributes that contain manga images
-        image_urls = re.findall(r'<img[^>]*src="([^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"', html)
+        image_urls = re.findall(
+            r'<img[^>]*src="([^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"', html
+        )
 
         # Clean URLs and filter for WP-manga images
         cleaned_urls = []
         for url in image_urls:
             url = url.strip()
-            if 'WP-manga' in url and 'thumbnails' not in url and 'data/manga' in url:
+            if "WP-manga" in url and "thumbnails" not in url and "data/manga" in url:
                 # Remove any leading/trailing whitespace or encoded characters
-                url = re.sub(r'^[^h]*', '', url)  # Remove anything before 'http'
-                if url.startswith('http'):
+                url = re.sub(r"^[^h]*", "", url)  # Remove anything before 'http'
+                if url.startswith("http"):
                     cleaned_urls.append(url)
 
         return list(dict.fromkeys(cleaned_urls))  # unique
@@ -230,15 +258,43 @@ def extract_image_urls(session, chapter_url):
         return []
 
 
+def extract_poster_url(session, series_url):
+    """
+    Extract poster URL from series page.
+
+    Args:
+        session: requests.Session object
+        series_url: Relative URL of the series
+
+    Returns:
+        str: Poster URL or None
+    """
+    url = f"{BASE_URL}{series_url}"
+    try:
+        response = session.get(url, timeout=30)
+        response.raise_for_status()
+        html = response.text
+
+        # Look for poster image with class="img-responsive"
+        poster_match = re.search(r'<img[^>]*class="img-responsive[^"]*"[^>]*src="([^"]+)"', html)
+        if poster_match:
+            poster_url = poster_match.group(1)
+            return poster_url
+
+    except Exception as e:
+        error(f"Error extracting poster from {url}: {e}")
+
+    return None
+
+
 # =============================================================================
 # Main Entry Point
 # =============================================================================
 def main():
     """Main entry point for the scraper."""
     log("Starting Setsu Scans scraper")
-    log("Mode: Full Downloader")
 
-    # Health check
+    # Health check and Cloudflare bypass
     log(f"Performing health check on {BASE_URL}...")
     try:
         cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
@@ -255,147 +311,20 @@ def main():
 
     success("Health check passed")
 
-    # Ensure folder exists
-    Path(FOLDER).mkdir(parents=True, exist_ok=True)
-
-    # Collect all series URLs
-    all_series_urls = []
-    page = 1
-    while True:
-        try:
-            page_series, is_last_page = extract_series_urls(session, page)
-            if not page_series:
-                log(f"No series found on page {page}, stopping.")
-                break
-            all_series_urls.extend(page_series)
-            log(f"Found {len(page_series)} series on page {page}")
-            if is_last_page:
-                log(f"Reached last page (page {page}).")
-                break
-            page += 1
-            if page > 50:  # Safety limit
-                log("Reached safety limit of 50 pages, stopping.")
-                break
-        except Exception as e:
-            error(f"Error fetching page {page}: {e}")
-            break
-
-    log(f"Found {len(all_series_urls)} series")
-
-    total_series = len(all_series_urls)
-    total_chapters = 0
-
-    # Process each series
-    for series_url in all_series_urls:
-        log(f"Processing: {series_url}")
-
-        title = extract_series_title(session, series_url)
-        if not title:
-            error(f"Could not extract title for {series_url}, skipping...")
-            continue
-
-        clean_title = sanitize_title(title)
-
-        log(f"Title: {clean_title}")
-        # Check for duplicate in higher priority providers
-        if check_duplicate_series(clean_title, HIGHER_PRIORITY_FOLDERS):
-            continue
-
-        # Extract chapter URLs
-        try:
-            chapter_urls = extract_chapter_urls(session, series_url)
-        except Exception as e:
-            error(f"Error extracting chapters for {series_url}: {e}")
-            continue
-
-        if not chapter_urls:
-            warn(f"No chapters found for {title}, skipping...")
-            continue
-
-        # Create series directory (only after confirming chapters exist)
-        series_directory = Path(FOLDER) / f"{clean_title} {DEFAULT_SUFFIX}"
-        series_directory.mkdir(parents=True, exist_ok=True)
-
-        # Determine padding width
-        chapter_numbers = [extract_chapter_number(url) for url in chapter_urls]
-        if chapter_numbers:
-            max_chapter = max(chapter_numbers)
-            padding_width = calculate_padding_width(max_chapter)
-        else:
-            padding_width = 3
-        log(f"Found {len(chapter_urls)} chapters (max: {max_chapter}, padding: {padding_width})")
-
-        # Check for existing chapters
-        existing_chapters = get_existing_chapters(series_directory)
-        log_existing_chapters(existing_chapters)
-
-        for chapter_url in chapter_urls:
-            chapter_num = extract_chapter_number(chapter_url)
-
-            # Skip if chapter already exists
-            if chapter_num in existing_chapters:
-                continue
-
-            chapter_name = format_chapter_name(clean_title, chapter_num, padding_width, DEFAULT_SUFFIX)
-
-            try:
-                image_urls = extract_image_urls(session, chapter_url)
-            except Exception as e:
-                error(f"Error extracting images for {chapter_url}: {e}")
-                continue
-
-            if not image_urls:
-                log(f"Skipping: Chapter {chapter_num} (no images)")
-                continue
-
-            total_chapters += 1
-
-            if DRY_RUN:
-                log(f"Chapter {chapter_num} [{len(image_urls)} images]")
-                continue
-
-            log(f"Downloading: {chapter_name} [{len(image_urls)} images]")
-
-            # Create chapter directory
-            chapter_folder = series_directory / chapter_name
-            chapter_folder.mkdir(parents=True, exist_ok=True)
-
-            # Download images
-            downloaded_count = 0
-            for i, img_url in enumerate(image_urls, 1):
-                if not img_url or not any(domain in img_url for domain in ALLOWED_DOMAINS):
-                    continue
-                img_url = quote(img_url, safe=':/')
-                ext = get_image_extension(img_url, 'jpg')
-                filename = chapter_folder / f"{i:03d}"
-                try:
-                    response = session.get(img_url, timeout=30)
-                    response.raise_for_status()
-                    with open(filename, 'wb') as f:
-                        f.write(response.content)
-                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Success", file=sys.stderr, flush=True)
-                    downloaded_count += 1
-                    if CONVERT_TO_WEBP and ext != 'webp':
-                        convert_to_webp(filename)
-                except Exception as e:
-                    print(f"  [{i:03d}/{len(image_urls):03d}] {img_url} Failed: {e}", file=sys.stderr, flush=True)
-
-            # Only create CBZ if more than 1 image was downloaded
-            if downloaded_count > 1:
-                if create_cbz(chapter_folder, chapter_name):
-                    # Remove temp folder
-                    shutil.rmtree(chapter_folder)
-                else:
-                    warn(f"CBZ creation failed for Chapter {chapter_num}, keeping folder")
-            else:
-                log(f"Skipping CBZ creation for Chapter {chapter_num} - only {downloaded_count} image(s) downloaded")
-                # Remove temp folder
-                shutil.rmtree(chapter_folder)
-
-    log(f"Total series processed: {total_series}")
-    log(f"Total chapters downloaded: {total_chapters}")
-    success(f"Completed! Output: {FOLDER}")
+    # Run the scraper
+    run_scraper(
+        session=session,
+        config=CONFIG,
+        extract_series_func=extract_series_urls,
+        extract_series_title_func=extract_series_title,
+        extract_chapter_urls_func=extract_chapter_urls,
+        extract_image_urls_func=extract_image_urls,
+        extract_poster_func=extract_poster_url,
+        allowed_domains=ALLOWED_DOMAINS,
+        base_url=BASE_URL,
+        series_url_builder=lambda data: data['series_url']  # data has 'series_url' key
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

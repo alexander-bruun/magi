@@ -15,7 +15,7 @@ type SyncProvider interface {
 	Name() string
 	RequiresAuth() bool
 	SetAuthToken(token string)
-	SyncReadingProgress(userName string, mediaSlug string, chapterSlug string) error
+	SyncReadingProgress(userName string, mediaSlug string, librarySlug string, chapterSlug string) error
 }
 
 // providers map
@@ -36,7 +36,7 @@ func GetProvider(name string, token string) SyncProvider {
 }
 
 // SyncReadingProgressForUser syncs progress for all connected services
-func SyncReadingProgressForUser(userName string, mediaSlug string, chapterSlug string) {
+func SyncReadingProgressForUser(userName string, mediaSlug string, librarySlug string, chapterSlug string) {
 	// Get all external accounts for the user
 	accounts, err := getUserExternalAccounts(userName)
 	if err != nil {
@@ -48,7 +48,7 @@ func SyncReadingProgressForUser(userName string, mediaSlug string, chapterSlug s
 		provider := GetProvider(account.ServiceName, account.AccessToken)
 		if provider != nil {
 			go func(p SyncProvider) {
-				err := p.SyncReadingProgress(userName, mediaSlug, chapterSlug)
+				err := p.SyncReadingProgress(userName, mediaSlug, librarySlug, chapterSlug)
 				if err != nil {
 					log.Errorf("Sync error for %s: %v", account.ServiceName, err)
 				}

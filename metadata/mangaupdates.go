@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 )
 
 const mangaupdatesBaseURL = "https://api.mangaupdates.com/v1"
@@ -135,7 +135,7 @@ func (m *MangaUpdatesProvider) Search(title string) ([]SearchResult, error) {
 			Description:     description,
 			CoverArtURL:     coverURL,
 			Year:            extractMangaUpdatesYear(series),
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(seriesTitle)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(seriesTitle)),
 			Tags:            tags,
 		})
 	}

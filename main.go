@@ -18,7 +18,8 @@ import (
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
+	"github.com/alexander-bruun/magi/utils/text"
 
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -100,7 +101,7 @@ func main() {
 			}
 
 			// Initialize console log streaming for admin panel
-			utils.InitializeConsoleLogger()
+			text.InitializeConsoleLogger()
 
 			log.Info("Starting Magi!")
 
@@ -112,7 +113,7 @@ func main() {
 			}
 
 			// Set the data directory for utility functions
-			utils.SetDataDirectory(dataDirectory)
+			files.SetDataDirectory(dataDirectory)
 
 			// Determine backup directory
 			backupDirectory = filepath.Join(dataDirectory, "backups")
@@ -169,7 +170,7 @@ func main() {
 			log.Debugf("Using '%s/...' as the backup location", backupDirectory)
 
 			// Initialize console log streaming for admin panel
-			utils.InitializeConsoleLogger()
+			text.InitializeConsoleLogger()
 
 			// Initialize database connection
 			err = models.Initialize(dataDirectory)
@@ -212,7 +213,7 @@ func main() {
 			})
 
 			// Start API in its own goroutine
-			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port)
+			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port, assetsfs)
 
 			// Start Indexer in its own goroutine
 			libraries, err := models.GetLibraries()

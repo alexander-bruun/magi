@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -150,7 +150,7 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 			Description:     description,
 			CoverArtURL:     coverURL,
 			Year:            media.Attributes.Year,
-			SimilarityScore: utils.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(mangaTitle)),
 			Tags:            tags,
 		})
 	}
@@ -159,7 +159,7 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (m *MangaDexProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", m.baseURL, id)
+	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art&includes[]=author&includes[]=artist&includes[]=scanlation_group", m.baseURL, id)
 
 	resp, err := m.client.Get(fetchURL)
 	if err != nil {
@@ -247,6 +247,31 @@ func (m *MangaDexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *
 		}
 	}
 
+	// Extract authors and artists from relationships
+	for _, rel := range detail.Relationships {
+		switch rel.Type {
+		case "author":
+			if name, ok := rel.Attributes["name"].(string); ok && name != "" {
+				authorInfo := AuthorInfo{
+					Name: name,
+					Role: "author",
+				}
+				metadata.Authors = append(metadata.Authors, authorInfo)
+				if metadata.Author == "" {
+					metadata.Author = name
+				}
+			}
+		case "artist":
+			if name, ok := rel.Attributes["name"].(string); ok && name != "" {
+				artistInfo := AuthorInfo{
+					Name: name,
+					Role: "artist",
+				}
+				metadata.Artists = append(metadata.Artists, artistInfo)
+			}
+		}
+	}
+
 	return metadata
 }
 
@@ -277,9 +302,9 @@ type mangadexTag struct {
 }
 
 type mangadexRelationship struct {
-	ID         string                 `json:"id"`
-	Type       string                 `json:"type"`
-	Attributes map[string]interface{} `json:"attributes"`
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Attributes map[string]any `json:"attributes"`
 }
 
 // Helper functions

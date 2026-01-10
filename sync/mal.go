@@ -40,7 +40,7 @@ func (m *MALProvider) SetAuthToken(token string) {
 	m.apiToken = token
 }
 
-func (m *MALProvider) SyncReadingProgress(userName string, mediaSlug string, chapterSlug string) error {
+func (m *MALProvider) SyncReadingProgress(userName string, mediaSlug string, librarySlug string, chapterSlug string) error {
 	log.Debugf("MAL sync: updating status only (chapter progress ignored due to API limitations)")
 	// MAL API v2 accepts updates but doesn't properly save num_read_chapters.
 	// We can still update other fields like status, but skip chapter progress for now.
@@ -126,7 +126,7 @@ func (m *MALProvider) findMangaOnMAL(mediaSlug string) (int, error) {
 func (m *MALProvider) updateStatusOnly(mangaID int) error {
 	log.Debugf("MAL updateStatusOnly: updating manga %d status to reading", mangaID)
 	url := fmt.Sprintf("%s/manga/%d/my_list_status", malBaseURL, mangaID)
-	data := map[string]interface{}{
+	data := map[string]any{
 		"status": "reading", // Ensure manga is marked as reading
 	}
 	jsonData, err := json.Marshal(data)

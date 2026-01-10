@@ -557,7 +557,6 @@ header.site-header {
 
 header.site-header uk-icon,
 header.site-header uk-icon * {
-  display: inline-block;
   width: var(--size-icon);
   height: var(--size-icon);
   vertical-align: middle;

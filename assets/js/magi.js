@@ -263,26 +263,8 @@
    * Manages configuration page interactions
    */
   const ConfigManager = (function () {
-    function updateTokenFields() {
-      const providerSelect = document.getElementById('metadata-provider-select');
-      const malField = document.getElementById('mal-token-field');
-      const anilistField = document.getElementById('anilist-token-field');
-
-      if (providerSelect && malField && anilistField) {
-        const provider = providerSelect.value;
-        malField.style.display = provider === 'mal' ? 'block' : 'none';
-        anilistField.style.display = provider === 'anilist' ? 'block' : 'none';
-      }
-    }
-
     function init() {
       document.addEventListener('DOMContentLoaded', function () {
-        const providerSelect = document.getElementById('metadata-provider-select');
-        if (providerSelect) {
-          providerSelect.addEventListener('change', updateTokenFields);
-          updateTokenFields(); // Initialize on page load
-        }
-
         // Auto-initialize console logs
         initConsoleLogs();
       });
@@ -290,16 +272,9 @@
       // Reinitialize on HTMX swap
       document.addEventListener('htmx:afterSettle', function (event) {
         if (event.detail.xhr && event.detail.xhr.status === 200) {
-          const providerSelect = document.getElementById('metadata-provider-select');
-          if (providerSelect) {
-            providerSelect.removeEventListener('change', updateTokenFields);
-            providerSelect.addEventListener('change', updateTokenFields);
-            updateTokenFields();
-          }
+          // Reinitialize console logs after HTMX swaps
+          initConsoleLogs();
         }
-
-        // Reinitialize console logs after HTMX swaps
-        initConsoleLogs();
       });
     }
 
@@ -340,8 +315,7 @@
     }
 
     return {
-      init: init,
-      updateTokenFields: updateTokenFields
+      init: init
     };
   })();
 

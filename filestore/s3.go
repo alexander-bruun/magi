@@ -165,8 +165,8 @@ func (s *S3Adapter) List(path string) ([]string, error) {
 	for _, obj := range resp.Contents {
 		key := aws.ToString(obj.Key)
 		// Remove the prefix
-		if strings.HasPrefix(key, prefix) {
-			name := strings.TrimPrefix(key, prefix)
+		if after, ok := strings.CutPrefix(key, prefix); ok {
+			name := after
 			// Skip directory markers (keys ending with /)
 			if name != "" && !strings.HasSuffix(name, "/") {
 				files = append(files, name)

@@ -131,4 +131,3 @@ Target_Folder/
 - `[SUCCESS]` - Completed operations
 - `[WARNING]` - Non-critical issues
 - `[ERROR]` - Failed operations</content>
-<parameter name="filePath">/home/alexa/magi/scripts/scrapers/README.md
