@@ -14,14 +14,14 @@ type ReadingState struct {
 }
 
 // MarkChapterRead inserts a reading state if not exists
-func MarkChapterRead(userName, mangaSlug, chapterSlug string) error {
+func MarkChapterRead(userName, mangaSlug, librarySlug, chapterSlug string) error {
 	query := `
-    INSERT INTO reading_states (user_name, media_slug, chapter_slug, created_at)
-    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(user_name, media_slug, chapter_slug) DO UPDATE SET created_at = CURRENT_TIMESTAMP
+    INSERT INTO reading_states (user_name, media_slug, library_slug, chapter_slug, created_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_name, media_slug, library_slug, chapter_slug) DO UPDATE SET created_at = CURRENT_TIMESTAMP
     `
 
-	_, err := db.Exec(query, userName, mangaSlug, chapterSlug)
+	_, err := db.Exec(query, userName, mangaSlug, librarySlug, chapterSlug)
 	if err != nil {
 		return err
 	}
@@ -31,13 +31,13 @@ func MarkChapterRead(userName, mangaSlug, chapterSlug string) error {
 }
 
 // UnmarkChapterRead deletes a reading state for a given user/manga/chapter
-func UnmarkChapterRead(userName, mangaSlug, chapterSlug string) error {
+func UnmarkChapterRead(userName, mangaSlug, librarySlug, chapterSlug string) error {
 	query := `
     DELETE FROM reading_states
-    WHERE user_name = ? AND media_slug = ? AND chapter_slug = ?
+    WHERE user_name = ? AND media_slug = ? AND library_slug = ? AND chapter_slug = ?
     `
 
-	_, err := db.Exec(query, userName, mangaSlug, chapterSlug)
+	_, err := db.Exec(query, userName, mangaSlug, librarySlug, chapterSlug)
 	if err != nil {
 		return err
 	}
@@ -86,27 +86,27 @@ func GetUserReadCount(userName, mangaSlug string) (int, error) {
 	return count, nil
 }
 
-// GetLastReadChapter returns the most recently read chapter slug for a user on a specific manga
-func GetLastReadChapter(userName, mangaSlug string) (string, error) {
+// GetLastReadChapter returns the most recently read chapter slug and library slug for a user on a specific manga
+func GetLastReadChapter(userName, mangaSlug string) (string, string, error) {
 	query := `
-    SELECT chapter_slug
+    SELECT chapter_slug, library_slug
     FROM reading_states
     WHERE user_name = ? AND media_slug = ?
     ORDER BY created_at DESC
     LIMIT 1
     `
 
-	var chapterSlug string
-	err := db.QueryRow(query, userName, mangaSlug).Scan(&chapterSlug)
+	var chapterSlug, librarySlug string
+	err := db.QueryRow(query, userName, mangaSlug).Scan(&chapterSlug, &librarySlug)
 	if err != nil {
-		// Return empty string if no record found
+		// Return empty strings if no record found
 		if err.Error() == "sql: no rows in result set" {
-			return "", nil
+			return "", "", nil
 		}
-		return "", err
+		return "", "", err
 	}
 
-	return chapterSlug, nil
+	return chapterSlug, librarySlug, nil
 }
 
 // GetChapterProgress returns the image index where the user left off in a chapter

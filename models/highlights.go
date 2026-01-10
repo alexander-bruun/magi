@@ -25,7 +25,7 @@ type HighlightWithMedia struct {
 func GetHighlights() ([]HighlightWithMedia, error) {
 	query := `
 		SELECT h.id, h.media_slug, h.background_image_url, h.description, h.display_order, h.created_at, h.updated_at,
-		       m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, m.created_at, m.updated_at
+		       m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at
 		FROM highlights h
 		JOIN media m ON h.media_slug = m.slug
 		ORDER BY h.display_order ASC, h.created_at DESC
@@ -46,7 +46,7 @@ func GetHighlights() ([]HighlightWithMedia, error) {
 			&h.Highlight.DisplayOrder, &h.Highlight.CreatedAt, &h.Highlight.UpdatedAt,
 			&h.Media.Slug, &h.Media.Name, &h.Media.Author, &h.Media.Description, &h.Media.Year,
 			&h.Media.OriginalLanguage, &h.Media.Type, &h.Media.Status, &h.Media.ContentRating,
-			&h.Media.LibrarySlug, &h.Media.CoverArtURL, &h.Media.Path, &h.Media.FileCount,
+			&h.Media.CoverArtURL, &h.Media.FileCount,
 			&mediaCreatedAt, &mediaUpdatedAt,
 		)
 		if err != nil {

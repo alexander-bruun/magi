@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -247,7 +248,7 @@ func RemoveMediaFromCollection(collectionID int, mediaSlug string) error {
 // GetCollectionMedia retrieves all media in a collection, filtered by accessible libraries
 func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
-		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count,
+		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
 			COALESCE(vote_scores.score, 0) as vote_score,
 			m.created_at, m.updated_at
@@ -283,8 +284,8 @@ func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media
 		var voteScore int
 		err := rows.Scan(
 			&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage,
-			&m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL,
-			&m.Path, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
+			&m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL,
+			&m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
 		if err != nil {
 			log.Error("Failed to scan media:", err)
 			return nil, err
@@ -307,7 +308,7 @@ func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media
 // GetTopMediaInCollection retrieves the top 4 most popular media in a collection (by vote score), filtered by accessible libraries
 func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
-		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count,
+		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
 			COALESCE(vote_scores.score, 0) as vote_score,
 			m.created_at, m.updated_at
@@ -344,8 +345,8 @@ func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]
 		var voteScore int
 		err := rows.Scan(
 			&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage,
-			&m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL,
-			&m.Path, &m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
+			&m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL,
+			&m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
 		if err != nil {
 			log.Error("Failed to scan media:", err)
 			return nil, err
@@ -390,16 +391,16 @@ func BatchCheckMediaInCollections(collectionIDs []int, mediaSlug string) (map[in
 	}
 
 	// Build placeholders for IN clause
-	placeholders := ""
+	var placeholders strings.Builder
 	for i := range collectionIDs {
 		if i > 0 {
-			placeholders += ","
+			placeholders.WriteString(",")
 		}
-		placeholders += "?"
+		placeholders.WriteString("?")
 	}
 
 	// Convert collection IDs to interface slice for query
-	args := make([]interface{}, len(collectionIDs)+1)
+	args := make([]any, len(collectionIDs)+1)
 	for i, id := range collectionIDs {
 		args[i] = id
 	}
@@ -413,7 +414,7 @@ func BatchCheckMediaInCollections(collectionIDs []int, mediaSlug string) (map[in
 	// Query all matching collection_media in one go
 	query := `
 		SELECT DISTINCT collection_id FROM collection_media
-		WHERE collection_id IN (` + placeholders + `) AND media_slug = ?`
+		WHERE collection_id IN (` + placeholders.String() + `) AND media_slug = ?`
 
 	rows, err := db.Query(query, args...)
 	if err != nil {

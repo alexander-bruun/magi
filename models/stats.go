@@ -354,14 +354,14 @@ func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([
 	if len(accessibleLibraries) > 0 {
 		libraryPlaceholders := strings.Repeat("?,", len(accessibleLibraries))
 		libraryPlaceholders = libraryPlaceholders[:len(libraryPlaceholders)-1] // remove trailing comma
-		libraryFilter = fmt.Sprintf("AND m.library_slug IN (%s)", libraryPlaceholders)
+		libraryFilter = fmt.Sprintf("AND EXISTS (SELECT 1 FROM chapters c WHERE c.media_slug = m.slug AND c.library_slug IN (%s))", libraryPlaceholders)
 	} else {
 		// No accessible libraries - return empty result
 		return []Media{}, nil
 	}
 
 	query := fmt.Sprintf(`
-        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.library_slug, m.cover_art_url, m.path, m.file_count, COALESCE(top_reads.read_count, 0) as read_count, m.created_at, m.updated_at
+        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, COALESCE(top_reads.read_count, 0) as read_count, m.created_at, m.updated_at
         FROM media m
         LEFT JOIN (
             SELECT media_slug, COUNT(*) as read_count
@@ -404,7 +404,7 @@ func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([
 		var m Media
 		var createdAt, updatedAt int64
 		var year sql.NullInt64
-		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.LibrarySlug, &m.CoverArtURL, &m.Path, &m.FileCount, &m.ReadCount, &createdAt, &updatedAt)
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &m.ReadCount, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -1179,12 +1179,13 @@ func getCPUFrequency() (float64, error) {
 func GetDiskStats() ([]DiskStats, error) {
 	var disks []DiskStats
 
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		// Windows disk stats not implemented yet
 		return disks, nil
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		return getDiskUsageLinux()
-	} else {
+	default:
 		return disks, nil
 	}
 }

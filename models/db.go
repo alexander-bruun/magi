@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/utils"
 	"github.com/gofiber/fiber/v2/log"
 
 	"database/sql"
@@ -33,9 +32,6 @@ func Initialize(dataDirectory string) error {
 
 // InitializeWithMigration connects to the SQLite database and applies migrations if applyMigrations is true
 func InitializeWithMigration(dataDirectory string, applyMigrationsFlag bool) error {
-	start := time.Now()
-	defer utils.LogDuration("Initialize", start)
-
 	databasePath := filepath.Join(dataDirectory, "magi.db")
 
 	var err error
@@ -88,9 +84,6 @@ func InitializeWithMigration(dataDirectory string, applyMigrationsFlag bool) err
 
 // Close closes the database connection
 func Close() error {
-	start := time.Now()
-	defer utils.LogDuration("Close", start)
-
 	if db != nil {
 		return db.Close()
 	}

@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -71,16 +70,6 @@ type AppConfig struct {
 	HoneypotAutoBan       bool `json:"honeypot_auto_ban" form:"honeypot_auto_ban"`             // whether to auto-ban IPs that trigger honeypots permanently
 	HoneypotBlockDuration int  `json:"honeypot_block_duration" form:"honeypot_block_duration"` // block duration in minutes
 
-	// Compression quality settings per role
-	ReaderCompressionQuality    int `json:"reader_compression_quality" form:"reader_compression_quality"`       // JPEG quality for reader role (0-100)
-	ModeratorCompressionQuality int `json:"moderator_compression_quality" form:"moderator_compression_quality"` // JPEG quality for moderator role (0-100)
-	AdminCompressionQuality     int `json:"admin_compression_quality" form:"admin_compression_quality"`         // JPEG quality for admin role (0-100)
-	PremiumCompressionQuality   int `json:"premium_compression_quality" form:"premium_compression_quality"`     // JPEG quality for premium role (0-100)
-	AnonymousCompressionQuality int `json:"anonymous_compression_quality" form:"anonymous_compression_quality"` // JPEG quality for anonymous users (0-100)
-
-	// Image processing settings
-	DisableWebpConversion bool `json:"disable_webp_conversion" form:"disable_webp_conversion"` // whether to disable conversion of images to WebP format
-
 	// Image token settings
 	ImageTokenValidityMinutes int `json:"image_token_validity_minutes" form:"image_token_validity_minutes"` // validity time for image access tokens in minutes
 
@@ -123,7 +112,6 @@ func (c *AppConfig) GetContentRatingLimit() int {
 
 var (
 	configCache     atomic.Value // AppConfig
-	configOnce      sync.Once
 	configCacheTime time.Time
 	configCacheTTL  = 5 * time.Minute // Cache config for 5 minutes to reduce lock contention
 )
@@ -167,12 +155,6 @@ func loadConfigFromDB() (AppConfig, error) {
         COALESCE(honeypot_auto_block, 1),
         COALESCE(honeypot_auto_ban, 0),
         COALESCE(honeypot_block_duration, 60),
-        COALESCE(reader_compression_quality, 70),
-        COALESCE(moderator_compression_quality, 85),
-        COALESCE(admin_compression_quality, 100),
-        COALESCE(premium_compression_quality, 90),
-        COALESCE(anonymous_compression_quality, 70),
-        COALESCE(disable_webp_conversion, 0),
         COALESCE(image_token_validity_minutes, 5),
         COALESCE(premium_early_access_duration, 3600),
         COALESCE(max_premium_chapters, 3),
@@ -223,12 +205,6 @@ func loadConfigFromDB() (AppConfig, error) {
 	var honeypotAutoBlock int
 	var honeypotAutoBan int
 	var honeypotBlockDuration int
-	var readerCompressionQuality int
-	var moderatorCompressionQuality int
-	var adminCompressionQuality int
-	var premiumCompressionQuality int
-	var anonymousCompressionQuality int
-	var disableWebpConversion int
 	var imageTokenValidityMinutes int
 	var premiumEarlyAccessDuration int
 	var maxPremiumChapters int
@@ -245,7 +221,7 @@ func loadConfigFromDB() (AppConfig, error) {
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
 		&tarpitEnabled, &tarpitMaxDelay, &timingAnalysisEnabled, &timingVarianceThreshold, &tlsFingerprintEnabled, &tlsFingerprintStrict, &behavioralAnalysisEnabled, &behavioralScoreThreshold, &headerAnalysisEnabled, &headerAnalysisThreshold, &headerAnalysisStrict, &honeypotEnabled, &honeypotAutoBlock, &honeypotAutoBan, &honeypotBlockDuration,
-		&readerCompressionQuality, &moderatorCompressionQuality, &adminCompressionQuality, &premiumCompressionQuality, &anonymousCompressionQuality, &disableWebpConversion, &imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold, &discordInviteLink); err != nil {
+		&imageTokenValidityMinutes, &premiumEarlyAccessDuration, &maxPremiumChapters, &premiumCooldownScalingEnabled, &maintenanceEnabled, &maintenanceMessage, &newBadgeDuration, &parallelIndexingEnabled, &parallelIndexingThreshold, &discordInviteLink); err != nil {
 		if err == sql.ErrNoRows {
 			// Fallback defaults if row missing.
 			return AppConfig{
@@ -288,12 +264,6 @@ func loadConfigFromDB() (AppConfig, error) {
 				HoneypotAutoBlock:             true,
 				HoneypotAutoBan:               false,
 				HoneypotBlockDuration:         60,
-				ReaderCompressionQuality:      70,
-				ModeratorCompressionQuality:   85,
-				AdminCompressionQuality:       100,
-				PremiumCompressionQuality:     90,
-				AnonymousCompressionQuality:   70,
-				DisableWebpConversion:         false,
 				ImageTokenValidityMinutes:     5,
 				PremiumEarlyAccessDuration:    3600,
 				MaxPremiumChapters:            3,
@@ -349,12 +319,6 @@ func loadConfigFromDB() (AppConfig, error) {
 		HoneypotAutoBlock:             honeypotAutoBlock == 1,
 		HoneypotAutoBan:               honeypotAutoBan == 1,
 		HoneypotBlockDuration:         honeypotBlockDuration,
-		ReaderCompressionQuality:      readerCompressionQuality,
-		ModeratorCompressionQuality:   moderatorCompressionQuality,
-		AdminCompressionQuality:       adminCompressionQuality,
-		PremiumCompressionQuality:     premiumCompressionQuality,
-		AnonymousCompressionQuality:   anonymousCompressionQuality,
-		DisableWebpConversion:         disableWebpConversion == 1,
 		ImageTokenValidityMinutes:     imageTokenValidityMinutes,
 		PremiumEarlyAccessDuration:    premiumEarlyAccessDuration,
 		MaxPremiumChapters:            maxPremiumChapters,
@@ -428,61 +392,6 @@ func UpdateRateLimitConfig(enabled bool, requests, window, blockDuration int) (A
 	}
 	_, err := db.Exec(`UPDATE app_config SET rate_limit_enabled = ?, rate_limit_requests = ?, rate_limit_window = ?, rate_limit_block_duration = ? WHERE id = 1`,
 		enabledInt, requests, window, blockDuration)
-	if err != nil {
-		return AppConfig{}, err
-	}
-	return RefreshAppConfig()
-}
-
-// UpdateCompressionConfig updates the compression quality settings per role
-func UpdateCompressionConfig(readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality int) (AppConfig, error) {
-	// Ensure qualities are within valid range (0-100)
-	if readerQuality < 0 {
-		readerQuality = 0
-	}
-	if readerQuality > 100 {
-		readerQuality = 100
-	}
-	if moderatorQuality < 0 {
-		moderatorQuality = 0
-	}
-	if moderatorQuality > 100 {
-		moderatorQuality = 100
-	}
-	if adminQuality < 0 {
-		adminQuality = 0
-	}
-	if adminQuality > 100 {
-		adminQuality = 100
-	}
-	if premiumQuality < 0 {
-		premiumQuality = 0
-	}
-	if premiumQuality > 100 {
-		premiumQuality = 100
-	}
-	if anonymousQuality < 0 {
-		anonymousQuality = 0
-	}
-	if anonymousQuality > 100 {
-		anonymousQuality = 100
-	}
-	_, err := db.Exec(`UPDATE app_config SET reader_compression_quality = ?, moderator_compression_quality = ?, admin_compression_quality = ?, premium_compression_quality = ?, anonymous_compression_quality = ? WHERE id = 1`,
-		readerQuality, moderatorQuality, adminQuality, premiumQuality, anonymousQuality)
-	if err != nil {
-		return AppConfig{}, err
-	}
-	return RefreshAppConfig()
-}
-
-// UpdateImageProcessingConfig updates the image processing settings
-func UpdateImageProcessingConfig(disableWebpConversion bool) (AppConfig, error) {
-	disableWebpInt := 0
-	if disableWebpConversion {
-		disableWebpInt = 1
-	}
-	_, err := db.Exec(`UPDATE app_config SET disable_webp_conversion = ? WHERE id = 1`,
-		disableWebpInt)
 	if err != nil {
 		return AppConfig{}, err
 	}
@@ -802,39 +711,6 @@ func ContentRatingToInt(rating string) int {
 func IsContentRatingAllowed(rating string, limit int) bool {
 	ratingLevel := ContentRatingToInt(rating)
 	return ratingLevel <= limit
-}
-
-// GetCompressionQualityForRole returns the JPEG compression quality for the given user role
-func GetCompressionQualityForRole(role string) int {
-	cfg, err := GetAppConfig()
-	if err != nil {
-		// Return default if config can't be loaded
-		switch role {
-		case "admin":
-			return 100
-		case "moderator":
-			return 85
-		case "premium":
-			return 90
-		case "anonymous":
-			return 70
-		default:
-			return 70
-		}
-	}
-
-	switch role {
-	case "admin":
-		return cfg.AdminCompressionQuality
-	case "moderator":
-		return cfg.ModeratorCompressionQuality
-	case "premium":
-		return cfg.PremiumCompressionQuality
-	case "anonymous":
-		return cfg.AnonymousCompressionQuality
-	default:
-		return cfg.ReaderCompressionQuality
-	}
 }
 
 // GetImageTokenValidityMinutes returns the configured validity time for image tokens in minutes

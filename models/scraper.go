@@ -111,7 +111,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
 		FROM scraper_scripts
 	`
-	args := []interface{}{}
+	args := []any{}
 
 	if enabledOnly {
 		query += " WHERE enabled = 1"
@@ -215,7 +215,7 @@ func EnableScraperScript(id int64, enabled bool) error {
 }
 
 // scanScraperScript scans a row into a ScraperScript
-func scanScraperScript(row interface{ Scan(...interface{}) error }) (*ScraperScript, error) {
+func scanScraperScript(row interface{ Scan(...any) error }) (*ScraperScript, error) {
 	var (
 		id               int64
 		name             string
@@ -528,7 +528,7 @@ func UpdateScraperLogFinal(id int64, status, output, errorMsg string, durationMs
 }
 
 // scanScraperLog scans a row into a ScraperExecutionLog
-func scanScraperLog(row interface{ Scan(...interface{}) error }) (*ScraperExecutionLog, error) {
+func scanScraperLog(row interface{ Scan(...any) error }) (*ScraperExecutionLog, error) {
 	var (
 		id           int64
 		scriptID     int64
