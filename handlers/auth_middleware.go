@@ -27,8 +27,8 @@ type RegisterFormData struct {
 	Password string `json:"password"`
 }
 
-// GetAuthConfig gets authentication configuration
-func GetAuthConfig() (*AuthConfig, error) {
+// getAuthConfig gets authentication configuration
+func getAuthConfig() (*AuthConfig, error) {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
 		return nil, err
@@ -47,13 +47,13 @@ func GetAuthConfig() (*AuthConfig, error) {
 }
 
 // CreateUser creates a new user
-func CreateUser(username, password string) error {
+func createUser(username, password string) error {
 	return models.CreateUser(username, password)
 }
 
-// CanRegister checks if registration is allowed
-func CanRegister() (bool, error) {
-	config, err := GetAuthConfig()
+// canRegister checks if registration is allowed
+func canRegister() (bool, error) {
+	config, err := getAuthConfig()
 	if err != nil {
 		return false, err
 	}
@@ -61,49 +61,49 @@ func CanRegister() (bool, error) {
 	return config.AllowRegistration && (config.MaxUsers == 0 || config.UserCount < config.MaxUsers), nil
 }
 
-// RegisterHandler renders the registration form page.
-func RegisterHandler(c *fiber.Ctx) error {
-	canRegister, err := CanRegister()
+// registerHandler renders the registration form page.
+func registerHandler(c *fiber.Ctx) error {
+	canRegister, err := canRegister()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if !canRegister {
-		if IsHTMXRequest(c) {
-			return sendForbiddenError(c, "Registration is currently disabled.")
+		if isHTMXRequest(c) {
+			return SendForbiddenError(c, "Registration is currently disabled.")
 		}
-		return HandleView(c, views.Error("Registration is currently disabled."))
+		return handleView(c, views.Error("Registration is currently disabled."))
 	}
 
-	return HandleView(c, views.Register())
+	return handleView(c, views.Register())
 }
 
-// LoginHandler renders the login page.
-func LoginHandler(c *fiber.Ctx) error {
+// loginHandler renders the login page.
+func loginHandler(c *fiber.Ctx) error {
 	target := c.Query("target", "")
-	return HandleView(c, views.Login(target))
+	return handleView(c, views.Login(target))
 }
 
-// CreateUserHandler processes a registration submission and redirects to login on success.
-func CreateUserHandler(c *fiber.Ctx) error {
-	canRegister, err := CanRegister()
+// createUserHandler processes a registration submission and redirects to login on success.
+func createUserHandler(c *fiber.Ctx) error {
+	canRegister, err := canRegister()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	if !canRegister {
-		return sendForbiddenError(c, "Registration is currently disabled.")
+		return SendForbiddenError(c, "Registration is currently disabled.")
 	}
 
 	var formData RegisterFormData
 	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	username := formData.Username
 	password := formData.Password
 
-	if err := CreateUser(username, password); err != nil {
+	if err := createUser(username, password); err != nil {
 		// Provide specific error messages based on the error
 		var errorMsg string
 		if err.Error() == "username already exists" {
@@ -115,24 +115,24 @@ func CreateUserHandler(c *fiber.Ctx) error {
 		} else if err.Error() == "password too weak" {
 			errorMsg = ErrPasswordTooWeak
 		} else {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// For HTMX requests, return validation error with notification
-		if IsHTMXRequest(c) {
-			return sendValidationError(c, errorMsg)
+		if isHTMXRequest(c) {
+			return SendValidationError(c, errorMsg)
 		}
 		// For regular requests, show error page
-		return HandleView(c, views.Error(errorMsg))
+		return handleView(c, views.Error(errorMsg))
 	}
 
 	// Automatically log in the user after registration
 	sessionToken, err := models.CreateSessionToken(username)
 	if err != nil {
-		return sendInternalServerError(c, "Could not create session after registration", err)
+		return SendInternalServerError(c, "Could not create session after registration", err)
 	}
 
-	setSessionCookie(c, sessionToken)
+	SetSessionCookie(c, sessionToken)
 
 	// Add success notification for HTMX requests
 	triggerNotification(c, "Account created successfully! Welcome to Magi.", "success")
@@ -141,11 +141,11 @@ func CreateUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-// LoginUserHandler validates credentials and issues a session token.
-func LoginUserHandler(c *fiber.Ctx) error {
+// loginUserHandler validates credentials and issues a session token.
+func loginUserHandler(c *fiber.Ctx) error {
 	var formData LoginFormData
 	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	username := formData.Username
@@ -154,19 +154,19 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		// For HTMX requests, return unauthorized error with notification
-		if IsHTMXRequest(c) {
-			return sendUnauthorizedError(c, ErrLoginFailed)
+		if isHTMXRequest(c) {
+			return SendUnauthorizedError(c, ErrLoginFailed)
 		}
 		// For regular requests, show wrong credentials view
-		return HandleView(c, views.WrongCredentials())
+		return handleView(c, views.WrongCredentials())
 	}
 
 	sessionToken, err := models.CreateSessionToken(user.Username)
 	if err != nil {
-		return sendInternalServerError(c, "Could not create session after login", err)
+		return SendInternalServerError(c, "Could not create session after login", err)
 	}
 
-	setSessionCookie(c, sessionToken)
+	SetSessionCookie(c, sessionToken)
 
 	// Add success notification for HTMX requests
 	triggerNotification(c, "Login successful! Welcome back.", "success")
@@ -180,15 +180,15 @@ func LoginUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// LogoutHandler revokes the session token and clears authentication cookie.
-func LogoutHandler(c *fiber.Ctx) error {
+// logoutHandler revokes the session token and clears authentication cookie.
+func logoutHandler(c *fiber.Ctx) error {
 	sessionToken := c.Cookies("session_token")
 
 	if sessionToken != "" {
 		models.DeleteSessionToken(sessionToken)
 	}
 
-	clearSessionCookie(c)
+	ClearSessionCookie(c)
 	c.Set("HX-Redirect", "/")
 	return c.SendStatus(fiber.StatusOK)
 }

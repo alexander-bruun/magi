@@ -244,7 +244,7 @@ func fingerprintCleanup() {
 }
 
 // GetTLSFingerprintStats returns statistics about TLS fingerprinting (for admin dashboard)
-func GetTLSFingerprintStats() map[string]interface{} {
+func GetTLSFingerprintStats() map[string]any {
 	fingerprintMu.RLock()
 	defer fingerprintMu.RUnlock()
 
@@ -260,7 +260,7 @@ func GetTLSFingerprintStats() map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_fingerprints":      totalCount,
 		"trusted_fingerprints":    trustedCount,
 		"suspicious_fingerprints": suspiciousCount,

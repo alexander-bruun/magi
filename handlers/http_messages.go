@@ -95,6 +95,12 @@ const (
 	ErrComicTokenInvalid  = "Invalid or expired access token."
 	ErrComicNotFound      = "Comic not found."
 
+	// EPUB errors
+	ErrEPUBNotFound           = "EPUB file not found."
+	ErrEPUBAccessDenied       = "Access denied: you don't have permission to view this EPUB."
+	ErrEPUBProcessingFailed   = "Failed to process EPUB file."
+	ErrEPUBUnsupportedVersion = "Unsupported EPUB version."
+
 	// Config errors
 	ErrConfigLoadFailed   = "Failed to load configuration."
 	ErrConfigUpdateFailed = "Failed to update configuration."

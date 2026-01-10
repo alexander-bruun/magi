@@ -249,7 +249,7 @@ func tarpitCleanup() {
 }
 
 // GetTarpitStats returns statistics about the tarpit (for admin dashboard)
-func GetTarpitStats() map[string]interface{} {
+func GetTarpitStats() map[string]any {
 	tarpitMu.RLock()
 	defer tarpitMu.RUnlock()
 
@@ -267,7 +267,7 @@ func GetTarpitStats() map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"active_entries":       activeCount,
 		"high_suspicion_count": highSuspicionCount,
 		"max_suspicion_score":  maxScore,
