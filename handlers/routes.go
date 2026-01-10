@@ -1,22 +1,21 @@
 package handlers
 
 import (
+	"embed"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils"
+	"github.com/alexander-bruun/magi/utils/files"
+	"github.com/alexander-bruun/magi/utils/text"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 )
-
-// savedDataDirectory stores the data directory path for image downloads
-var savedDataDirectory string
 
 // savedBackupDirectory stores the backup directory path
 var savedBackupDirectory string
@@ -44,7 +43,7 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string) {
+func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string, assetsFS embed.FS) {
 	log.Info("Initializing application routes and middleware")
 
 	// Initialize data manager with provided backend
@@ -56,28 +55,33 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Initialize CSS Parser for dynamic CSS injection
 	// ========================================
-	if err := InitCSSParser("./assets/css"); err != nil {
+	if err := InitCSSParser(assetsFS, "assets/css"); err != nil {
 		log.Warnf("Failed to initialize CSS parser: %v - falling back to static CSS", err)
 	}
 
 	// ========================================
 	// Initialize JS Cache for dynamic JS inlining
 	// ========================================
-	if err := InitJSCache("./assets"); err != nil {
+	if err := InitJSCache(assetsFS, "assets"); err != nil {
 		log.Warnf("Failed to initialize JS cache: %v - falling back to static JS", err)
 	}
 
 	// ========================================
+	// Initialize Minifier for CSS, HTML, and JS minification
+	// ========================================
+	InitMinifier()
+
+	// ========================================
 	// Initialize Image Cache for inlining icons
 	// ========================================
-	if err := InitImgCache("./assets"); err != nil {
+	if err := InitImgCache(assetsFS, "assets"); err != nil {
 		log.Warnf("Failed to initialize image cache: %v - falling back to static images", err)
 	}
 
 	// ========================================
 	// Initialize console logger for WebSocket streaming
 	// ========================================
-	utils.InitializeConsoleLogger()
+	text.InitializeConsoleLogger()
 
 	// ========================================
 	// Set up job status notification callbacks
@@ -97,7 +101,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 		for {
 			select {
 			case <-ticker.C:
-				utils.CleanupExpiredTokens()
+				files.CleanupExpiredTokens()
 			case <-tokenCleanupStop:
 				return
 			}
@@ -146,11 +150,8 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Honeypot Middleware - catches scrapers probing for exploits
 	app.Use(HoneypotMiddleware())
 
-	// CSS Middleware - dynamically injects only required CSS
-	app.Use(CSSMiddleware())
-
-	// JS Middleware - dynamically injects only required JS
-	app.Use(JSMiddleware())
+	// CSS and JS Middleware - optimizes CSS and inlines JS, then minifies all content
+	app.Use(MinifyMiddleware())
 
 	// Image Middleware - inlines icon.webp as data URI
 	app.Use(ImgMiddleware())
@@ -173,12 +174,6 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Image Routes with Cache Headers
 	// ========================================
-
-	// Dynamic image serving (legacy - returns 404 for cached images)
-	// app.Use("/api/images", BotDetectionMiddleware(), imageCacheMiddleware)
-	// app.Get("/api/images/*", BotDetectionMiddleware(), func(c *fiber.Ctx) error {
-	// 	return handleImageRequest(c)
-	// })
 
 	// Poster serving (no bot detection for better UX)
 	app.Use("/api/posters", imageCacheMiddleware)
@@ -269,11 +264,11 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Authentication Routes
 	// ========================================
 	auth := app.Group("/auth")
-	auth.Get("/login", LoginHandler)
-	auth.Post("/login", LoginUserHandler)
-	auth.Get("/register", RegisterHandler)
-	auth.Post("/register", CreateUserHandler)
-	auth.Post("/logout", LogoutHandler)
+	auth.Get("/login", loginHandler)
+	auth.Post("/login", loginUserHandler)
+	auth.Get("/register", registerHandler)
+	auth.Post("/register", createUserHandler)
+	auth.Post("/logout", logoutHandler)
 
 	// ========================================
 	// Collections Routes
@@ -306,6 +301,21 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Post("/series/:media/collections/remove", AuthMiddleware("reader"), HandleRemoveMediaFromCollectionFromMedia)
 
 	// ========================================
+	// Chapter Routes (top-level)
+	// ========================================
+	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>/assets/*", HandleMediaChapterAsset)
+	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>/toc", HandleMediaChapterTOC)
+	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>/content", HandleMediaChapterContent)
+	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapter)
+	app.Post("/chapter/:hash<[A-Za-z0-9_-]+>/read", AuthMiddleware("reader"), HandleMarkRead)
+	app.Post("/chapter/:hash<[A-Za-z0-9_-]+>/unread", AuthMiddleware("reader"), HandleMarkUnread)
+	app.Post("/chapter/:hash<[A-Za-z0-9_-]+>/unmark-premium", AuthMiddleware("moderator"), HandleUnmarkChapterPremium)
+
+	// Chapter comments
+	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>/comments", HandleGetComments)
+	app.Post("/chapter/:hash<[A-Za-z0-9_-]+>/comments", AuthMiddleware("reader"), HandleCreateComment)
+
+	// ========================================
 	// Media Routes (FIXED)
 	// ========================================
 
@@ -336,55 +346,27 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	media.Get("/tags", HandleTags)
 	media.Get("/tags/fragment", HandleTagsFragment)
 
-	// Individual media (restricted slug)
+	// Individual media (restricted slug) - registered after chapter routes to avoid conflicts
 	media.Get("/:media<[A-Za-z0-9_-]+>", HandleMedia)
 
 	// Media interactions
-	media.Post("/:media<[A-Za-z0-9_-]+>/vote", AuthMiddleware("reader"), HandleMediaVote)
+	media.Post("/:media<[A-Za-z0-9_-]+>/vote", HandleMediaVote)
 	media.Get("/:media<[A-Za-z0-9_-]+>/vote/fragment", HandleMediaVoteFragment)
-	media.Post("/:media<[A-Za-z0-9_-]+>/favorite", AuthMiddleware("reader"), HandleMediaFavorite)
+	media.Post("/:media<[A-Za-z0-9_-]+>/favorite", HandleMediaFavorite)
 	media.Get("/:media<[A-Za-z0-9_-]+>/favorite/fragment", HandleMediaFavoriteFragment)
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", HandleAddHighlight)
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", HandleRemoveHighlight)
 
-	// Comments and reviews
-	media.Get("/:media<[A-Za-z0-9_-]+>/comments", HandleGetComments)
-	media.Post("/:media<[A-Za-z0-9_-]+>/comments", AuthMiddleware("reader"), HandleCreateComment)
-	media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
-	media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
-	media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
-	media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:reviewId?", AuthMiddleware("reader"), HandleDeleteReview)
+	// Poster management
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", HandlePosterChapterSelect)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", HandlePosterSelector)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", HandlePosterPreview)
+	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", HandlePosterSet)
 
-	// Metadata routes
-	media.Get("/:media/metadata/form", AuthMiddleware("moderator"), HandleUpdateMetadataMedia)
-	media.Post("/:media/metadata/manual", AuthMiddleware("moderator"), HandleManualEditMetadata)
-	media.Post("/:media/metadata/refresh", AuthMiddleware("moderator"), HandleRefreshMetadata)
-	media.Post("/:media/metadata/reindex", AuthMiddleware("moderator"), HandleReindexChapters)
-	media.Post("/:media/metadata/overwrite", AuthMiddleware("moderator"), HandleEditMetadataMedia)
-	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("moderator"), HandleDeleteMedia)
-
-	// Poster selector
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", ConditionalAuthMiddleware(), HandlePosterChapterSelect)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", ConditionalAuthMiddleware(), HandlePosterSelector)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", ConditionalAuthMiddleware(), HandlePosterPreview)
-	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", ConditionalAuthMiddleware(), HandlePosterSet)
-
-	// Highlight management
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", AuthMiddleware("moderator"), HandleRemoveHighlight)
-
-	// Chapter routes (slug restricted)
-	chapters := media.Group("/:media<[A-Za-z0-9_-]+>")
-
-	chapters.Get("/:chapter/assets/*", HandleMediaChapterAsset)
-	chapters.Get("/:chapter/toc", HandleMediaChapterTOC)
-	chapters.Get("/:chapter/content", HandleMediaChapterContent)
-	chapters.Get("/:chapter", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapter)
-	chapters.Post("/:chapter/read", AuthMiddleware("reader"), HandleMarkRead)
-	chapters.Post("/:chapter/unread", AuthMiddleware("reader"), HandleMarkUnread)
-	chapters.Post("/:chapter/unmark-premium", AuthMiddleware("moderator"), HandleUnmarkChapterPremium)
-
-	// Chapter comments
-	chapters.Get("/:chapter/comments", HandleGetComments)
-	chapters.Post("/:chapter/comments", AuthMiddleware("reader"), HandleCreateComment)
+	// Media metadata management
+	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
+	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
+	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
 
 	// ========================================
 	// Account Routes
@@ -481,8 +463,6 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	libraries.Put("/:slug", HandleUpdateLibrary)
 	libraries.Delete("/:slug", HandleDeleteLibrary)
 	libraries.Post("/:slug/scan", HandleScanLibrary)
-	libraries.Post("/:slug/enable", HandleEnableLibrary)
-	libraries.Post("/:slug/disable", HandleDisableLibrary)
 	libraries.Get("/:slug/logs", HandleIndexerLogsWebSocketUpgrade)
 	libraries.Get("/helpers/add-folder", HandleAddFolder)
 	libraries.Get("/helpers/remove-folder", HandleRemoveFolder)
@@ -540,9 +520,9 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Backups
 	// ========================================
 	backups := app.Group("/admin/backups", AuthMiddleware("admin"))
-	backups.Get("", HandleBackups)
-	backups.Post("/create", HandleCreateBackup)
-	backups.Post("/restore/:filename", HandleRestoreBackup)
+	backups.Get("", handleBackups)
+	backups.Post("/create", handleCreateBackup)
+	backups.Post("/restore/:filename", handleRestoreBackup)
 
 	// ========================================
 	// Job Status WebSocket
