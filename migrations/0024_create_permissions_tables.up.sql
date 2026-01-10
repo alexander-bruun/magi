@@ -47,30 +47,18 @@ VALUES ('all', 'Access to all libraries', TRUE, TRUE, strftime('%s', 'now'), str
 INSERT OR IGNORE INTO permissions (name, description, is_wildcard, is_enabled, premium_chapter_access, created_at, updated_at)
 VALUES ('premium', 'Access to all libraries and premium chapters', TRUE, TRUE, TRUE, strftime('%s', 'now'), strftime('%s', 'now'));
 
--- Assign the wildcard 'all' permission to the anonymous role
--- This grants unauthenticated users access to all libraries by default
+-- Assign the wildcard 'all' permission to the anonymous and reader roles
+-- This grants unauthenticated users and readers access to all libraries by default
 INSERT OR IGNORE INTO role_permissions (role, permission_id, created_at)
-SELECT 'anonymous', id, strftime('%s', 'now')
-FROM permissions
-WHERE name = 'all' AND is_wildcard = TRUE;
+SELECT roles.role, perms.id, strftime('%s', 'now')
+FROM (SELECT 'anonymous' AS role UNION ALL SELECT 'reader') AS roles
+CROSS JOIN (SELECT id FROM permissions WHERE name = 'all' AND is_wildcard = TRUE) AS perms;
 
--- Assign the 'all' permission to the reader role by default
+-- Assign the 'premium' permission to the premium, moderator, and admin roles by default
 INSERT OR IGNORE INTO role_permissions (role, permission_id, created_at)
-SELECT 'reader', id, strftime('%s', 'now')
-FROM permissions
-WHERE name = 'all' AND is_wildcard = TRUE;
-
--- Assign the 'all' permission to the premium role by default
-INSERT OR IGNORE INTO role_permissions (role, permission_id, created_at)
-SELECT 'premium', id, strftime('%s', 'now')
-FROM permissions
-WHERE name = 'all' AND is_wildcard = TRUE;
-
--- Assign the 'premium' permission to the premium role by default
-INSERT OR IGNORE INTO role_permissions (role, permission_id, created_at)
-SELECT 'premium', id, strftime('%s', 'now')
-FROM permissions
-WHERE name = 'premium' AND is_wildcard = TRUE;
+SELECT roles.role, perms.id, strftime('%s', 'now')
+FROM (SELECT 'premium' AS role UNION ALL SELECT 'moderator' UNION ALL SELECT 'admin') AS roles
+CROSS JOIN (SELECT id FROM permissions WHERE name = 'premium' AND is_wildcard = TRUE) AS perms;
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_library_permissions_library ON library_permissions(library_slug);

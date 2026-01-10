@@ -9,12 +9,25 @@ CREATE TABLE IF NOT EXISTS media (
     type TEXT DEFAULT 'manga',
     status TEXT,
     content_rating TEXT,
-    library_slug TEXT,
     cover_art_url TEXT,
-    path TEXT,
     file_count INTEGER DEFAULT 0,
     created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    start_date TEXT,
+    end_date TEXT,
+    chapter_count INTEGER,
+    volume_count INTEGER,
+    average_score REAL,
+    popularity INTEGER,
+    favorites INTEGER,
+    demographic TEXT,
+    publisher TEXT,
+    magazine TEXT,
+    serialization TEXT,
+    authors TEXT, -- JSON array
+    artists TEXT, -- JSON array
+    genres TEXT, -- JSON array
+    characters TEXT, -- JSON array
+    alternative_titles TEXT, -- JSON array
+    attribution_links TEXT -- JSON array
 );
-
-CREATE INDEX IF NOT EXISTS idx_media_library_slug ON media(library_slug);

@@ -3,8 +3,9 @@ CREATE TABLE IF NOT EXISTS reading_states (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_name TEXT NOT NULL,
     media_slug TEXT NOT NULL,
+    library_slug TEXT NOT NULL,
     chapter_slug TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_name, media_slug, chapter_slug),
+    UNIQUE(user_name, media_slug, library_slug, chapter_slug),
     FOREIGN KEY(user_name) REFERENCES users(username) ON DELETE CASCADE
 );

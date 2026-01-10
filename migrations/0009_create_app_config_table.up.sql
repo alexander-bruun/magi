@@ -16,12 +16,6 @@ CREATE TABLE IF NOT EXISTS app_config (
     bot_chapter_threshold INTEGER NOT NULL DEFAULT 10,  -- max chapter accesses per time window
     bot_detection_window INTEGER NOT NULL DEFAULT 60,   -- time window in seconds for bot detection
     image_access_secret TEXT NOT NULL DEFAULT '',
-    reader_compression_quality INTEGER NOT NULL DEFAULT 70,
-    moderator_compression_quality INTEGER NOT NULL DEFAULT 85,
-    admin_compression_quality INTEGER NOT NULL DEFAULT 100,
-    premium_compression_quality INTEGER NOT NULL DEFAULT 90,
-    anonymous_compression_quality INTEGER NOT NULL DEFAULT 70,
-    disable_webp_conversion INTEGER NOT NULL DEFAULT 0, -- 1 = disabled, 0 = enabled
     image_token_validity_minutes INTEGER NOT NULL DEFAULT 5,
     premium_early_access_duration INTEGER NOT NULL DEFAULT 3600, -- default 1 hour in seconds
     max_premium_chapters INTEGER NOT NULL DEFAULT 3,
@@ -61,6 +55,6 @@ CREATE TABLE IF NOT EXISTS app_config (
 -- Ensure exactly one row exists (id = 1)
 INSERT INTO app_config (id, allow_registration, max_users, content_rating_limit, metadata_provider, mal_api_token, anilist_api_token, 
     rate_limit_enabled, rate_limit_requests, rate_limit_window, rate_limit_block_duration, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window,
-    image_access_secret, reader_compression_quality, moderator_compression_quality, admin_compression_quality, premium_compression_quality, anonymous_compression_quality, disable_webp_conversion, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, honeypot_enabled, honeypot_auto_block, honeypot_auto_ban, honeypot_block_duration, parallel_indexing_enabled, parallel_indexing_threshold, browser_challenge_enabled, browser_challenge_difficulty, browser_challenge_validity_hours, browser_challenge_ip_bound, referer_validation_enabled, tarpit_enabled, tarpit_max_delay, timing_analysis_enabled, timing_variance_threshold, tls_fingerprint_enabled, tls_fingerprint_strict, behavioral_analysis_enabled, behavioral_score_threshold, header_analysis_enabled, header_analysis_threshold, header_analysis_strict)
-SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 300, 1, 5, 10, 60, '', 70, 85, 100, 90, 70, 0, 5, 3600, 3, 0, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0
+    image_access_secret, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, honeypot_enabled, honeypot_auto_block, honeypot_auto_ban, honeypot_block_duration, parallel_indexing_enabled, parallel_indexing_threshold, browser_challenge_enabled, browser_challenge_difficulty, browser_challenge_validity_hours, browser_challenge_ip_bound, referer_validation_enabled, tarpit_enabled, tarpit_max_delay, timing_analysis_enabled, timing_variance_threshold, tls_fingerprint_enabled, tls_fingerprint_strict, behavioral_analysis_enabled, behavioral_score_threshold, header_analysis_enabled, header_analysis_threshold, header_analysis_strict, discord_invite_link)
+SELECT 1, 1, 0, 3, 'mangadex', '', '', 1, 100, 60, 300, 1, 5, 10, 60, '', 5, 3600, 3, 1, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0, ''
 WHERE NOT EXISTS (SELECT 1 FROM app_config WHERE id = 1);

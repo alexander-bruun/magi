@@ -16,6 +16,10 @@ CREATE INDEX IF NOT EXISTS idx_reading_states_user_media_created ON reading_stat
 
 -- Votes table index for media-based queries
 CREATE INDEX IF NOT EXISTS idx_votes_media_slug ON votes(media_slug);
+CREATE INDEX IF NOT EXISTS idx_votes_created_at ON votes(created_at);
+
+-- Reading states table index for date-based queries
+CREATE INDEX IF NOT EXISTS idx_reading_states_created_at ON reading_states(created_at);
 
 -- Favorites table index for media-based queries
 CREATE INDEX IF NOT EXISTS idx_favorites_media_slug ON favorites(media_slug);
