@@ -6,31 +6,72 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/alexander-bruun/magi/utils/text"
 )
 
 const malBaseURL = "https://api.myanimelist.net/v2"
 
+// MALTokenResponse represents the OAuth2 token response from MAL
+type MALTokenResponse struct {
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 // MALProvider implements the Provider interface for MyAnimeList API
 type MALProvider struct {
-	apiToken string
-	config   ConfigProvider
-	client   *http.Client // HTTP client for making requests (configurable for testing)
-	baseURL  string       // Base URL for API calls (configurable for testing)
+	clientID     string
+	clientSecret string
+	accessToken  string    // Cached access token
+	tokenExpiry  time.Time // When the token expires
+	config       ConfigProvider
+	client       *http.Client // HTTP client for making requests (configurable for testing)
+	baseURL      string       // Base URL for API calls (configurable for testing)
 }
 
 // NewMALProvider creates a new MyAnimeList metadata provider
+// apiToken should be in the format "clientID:clientSecret"
 func NewMALProvider(apiToken string) Provider {
+	parts := strings.Split(apiToken, ":")
+	clientID := ""
+	clientSecret := ""
+	if len(parts) >= 1 {
+		clientID = parts[0]
+	}
+	if len(parts) >= 2 {
+		clientSecret = parts[1]
+	}
+
 	return &MALProvider{
-		apiToken: apiToken,
-		client:   &http.Client{},
-		baseURL:  malBaseURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		client:       &http.Client{},
+		baseURL:      malBaseURL,
 	}
 }
 
 func init() {
-	RegisterProvider("mal", NewMALProvider)
+	// Deprecated: MAL provider requires authentication and is no longer supported
+	// RegisterProvider("mal", NewMALProvider)
+}
+
+// getAccessToken retrieves an OAuth2 access token using client credentials flow
+// Note: MAL doesn't support client_credentials grant type, so we use client ID as API key
+func (m *MALProvider) getAccessToken() error {
+	// For MAL, we don't actually get OAuth tokens - we use the client ID directly
+	// as an API key in the X-MAL-CLIENT-ID header
+	if m.clientID == "" {
+		return fmt.Errorf("MAL client ID is required")
+	}
+
+	// Set the access token to the client ID for compatibility with the rest of the code
+	m.accessToken = m.clientID
+	m.tokenExpiry = time.Now().Add(24 * time.Hour) // API keys don't expire
+
+	return nil
 }
 
 func (m *MALProvider) Name() string {
@@ -42,7 +83,17 @@ func (m *MALProvider) RequiresAuth() bool {
 }
 
 func (m *MALProvider) SetAuthToken(token string) {
-	m.apiToken = token
+	// For backward compatibility, accept "clientID:clientSecret" format
+	parts := strings.Split(token, ":")
+	if len(parts) >= 1 {
+		m.clientID = parts[0]
+	}
+	if len(parts) >= 2 {
+		m.clientSecret = parts[1]
+	}
+	// Clear cached token to force refresh
+	m.accessToken = ""
+	m.tokenExpiry = time.Time{}
 }
 
 func (m *MALProvider) SetConfig(config ConfigProvider) {
@@ -58,23 +109,45 @@ func (m *MALProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 }
 
 func (m *MALProvider) Search(title string) ([]SearchResult, error) {
-	if m.apiToken == "" {
-		return nil, ErrAuthRequired
+	// Search both anime and manga
+	animeResults, err := m.searchMediaType(title, "anime")
+	if err != nil {
+		return nil, err
+	}
+
+	mangaResults, err := m.searchMediaType(title, "manga")
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine results
+	allResults := append(animeResults, mangaResults...)
+
+	// Sort by similarity score (highest first)
+	// The FindBestMatch will pick the highest scoring result
+	return allResults, nil
+}
+
+// searchMediaType searches for a specific media type (anime or manga)
+func (m *MALProvider) searchMediaType(title, mediaType string) ([]SearchResult, error) {
+	// Ensure we have a valid access token
+	if err := m.getAccessToken(); err != nil {
+		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
 
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles,genres", m.baseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/%s?q=%s&limit=50&fields=id,title,synopsis,main_picture,start_date,mean,media_type,alternative_titles,genres", m.baseURL, mediaType, titleEncoded)
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MAL request: %w", err)
 	}
 
-	req.Header.Set("X-MAL-CLIENT-ID", m.apiToken)
+	req.Header.Set("X-MAL-CLIENT-ID", m.accessToken)
 
 	resp, err := m.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search MAL: %w", err)
+		return nil, fmt.Errorf("failed to search MAL %s: %w", mediaType, err)
 	}
 	defer resp.Body.Close()
 
@@ -97,7 +170,7 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	if len(response.Data) == 0 {
-		return nil, ErrNoResults
+		return []SearchResult{}, nil
 	}
 
 	results := make([]SearchResult, 0, len(response.Data))
@@ -138,18 +211,30 @@ func (m *MALProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	if m.apiToken == "" {
-		return nil, ErrAuthRequired
+	// Try anime first
+	meta, err := m.getMetadataForType(id, "anime")
+	if err == nil {
+		return meta, nil
 	}
 
-	fetchURL := fmt.Sprintf("%s/series/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters,num_volumes,authors,serialization,demographics,recommendations", m.baseURL, id)
+	// If anime fails, try manga
+	return m.getMetadataForType(id, "manga")
+}
+
+func (m *MALProvider) getMetadataForType(id, mediaType string) (*MediaMetadata, error) {
+	// Ensure we have a valid access token
+	if err := m.getAccessToken(); err != nil {
+		return nil, fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	fetchURL := fmt.Sprintf("%s/%s/%s?fields=id,title,synopsis,main_picture,start_date,end_date,mean,media_type,status,genres,alternative_titles,nsfw,num_chapters,num_volumes,authors,serialization,demographics,recommendations", m.baseURL, mediaType, id)
 
 	req, err := http.NewRequest("GET", fetchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MAL request: %w", err)
 	}
 
-	req.Header.Set("X-MAL-CLIENT-ID", m.apiToken)
+	req.Header.Set("X-MAL-CLIENT-ID", m.accessToken)
 
 	resp, err := m.client.Do(req)
 	if err != nil {
@@ -159,6 +244,10 @@ func (m *MALProvider) GetMetadata(id string) (*MediaMetadata, error) {
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, ErrInvalidCredentials
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("media not found")
 	}
 
 	if resp.StatusCode != http.StatusOK {

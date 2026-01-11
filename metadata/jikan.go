@@ -24,8 +24,15 @@ type JikanProvider struct {
 func NewJikanProvider(apiToken string) Provider {
 	return &JikanProvider{
 		apiToken: apiToken,
-		client:   &http.Client{},
-		baseURL:  jikanBaseURL,
+		client: &http.Client{
+			Transport: &http.Transport{
+				DisableKeepAlives: true,
+			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		baseURL: jikanBaseURL,
 	}
 }
 
@@ -58,12 +65,57 @@ func (j *JikanProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 }
 
 func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
-	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/series?q=%s&limit=50&order_by=popularity", j.baseURL, titleEncoded)
+	// Search both anime and manga endpoints
+	var allResults []SearchResult
 
-	resp, err := j.client.Get(searchURL)
+	// Search anime
+	animeResults, err := j.searchMediaType(title, "anime")
+	if err == nil {
+		allResults = append(allResults, animeResults...)
+	}
+
+	// Search manga
+	mangaResults, err := j.searchMediaType(title, "manga")
+	if err == nil {
+		allResults = append(allResults, mangaResults...)
+	}
+
+	if len(allResults) == 0 {
+		return nil, ErrNoResults
+	}
+
+	// Sort by similarity score (highest first)
+	for i := 0; i < len(allResults)-1; i++ {
+		for j := i + 1; j < len(allResults); j++ {
+			if allResults[j].SimilarityScore > allResults[i].SimilarityScore {
+				allResults[i], allResults[j] = allResults[j], allResults[i]
+			}
+		}
+	}
+
+	// Limit to top 25 results
+	if len(allResults) > 25 {
+		allResults = allResults[:25]
+	}
+
+	return allResults, nil
+}
+
+// searchMediaType searches a specific media type (anime or manga)
+func (j *JikanProvider) searchMediaType(title, mediaType string) ([]SearchResult, error) {
+	titleEncoded := url.QueryEscape(title)
+	searchURL := fmt.Sprintf("%s/%s?q=%s&limit=25", j.baseURL, mediaType, titleEncoded)
+
+	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search Jikan: %w", err)
+		return nil, fmt.Errorf("failed to create Jikan request: %w", err)
+	}
+	req.Header.Set("User-Agent", "curl/8.15.0")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := j.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search Jikan %s: %w", mediaType, err)
 	}
 	defer resp.Body.Close()
 
@@ -101,6 +153,8 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 		year := 0
 		if media.Published.From != "" {
 			fmt.Sscanf(media.Published.From, "%d", &year)
+		} else if media.Aired.From != "" {
+			fmt.Sscanf(media.Aired.From, "%d", &year)
 		}
 
 		// Extract tags from genres, themes, and demographics
@@ -115,13 +169,19 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 			tags = append(tags, demo.Name)
 		}
 
+		// Use English title if available, otherwise use default title
+		displayTitle := media.Title
+		if media.TitleEnglish != "" {
+			displayTitle = media.TitleEnglish
+		}
+
 		results = append(results, SearchResult{
-			ID:              fmt.Sprintf("%d", media.MalID),
-			Title:           media.Title,
+			ID:              fmt.Sprintf("%s:%d", mediaType, media.MalID),
+			Title:           displayTitle,
 			Description:     media.Synopsis,
 			CoverArtURL:     coverURL,
 			Year:            year,
-			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(media.Title)),
+			SimilarityScore: text.CompareStrings(titleLower, strings.ToLower(displayTitle)),
 			Tags:            tags,
 		})
 	}
@@ -130,7 +190,15 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/series/%s/full", j.baseURL, id)
+	// Parse media type and ID from the combined format "type:id"
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid ID format: %s", id)
+	}
+	mediaType := parts[0]
+	malID := parts[1]
+
+	fetchURL := fmt.Sprintf("%s/%s/%s", j.baseURL, mediaType, malID)
 
 	resp, err := j.client.Get(fetchURL)
 	if err != nil {
@@ -154,7 +222,10 @@ func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
 		return nil, fmt.Errorf("failed to decode Jikan response: %w", err)
 	}
 
-	return j.convertToMediaMetadata(&response.Data), nil
+	metadata := j.convertToMediaMetadata(&response.Data)
+	// Set the ExternalID with the media type prefix
+	metadata.ExternalID = id
+	return metadata, nil
 }
 
 func (j *JikanProvider) FindBestMatch(title string) (*MediaMetadata, error) {
@@ -190,16 +261,23 @@ func (j *JikanProvider) convertToMediaMetadata(data *jikanMediaData) *MediaMetad
 	year := 0
 	if data.Published.From != "" {
 		fmt.Sscanf(data.Published.From, "%d", &year)
+	} else if data.Aired.From != "" {
+		fmt.Sscanf(data.Aired.From, "%d", &year)
+	}
+
+	// Use English title if available, otherwise use default title
+	displayTitle := data.Title
+	if data.TitleEnglish != "" {
+		displayTitle = data.TitleEnglish
 	}
 
 	metadata := &MediaMetadata{
-		Title:         data.Title,
+		Title:         displayTitle,
 		Description:   data.Synopsis,
 		Year:          year,
 		Status:        convertJikanStatus(data.Status),
 		ContentRating: convertJikanRating(data.Demographics),
 		CoverArtURL:   coverURL,
-		ExternalID:    fmt.Sprintf("%d", data.MalID),
 		Type:          convertJikanType(data.Type),
 	}
 
@@ -256,6 +334,10 @@ type jikanMediaData struct {
 		From string `json:"from"`
 		To   string `json:"to"`
 	} `json:"published"`
+	Aired struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"aired"`
 	Images struct {
 		JPG struct {
 			ImageURL      string `json:"image_url"`

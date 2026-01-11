@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // DetermineMediaTypeByLanguage returns a suggested type (media/manhwa/manhua/etc.)
@@ -147,6 +148,10 @@ func UpdateMediaFromAggregated(media MediaUpdater, aggregatedMeta *AggregatedMed
 	attributionLinks := make([]models.AttributionLink, len(aggregatedMeta.AttributionLinks))
 	for i, link := range aggregatedMeta.AttributionLinks {
 		attributionLinks[i] = models.AttributionLink{Provider: link.Provider, URL: link.URL, Title: link.Title}
+	}
+	log.Infof("UpdateMediaFromAggregated: setting %d attribution links for media", len(attributionLinks))
+	for _, link := range attributionLinks {
+		log.Infof("  - Provider: %s, URL: %s, Title: %s", link.Provider, link.URL, link.Title)
 	}
 	media.SetAttributionLinks(attributionLinks)
 }

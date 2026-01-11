@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/utils/text"
-	"github.com/gofiber/fiber/v2/log"
 )
 
 const kitsuBaseURL = "https://kitsu.io/api/edge"
@@ -60,17 +60,45 @@ func (k *KitsuProvider) GetCoverImageURL(metadata *MediaMetadata) string {
 }
 
 func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
+	// Search both anime and manga
+	animeResults, err := k.searchMediaType(title, "anime")
+	if err != nil {
+		return nil, err
+	}
+
+	mangaResults, err := k.searchMediaType(title, "manga")
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine results
+	allResults := append(animeResults, mangaResults...)
+
+	// Sort by similarity score (highest first)
+	sort.Slice(allResults, func(i, j int) bool {
+		return allResults[i].SimilarityScore > allResults[j].SimilarityScore
+	})
+
+	return allResults, nil
+}
+
+// searchMediaType searches for a specific media type (anime or manga)
+func (k *KitsuProvider) searchMediaType(title, mediaType string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/manga?filter[text]=%s&page[limit]=50", k.baseURL, titleEncoded)
+	searchURL := fmt.Sprintf("%s/%s?filter[text]=%s&page[limit]=20", k.baseURL, mediaType, titleEncoded)
 
 	resp, err := k.client.Get(searchURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search Kitsu: %w", err)
+		return nil, fmt.Errorf("failed to search Kitsu %s: %w", mediaType, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Kitsu API returned status: %s", resp.Status)
+		// Read the response body to get error details
+		body := make([]byte, 1024)
+		n, _ := resp.Body.Read(body)
+		bodyStr := string(body[:n])
+		return nil, fmt.Errorf("Kitsu API returned status: %s, body: %s", resp.Status, bodyStr)
 	}
 
 	var response struct {
@@ -81,14 +109,11 @@ func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 		return nil, fmt.Errorf("failed to decode Kitsu response: %w", err)
 	}
 
-	if len(response.Data) == 0 {
-		return nil, ErrNoResults
-	}
-
 	results := make([]SearchResult, 0, len(response.Data))
 	titleLower := strings.ToLower(title)
 
 	for _, media := range response.Data {
+
 		mangaTitle := extractKitsuTitle(media.Attributes.Titles)
 		if mangaTitle == "" {
 			continue
@@ -126,7 +151,18 @@ func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (k *KitsuProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s", k.baseURL, id)
+	// Try anime first
+	meta, err := k.getMetadataForType(id, "anime")
+	if err == nil {
+		return meta, nil
+	}
+
+	// If anime fails, try manga
+	return k.getMetadataForType(id, "manga")
+}
+
+func (k *KitsuProvider) getMetadataForType(id, mediaType string) (*MediaMetadata, error) {
+	fetchURL := fmt.Sprintf("%s/%s/%s", k.baseURL, mediaType, id)
 
 	resp, err := k.client.Get(fetchURL)
 	if err != nil {
@@ -180,7 +216,7 @@ func (k *KitsuProvider) convertToMediaMetadata(detail *kitsuMediaDetail) *MediaM
 		Status:           detail.Attributes.Status,
 		ContentRating:    mapKitsuAgeRating(detail.Attributes.AgeRating, detail.Attributes.AgeRatingGuide),
 		CoverArtURL:      extractKitsuCoverURL(detail.Attributes.PosterImage),
-		ExternalID:       detail.ID,
+		ExternalID:       fmt.Sprintf("%s:%s", detail.Type, detail.ID),
 		Type:             "manga", // Kitsu is primarily for manga/anime
 	}
 
@@ -204,8 +240,6 @@ func (k *KitsuProvider) convertToMediaMetadata(detail *kitsuMediaDetail) *MediaM
 
 	// Extract author (this would require additional API calls to staff relationships)
 	// For now, we'll leave it empty
-
-	log.Debugf("Extracted metadata for Kitsu media %s: Title=%s, Year=%d", detail.ID, metadata.Title, metadata.Year)
 
 	return metadata
 }

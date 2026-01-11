@@ -2,6 +2,10 @@ package metadata
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // AttributionLink represents a link to the source metadata page
@@ -240,14 +244,30 @@ func AggregateMetadata(title string, providerResults map[string]*MediaMetadata) 
 			url = fmt.Sprintf("https://mangadex.org/title/%s", meta.ExternalID)
 		case "anilist":
 			url = fmt.Sprintf("https://anilist.co/manga/%s", meta.ExternalID)
-		case "mal":
-			url = fmt.Sprintf("https://myanimelist.net/manga/%s", meta.ExternalID)
 		case "kitsu":
-			url = fmt.Sprintf("https://kitsu.io/manga/%s", meta.ExternalID)
+			// Kitsu ExternalID format: "type:id" (e.g., "anime:46231" or "manga:46231")
+			parts := strings.Split(meta.ExternalID, ":")
+			if len(parts) == 2 {
+				mediaType := parts[0]
+				id := parts[1]
+				url = fmt.Sprintf("https://kitsu.io/%s/%s", mediaType, id)
+			} else {
+				// Fallback for old format
+				url = fmt.Sprintf("https://kitsu.io/manga/%s", meta.ExternalID)
+			}
 		case "jikan":
-			url = fmt.Sprintf("https://myanimelist.net/manga/%s", meta.ExternalID) // Jikan uses MAL IDs
+			// Jikan ExternalID format: "type:id" (e.g., "anime:52299" or "manga:121496")
+			parts := strings.Split(meta.ExternalID, ":")
+			if len(parts) == 2 {
+				mediaType := parts[0]
+				id := parts[1]
+				url = fmt.Sprintf("https://myanimelist.net/%s/%s", mediaType, id)
+			} else {
+				// Fallback for old format
+				url = fmt.Sprintf("https://myanimelist.net/manga/%s", meta.ExternalID)
+			}
 		case "mangaupdates":
-			url = fmt.Sprintf("https://www.mangaupdates.com/series/%s", meta.ExternalID)
+			url = meta.ExternalID
 		default:
 			url = fmt.Sprintf("https://%s.example.com/title/%s", providerName, meta.ExternalID)
 		}
@@ -257,6 +277,7 @@ func AggregateMetadata(title string, providerResults map[string]*MediaMetadata) 
 			URL:      url,
 			Title:    meta.Title,
 		}
+		log.Debugf("AggregateMetadata: Adding attribution link for %s: Provider=%s, URL=%s, Title=%s", providerName, attribution.Provider, attribution.URL, attribution.Title)
 		aggregated.AttributionLinks = append(aggregated.AttributionLinks, attribution)
 	}
 
@@ -267,34 +288,43 @@ func AggregateMetadata(title string, providerResults map[string]*MediaMetadata) 
 func QueryAllProviders(title string) (*AggregatedMediaMetadata, error) {
 	providerNames := ListProviders()
 	results := make(map[string]*MediaMetadata)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
 
-	// Providers that are known to be slow or problematic
-	providersToSkip := map[string]bool{
-		"mangaupdates": true, // Can be very slow
-	}
-
-	// Query each provider
+	// Query each provider in parallel
 	for _, providerName := range providerNames {
-		if providersToSkip[providerName] {
-			continue
-		}
+		wg.Add(1)
+		go func(pName string) {
+			defer wg.Done()
 
-		provider, err := GetProvider(providerName, "")
-		if err != nil {
-			// Skip providers that can't be initialized
-			continue
-		}
+			provider, err := GetProvider(pName, "")
+			if err != nil {
+				// Skip providers that can't be initialized
+				log.Debugf("QueryAllProviders: Failed to get provider %s: %v", pName, err)
+				return
+			}
 
-		meta, err := provider.FindBestMatch(title)
-		if err != nil {
-			// Skip providers that fail
-			continue
-		}
+			log.Debugf("QueryAllProviders: Querying provider %s for title '%s'", pName, title)
+			meta, err := provider.FindBestMatch(title)
+			if err != nil {
+				// Skip providers that fail
+				log.Debugf("QueryAllProviders: Provider %s failed for '%s': %v", pName, title, err)
+				return
+			}
 
-		if meta != nil {
-			results[providerName] = meta
-		}
+			if meta != nil {
+				log.Debugf("QueryAllProviders: Provider %s found result: %s (ID: %s)", pName, meta.Title, meta.ExternalID)
+				mu.Lock()
+				results[pName] = meta
+				mu.Unlock()
+			} else {
+				log.Debugf("QueryAllProviders: Provider %s returned nil for '%s'", pName, title)
+			}
+		}(providerName)
 	}
+
+	// Wait for all providers to complete
+	wg.Wait()
 
 	if len(results) == 0 {
 		return nil, ErrNoResults

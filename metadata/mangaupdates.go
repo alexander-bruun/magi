@@ -222,7 +222,7 @@ func (m *MangaUpdatesProvider) convertToMediaMetadata(detail *mangaupdatesSeries
 		Status:           extractMangaUpdatesStatus(*detail),
 		ContentRating:    extractMangaUpdatesContentRating(*detail),
 		CoverArtURL:      extractMangaUpdatesCoverURL(*detail),
-		ExternalID:       fmt.Sprintf("%d", detail.SeriesID),
+		ExternalID:       detail.URL,
 		Type:             extractMangaUpdatesType(*detail),
 	}
 
