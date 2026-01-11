@@ -12,7 +12,8 @@ type AppConfig struct {
 	MaxUsers           int64  `json:"max_users" form:"max_users"`                       // 0 means unlimited
 	ContentRatingLimit int    `json:"content_rating_limit" form:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
 	MetadataProvider   string `json:"metadata_provider" form:"metadata_provider"`       // mangadex, mal, anilist, jikan, mangaupdates, kitsu
-	MALApiToken        string `json:"mal_api_token" form:"mal_api_token"`               // MyAnimeList API token
+	MALClientID        string `json:"mal_client_id" form:"mal_client_id"`               // MyAnimeList OAuth2 client ID
+	MALClientSecret    string `json:"mal_client_secret" form:"mal_client_secret"`       // MyAnimeList OAuth2 client secret
 	AniListApiToken    string `json:"anilist_api_token" form:"anilist_api_token"`       // AniList API token (optional)
 	ImageAccessSecret  string `json:"image_access_secret" form:"image_access_secret"`
 
@@ -98,8 +99,12 @@ func (c *AppConfig) GetMetadataProvider() string {
 	return c.MetadataProvider
 }
 
-func (c *AppConfig) GetMALApiToken() string {
-	return c.MALApiToken
+func (c *AppConfig) GetMALClientID() string {
+	return c.MALClientID
+}
+
+func (c *AppConfig) GetMALClientSecret() string {
+	return c.MALClientSecret
 }
 
 func (c *AppConfig) GetAniListApiToken() string {
@@ -120,7 +125,8 @@ var (
 func loadConfigFromDB() (AppConfig, error) {
 	row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, 
         COALESCE(metadata_provider, 'mangadex'), 
-        COALESCE(mal_api_token, ''), 
+        COALESCE(mal_client_id, ''), 
+        COALESCE(mal_client_secret, ''),
         COALESCE(anilist_api_token, ''),
         COALESCE(image_access_secret, ''),
         COALESCE(stripe_enabled, 0),
@@ -170,7 +176,8 @@ func loadConfigFromDB() (AppConfig, error) {
 	var maxUsers int64
 	var contentRatingLimit int
 	var metadataProvider string
-	var malApiToken string
+	var malClientID string
+	var malClientSecret string
 	var anilistApiToken string
 	var imageAccessSecret string
 	var stripeEnabled int
@@ -216,7 +223,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var parallelIndexingThreshold int
 	var discordInviteLink string
 
-	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malApiToken, &anilistApiToken, &imageAccessSecret,
+	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malClientID, &malClientSecret, &anilistApiToken, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
@@ -229,7 +236,8 @@ func loadConfigFromDB() (AppConfig, error) {
 				MaxUsers:                      0,
 				ContentRatingLimit:            3,
 				MetadataProvider:              "mangadex",
-				MALApiToken:                   "",
+				MALClientID:                   "",
+				MALClientSecret:               "",
 				AniListApiToken:               "",
 				ImageAccessSecret:             "",
 				StripeEnabled:                 false,
@@ -284,7 +292,8 @@ func loadConfigFromDB() (AppConfig, error) {
 		MaxUsers:                      maxUsers,
 		ContentRatingLimit:            contentRatingLimit,
 		MetadataProvider:              metadataProvider,
-		MALApiToken:                   malApiToken,
+		MALClientID:                   malClientID,
+		MALClientSecret:               malClientSecret,
 		AniListApiToken:               anilistApiToken,
 		ImageAccessSecret:             imageAccessSecret,
 		StripeEnabled:                 stripeEnabled == 1,
@@ -438,7 +447,7 @@ func UpdatePremiumCooldownScalingConfig(enabled bool) (AppConfig, error) {
 }
 
 // UpdateMetadataConfig updates the metadata provider configuration
-func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, error) {
+func UpdateMetadataConfig(provider, malClientID, malClientSecret, anilistToken string) (AppConfig, error) {
 	// Validate provider
 	validProviders := map[string]bool{
 		"mangadex":     true,
@@ -452,8 +461,8 @@ func UpdateMetadataConfig(provider, malToken, anilistToken string) (AppConfig, e
 		provider = "mangadex"
 	}
 
-	_, err := db.Exec(`UPDATE app_config SET metadata_provider = ?, mal_api_token = ?, anilist_api_token = ? WHERE id = 1`,
-		provider, malToken, anilistToken)
+	_, err := db.Exec(`UPDATE app_config SET metadata_provider = ?, mal_client_id = ?, mal_client_secret = ?, anilist_api_token = ? WHERE id = 1`,
+		provider, malClientID, malClientSecret, anilistToken)
 	if err != nil {
 		return AppConfig{}, err
 	}

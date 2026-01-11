@@ -205,3 +205,35 @@ type LibraryDuplicates struct {
 	Library    Library
 	Duplicates [][]DuplicateFolder // Each slice represents a group of similar folders
 }
+
+// CheckDuplicateFolders checks if any of the given folders are already used by other libraries
+// excludeSlug: if not empty, exclude this library from the check (for updates)
+func CheckDuplicateFolders(folders []string, excludeSlug string) error {
+	libraries, err := GetLibraries()
+	if err != nil {
+		return err
+	}
+
+	// Create a map of folder to library slug
+	folderToLibrary := make(map[string]string)
+	for _, lib := range libraries {
+		if excludeSlug != "" && lib.Slug == excludeSlug {
+			continue
+		}
+		for _, folder := range lib.Folders {
+			folderToLibrary[folder] = lib.Slug
+		}
+	}
+
+	// Check if any new folder is already used
+	for _, folder := range folders {
+		if folder == "" {
+			continue
+		}
+		if libSlug, exists := folderToLibrary[folder]; exists {
+			return fmt.Errorf("folder '%s' is already used by library '%s'", folder, libSlug)
+		}
+	}
+
+	return nil
+}

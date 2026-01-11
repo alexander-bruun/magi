@@ -28,7 +28,7 @@ type LibraryFormData struct {
 }
 
 // validateLibraryFormData validates the parsed library form data
-func validateLibraryFormData(formData LibraryFormData) error {
+func validateLibraryFormData(formData LibraryFormData, currentSlug string) error {
 	// Validate cron expression
 	if formData.Cron != "" {
 		_, err := cron.ParseStandard(formData.Cron)
@@ -52,6 +52,11 @@ func validateLibraryFormData(formData LibraryFormData) error {
 		if !info.IsDir() {
 			return fmt.Errorf("Path is not a directory: %s", folder)
 		}
+	}
+
+	// Check for duplicate folders across libraries
+	if err := models.CheckDuplicateFolders(formData.Folders, currentSlug); err != nil {
+		return err
 	}
 
 	return nil
@@ -102,7 +107,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	}
 
 	// Validate the form data
-	if err := validateLibraryFormData(formData); err != nil {
+	if err := validateLibraryFormData(formData, ""); err != nil {
 		return sendValidationError(c, err.Error())
 	}
 
@@ -193,8 +198,10 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		return sendBadRequestError(c, ErrBadRequest)
 	}
 
+	slug := c.Params("slug")
+
 	// Validate the form data
-	if err := validateLibraryFormData(formData); err != nil {
+	if err := validateLibraryFormData(formData, slug); err != nil {
 		return sendValidationError(c, err.Error())
 	}
 
@@ -213,7 +220,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		library.MetadataProvider = sql.NullString{Valid: false}
 	}
 
-	library.Slug = c.Params("slug")
+	library.Slug = slug
 	log.Infof("Updating library: %s", library.Slug)
 
 	if err := models.UpdateLibrary(&library); err != nil {

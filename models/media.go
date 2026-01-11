@@ -243,7 +243,7 @@ func CreateMedia(media Media) error {
 	INSERT INTO media (slug, name, author, description, year, original_language, type, status, content_rating, cover_art_url, file_count, created_at, updated_at,
 		start_date, end_date, chapter_count, volume_count, average_score, popularity, favorites, demographic, publisher, magazine, serialization,
 		authors, artists, genres, characters, alternative_titles, attribution_links)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	createdAt, updatedAt := timestamps.UnixTimestamps()

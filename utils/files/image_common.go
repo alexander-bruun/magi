@@ -64,6 +64,8 @@ var standardSizes = []ThumbnailSize{
 	{"", targetWidth, targetHeight},     // full
 	{"_thumb", thumbWidth, thumbHeight}, // thumbnail
 	{"_small", smallWidth, smallHeight}, // small
+	{"_tiny", tinyWidth, tinyHeight},    // tiny
+	{"_display", displayWidth, displayHeight}, // display
 }
 
 // saveOriginal saves the original image to the data backend

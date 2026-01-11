@@ -269,7 +269,7 @@ html {
 }
 
 .uk-card-scroll {
-  max-height: 650px;
+  max-height: 800px;
   overflow: auto;
 }
 
@@ -285,6 +285,15 @@ html {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.truncate-multiline {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  max-height: 2.5rem !important;
 }
 
 .input-bg {
@@ -3513,4 +3522,12 @@ textarea.code-editor-hidden {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+/* Custom truncation for series titles */
+.series-title-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }

@@ -47,6 +47,18 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 
+	// Update metadata provider configuration
+	metadataProvider := config.MetadataProvider
+	if metadataProvider == "" {
+		metadataProvider = "mangadex"
+	}
+	malClientID := config.MALClientID
+	malClientSecret := config.MALClientSecret
+	anilistApiToken := config.AniListApiToken
+	if _, err := models.UpdateMetadataConfig(metadataProvider, malClientID, malClientSecret, anilistApiToken); err != nil {
+		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
+	}
+
 	// Update Stripe configuration
 	stripeEnabled := config.StripeEnabled
 	stripePublishableKey := config.StripePublishableKey

@@ -368,6 +368,12 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
 
+	// Review management
+	media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
+	media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
+	media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
+	media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:id", AuthMiddleware("reader"), HandleDeleteReview)
+
 	// ========================================
 	// Account Routes
 	// ========================================

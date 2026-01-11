@@ -318,9 +318,17 @@ def main():
     session = get_session()
     
     # Extract all series
-    series_data, _ = extract_series_urls(session, 1)
+    all_series_data = []
+    page_num = 1
+    while True:
+        series_data, is_last_page = extract_series_urls(session, page_num)
+        all_series_data.extend(series_data)
+        log(f"Collected {len(series_data)} series from page {page_num} (total: {len(all_series_data)})")
+        if is_last_page:
+            break
+        page_num += 1
     
-    for series in series_data:
+    for series in all_series_data:
         series_url = series['series_url']
         title = extract_series_title(session, series_url)
         if not title:
