@@ -194,6 +194,19 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterID string
 			</div>
 		</div>
 	</div>
+	<script>
+	function toggleTags() {
+		const hiddenTags = document.getElementById('hidden-tags');
+		const viewMoreBtn = document.getElementById('view-more-tags');
+		if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
+			hiddenTags.style.display = 'inline';
+			viewMoreBtn.textContent = 'View Less';
+		} else {
+			hiddenTags.style.display = 'none';
+			viewMoreBtn.textContent = '+' + viewMoreBtn.getAttribute('data-count') + ' more';
+		}
+	}
+	</script>
 }
 
 // ChapterJumpButton renders a button to jump to first/last chapter
@@ -602,13 +615,27 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 				</div>
 				<strong class="text-xs text-gray-500 uppercase tracking-wide">Tags</strong>
 			</div>
-			<div class="flex flex-wrap gap-1.5 pl-7">
-				for _, tag := range media.Tags {
-					if tag != "" {
+			<div class="flex flex-wrap gap-1.5 pl-7" id="tags-container">
+				for i, tag := range media.Tags {
+					if tag != "" && i < 20 {
 						<a href={ templ.URL(fmt.Sprintf("/series?tags=%s", url.QueryEscape(tag))) } class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200 no-underline">
 							{ tag }
 						</a>
 					}
+				}
+				if len(media.Tags) > 20 {
+					<div id="hidden-tags" class="hidden">
+						for i, tag := range media.Tags {
+							if tag != "" && i >= 20 {
+								<a href={ templ.URL(fmt.Sprintf("/series?tags=%s", url.QueryEscape(tag))) } class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200 no-underline">
+									{ tag }
+								</a>
+							}
+						}
+					</div>
+					<button id="view-more-tags" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-gray-300 no-underline hover:bg-gray-50 transition-colors" onclick="toggleTags()" data-count={ fmt.Sprint(len(media.Tags) - 20) }>
+						+{ fmt.Sprint(len(media.Tags) - 20) } more
+					</button>
 				}
 			</div>
 		</div>
@@ -624,31 +651,21 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 					Sources
 				</strong>
 			</div>
-			<div class="flex flex-wrap gap-1.5 pl-7">
+			<div class="flex gap-1.5 pl-7 overflow-hidden">
 				for _, link := range media.AttributionLinks {
-					<a href={ link.URL } target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-green-200 no-underline hover:bg-green-50 transition-colors">
-						<uk-icon icon="external-link" class="mr-1 w-3 h-3"></uk-icon>
-						{ link.Title }
-					</a>
+					if link.Provider == "mangaupdates" {
+						<a href={ link.URL } target="_blank" rel="noopener noreferrer">
+							<span class="w-6 h-6 bg-gray-200 flex items-center justify-center text-xs font-bold">MU</span>
+						</a>
+					} else {
+						<a href={ link.URL } target="_blank" rel="noopener noreferrer">
+							<img src={ fmt.Sprintf("/assets/img/providers/%s.png", link.Provider) } alt={ link.Provider } class="w-6 h-6">
+						</a>
+					}
 				}
 			</div>
 		</div>
 	}
-	<!-- stack on small/medium screens, switch to row on large screens -->
-	<div class="mt-3 flex flex-col lg:flex-row justify-center items-center gap-2">
-		<!-- Left: author/metadata compact -->
-		<div class="flex items-center space-x-3">
-			<div>
-				if media.Author != "" {
-					<span class="uk-text-muted">By { media.Author }</span>
-				}
-			</div>
-		</div>
-		<div class="w-full">
-			<!-- Second row: metadata + favorite centered and tighter -->
-			<div class="controls-row"></div>
-		</div>
-	</div>
 	<!-- This is the modal -->
 	<div id="metadata-modal" uk-modal role="dialog" aria-labelledby="metadata-modal-title" aria-modal="true">
 		<div class="uk-modal-body uk-modal-dialog reader-modal">
@@ -2409,6 +2426,18 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 	}
 	}
 	updateCountdown();
+
+	function toggleTags() {
+		const hiddenTags = document.getElementById('hidden-tags');
+		const viewMoreBtn = document.getElementById('view-more-btn');
+		if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
+			hiddenTags.style.display = 'inline';
+			viewMoreBtn.textContent = 'View Less';
+		} else {
+			hiddenTags.style.display = 'none';
+			viewMoreBtn.textContent = 'View More';
+		}
+	}
 	</script>
 }
 

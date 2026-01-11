@@ -54,7 +54,7 @@ func MediaListingFragment(media []models.Media, currentPage int, totalPages int,
 			return templ_7745c5c3_Err
 		}
 		if len(media) > 0 {
-			templ_7745c5c3_Err = MediaGrid(media, 300, 450, false, false, sort).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = MediaGrid(media, 300, 450, true, false, sort).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

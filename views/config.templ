@@ -98,6 +98,40 @@ templ ConfigForm() {
             </div>
         </div>
         
+        <!-- Metadata Provider Settings Card -->
+        <div class="uk-card p-4">
+            <h4 class="uk-heading-line mb-2"><span>Metadata Provider Settings</span></h4>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block mb-1">Default Metadata Provider</label>
+                    <select name="metadata_provider" class="uk-select">
+                        <option value="mangadex" selected?={ cfg.MetadataProvider == "mangadex" }>MangaDex</option>
+                        <option value="mal" selected?={ cfg.MetadataProvider == "mal" }>MyAnimeList</option>
+                        <option value="anilist" selected?={ cfg.MetadataProvider == "anilist" }>AniList</option>
+                        <option value="jikan" selected?={ cfg.MetadataProvider == "jikan" }>Jikan (MAL API)</option>
+                        <option value="mangaupdates" selected?={ cfg.MetadataProvider == "mangaupdates" }>MangaUpdates</option>
+                        <option value="kitsu" selected?={ cfg.MetadataProvider == "kitsu" }>Kitsu</option>
+                    </select>
+                    <p class="text-xs text-muted-foreground mt-1">Choose the default metadata provider for fetching manga information.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">MyAnimeList Client ID</label>
+                    <input type="password" class="uk-input" name="mal_client_id" value={ cfg.MALClientID } placeholder="Your MAL Client ID" />
+                    <p class="text-xs text-muted-foreground mt-1">Required for MyAnimeList provider. Get from <a href="https://myanimelist.net/apiconfig" target="_blank" class="text-blue-500">MyAnimeList API settings</a>.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">MyAnimeList Client Secret</label>
+                    <input type="password" class="uk-input" name="mal_client_secret" value={ cfg.MALClientSecret } placeholder="Your MAL Client Secret" />
+                    <p class="text-xs text-muted-foreground mt-1">Required for MyAnimeList provider. Keep this secret and secure.</p>
+                </div>
+                <div>
+                    <label class="block mb-1">AniList API Token (Optional)</label>
+                    <input type="password" class="uk-input" name="anilist_api_token" value={ cfg.AniListApiToken } placeholder="Your AniList API token" />
+                    <p class="text-xs text-muted-foreground mt-1">Optional for AniList provider. Provides higher rate limits when authenticated.</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Stripe Payment Settings Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Stripe Payment Settings</span></h4>

@@ -10,7 +10,7 @@ import (
 templ MediaListingFragment(media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, path string, targetID string, selectedTags []string, tagMode string, selectedTypes []string, searchFilter string) {
     <div id={ targetID }>
         if len(media) > 0 {
-            @MediaGrid(media, 300, 450, false, false, sort)
+            @MediaGrid(media, 300, 450, true, false, sort)
             <div class="flex justify-center items-center py-8">
                 @Pagination(path, targetID, totalPages, currentPage, sort, order, selectedTags, tagMode, selectedTypes, searchFilter)
             </div>

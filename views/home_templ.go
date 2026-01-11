@@ -1353,7 +1353,7 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</div></a></div><div class=\"flex-1 min-w-0 overflow-hidden\"><h3 class=\"font-bold text-base mb-2 leading-tight\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</div></a></div><div class=\"flex-1 min-w-0 overflow-hidden\"><h3 class=\"font-bold text-base mb-2\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1366,14 +1366,14 @@ func LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration 
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "\" class=\"block truncate overflow-hidden whitespace-nowrap series-title-truncate\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var72 string
 			templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(item.Media.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 513, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 513, Col: 158}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 			if templ_7745c5c3_Err != nil {

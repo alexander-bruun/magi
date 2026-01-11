@@ -509,8 +509,8 @@ templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration
 						</a>
 					</div>
 					<div class="flex-1 min-w-0 overflow-hidden">
-						<h3 class="font-bold text-base mb-2 leading-tight">
-							<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) }>{ item.Media.Name }</a>
+						<h3 class="font-bold text-base mb-2">
+							<a href={ fmt.Sprintf("/series/%s", item.Media.Slug) } class="block truncate overflow-hidden whitespace-nowrap series-title-truncate">{ item.Media.Name }</a>
 						</h3>
 						<div class="space-y-1">
 							for i, chapter := range item.Chapters {
