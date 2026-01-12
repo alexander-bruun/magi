@@ -23,7 +23,7 @@ require (
 	github.com/stripe/stripe-go/v79 v79.12.0
 	github.com/tdewolff/minify/v2 v2.24.8
 	github.com/yuin/goldmark v1.7.16
-	golang.org/x/crypto v0.46.0
+	golang.org/x/crypto v0.47.0
 	golang.org/x/image v0.34.0
 )
 
