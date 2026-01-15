@@ -182,6 +182,14 @@ func HandleHome(c *fiber.Ctx) error {
 		}
 	}
 
+	// Fetch recent reading activity for logged-in users
+	var recentReadingActivity []models.ReadingActivityItem
+	if userName != "" {
+		if activities, err := models.GetRecentReadingActivity(userName, 10); err == nil {
+			recentReadingActivity = activities
+		}
+	}
+
 	// Fetch homepage statistics
 	stats, err := models.GetHomePageStats()
 	if err != nil {
@@ -190,7 +198,7 @@ func HandleHome(c *fiber.Ctx) error {
 		stats = models.HomePageStats{}
 	}
 
-	return handleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadAll, latestUpdates, highlights, stats, unreadCount, notifications), unreadCount, notifications)
+	return handleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, topMedias, topReadToday, topReadWeek, topReadAll, latestUpdates, highlights, stats, unreadCount, notifications, recentReadingActivity), unreadCount, notifications)
 }
 
 // HandleTopPopularFull renders the Popular section with sub-navigation

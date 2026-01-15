@@ -315,7 +315,7 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 	</div>
 }
 
-templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification) {
+templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification, recentReadingActivity []models.ReadingActivityItem) {
 	@PageTitle("Magi")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
@@ -323,6 +323,66 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 
 	if len(highlights) > 0 {
 		@HighlightBanner(highlights)
+	}
+
+	if len(recentReadingActivity) > 0 {
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Continue Reading</span></h2>
+		<div class="mt-4">
+			<div class="grid grid-cols-1 gap-4">
+				<div class="overflow-x-auto">
+					<div class="flex gap-2 pb-2" style="width: max-content;">
+						for _, activity := range recentReadingActivity {
+							if activity.Media != nil {
+								{{ readCount, _ := models.GetUserReadCount(activity.ReadingState.UserName, activity.Media.Slug) }}
+								{{ totalChapters, _ := models.GetChapterCount(activity.Media.Slug) }}
+								{{ progress := float64(0) }}
+								if totalChapters > 0 {
+									{{ progress = float64(readCount) * 100.0 / float64(totalChapters) }}
+									if progress < 5 && readCount > 0 {
+										{{ progress = 5 }} // Minimum visible progress
+									}
+								}
+								<div class="uk-card flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-md p-2">
+									<div class="flex gap-3">
+										<div class="w-20 h-[100px] flex-shrink-0 overflow-hidden rounded">
+											<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) }>
+												<img src={ activity.Media.CoverArtURL + "?size=tiny" } alt={ activity.Media.Name } class="w-full h-full object-contain rounded"/>
+											</a>
+										</div>
+										<div class="flex-1 min-w-0 overflow-hidden flex flex-col">
+											<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) } class="font-medium text-sm truncate-header hover:text-blue-600 dark:hover:text-blue-400 block overflow-hidden whitespace-nowrap">
+												{ activity.Media.Name }
+											</a>
+											<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+												if activity.Media.Type == "novel" {
+													{ fmt.Sprintf("Volume %s", strings.TrimPrefix(activity.ReadingState.Chapter, "volume-")) }
+												} else {
+													{ fmt.Sprintf("Chapter %s", strings.TrimPrefix(activity.ReadingState.Chapter, "chapter-")) }
+												}
+											</div>
+											<div class="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+												<span class="flex items-center gap-1">
+													<uk-icon icon="clock" class="uk-icon"></uk-icon> {activity.Media.UpdatedAt.Format("Jan 2, 2006 15:04")}
+												</span>
+											</div>
+											<div class="mt-auto">
+												<div class="w-full rounded-full h-2" style="background-color: #6b7280;">
+													<div class="bg-success h-2 rounded-full transition-all duration-300" style={ fmt.Sprintf("width: %.0f%%; min-width: 8px;", progress) }></div>
+												</div>
+												<div class="flex items-center justify-between text-sm text-gray-600 mt-1">
+													<span>{ fmt.Sprintf("%d / %d", readCount, totalChapters) }</span>
+													<span>{ fmt.Sprintf("%.0f%%", progress) }</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							}
+						}
+					</div>
+				</div>
+			</div>
+		</div>
 	}
 
 	<div class="mt-4">
