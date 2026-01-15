@@ -14,12 +14,9 @@ import (
 type ScraperScript struct {
 	ID               int64
 	Name             string
-	Script           string
-	Language         string            // "bash", "python"
+	Language         string            // "bash", "python" - inferred from file extension
 	Schedule         string            // Cron format (e.g., "0 0 * * *")
 	Variables        map[string]string // Key-value pairs for script variables
-	Packages         []string          // Python packages to install for python scripts
-	SharedScript     *string           // Shared bash script that can be sourced by scraper scripts
 	IndexLibrarySlug *string           // Library slug to index after successful execution
 	LastRun          *int64            // Unix timestamp
 	LastRunOutput    *string
@@ -27,10 +24,12 @@ type ScraperScript struct {
 	CreatedAt        int64
 	UpdatedAt        int64
 	Enabled          bool
+	ScriptPath       *string // Path to the script file (for file-based scripts)
+	RequirementsPath *string // Path to requirements.txt (for Python scripts)
 }
 
 // CreateScraperScript creates a new scraper script in the database
-func CreateScraperScript(name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string, indexLibrarySlug *string) (*ScraperScript, error) {
+func CreateScraperScript(name, language, schedule string, variables map[string]string, indexLibrarySlug *string, scriptPath *string, requirementsPath *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 
 	// Serialize variables to JSON
@@ -43,21 +42,11 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 		variablesJSON = string(data)
 	}
 
-	// Serialize packages to JSON
-	packagesJSON := "[]"
-	if len(packages) > 0 {
-		data, err := json.Marshal(packages)
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize packages: %w", err)
-		}
-		packagesJSON = string(data)
-	}
-
 	query := `
-		INSERT INTO scraper_scripts (name, script, language, schedule, variables, packages, shared_script, index_library_slug, created_at, updated_at, enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+		INSERT INTO scraper_scripts (name, language, schedule, variables, index_library_slug, script_path, requirements_path, created_at, updated_at, enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 	`
-	result, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, indexLibrarySlug, now, now)
+	result, err := db.Exec(query, name, language, schedule, variablesJSON, indexLibrarySlug, scriptPath, requirementsPath, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scraper script: %w", err)
 	}
@@ -70,13 +59,12 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 	return &ScraperScript{
 		ID:               id,
 		Name:             name,
-		Script:           script,
 		Language:         language,
 		Schedule:         schedule,
 		Variables:        variables,
-		Packages:         packages,
-		SharedScript:     sharedScript,
 		IndexLibrarySlug: indexLibrarySlug,
+		ScriptPath:       scriptPath,
+		RequirementsPath: requirementsPath,
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		Enabled:          true,
@@ -86,7 +74,7 @@ func CreateScraperScript(name, script, language, schedule string, variables map[
 // GetScraperScript retrieves a script by ID
 func GetScraperScript(id int64) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
+		SELECT id, name, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, index_library_slug, script_path, requirements_path
 		FROM scraper_scripts
 		WHERE id = ?
 	`
@@ -97,7 +85,7 @@ func GetScraperScript(id int64) (*ScraperScript, error) {
 // GetScraperScriptByName retrieves a script by name
 func GetScraperScriptByName(name string) (*ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
+		SELECT id, name, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, index_library_slug, script_path, requirements_path
 		FROM scraper_scripts
 		WHERE name = ?
 	`
@@ -108,7 +96,7 @@ func GetScraperScriptByName(name string) (*ScraperScript, error) {
 // ListScraperScripts retrieves all scraper scripts, optionally filtered by enabled status
 func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 	query := `
-		SELECT id, name, script, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, packages, shared_script, index_library_slug
+		SELECT id, name, language, schedule, last_run, last_run_output, last_run_error, created_at, updated_at, enabled, variables, index_library_slug, script_path, requirements_path
 		FROM scraper_scripts
 	`
 	args := []any{}
@@ -138,7 +126,7 @@ func ListScraperScripts(enabledOnly bool) ([]ScraperScript, error) {
 }
 
 // UpdateScraperScript updates a scraper script
-func UpdateScraperScript(id int64, name, script, language, schedule string, variables map[string]string, packages []string, sharedScript *string, indexLibrarySlug *string) (*ScraperScript, error) {
+func UpdateScraperScript(id int64, name, language, schedule string, variables map[string]string, indexLibrarySlug *string, scriptPath *string, requirementsPath *string) (*ScraperScript, error) {
 	now := time.Now().Unix()
 
 	// Serialize variables to JSON
@@ -151,22 +139,12 @@ func UpdateScraperScript(id int64, name, script, language, schedule string, vari
 		variablesJSON = string(data)
 	}
 
-	// Serialize packages to JSON
-	packagesJSON := "[]"
-	if len(packages) > 0 {
-		data, err := json.Marshal(packages)
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize packages: %w", err)
-		}
-		packagesJSON = string(data)
-	}
-
 	query := `
 		UPDATE scraper_scripts
-		SET name = ?, script = ?, language = ?, schedule = ?, variables = ?, packages = ?, shared_script = ?, index_library_slug = ?, updated_at = ?
+		SET name = ?, language = ?, schedule = ?, variables = ?, index_library_slug = ?, script_path = ?, requirements_path = ?, updated_at = ?
 		WHERE id = ?
 	`
-	_, err := db.Exec(query, name, script, language, schedule, variablesJSON, packagesJSON, sharedScript, indexLibrarySlug, now, id)
+	_, err := db.Exec(query, name, language, schedule, variablesJSON, indexLibrarySlug, scriptPath, requirementsPath, now, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update scraper script: %w", err)
 	}
@@ -219,7 +197,6 @@ func scanScraperScript(row interface{ Scan(...any) error }) (*ScraperScript, err
 	var (
 		id               int64
 		name             string
-		script           string
 		language         string
 		schedule         string
 		lastRun          sql.NullInt64
@@ -229,12 +206,12 @@ func scanScraperScript(row interface{ Scan(...any) error }) (*ScraperScript, err
 		updatedAt        int64
 		enabled          bool
 		variablesJSON    sql.NullString
-		packagesJSON     sql.NullString
-		sharedScript     sql.NullString
 		indexLibrarySlug sql.NullString
+		scriptPath       sql.NullString
+		requirementsPath sql.NullString
 	)
 
-	err := row.Scan(&id, &name, &script, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &packagesJSON, &sharedScript, &indexLibrarySlug)
+	err := row.Scan(&id, &name, &language, &schedule, &lastRun, &lastRunOutput, &lastRunError, &createdAt, &updatedAt, &enabled, &variablesJSON, &indexLibrarySlug, &scriptPath, &requirementsPath)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("scraper script not found")
@@ -252,34 +229,25 @@ func scanScraperScript(row interface{ Scan(...any) error }) (*ScraperScript, err
 		}
 	}
 
-	// Parse packages JSON
-	packages := []string{}
-	if packagesJSON.Valid && packagesJSON.String != "" {
-		err := json.Unmarshal([]byte(packagesJSON.String), &packages)
-		if err != nil {
-			// If parsing fails, just use empty slice
-			packages = []string{}
-		}
-	}
-
 	ss := &ScraperScript{
 		ID:        id,
 		Name:      name,
-		Script:    script,
 		Language:  language,
 		Schedule:  schedule,
 		Variables: variables,
-		Packages:  packages,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 		Enabled:   enabled,
 	}
 
-	if sharedScript.Valid {
-		ss.SharedScript = &sharedScript.String
-	}
 	if indexLibrarySlug.Valid {
 		ss.IndexLibrarySlug = &indexLibrarySlug.String
+	}
+	if scriptPath.Valid {
+		ss.ScriptPath = &scriptPath.String
+	}
+	if requirementsPath.Valid {
+		ss.RequirementsPath = &requirementsPath.String
 	}
 	if lastRun.Valid {
 		ss.LastRun = &lastRun.Int64

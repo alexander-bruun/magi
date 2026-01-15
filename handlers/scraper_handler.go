@@ -15,14 +15,13 @@ import (
 // ScraperFormData represents form data for creating/updating scraper scripts
 type ScraperFormData struct {
 	Name             string `json:"name" form:"name"`
-	Script           string `json:"script" form:"script"`
 	Language         string `json:"language" form:"language"`
 	Schedule         string `json:"schedule" form:"schedule"`
-	SharedScript     string `json:"shared_script" form:"shared_script"`
 	IndexLibrarySlug string `json:"index_library_slug" form:"index_library_slug"`
 	VariableName     any    `json:"variable_name" form:"variable_name"`
 	VariableValue    any    `json:"variable_value" form:"variable_value"`
-	Package          any    `json:"package" form:"package"`
+	ScriptPath       string `json:"script_path" form:"script_path"`
+	RequirementsPath string `json:"requirements_path" form:"requirements_path"`
 }
 
 // normalizeToStringSlice converts interface{} to []string, handling both single values and arrays
@@ -74,24 +73,6 @@ func extractVariablesFromForm(formData ScraperFormData) map[string]string {
 	return variables
 }
 
-// extractPackagesFromForm extracts package list from form data
-// Packages should be submitted as: package=<package_name> (multiple)
-func extractPackagesFromForm(formData ScraperFormData) []string {
-	var packages []string
-
-	// Normalize the interface{} field to []string
-	pkgNames := normalizeToStringSlice(formData.Package)
-
-	for _, pkg := range pkgNames {
-		pkgName := strings.TrimSpace(string(pkg))
-		if pkgName != "" {
-			packages = append(packages, pkgName)
-		}
-	}
-
-	return packages
-}
-
 // HandleScraper renders the scraper page with all scripts
 func HandleScraper(c *fiber.Ctx) error {
 	scripts, err := models.ListScraperScripts(false)
@@ -120,12 +101,7 @@ func HandleScraperScriptDetail(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrScraperScriptNotFound)
 	}
 
-	scripts, err := models.ListScraperScripts(false)
-	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-
-	return handleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
+	return handleView(c, views.ScraperForm(script, "put", true))
 }
 
 // HandleScraperScriptCreate creates a new script
@@ -142,11 +118,11 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	} else {
 		// Parse as traditional form data
 		formData.Name = c.FormValue("name")
-		formData.Script = c.FormValue("script")
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
-		formData.SharedScript = c.FormValue("shared_script")
 		formData.IndexLibrarySlug = c.FormValue("index_library_slug")
+		formData.ScriptPath = c.FormValue("script_path")
+		formData.RequirementsPath = c.FormValue("requirements_path")
 
 		// For traditional form data, we need to manually collect arrays
 		varNames := c.Request().PostArgs().PeekMulti("variable_name")
@@ -166,30 +142,31 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 			}
 			formData.VariableValue = values
 		}
-
-		packages := c.Request().PostArgs().PeekMulti("package")
-		if len(packages) > 0 {
-			pkgs := make([]string, len(packages))
-			for i, v := range packages {
-				pkgs[i] = string(v)
-			}
-			formData.Package = pkgs
-		}
 	}
 
 	name := strings.TrimSpace(formData.Name)
-	scriptContent := formData.Script
 	language := formData.Language
 	schedule := strings.TrimSpace(formData.Schedule)
-	sharedScriptContent := formData.SharedScript
 
 	// Validate input
 	if name == "" {
 		return sendValidationError(c, ErrRequiredField)
 	}
 
-	if err := models.ValidateScript(scriptContent, language); err != nil {
-		return sendValidationError(c, ErrScraperScriptInvalid)
+	// Validate that script path is provided
+	if formData.ScriptPath == "" {
+		return sendValidationError(c, ErrRequiredField) // TODO: define proper error
+	}
+
+	// Infer language from script path extension if not provided
+	if language == "" {
+		if strings.HasSuffix(formData.ScriptPath, ".py") {
+			language = "python"
+		} else if strings.HasSuffix(formData.ScriptPath, ".sh") {
+			language = "bash"
+		} else {
+			return sendValidationError(c, ErrScraperScriptInvalid) // Unsupported file extension
+		}
 	}
 
 	if schedule == "" {
@@ -199,34 +176,36 @@ func HandleScraperScriptCreate(c *fiber.Ctx) error {
 	// Extract variables from form
 	variables := extractVariablesFromForm(formData)
 
-	// Extract packages from form
-	extractedPackages := extractPackagesFromForm(formData)
-
-	// Handle shared script
-	var sharedScript *string
-	if sharedScriptContent != "" {
-		sharedScript = &sharedScriptContent
-	}
-
 	// Handle index library slug
 	var indexLibrarySlug *string
 	if strings.TrimSpace(formData.IndexLibrarySlug) != "" {
 		indexLibrarySlug = &formData.IndexLibrarySlug
 	}
 
-	script, err := models.CreateScraperScript(name, scriptContent, language, schedule, variables, extractedPackages, sharedScript, indexLibrarySlug)
-	if err != nil {
+	// Handle script path
+	var scriptPath *string
+	if strings.TrimSpace(formData.ScriptPath) != "" {
+		scriptPath = &formData.ScriptPath
+	}
+
+	// Handle requirements path
+	var requirementsPath *string
+	if strings.TrimSpace(formData.RequirementsPath) != "" {
+		requirementsPath = &formData.RequirementsPath
+	}
+
+	if _, err := models.CreateScraperScript(name, language, schedule, variables, indexLibrarySlug, scriptPath, requirementsPath); err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// Get all scripts to update the tabs
+	// Get all scripts to update the table
 	scripts, err := models.ListScraperScripts(false)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// Return the new script in editor view with updated tabs
-	return handleView(c, views.ScraperEditorWithUpdatedTabs(script, scripts))
+	// Return the updated table
+	return handleView(c, views.ScraperTable(scripts))
 }
 
 // HandleScraperScriptUpdate updates an existing script
@@ -249,11 +228,11 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	} else {
 		// Parse as traditional form data
 		formData.Name = c.FormValue("name")
-		formData.Script = c.FormValue("script")
 		formData.Language = c.FormValue("language")
 		formData.Schedule = c.FormValue("schedule")
-		formData.SharedScript = c.FormValue("shared_script")
 		formData.IndexLibrarySlug = c.FormValue("index_library_slug")
+		formData.ScriptPath = c.FormValue("script_path")
+		formData.RequirementsPath = c.FormValue("requirements_path")
 
 		// For traditional form data, we need to manually collect arrays
 		varNames := c.Request().PostArgs().PeekMulti("variable_name")
@@ -273,30 +252,31 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 			}
 			formData.VariableValue = values
 		}
-
-		packages := c.Request().PostArgs().PeekMulti("package")
-		if len(packages) > 0 {
-			pkgs := make([]string, len(packages))
-			for i, v := range packages {
-				pkgs[i] = string(v)
-			}
-			formData.Package = pkgs
-		}
 	}
 
 	name := strings.TrimSpace(formData.Name)
-	scriptContent := formData.Script
 	language := formData.Language
 	schedule := strings.TrimSpace(formData.Schedule)
-	sharedScriptContent := formData.SharedScript
 
 	// Validate input
 	if name == "" {
 		return sendValidationError(c, ErrRequiredField)
 	}
 
-	if err := models.ValidateScript(scriptContent, language); err != nil {
-		return sendValidationError(c, ErrScraperScriptInvalid)
+	// Validate that script path is provided
+	if formData.ScriptPath == "" {
+		return sendValidationError(c, ErrRequiredField) // TODO: define proper error
+	}
+
+	// Infer language from script path extension if not provided
+	if language == "" {
+		if strings.HasSuffix(formData.ScriptPath, ".py") {
+			language = "python"
+		} else if strings.HasSuffix(formData.ScriptPath, ".sh") {
+			language = "bash"
+		} else {
+			return sendValidationError(c, ErrScraperScriptInvalid) // Unsupported file extension
+		}
 	}
 
 	if schedule == "" {
@@ -306,22 +286,25 @@ func HandleScraperScriptUpdate(c *fiber.Ctx) error {
 	// Extract variables from form
 	variables := extractVariablesFromForm(formData)
 
-	// Extract packages from form
-	extractedPackages := extractPackagesFromForm(formData)
-
-	// Handle shared script
-	var sharedScript *string
-	if sharedScriptContent != "" {
-		sharedScript = &sharedScriptContent
-	}
-
 	// Handle index library slug
 	var indexLibrarySlug *string
 	if strings.TrimSpace(formData.IndexLibrarySlug) != "" {
 		indexLibrarySlug = &formData.IndexLibrarySlug
 	}
 
-	script, err := models.UpdateScraperScript(id, name, scriptContent, language, schedule, variables, extractedPackages, sharedScript, indexLibrarySlug)
+	// Handle script path
+	var scriptPath *string
+	if strings.TrimSpace(formData.ScriptPath) != "" {
+		scriptPath = &formData.ScriptPath
+	}
+
+	// Handle requirements path
+	var requirementsPath *string
+	if strings.TrimSpace(formData.RequirementsPath) != "" {
+		requirementsPath = &formData.RequirementsPath
+	}
+
+	script, err := models.UpdateScraperScript(id, name, language, schedule, variables, indexLibrarySlug, scriptPath, requirementsPath)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -346,9 +329,13 @@ func HandleScraperScriptDelete(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// Redirect to scraper page to refresh the entire page
-	c.Set("HX-Redirect", "/admin/scraper")
-	return c.SendStatus(fiber.StatusNoContent)
+	// Get updated scripts list and return the table
+	scripts, err := models.ListScraperScripts(false)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	return handleView(c, views.ScraperTable(scripts))
 }
 
 // HandleScraperScriptCancel cancels a running script
@@ -363,8 +350,8 @@ func HandleScraperScriptCancel(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// HandleScraperScriptToggle enables or disables a script
-func HandleScraperScriptToggle(c *fiber.Ctx) error {
+// HandleScraperScriptDisable disables a script
+func HandleScraperScriptDisable(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendBadRequestError(c, ErrInvalidScriptID)
@@ -378,19 +365,62 @@ func HandleScraperScriptToggle(c *fiber.Ctx) error {
 		return sendNotFoundError(c, ErrScraperScriptNotFound)
 	}
 
-	if err := models.EnableScraperScript(id, !script.Enabled); err != nil {
+	if err := models.EnableScraperScript(id, false); err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// For HTMX requests, return a simple success response instead of re-rendering the form
+	// For HTMX requests, return the updated toggle button
 	if c.Get("HX-Request") == "true" {
-		newState := !script.Enabled
-		message := "Script disabled"
-		if newState {
-			message = "Script enabled"
+		triggerNotification(c, "Script disabled", "success")
+
+		// Get the updated script with new state
+		updated, err := models.GetScraperScript(id)
+		if err != nil {
+			return sendInternalServerError(c, ErrInternalServerError, err)
 		}
-		triggerNotification(c, message, "success")
-		return c.SendStatus(fiber.StatusOK)
+
+		return handleView(c, views.ScraperTableRow(updated))
+	}
+
+	// Return updated script
+	updated, err := models.GetScraperScript(id)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	return handleView(c, views.ScraperScriptRow(updated))
+}
+
+// HandleScraperScriptEnable enables a script
+func HandleScraperScriptEnable(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return sendBadRequestError(c, ErrInvalidScriptID)
+	}
+
+	script, err := models.GetScraperScript(id)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if script == nil {
+		return sendNotFoundError(c, ErrScraperScriptNotFound)
+	}
+
+	if err := models.EnableScraperScript(id, true); err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	// For HTMX requests, return the updated toggle button
+	if c.Get("HX-Request") == "true" {
+		triggerNotification(c, "Script enabled", "success")
+
+		// Get the updated script with new state
+		updated, err := models.GetScraperScript(id)
+		if err != nil {
+			return sendInternalServerError(c, ErrInternalServerError, err)
+		}
+
+		return handleView(c, views.ScraperTableRow(updated))
 	}
 
 	// Return updated script
@@ -494,14 +524,12 @@ func HandleScraperNewForm(c *fiber.Ctx) error {
 	emptyScript := &models.ScraperScript{
 		ID:        0,
 		Name:      "",
-		Script:    "",
-		Language:  "bash", // Default to bash for new scripts
+		Language:  "", // Will be inferred from script path
 		Schedule:  "0 0 * * *",
 		Variables: make(map[string]string),
-		Packages:  []string{},
 		Enabled:   true,
 	}
-	return handleView(c, views.ScraperScriptEditor(emptyScript))
+	return handleView(c, views.ScraperForm(emptyScript, "post", false))
 }
 
 // HandleScraperLogs returns the logs view for a script
@@ -517,7 +545,7 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 	if err != nil || page < 1 {
 		page = 1
 	}
-	perPage := 5
+	perPage := 10 // Increased for modal view
 	offset := (page - 1) * perPage
 
 	// Get logs for current page
@@ -550,7 +578,8 @@ func HandleScraperLogs(c *fiber.Ctx) error {
 		"script_id":    id,
 	}
 
-	return handleView(c, views.ScraperLogsPanelWithPagination(logs, pagination))
+	// Return just the logs panel for modal
+	return handleView(c, views.ScraperLogsModalContent(logs, pagination, id))
 }
 
 // HandleScraperVariableAdd returns an empty variable input row for HTMX inserts
@@ -573,40 +602,35 @@ func HandleScraperVariableRemove(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
-// HandleScraperPackageAdd returns an empty package input row for HTMX inserts
-func HandleScraperPackageAdd(c *fiber.Ctx) error {
+// HandleScraperCancelEdit resets the scraper form to its default state.
+func HandleScraperCancelEdit(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
 	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
-	return handleView(c, views.Package("", false))
+	return handleView(c, views.ScraperForm(&models.ScraperScript{}, "post", false))
 }
 
-// HandleScraperPackageRemove acknowledges package removal requests without returning content
-func HandleScraperPackageRemove(c *fiber.Ctx) error {
+// HandleScraperUpdateScriptPath returns updated language-dependent sections based on script path extension
+func HandleScraperUpdateScriptPath(c *fiber.Ctx) error {
 	// If not an HTMX request, redirect to the scraper page
 	if !isHTMXRequest(c) {
 		return c.Redirect("/admin/scraper")
 	}
 
-	return c.SendString("")
-}
+	// Get the script path from the request
+	scriptPath := c.Query("script_path", "")
 
-// HandleScraperUpdateLanguage returns updated language-dependent sections for HTMX requests
-func HandleScraperUpdateLanguage(c *fiber.Ctx) error {
-	// If not an HTMX request, redirect to the scraper page
-	if !isHTMXRequest(c) {
-		return c.Redirect("/admin/scraper")
-	}
-
-	// Get the language from the request
-	language := c.Query("language", "python")
-	if language == "" {
+	// Infer language from script path extension
+	language := ""
+	if strings.HasSuffix(scriptPath, ".py") {
 		language = "python"
+	} else if strings.HasSuffix(scriptPath, ".sh") {
+		language = "bash"
 	}
 
-	// Create a mock script object with the selected language
+	// Create a mock script object with the inferred language
 	script := &models.ScraperScript{
 		Language: language,
 	}
