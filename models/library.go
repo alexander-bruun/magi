@@ -18,7 +18,7 @@ type Library struct {
 	Description      string         `json:"description"`
 	Cron             string         `json:"cron"`
 	Folders          []string       `json:"folders"`
-	MetadataProvider sql.NullString `json:"metadata_provider"` // Optional: mangadex, mal, anilist, jikan
+	MetadataProvider sql.NullString `json:"metadata_provider"` // Optional: mangadex, anilist, jikan
 	CreatedAt        int64          `json:"created_at"`        // Unix timestamp
 	UpdatedAt        int64          `json:"updated_at"`        // Unix timestamp
 }
@@ -82,7 +82,7 @@ func CreateLibrary(library Library) error {
 
 // GetLibraries retrieves all Libraries from the database
 func GetLibraries() ([]Library, error) {
-	query := `SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries`
+	query := `SELECT slug, name, description, cron, folders, metadata_provider, created_at, updated_at FROM libraries ORDER BY name ASC`
 
 	rows, err := db.Query(query)
 	if err != nil {

@@ -172,7 +172,7 @@ func LibraryTable(libraries []models.Library) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></td><td colspan=\"3\"><div class=\"flex items-center justify-center\"><div class=\"uk-btn-group flex-nowrap\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0\" hx-post=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></td><td colspan=\"3\"><div class=\"flex items-center justify-center\"><div class=\"uk-btn-group flex-nowrap\"><button type=\"button\" class=\"uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0 spin-on-request\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

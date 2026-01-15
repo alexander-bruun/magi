@@ -736,110 +736,6 @@
       }
     };
 
-    // Code Editor Enhancer
-    const CodeEditorManager = {
-      editors: new Set(),
-
-      currentTheme() {
-        return document.documentElement.classList.contains('dark') ? 'dracula' : 'default';
-      },
-
-      mountEditors(root) {
-        const scope = root instanceof Element ? root : document;
-        scope.querySelectorAll('textarea[data-code-editor]:not([data-code-editor-init])')
-          .forEach((ta) => this.createEditor(ta));
-      },
-
-      createEditor(ta) {
-        // Prevent double initialization
-        if (ta.dataset.codeEditorInit) return;
-
-        // Mark as initializing immediately
-        ta.dataset.codeEditorInit = '1';
-
-        const mode = ta.dataset.codeEditor || ta.dataset.codeMode || 'shell';
-        const height = ta.dataset.codeEditorHeight || '384px';
-
-        try {
-          const editor = window.CodeMirror.fromTextArea(ta, {
-            mode,
-            lineNumbers: true,
-            lineWrapping: true,
-            theme: this.currentTheme()
-          });
-          editor.setSize('100%', height);
-          ta.classList.add('code-editor-hidden');
-          // Note: Content syncing is handled globally by htmx:beforeRequest listener
-          // Store reference to editor on textarea for easy access
-          ta._codeMirrorEditor = editor;
-          this.editors.add(editor);
-        } catch (error) {
-          console.error('Failed to create CodeMirror editor:', error);
-          // Reset flag if creation failed
-          delete ta.dataset.codeEditorInit;
-        }
-      },
-
-      updateEditorMode(ta, newMode) {
-        if (ta._codeMirrorEditor) {
-          ta._codeMirrorEditor.setOption('mode', newMode);
-        }
-      },
-
-      observeTheme() {
-        if (this.themeObserver) return;
-        this.themeObserver = new MutationObserver(() => {
-          const theme = this.currentTheme();
-          this.editors.forEach((editor) => editor.setOption('theme', theme));
-        });
-        this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      },
-
-      init() {
-        this.observeTheme();
-        // Sync all code editors before HTMX requests
-        document.addEventListener('htmx:beforeRequest', () => {
-          this.editors.forEach((editor) => editor.save());
-        });
-
-        const ready = () => {
-          // Wait for CodeMirror to be available
-          const waitForCodeMirror = () => {
-            if (typeof window.CodeMirror !== 'undefined') {
-              this.mountEditors(document.body);
-            } else {
-              setTimeout(waitForCodeMirror, 50);
-            }
-          };
-          waitForCodeMirror();
-        };
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', ready);
-        } else {
-          ready();
-        }
-
-        document.addEventListener('htmx:afterSwap', (event) => {
-          const target = event.detail?.target || event.target;
-          if (target) {
-            // Wait for CodeMirror to be available after HTMX swap
-            const waitForCodeMirror = () => {
-              if (typeof window.CodeMirror !== 'undefined') {
-                this.mountEditors(target);
-              } else {
-                setTimeout(waitForCodeMirror, 50);
-              }
-            };
-            waitForCodeMirror();
-          }
-        });
-      }
-    };
-
-    // Expose CodeEditorManager globally
-    window.CodeEditorManager = CodeEditorManager;
-
     // Scroll Helpers
     const ScrollHelpers = {
       init() {
@@ -1028,7 +924,6 @@
       safeExecute(() => NavigationManager.init(), 'Navigation sync');
       safeExecute(() => TagFilterManager.init(), 'Tag filtering');
       safeExecute(() => ChapterHoverManager.init(), 'Chapter hover');
-      safeExecute(() => CodeEditorManager.init(), 'Code editor');
       safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
       safeExecute(() => DropdownManager.init(), 'Dropdown manager');
       safeExecute(() => ThemeManager.init(), 'Theme manager');
@@ -1274,6 +1169,7 @@
     const selectBtn = document.getElementById('select-folder-btn');
     if (selectBtn) {
       selectBtn.style.display = 'none';
+      selectBtn.textContent = 'Select';
     }
 
     // Load initial directory listing
@@ -1292,7 +1188,7 @@
           if (entry.IsDir) {
             html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
           } else {
-            html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
+            html += `<li><a href="#" onclick="selectFile('${entry.Path}'); return false;" class="uk-link-text file-entry"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></a></li>`;
           }
         });
 
@@ -1300,7 +1196,7 @@
 
         content.innerHTML = html;
 
-        // Update the select button
+        // Update the select button for current directory
         const selectBtn = document.getElementById('select-folder-btn');
         selectBtn.style.display = 'block';
         selectBtn.onclick = () => selectFolder('/');
@@ -1338,7 +1234,7 @@
           if (entry.IsDir) {
             html += `<li><a href="#" onclick="navigateToFolder('${entry.Path}'); return false;" class="uk-link-text"><span class="inline-flex items-center gap-2"><uk-icon icon="Folder"></uk-icon> ${entry.Name}</span></a></li>`;
           } else {
-            html += `<li class="uk-text-muted"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></li>`;
+            html += `<li><a href="#" onclick="selectFile('${entry.Path}'); return false;" class="uk-link-text file-entry"><span class="inline-flex items-center gap-2"><uk-icon icon="File"></uk-icon> ${entry.Name}</span></a></li>`;
           }
         });
 
@@ -1374,6 +1270,29 @@
     if (selectBtn) {
       selectBtn.style.display = 'none';
     }
+
+    // Close the modal
+    UIkit.modal(document.getElementById('file-explorer-modal')).hide();
+  };
+
+  /**
+   * Selects a file and closes the modal
+   * @param {string} path - The selected file path
+   */
+  window.selectFile = function (path) {
+    const inputElement = window.currentFileExplorerTarget;
+    if (inputElement) {
+      inputElement.value = path;
+      
+      // Trigger input event to ensure HTMX picks up the change
+      const inputEvent = new Event('input', { bubbles: true });
+      const changeEvent = new Event('change', { bubbles: true });
+      inputElement.dispatchEvent(inputEvent);
+      inputElement.dispatchEvent(changeEvent);
+    }
+
+    // Clear the global target
+    window.currentFileExplorerTarget = null;
 
     // Close the modal
     UIkit.modal(document.getElementById('file-explorer-modal')).hide();

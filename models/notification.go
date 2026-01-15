@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ type UserNotification struct {
 	MediaSlug   string    `json:"media_slug"`
 	MangaName   string    `json:"manga_name,omitempty"`
 	ChapterSlug string    `json:"chapter_slug"`
+	ChapterID   string    `json:"chapter_id,omitempty"`
 	ChapterName string    `json:"chapter_name,omitempty"`
 	Message     string    `json:"message"`
 	IsRead      bool      `json:"is_read"`
@@ -57,12 +59,20 @@ func createUserNotification(userName, mangaSlug, chapterSlug, message string) er
 // createUserNotificationWithType creates a new notification for a user with a specific type
 func createUserNotificationWithType(userName, mediaSlug, chapterSlug, message, notificationType string) error {
 	query := `
-	INSERT INTO user_notifications (user_name, media_slug, chapter_slug, message, is_read, created_at, type)
-	VALUES (?, ?, ?, ?, 0, ?, ?)
+	INSERT INTO user_notifications (user_name, media_slug, library_slug, chapter_slug, message, is_read, created_at, type)
+	VALUES (?, ?, ?, ?, ?, 0, ?, ?)
 	`
 
 	createdAt := time.Now().Unix()
-	_, err := db.Exec(query, userName, mediaSlug, chapterSlug, message, createdAt, notificationType)
+
+	// For admin notifications, use NULL for media/chapter fields
+	if notificationType == "admin_issue" {
+		_, err := db.Exec(query, userName, nil, nil, nil, message, createdAt, notificationType)
+		return err
+	}
+
+	// For chapter notifications, use the provided values (library_slug is empty for now)
+	_, err := db.Exec(query, userName, mediaSlug, "", chapterSlug, message, createdAt, notificationType)
 	return err
 }
 
@@ -84,6 +94,14 @@ func createUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, librarySl
 	`
 
 	createdAt := time.Now().Unix()
+
+	// For admin notifications, use NULL for media/chapter fields
+	if notificationType == "admin_issue" {
+		_, err := tx.Exec(query, userName, nil, nil, nil, message, createdAt, notificationType)
+		return err
+	}
+
+	// For chapter notifications, use the provided values
 	_, err := tx.Exec(query, userName, mediaSlug, librarySlug, chapterSlug, message, createdAt, notificationType)
 	return err
 }
@@ -92,7 +110,7 @@ func createUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, librarySl
 func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification, error) {
 	query := `
 	SELECT n.id, n.user_name, n.media_slug, n.chapter_slug, n.message, n.is_read, n.created_at, n.type,
-	       COALESCE(m.name, '') as manga_name, COALESCE(c.name, '') as chapter_name
+	       COALESCE(m.name, '') as manga_name, COALESCE(c.name, '') as chapter_name, COALESCE(c.id, '') as chapter_id
 	FROM user_notifications n
 	LEFT JOIN media m ON n.media_slug = m.slug AND n.type = 'chapter'
 	LEFT JOIN chapters c ON n.chapter_slug = c.slug AND n.media_slug = c.media_slug AND n.type = 'chapter'
@@ -115,16 +133,24 @@ func GetUserNotifications(userName string, unreadOnly bool) ([]UserNotification,
 	for rows.Next() {
 		var n UserNotification
 		var createdAt int64
-		var mangaName, chapterName string
+		var mangaName, chapterName, chapterID string
+		var mediaSlug, chapterSlug sql.NullString
 
-		if err := rows.Scan(&n.ID, &n.UserName, &n.MediaSlug, &n.ChapterSlug, &n.Message, &n.IsRead, &createdAt, &n.Type, &mangaName, &chapterName); err != nil {
+		if err := rows.Scan(&n.ID, &n.UserName, &mediaSlug, &chapterSlug, &n.Message, &n.IsRead, &createdAt, &n.Type, &mangaName, &chapterName, &chapterID); err != nil {
 			return nil, err
 		}
 
 		n.CreatedAt = time.Unix(createdAt, 0)
+		if mediaSlug.Valid {
+			n.MediaSlug = mediaSlug.String
+		}
+		if chapterSlug.Valid {
+			n.ChapterSlug = chapterSlug.String
+		}
 		if n.Type == "chapter" {
 			n.MangaName = mangaName
 			n.ChapterName = chapterName
+			n.ChapterID = chapterID
 		}
 
 		notifications = append(notifications, n)
@@ -241,6 +267,23 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	if len(newChapters) == 0 {
 		return tx.Commit() // Nothing to do, but commit the transaction
 	}
+
+	// Sort chapters by chapter number for proper range display
+	sort.Slice(newChapters, func(i, j int) bool {
+		numI := extractChapterNumber(newChapters[i].name)
+		numJ := extractChapterNumber(newChapters[j].name)
+		// Handle cases where extraction fails (-1)
+		if numI == -1 && numJ == -1 {
+			return newChapters[i].name < newChapters[j].name
+		}
+		if numI == -1 {
+			return false // items with no number go to the end
+		}
+		if numJ == -1 {
+			return true // items with no number go to the end
+		}
+		return numI < numJ
+	})
 
 	// Get users who are reading this manga
 	usersQuery := `

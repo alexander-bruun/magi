@@ -52,10 +52,7 @@ func HandleConfigurationUpdate(c *fiber.Ctx) error {
 	if metadataProvider == "" {
 		metadataProvider = "mangadex"
 	}
-	malClientID := config.MALClientID
-	malClientSecret := config.MALClientSecret
-	anilistApiToken := config.AniListApiToken
-	if _, err := models.UpdateMetadataConfig(metadataProvider, malClientID, malClientSecret, anilistApiToken); err != nil {
+	if _, err := models.UpdateMetadataConfig(metadataProvider); err != nil {
 		return sendInternalServerError(c, ErrConfigUpdateFailed, err)
 	}
 

@@ -8,6 +8,7 @@ Downloads manga/manhwa/manhua from reset-scans.org.
 # Standard library imports
 import asyncio
 import re
+import json
 
 # Local imports
 from scraper_utils import (
@@ -33,49 +34,66 @@ BASE_URL = "https://reset-scans.org"
 # =============================================================================
 def extract_series_urls(session, page_num):
     """
-    Extract series URLs from the specified page.
+    Extract all series URLs by fetching all pages.
 
     Args:
         session: requests.Session object
-        page_num: Page number to fetch
+        page_num: Ignored, always fetch all pages
 
     Returns:
-        tuple: (list of dicts with 'series_url' key, total_pages)
+        list: List of dicts with 'series_url' key
     """
-    if page_num == 1:
-        url = "https://reset-scans.org/manga/"
-    else:
-        url = f"https://reset-scans.org/manga/page/{page_num}/"
+    all_series = []
+    page_num = 1
+    max_pages = 50  # Safety limit
     
-    log(f"Fetching series list from page {page_num}...")
+    while page_num <= max_pages:
+        if page_num == 1:
+            url = "https://reset-scans.org/manga/"
+        else:
+            url = f"https://reset-scans.org/manga/page/{page_num}/"
+        
+        log(f"Fetching series list from page {page_num}...")
+        
+        try:
+            response = session.get(url, timeout=30)
+            response.raise_for_status()
+            html = response.text
+        except Exception as e:
+            log(f"Failed to fetch page {page_num}: {e}")
+            break
+        
+        # Extract series URLs - look for manga entry links
+        series_urls = re.findall(r'href="https://reset-scans\.org(/manga/[^/]+/)"', html)
+        # Filter out chapter URLs and other non-series URLs
+        series_urls = [
+            url
+            for url in series_urls
+            if "chapter" not in url and "feed" not in url and "genre" not in url
+        ]
+        
+        series_list = [{'series_url': url} for url in series_urls]
+        
+        if not series_list:
+            log(f"No series found on page {page_num}, stopping")
+            break
+        
+        all_series.extend(series_list)
+        log(f"Found {len(series_list)} series on page {page_num}, total: {len(all_series)}")
+        
+        page_num += 1
     
-    try:
-        response = session.get(url, timeout=30)
-        response.raise_for_status()
-        html = response.text
-    except Exception as e:
-        log(f"Failed to fetch page {page_num}: {e}")
-        return [], page_num
-    
-    # Extract series URLs - look for manga entry links
-    series_urls = re.findall(r'href="https://reset-scans\.org(/manga/[^/]+/)"', html)
-    # Filter out chapter URLs and other non-series URLs
-    series_urls = [
-        url
-        for url in series_urls
-        if "chapter" not in url and "feed" not in url and "genre" not in url
-    ]
-    
-    series_list = [{'series_url': url} for url in series_urls]
-    
-    # Check if there's a next page
-    has_next = "next page-numbers" in html or "Next" in html
-    if has_next:
-        total_pages = page_num + 1
-    else:
-        total_pages = page_num
-    
-    return series_list, total_pages
+    log(f"Total series collected: {len(all_series)}")
+    # Remove duplicates
+    seen = set()
+    unique_series = []
+    for series in all_series:
+        url = series['series_url']
+        if url not in seen:
+            seen.add(url)
+            unique_series.append(series)
+    log(f"Unique series: {len(unique_series)}")
+    return unique_series, len(unique_series)
 
 
 def extract_series_title(session, series_url):
@@ -159,8 +177,31 @@ def extract_image_urls(session, chapter_url):
         list: List of image URLs
     """
     full_url = f"{BASE_URL}{chapter_url}"
-    response = session.get(full_url, timeout=30)
-    response.raise_for_status()
+    
+    try:
+        response = session.get(full_url, timeout=30)
+        response.raise_for_status()
+    except Exception as e:
+        if hasattr(e, 'response') and e.response and e.response.status_code == 403:
+            log(f"Cloudflare block detected (403) for chapter page {full_url}, attempting bypass...")
+            try:
+                cookies, headers = asyncio.run(bypass_cloudflare(full_url))
+                if cookies:
+                    session.cookies.update(cookies)
+                    if headers:
+                        session.headers.update(headers)
+                    success("Cloudflare bypass re-run successful")
+                    # Retry the request
+                    response = session.get(full_url, timeout=30)
+                    response.raise_for_status()
+                else:
+                    raise e
+            except Exception as bypass_error:
+                error(f"Cloudflare bypass re-run failed: {bypass_error}")
+                raise e
+        else:
+            raise e
+    
     html = response.text.replace("\0", "")
 
     # Look for img src attributes that contain manga images

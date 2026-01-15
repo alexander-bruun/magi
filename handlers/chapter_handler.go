@@ -158,39 +158,44 @@ func GetChapterData(hash, userName string) (*ChapterData, error) {
 		return nil, err
 	}
 
+	// Determine content type based on file extension
+	library, err := models.GetLibrary(chapter.LibrarySlug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
+	}
+	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
+
+	// Check file extension to determine if it's a novel (.epub) or comic (.cbz, .cbr, or folder with images)
+	isNovel := false
+	if fileInfo, err := os.Stat(chapterFilePath); err == nil {
+		if fileInfo.IsDir() {
+			// Folder with images - treat as comic
+			isNovel = false
+		} else {
+			// Check file extension
+			ext := strings.ToLower(filepath.Ext(chapterFilePath))
+			isNovel = ext == ".epub"
+		}
+	} else {
+		// File doesn't exist, default to comic behavior
+		isNovel = false
+	}
+
 	data := &ChapterData{
 		Media:    media,
 		Chapter:  chapter,
 		Chapters: chapters,
 		PrevID:   prevID,
 		NextID:   nextID,
-		IsNovel:  media.Type == "novel",
+		IsNovel:  isNovel,
 	}
 
 	if data.IsNovel {
-		// Handle novel-specific logic
-		library, err := models.GetLibrary(chapter.LibrarySlug)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
-		}
-		chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
-
-		// Check if file exists
-		if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
-			return nil, nil // File not found
-		}
 
 		data.TOC = files.GetTOC(chapterFilePath)
 		validityMinutes := models.GetImageTokenValidityMinutes()
 		data.Content = files.GetBookContentWithValidity(chapterFilePath, chapter.MediaSlug, chapter.LibrarySlug, chapter.Slug, validityMinutes)
 	} else {
-		// Determine the chapter file path for comics
-		library, err := models.GetLibrary(chapter.LibrarySlug)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err)
-		}
-		chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
-
 		// Check if chapter file path exists
 		if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 			// Chapter file missing, delete the chapter
@@ -385,9 +390,11 @@ func HandleMediaChapterTOC(c *fiber.Ctx) error {
 	}
 	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
-	// Check if the file exists
-	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
+	// Check if the file exists and is an EPUB
+	if fileInfo, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 		return SendNotFoundError(c, ErrEPUBNotFound)
+	} else if !fileInfo.IsDir() && strings.ToLower(filepath.Ext(chapterFilePath)) != ".epub" {
+		return SendBadRequestError(c, "TOC only available for EPUB files")
 	}
 
 	toc := files.GetTOC(chapterFilePath)
@@ -434,9 +441,11 @@ func HandleMediaChapterContent(c *fiber.Ctx) error {
 	}
 	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
-	// Check if the file exists
-	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
+	// Check if the file exists and is an EPUB
+	if fileInfo, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 		return SendNotFoundError(c, ErrEPUBNotFound)
+	} else if !fileInfo.IsDir() && strings.ToLower(filepath.Ext(chapterFilePath)) != ".epub" {
+		return c.Status(fiber.StatusBadRequest).SendString("Content only available for EPUB files")
 	}
 
 	validityMinutes := models.GetImageTokenValidityMinutes()

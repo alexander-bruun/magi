@@ -64,7 +64,7 @@ type SearchResult struct {
 
 // Provider is the interface that all metadata providers must implement
 type Provider interface {
-	// Name returns the provider name (e.g., "mangadex", "mal", "anilist", "jikan")
+	// Name returns the provider name (e.g., "mangadex", "anilist", "jikan")
 	Name() string
 
 	// Search searches for media by title and returns a list of results

@@ -11,10 +11,7 @@ type AppConfig struct {
 	AllowRegistration  bool   `json:"allow_registration" form:"allow_registration"`
 	MaxUsers           int64  `json:"max_users" form:"max_users"`                       // 0 means unlimited
 	ContentRatingLimit int    `json:"content_rating_limit" form:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
-	MetadataProvider   string `json:"metadata_provider" form:"metadata_provider"`       // mangadex, mal, anilist, jikan, mangaupdates, kitsu
-	MALClientID        string `json:"mal_client_id" form:"mal_client_id"`               // MyAnimeList OAuth2 client ID
-	MALClientSecret    string `json:"mal_client_secret" form:"mal_client_secret"`       // MyAnimeList OAuth2 client secret
-	AniListApiToken    string `json:"anilist_api_token" form:"anilist_api_token"`       // AniList API token (optional)
+	MetadataProvider   string `json:"metadata_provider" form:"metadata_provider"`       // mangadex, anilist, jikan, mangaupdates, kitsu
 	ImageAccessSecret  string `json:"image_access_secret" form:"image_access_secret"`
 
 	// Stripe payment settings
@@ -99,18 +96,6 @@ func (c *AppConfig) GetMetadataProvider() string {
 	return c.MetadataProvider
 }
 
-func (c *AppConfig) GetMALClientID() string {
-	return c.MALClientID
-}
-
-func (c *AppConfig) GetMALClientSecret() string {
-	return c.MALClientSecret
-}
-
-func (c *AppConfig) GetAniListApiToken() string {
-	return c.AniListApiToken
-}
-
 func (c *AppConfig) GetContentRatingLimit() int {
 	return c.ContentRatingLimit
 }
@@ -125,9 +110,6 @@ var (
 func loadConfigFromDB() (AppConfig, error) {
 	row := db.QueryRow(`SELECT allow_registration, max_users, content_rating_limit, 
         COALESCE(metadata_provider, 'mangadex'), 
-        COALESCE(mal_client_id, ''), 
-        COALESCE(mal_client_secret, ''),
-        COALESCE(anilist_api_token, ''),
         COALESCE(image_access_secret, ''),
         COALESCE(stripe_enabled, 0),
         COALESCE(stripe_publishable_key, ''),
@@ -176,9 +158,6 @@ func loadConfigFromDB() (AppConfig, error) {
 	var maxUsers int64
 	var contentRatingLimit int
 	var metadataProvider string
-	var malClientID string
-	var malClientSecret string
-	var anilistApiToken string
 	var imageAccessSecret string
 	var stripeEnabled int
 	var stripePublishableKey string
@@ -223,7 +202,7 @@ func loadConfigFromDB() (AppConfig, error) {
 	var parallelIndexingThreshold int
 	var discordInviteLink string
 
-	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &malClientID, &malClientSecret, &anilistApiToken, &imageAccessSecret,
+	if err := row.Scan(&allowInt, &maxUsers, &contentRatingLimit, &metadataProvider, &imageAccessSecret,
 		&stripeEnabled, &stripePublishableKey, &stripeSecretKey, &stripeWebhookSecret,
 		&rateLimitEnabled, &rateLimitRequests, &rateLimitWindow, &rateLimitBlockDuration, &botDetectionEnabled, &botSeriesThreshold, &botChapterThreshold, &botDetectionWindow,
 		&browserChallengeEnabled, &browserChallengeDifficulty, &browserChallengeValidityHours, &browserChallengeIPBound, &refererValidationEnabled,
@@ -236,9 +215,6 @@ func loadConfigFromDB() (AppConfig, error) {
 				MaxUsers:                      0,
 				ContentRatingLimit:            3,
 				MetadataProvider:              "mangadex",
-				MALClientID:                   "",
-				MALClientSecret:               "",
-				AniListApiToken:               "",
 				ImageAccessSecret:             "",
 				StripeEnabled:                 false,
 				StripePublishableKey:          "",
@@ -292,9 +268,6 @@ func loadConfigFromDB() (AppConfig, error) {
 		MaxUsers:                      maxUsers,
 		ContentRatingLimit:            contentRatingLimit,
 		MetadataProvider:              metadataProvider,
-		MALClientID:                   malClientID,
-		MALClientSecret:               malClientSecret,
-		AniListApiToken:               anilistApiToken,
 		ImageAccessSecret:             imageAccessSecret,
 		StripeEnabled:                 stripeEnabled == 1,
 		StripePublishableKey:          stripePublishableKey,
@@ -447,11 +420,10 @@ func UpdatePremiumCooldownScalingConfig(enabled bool) (AppConfig, error) {
 }
 
 // UpdateMetadataConfig updates the metadata provider configuration
-func UpdateMetadataConfig(provider, malClientID, malClientSecret, anilistToken string) (AppConfig, error) {
+func UpdateMetadataConfig(provider string) (AppConfig, error) {
 	// Validate provider
 	validProviders := map[string]bool{
 		"mangadex":     true,
-		"mal":          true,
 		"anilist":      true,
 		"jikan":        true,
 		"mangaupdates": true,
@@ -461,8 +433,8 @@ func UpdateMetadataConfig(provider, malClientID, malClientSecret, anilistToken s
 		provider = "mangadex"
 	}
 
-	_, err := db.Exec(`UPDATE app_config SET metadata_provider = ?, mal_client_id = ?, mal_client_secret = ?, anilist_api_token = ? WHERE id = 1`,
-		provider, malClientID, malClientSecret, anilistToken)
+	_, err := db.Exec(`UPDATE app_config SET metadata_provider = ? WHERE id = 1`,
+		provider)
 	if err != nil {
 		return AppConfig{}, err
 	}

@@ -7,6 +7,7 @@ Downloads manga/manhwa/manhua from lhtranslation.net.
 
 # Standard library imports
 import asyncio
+import html
 import re
 import time
 
@@ -189,9 +190,12 @@ def extract_chapter_urls(session, series_url):
 
     chapter_info = []
     for url in set(chapter_urls):
-        match = re.search(r"chapter-(\d+)", url)
+        match = re.search(r"chapter-(\d+)(?:-(\d+))?(?:-(\d+))?", url)
         if match:
-            num = int(match.group(1))
+            major = int(match.group(1))
+            minor = int(match.group(2)) if match.group(2) else 0
+            patch = int(match.group(3)) if match.group(3) else 0
+            num = major + minor / 10.0 + patch / 100.0
             chapter_info.append({'url': url, 'num': num})
 
     # Sort by chapter number
@@ -212,14 +216,20 @@ def extract_image_urls(session, chapter_url):
     """
     response = session.get(chapter_url, timeout=30)
     response.raise_for_status()
-    html = response.text.replace("\n", " ")
+    page_html = response.text.replace("\n", " ")
 
-    # Extract image URLs from data-src attributes
-    image_urls = re.findall(
-        r'data-src="\s*(https://lhtranslation\.net/wp-content/uploads/WP-manga/data/[^"]*\.(?:jpg|jpeg|png|webp))',
-        html,
-    )
-    # Remove duplicates while preserving order
+    # Find all img tags
+    img_tags = re.findall(r'<img[^>]*>', page_html)
+    image_urls = []
+    for tag in img_tags:
+        # Extract data-src or src attribute
+        src_match = re.search(r'(?:data-src|src)="([^"]+)"', tag)
+        if src_match:
+            url = src_match.group(1).strip()
+            url = html.unescape(url)
+            if url.startswith('https://lhtranslation.net/wp-content/uploads/WP-manga/data/') and any(url.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                image_urls.append(url)
+    
     return list(dict.fromkeys(image_urls))
 
 

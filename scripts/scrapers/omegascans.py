@@ -216,13 +216,10 @@ def extract_image_urls(session, chapter_url):
 
     # Extract image URLs from src attributes
     api_urls = re.findall(
-        r'src="https://api\.omegascans\.org/uploads/series/[^"]+', html
+        r'src="https://(?:api|media)\.omegascans\.org/(?:[^"]*uploads/series/[^"]+|uploads/series/[^"]+)', html
     )
-    media_urls = re.findall(r'src="https://media\.omegascans\.org/file/[^"]+', html)
-
-    all_urls = api_urls + media_urls
     # Remove src=" prefix
-    all_urls = [url.replace('src="', "") for url in all_urls]
+    all_urls = [url.replace('src="', "") for url in api_urls]
 
     return all_urls
 

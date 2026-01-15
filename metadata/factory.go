@@ -9,9 +9,6 @@ import (
 // This allows the metadata package to get provider config without importing models
 type ConfigProvider interface {
 	GetMetadataProvider() string
-	GetMALClientID() string
-	GetMALClientSecret() string
-	GetAniListApiToken() string
 	GetContentRatingLimit() int
 }
 
@@ -26,17 +23,8 @@ func GetProviderFromConfig(config ConfigProvider) (Provider, error) {
 	providerName := config.GetMetadataProvider()
 
 	switch providerName {
-	case "mal":
-		clientID := config.GetMALClientID()
-		clientSecret := config.GetMALClientSecret()
-		if clientID == "" || clientSecret == "" {
-			return nil, fmt.Errorf("MAL client ID and secret are required")
-		}
-		combinedToken := clientID + ":" + clientSecret
-		return GetProvider("mal", combinedToken)
 	case "anilist":
-		apiToken := config.GetAniListApiToken()
-		return GetProvider("anilist", apiToken)
+		return GetProvider("anilist", "")
 	case "jikan":
 		return GetProvider("jikan", "") // Jikan doesn't require auth
 	case "mangadex":
@@ -61,14 +49,8 @@ func GetProviderForLibrary(libraryProvider sql.NullString, config ConfigProvider
 
 	var apiToken string
 	switch providerName {
-	case "mal":
-		clientID := config.GetMALClientID()
-		clientSecret := config.GetMALClientSecret()
-		if clientID != "" && clientSecret != "" {
-			apiToken = clientID + ":" + clientSecret
-		}
 	case "anilist":
-		apiToken = config.GetAniListApiToken()
+		apiToken = ""
 	case "jikan":
 		apiToken = "" // Jikan doesn't require auth
 	case "mangadex":

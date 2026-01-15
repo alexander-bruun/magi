@@ -149,9 +149,9 @@ func UpdateMediaFromAggregated(media MediaUpdater, aggregatedMeta *AggregatedMed
 	for i, link := range aggregatedMeta.AttributionLinks {
 		attributionLinks[i] = models.AttributionLink{Provider: link.Provider, URL: link.URL, Title: link.Title}
 	}
-	log.Infof("UpdateMediaFromAggregated: setting %d attribution links for media", len(attributionLinks))
+	log.Debugf("UpdateMediaFromAggregated: setting %d attribution links for media", len(attributionLinks))
 	for _, link := range attributionLinks {
-		log.Infof("  - Provider: %s, URL: %s, Title: %s", link.Provider, link.URL, link.Title)
+		log.Debugf("  - Provider: %s, URL: %s, Title: %s", link.Provider, link.URL, link.Title)
 	}
 	media.SetAttributionLinks(attributionLinks)
 }

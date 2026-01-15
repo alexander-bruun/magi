@@ -1,962 +1,894 @@
-/**
- * Reader Module - Handles reading modes for manga and light novels
- */
 (function() {
     'use strict';
 
-    const STORAGE_KEY = 'magi-reading-mode';
-    const FOCUS_STATE_KEY = 'magi-focus-state';
-    const NOVEL_SETTINGS_KEY = 'lightNovelReaderSettings';
-    const MODES = { WEBTOON: 'webtoon', SINGLE: 'single', SIDE_BY_SIDE: 'side-by-side' };
-
-    // Lazy loading setup - check scroll position to load more canvases
-    let scrollCheckTimeout = null;
-    
-    const checkScrollForLazyLoading = () => {
-        if (lazyTokens.length === 0) return;
-        
-        const canvases = containerElement.querySelectorAll('.reader-canvas');
-        if (canvases.length === 0) return;
-        
-        const lastCanvas = canvases[canvases.length - 1];
-        const rect = lastCanvas.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        
-        // Load next canvas if top of last canvas is within 0.5 viewport heights of viewport bottom
-        if (rect.top <= viewportHeight + viewportHeight * 0.5) {
-            loadNextCanvas();
-        }
+    // Constants
+    const MODES = {
+        WEBTOON: 'webtoon',
+        SINGLE: 'single',
+        SIDE_BY_SIDE: 'side-by-side'
     };
 
-    const observeLazyCanvases = () => {
-        const scrollElement = document.querySelector('main.site-main') || window;
-        // Remove previous scroll listener if exists
-        scrollElement.removeEventListener('scroll', handleScroll);
-        // Add scroll listener
-        scrollElement.addEventListener('scroll', handleScroll, { passive: true });
+    const STORAGE_KEYS = {
+        READING_MODE: 'magi-reading-mode',
+        FOCUS_STATE: 'magi-focus-state',
+        NOVEL_SETTINGS: 'lightNovelReaderSettings'
     };
 
-    const handleScroll = () => {
-        checkScrollForLazyLoading();
+    const DIMENSIONS = {
+        PLACEHOLDER_SIZE: 100,
+        LAZY_LOAD_MARGIN: 200,
+        INITIAL_LOAD_DELAY: 100,
+        HEADER_HEIGHT_FALLBACK: 64,
+        DROPDOWN_HEIGHT_FALLBACK: 100,
+        FOCUS_Z_INDEX: 10002,
+        PAGINATION_BOTTOM_OFFSET: 10
     };
 
-    const loadInitialCanvases = async () => {
-        const initialTokens = images.slice(0, 2);
-        lazyTokens = images.slice(2);
-        currentLoadedIndex = 1;
-
-        // Load first 2 canvases
-        for (let i = 0; i < initialTokens.length; i++) {
-            const token = initialTokens[i];
-            const canvas = document.createElement('canvas');
-            canvas.className = 'reader-canvas';
-            canvas.width = 100; // placeholder
-            canvas.height = 100; // placeholder
-            canvas.style.width = '100%';
-            canvas.style.height = 'auto';
-            canvas.style.display = 'block';
-            containerElement.appendChild(canvas);
-            await loadImageToCanvas(canvas, `/api/image?token=${token}`);
-        }
-
-        // Now start observing for lazy loading
-        updateModeVisibility();
-        observeLazyCanvases();
+    const SELECTORS = {
+        CONTAINER: '#reader-images-container',
+        PAGINATION_BOTTOM: '#reader-pagination-bottom',
+        HEADER: 'nav, header, .uk-navbar',
+        DROPDOWN: '#chapter-dropdown, .chapter-dropdown, .uk-dropdown'
     };
 
-    const loadImageToCanvas = async (canvas, url) => {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-            }
-            const blob = await response.blob();
-            const bitmap = await createImageBitmap(blob);
-            
-            // Set canvas dimensions to bitmap size
-            canvas.width = bitmap.width;
-            canvas.height = bitmap.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(bitmap, 0, 0);
-            
-            // Update canvas style to maintain aspect ratio and respect container width
-            canvas.style.width = '100%';
-            canvas.style.height = 'auto';
-            canvas.style.maxWidth = '100%';
-            canvas.style.objectFit = 'contain';
-        } catch (error) {
-            console.error('Failed to load image to canvas:', error);
-        }
+    // Utility functions for dynamic sizing
+    const getElementHeight = (selector, fallback) => {
+        const element = document.querySelector(selector);
+        return element ? element.offsetHeight : fallback;
     };
 
-    const loadNextCanvas = async () => {
-        if (lazyTokens.length === 0) return;
-        
-        const token = lazyTokens.shift(); // Take the next token
-        const canvas = document.createElement('canvas');
-        canvas.className = 'reader-canvas';
-        canvas.width = 100; // placeholder
-        canvas.height = 100; // placeholder
-        canvas.style.width = '100%';
-        canvas.style.height = 'auto';
-        canvas.style.display = 'block';
-        containerElement.appendChild(canvas);
-        await loadImageToCanvas(canvas, `/api/image?token=${token}`);
-        currentLoadedIndex++;
-    };
+    const getHeaderHeight = () => getElementHeight(SELECTORS.HEADER, DIMENSIONS.HEADER_HEIGHT_FALLBACK);
+    const getDropdownHeight = () => getElementHeight(SELECTORS.DROPDOWN, DIMENSIONS.DROPDOWN_HEIGHT_FALLBACK);
 
-    // State
-    let currentMode = MODES.WEBTOON;
-    let currentPage = 0;
-    let images = [];
-    let lazyTokens = [];
-    let currentLoadedIndex = -1;
-    let containerElement = null;
-    let focusModal = null;
-    let scrollPositionBeforeFocus = 0;
-    let focusModalZoom = 1;
-    let focusStateData = {};
-    let isLightNovel = false;
-    let originalImageParents = [];
+    const getViewportHeight = () => window.innerHeight;
 
-    // Light novel settings
-    const novelSettings = {
-        fontSize: 18,
-        textColor: null,
-        bgColor: null,
-        textAlign: 'justify',
-        margin: 20
-    };
-    const novelLimits = {
-        fontSize: { min: 12, max: 32, step: 2 },
-        margin: { min: 0, max: 50, step: 5 }
-    };
-
-    // Utility functions
     const saveToStorage = (key, data) => {
         try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.warn(`Failed to save ${key}:`, e); }
     };
+
     const loadFromStorage = (key) => {
-        try { return JSON.parse(localStorage.getItem(key)); } catch (e) { console.warn(`Failed to load ${key}:`, e); return null; }
-    };
-    const removeFromStorage = (key) => {
-        try { localStorage.removeItem(key); } catch (e) { console.warn(`Failed to remove ${key}:`, e); }
-    };
-
-    // Mobile detection
-    const isMobile = () => window.innerWidth <= 768;
-
-    const updateContainerWidth = () => {
-        const ukContainer = containerElement.closest('.uk-container');
-        const mainContent = containerElement.closest('main');
-        if (containerElement) {
-            if (isMobile()) {
-                containerElement.style.width = '100vw';
-                containerElement.style.position = 'relative';
-                containerElement.style.left = '50%';
-                containerElement.style.transform = 'translateX(-50%)';
-                containerElement.style.maxWidth = 'none';
-            } else {
-                containerElement.style.width = '';
-                containerElement.style.position = '';
-                containerElement.style.left = '';
-                containerElement.style.transform = '';
-                containerElement.style.maxWidth = '';
+        try {
+            const item = localStorage.getItem(key);
+            if (item === null) return null;
+            // Try to parse as JSON, if fails, return as string (for backward compatibility)
+            try {
+                return JSON.parse(item);
+            } catch (parseError) {
+                return item; // Return raw string if not JSON
             }
+        } catch (e) {
+            console.warn(`Failed to load ${key}:`, e);
+            return null;
         }
     };
 
-    // Light novel functions
-    const loadNovelSettings = () => {
-        const saved = loadFromStorage(NOVEL_SETTINGS_KEY);
-        if (saved) Object.assign(novelSettings, saved);
-    };
+    // Reader class for modularity
+    class Reader {
+        constructor(containerSelector) {
+            this.container = document.querySelector(containerSelector);
+            if (!this.container) throw new Error('Reader container not found');
 
-    const saveNovelSettings = () => saveToStorage(NOVEL_SETTINGS_KEY, novelSettings);
+            this.currentMode = MODES.WEBTOON;
+            this.currentPage = 0;
+            this.images = [];
+            this.lazyTokens = [];
+            this.loadedCanvases = [];
+            this.focusModal = null;
+            this.isLightNovel = window.isLightNovel || false;
+            this.observer = null;
+            this.isInitialLoad = true;
+            this.focusStateData = {};
+            this.scrollPositionBeforeFocus = 0;
+            this.focusModalZoom = 1;
+            this.currentFocusIndex = 0;
 
-    const applyNovelSettings = () => {
-        const reader = document.querySelector('.epub-reader');
-        if (!reader) return;
-
-        const card = reader.closest('.uk-card');
-
-        reader.style.fontSize = novelSettings.fontSize + 'px';
-        const fontSizeDisplay = document.getElementById('current-font-size');
-        if (fontSizeDisplay) fontSizeDisplay.textContent = novelSettings.fontSize + 'px';
-
-        if (novelSettings.textColor) {
-            reader.style.color = novelSettings.textColor;
-            reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a').forEach(el => el.style.color = novelSettings.textColor);
-        } else {
-            reader.style.color = '';
-            reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a').forEach(el => el.style.color = '');
+            this.init();
         }
 
-        if (card) {
-            card.style.backgroundColor = novelSettings.bgColor || '';
-            if (novelSettings.bgColor) reader.setAttribute('data-bg-color', novelSettings.bgColor);
-            else reader.removeAttribute('data-bg-color');
+        init() {
+            this.loadSettings();
+            // Collect tokens from divs and remove them
+            const tokenDivs = Array.from(this.container.querySelectorAll('.reader-token'));
+            this.images = tokenDivs.map(div => div.dataset.token).filter(token => token && token.trim() && token !== 'undefined');
+            // Remove all token divs
+            tokenDivs.forEach(div => div.remove());
+            this.setupEventListeners();
+            this.setupLazyLoading();
+            this.loadInitialImages();
+            this.updateMode();
         }
 
-        reader.style.textAlign = novelSettings.textAlign;
-        document.documentElement.style.setProperty('--reader-margin', novelSettings.margin + 'px');
-
-        const colorPicker = document.getElementById('font-color-picker');
-        if (colorPicker) colorPicker.value = novelSettings.textColor || '#000000';
-        const bgColorPicker = document.getElementById('bg-color-picker');
-        if (bgColorPicker) bgColorPicker.value = novelSettings.bgColor || '#ffffff';
-
-        document.querySelectorAll('.text-align-btn').forEach(btn => {
-            btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === novelSettings.textAlign);
-            btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== novelSettings.textAlign);
-        });
-
-        const marginDisplay = document.getElementById('current-margin');
-        if (marginDisplay) marginDisplay.textContent = novelSettings.margin + 'px';
-    };
-
-    const adjustSetting = (key, direction) => {
-        const limit = novelLimits[key];
-        if (!limit) return;
-        const newValue = novelSettings[key] + (direction * limit.step);
-        if (newValue >= limit.min && newValue <= limit.max) {
-            novelSettings[key] = newValue;
-            applyNovelSettings();
-            saveNovelSettings();
+        loadSettings() {
+            this.currentMode = loadFromStorage(STORAGE_KEYS.READING_MODE) || MODES.WEBTOON;
         }
-    };
 
-    const resetNovelSettings = () => {
-        Object.assign(novelSettings, { fontSize: 18, textColor: null, bgColor: null, textAlign: 'justify', margin: 20 });
-        applyNovelSettings();
-        removeFromStorage(NOVEL_SETTINGS_KEY);
-    };
+        saveSettings() {
+            saveToStorage(STORAGE_KEYS.READING_MODE, this.currentMode);
+        }
 
-    // Focus modal functions
-    const createFocusModal = () => {
-        const modal = document.createElement('div');
-        modal.className = 'webtoon-focus-modal';
-        modal.id = 'webtoon-focus-modal';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.zIndex = '9999';
-        modal.style.display = 'none';
+        setupEventListeners() {
+            window.addEventListener('resize', () => this.handleResize());
+            window.addEventListener('keydown', (e) => this.handleKeydown(e));
 
-        const overlay = document.createElement('div');
-        overlay.className = 'webtoon-focus-modal-overlay';
-        overlay.style.position = 'absolute';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
-        overlay.style.zIndex = '1';
-        overlay.addEventListener('click', closeFocusModal);
+            // Pagination buttons
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            if (prevBtn) prevBtn.addEventListener('click', () => this.prevPage());
+            if (nextBtn) nextBtn.addEventListener('click', () => this.nextPage());
+        }
 
-        const scrollContainer = document.createElement('div');
-        scrollContainer.className = 'webtoon-focus-modal-scroll';
-        scrollContainer.id = 'webtoon-focus-modal-scroll';
-        scrollContainer.style.position = 'absolute';
-        scrollContainer.style.top = '0';
-        scrollContainer.style.left = '0';
-        scrollContainer.style.width = '100%';
-        scrollContainer.style.height = '100%';
-        scrollContainer.style.overflow = 'auto';
-        scrollContainer.style.zIndex = '2';
-        scrollContainer.addEventListener('click', (e) => { if (e.target === scrollContainer) closeFocusModal(); });
-
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'webtoon-focus-modal-close';
-        closeBtn.innerHTML = '&times;';
-        closeBtn.style.position = 'absolute';
-        closeBtn.style.top = '10px';
-        closeBtn.style.right = '10px';
-        closeBtn.style.zIndex = '10000';
-        closeBtn.style.background = 'rgba(0,0,0,0.5)';
-        closeBtn.style.color = 'white';
-        closeBtn.style.border = 'none';
-        closeBtn.style.padding = '10px';
-        closeBtn.style.cursor = 'pointer';
-        closeBtn.setAttribute('aria-label', 'Close');
-        closeBtn.addEventListener('click', closeFocusModal);
-
-        modal.append(overlay, scrollContainer, closeBtn);
-        document.body.appendChild(modal);
-        return modal;
-    };    const getFocusModal = () => focusModal || (focusModal = createFocusModal());
-
-    const saveFocusState = (modalScrollTop = 0) => {
-        const state = { ...focusStateData, modalScrollTop, mainPageScrollTop: scrollPositionBeforeFocus, timestamp: Date.now() };
-        saveToStorage(FOCUS_STATE_KEY, state);
-    };
-
-    const getSavedFocusState = () => loadFromStorage(FOCUS_STATE_KEY);
-
-    const clearFocusState = () => removeFromStorage(FOCUS_STATE_KEY);
-
-    const handleFocusModalCanvasClick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        closeFocusModal();
-    };
-
-    const openFocusModal = (clickedCanvas) => {
-        const modal = getFocusModal();
-        const scrollContainer = modal.querySelector('.webtoon-focus-modal-scroll');
-
-        const savedState = getSavedFocusState();
-        const shouldRestoreScroll = savedState && clickedCanvas === undefined;
-
-        scrollPositionBeforeFocus = document.querySelector('main.site-main')?.scrollTop ?? document.documentElement.scrollTop;
-
-        const navbar = document.querySelector('nav') || document.querySelector('.navbar') || document.querySelector('.top-navbar');
-        const navbarHeight = navbar ? navbar.offsetHeight : 0;
-        const effectiveScrollPosition = scrollPositionBeforeFocus + navbarHeight;
-
-        let clickedIndex = -1;
-        const mainCanvases = containerElement.querySelectorAll('.reader-canvas');
-        mainCanvases.forEach((canvas, index) => { if (canvas === clickedCanvas) clickedIndex = index; });
-        if (clickedIndex === -1) clickedIndex = 0;
-
-        const mainCanvasWidth = clickedCanvas.offsetWidth;
-        const mainCanvasHeight = clickedCanvas.offsetHeight;
-
-        let canvasTopPosition = 0;
-        for (let i = 0; i < clickedIndex; i++) canvasTopPosition += mainCanvases[i].offsetHeight;
-
-        const containerStyles = window.getComputedStyle(containerElement);
-        const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
-        const scrollOffsetFromCanvasStart = effectiveScrollPosition - (canvasTopPosition + containerElement.offsetTop + containerPaddingTop);
-        const naturalAspectRatio = clickedCanvas.width / clickedCanvas.height;
-
-        focusStateData = { imageIndex: clickedIndex, mainImageWidth: mainCanvasWidth, mainImageHeight: mainCanvasHeight, viewportScrollOffset: scrollOffsetFromCanvasStart, naturalAspectRatio };
-
-        scrollContainer.innerHTML = '';
-        if (currentMode === MODES.WEBTOON) {
-            originalImageParents = [];
-            mainCanvases.forEach((canvas, index) => {
-                originalImageParents.push(canvas.parentNode);
-                scrollContainer.appendChild(canvas);
-                canvas.addEventListener('click', handleFocusModalCanvasClick);
-                // Remove the open focus listener while in modal
-                if (canvas.openFocusListener) {
-                    canvas.removeEventListener('click', canvas.openFocusListener);
+        setupLazyLoading() {
+            this.observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting && this.lazyTokens.length > 0 && !this.isInitialLoad) {
+                            this.loadNextImage();
+                        }
+                    });
+                },
+                {
+                    root: null,
+                    rootMargin: `0px 0px ${DIMENSIONS.LAZY_LOAD_MARGIN}px 0px`,
+                    threshold: 0
                 }
-            });
-            // Set up lazy loading in focus modal
-            let modalLazyTokens = [...lazyTokens];
-            const checkScrollForLazyLoadingModal = () => {
-                if (modalLazyTokens.length === 0) return;
-                const canvases = scrollContainer.querySelectorAll('.reader-canvas');
-                if (canvases.length === 0) return;
-                const lastCanvas = canvases[canvases.length - 1];
-                const scrollTop = scrollContainer.scrollTop;
-                const modalHeight = scrollContainer.clientHeight;
-                const lastCanvasTop = lastCanvas.offsetTop;
-                // Load next if last canvas top is within 0.5 modal heights from bottom
-                if (lastCanvasTop - scrollTop <= modalHeight + modalHeight * 0.5) {
-                    const token = modalLazyTokens.shift();
+            );
+        }
+
+        loadInitialImages() {
+            const initialTokens = this.images.slice(0, 2);
+            this.lazyTokens = [];
+            this.currentLoadedIndex = 0;
+
+            const loadPromises = initialTokens.map((token, i) => this.createAndLoadCanvas(token, i));
+
+            Promise.all(loadPromises).then(() => {
+                this.updateMode();
+                // Set up intersection observer for lazy loading
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const canvas = entry.target;
+                            const imageIndex = parseInt(canvas.dataset.index);
+                            if (imageIndex >= this.currentLoadedIndex && imageIndex < this.images.length) {
+                                this.loadImageToCanvas(canvas, `/api/image?token=${this.images[imageIndex]}`);
+                                this.currentLoadedIndex++;
+                                observer.unobserve(canvas);
+                            }
+                        }
+                    });
+                }, { rootMargin: '100px' });
+
+                // Create placeholder canvases for remaining images
+                for (let i = 2; i < this.images.length; i++) {
                     const canvas = document.createElement('canvas');
                     canvas.className = 'reader-canvas';
-                    canvas.width = 100;
-                    canvas.height = 100;
-                    canvas.style.width = '100%';
-                    canvas.style.height = 'auto';
+                    canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
+                    canvas.height = DIMENSIONS.PLACEHOLDER_SIZE;
                     canvas.style.display = 'block';
-                    scrollContainer.appendChild(canvas);
-                    loadImageToCanvas(canvas, `/api/image?token=${token}`);
-                    canvas.addEventListener('click', handleFocusModalCanvasClick);
+                    canvas.dataset.index = i;
+                    canvas.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.openFocusModal(canvas);
+                    });
+                    this.container.appendChild(canvas);
+                    this.lazyTokens.push(canvas);
+                    observer.observe(canvas);
                 }
-            };
-            const handleModalScroll = () => checkScrollForLazyLoadingModal();
-            scrollContainer.addEventListener('scroll', handleModalScroll);
-            // Store to remove later
-            scrollContainer.modalScrollHandler = handleModalScroll;
-        } else {
-            // For single/double, create enlarged copies of current page
-            if (currentMode === MODES.SINGLE) {
-                const currentSrc = images[currentPage];
-                if (currentSrc) {
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'reader-canvas';
-                    canvas.style.maxWidth = '100%';
-                    canvas.style.height = 'auto';
-                    scrollContainer.appendChild(canvas);
-                    loadImageToCanvas(canvas, currentSrc);
-                    canvas.addEventListener('click', handleFocusModalCanvasClick);
-                }
-            } else if (currentMode === MODES.SIDE_BY_SIDE) {
-                const leftSrc = images[currentPage * 2];
-                const rightSrc = images[currentPage * 2 + 1];
-                if (leftSrc) {
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'reader-canvas';
-                    canvas.style.setProperty('width', '50%', 'important');
-                    canvas.style.setProperty('height', 'auto', 'important');
-                    scrollContainer.appendChild(canvas);
-                    loadImageToCanvas(canvas, leftSrc);
-                    canvas.addEventListener('click', handleFocusModalCanvasClick);
-                }
-                if (rightSrc) {
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'reader-canvas';
-                    canvas.style.setProperty('width', '50%', 'important');
-                    canvas.style.setProperty('height', 'auto', 'important');
-                    scrollContainer.appendChild(canvas);
-                    loadImageToCanvas(canvas, rightSrc);
-                    canvas.addEventListener('click', handleFocusModalCanvasClick);
-                }
-                // Set container to flex for side by side
-                scrollContainer.style.setProperty('display', 'flex', 'important');
-                scrollContainer.style.setProperty('flex-direction', 'row', 'important');
-                scrollContainer.style.setProperty('justify-content', 'space-between', 'important');
-                scrollContainer.style.setProperty('align-items', 'flex-start', 'important');
-            }
-        }
-
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        document.body.classList.add('webtoon-focus-open');
-
-        const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
-        if (focusCanvases[clickedIndex]) {
-            const focusCanvas = focusCanvases[clickedIndex];
-            let targetScrollTop = 0;
-            for (let i = 0; i < clickedIndex; i++) targetScrollTop += focusCanvases[i].offsetHeight;
-            const heightRatio = focusCanvas.offsetHeight / mainCanvasHeight;
-            targetScrollTop += scrollOffsetFromCanvasStart * heightRatio;
-            scrollContainer.scrollTop = targetScrollTop;
-        }
-
-        if (shouldRestoreScroll && savedState.modalScrollTop !== undefined) {
-            scrollContainer.scrollTop = savedState.modalScrollTop;
-        }
-
-        focusModalZoom = 1;
-        updateFocusModalZoom();
-
-        // Bring pagination to top in focus mode for single/double modes
-        if (currentMode !== MODES.WEBTOON) {
-            const pagination = document.getElementById('reader-pagination-bottom');
-            if (pagination) {
-                pagination.style.setProperty('z-index', '10002', 'important');
-                pagination.style.setProperty('position', 'fixed', 'important');
-                pagination.style.setProperty('bottom', '10px', 'important');
-                pagination.style.setProperty('top', 'auto', 'important');
-                pagination.style.setProperty('left', '50%', 'important');
-                pagination.style.setProperty('display', 'flex', 'important');
-                pagination.stopPropagationListener = (e) => e.stopPropagation();
-                pagination.addEventListener('click', pagination.stopPropagationListener);
-            }
-        }
-
-        scrollContainer.addEventListener('scroll', () => saveFocusState(scrollContainer.scrollTop));
-    };
-
-    const closeFocusModal = () => {
-        if (!focusModal) return;
-
-        const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-        const currentModalScrollTop = scrollContainer.scrollTop;
-        saveFocusState(currentModalScrollTop);
-
-        // Remove modal lazy loading scroll handler
-        if (scrollContainer.modalScrollHandler) {
-            scrollContainer.removeEventListener('scroll', scrollContainer.modalScrollHandler);
-            delete scrollContainer.modalScrollHandler;
-        }
-
-        if (currentMode === MODES.WEBTOON) {
-            const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
-
-        // Store modal heights before moving canvases back
-        const modalHeights = Array.from(focusCanvases).map(canvas => canvas.offsetHeight);
-
-        // Calculate the current position in the modal
-        let currentCanvasIndex = 0;
-        let cumulativeModalHeight = 0;
-        for (let i = 0; i < focusCanvases.length; i++) {
-            const canvasHeight = modalHeights[i];
-            if (cumulativeModalHeight + canvasHeight > currentModalScrollTop) {
-                currentCanvasIndex = i;
-                break;
-            }
-            cumulativeModalHeight += canvasHeight;
-        }
-        const offsetInModal = currentModalScrollTop - cumulativeModalHeight;
-
-        // Move canvases back
-        focusCanvases.forEach((canvas, index) => {
-            const parent = originalImageParents[index] || containerElement;
-            parent.appendChild(canvas);
-            canvas.removeEventListener('click', handleFocusModalCanvasClick);
-            // Restore the open focus listener
-            if (canvas.openFocusListener) {
-                canvas.addEventListener('click', canvas.openFocusListener);
-            }
-        });
-
-        // Restore scroll position with proper mapping
-        requestAnimationFrame(() => {
-            const mainElement = document.querySelector('main.site-main');
-            const mainCanvases = containerElement.querySelectorAll('.reader-canvas');
-            const containerStyles = window.getComputedStyle(containerElement);
-            const containerPaddingTop = parseFloat(containerStyles.paddingTop) || 0;
-
-            let mainScrollTop = containerElement.offsetTop + containerPaddingTop;
-            for (let i = 0; i < currentCanvasIndex; i++) {
-                mainScrollTop += mainCanvases[i].offsetHeight;
-            }
-
-            const heightRatio = (currentCanvasIndex < mainCanvases.length && modalHeights[currentCanvasIndex]) ?
-                mainCanvases[currentCanvasIndex].offsetHeight / modalHeights[currentCanvasIndex] : 1;
-            mainScrollTop += offsetInModal * heightRatio;
-
-            // Adjust for navbar height to match perceived position
-            const navbar = document.querySelector('nav') || document.querySelector('.navbar') || document.querySelector('.top-navbar');
-            const navbarHeight = navbar ? navbar.offsetHeight : 0;
-            mainScrollTop = Math.max(0, mainScrollTop - navbarHeight);
-
-            if (mainElement) {
-                mainElement.scrollTop = mainScrollTop;
-            } else {
-                document.documentElement.scrollTop = mainScrollTop;
-            }
-
-            // Reset pagination styles
-            const pagination = document.getElementById('reader-pagination-bottom');
-            if (pagination) {
-                if (pagination.stopPropagationListener) {
-                    pagination.removeEventListener('click', pagination.stopPropagationListener);
-                    delete pagination.stopPropagationListener;
-                }
-                pagination.style.removeProperty('z-index');
-                pagination.style.removeProperty('position');
-                pagination.style.removeProperty('bottom');
-                pagination.style.removeProperty('top');
-                pagination.style.removeProperty('left');
-                pagination.style.removeProperty('transform');
-                pagination.style.removeProperty('display');
-            }
-
-            // Hide the modal
-            focusModal.classList.remove('active');
-            focusModal.style.display = 'none';
-            document.body.classList.remove('webtoon-focus-open');
-
-            // Update visibility after modal is hidden
-            updateModeVisibility();
-            // Re-observe for lazy loading in main view
-            observeLazyCanvases();
-        });
-        } else {
-            // For single/double, just hide the modal
-            requestAnimationFrame(() => {
-                // Update visibility after modal is hidden
-                updateModeVisibility();
-
-                // Hide the modal
-                focusModal.classList.remove('active');
-                focusModal.style.display = 'none';
-                document.body.classList.remove('webtoon-focus-open');
-
-                // Reset pagination styles
-                const pagination = document.getElementById('reader-pagination-bottom');
-                if (pagination) {
-                    if (pagination.stopPropagationListener) {
-                        pagination.removeEventListener('click', pagination.stopPropagationListener);
-                        delete pagination.stopPropagationListener;
-                    }
-                    pagination.style.removeProperty('z-index');
-                    pagination.style.removeProperty('position');
-                    pagination.style.removeProperty('bottom');
-                    pagination.style.removeProperty('top');
-                    pagination.style.removeProperty('left');
-                    pagination.style.removeProperty('transform');
-                    pagination.style.removeProperty('display');
-                }
+                this.isInitialLoad = false;
             });
         }
-    };
 
-    const updateFocusModalZoom = () => {
-        const scrollContainer = focusModal ? focusModal.querySelector('.webtoon-focus-modal-scroll') : null;
-        if (!scrollContainer) return;
-
-        const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
-        focusCanvases.forEach(canvas => {
-            canvas.style.transform = `scale(${focusModalZoom})`;
-            canvas.style.transformOrigin = 'top center';
-        });
-    };
-
-    const zoomInFocusModal = () => {
-        if (focusModalZoom < 3) {
-            focusModalZoom += 0.25;
-            updateFocusModalZoom();
+        createAndLoadCanvas(token, index) {
+            const canvas = document.createElement('canvas');
+            canvas.className = 'reader-canvas';
+            canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
+            canvas.height = DIMENSIONS.PLACEHOLDER_SIZE;
+            canvas.style.display = 'block';
+            canvas.dataset.index = index;
+            this.container.appendChild(canvas);
+            this.loadedCanvases[index] = canvas;
+            return this.loadImageToCanvas(canvas, `/api/image?token=${token}`);
         }
-    };
 
-    const zoomOutFocusModal = () => {
-        if (focusModalZoom > 0.5) {
-            focusModalZoom -= 0.25;
-            updateFocusModalZoom();
-        }
-    };
+        async loadImageToCanvas(canvas, url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+                const blob = await response.blob();
+                const bitmap = await createImageBitmap(blob);
+                const ctx = canvas.getContext('2d');
 
-    const resetFocusModalZoom = () => {
-        focusModalZoom = 1;
-        updateFocusModalZoom();
-    };
+                let width = bitmap.width;
+                let height = bitmap.height;
 
-    // Reading mode functions
-    const setReadingMode = (mode) => {
-        currentMode = mode;
-        localStorage.setItem(STORAGE_KEY, mode);
-        updateModeVisibility();
-        updateModeButtons();
-    };
+                if (this.currentMode === MODES.WEBTOON) {
+                    // No scaling, let CSS handle sizing
+                }
 
-    const updatePageCounter = () => {
-        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
-        const counter = (currentPage + 1) + ' / ' + maxPages;
-        const pageCounter = document.getElementById('page-counter');
-        if (pageCounter) pageCounter.textContent = counter;
-        const pageCounterBottom = document.getElementById('page-counter-bottom');
-        if (pageCounterBottom) pageCounterBottom.textContent = counter;
-    };
-
-    const updateModeVisibility = () => {
-        if (isLightNovel) return;
-        const allCanvases = containerElement.querySelectorAll('.reader-canvas');
-        const wrappers = containerElement.querySelectorAll('.webtoon-image-wrapper');
-        allCanvases.forEach(canvas => {
-            canvas.style.display = 'none';
-            canvas.style.maxWidth = '';
-            canvas.style.height = '';
-            canvas.style.width = '';
-        });
-        wrappers.forEach(wrapper => wrapper.style.display = 'none');
-        if (currentMode === MODES.WEBTOON) {
-            containerElement.className = 'flex flex-col items-center justify-center p-0 sm:p-4 w-full mx-auto';
-            containerElement.style.maxWidth = '1200px';
-            containerElement.style.display = '';
-            containerElement.style.justifyContent = '';
-            containerElement.style.alignItems = '';
-            containerElement.style.gap = '';
-            wrappers.forEach(wrapper => wrapper.style.display = 'block');
-            allCanvases.forEach(canvas => {
-                canvas.style.display = 'block';
-                canvas.style.maxWidth = '100%';
-                canvas.style.height = 'auto';
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(bitmap, 0, 0, width, height);
                 canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                canvas.style.objectFit = 'contain';
+
+                // Update focus modal if active
+                if (this.focusModal && this.focusModal.classList.contains('active')) {
+                    await this.updateFocusModal();
+                }
+            } catch (error) {
+                console.error('Failed to load image:', error);
+            }
+        }
+
+        loadNextImage() {
+            if (this.lazyTokens.length === 0) return;
+            const numToLoad = Math.min(2, this.lazyTokens.length);
+            const loadPromises = [];
+
+            for (let i = 0; i < numToLoad; i++) {
+                const token = this.lazyTokens.shift();
+                const canvas = document.createElement('canvas');
+                canvas.className = 'reader-canvas';
+                canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
+                canvas.height = DIMENSIONS.PLACEHOLDER_SIZE;
+                canvas.style.height = 'auto';
+                canvas.style.display = 'block';
+                canvas.dataset.index = this.currentLoadedIndex + i;
+                this.container.appendChild(canvas);
+                loadPromises.push(this.loadImageToCanvas(canvas, `/api/image?token=${token}`));
+                this.currentLoadedIndex++;
+            }
+
+            Promise.all(loadPromises).then(() => {
+                const lastCanvas = this.container.querySelector('.reader-canvas:last-child');
+                if (lastCanvas) this.observer.observe(lastCanvas);
             });
-        } else if (currentMode === MODES.SINGLE) {
-            containerElement.className = 'reader-single-page-container';
-            containerElement.style.display = '';
-            containerElement.style.justifyContent = '';
-            containerElement.style.alignItems = '';
-            containerElement.style.gap = '';
-            containerElement.style.maxWidth = '';
-            allCanvases.forEach((canvas, index) => {
-                if (index === currentPage) {
-                    canvas.style.display = 'block';
-                    canvas.style.maxWidth = '100%';
-                    canvas.style.height = 'auto';
+        }
+
+        updateMode() {
+            if (this.isLightNovel) return;
+
+            // Reset container styles
+            this.container.style.overflowY = '';
+            this.container.style.height = '';
+            this.container.style.position = '';
+            this.container.style.textAlign = '';
+            this.container.style.display = '';
+            this.container.style.justifyContent = '';
+            this.container.style.alignItems = '';
+            this.container.style.gap = '';
+            this.container.style.maxWidth = '';
+            this.container.className = '';
+
+            this.loadedCanvases.forEach(canvas => {
+                if (canvas) {
+                    canvas.style.display = 'none';
+                    canvas.style.maxWidth = '';
+                    canvas.style.height = '';
                     canvas.style.width = '';
+                    canvas.style.position = '';
+                    canvas.style.left = '';
+                    canvas.style.top = '';
                 }
             });
-        } else if (currentMode === MODES.SIDE_BY_SIDE) {
-            containerElement.className = '';
-            containerElement.style.display = 'flex';
-            containerElement.style.justifyContent = 'space-between';
-            containerElement.style.alignItems = 'flex-start';
-            containerElement.style.gap = '0';
-            containerElement.style.maxWidth = '';
-            allCanvases.forEach((canvas, index) => {
-                if (index === currentPage * 2 || index === currentPage * 2 + 1) {
+
+            if (this.currentMode === MODES.WEBTOON) {
+                this.setupWebtoonMode();
+            }
+
+            this.updatePaginationVisibility();
+            this.attachCanvasListeners();
+            this.updatePageCounter();
+        }
+
+        setupWebtoonMode() {
+            this.container.className = 'flex flex-col p-0 w-full mx-auto';
+            this.container.style.display = '';
+            this.container.style.justifyContent = '';
+            this.container.style.alignItems = '';
+            this.container.style.gap = '';
+            this.container.style.maxWidth = '60%';
+            this.loadedCanvases.forEach(canvas => {
+                if (canvas) {
                     canvas.style.display = 'block';
-                    canvas.style.maxWidth = '50%';
-                    canvas.style.height = 'auto';
-                    canvas.style.width = '';
                 }
             });
         }
-        // Handle uk-container width on mobile for full-width images
-        updateContainerWidth();
-        attachCanvasListeners();
-        updatePageCounter();
-        const pagination = document.getElementById('reader-pagination');
-        const paginationBottom = document.getElementById('reader-pagination-bottom');
-        if (currentMode === MODES.WEBTOON) {
-            if (pagination) pagination.style.display = 'none';
+
+        loadImageForPage(pageIndex) {
+            const token = this.images[pageIndex];
+            const canvas = document.createElement('canvas');
+            canvas.className = 'reader-canvas';
+            canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
+            canvas.height = DIMENSIONS.PLACEHOLDER_SIZE;
+            canvas.style.display = 'block';
+            this.container.appendChild(canvas);
+            this.loadedCanvases[pageIndex] = canvas;
+            this.loadImageToCanvas(canvas, `/api/image?token=${token}`);
+        }
+
+        updatePaginationVisibility() {
+            const paginationBottom = document.querySelector(SELECTORS.PAGINATION_BOTTOM);
             if (paginationBottom) paginationBottom.style.display = 'none';
-        } else {
-            if (pagination) pagination.style.display = 'flex';
-            if (paginationBottom) paginationBottom.style.display = 'flex';
-            centerPaginationToContent();
         }
 
-        // If focus modal is active
-        if (focusModal && focusModal.classList.contains('active')) {
-            if (currentMode === MODES.WEBTOON) {
-                const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-                const focusCanvases = scrollContainer.querySelectorAll('.reader-canvas');
-                let targetScrollTop = 0;
-                let targetIndex = currentPage; // For webtoon, currentPage is 0
-                for (let i = 0; i < targetIndex && i < focusCanvases.length; i++) {
-                    targetScrollTop += focusCanvases[i].offsetHeight;
+        attachCanvasListeners() {
+            this.loadedCanvases.forEach(canvas => {
+                if (canvas) {
+                    canvas.addEventListener('click', () => {
+                        this.openFocusModal(canvas);
+                    });
                 }
-                scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+            });
+        }
+
+        updatePageCounter() {
+            const counter = document.getElementById('page-counter');
+            const counterBottom = document.getElementById('page-counter-bottom');
+            const total = this.images.length;
+            const current = this.currentPage + 1;
+            const text = total > 0 ? `${current} / ${total}` : 'No images';
+            if (counter) counter.textContent = text;
+            if (counterBottom) counterBottom.textContent = text;
+        }
+
+        handleResize() {
+            // No action needed for webtoon mode
+        }
+
+        handleKeydown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.prevPage();
+                    break;
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case ' ':
+                    e.preventDefault();
+                    this.nextPage();
+                    break;
+                case 'Escape':
+                    if (this.focusModal) {
+                        this.closeFocusModal();
+                    }
+                    break;
+            }
+        }
+
+        async nextPage() {
+            if (this.focusModal && this.focusModal.classList.contains('active')) {
+                // Handle focus modal navigation
+                const increment = 1;
+                const maxPage = this.images.length - 1;
+                if (this.currentFocusIndex < maxPage) {
+                    this.currentFocusIndex += increment;
+                    await this.updateFocusModal();
+                }
+                return;
+            }
+
+            if (this.currentMode === MODES.WEBTOON) {
+                window.scrollBy(0, window.innerHeight);
+                return;
+            }
+        }
+
+        async prevPage() {
+            if (this.focusModal && this.focusModal.classList.contains('active')) {
+                // Handle focus modal navigation
+                const decrement = 1;
+                if (this.currentFocusIndex >= decrement) {
+                    this.currentFocusIndex -= decrement;
+                    await this.updateFocusModal();
+                }
+                return;
+            }
+
+            if (this.currentMode === MODES.WEBTOON) {
+                window.scrollBy(0, -window.innerHeight);
+                return;
+            }
+        }
+
+        async changeMode(newMode) {
+            if (newMode === MODES.WEBTOON) {
+                this.currentMode = newMode;
+                this.saveSettings();
+                this.currentPage = 0;
+                this.updateMode();
+            } else if (this.focusModal && this.focusModal.classList.contains('active')) {
+                this.focusModalMode = newMode;
+                await this.updateFocusModal();
+            }
+        }
+
+        async openFocusModal(canvas) {
+            if (!this.focusModal) {
+                this.focusModal = document.createElement('div');
+                this.focusModal.className = 'focus-modal';
+                this.focusModal.innerHTML = `
+                    <div class="focus-modal-overlay"></div>
+                    <div class="focus-modal-content">
+                        <button class="focus-nav-btn focus-prev-btn" style="background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 75%, rgba(0,0,0,0) 100%); color: white; border: none; cursor: pointer; position: fixed; left: 0; top: 0; width: 100px; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10001;">
+                            <uk-icon height=64 width=64 icon="chevron-left"></uk-icon>
+                        </button>
+                        <div class="focus-canvas-container" style="display: flex; justify-content: center; align-items: center; height: 100vh; gap: 0px;">
+                            <canvas class="focus-canvas focus-canvas-left"></canvas>
+                            <canvas class="focus-canvas focus-canvas-right" style="display: none;"></canvas>
+                        </div>
+                        <button class="focus-nav-btn focus-next-btn" style="background: linear-gradient(to left, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 75%, rgba(0,0,0,0) 100%); color: white; border: none; cursor: pointer; position: fixed; right: 0; top: 0; width: 100px; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10001;">
+                            <uk-icon height=64 width=64 icon="chevron-right"></uk-icon>
+                        </button>
+                        <button class="uk-btn uk-btn-default focus-toggle-btn" style="position: fixed; top: 10px; right: 60px; z-index: 10002; cursor: pointer;">
+                            Single
+                        </button>
+                        <button class="uk-btn uk-btn-destructive btn-circular focus-close-btn" style="position: fixed; top: 10px; right: 10px; z-index: 10002; cursor: pointer;">
+                            <uk-icon height=32 width=32 icon="X"></uk-icon>
+                        </button>
+                        <div class="focus-page-number" style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 10002;"></div>
+                    </div>
+                `;
+                document.body.appendChild(this.focusModal);
+
+                this.focusModal.querySelector('.focus-modal-overlay').addEventListener('click', () => this.closeFocusModal());
+                this.focusModal.querySelector('.focus-prev-btn').addEventListener('click', () => this.prevPage());
+                this.focusModal.querySelector('.focus-next-btn').addEventListener('click', () => this.nextPage());
+                this.focusModal.querySelector('.focus-toggle-btn').addEventListener('click', () => this.toggleFocusMode());
+                this.focusModal.querySelector('.focus-close-btn').addEventListener('click', () => this.closeFocusModal());
+            }
+
+            this.focusModalMode = MODES.SINGLE;
+            this.currentFocusIndex = parseInt(canvas.dataset.index);
+
+            this.focusModal.classList.add('active');
+            await this.updateFocusModal();
+
+            this.scrollPositionBeforeFocus = window.scrollY;
+            document.body.style.overflow = 'hidden';
+        }
+
+        async updateFocusModal() {
+            if (!this.focusModal || !this.focusModal.classList.contains('active')) return;
+
+            const leftCanvas = this.focusModal.querySelector('.focus-canvas-left');
+            const rightCanvas = this.focusModal.querySelector('.focus-canvas-right');
+
+            // Clear canvases to prevent showing previous images
+            const leftCtx = leftCanvas.getContext('2d');
+            leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
+            const rightCtx = rightCanvas.getContext('2d');
+            rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+
+            if (this.focusModalMode === MODES.SINGLE) {
+                this.focusModal.style.flexDirection = 'column';
+                const canvas = this.loadedCanvases[this.currentFocusIndex];
+                const contentDiv = document.getElementById('content');
+                const maxW = contentDiv ? contentDiv.getBoundingClientRect().width : window.innerWidth * 0.9;
+                const maxH = window.innerHeight * 0.9;
+                if (!canvas) {
+                    // Load the image on demand
+                    const token = this.images[this.currentFocusIndex];
+                    try {
+                        const response = await fetch(`/api/image?token=${token}`);
+                        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+                        const blob = await response.blob();
+                        const bitmap = await createImageBitmap(blob);
+                        const scale = Math.min(1, maxW / bitmap.width, maxH / bitmap.height);
+                        leftCanvas.width = bitmap.width * scale;
+                        leftCanvas.height = bitmap.height * scale;
+                        const ctx = leftCanvas.getContext('2d');
+                        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, leftCanvas.width, leftCanvas.height);
+                    } catch (error) {
+                        console.error('Failed to load image for focus modal:', error);
+                    }
+                } else {
+                    const scale = Math.min(1, maxW / canvas.width, maxH / canvas.height);
+                    leftCanvas.width = canvas.width * scale;
+                    leftCanvas.height = canvas.height * scale;
+                    const ctx = leftCanvas.getContext('2d');
+                    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, leftCanvas.width, leftCanvas.height);
+                }
+                leftCanvas.style.width = '100%';
+                leftCanvas.style.height = 'auto';
+                leftCanvas.style.display = 'block';
+                rightCanvas.style.display = 'none';
+            } else if (this.focusModalMode === MODES.SIDE_BY_SIDE) {
+                this.focusModal.style.flexDirection = 'row';
+                const contentDiv = document.getElementById('content');
+                const maxW = contentDiv ? contentDiv.getBoundingClientRect().width * 0.49 : window.innerWidth * 0.49;
+                const maxH = window.innerHeight * 0.9;
+                // Load left image
+                const leftImg = this.loadedCanvases[this.currentFocusIndex];
+                if (!leftImg) {
+                    const token = this.images[this.currentFocusIndex];
+                    try {
+                        const response = await fetch(`/api/image?token=${token}`);
+                        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+                        const blob = await response.blob();
+                        const bitmap = await createImageBitmap(blob);
+                        const scale = Math.min(1, maxW / bitmap.width, maxH / bitmap.height);
+                        leftCanvas.width = bitmap.width * scale;
+                        leftCanvas.height = bitmap.height * scale;
+                        const ctx = leftCanvas.getContext('2d');
+                        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, leftCanvas.width, leftCanvas.height);
+                    } catch (error) {
+                        console.error('Failed to load left image for focus modal:', error);
+                    }
+                } else {
+                    const scale = Math.min(1, maxW / leftImg.width, maxH / leftImg.height);
+                    leftCanvas.width = leftImg.width * scale;
+                    leftCanvas.height = leftImg.height * scale;
+                    const ctxLeft = leftCanvas.getContext('2d');
+                    ctxLeft.drawImage(leftImg, 0, 0, leftImg.width, leftImg.height, 0, 0, leftCanvas.width, leftCanvas.height);
+                }
+
+                // Load right image
+                const rightImg = this.loadedCanvases[this.currentFocusIndex + 1];
+                if (rightImg) {
+                    const scale = Math.min(1, maxW / rightImg.width, maxH / rightImg.height);
+                    rightCanvas.width = rightImg.width * scale;
+                    rightCanvas.height = rightImg.height * scale;
+                    const ctxRight = rightCanvas.getContext('2d');
+                    ctxRight.drawImage(rightImg, 0, 0, rightImg.width, rightImg.height, 0, 0, rightCanvas.width, rightCanvas.height);
+                    rightCanvas.style.display = 'block';
+                } else if (this.currentFocusIndex + 1 < this.images.length) {
+                    const token = this.images[this.currentFocusIndex + 1];
+                    try {
+                        const response = await fetch(`/api/image?token=${token}`);
+                        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+                        const blob = await response.blob();
+                        const bitmap = await createImageBitmap(blob);
+                        const scale = Math.min(1, maxW / bitmap.width, maxH / bitmap.height);
+                        rightCanvas.width = bitmap.width * scale;
+                        rightCanvas.height = bitmap.height * scale;
+                        const ctx = rightCanvas.getContext('2d');
+                        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, rightCanvas.width, rightCanvas.height);
+                        rightCanvas.style.display = 'block';
+                    } catch (error) {
+                        console.error('Failed to load right image for focus modal:', error);
+                        rightCanvas.style.display = 'none';
+                    }
+                } else {
+                    rightCanvas.style.display = 'none';
+                }
+
+                leftCanvas.style.display = 'block';
+            }
+
+            this.updateFocusPageNumber();
+        }
+
+        async toggleFocusMode() {
+            if (this.focusModalMode === MODES.SINGLE) {
+                this.focusModalMode = MODES.SIDE_BY_SIDE;
             } else {
-                // Update modal content for single/double
-                const scrollContainer = focusModal.querySelector('.webtoon-focus-modal-scroll');
-                scrollContainer.innerHTML = '';
-                if (currentMode === MODES.SINGLE) {
-                    const currentSrc = images[currentPage];
-                    if (currentSrc) {
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'reader-canvas';
-                        canvas.style.maxWidth = '100%';
-                        canvas.style.height = 'auto';
-                        scrollContainer.appendChild(canvas);
-                        loadImageToCanvas(canvas, currentSrc);
-                        canvas.addEventListener('click', handleFocusModalCanvasClick);
-                    }
-                } else if (currentMode === MODES.SIDE_BY_SIDE) {
-                    const leftSrc = images[currentPage * 2];
-                    const rightSrc = images[currentPage * 2 + 1];
-                    if (leftSrc) {
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'reader-canvas';
-                        canvas.style.setProperty('width', '50%', 'important');
-                        canvas.style.setProperty('height', 'auto', 'important');
-                        scrollContainer.appendChild(canvas);
-                        loadImageToCanvas(canvas, leftSrc);
-                        canvas.addEventListener('click', handleFocusModalCanvasClick);
-                    }
-                    if (rightSrc) {
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'reader-canvas';
-                        canvas.style.setProperty('width', '50%', 'important');
-                        canvas.style.setProperty('height', 'auto', 'important');
-                        scrollContainer.appendChild(canvas);
-                        loadImageToCanvas(canvas, rightSrc);
-                        canvas.addEventListener('click', handleFocusModalCanvasClick);
-                    }
-                    // Set container to flex for side by side
-                    scrollContainer.style.setProperty('display', 'flex', 'important');
-                    scrollContainer.style.setProperty('flex-direction', 'row', 'important');
-                    scrollContainer.style.setProperty('justify-content', 'space-between', 'important');
-                    scrollContainer.style.setProperty('align-items', 'flex-start', 'important');
-                }
+                this.focusModalMode = MODES.SINGLE;
+            }
+            const toggleBtn = this.focusModal.querySelector('.focus-toggle-btn');
+            toggleBtn.textContent = this.focusModalMode === MODES.SINGLE ? 'Single' : 'Side-by-Side';
+            await this.updateFocusModal();
+        }
+
+        updateFocusPageNumber() {
+            const pageNumberDiv = this.focusModal.querySelector('.focus-page-number');
+            if (!pageNumberDiv) return;
+
+            const total = this.images.length;
+            if (this.focusModalMode === MODES.SINGLE) {
+                const current = this.currentFocusIndex + 1;
+                pageNumberDiv.textContent = `Page ${current} of ${total}`;
+            } else {
+                const start = this.currentFocusIndex + 1;
+                const end = Math.min(this.currentFocusIndex + 2, total);
+                pageNumberDiv.textContent = `Pages ${start}-${end} of ${total}`;
             }
         }
-    };
 
-    const updateModeButtons = () => {
-        document.querySelectorAll('.reader-mode-btn').forEach(btn => {
-            const mode = btn.getAttribute('data-mode');
-            btn.classList.toggle('uk-btn-primary', mode === currentMode);
-            btn.classList.toggle('uk-btn-default', mode !== currentMode);
-        });
-    };
-
-    const attachCanvasListeners = () => {
-        containerElement.querySelectorAll('.reader-canvas').forEach(canvas => {
-            if (!canvas.openFocusListener) {
-                canvas.openFocusListener = () => {
-                    if (isMobile()) {
-                        // On mobile, scroll down slightly instead of opening focus modal
-                        const scrollAmount = window.innerHeight * 0.75; // Scroll down by 3/4 viewport height
-                        window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
-                    } else {
-                        openFocusModal(canvas);
-                    }
-                };
-                canvas.addEventListener('click', canvas.openFocusListener);
+        closeFocusModal() {
+            if (this.focusModal) {
+                this.focusModal.classList.remove('active');
+                document.body.style.overflow = '';
+                window.scrollTo(0, this.scrollPositionBeforeFocus);
             }
-        });
-    };
-
-    const centerPaginationToContent = () => {
-        const pagination = document.getElementById('reader-pagination');
-        const paginationBottom = document.getElementById('reader-pagination-bottom');
-        if (!containerElement || (!pagination && !paginationBottom)) return;
-
-        const containerRect = containerElement.getBoundingClientRect();
-        const centerX = containerRect.left + (containerRect.width / 2);
-
-        if (pagination) {
-            pagination.style.left = centerX + 'px';
-            pagination.style.transform = 'translateX(-50%)';
         }
-        if (paginationBottom) {
-            paginationBottom.style.left = centerX + 'px';
-            paginationBottom.style.transform = 'translateX(-50%) translateY(0)';
+    }
+
+    // Initialize when DOM is ready
+    function initializeReaders() {
+        console.log('[Reader] Initializing readers...');
+
+        const container = document.querySelector(SELECTORS.CONTAINER);
+        console.log('[Reader] Container found:', !!container);
+
+        if (container) {
+            const reader = new Reader(SELECTORS.CONTAINER);
+            // Expose reader globally if needed
+            window.reader = reader;
+            console.log('[Reader] Manga reader initialized');
         }
-    };
 
-    // Navigation functions
-    const nextPage = () => {
-        if (isLightNovel) return;
-        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
-        if (currentPage < maxPages - 1) {
-            currentPage++;
-            updateModeVisibility();
-        }
-    };
+        // Light Novel Reader Logic
+        console.log('[Reader] Calling initializeLightNovelReader');
+        initializeLightNovelReader();
+    }
 
-    const prevPage = () => {
-        if (isLightNovel) return;
-        if (currentPage > 0) {
-            currentPage--;
-            updateModeVisibility();
-        }
-    };
+    function initializeLightNovelReader() {
+        console.log('[Light Novel Reader] Initializing...');
 
-    const goToPage = (page) => {
-        if (isLightNovel) return;
-        const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
-        if (page >= 0 && page < maxPages) {
-            currentPage = page;
-            updateModeVisibility();
-        }
-    };
+        // Check if this is a light novel page
+        const epubReader = document.querySelector('.epub-reader');
+        console.log('[Light Novel Reader] epub-reader element found:', !!epubReader);
 
-    // Initialization
-    const init = () => {
-        containerElement = document.getElementById('reader-images-container');
-        const textContainer = document.getElementById('reader-text-container');
-        isLightNovel = !!textContainer;
-
-        if (isLightNovel) {
-            loadNovelSettings();
-            applyNovelSettings();
+        if (!epubReader) {
+            console.log('[Light Novel Reader] No epub-reader found, skipping initialization');
             return;
         }
 
-        if (!containerElement) return;
+        console.log('[Light Novel Reader] epub-reader found, proceeding with initialization');
 
-        const savedMode = localStorage.getItem(STORAGE_KEY);
-        if (savedMode && Object.values(MODES).includes(savedMode)) currentMode = savedMode;
+        // Reader customization variables
+        let currentFontSize = 18;
+        const minFontSize = 12;
+        const maxFontSize = 28;
+        const fontSizeStep = 2;
 
-        // Collect tokens from divs and remove them
-        const tokenDivs = Array.from(containerElement.querySelectorAll('.reader-token'));
-        images = tokenDivs.map(div => div.dataset.token);
-        
-        // Remove all token divs
-        tokenDivs.forEach(div => div.remove());
+        const minMargin = 0;
+        const maxMargin = 100;
+        const marginStep = 5;
 
-        // Load initial 2 canvases asynchronously
-        loadInitialCanvases();
+        let currentTextColor = null; // null means use default
+        let currentBgColor = null; // null means transparent
+        let currentTextAlign = 'justify';
+        let currentMargin = 20; // default margin in pixels
 
-        updateModeButtons();
+        function loadReaderSettings() {
+            console.log('[Light Novel Reader] Loading settings...');
 
-        // Event listeners
-        document.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
-            switch (e.key) {
-                case 'ArrowRight': case ' ': nextPage(); break;
-                case 'ArrowLeft': prevPage(); break;
-                case 'f': case 'F': if (!isMobile()) openFocusModal(); break;
-                case 'Escape': if (focusModal && focusModal.classList.contains('active')) closeFocusModal(); break;
+            // Check for new settings format first
+            const saved = localStorage.getItem('novelReaderSettings');
+            console.log('[Light Novel Reader] Saved settings found:', !!saved);
+
+            if (saved) {
+                const settings = JSON.parse(saved);
+                currentFontSize = settings.fontSize || 18;
+                currentTextColor = settings.textColor || null;
+                currentBgColor = settings.bgColor || null;
+                currentTextAlign = settings.textAlign || 'justify';
+                currentMargin = settings.margin || 20;
+                console.log('[Light Novel Reader] Loaded settings:', { currentFontSize, currentTextColor, currentBgColor, currentTextAlign, currentMargin });
+            } else {
+                // Backward compatibility: check for old font size setting
+                const oldFontSize = localStorage.getItem('novelFontSize');
+                console.log('[Light Novel Reader] Old font size setting found:', !!oldFontSize);
+
+                if (oldFontSize) {
+                    currentFontSize = parseInt(oldFontSize);
+                    // Remove old setting and save new format
+                    localStorage.removeItem('novelFontSize');
+                    saveReaderSettings();
+                    console.log('[Light Novel Reader] Migrated old font size:', currentFontSize);
+                }
             }
-        });
-
-        document.querySelectorAll('.reader-mode-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                setReadingMode(btn.getAttribute('data-mode'));
-            });
-        });
-
-        // Pagination button event listeners
-        const firstPageBtn = document.getElementById('first-page-btn');
-        if (firstPageBtn) firstPageBtn.addEventListener('click', () => goToPage(0));
-        const prevPageBtn = document.getElementById('prev-page-btn');
-        if (prevPageBtn) prevPageBtn.addEventListener('click', prevPage);
-        const nextPageBtn = document.getElementById('next-page-btn');
-        if (nextPageBtn) nextPageBtn.addEventListener('click', nextPage);
-        const lastPageBtn = document.getElementById('last-page-btn');
-        if (lastPageBtn) {
-            lastPageBtn.addEventListener('click', () => {
-                const maxPages = currentMode === MODES.SIDE_BY_SIDE ? Math.ceil(images.length / 2) : images.length;
-                goToPage(maxPages - 1);
-            });
+            applyReaderSettings();
         }
 
-        // Center pagination on window resize
-        window.addEventListener('resize', () => {
-            if (currentMode !== MODES.WEBTOON) {
-                centerPaginationToContent();
+        function saveReaderSettings() {
+            const settings = {
+                fontSize: currentFontSize,
+                textColor: currentTextColor,
+                bgColor: currentBgColor,
+                textAlign: currentTextAlign,
+                margin: currentMargin
+            };
+            localStorage.setItem('novelReaderSettings', JSON.stringify(settings));
+        }
+
+        function applyReaderSettings() {
+            console.log('[Light Novel Reader] Applying settings: fontSize=', currentFontSize, 'textAlign=', currentTextAlign);
+            const reader = document.querySelector('.epub-reader');
+            const card = reader.closest('.uk-card');
+
+            // Apply font size
+            reader.style.setProperty('font-size', currentFontSize + 'px', 'important');
+            const fontSizeDisplay = document.getElementById('current-font-size');
+            if (fontSizeDisplay) fontSizeDisplay.textContent = currentFontSize + 'px';
+
+            // Apply text color if set
+            if (currentTextColor) {
+                reader.style.setProperty('color', currentTextColor, 'important');
+                const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+                elements.forEach(el => {
+                    el.style.setProperty('color', currentTextColor, 'important');
+                });
+            } else {
+                // Reset to default
+                reader.style.removeProperty('color');
+                const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
+                elements.forEach(el => {
+                    el.style.removeProperty('color');
+                });
             }
-            updateContainerWidth();
+
+            // Apply background to the card
+            if (currentBgColor) {
+                card.style.setProperty('background-color', currentBgColor, 'important');
+                reader.setAttribute('data-bg-color', currentBgColor);
+            } else {
+                card.style.removeProperty('background-color');
+                reader.removeAttribute('data-bg-color');
+            }
+
+            // Apply text alignment directly
+            reader.style.setProperty('text-align', currentTextAlign, 'important');
+
+            // Apply margin
+            document.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');
+
+            // Update UI controls
+            const fontColorPicker = document.getElementById('font-color-picker');
+            if (fontColorPicker) fontColorPicker.value = currentTextColor || '#000000';
+            const bgColorPicker = document.getElementById('bg-color-picker');
+            if (bgColorPicker) bgColorPicker.value = currentBgColor || '#ffffff';
+
+            // Update alignment buttons
+            document.querySelectorAll('.text-align-btn').forEach(btn => {
+                btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);
+                btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);
+            });
+
+            // Update margin display
+            const marginDisplay = document.getElementById('current-margin');
+            if (marginDisplay) marginDisplay.textContent = currentMargin + 'px';
+        }
+
+        function increaseFontSize() {
+            console.log('[Light Novel Reader] Increasing font size from', currentFontSize);
+            if (currentFontSize < maxFontSize) {
+                currentFontSize += fontSizeStep;
+                applyReaderSettings();
+                saveReaderSettings();
+                console.log('[Light Novel Reader] Font size increased to', currentFontSize);
+            } else {
+                console.log('[Light Novel Reader] Font size already at max');
+            }
+        }
+
+        function decreaseFontSize() {
+            console.log('[Light Novel Reader] Decreasing font size from', currentFontSize);
+            if (currentFontSize > minFontSize) {
+                currentFontSize -= fontSizeStep;
+                applyReaderSettings();
+                saveReaderSettings();
+                console.log('[Light Novel Reader] Font size decreased to', currentFontSize);
+            } else {
+                console.log('[Light Novel Reader] Font size already at min');
+            }
+        }
+
+        function increaseMargin() {
+            if (currentMargin < maxMargin) {
+                currentMargin += marginStep;
+                applyReaderSettings();
+                saveReaderSettings();
+            }
+        }
+
+        function decreaseMargin() {
+            if (currentMargin > minMargin) {
+                currentMargin -= marginStep;
+                applyReaderSettings();
+                saveReaderSettings();
+            }
+        }
+
+        // Initialize on page load or HTMX swap
+        loadReaderSettings();
+
+        // Font size button handlers
+        const fontSizeBtns = document.querySelectorAll('.font-size-btn');
+        console.log('[Light Novel Reader] Font size buttons found:', fontSizeBtns.length);
+
+        document.querySelectorAll('.font-size-btn').forEach(btn => {
+            console.log('[Light Novel Reader] Attaching listener to font size button');
+            btn.addEventListener('click', function() {
+                console.log('[Light Novel Reader] Font size button event fired');
+                const action = this.getAttribute('data-action');
+                console.log('[Light Novel Reader] Font size button clicked:', action);
+                if (action === 'increase') {
+                    increaseFontSize();
+                } else if (action === 'decrease') {
+                    decreaseFontSize();
+                }
+            });
         });
 
-        // Light novel controls
-        const increaseFontSizeBtn = document.getElementById('increase-font-size');
-        if (increaseFontSizeBtn) increaseFontSizeBtn.addEventListener('click', () => adjustSetting('fontSize', 1));
-        const decreaseFontSizeBtn = document.getElementById('decrease-font-size');
-        if (decreaseFontSizeBtn) decreaseFontSizeBtn.addEventListener('click', () => adjustSetting('fontSize', -1));
-        const increaseMarginBtn = document.getElementById('increase-margin');
-        if (increaseMarginBtn) increaseMarginBtn.addEventListener('click', () => adjustSetting('margin', 1));
-        const decreaseMarginBtn = document.getElementById('decrease-margin');
-        if (decreaseMarginBtn) decreaseMarginBtn.addEventListener('click', () => adjustSetting('margin', -1));
-        const resetBtn = document.getElementById('reset-light-novel-settings');
-        if (resetBtn) resetBtn.addEventListener('click', resetNovelSettings);
-
+        // Color picker handlers
         const fontColorPicker = document.getElementById('font-color-picker');
-        if (fontColorPicker) fontColorPicker.addEventListener('input', (e) => {
-            novelSettings.textColor = e.target.value;
-            applyNovelSettings();
-            saveNovelSettings();
-        });
+        if (fontColorPicker) {
+            fontColorPicker.addEventListener('input', function(e) {
+                currentTextColor = e.target.value;
+                applyReaderSettings();
+                saveReaderSettings();
+            });
+        }
 
         const bgColorPicker = document.getElementById('bg-color-picker');
-        if (bgColorPicker) bgColorPicker.addEventListener('input', (e) => {
-            novelSettings.bgColor = e.target.value;
-            applyNovelSettings();
-            saveNovelSettings();
-        });
+        if (bgColorPicker) {
+            bgColorPicker.addEventListener('input', function(e) {
+                currentBgColor = e.target.value;
+                applyReaderSettings();
+                saveReaderSettings();
+            });
+        }
 
+        // Reset button handler
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset all reading customizations?')) {
+                    localStorage.removeItem('novelReaderSettings');
+                    // Reset variables to defaults
+                    currentFontSize = 18;
+                    currentTextColor = null;
+                    currentBgColor = null;
+                    currentTextAlign = 'justify';
+                    currentMargin = 20;
+                    applyReaderSettings();
+                }
+            });
+        }
+
+        // Text alignment handlers
         document.querySelectorAll('.text-align-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                novelSettings.textAlign = btn.getAttribute('data-align');
-                applyNovelSettings();
-                saveNovelSettings();
+            btn.addEventListener('click', function() {
+                currentTextAlign = this.getAttribute('data-align');
+                applyReaderSettings();
+                saveReaderSettings();
             });
         });
 
-        // Focus modal controls
-        document.addEventListener('keydown', (e) => {
-            if (!focusModal || !focusModal.classList.contains('active')) return;
-            switch (e.key) {
-                case '+': case '=': zoomInFocusModal(); break;
-                case '-': zoomOutFocusModal(); break;
-                case '0': resetFocusModalZoom(); break;
-            }
+        // Margin button handlers
+        document.querySelectorAll('.margin-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                if (action === 'increase') {
+                    increaseMargin();
+                } else if (action === 'decrease') {
+                    decreaseMargin();
+                }
+            });
         });
-    };
 
-    // Auto-init on page load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+        // Smooth scrolling for TOC links
+        const tocLinks = document.querySelectorAll('.toc-content a');
+        tocLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                // Close the modal after clicking a TOC link
+                if (typeof UIkit !== 'undefined' && UIkit.modal) {
+                    UIkit.modal('#toc-modal').hide();
+                }
+            });
+        });
     }
 
-    // Re-init on HTMX content swap
-    document.addEventListener('htmx:afterSwap', (event) => {
-        if (event.detail.target && event.detail.target.id === 'content' &&
-            (document.getElementById('reader-images-container') || document.getElementById('reader-text-container'))) {
-            setTimeout(init, 50); // Small delay to ensure DOM is ready
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Reader] DOMContentLoaded fired');
+        initializeReaders();
     });
 
-    // Expose functions globally if needed
-    window.ReaderModule = { init, setReadingMode, openFocusModal, closeFocusModal };
+    // Also initialize after HTMX content swaps
+    document.addEventListener('htmx:afterSwap', function() {
+        console.log('[Reader] htmx:afterSwap fired');
+        initializeReaders();
+    });
+
 })();

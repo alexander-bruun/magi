@@ -29,6 +29,10 @@ ALLOWED_DOMAINS = [
     "mangareadon.org",
     "readermc.org",
     "mangafirst.org",
+    "mangathird.org",
+    "mangasecond.org",
+    "mangafourth.org",
+    "mangafifth.org",
 ]
 BASE_URL = "https://demonicscans.org"
 
@@ -182,13 +186,21 @@ def extract_image_urls(session, chapter_url):
     response.raise_for_status()
     html = response.text.replace("\0", "")
 
-    image_urls = re.findall(r'https?://[^"]*\.(?:jpg|jpeg|png|webp|web)', html)
-    filtered_urls = [
-        url
-        for url in image_urls
-        if any(domain in url for domain in ALLOWED_DOMAINS) and "thumbnails" not in url
-    ]
-    return list(dict.fromkeys(filtered_urls))  # unique
+    # Find all img tags
+    img_tags = re.findall(r'<img[^>]*>', html)
+    image_urls = []
+    for tag in img_tags:
+        # Skip if data-tried="true" is present
+        if 'data-tried="true"' in tag:
+            continue
+        # Extract src or data-src attribute
+        src_match = re.search(r'(?:data-src|src)="([^"]+)"', tag)
+        if src_match:
+            url = src_match.group(1)
+            if any(domain in url for domain in ALLOWED_DOMAINS) and "thumbnails" not in url:
+                image_urls.append(url)
+    
+    return list(dict.fromkeys(image_urls))  # unique
 
 
 # =============================================================================

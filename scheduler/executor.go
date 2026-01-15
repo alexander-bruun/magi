@@ -254,91 +254,54 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 
 		switch s.Language {
 		case "bash":
-			tmpFile, err := os.CreateTemp("", "scraper_*.sh")
-			if err != nil {
-				errMsg = fmt.Sprintf("Failed to create temporary script file: %v", err)
+			if s.ScriptPath == nil || *s.ScriptPath == "" {
+				errMsg = "No script path specified for bash execution"
 			} else {
-				defer os.Remove(tmpFile.Name())
-
-				// If shared script exists, create it and source it
-				var sharedScriptPath string
-				if s.SharedScript != nil && *s.SharedScript != "" {
-					sharedTmpFile, err := os.CreateTemp("", "shared_*.sh")
-					if err != nil {
-						errMsg = fmt.Sprintf("Failed to create temporary shared script file: %v", err)
-					} else {
-						defer os.Remove(sharedTmpFile.Name())
-						if _, err := sharedTmpFile.WriteString(*s.SharedScript); err != nil {
-							errMsg = fmt.Sprintf("Failed to write shared script content: %v", err)
-						}
-						sharedTmpFile.Close()
-						if err := os.Chmod(sharedTmpFile.Name(), 0755); err != nil {
-							errMsg = fmt.Sprintf("Failed to make shared script executable: %v", err)
-						} else {
-							sharedScriptPath = sharedTmpFile.Name()
-						}
-					}
+				cmd := exec.CommandContext(ctx, "bash", "-u", *s.ScriptPath)
+				cmd.Env = os.Environ()
+				for k, v := range vars {
+					cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 				}
 
-				// Write the main script, sourcing the shared script if it exists
-				scriptContent := s.Script
-				if sharedScriptPath != "" {
-					scriptContent = fmt.Sprintf("source %s\n%s", sharedScriptPath, s.Script)
-				}
-
-				if _, err := tmpFile.WriteString(scriptContent); err != nil {
-					errMsg = fmt.Sprintf("Failed to write script content: %v", err)
-				}
-				tmpFile.Close()
-				if err := os.Chmod(tmpFile.Name(), 0755); err != nil {
-					errMsg = fmt.Sprintf("Failed to make script executable: %v", err)
+				// Combine stdout and stderr
+				stdoutPipe, err := cmd.StdoutPipe()
+				if err != nil {
+					errMsg = fmt.Sprintf("Failed to create stdout pipe: %v", err)
 				} else {
-					cmd := exec.CommandContext(ctx, "bash", "-u", tmpFile.Name())
-					cmd.Env = os.Environ()
-					for k, v := range vars {
-						cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
-					}
-
-					// Combine stdout and stderr
-					stdoutPipe, err := cmd.StdoutPipe()
-					if err != nil {
-						errMsg = fmt.Sprintf("Failed to create stdout pipe: %v", err)
+					cmd.Stderr = cmd.Stdout // Redirect stderr to stdout
+					if err := cmd.Start(); err != nil {
+						errMsg = fmt.Sprintf("Failed to start script: %v", err)
 					} else {
-						cmd.Stderr = cmd.Stdout // Redirect stderr to stdout
-						if err := cmd.Start(); err != nil {
-							errMsg = fmt.Sprintf("Failed to start script: %v", err)
-						} else {
-							log.Debugf("Started bash script execution for script ID %d", s.ID)
-							var wg sync.WaitGroup
-							wg.Go(func() {
-								scanner := bufio.NewScanner(stdoutPipe)
-								log.Debugf("[STDOUT] Starting to read combined output for script ID %d", s.ID)
-								for scanner.Scan() {
-									line := scanner.Text()
-									log.Debugf("[STDOUT] Script %d: %s", s.ID, line)
-									outputBuf.WriteString(line + "\n")
-									BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", line)
-								}
-								if err := scanner.Err(); err != nil {
-									log.Errorf("[STDOUT] Scanner error for script ID %d: %v", s.ID, err)
-								}
-								log.Debugf("[STDOUT] Finished reading combined output for script ID %d", s.ID)
-							})
-
-							// Combined stdout and stderr, no separate stderr goroutine needed
-
-							// Wait for command to complete
-							if err := cmd.Wait(); err != nil {
-								if outputBuf.Len() == 0 {
-									errMsg = err.Error()
-								} else {
-									errMsg = strings.TrimSpace(outputBuf.String())
-								}
+						log.Debugf("Started bash script execution for script ID %d", s.ID)
+						var wg sync.WaitGroup
+						wg.Go(func() {
+							scanner := bufio.NewScanner(stdoutPipe)
+							log.Debugf("[STDOUT] Starting to read combined output for script ID %d", s.ID)
+							for scanner.Scan() {
+								line := scanner.Text()
+								log.Debugf("[STDOUT] Script %d: %s", s.ID, line)
+								outputBuf.WriteString(line + "\n")
+								BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", line)
 							}
+							if err := scanner.Err(); err != nil {
+								log.Errorf("[STDOUT] Scanner error for script ID %d: %v", s.ID, err)
+							}
+							log.Debugf("[STDOUT] Finished reading combined output for script ID %d", s.ID)
+						})
 
-							// Wait for all output to be read from pipes
-							wg.Wait()
+						// Combined stdout and stderr, no separate stderr goroutine needed
+
+						// Wait for command to complete
+						if err := cmd.Wait(); err != nil {
+							if outputBuf.Len() == 0 {
+								errMsg = err.Error()
+							} else {
+								errMsg = strings.TrimSpace(outputBuf.String())
+							}
 						}
+
+						// Wait for all output to be read from pipes
+						wg.Wait()
 					}
 				}
 			}
@@ -357,31 +320,28 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 				if err := exec.CommandContext(ctx, "python3", "-m", "venv", venvPath).Run(); err != nil {
 					errMsg = fmt.Sprintf("Failed to create virtual environment: %v", err)
 				} else {
-					// Install packages if any
-					if len(s.Packages) > 0 {
-						BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Installing packages: %s", strings.Join(s.Packages, ", ")))
-						pipCmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/pip", venvPath), "install")
-						pipCmd.Args = append(pipCmd.Args, s.Packages...)
+					// Install packages from requirements file if specified
+					if s.RequirementsPath != nil && *s.RequirementsPath != "" {
+						BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Installing packages from requirements file: %s", *s.RequirementsPath))
+						pipCmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/pip", venvPath), "install", "-r", *s.RequirementsPath)
 						pipCmd.Env = os.Environ()
 						for k, v := range vars {
 							pipCmd.Env = append(pipCmd.Env, fmt.Sprintf("%s=%s", k, v))
 						}
 
 						if output, err := pipCmd.CombinedOutput(); err != nil {
-							errMsg = fmt.Sprintf("Failed to install packages: %v\nOutput: %s", err, string(output))
+							errMsg = fmt.Sprintf("Failed to install packages from requirements file: %v\nOutput: %s", err, string(output))
 						} else {
 							BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", "Packages installed successfully")
 						}
 					}
 
 					if errMsg == "" {
-						// Create temporary Python script file
-						scriptFile := fmt.Sprintf("%s/script.py", tmpDir)
-						if err := os.WriteFile(scriptFile, []byte(s.Script), 0644); err != nil {
-							errMsg = fmt.Sprintf("Failed to write script content: %v", err)
+						if s.ScriptPath == nil || *s.ScriptPath == "" {
+							errMsg = "No script path specified for python execution"
 						} else {
 							// Run the Python script in the virtual environment
-							cmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/python", venvPath), scriptFile)
+							cmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/python", venvPath), *s.ScriptPath)
 							cmd.Env = os.Environ()
 							for k, v := range vars {
 								cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))

@@ -27,24 +27,11 @@ templ VariableInputs(variables map[string]string) {
 	</div>
 }
 
-// PackageInputs renders the package management section
-templ PackageInputs(packages []string) {
-	<div id="packages-container">
-		if len(packages) == 0 {
-			@Package("", true)
-		} else {
-			for index, pkg := range packages {
-				@Package(pkg, index == 0)
-			}
-		}
-	</div>
-}
-
-// Variable renders a single variable input row with add/remove button  
+// Variable renders a single variable input row with add/remove button
 templ Variable(varName string, varValue string, isFirst bool) {
 	<div class="variable-row mb-2 flex items-center gap-2">
-		<input class="uk-input flex-1" type="text" name="variable_name" placeholder="Variable name" value={ varName }/>
-		<input class="uk-input flex-1" type="text" name="variable_value" placeholder="Variable value" value={ varValue }/>
+		<input class="uk-input flex-1" type="text" name="variable_name" placeholder="Key" value={ varName }/>
+		<input class="uk-input flex-1" type="text" name="variable_value" placeholder="Value" value={ varValue }/>
 		if isFirst {
 			<button type="button" class="uk-btn uk-btn-default h-10 w-10" hx-get="/admin/scraper/helpers/add-variable" hx-target="#variables-container" hx-swap="beforeend">
 				<uk-icon icon="Plus"></uk-icon>
@@ -58,21 +45,6 @@ templ Variable(varName string, varValue string, isFirst bool) {
 }
 
 // Package renders a single package input row with add/remove button
-templ Package(pkgName string, isFirst bool) {
-	<div class="package-row mb-2 flex items-center gap-2">
-		<input class="uk-input flex-1" type="text" name="package" placeholder="Package name (e.g., requests, beautifulsoup4)" value={ pkgName }/>
-		if isFirst {
-			<button type="button" class="uk-btn uk-btn-default h-10 w-10" hx-get="/admin/scraper/helpers/add-package" hx-target="#packages-container" hx-swap="beforeend">
-				<uk-icon icon="Plus"></uk-icon>
-			</button>
-		} else {
-			<button type="button" class="uk-btn uk-btn-destructive h-10 w-10" hx-get="/admin/scraper/helpers/remove-package" hx-target="closest .package-row" hx-swap="outerHTML">
-				<uk-icon icon="X"></uk-icon>
-			</button>
-		}
-	</div>
-}
-
 // Helper function to get sorted variable names
 func getSortedVariableNames(variables map[string]string) []string {
 	names := make([]string, 0, len(variables))
@@ -83,73 +55,380 @@ func getSortedVariableNames(variables map[string]string) []string {
 	return names
 }
 
-// Helper function to get code editor language
-func getCodeEditorLanguage(language string) string {
-	if language == "python" {
-		return "python"
-	}
-	return "shell"
-}
-
-// Helper function to get script placeholder
-func getScriptPlaceholder(language string) string {
-	if language == "python" {
-		return "# Python script\n# Enter your python script here\nprint('Hello from scraper')"
-	}
-	return "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'"
-}
-
-// Helper function to get shared script content
-func getSharedScriptContent(sharedScript *string) string {
-	if sharedScript != nil {
-		return *sharedScript
+// Helper function to get script path value
+func getScriptPathValue(scriptPath *string) string {
+	if scriptPath != nil {
+		return *scriptPath
 	}
 	return ""
 }
 
-// Scraper renders the main scraper page with tabs
-templ Scraper(scripts []models.ScraperScript, activeID int64) {
-	@PageTitle("Scraper")
-	<div class="mt-4">
-		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
-		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scraper Scripts</span></h2>
-		
-		<!-- Tabs Container -->
-		<div class="border-b border-border mb-4">
-			<div class="flex items-center gap-1 overflow-x-auto pb-2">
-				<!-- Existing Script Tabs -->
-				<div id="script-tabs" class="flex items-center gap-1">
-					@ScraperTabs(scripts, activeID)
-				</div>
-				
-				<!-- Plus Button for New Script -->
-				<button 
-					class="uk-btn uk-btn-default h-10 w-10 flex items-center justify-center"
-					hx-get="/admin/scraper/new"
-					hx-target="#scraper-editor-container"
-					hx-swap="innerHTML"
-					title="New script"
-					aria-label="New script"
-				>
-					<uk-icon icon="plus" ratio="1"></uk-icon>
+// Helper function to get requirements path value
+func getRequirementsPathValue(requirementsPath *string) string {
+	if requirementsPath != nil {
+		return *requirementsPath
+	}
+	return ""
+}
+
+// ScraperForm renders the scraper creation/editing form
+templ ScraperForm(script *models.ScraperScript, action string, editing bool) {
+	if action == "post" {
+		<div id="scraper-form">
+			<form
+				id="scraper-form"
+				hx-post="/admin/scraper"
+				hx-target="#scrapers-table"
+				hx-trigger="submit"
+				hx-ext="form-json"
+			>
+				@ScraperFormContent(script, editing)
+			</form>
+		</div>
+	} else {
+		<div id="scraper-form">
+			<form
+				id="scraper-form"
+				hx-put={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
+				hx-target="#scrapers-table"
+				hx-trigger="submit"
+				hx-ext="form-json"
+			>
+				@ScraperFormContent(script, editing)
+			</form>
+		</div>
+	}
+}
+
+// ScraperFormContent renders the form fields
+templ ScraperFormContent(script *models.ScraperScript, editing bool) {
+	<fieldset class="space-y-4">
+		<div class="uk-margin">
+			<input
+				class="uk-input"
+				type="text"
+				name="name"
+				placeholder="Scraper Name"
+				value={ script.Name }
+				required
+				readonly?={ editing }
+			/>
+		</div>
+
+		<div class="uk-margin">
+			<div class="flex items-center">
+				<input
+					class="uk-input flex-1"
+					type="text"
+					name="script_path"
+					placeholder="Script File Path"
+					value={ getScriptPathValue(script.ScriptPath) }
+					required
+					hx-get="/admin/scraper/helpers/update-script-path"
+					hx-target="#language-dependent-sections"
+					hx-include="[name='script_path']"
+					hx-trigger="input changed delay:300ms"
+				/>
+				<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" onclick="openFileExplorer(this.previousElementSibling)">
+					<uk-icon icon="FolderOpen"></uk-icon>
 				</button>
 			</div>
 		</div>
 
-		<!-- Editor Container -->
-		<div id="scraper-editor-container" class="uk-card uk-card-body p-4" if len(scripts) > 0 { data-active-script={ fmt.Sprintf("%d", scripts[0].ID) } }>
-			if len(scripts) > 0 {
-				@ScraperScriptEditor(&scripts[0])
-			} else {
-				<div class="text-center py-8">
-					<p class="text-muted">No scripts yet. Click the plus button to create one.</p>
-				</div>
-			}
+		<!-- Language-dependent sections -->
+		<div id="language-dependent-sections">
+			@LanguageDependentSections(script)
 		</div>
+
+		<div class="uk-margin">
+			<input
+				class="uk-input"
+				type="text"
+				name="schedule"
+				placeholder="0 0 * * * (daily at midnight)"
+				value={ script.Schedule }
+				required
+			/>
+		</div>
+
+		<!-- Script Variables -->
+		<div class="uk-margin">
+			<label class="uk-form-label">Variables (optional)</label>
+			@VariableInputs(script.Variables)
+		</div>
+
+		<div id="response" class="mt-8"></div>
+
+		if editing {
+			<div class="mt-4 uk-flex">
+				<button type="submit" class="uk-btn uk-btn-default mr-2">Save</button>
+				<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/admin/scraper/helpers/cancel-edit" hx-target="#scraper-form" hx-swap="outerHTML">Cancel</button>
+			</div>
+		} else {
+			<div class="flex justify-center">
+				<button type="submit" class="uk-btn uk-btn-default">SUBMIT</button>
+			</div>
+		}
+	</fieldset>
+}
+
+// Scraper renders the main scraper page with form and table layout
+templ Scraper(scripts []models.ScraperScript, activeID int64) {
+	@PageTitle("Scraper")
+	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
+	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+		<div id="form-column" class="lg:col-span-1">
+			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
+				<div class="uk-card p-2">
+					@ScraperForm(&models.ScraperScript{}, "post", false)
+				</div>
+			</div>
+			<div id="table-column" class="lg:col-span-3">
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scrapers</span></h2>
+				<div class="uk-card p-2">
+					@ScraperTable(scripts)
+				</div>
+			</div>
+		</div>
+	@FileExplorer()
+	@ScraperLogsModal()
+}
+
+templ ScraperTable(scripts []models.ScraperScript) {
+	<div id="scrapers-table" class="uk-overflow-auto">
+		<table class="uk-table">
+			<thead>
+				<tr>
+					<th class="text-center">ID</th>
+					<th class="text-center">Name</th>
+					<th class="text-center">Status</th>
+					<th class="text-center">Schedule</th>
+					<th class="text-center">Language</th>
+					<th class="text-center">Last Run</th>
+					<th class="text-center">Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, script := range scripts {
+					<tr id={ fmt.Sprintf("scraper-row-%d", script.ID) }>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								{ fmt.Sprintf("%d", script.ID) }
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								<p>{ script.Name }</p>
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								if script.Enabled {
+									<span class="uk-badge bg-success">Active</span>
+								} else {
+									<span class="uk-badge bg-destructive">Inactive</span>
+								}
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								{ script.Schedule }
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								<span class="uk-badge">{ script.Language }</span>
+							</div>
+						</td>
+						<td>
+							<div class="mt-2 flex items-center justify-center">
+								{ script.FormatLastRun() }
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center justify-center">
+								<div class="uk-btn-group flex-nowrap">
+									<button
+										type="button"
+										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
+										hx-post={ getToggleURL(script) }
+										hx-trigger="click"
+										hx-indicator="this"
+										hx-disabled-elt="this"
+										hx-target={ fmt.Sprintf("#scraper-row-%d", script.ID) }
+										hx-swap="outerHTML"
+										title={ getToggleTitle(script.Enabled) }
+									>
+										if script.Enabled {
+											<uk-icon icon="Pause"></uk-icon>
+										} else {
+											<uk-icon icon="Play"></uk-icon>
+										}
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+										hx-get={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
+										hx-trigger="click"
+										hx-target="#scraper-form"
+										title="Edit"
+									>
+										<uk-icon icon="Pencil"></uk-icon>
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+										hx-post={ fmt.Sprintf("/admin/scraper/%d/run", script.ID) }
+										hx-trigger="click"
+										hx-disabled-elt="this"
+										title="Run Now"
+									>
+										<uk-icon icon="PlayCircle"></uk-icon>
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+										hx-get={ fmt.Sprintf("/admin/scraper/%d/logs/view", script.ID) }
+										hx-target="#scraper-logs-modal-content"
+										hx-swap="innerHTML"
+										data-uk-toggle="target: #scraper-logs-modal"
+										title="View Logs"
+									>
+										<uk-icon icon="FileText"></uk-icon>
+									</button>
+									<button
+										type="button"
+										class="uk-btn uk-btn-destructive h-10 w-10 flex-shrink-0"
+										hx-delete={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
+										hx-trigger="click"
+										hx-confirm="Are you sure you want to delete this scraper?"
+										hx-target="#scrapers-table"
+										hx-swap="innerHTML"
+										title="Delete"
+									>
+										<uk-icon icon="Trash"></uk-icon>
+									</button>
+								</div>
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		if len(scripts) == 0 {
+			<div class="text-center py-8">
+				<p class="text-muted">No scrapers yet. Create one using the form.</p>
+			</div>
+		}
 	</div>
 }
 
-// ScraperTabs renders all script tabs (for HTMX updates after creating a new script)
+// ScraperTableRow renders a single table row for a scraper script
+templ ScraperTableRow(script *models.ScraperScript) {
+	<tr id={ fmt.Sprintf("scraper-row-%d", script.ID) }>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				{ fmt.Sprintf("%d", script.ID) }
+			</div>
+		</td>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				<p>{ script.Name }</p>
+			</div>
+		</td>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				if script.Enabled {
+					<span class="uk-badge bg-success">Active</span>
+				} else {
+					<span class="uk-badge bg-destructive">Inactive</span>
+				}
+			</div>
+		</td>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				{ script.Schedule }
+			</div>
+		</td>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				<span class="uk-badge">{ script.Language }</span>
+			</div>
+		</td>
+		<td>
+			<div class="mt-2 flex items-center justify-center">
+				{ script.FormatLastRun() }
+			</div>
+		</td>
+		<td>
+			<div class="flex items-center justify-center">
+				<div class="uk-btn-group flex-nowrap">
+					<button
+						type="button"
+						class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
+						hx-post={ getToggleURL(*script) }
+						hx-trigger="click"
+						hx-indicator="this"
+						hx-disabled-elt="this"
+						hx-target={ fmt.Sprintf("#scraper-row-%d", script.ID) }
+						hx-swap="outerHTML"
+						title={ getToggleTitle(script.Enabled) }
+					>
+						if script.Enabled {
+							<uk-icon icon="Pause"></uk-icon>
+						} else {
+							<uk-icon icon="Play"></uk-icon>
+						}
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+						hx-get={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
+						hx-trigger="click"
+						hx-target="#scraper-form"
+						title="Edit"
+					>
+						<uk-icon icon="Pencil"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+						hx-post={ fmt.Sprintf("/admin/scraper/%d/run", script.ID) }
+						hx-trigger="click"
+						hx-disabled-elt="this"
+						title="Run Now"
+					>
+						<uk-icon icon="PlayCircle"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-default h-10 w-10 flex-shrink-0"
+						hx-get={ fmt.Sprintf("/admin/scraper/%d/logs/view", script.ID) }
+						hx-target="#scraper-logs-modal-content"
+						hx-swap="innerHTML"
+						data-uk-toggle="target: #scraper-logs-modal"
+						title="View Logs"
+					>
+						<uk-icon icon="FileText"></uk-icon>
+					</button>
+					<button
+						type="button"
+						class="uk-btn uk-btn-destructive h-10 w-10 flex-shrink-0"
+						hx-delete={ fmt.Sprintf("/admin/scraper/%d", script.ID) }
+						hx-trigger="click"
+						hx-confirm="Are you sure you want to delete this scraper?"
+						hx-target="#scrapers-table"
+						hx-swap="innerHTML"
+						title="Delete"
+					>
+						<uk-icon icon="Trash"></uk-icon>
+					</button>
+				</div>
+			</div>
+		</td>
+	</tr>
+}
+
 templ ScraperTabs(scripts []models.ScraperScript, activeID int64) {
 	for _, script := range scripts {
 		@ScraperTab(&script, activeID)
@@ -162,6 +441,22 @@ templ ScraperEditorWithUpdatedTabs(script *models.ScraperScript, scripts []model
 		@ScraperTabs(scripts, script.ID)
 	</div>
 	@ScraperScriptEditor(script)
+}
+
+// Helper function to get toggle button title
+func getToggleTitle(enabled bool) string {
+	if enabled {
+		return "Disable"
+	}
+	return "Enable"
+}
+
+// Helper function to get toggle URL
+func getToggleURL(script models.ScraperScript) string {
+	if script.Enabled {
+		return fmt.Sprintf("/admin/scraper/%d/disable", script.ID)
+	}
+	return fmt.Sprintf("/admin/scraper/%d/enable", script.ID)
 }
 
 // Helper function to get tab class
@@ -321,27 +616,20 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 			@VariableInputs(script.Variables)
 		</div>
 
-		<!-- Python Packages -->
-		<div id="packages-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.Language == "python")) }>
-			<label class="uk-form-label">Python Packages (optional)</label>
-			<p class="text-xs text-muted-foreground mb-3">Specify Python packages to install in the virtual environment before running the script.</p>
-			@PackageInputs(script.Packages)
-		</div>
-
-			<!-- Actions -->
-			<div class="flex gap-2 justify-between flex-wrap">
-				<div class="flex gap-2">
-					if script.ID == 0 {
-						<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
-							<uk-icon icon="Plus" ratio="0.9"></uk-icon>
-							Create Script
-						</button>
-					}
-					if script.ID != 0 {
-						<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
-							<uk-icon icon="Save" ratio="0.9"></uk-icon>
-							Save Changes
-						</button>
+		<!-- Actions -->
+		<div class="flex gap-2 justify-between flex-wrap">
+			<div class="flex gap-2">
+				if script.ID == 0 {
+					<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
+						<uk-icon icon="Plus" ratio="0.9"></uk-icon>
+						Create Script
+					</button>
+				}
+				if script.ID != 0 {
+					<button type="submit" class="uk-btn uk-btn-primary flex items-center gap-2">
+						<uk-icon icon="Save" ratio="0.9"></uk-icon>
+						Save Changes
+					</button>
 						<button 
 							type="button"
 							class="uk-btn uk-btn-secondary"
@@ -367,7 +655,10 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 							<button 
 								type="button"
 								class="uk-btn uk-btn-destructive"
-								hx-post={ fmt.Sprintf("/admin/scraper/%d/toggle", script.ID) }
+								hx-post={ fmt.Sprintf("/admin/scraper/%d/disable", script.ID) }
+								hx-trigger="click"
+								hx-indicator="this"
+								hx-disabled-elt="this"
 								hx-target="#scraper-editor-container"
 								hx-swap="none"
 							>
@@ -378,7 +669,10 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 							<button 
 								type="button"
 								class="uk-btn uk-btn-secondary"
-								hx-post={ fmt.Sprintf("/admin/scraper/%d/toggle", script.ID) }
+								hx-post={ fmt.Sprintf("/admin/scraper/%d/enable", script.ID) }
+								hx-trigger="click"
+								hx-indicator="this"
+								hx-disabled-elt="this"
 								hx-target="#scraper-editor-container"
 								hx-swap="none"
 							>
@@ -389,12 +683,6 @@ templ ScraperEditorTabContent(script *models.ScraperScript) {
 				</div>
 			</div>
 		</form>
-		<!-- CodeMirror dependencies - loaded when editor is used -->
-		<link rel="stylesheet" href="/assets/css/vendor/codemirror.min.css"/>
-		<link rel="stylesheet" href="/assets/css/vendor/dracula.min.css"/>
-		<script src="/assets/js/vendor/codemirror.min.js" defer></script>
-		<script src="/assets/js/vendor/shell.min.js" defer></script>
-		<script src="/assets/js/vendor/python.min.js" defer></script>
 }
 
 // ScraperLogsTabContent renders the logs tab content
@@ -430,19 +718,19 @@ templ ScraperScriptRow(script *models.ScraperScript) {
 		<div>
 			<h4 class="font-semibold">{ script.Name }</h4>
 			<p class="text-xs text-muted">
-				<span class="badge">{ script.Language }</span>
-				<span class="badge ml-2">{ script.Schedule }</span>
-				<span class="badge ml-2">{ script.FormatLastRun() }</span>
+				<span class="uk-badge">{ script.Language }</span>
+				<span class="uk-badge ml-2">{ script.Schedule }</span>
+				<span class="uk-badge ml-2">{ script.FormatLastRun() }</span>
 			</p>
 		</div>
 		<div class="flex gap-2">
 			if script.Enabled {
-				<div><span class="badge bg-success">Active</span></div>
+				<div><span class="uk-badge bg-success">Active</span></div>
 			} else {
-				<div><span class="badge bg-destructive">Inactive</span></div>
+				<div><span class="uk-badge bg-destructive">Inactive</span></div>
 			}
 			if script.LastRunError != nil && *script.LastRunError != "" {
-				<div><span class="badge bg-destructive">Error</span></div>
+				<div><span class="uk-badge bg-destructive">Error</span></div>
 			}
 		</div>
 	</div>
@@ -452,75 +740,85 @@ templ ScraperScriptRow(script *models.ScraperScript) {
 templ ScraperScriptForm(script *models.ScraperScript) {
 	<div id="scraper-script-editor-form">
 		@ScraperScriptEditor(&models.ScraperScript{
-			Language: "bash", 
+			Language: "bash",
 			Schedule: "0 0 * * *",
-			Script: "#!/bin/bash\n# Enter your bash script here\necho 'Hello from scraper'",
 		})
 	</div>
 }
 
+// ScraperLogsModalContent renders the complete logs content for the modal including live and historical logs
+templ ScraperLogsModalContent(logs []models.ScraperExecutionLog, pagination map[string]interface{}, scriptID int64) {
+	<!-- HTMX WebSocket extension for live log streaming -->
+	<div id="scraper-log-viewer" class="mb-6 uk-card uk-card-body bg-surface p-3 text-xs max-h-96 overflow-y-auto" 
+		hx-ext="ws" 
+		ws-connect={ fmt.Sprintf("/admin/scraper/%d/logs", scriptID) }>
+		<div class="text-muted-foreground mb-2">Live Output</div>
+		<div id="log-output-container" class="log-output-container"></div>
+	</div>
+
+	@ScraperLogsPanelWithPagination(logs, pagination)
+}
+
 // ScraperLogsPanelWithPagination renders a list of execution logs with pagination
 templ ScraperLogsPanelWithPagination(logs []models.ScraperExecutionLog, pagination map[string]interface{}) {
-	<div class="uk-card uk-card-body p-4">
-		<div class="flex justify-between items-center mb-4">
-			<h4 class="font-semibold text-lg">Execution Logs</h4>
-			if len(logs) > 0 {
-				<div class="text-sm text-muted-foreground">
-					Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) } 
-					({ fmt.Sprintf("%v", pagination["total_count"]) } total executions)
-				</div>
-			}
-		</div>
-
-		if len(logs) == 0 {
-			<div class="text-center py-8">
-				<p class="text-muted">No execution logs yet</p>
-			</div>
-		}
-
+	<div class="flex justify-between items-center mb-4">
+		<h4 class="font-semibold text-lg">Execution Logs</h4>
 		if len(logs) > 0 {
-			<div class="uk-list uk-list-divider space-y-2">
-				for _, log := range logs {
-					@ScraperLogEntry(&log)
-				}
-			</div>
-		}
-
-		// Pagination controls
-		if pagination["total_pages"].(int) > 1 {
-			<div class="flex justify-center items-center gap-2 mt-6">
-				if pagination["has_prev"].(bool) {
-					<button 
-						class="uk-btn uk-btn-default"
-						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["prev_page"]) }
-						hx-target="#scraper-logs-container"
-						hx-swap="innerHTML"
-					>
-						Previous
-					</button>
-				} else {
-					<button class="uk-btn uk-btn-default" disabled>Previous</button>
-				}
-
-				<span class="text-sm text-muted-foreground px-4">
-					Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) }
-				</span>
-
-				if pagination["has_next"].(bool) {
-					<button 
-						class="uk-btn uk-btn-default"
-						hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["next_page"]) }
-						hx-target="#scraper-logs-container"
-						hx-swap="innerHTML"
-					>
-						Next
-					</button>
-				} else {
-					<button class="uk-btn uk-btn-default" disabled>Next</button>
-				}
+			<div class="text-sm text-muted-foreground">
+				Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) } 
+				({ fmt.Sprintf("%v", pagination["total_count"]) } total executions)
 			</div>
 		}
 	</div>
+
+	if len(logs) == 0 {
+		<div class="text-center py-8">
+			<p class="text-muted">No execution logs yet</p>
+		</div>
+	}
+
+	if len(logs) > 0 {
+		<div class="uk-list uk-list-divider space-y-2">
+			for _, log := range logs {
+				@ScraperLogEntry(&log)
+			}
+		</div>
+	}
+
+	// Pagination controls
+	if pagination["total_pages"].(int) > 1 {
+		<div class="flex justify-center items-center gap-2 mt-6">
+			if pagination["has_prev"].(bool) {
+				<button 
+					class="uk-btn uk-btn-default"
+					hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["prev_page"]) }
+					hx-target="#scraper-logs-container"
+					hx-swap="innerHTML"
+				>
+					Previous
+				</button>
+			} else {
+				<button class="uk-btn uk-btn-default" disabled>Previous</button>
+			}
+
+			<span class="text-sm text-muted-foreground px-4">
+				Page { fmt.Sprintf("%v", pagination["current_page"]) } of { fmt.Sprintf("%v", pagination["total_pages"]) }
+			</span>
+
+			if pagination["has_next"].(bool) {
+				<button 
+					class="uk-btn uk-btn-default"
+					hx-get={ fmt.Sprintf("/admin/scraper/%v/logs/view?page=%v", pagination["script_id"], pagination["next_page"]) }
+					hx-target="#scraper-logs-container"
+					hx-swap="innerHTML"
+				>
+					Next
+				</button>
+			} else {
+				<button class="uk-btn uk-btn-default" disabled>Next</button>
+			}
+		</div>
+	}
 }
 
 // ScraperLogEntry renders a single log entry
@@ -589,36 +887,61 @@ templ ScraperLogViewer(scriptID int64) {
 	</div>
 }
 
-// LanguageDependentSections renders the code editor and shared script sections that change based on language
+// LanguageDependentSections renders the script path inputs and shared script sections that change based on language
 templ LanguageDependentSections(script *models.ScraperScript) {
-	<!-- Code Editor -->
-	<div>
-		<label for="script-content" class="uk-form-label">Script Content</label>
-		<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
-			<textarea
-				id="script-content"
-				name="script"
-				data-code-editor={ getCodeEditorLanguage(script.Language) }
-				data-code-editor-height="384px"
-				class="w-full h-96 p-3 text-sm bg-background text-foreground border-0 resize-none"
-				placeholder={ getScriptPlaceholder(script.Language) }
-			>{ script.Script }</textarea>
+	<!-- Requirements Path (Python only) -->
+	<div id="requirements-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.Language == "python")) }>
+		<div class="flex items-center">
+			<input
+				id="requirements-path"
+				name="requirements_path"
+				type="text"
+				class="uk-input flex-1"
+				placeholder="e.g., requirements.txt"
+				value={ getRequirementsPathValue(script.RequirementsPath) }
+			/>
+			<button type="button" class="uk-btn uk-btn-default ml-2 h-10 w-10" onclick="openFileExplorer(this.previousElementSibling)">
+				<uk-icon icon="FolderOpen"></uk-icon>
+			</button>
 		</div>
 	</div>
+}
 
-	<!-- Shared Script (Bash only) -->
-	<div id="shared-script-section" style={ fmt.Sprintf("display: %s", getDisplayStyle(script.ID == 0 || script.Language == "bash")) }>
-		<label for="shared-script-content" class="uk-form-label">Shared Script (optional)</label>
-		<p class="text-xs text-muted-foreground mb-3">Bash script that will be sourced by the main script. Useful for shared functions and utilities.</p>
-		<div class="uk-card uk-card-default uk-card-body p-0 border overflow-hidden">
-			<textarea
-				id="shared-script-content"
-				name="shared_script"
-				data-code-editor="shell"
-				data-code-editor-height="200px"
-				class="w-full h-48 p-3 text-sm bg-background text-foreground border-0 resize-none"
-				placeholder="#!/bin/bash&#10;# Shared functions and utilities&#10;# This script will be sourced by the main script"
-			>{ getSharedScriptContent(script.SharedScript) }</textarea>
+// ScraperLogsModal renders the modal for viewing scraper execution logs
+templ ScraperLogsModal() {
+	<div id="scraper-logs-modal" class="uk-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<h2 class="uk-modal-title mb-4">Scraper Execution Logs</h2>
+			<div id="scraper-logs-modal-content">
+				<!-- Logs content will be loaded here via HTMX -->
+				<div class="text-center py-8">
+					<p class="text-muted">Loading logs...</p>
+				</div>
+			</div>
+			<div class="uk-modal-footer uk-text-right">
+				<button class="uk-btn uk-btn-default uk-modal-close" type="button">Close</button>
+			</div>
 		</div>
 	</div>
+}
+
+// ScraperToggleButton renders just the toggle button for HTMX updates
+templ ScraperToggleButton(script *models.ScraperScript) {
+	<button
+		type="button"
+		class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
+		hx-post={ getToggleURL(*script) }
+		hx-trigger="click"
+		hx-indicator="this"
+		hx-disabled-elt="this"
+		hx-target="this"
+		hx-swap="outerHTML"
+		title={ getToggleTitle(script.Enabled) }
+	>
+		if script.Enabled {
+			<uk-icon icon="Pause"></uk-icon>
+		} else {
+			<uk-icon icon="Play"></uk-icon>
+		}
+	</button>
 }

@@ -18,25 +18,26 @@ type Issue struct {
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	ResolvedAt   *time.Time `json:"resolved_at,omitempty"`
+	Resolution   string     `json:"resolution,omitempty"`
 }
 
 // CreateIssue adds a new issue report
 func CreateIssue(issue Issue) error {
 	query := `
-	INSERT INTO issues (user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO issues (user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at, resolution)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	timestamps := NewTimestamps()
 
-	_, err := db.Exec(query, issue.UserUsername, issue.Title, issue.Description, issue.Status, issue.Priority, issue.Category, issue.UserAgent, issue.URL, timestamps.CreatedAt.Unix(), timestamps.UpdatedAt.Unix())
+	_, err := db.Exec(query, issue.UserUsername, issue.Title, issue.Description, issue.Status, issue.Priority, issue.Category, issue.UserAgent, issue.URL, timestamps.CreatedAt.Unix(), timestamps.UpdatedAt.Unix(), issue.Resolution)
 	return err
 }
 
 // GetIssues retrieves issues with optional filtering
 func GetIssues(status, category string, limit, offset int) ([]Issue, error) {
 	query := `
-	SELECT id, user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at, resolved_at
+	SELECT id, user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at, resolved_at, resolution
 	FROM issues
 	WHERE 1=1
 	`
@@ -78,7 +79,7 @@ func GetIssues(status, category string, limit, offset int) ([]Issue, error) {
 		var createdAt int64
 		var updatedAt int64
 
-		err := rows.Scan(&issue.ID, &userUsername, &issue.Title, &issue.Description, &issue.Status, &issue.Priority, &issue.Category, &issue.UserAgent, &issue.URL, &createdAt, &updatedAt, &resolvedAt)
+		err := rows.Scan(&issue.ID, &userUsername, &issue.Title, &issue.Description, &issue.Status, &issue.Priority, &issue.Category, &issue.UserAgent, &issue.URL, &createdAt, &updatedAt, &resolvedAt, &issue.Resolution)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +101,7 @@ func GetIssues(status, category string, limit, offset int) ([]Issue, error) {
 // GetIssueByID retrieves a single issue by ID
 func GetIssueByID(id int) (*Issue, error) {
 	query := `
-	SELECT id, user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at, resolved_at
+	SELECT id, user_username, title, description, status, priority, category, user_agent, url, created_at, updated_at, resolved_at, resolution
 	FROM issues
 	WHERE id = ?
 	`
@@ -111,7 +112,7 @@ func GetIssueByID(id int) (*Issue, error) {
 	var createdAt int64
 	var updatedAt int64
 
-	err := db.QueryRow(query, id).Scan(&issue.ID, &userUsername, &issue.Title, &issue.Description, &issue.Status, &issue.Priority, &issue.Category, &issue.UserAgent, &issue.URL, &createdAt, &updatedAt, &resolvedAt)
+	err := db.QueryRow(query, id).Scan(&issue.ID, &userUsername, &issue.Title, &issue.Description, &issue.Status, &issue.Priority, &issue.Category, &issue.UserAgent, &issue.URL, &createdAt, &updatedAt, &resolvedAt, &issue.Resolution)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +130,11 @@ func GetIssueByID(id int) (*Issue, error) {
 
 // UpdateIssueStatus updates the status of an issue
 func UpdateIssueStatus(id int, status string) error {
+	return UpdateIssueResolution(id, status, "")
+}
+
+// UpdateIssueResolution updates the status and resolution of an issue
+func UpdateIssueResolution(id int, status string, resolution string) error {
 	query := `
 	UPDATE issues
 	SET status = ?, updated_at = ?
@@ -138,11 +144,11 @@ func UpdateIssueStatus(id int, status string) error {
 	if status == "closed" {
 		query = `
 		UPDATE issues
-		SET status = ?, resolved_at = ?, updated_at = ?
+		SET status = ?, resolved_at = ?, resolution = ?, updated_at = ?
 		WHERE id = ?
 		`
 		timestamps := NewTimestamps()
-		_, err := db.Exec(query, status, timestamps.CreatedAt.Unix(), timestamps.CreatedAt.Unix(), id)
+		_, err := db.Exec(query, status, timestamps.CreatedAt.Unix(), resolution, timestamps.CreatedAt.Unix(), id)
 		return err
 	}
 

@@ -292,6 +292,19 @@ func handleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotificatio
 
 	unreadCount := 0
 	notifications := []models.UserNotification{}
+
+	// Load notifications for authenticated users
+	userName := GetUserContext(c)
+	if userName != "" {
+		if count, err := models.GetUnreadNotificationCount(userName); err == nil {
+			unreadCount = count
+		}
+		if notifs, err := models.GetUserNotifications(userName, true); err == nil {
+			notifications = notifs
+		}
+	}
+
+	// Override with provided values if specified
 	if len(unreadCountAndNotifications) > 0 {
 		unreadCount = unreadCountAndNotifications[0].(int)
 	}

@@ -34,6 +34,25 @@ func hasDuplicateChapters(chapters []models.Chapter, index int) bool {
 	return false
 }
 
+// countReadChapters returns the number of read chapters
+func countReadChapters(chapters []models.Chapter) int {
+	count := 0
+	for _, ch := range chapters {
+		if ch.Read {
+			count++
+		}
+	}
+	return count
+}
+
+// pluralizeUnit returns the plural form of the unit based on count
+func pluralizeUnit(unit string, count int) string {
+	if count == 1 {
+		return unit
+	}
+	return unit + "s"
+}
+
 templ MediaCollectionItem(mediaSlug string, collection models.Collection, inCollection bool) {
 	<div class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
 		<div class="flex-1">
@@ -159,7 +178,7 @@ templ AdminButtonGroup(mediaSlug string, isHighlighted bool, buttonIdSuffix stri
 	</div>
 }
 
-templ Media(media models.Media, chapters []models.Chapter, firstChapterID string, lastChapterID string, firstLibrarySlug string, lastLibrarySlug string, chapterCount int, userRole string, lastReadChapterID string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool) {
+templ Media(media models.Media, chapters []models.Chapter, firstChapterID string, lastChapterID string, firstLibrarySlug string, lastLibrarySlug string, chapterCount int, userRole string, lastReadChapterID string, reverse bool, premiumDuration int, reviews []models.Review, userReview *models.Review, userName string, userCollections []models.Collection, mediaCollections []models.Collection, isHighlighted bool, favCount int, isFavorite bool, score int, upvotes int, downvotes int, userVote int) {
 	@PageTitle(media.Name)
 	@Breadcrumb([]BreadcrumbItem{
 		{Label: "Series", Href: "/series"},
@@ -176,7 +195,7 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterID string
 	<div class="flex flex-col lg:flex-row mt-2">
 		<div id="form-column" class="w-full lg:w-1/4 m-2">
 			<div class="uk-card p-2">
-				@Info(media, userRole, lastReadChapterID, unit)
+				@Info(media, userRole, lastReadChapterID, unit, userName, favCount, isFavorite, score, upvotes, downvotes, userVote)
 			</div>
 		</div>
 		<div id="table-column" class="w-full lg:w-3/4 m-2">
@@ -187,7 +206,7 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterID string
 			</div>
 			<hr class="uk-divider-icon mb-4"/>
 			<div id="chapters-section">
-				@MediaChaptersSection(media, chapters, reverse, lastReadChapterID, premiumDuration, userRole, isHighlighted)
+				@MediaChaptersSection(media, chapters, reverse, lastReadChapterID, premiumDuration, userRole, isHighlighted, unit, userName)
 			</div>
 			<div id="reviews-section" class="mt-8">
 				@MediaReviewsSection(media, reviews, userReview, userRole, userName)
@@ -279,7 +298,7 @@ templ InlineEyeToggle(read bool, chapterID string) {
 	}
 }
 
-templ Info(media models.Media, userRole string, lastReadChapterID string, unit string) {
+templ Info(media models.Media, userRole string, lastReadChapterID string, unit string, userName string, favCount int, isFavorite bool, score int, upvotes int, downvotes int, userVote int) {
 	{{ posterClass := "relative flex justify-center items-center poster-container" }}
 	{{ if userRole == "moderator" || userRole == "admin" {
 	posterClass += " admin-hover"
@@ -301,10 +320,18 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 	</div>
 	<!-- Status and voting under poster -->
 	<div class="mt-2 flex justify-center">
-		<div id="media-favorite" hx-get={ fmt.Sprintf("/series/%s/favorite/fragment", media.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+		if userName == "" {
+			@MediaFavoriteFragmentAnonymous(media.Slug, favCount)
+		} else {
+			@MediaFavoriteFragment(media.Slug, favCount, isFavorite)
+		}
 	</div>
 	<div class="mt-2 flex justify-center">
-		<div id="media-vote" hx-get={ fmt.Sprintf("/series/%s/vote/fragment", media.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
+		if userName == "" {
+			@MediaVoteFragmentAnonymous(media.Slug, score, upvotes, downvotes)
+		} else {
+			@MediaVoteFragment(media.Slug, score, upvotes, downvotes, userVote)
+		}
 	</div>
 	<div class="mt-2 flex justify-center">
 		if media.Status != "" {
@@ -693,94 +720,272 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 	</div>
 	<!-- Edit Metadata Modal for Moderators/Admins -->
 	<div id="edit-metadata-modal" uk-modal role="dialog" aria-labelledby="edit-metadata-modal-title" aria-modal="true">
-		<div class="uk-modal-body uk-modal-dialog hide-scrollbar reader-modal-body">
+		<div class="uk-modal-body uk-modal-dialog hide-scrollbar reader-modal-body" style="max-width: 800px;">
 			<h2 id="edit-metadata-modal-title" class="uk-modal-title mb-3">Edit Media Metadata</h2>
 			<p class="uk-text-muted mb-6">
 				Manually edit the metadata for this media. Changes will overwrite existing data.
 			</p>
+
 			<form
 				hx-post={ fmt.Sprintf("/series/%s/metadata/manual", media.Slug) }
 				hx-ext="form-json"
 				class="space-y-6"
 			>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="name">Name</label>
-					<input class="uk-input" type="text" id="name" name="name" value={ media.Name }/>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="author">Author</label>
-					<input class="uk-input" type="text" id="author" name="author" value={ media.Author }/>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="description">
-						Description
-						<span class="uk-text-meta ml-2">(Markdown supported)</span>
-					</label>
-					<textarea class="uk-textarea" id="description" name="description" rows="5" placeholder="Supports **bold**, *italic*, [links](url), lists, and more...">{ media.Description }</textarea>
-					<p class="uk-text-meta mt-1">
-						Tip: Use markdown formatting for rich descriptions. 
-						<a href="https://www.markdownguide.org/basic-syntax/" target="_blank" class="uk-link-text">Markdown Guide</a>
-					</p>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="year">Year</label>
-					<input class="uk-input" type="number" id="year" name="year" value={ fmt.Sprint(media.Year) }/>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="original_language">Original Language</label>
-					<input class="uk-input" type="text" id="original_language" name="original_language" value={ media.OriginalLanguage }/>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="manga_type">Type</label>
-					<select class="uk-select" id="manga_type" name="manga_type">
-						<option value="manga" selected?={ media.Type == "manga" }>Manga</option>
-						<option value="manhwa" selected?={ media.Type == "manhwa" }>Manhwa</option>
-						<option value="manhua" selected?={ media.Type == "manhua" }>Manhua</option>
-						<option value="comic" selected?={ media.Type == "comic" }>Comic</option>
-						<option value="webtoon" selected?={ media.Type == "webtoon" }>Webtoon</option>
-						<option value="novel" selected?={ media.Type == "novel" }>Novel</option>
-						<option value="oneshot" selected?={ media.Type == "oneshot" }>Oneshot</option>
-						<option value="doujinshi" selected?={ media.Type == "doujinshi" }>Doujinshi</option>
-						<option value="oel" selected?={ media.Type == "oel" }>OEL</option>
-						<option value="other" selected?={ media.Type == "other" }>Other</option>
-					</select>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="status">Status</label>
-					<select class="uk-select" id="status" name="status">
-						<option value="ongoing" selected?={ media.Status == "ongoing" }>Ongoing</option>
-						<option value="completed" selected?={ media.Status == "completed" }>Completed</option>
-						<option value="hiatus" selected?={ media.Status == "hiatus" }>Hiatus</option>
-						<option value="cancelled" selected?={ media.Status == "cancelled" }>Cancelled</option>
-						<option value="upcoming" selected?={ media.Status == "upcoming" }>Upcoming</option>
-					</select>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="content_rating">Content Rating</label>
-					<select class="uk-select" id="content_rating" name="content_rating">
-						<option value="safe" selected?={ media.ContentRating == "safe" }>Safe</option>
-						<option value="suggestive" selected?={ media.ContentRating == "suggestive" }>Suggestive</option>
-						<option value="erotica" selected?={ media.ContentRating == "erotica" }>Erotica</option>
-						<option value="pornographic" selected?={ media.ContentRating == "pornographic" }>Pornographic</option>
-					</select>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="tags">Tags (comma-separated)</label>
-					{{ tagsString := "" }}
-					{{
-						if len(media.Tags) > 0 {
-							tagsString = strings.Join(media.Tags, ", ")
-						}
-					}}
-					<input class="uk-input" type="text" id="tags" name="tags" value={ tagsString } placeholder="e.g. Action, Adventure, Fantasy"/>
-					<small class="uk-text-muted block mt-2">Separate tags with commas</small>
-				</div>
-				<div class="mb-5">
-					<label class="uk-form-label mb-2 block font-semibold" for="cover_url">Cover Art URL</label>
-					<input class="uk-input" type="url" id="cover_url" name="cover_url"/>
-					<small class="uk-text-muted block mt-2">Enter a URL to download and store a new cover image</small>
-				</div>
-				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4 reader-footer">
+				<!-- Tabs for organizing fields -->
+				<ul class="uk-tab mb-6" uk-tab="swiping: false">
+					<li><a href="#">Basic Info</a></li>
+					<li><a href="#">Publication</a></li>
+					<li><a href="#">Content</a></li>
+					<li><a href="#">Statistics</a></li>
+				</ul>
+
+				<ul class="uk-switcher uk-margin">
+					<!-- Basic Info Tab -->
+					<li>
+						<div class="space-y-5">
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="name">Title *</label>
+								<input class="uk-input" type="text" id="name" name="name" value={ media.Name } required/>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="alternative_titles">Alternative Titles</label>
+								{{ altTitlesString := "" }}
+								{{
+									if len(media.AlternativeTitles) > 0 {
+										altTitlesString = strings.Join(media.AlternativeTitles, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="alternative_titles" name="alternative_titles" value={ altTitlesString } placeholder="e.g. Original Title, English Title"/>
+								<small class="uk-text-muted block mt-1">Separate multiple titles with commas</small>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="description">
+									Description
+									<span class="uk-text-meta ml-2">(Markdown supported)</span>
+								</label>
+								<textarea class="uk-textarea" id="description" name="description" rows="4" placeholder="Supports **bold**, *italic*, [links](url), lists, and more...">{ media.Description }</textarea>
+								<p class="uk-text-meta mt-1">
+									<a href="https://www.markdownguide.org/basic-syntax/" target="_blank" class="uk-link-text">Markdown Guide</a>
+								</p>
+							</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="year">Year</label>
+									<input class="uk-input" type="number" id="year" name="year" value={ fmt.Sprint(media.Year) } min="1900" max="2100"/>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="original_language">Original Language</label>
+									<input class="uk-input" type="text" id="original_language" name="original_language" value={ media.OriginalLanguage } placeholder="e.g. Japanese, Korean"/>
+								</div>
+							</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="manga_type">Type</label>
+									<select class="uk-select" id="manga_type" name="manga_type">
+										<option value="" selected?={ media.Type == "" }>Select type...</option>
+										<option value="manga" selected?={ media.Type == "manga" }>Manga</option>
+										<option value="manhwa" selected?={ media.Type == "manhwa" }>Manhwa</option>
+										<option value="manhua" selected?={ media.Type == "manhua" }>Manhua</option>
+										<option value="comic" selected?={ media.Type == "comic" }>Comic</option>
+										<option value="webtoon" selected?={ media.Type == "webtoon" }>Webtoon</option>
+										<option value="novel" selected?={ media.Type == "novel" }>Novel</option>
+										<option value="oneshot" selected?={ media.Type == "oneshot" }>Oneshot</option>
+										<option value="doujinshi" selected?={ media.Type == "doujinshi" }>Doujinshi</option>
+										<option value="oel" selected?={ media.Type == "oel" }>OEL</option>
+										<option value="other" selected?={ media.Type == "other" }>Other</option>
+									</select>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="demographic">Demographic</label>
+									<select class="uk-select" id="demographic" name="demographic">
+										<option value="" selected?={ media.Demographic == "" }>Select demographic...</option>
+										<option value="shounen" selected?={ media.Demographic == "shounen" }>Shounen</option>
+										<option value="shoujo" selected?={ media.Demographic == "shoujo" }>Shoujo</option>
+										<option value="seinen" selected?={ media.Demographic == "seinen" }>Seinen</option>
+										<option value="josei" selected?={ media.Demographic == "josei" }>Josei</option>
+										<option value="kodomomuke" selected?={ media.Demographic == "kodomomuke" }>Kodomomuke</option>
+										<option value="other" selected?={ media.Demographic == "other" }>Other</option>
+									</select>
+								</div>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="cover_url">Cover Art URL</label>
+								<input class="uk-input" type="url" id="cover_url" name="cover_url" placeholder="https://example.com/cover.jpg"/>
+								<small class="uk-text-muted block mt-1">Enter a URL to download and store a new cover image</small>
+							</div>
+						</div>
+					</li>
+
+					<!-- Publication Tab -->
+					<li>
+						<div class="space-y-5">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="start_date">Start Date</label>
+									<input class="uk-input" type="date" id="start_date" name="start_date" value={ media.StartDate }/>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="end_date">End Date</label>
+									<input class="uk-input" type="date" id="end_date" name="end_date" value={ media.EndDate }/>
+								</div>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="status">Status</label>
+								<select class="uk-select" id="status" name="status">
+									<option value="" selected?={ media.Status == "" }>Select status...</option>
+									<option value="ongoing" selected?={ media.Status == "ongoing" }>Ongoing</option>
+									<option value="completed" selected?={ media.Status == "completed" }>Completed</option>
+									<option value="hiatus" selected?={ media.Status == "hiatus" }>Hiatus</option>
+									<option value="cancelled" selected?={ media.Status == "cancelled" }>Cancelled</option>
+									<option value="upcoming" selected?={ media.Status == "upcoming" }>Upcoming</option>
+								</select>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="authors">Authors</label>
+								{{ authorsString := "" }}
+								{{
+									var authorParts []string
+									for _, author := range media.Authors {
+										if author.Role != "" && author.Role != "author" {
+											authorParts = append(authorParts, fmt.Sprintf("%s (%s)", author.Name, author.Role))
+										} else {
+											authorParts = append(authorParts, author.Name)
+										}
+									}
+									if len(authorParts) > 0 {
+										authorsString = strings.Join(authorParts, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="authors" name="authors" value={ authorsString } placeholder="e.g. Author Name, Artist Name (Illustrator)"/>
+								<small class="uk-text-muted block mt-1">Separate authors with commas. Use (Role) for specific roles.</small>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="artists">Artists</label>
+								{{ artistsString := "" }}
+								{{
+									var artistParts []string
+									for _, artist := range media.Artists {
+										if artist.Role != "" && artist.Role != "artist" {
+											artistParts = append(artistParts, fmt.Sprintf("%s (%s)", artist.Name, artist.Role))
+										} else {
+											artistParts = append(artistParts, artist.Name)
+										}
+									}
+									if len(artistParts) > 0 {
+										artistsString = strings.Join(artistParts, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="artists" name="artists" value={ artistsString } placeholder="e.g. Artist Name, Illustrator Name (Assistant)"/>
+								<small class="uk-text-muted block mt-1">Separate artists with commas. Use (Role) for specific roles.</small>
+							</div>
+							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="publisher">Publisher</label>
+									<input class="uk-input" type="text" id="publisher" name="publisher" value={ media.Publisher } placeholder="e.g. Shueisha"/>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="magazine">Magazine</label>
+									<input class="uk-input" type="text" id="magazine" name="magazine" value={ media.Magazine } placeholder="e.g. Weekly Shonen Jump"/>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="serialization">Serialization</label>
+									<input class="uk-input" type="text" id="serialization" name="serialization" value={ media.Serialization } placeholder="e.g. Jump Comics"/>
+								</div>
+							</div>
+						</div>
+					</li>
+
+					<!-- Content Tab -->
+					<li>
+						<div class="space-y-5">
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="content_rating">Content Rating</label>
+								<select class="uk-select" id="content_rating" name="content_rating">
+									<option value="" selected?={ media.ContentRating == "" }>Select rating...</option>
+									<option value="safe" selected?={ media.ContentRating == "safe" }>Safe</option>
+									<option value="suggestive" selected?={ media.ContentRating == "suggestive" }>Suggestive</option>
+									<option value="erotica" selected?={ media.ContentRating == "erotica" }>Erotica</option>
+									<option value="pornographic" selected?={ media.ContentRating == "pornographic" }>Pornographic</option>
+								</select>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="genres">Genres</label>
+								{{ genresString := "" }}
+								{{
+									if len(media.Genres) > 0 {
+										genresString = strings.Join(media.Genres, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="genres" name="genres" value={ genresString } placeholder="e.g. Action, Adventure, Fantasy"/>
+								<small class="uk-text-muted block mt-1">Separate genres with commas</small>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="characters">Characters</label>
+								{{ charactersString := "" }}
+								{{
+									if len(media.Characters) > 0 {
+										charactersString = strings.Join(media.Characters, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="characters" name="characters" value={ charactersString } placeholder="e.g. Character Name, Another Character"/>
+								<small class="uk-text-muted block mt-1">Separate characters with commas</small>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="tags">Tags</label>
+								{{ tagsString := "" }}
+								{{
+									if len(media.Tags) > 0 {
+										tagsString = strings.Join(media.Tags, ", ")
+									}
+								}}
+								<input class="uk-input" type="text" id="tags" name="tags" value={ tagsString } placeholder="e.g. Action, Adventure, Fantasy"/>
+								<small class="uk-text-muted block mt-1">Separate tags with commas</small>
+							</div>
+						</div>
+					</li>
+
+					<!-- Statistics Tab -->
+					<li>
+						<div class="space-y-5">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="chapter_count">Chapter Count</label>
+									<input class="uk-input" type="number" id="chapter_count" name="chapter_count" value={ fmt.Sprint(media.ChapterCount) } min="0"/>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="volume_count">Volume Count</label>
+									<input class="uk-input" type="number" id="volume_count" name="volume_count" value={ fmt.Sprint(media.VolumeCount) } min="0"/>
+								</div>
+							</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="average_score">Average Score</label>
+									<input class="uk-input" type="number" id="average_score" name="average_score" value={ fmt.Sprintf("%.2f", media.AverageScore) } min="0" max="10" step="0.01"/>
+									<small class="uk-text-muted block mt-1">0.00 - 10.00</small>
+								</div>
+								<div>
+									<label class="uk-form-label mb-2 block font-semibold" for="popularity">Popularity Rank</label>
+									<input class="uk-input" type="number" id="popularity" name="popularity" value={ fmt.Sprint(media.Popularity) } min="0"/>
+									<small class="uk-text-muted block mt-1">Lower numbers = more popular</small>
+								</div>
+							</div>
+							<div>
+								<label class="uk-form-label mb-2 block font-semibold" for="favorites">Favorites Count</label>
+								<input class="uk-input" type="number" id="favorites" name="favorites" value={ fmt.Sprint(media.Favorites) } min="0"/>
+							</div>
+							<div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+								<div class="flex items-start gap-2">
+									<uk-icon icon="Info" class="shrink-0 mt-0.5 text-blue-600"></uk-icon>
+									<div class="text-sm text-blue-800">
+										<strong>Statistics Note:</strong> These fields are typically populated automatically from metadata providers. Manual edits here will override external data.
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+
+				<div class="uk-flex uk-flex-right gap-3 mt-8 pt-4 border-t">
 					<button type="button" class="uk-btn uk-btn-default uk-modal-close px-6">Cancel</button>
 					<button type="submit" class="uk-btn uk-btn-primary px-6">Save Changes</button>
 				</div>
@@ -898,7 +1103,8 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 			<!-- Tabs for different poster edit modes -->
 			<ul class="uk-tab" uk-tab="swiping: false">
 				<li><a href="#">Upload</a></li>
-				<li><a href="#">Select</a></li>
+				<li hx-on:click="if (!document.getElementById('poster-selector-content').hasAttribute('data-loaded')) { htmx.trigger('#poster-selector-content', 'customLoad'); document.getElementById('poster-selector-content').setAttribute('data-loaded', 'true'); }"><a href="#">Select</a></li>
+				<li><a href="#">Metadata</a></li>
 			</ul>
 			<ul class="uk-switcher uk-margin">
 				<!-- Upload Tab -->
@@ -929,13 +1135,29 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 						<p class="uk-text-muted">Select a poster image from your media files:</p>
 						<div
 							id="poster-selector-content"
-							hx-get={ fmt.Sprintf("/series/%s/poster/chapters", media.Slug) }
-							hx-trigger="load"
+							if userRole == "moderator" || userRole == "admin" {
+								hx-get={ fmt.Sprintf("/series/%s/poster/chapters", media.Slug) }
+								hx-trigger="customLoad"
+								hx-target="this"
+								hx-swap="outerHTML"
+							}
 						>
-							<div class="uk-text-center uk-padding">
-								<div uk-spinner></div>
-								<p>Loading chapters...</p>
-							</div>
+							<p class="uk-text-muted">Loading chapter images...</p>
+						</div>
+					</div>
+				</li>
+				<!-- Metadata Tab -->
+				<li>
+					<div class="uk-margin">
+						<p class="uk-text-muted">Select a poster image from metadata providers:</p>
+						<div
+							id="poster-metadata-content"
+							hx-get={ fmt.Sprintf("/series/%s/poster/metadata", media.Slug) }
+							hx-trigger="customLoad"
+							hx-target="this"
+							hx-swap="outerHTML"
+						>
+							<p class="uk-text-muted">Loading cover images...</p>
 						</div>
 					</div>
 				</li>
@@ -949,6 +1171,86 @@ templ Info(media models.Media, userRole string, lastReadChapterID string, unit s
 		</div>
 	</div>
 
+	<script>
+		function filterChapters() {
+			const searchInput = document.getElementById('chapter-search');
+			const filter = searchInput.value.toLowerCase();
+			const chapterItems = document.querySelectorAll('#chapters-container ul.uk-accordion li');
+			const countElement = document.getElementById('chapter-count');
+			const unit = countElement ? countElement.getAttribute('data-unit') : 'chapter';
+			let visibleCount = 0;
+
+			chapterItems.forEach(item => {
+				const chapterTitle = item.querySelector('.uk-accordion-title');
+				if (chapterTitle) {
+					const text = chapterTitle.textContent.toLowerCase();
+					if (text.includes(filter)) {
+						item.style.display = '';
+						visibleCount++;
+					} else {
+						item.style.display = 'none';
+					}
+				}
+			});
+
+			// Update the count display
+			if (countElement) {
+				const totalCount = chapterItems.length;
+				const totalUnit = totalCount === 1 ? unit : unit + 's';
+				const visibleUnit = visibleCount === 1 ? unit : unit + 's';
+				if (visibleCount === totalCount) {
+					countElement.textContent = `${totalCount} ${totalUnit}`;
+				} else {
+					countElement.textContent = `${visibleCount} of ${totalCount} ${visibleUnit}`;
+				}
+			}
+		}
+
+		function toggleChapterOrder() {
+			const container = document.querySelector('#chapters-container ul.uk-accordion');
+			const containerDiv = document.getElementById('chapters-container');
+			if (!container || !containerDiv) return;
+
+			const items = Array.from(container.children);
+			items.reverse();
+			items.forEach(item => container.appendChild(item));
+
+			// Toggle the reverse state
+			const isReversed = containerDiv.getAttribute('data-reverse') === 'true';
+			containerDiv.setAttribute('data-reverse', (!isReversed).toString());
+
+			// Update all reverse buttons
+			const buttons = ['reverse-btn', 'reverse-btn-desktop', 'reverse-btn-large'];
+			buttons.forEach(btnId => {
+				const btn = document.getElementById(btnId);
+				if (btn) {
+					const icon = btn.querySelector('uk-icon');
+					const span = btn.querySelector('span');
+
+					if (isReversed) {
+						// Was reversed (descending), now ascending
+						icon.setAttribute('icon', 'arrow-down');
+						span.textContent = 'Descending';
+						btn.setAttribute('title', 'Sort chapters in descending order');
+					} else {
+						// Was ascending, now descending
+						icon.setAttribute('icon', 'arrow-up');
+						span.textContent = 'Ascending';
+						btn.setAttribute('title', 'Sort chapters in ascending order');
+					}
+				}
+			});
+		}
+
+		// Load poster metadata content when edit poster modal is opened
+		UIkit.util.on('#edit-poster-modal', 'show', function() {
+			const metadataContent = document.getElementById('poster-metadata-content');
+			if (metadataContent && !metadataContent.hasAttribute('data-loaded')) {
+				htmx.trigger(metadataContent, 'customLoad');
+				metadataContent.setAttribute('data-loaded', 'true');
+			}
+		});
+	</script>
 }
 
 // Favorite fragment for a media. Returned by HTMX when toggling favorite state.
@@ -1133,7 +1435,7 @@ templ ChaptersContainer(media models.Media, chapters []models.Chapter, reverse b
 	@Chapters(media, chapters, premiumDuration, userRole)
 }
 
-templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterID string, premiumDuration int, userRole string, isHighlighted bool) {
+templ MediaChaptersSection(media models.Media, chapters []models.Chapter, reverse bool, lastReadChapterID string, premiumDuration int, userRole string, isHighlighted bool, unit string, userName string) {
 	{{ toggleURL := fmt.Sprintf("/series/%s", media.Slug) }}
 	{{ buttonText := "" }}
 	{{ buttonIcon := "" }}
@@ -1155,8 +1457,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			id="reverse-btn"
 			type="button"
 			class="uk-btn uk-btn-default"
-			hx-get={ toggleURL }
-			hx-target="#chapters-section"
+			onclick="toggleChapterOrder()"
 			title={ buttonTitle }
 		>
 			<uk-icon icon={ buttonIcon }></uk-icon>
@@ -1190,8 +1491,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 				id="reverse-btn-desktop"
 				type="button"
 				class="uk-btn uk-btn-default"
-				hx-get={ toggleURL }
-				hx-target="#chapters-section"
+				onclick="toggleChapterOrder()"
 				title={ buttonTitle }
 			>
 				<uk-icon icon={ buttonIcon }></uk-icon>
@@ -1224,8 +1524,7 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			id="reverse-btn-large"
 			type="button"
 			class="uk-btn uk-btn-default"
-			hx-get={ toggleURL }
-			hx-target="#chapters-section"
+			onclick="toggleChapterOrder()"
 			title={ buttonTitle }
 		>
 			<uk-icon icon={ buttonIcon }></uk-icon>
@@ -1253,9 +1552,40 @@ templ MediaChaptersSection(media models.Media, chapters []models.Chapter, revers
 			</div>
 		}
 	</div>
-	<div class="uk-card p-2 uk-card-scroll hide-scrollbar">
-		<div id="chapters-container" class="p-2">
-			@ChaptersContainer(media, chapters, reverse, premiumDuration, userRole)
+	if len(userName) > 0 {
+	{{ readCount := countReadChapters(chapters) }}
+	{{ percentage := 0 }}
+	{{ if len(chapters) > 0 { percentage = (readCount * 100) / len(chapters) } }}
+		<div class="px-4 mb-4">
+			<div class="flex items-center justify-between text-sm text-gray-600 mb-1">
+				<span>Reading Progress</span>
+				<span>{ fmt.Sprintf("%d / %d %s read", readCount, len(chapters), unit) }</span>
+			</div>
+			<div class="w-full rounded-full h-2" style="background-color: #6b7280;">
+				<div class="bg-success h-2 rounded-full transition-all duration-300" style={ fmt.Sprintf("width: %d%%", percentage) }></div>
+			</div>
+		</div>
+	}
+	<div class="uk-card">
+		<!-- Fixed header bar -->
+		<div class="flex justify-between items-center px-2 py-2 bg-white" style="border-bottom: var(--uk-card-border, 1px solid hsl(var(--border) / var(--border-alpha, 1)));">
+			<span class="font-semibold">Chapters</span>
+			<div class="flex items-center space-x-2">
+				<span id="chapter-count" class="text-sm text-gray-600" data-unit={ unit }>{ fmt.Sprintf("%d %s", len(chapters), pluralizeUnit(unit, len(chapters))) }</span>
+				<input
+					type="text"
+					id="chapter-search"
+					placeholder="Search chapters..."
+					class="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					oninput="filterChapters()"
+				/>
+			</div>
+		</div>
+		<!-- Scrollable content -->
+		<div class="uk-card-scroll hide-scrollbar p-2">
+		<div id="chapters-container" class="p-2" data-reverse={ fmt.Sprintf("%t", reverse) }>
+				@ChaptersContainer(media, chapters, reverse, premiumDuration, userRole)
+			</div>
 		</div>
 	</div>
 }
@@ -1325,24 +1655,6 @@ templ Chapter(prevID string, chapterSlug string, nextID string, media models.Med
 	</button>
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
 	@ChapterNavigation(media, chapter, chapters, prevID, nextID)
-	<!-- Pagination Controls (hidden in webtoon mode) -->
-	<div id="reader-pagination" class="reader-pagination">
-		<div class="pagination-controls">
-			<button id="first-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="First page">
-				<uk-icon icon="chevrons-left" ratio="0.8"></uk-icon>
-			</button>
-			<button id="prev-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="Previous page">
-				<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
-			</button>
-			<span id="page-counter" >1 / 1</span>
-			<button id="next-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="Next page">
-				<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
-			</button>
-			<button id="last-page-btn" type="button" class="uk-btn uk-btn-default uk-btn-icon btn-circular" title="Last page">
-				<uk-icon icon="chevrons-right" ratio="0.8"></uk-icon>
-			</button>
-		</div>
-	</div>
 	<div id="reader-images-container" data-media-type={ media.Type }>
 		for _, token := range images {
 			<div class="reader-token" data-token={ token }></div>
@@ -1410,43 +1722,38 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 							<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 						</button>
 						<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-justify; offset: 5; flip: false; boundary: false; auto-update: false; animation: uk-anmt-slide-top-sm; duration: 100">
-							<ul class="uk-dropdown-nav uk-nav dropdown-nav">
-								for i, ch := range chapters {
-									<li class={ templ.KV("active-chapter", ch.ID == chapter.ID) }>
-										<a
-											class="flex justify-between items-center w-full"
-											href={ templ.URL(fmt.Sprintf("/chapter/%s", ch.ID)) }
-											onclick="event.preventDefault(); window.location.href=this.href; return false;"
-										>
-											<span class={ templ.KV("font-semibold", ch.ID == chapter.ID) }>
-												{ ch.Name }
-												if hasDuplicateChapters(chapters, i) {
-													<span class="ml-1 uk-badge uk-badge-primary uk-badge-small">{ ch.LibraryName }</span>
+							<!-- Fixed header bar -->
+							<div class="flex justify-between items-center px-3 py-2 bg-white" style="border-bottom: var(--uk-card-border, 1px solid hsl(var(--border) / var(--border-alpha, 1)));">
+								<span class="font-semibold text-sm">Chapters</span>
+								<span class="text-xs text-gray-600">{ fmt.Sprintf("%d chapters", len(chapters)) }</span>
+							</div>
+							<!-- Scrollable content -->
+							<div class="max-h-64 overflow-y-auto">
+								<ul class="uk-dropdown-nav uk-nav dropdown-nav">
+									for i := len(chapters) - 1; i >= 0; i-- {
+										{{ ch := chapters[i] }}
+										<li class={ templ.KV("active-chapter", ch.ID == chapter.ID) }>
+											<a
+												class="flex justify-between items-center w-full pl-2 pr-2"
+												href={ templ.URL(fmt.Sprintf("/chapter/%s", ch.ID)) }
+												onclick="event.preventDefault(); window.location.href=this.href; return false;"
+											>
+												<span class={ templ.KV("font-semibold", ch.ID == chapter.ID) }>
+													{ ch.Name }
+													if hasDuplicateChapters(chapters, i) {
+														<span class="ml-1 uk-badge uk-badge-primary uk-badge-small">{ ch.LibraryName }</span>
+													}
+												</span>
+												if ch.IsPremium {
+													<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
 												}
-											</span>
-											if ch.IsPremium {
-												<uk-icon icon="Clock" ratio="0.8" class="text-yellow-500"></uk-icon>
-											}
-										</a>
-									</li>
-								}
-							</ul>
+											</a>
+										</li>
+									}
+								</ul>
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="reader-mode-selector">
-					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="webtoon">
-						<uk-icon icon="menu" ratio="0.8"></uk-icon>
-						<span class="ml-1">Webtoon</span>
-					</button>
-					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="single">
-						<uk-icon icon="file-text" ratio="0.8"></uk-icon>
-						<span class="ml-1">Single Page</span>
-					</button>
-					<button type="button" class="uk-btn uk-btn-default reader-mode-btn" data-mode="side-by-side">
-						<uk-icon icon="columns" ratio="0.8"></uk-icon>
-						<span class="ml-1">Side by Side</span>
-					</button>
 				</div>
 			</div>
 		}
@@ -1467,7 +1774,7 @@ templ ChapterNavigation(media models.Media, chapter models.Chapter, chapters []m
 }
 
 // Small fragment that renders the read state badge and a toggle button
-templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
+templ ChapterReadBadge(read bool, mangaSlug string, chapterID string) {
 	if read {
 		<div id="read-state" class="flex items-center justify-center gap-2 my-2">
 			<span class="uk-badge inline-flex items-center gap-1">
@@ -1477,7 +1784,7 @@ templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
 			<button
 				type="button"
 				class="uk-btn uk-btn-default uk-button-small"
-				hx-post={ fmt.Sprintf("/series/%s/%s/unread", mangaSlug, chapterSlug) }
+				hx-post={ fmt.Sprintf("/chapter/%s/unread", chapterID) }
 				hx-target="#read-state"
 				hx-swap="outerHTML"
 			>Mark as unread</button>
@@ -1491,7 +1798,7 @@ templ ChapterReadBadge(read bool, mangaSlug string, chapterSlug string) {
 			<button
 				type="button"
 				class="uk-btn uk-btn-default uk-button-small"
-				hx-post={ fmt.Sprintf("/series/%s/%s/read", mangaSlug, chapterSlug) }
+				hx-post={ fmt.Sprintf("/chapter/%s/read", chapterID) }
 				hx-target="#read-state"
 				hx-swap="outerHTML"
 			>Mark as read</button>
@@ -1967,6 +2274,29 @@ templ PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex i
 	</div>
 }
 
+// PosterMetadataSelector shows a grid of cover images from metadata providers
+templ PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) {
+	<div id="poster-metadata-content" class="poster-metadata-selector uk-margin">
+		<div class="uk-margin">
+			<label class="uk-form-label"><strong>Select a Cover Image ({ fmt.Sprint(len(results)) } found):</strong></label>
+			<div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8 mt-4">
+				for _, result := range results {
+					<img
+						src={ result.CoverArtURL }
+						alt={ result.Title }
+						class="w-full h-64 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+						loading="lazy"
+						hx-post={ fmt.Sprintf("/series/%s/poster/set", mangaSlug) }
+						hx-vals={ fmt.Sprintf(`{"metadata_cover_url": "%s"}`, result.CoverArtURL) }
+						hx-target="#poster-metadata-content"
+						hx-swap="outerHTML"
+					/>
+				}
+			</div>
+		</div>
+	</div>
+}
+
 // NovelChapter renders a full page for reading a novel chapter
 templ NovelChapter(prevID string, chapterSlug string, nextID string, media models.Media, chapter models.Chapter, chapters []models.Chapter, toc string, content string) {
 	@PageTitle(chapter.Name)
@@ -1985,7 +2315,7 @@ templ NovelChapter(prevID string, chapterSlug string, nextID string, media model
 	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
 	<div
 		id="read-state"
-		hx-post={ fmt.Sprintf("/series/%s/%s/read", media.Slug, chapter.Slug) }
+		hx-post={ fmt.Sprintf("/chapter/%s/read", chapter.ID) }
 		hx-trigger="load"
 		hx-swap="none"
 		class="hidden"
@@ -2001,222 +2331,6 @@ templ NovelChapter(prevID string, chapterSlug string, nextID string, media model
 			</div>
 		</div>
 	</div>
-	<script>
-		// Use the global scrollToTop function from magi.js
-
-		// Reader customization variables
-		let currentFontSize = 18;
-		const minFontSize = 12;
-		const maxFontSize = 28;
-		const fontSizeStep = 2;
-
-		const minMargin = 0;
-		const maxMargin = 100;
-		const marginStep = 5;
-
-		let currentTextColor = null; // null means use default
-		let currentBgColor = null; // null means transparent
-		let currentTextAlign = 'justify';
-		let currentMargin = 20; // default margin in pixels
-
-		function loadReaderSettings() {
-			// Check for new settings format first
-			const saved = localStorage.getItem('novelReaderSettings');
-			if (saved) {
-				const settings = JSON.parse(saved);
-				currentFontSize = settings.fontSize || 18;
-				currentTextColor = settings.textColor || null;
-				currentBgColor = settings.bgColor || null;
-				currentTextAlign = settings.textAlign || 'justify';
-				currentMargin = settings.margin || 20;
-			} else {
-				// Backward compatibility: check for old font size setting
-				const oldFontSize = localStorage.getItem('novelFontSize');
-				if (oldFontSize) {
-					currentFontSize = parseInt(oldFontSize);
-					// Remove old setting and save new format
-					localStorage.removeItem('novelFontSize');
-					saveReaderSettings();
-				}
-			}
-			applyReaderSettings();
-		}
-
-		function saveReaderSettings() {
-			const settings = {
-				fontSize: currentFontSize,
-				textColor: currentTextColor,
-				bgColor: currentBgColor,
-				textAlign: currentTextAlign,
-				margin: currentMargin
-			};
-			localStorage.setItem('novelReaderSettings', JSON.stringify(settings));
-		}
-
-		function applyReaderSettings() {
-			const reader = document.querySelector('.epub-reader');
-			const card = reader.closest('.uk-card');
-
-			// Apply font size
-			reader.style.fontSize = currentFontSize + 'px';
-			document.getElementById('current-font-size').textContent = currentFontSize + 'px';
-
-			// Apply text color if set
-			if (currentTextColor) {
-				reader.style.cssText += `color: ${currentTextColor} !important;`;
-				const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
-				elements.forEach(el => {
-					el.style.cssText += `color: ${currentTextColor} !important;`;
-				});
-			} else {
-				// Reset to default
-				reader.style.color = '';
-				const elements = reader.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div, a');
-				elements.forEach(el => {
-					el.style.color = '';
-				});
-			}
-
-			// Apply background to the card
-			if (currentBgColor) {
-				card.style.backgroundColor = currentBgColor;
-				reader.setAttribute('data-bg-color', currentBgColor);
-			} else {
-				card.style.backgroundColor = '';
-				reader.removeAttribute('data-bg-color');
-			}
-
-			// Apply text alignment directly
-			reader.style.textAlign = currentTextAlign;
-
-			// Apply margin
-			document.documentElement.style.setProperty('--reader-margin', currentMargin + 'px');
-
-			// Update UI controls
-			document.getElementById('font-color-picker').value = currentTextColor || '#000000';
-			document.getElementById('bg-color-picker').value = currentBgColor || '#ffffff';
-
-			// Update alignment buttons
-			document.querySelectorAll('.text-align-btn').forEach(btn => {
-				btn.classList.toggle('uk-btn-primary', btn.getAttribute('data-align') === currentTextAlign);
-				btn.classList.toggle('uk-btn-default', btn.getAttribute('data-align') !== currentTextAlign);
-			});
-
-			// Update margin display
-			document.getElementById('current-margin').textContent = currentMargin + 'px';
-		}
-
-		function increaseFontSize() {
-			if (currentFontSize < maxFontSize) {
-				currentFontSize += fontSizeStep;
-				applyReaderSettings();
-				saveReaderSettings();
-			}
-		}
-
-		function decreaseFontSize() {
-			if (currentFontSize > minFontSize) {
-				currentFontSize -= fontSizeStep;
-				applyReaderSettings();
-				saveReaderSettings();
-			}
-		}
-
-		function increaseMargin() {
-			if (currentMargin < maxMargin) {
-				currentMargin += marginStep;
-				applyReaderSettings();
-				saveReaderSettings();
-			}
-		}
-
-		function decreaseMargin() {
-			if (currentMargin > minMargin) {
-				currentMargin -= marginStep;
-				applyReaderSettings();
-				saveReaderSettings();
-			}
-		}
-
-		// Smooth scrolling for TOC links
-		document.addEventListener('DOMContentLoaded', function() {
-			loadReaderSettings();
-
-			// Font size button handlers
-			document.querySelectorAll('.font-size-btn').forEach(btn => {
-				btn.addEventListener('click', function() {
-					const action = this.getAttribute('data-action');
-					if (action === 'increase') {
-						increaseFontSize();
-					} else if (action === 'decrease') {
-						decreaseFontSize();
-					}
-				});
-			});
-
-			// Color picker handlers
-			document.getElementById('font-color-picker').addEventListener('input', function(e) {
-				currentTextColor = e.target.value;
-				applyReaderSettings();
-				saveReaderSettings();
-			});
-
-			document.getElementById('bg-color-picker').addEventListener('input', function(e) {
-				currentBgColor = e.target.value;
-				applyReaderSettings();
-				saveReaderSettings();
-			});
-
-			// Reset button handler
-			document.getElementById('reset-btn').addEventListener('click', function() {
-				if (confirm('Are you sure you want to reset all reading customizations?')) {
-					localStorage.removeItem('novelReaderSettings');
-					// Reset variables to defaults
-					currentFontSize = 18;
-					currentTextColor = null;
-					currentBgColor = null;
-					currentTextAlign = 'justify';
-					currentMargin = 20;
-					applyReaderSettings();
-				}
-			});
-
-			// Text alignment handlers
-			document.querySelectorAll('.text-align-btn').forEach(btn => {
-				btn.addEventListener('click', function() {
-					currentTextAlign = this.getAttribute('data-align');
-					applyReaderSettings();
-					saveReaderSettings();
-				});
-			});
-
-			// Margin button handlers
-			document.querySelectorAll('.margin-btn').forEach(btn => {
-				btn.addEventListener('click', function() {
-					const action = this.getAttribute('data-action');
-					if (action === 'increase') {
-						increaseMargin();
-					} else if (action === 'decrease') {
-						decreaseMargin();
-					}
-				});
-			});
-
-			const tocLinks = document.querySelectorAll('.toc-content a');
-			tocLinks.forEach(link => {
-				link.addEventListener('click', function(e) {
-					e.preventDefault();
-					const targetId = this.getAttribute('href').substring(1);
-					const target = document.getElementById(targetId);
-					if (target) {
-						target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-					}
-					// Close the modal after clicking a TOC link
-					UIkit.modal('#toc-modal').hide();
-				});
-			});
-		});
-	</script>
 	<!-- TOC Modal -->
 	<div id="toc-modal" uk-modal>
 		<div class="uk-modal-dialog uk-modal-body">
@@ -2264,18 +2378,27 @@ templ NovelChapterNavigation(media models.Media, chapter models.Chapter, chapter
 						<span class="inline sm:hidden"><uk-icon icon="ChevronDown" ratio="0.9"></uk-icon></span>
 					</button>
 					<div id={ fmt.Sprintf("chapter-list-drop-%s", media.Slug) } data-trigger-id={ fmt.Sprintf("chapter-list-btn-%s", media.Slug) } class="uk-drop uk-dropdown min-w-52" data-uk-dropdown="mode: click; pos: bottom-center; offset: 5; flip: true; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
-						<ul class="uk-dropdown-nav uk-nav chapter-dropdown-nav">
-							for _, ch := range chapters {
-								<li class={ templ.KV("uk-active", ch.ID == chapter.ID) }>
-									<a href={ fmt.Sprintf("/chapter/%s", ch.ID) }>{ ch.Name }</a>
-									if ch.Read {
-										<span class="ml-2 brand-gradient inline-flex items-center" title="Read">
-											<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
-										</span>
-									}
-								</li>
-							}
-						</ul>
+						<!-- Fixed header bar -->
+						<div class="flex justify-between items-center px-3 py-2 border-b bg-white">
+							<span class="font-semibold text-sm">Chapters</span>
+							<span class="text-xs text-gray-600">{ fmt.Sprintf("%d chapters", len(chapters)) }</span>
+						</div>
+						<!-- Scrollable content -->
+						<div class="max-h-64 overflow-y-auto">
+							<ul class="uk-dropdown-nav uk-nav chapter-dropdown-nav">
+								for i := len(chapters) - 1; i >= 0; i-- {
+									{{ ch := chapters[i] }}
+									<li class={ templ.KV("uk-active", ch.ID == chapter.ID) }>
+										<a href={ fmt.Sprintf("/chapter/%s", ch.ID) }>{ ch.Name }</a>
+										if ch.Read {
+											<span class="ml-2 brand-gradient inline-flex items-center" title="Read">
+												<uk-icon icon="BadgeCheck" ratio="0.8"></uk-icon>
+											</span>
+										}
+									</li>
+								}
+							</ul>
+						</div>
 					</div>
 				</div>
 				<a href={ fmt.Sprintf("/series/%s", media.Slug) } class="uk-btn uk-btn-secondary">
@@ -2630,7 +2753,7 @@ templ ChapterCommentsSection(media models.Media, chapter models.Chapter, comment
 		<div class="uk-card uk-card-default p-4 mb-6">
 			<h3 class="text-lg font-semibold mb-3">Leave a Comment</h3>
 			<form
-				hx-post={ fmt.Sprintf("/series/%s/%s/comments", media.Slug, chapter.Slug) }
+				hx-post={ fmt.Sprintf("/chapter/%s/comments", chapter.ID) }
 				hx-target="#comments-section"
 				hx-swap="outerHTML"
 				class="space-y-4"

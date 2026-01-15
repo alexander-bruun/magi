@@ -1681,7 +1681,7 @@ func FileExplorer() templ.Component {
 			templ_7745c5c3_Var79 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" class=\"file-explorer-content\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex mt-4\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary select-folder-btn\" type=\"button\">Select This Folder</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 139, "<div id=\"file-explorer-modal\" class=\"uk-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><h2 class=\"uk-modal-title\">Select File or Folder</h2><div class=\"uk-margin\"><div id=\"file-explorer-content\" class=\"file-explorer-content\"><!-- Content will be populated by JavaScript --></div></div><div class=\"uk-flex mt-4\"><button id=\"select-folder-btn\" class=\"uk-btn uk-btn-primary select-folder-btn\" type=\"button\">Select</button> <button class=\"uk-btn uk-btn-default uk-modal-close\" type=\"button\">Cancel</button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

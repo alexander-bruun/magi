@@ -9,8 +9,7 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 	@PageTitle("Issues")
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Home", Href: "/" },
-		{ Label: "Libraries", Href: "/admin/libraries" },
-		{ Label: "Better", Href: "/admin/duplicates" },
+		{ Label: "Issues", Href: "/admin/issues" },
 	})
 	<div >
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Issue Management</span></h2>
@@ -75,6 +74,53 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 	<div id="issues-content" class="mt-4">
 		@IssuesTable(issues, status, category, limit, offset)
 	</div>
+	
+	<!-- Close Issue Modal -->
+	<div id="close-issue-modal" class="uk-modal" uk-modal>
+		<div class="uk-modal-dialog uk-modal-body">
+			<h2 class="uk-modal-title">Close Issue</h2>
+			<p class="uk-text-meta">Provide a resolution message for the user (optional)</p>
+			<form id="close-issue-form">
+				<div class="uk-margin">
+					<label class="uk-form-label">Resolution Message:</label>
+					<textarea class="uk-textarea" name="resolution" rows="4" placeholder="Explain how the issue was resolved..."></textarea>
+				</div>
+				<p class="uk-text-right">
+					<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
+					<button class="uk-btn uk-btn-primary" type="submit">Close Issue</button>
+				</p>
+			</form>
+		</div>
+	</div>
+	
+	<script>
+		let currentIssueId = null;
+		
+		function openCloseModal(issueId) {
+			currentIssueId = parseInt(issueId);
+			UIkit.modal('#close-issue-modal').show();
+		}
+		
+		document.getElementById('close-issue-form').addEventListener('submit', function(e) {
+			e.preventDefault();
+			const formData = new FormData(this);
+			const resolution = formData.get('resolution');
+			
+			fetch('/admin/issues/' + currentIssueId + '/status', {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: 'status=closed&resolution=' + encodeURIComponent(resolution)
+			}).then(response => {
+				if (response.ok) {
+					UIkit.modal('#close-issue-modal').hide();
+					// Reload the issues table
+					location.reload();
+				}
+			});
+		});
+	</script>
 }
 
 templ IssuesTable(issues []models.Issue, status, category string, limit, offset int) {
@@ -163,21 +209,9 @@ templ IssueRow(issue models.Issue) {
 					<input type="hidden" name="status" value="in_progress">
 					<button class="uk-btn uk-btn-primary" type="submit">Start Progress</button>
 				</form>
-				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }
-				      hx-target={ fmt.Sprintf("#issue-%d", issue.ID) }
-				      hx-swap="outerHTML"
-				      style="display: inline;">
-					<input type="hidden" name="status" value="closed">
-					<button class="uk-btn uk-btn-secondary" type="submit">Close</button>
-				</form>
+				<button class="uk-btn uk-btn-secondary" type="button" data-issue-id={ fmt.Sprint(issue.ID) } onclick="openCloseModal(this.getAttribute('data-issue-id'))">Close</button>
 			} else if issue.Status == "in_progress" {
-				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }
-				      hx-target={ fmt.Sprintf("#issue-%d", issue.ID) }
-				      hx-swap="outerHTML"
-				      style="display: inline;">
-					<input type="hidden" name="status" value="closed">
-					<button class="uk-btn uk-btn-secondary" type="submit">Close</button>
-				</form>
+				<button class="uk-btn uk-btn-secondary" type="button" data-issue-id={ fmt.Sprint(issue.ID) } onclick="openCloseModal(this.getAttribute('data-issue-id'))">Close</button>
 			} else if issue.Status == "closed" {
 				<form hx-put={ fmt.Sprintf("/admin/issues/%d/status", issue.ID) }
 				      hx-target={ fmt.Sprintf("#issue-%d", issue.ID) }
@@ -186,6 +220,10 @@ templ IssueRow(issue models.Issue) {
 					<input type="hidden" name="status" value="open">
 					<button class="uk-btn uk-btn-secondary" type="submit">Reopen</button>
 				</form>
+				if issue.Resolution != "" {
+					<br>
+					<small class="uk-text-muted"><strong>Resolution:</strong> { issue.Resolution }</small>
+				}
 			}
 		</td>
 	</tr>

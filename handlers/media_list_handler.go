@@ -257,6 +257,12 @@ func HandleMedia(c *fiber.Ctx) error {
 	var userReview *models.Review
 	var userCollections []models.Collection
 	var mediaCollections []models.Collection
+	favCount := 0
+	isFavorite := false
+	score := 0
+	upvotes := 0
+	downvotes := 0
+	userVote := 0
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil {
@@ -322,6 +328,28 @@ func HandleMedia(c *fiber.Ctx) error {
 		}
 	}
 
+	// Fetch favorite data
+	favCount, err = models.GetFavoritesCount(slug)
+	if err != nil {
+		log.Errorf("Error getting favorites count for %s: %v", slug, err)
+		favCount = 0
+	}
+	if userName != "" {
+		isFav, _ := models.IsFavoriteForUser(userName, slug)
+		isFavorite = isFav
+	}
+
+	// Fetch vote data
+	score, upvotes, downvotes, err = models.GetMediaVotes(slug)
+	if err != nil {
+		log.Errorf("Error getting votes for %s: %v", slug, err)
+		score, upvotes, downvotes = 0, 0, 0
+	}
+	if userName != "" {
+		userV, _ := models.GetUserVoteForMedia(userName, slug)
+		userVote = userV
+	}
+
 	// Fetch all reviews for the media
 	reviews, err := models.GetReviewsByMedia(slug)
 	if err != nil {
@@ -336,15 +364,11 @@ func HandleMedia(c *fiber.Ctx) error {
 		isHighlighted = false
 	}
 
-	if isHTMXRequest(c) && c.Query("reverse") != "" {
-		return handleView(c, views.MediaChaptersSection(*media, chapters, reverse, lastReadChapterID, premiumDuration, userRole, isHighlighted))
-	}
-
 	if isHTMXRequest(c) {
-		return handleView(c, views.Media(*media, chapters, firstID, lastID, firstLibrarySlug, lastLibrarySlug, len(chapters), userRole, lastReadChapterID, reverse, premiumDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
+		return handleView(c, views.Media(*media, chapters, firstID, lastID, firstLibrarySlug, lastLibrarySlug, len(chapters), userRole, lastReadChapterID, reverse, premiumDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted, favCount, isFavorite, score, upvotes, downvotes, userVote))
 	}
 
-	return handleView(c, views.Media(*media, chapters, firstID, lastID, firstLibrarySlug, lastLibrarySlug, len(chapters), userRole, lastReadChapterID, reverse, premiumDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted))
+	return handleView(c, views.Media(*media, chapters, firstID, lastID, firstLibrarySlug, lastLibrarySlug, len(chapters), userRole, lastReadChapterID, reverse, premiumDuration, reviews, userReview, userName, userCollections, mediaCollections, isHighlighted, favCount, isFavorite, score, upvotes, downvotes, userVote))
 } // HandleMediaSearch returns search results for the quick-search panel.
 func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")

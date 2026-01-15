@@ -251,513 +251,464 @@ func ConfigForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, ">MangaDex</option> <option value=\"mal\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, ">MangaDex</option> <option value=\"anilist\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.MetadataProvider == "mal" {
+		if cfg.MetadataProvider == "anilist" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, ">MyAnimeList</option> <option value=\"anilist\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, ">AniList</option> <option value=\"jikan\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.MetadataProvider == "anilist" {
+		if cfg.MetadataProvider == "jikan" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, ">AniList</option> <option value=\"jikan\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, ">Jikan (MAL API)</option> <option value=\"mangaupdates\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.MetadataProvider == "jikan" {
+		if cfg.MetadataProvider == "mangaupdates" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, ">Jikan (MAL API)</option> <option value=\"mangaupdates\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, ">MangaUpdates</option> <option value=\"kitsu\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.MetadataProvider == "mangaupdates" {
+		if cfg.MetadataProvider == "kitsu" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, ">MangaUpdates</option> <option value=\"kitsu\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, ">Kitsu</option></select><p class=\"text-xs text-muted-foreground mt-1\">Choose the default metadata provider for fetching manga information.</p></div></div></div><!-- Stripe Payment Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Stripe Payment Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"stripe_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.MetadataProvider == "kitsu" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " selected")
+		if cfg.StripeEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, ">Kitsu</option></select><p class=\"text-xs text-muted-foreground mt-1\">Choose the default metadata provider for fetching manga information.</p></div><div><label class=\"block mb-1\">MyAnimeList Client ID</label> <input type=\"password\" class=\"uk-input\" name=\"mal_client_id\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, " class=\"uk-checkbox\"> <span>Enable Stripe payments</span></label><p class=\"text-xs text-muted-foreground mt-1\">Enable Stripe integration for premium subscriptions.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Stripe Publishable Key</label> <input type=\"text\" class=\"uk-input\" name=\"stripe_publishable_key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.MALClientID)
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripePublishableKey)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 119, Col: 104}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 132, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" placeholder=\"Your MAL Client ID\"><p class=\"text-xs text-muted-foreground mt-1\">Required for MyAnimeList provider. Get from <a href=\"https://myanimelist.net/apiconfig\" target=\"_blank\" class=\"text-blue-500\">MyAnimeList API settings</a>.</p></div><div><label class=\"block mb-1\">MyAnimeList Client Secret</label> <input type=\"password\" class=\"uk-input\" name=\"mal_client_secret\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" placeholder=\"pk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p></div><div><label class=\"block mb-1 mt-2\">Stripe Secret Key</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_secret_key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.MALClientSecret)
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeSecretKey)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 124, Col: 112}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 137, Col: 112}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" placeholder=\"Your MAL Client Secret\"><p class=\"text-xs text-muted-foreground mt-1\">Required for MyAnimeList provider. Keep this secret and secure.</p></div><div><label class=\"block mb-1\">AniList API Token (Optional)</label> <input type=\"password\" class=\"uk-input\" name=\"anilist_api_token\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" placeholder=\"sk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p></div><div><label class=\"block mb-1 mt-2\">Stripe Webhook Secret</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_webhook_secret\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.AniListApiToken)
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeWebhookSecret)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 129, Col: 112}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 142, Col: 120}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" placeholder=\"Your AniList API token\"><p class=\"text-xs text-muted-foreground mt-1\">Optional for AniList provider. Provides higher rate limits when authenticated.</p></div></div></div><!-- Stripe Payment Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Stripe Payment Settings</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"stripe_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" placeholder=\"whsec_...\"><p class=\"text-xs text-muted-foreground mt-1\">Webhook endpoint secret for verifying Stripe webhook signatures.</p></div></div></div><!-- Rate Limiting Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Rate Limiting</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"rate_limit_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.StripeEnabled {
+		if cfg.RateLimitEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, " class=\"uk-checkbox\"> <span>Enable Stripe payments</span></label><p class=\"text-xs text-muted-foreground mt-1\">Enable Stripe integration for premium subscriptions.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Stripe Publishable Key</label> <input type=\"text\" class=\"uk-input\" name=\"stripe_publishable_key\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, " class=\"uk-checkbox\"> <span>Enable rate limiting</span></label><p class=\"text-xs text-muted-foreground mt-1\">Limit the number of requests per IP address to prevent abuse.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Requests per window</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_requests\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripePublishableKey)
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitRequests))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 148, Col: 118}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 161, Col: 141}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" placeholder=\"pk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe publishable key (starts with pk_). Safe to expose in frontend code.</p></div><div><label class=\"block mb-1 mt-2\">Stripe Secret Key</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_secret_key\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of requests allowed per time window.</p></div><div><label class=\"block mb-1 mt-2\">Time window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_window\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeSecretKey)
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitWindow))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 153, Col: 112}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 166, Col: 137}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\" placeholder=\"sk_test_...\"><p class=\"text-xs text-muted-foreground mt-1\">Your Stripe secret key (starts with sk_). Keep this secure and never expose it.</p></div><div><label class=\"block mb-1 mt-2\">Stripe Webhook Secret</label> <input type=\"password\" class=\"uk-input\" name=\"stripe_webhook_secret\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for rate limiting.</p></div><div><label class=\"block mb-1 mt-2\">Block duration (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_block_duration\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(cfg.StripeWebhookSecret)
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitBlockDuration))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 158, Col: 120}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 171, Col: 152}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\" placeholder=\"whsec_...\"><p class=\"text-xs text-muted-foreground mt-1\">Webhook endpoint secret for verifying Stripe webhook signatures.</p></div></div></div><!-- Rate Limiting Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Rate Limiting</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"rate_limit_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long to block IPs that exceed the limit.</p></div></div></div><!-- Bot Detection Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Bot Detection</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"bot_detection_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.RateLimitEnabled {
+		if cfg.BotDetectionEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, " class=\"uk-checkbox\"> <span>Enable rate limiting</span></label><p class=\"text-xs text-muted-foreground mt-1\">Limit the number of requests per IP address to prevent abuse.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Requests per window</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_requests\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, " class=\"uk-checkbox\"> <span>Enable bot detection</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically detect and ban IPs that access too many series/chapters in sequence.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Series access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_series_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitRequests))
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotSeriesThreshold))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 177, Col: 141}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 190, Col: 143}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of requests allowed per time window.</p></div><div><label class=\"block mb-1 mt-2\">Time window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_window\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum series page accesses allowed per time window before banning.</p></div><div><label class=\"block mb-1 mt-2\">Chapter access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_chapter_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitWindow))
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotChapterThreshold))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 182, Col: 137}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 195, Col: 145}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for rate limiting.</p></div><div><label class=\"block mb-1 mt-2\">Block duration (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"rate_limit_block_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum chapter page accesses allowed per time window before banning.</p></div><div><label class=\"block mb-1 mt-2\">Detection window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_detection_window\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.RateLimitBlockDuration))
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotDetectionWindow))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 187, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 200, Col: 143}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long to block IPs that exceed the limit.</p></div></div></div><!-- Bot Detection Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Bot Detection</span></h4><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"bot_detection_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div></div><!-- Browser Challenge Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Browser Challenge</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Invisible JavaScript challenge that verifies clients are running in a real browser environment. Blocks automated scripts and bots.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"browser_challenge_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.BotDetectionEnabled {
+		if cfg.BrowserChallengeEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, " class=\"uk-checkbox\"> <span>Enable bot detection</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically detect and ban IPs that access too many series/chapters in sequence.</p></div><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"block mb-1 mt-2\">Series access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_series_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, " class=\"uk-checkbox\"> <span>Enable browser challenge</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, clients must solve a proof-of-work challenge to access protected content.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"browser_challenge_ip_bound\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.BrowserChallengeIPBound {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, " class=\"uk-checkbox\"> <span>Bind to IP</span></label><p class=\"text-xs text-muted-foreground mt-1\">Bind challenge verification to the client's IP address.</p></div></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mb-1 mt-2\">Difficulty (1-6)</label> <input type=\"number\" min=\"1\" max=\"6\" class=\"uk-input\" name=\"browser_challenge_difficulty\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotSeriesThreshold))
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BrowserChallengeDifficulty))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 206, Col: 143}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 229, Col: 167}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum series page accesses allowed per time window before banning.</p></div><div><label class=\"block mb-1 mt-2\">Chapter access threshold</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_chapter_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\"><p class=\"text-xs text-muted-foreground mt-1\">Number of leading zeros required in hash. Higher = harder to solve (3 recommended).</p></div><div><label class=\"block mb-1 mt-2\">Validity (hours)</label> <input type=\"number\" min=\"1\" max=\"168\" class=\"uk-input\" name=\"browser_challenge_validity_hours\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotChapterThreshold))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BrowserChallengeValidityHours))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 211, Col: 145}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 234, Col: 176}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum chapter page accesses allowed per time window before banning.</p></div><div><label class=\"block mb-1 mt-2\">Detection window (seconds)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"bot_detection_window\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long the verification cookie remains valid (1-168 hours).</p></div></div></div><!-- Referer Validation Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Referer Validation</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Validates that requests have proper Referer headers from your domain. Helps prevent direct access by scripts that don't simulate browser navigation.</p><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"referer_validation_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.RefererValidationEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, " class=\"uk-checkbox\"> <span>Enable referer validation</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, non-GET requests without a valid Referer header will be blocked. Entry points (home, media pages) are exempt.</p></div></div><!-- Tarpit Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Tarpit / Slow Response</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Progressively slows responses for suspected bots. Tracks suspicious behavior patterns and applies increasing delays to repeat offenders.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tarpit_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.TarpitEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, " class=\"uk-checkbox\"> <span>Enable tarpit</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, suspicious requests receive progressively slower responses.</p></div><div><label class=\"block mb-1\">Max delay (ms)</label> <input type=\"number\" min=\"100\" max=\"30000\" class=\"uk-input\" name=\"tarpit_max_delay\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BotDetectionWindow))
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.TarpitMaxDelay))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 216, Col: 143}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 267, Col: 149}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time window in seconds for bot detection monitoring.</p></div></div></div><!-- Browser Challenge Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Browser Challenge</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Invisible JavaScript challenge that verifies clients are running in a real browser environment. Blocks automated scripts and bots.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"browser_challenge_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum response delay for highly suspicious requests (100-30000ms).</p></div></div></div><!-- Timing Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Request Timing Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes request timing patterns to detect automated scripts. Bots often have unnaturally consistent request intervals.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"timing_analysis_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.BrowserChallengeEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, " class=\"uk-checkbox\"> <span>Enable browser challenge</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, clients must solve a proof-of-work challenge to access protected content.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"browser_challenge_ip_bound\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.BrowserChallengeIPBound {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 59, " class=\"uk-checkbox\"> <span>Bind to IP</span></label><p class=\"text-xs text-muted-foreground mt-1\">Bind challenge verification to the client's IP address.</p></div></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mb-1 mt-2\">Difficulty (1-6)</label> <input type=\"number\" min=\"1\" max=\"6\" class=\"uk-input\" name=\"browser_challenge_difficulty\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BrowserChallengeDifficulty))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 245, Col: 167}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 60, "\"><p class=\"text-xs text-muted-foreground mt-1\">Number of leading zeros required in hash. Higher = harder to solve (3 recommended).</p></div><div><label class=\"block mb-1 mt-2\">Validity (hours)</label> <input type=\"number\" min=\"1\" max=\"168\" class=\"uk-input\" name=\"browser_challenge_validity_hours\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BrowserChallengeValidityHours))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 250, Col: 176}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long the verification cookie remains valid (1-168 hours).</p></div></div></div><!-- Referer Validation Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Referer Validation</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Validates that requests have proper Referer headers from your domain. Helps prevent direct access by scripts that don't simulate browser navigation.</p><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"referer_validation_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.RefererValidationEnabled {
+		if cfg.TimingAnalysisEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 62, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, " class=\"uk-checkbox\"> <span>Enable referer validation</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, non-GET requests without a valid Referer header will be blocked. Entry points (home, media pages) are exempt.</p></div></div><!-- Tarpit Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Tarpit / Slow Response</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Progressively slows responses for suspected bots. Tracks suspicious behavior patterns and applies increasing delays to repeat offenders.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tarpit_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 63, " class=\"uk-checkbox\"> <span>Enable timing analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, requests with machine-like timing patterns are flagged as suspicious.</p></div><div><label class=\"block mb-1\">Variance threshold</label> <input type=\"number\" min=\"0.01\" max=\"1.0\" step=\"0.01\" class=\"uk-input\" name=\"timing_variance_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.TarpitEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, " checked")
+		var templ_7745c5c3_Var21 string
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f", cfg.TimingVarianceThreshold))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 287, Col: 180}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 64, "\"><p class=\"text-xs text-muted-foreground mt-1\">Lower values are stricter. Requests with coefficient of variation below this are suspicious (0.1 recommended).</p></div></div></div><!-- TLS Fingerprint Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>TLS Fingerprinting</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes TLS handshake characteristics (JA3/JA4) to identify non-browser clients. Requires reverse proxy to pass fingerprint headers.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tls_fingerprint_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.TLSFingerprintEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, " class=\"uk-checkbox\"> <span>Enable tarpit</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, suspicious requests receive progressively slower responses.</p></div><div><label class=\"block mb-1\">Max delay (ms)</label> <input type=\"number\" min=\"100\" max=\"30000\" class=\"uk-input\" name=\"tarpit_max_delay\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, " class=\"uk-checkbox\"> <span>Enable TLS fingerprinting</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, TLS fingerprints are analyzed to detect non-browser clients.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tls_fingerprint_strict\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.TarpitMaxDelay))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 283, Col: 149}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 66, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum response delay for highly suspicious requests (100-30000ms).</p></div></div></div><!-- Timing Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Request Timing Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes request timing patterns to detect automated scripts. Bots often have unnaturally consistent request intervals.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"timing_analysis_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.TimingAnalysisEnabled {
+		if cfg.TLSFingerprintStrict {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, " class=\"uk-checkbox\"> <span>Enable timing analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, requests with machine-like timing patterns are flagged as suspicious.</p></div><div><label class=\"block mb-1\">Variance threshold</label> <input type=\"number\" min=\"0.01\" max=\"1.0\" step=\"0.01\" class=\"uk-input\" name=\"timing_variance_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, " class=\"uk-checkbox\"> <span>Strict mode</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, requests with suspicious fingerprints are blocked (otherwise just flagged).</p></div></div></div><!-- Behavioral Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Behavioral Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Tracks client-side behavior (mouse movement, scrolling, clicks) to distinguish humans from bots. Injects tracking JavaScript.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"behavioral_analysis_enabled\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.2f", cfg.TimingVarianceThreshold))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 303, Col: 180}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, "\"><p class=\"text-xs text-muted-foreground mt-1\">Lower values are stricter. Requests with coefficient of variation below this are suspicious (0.1 recommended).</p></div></div></div><!-- TLS Fingerprint Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>TLS Fingerprinting</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes TLS handshake characteristics (JA3/JA4) to identify non-browser clients. Requires reverse proxy to pass fingerprint headers.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tls_fingerprint_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.TLSFingerprintEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, " checked")
+		if cfg.BehavioralAnalysisEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, " class=\"uk-checkbox\"> <span>Enable TLS fingerprinting</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, TLS fingerprints are analyzed to detect non-browser clients.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"tls_fingerprint_strict\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, " class=\"uk-checkbox\"> <span>Enable behavioral analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, client-side behavior is tracked and analyzed.</p></div><div><label class=\"block mb-1\">Score threshold</label> <input type=\"number\" min=\"0\" max=\"100\" class=\"uk-input\" name=\"behavioral_score_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.TLSFingerprintStrict {
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BehavioralScoreThreshold))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 329, Col: 165}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 71, "\"><p class=\"text-xs text-muted-foreground mt-1\">Sessions with a human score below this are flagged as suspicious (0-100, 40 recommended).</p></div></div></div><!-- Header Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Header Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes HTTP headers for bot-like patterns. Checks User-Agent, Accept headers, and other browser fingerprints.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"header_analysis_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.HeaderAnalysisEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 72, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " class=\"uk-checkbox\"> <span>Strict mode</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, requests with suspicious fingerprints are blocked (otherwise just flagged).</p></div></div></div><!-- Behavioral Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Behavioral Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Tracks client-side behavior (mouse movement, scrolling, clicks) to distinguish humans from bots. Injects tracking JavaScript.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"behavioral_analysis_enabled\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 73, " class=\"uk-checkbox\"> <span>Enable header analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, HTTP headers are analyzed for suspicious patterns.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"header_analysis_strict\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.BehavioralAnalysisEnabled {
+		if cfg.HeaderAnalysisStrict {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " class=\"uk-checkbox\"> <span>Enable behavioral analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, client-side behavior is tracked and analyzed.</p></div><div><label class=\"block mb-1\">Score threshold</label> <input type=\"number\" min=\"0\" max=\"100\" class=\"uk-input\" name=\"behavioral_score_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " class=\"uk-checkbox\"> <span>Strict mode</span></label><p class=\"text-xs text-muted-foreground mt-1\">Block requests that exceed the threshold instead of just flagging.</p></div></div><div><label class=\"block mb-1 mt-2\">Suspicion threshold</label> <input type=\"number\" min=\"1\" max=\"20\" class=\"uk-input\" name=\"header_analysis_threshold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.BehavioralScoreThreshold))
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.HeaderAnalysisThreshold))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 345, Col: 165}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 357, Col: 158}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\"><p class=\"text-xs text-muted-foreground mt-1\">Sessions with a human score below this are flagged as suspicious (0-100, 40 recommended).</p></div></div></div><!-- Header Analysis Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Header Analysis</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Analyzes HTTP headers for bot-like patterns. Checks User-Agent, Accept headers, and other browser fingerprints.</p><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"header_analysis_enabled\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.HeaderAnalysisEnabled {
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\"><p class=\"text-xs text-muted-foreground mt-1\">Score above which to flag as suspicious (1-20, 5 recommended).</p></div></div><!-- Honeypot Traps Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Honeypot Traps</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Hidden trap paths that catch scrapers and vulnerability scanners. Detects bots probing for common exploits.</p><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.HoneypotEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, " class=\"uk-checkbox\"> <span>Enable header analysis</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, HTTP headers are analyzed for suspicious patterns.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"header_analysis_strict\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, " class=\"uk-checkbox\"> <span>Enable honeypot traps</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, trap paths are monitored for suspicious access.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_auto_block\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if cfg.HeaderAnalysisStrict {
+		if cfg.HoneypotAutoBlock {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, " class=\"uk-checkbox\"> <span>Strict mode</span></label><p class=\"text-xs text-muted-foreground mt-1\">Block requests that exceed the threshold instead of just flagging.</p></div></div><div><label class=\"block mb-1 mt-2\">Suspicion threshold</label> <input type=\"number\" min=\"1\" max=\"20\" class=\"uk-input\" name=\"header_analysis_threshold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, " class=\"uk-checkbox\"> <span>Auto-block triggered IPs</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically block IPs that access honeypot trap paths.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_auto_ban\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.HoneypotAutoBan {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, " class=\"uk-checkbox\"> <span>Auto-ban triggered IPs</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically ban IPs that access honeypot trap paths permanently.</p></div></div><div><label class=\"block mb-1 mt-2\">Block duration (minutes)</label> <input type=\"number\" min=\"1\" max=\"1440\" class=\"uk-input\" name=\"honeypot_block_duration\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var24 string
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.HoneypotBlockDuration))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 391, Col: 156}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long to block IPs that trigger traps (1-1440 min).</p></div></div><!-- Image Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Image Settings</span></h4><div><label class=\"block mb-1 mt-2\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 401, Col: 163}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Premium Features</span></h4><div class=\"uk-margin mt-2\"><label class=\"uk-form-label\"><input type=\"checkbox\" class=\"uk-checkbox\" name=\"premium_cooldown_scaling_enabled\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if cfg.PremiumCooldownScalingEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "> Enable premium cooldown scaling</label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mb-1 mt-2\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.HeaderAnalysisThreshold))
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 373, Col: 158}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 419, Col: 160}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"><p class=\"text-xs text-muted-foreground mt-1\">Score above which to flag as suspicious (1-20, 5 recommended).</p></div></div><!-- Honeypot Traps Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Honeypot Traps</span></h4><p class=\"text-xs text-muted-foreground mb-2\">Hidden trap paths that catch scrapers and vulnerability scanners. Detects bots probing for common exploits.</p><div class=\"grid grid-cols-3 gap-4\"><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.HoneypotEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, " class=\"uk-checkbox\"> <span>Enable honeypot traps</span></label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, trap paths are monitored for suspicious access.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_auto_block\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.HoneypotAutoBlock {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, " class=\"uk-checkbox\"> <span>Auto-block triggered IPs</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically block IPs that access honeypot trap paths.</p></div><div><label class=\"flex items-center space-x-2\"><input type=\"checkbox\" name=\"honeypot_auto_ban\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.HoneypotAutoBan {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, " class=\"uk-checkbox\"> <span>Auto-ban triggered IPs</span></label><p class=\"text-xs text-muted-foreground mt-1\">Automatically ban IPs that access honeypot trap paths permanently.</p></div></div><div><label class=\"block mb-1 mt-2\">Block duration (minutes)</label> <input type=\"number\" min=\"1\" max=\"1440\" class=\"uk-input\" name=\"honeypot_block_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in seconds that premium users can access chapters before their release time.</p></div><div><label class=\"block mb-1 mt-2\">Maximum premium chapters</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_premium_chapters\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.HoneypotBlockDuration))
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxPremiumChapters))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 407, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 424, Col: 143}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\"><p class=\"text-xs text-muted-foreground mt-1\">How long to block IPs that trigger traps (1-1440 min).</p></div></div><!-- Image Settings Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Image Settings</span></h4><div><label class=\"block mb-1 mt-2\">Image token validity (minutes)</label> <input type=\"number\" min=\"1\" max=\"60\" class=\"uk-input\" name=\"image_token_validity_minutes\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var28 string
-		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 417, Col: 163}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p></div></div><!-- Premium Features Card --><div class=\"uk-card p-4\"><h4 class=\"uk-heading-line mb-2\"><span>Premium Features</span></h4><div class=\"uk-margin mt-2\"><label class=\"uk-form-label\"><input type=\"checkbox\" class=\"uk-checkbox\" name=\"premium_cooldown_scaling_enabled\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if cfg.PremiumCooldownScalingEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "> Enable premium cooldown scaling</label><p class=\"text-xs text-muted-foreground mt-1\">When enabled, premium chapter cooldowns scale based on their position. First premium chapter uses base duration, second uses 2x, third uses 3x, etc.</p></div><div class=\"grid grid-cols-2 gap-4\"><div><label class=\"block mb-1 mt-2\">Premium early access duration (seconds)</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"premium_early_access_duration\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var29 string
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.PremiumEarlyAccessDuration))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 435, Col: 160}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "\"><p class=\"text-xs text-muted-foreground mt-1\">Time in seconds that premium users can access chapters before their release time.</p></div><div><label class=\"block mb-1 mt-2\">Maximum premium chapters</label> <input type=\"number\" min=\"0\" class=\"uk-input\" name=\"max_premium_chapters\" value=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var30 string
-		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cfg.MaxPremiumChapters))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/config.templ`, Line: 440, Col: 143}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of the most recent chapters that can be marked as premium.</p></div></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><script>\n        // Update value displays when sliders change\n        document.getElementById('reader-slider').addEventListener('input', function() {\n            document.getElementById('reader-value').textContent = this.value;\n        });\n        document.getElementById('moderator-slider').addEventListener('input', function() {\n            document.getElementById('moderator-value').textContent = this.value;\n        });\n        document.getElementById('premium-slider').addEventListener('input', function() {\n            document.getElementById('premium-value').textContent = this.value;\n        });\n        document.getElementById('admin-slider').addEventListener('input', function() {\n            document.getElementById('admin-value').textContent = this.value;\n        });\n        document.getElementById('anonymous-slider').addEventListener('input', function() {\n            document.getElementById('anonymous-value').textContent = this.value;\n        });\n\n        // Handle compression disable/enable\n        const compressionCheckbox = document.getElementById('disable-compression-checkbox');\n        const sliders = [\n            'reader-slider', 'moderator-slider', 'admin-slider', 'anonymous-slider', 'premium-slider'\n        ];\n\n        function toggleSliders() {\n            const disabled = compressionCheckbox.checked;\n            sliders.forEach(id => {\n                const slider = document.getElementById(id);\n                if (slider) {\n                    slider.disabled = disabled;\n                }\n            });\n        }\n\n        // Initial state\n        toggleSliders();\n\n        // Listen for changes\n        compressionCheckbox.addEventListener('change', toggleSliders);\n    </script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "\"><p class=\"text-xs text-muted-foreground mt-1\">Maximum number of the most recent chapters that can be marked as premium.</p></div></div></div><!-- Save Button Card --><div class=\"p-4\"><div class=\"flex justify-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default\">Save Configuration</button></div></div></form><script>\n        // Update value displays when sliders change\n        document.getElementById('reader-slider').addEventListener('input', function() {\n            document.getElementById('reader-value').textContent = this.value;\n        });\n        document.getElementById('moderator-slider').addEventListener('input', function() {\n            document.getElementById('moderator-value').textContent = this.value;\n        });\n        document.getElementById('premium-slider').addEventListener('input', function() {\n            document.getElementById('premium-value').textContent = this.value;\n        });\n        document.getElementById('admin-slider').addEventListener('input', function() {\n            document.getElementById('admin-value').textContent = this.value;\n        });\n        document.getElementById('anonymous-slider').addEventListener('input', function() {\n            document.getElementById('anonymous-value').textContent = this.value;\n        });\n\n        // Handle compression disable/enable\n        const compressionCheckbox = document.getElementById('disable-compression-checkbox');\n        const sliders = [\n            'reader-slider', 'moderator-slider', 'admin-slider', 'anonymous-slider', 'premium-slider'\n        ];\n\n        function toggleSliders() {\n            const disabled = compressionCheckbox.checked;\n            sliders.forEach(id => {\n                const slider = document.getElementById(id);\n                if (slider) {\n                    slider.disabled = disabled;\n                }\n            });\n        }\n\n        // Initial state\n        toggleSliders();\n\n        // Listen for changes\n        compressionCheckbox.addEventListener('change', toggleSliders);\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -781,12 +732,12 @@ func ConsoleLogs() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var31 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var31 == nil {
-			templ_7745c5c3_Var31 = templ.NopComponent
+		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var28 == nil {
+			templ_7745c5c3_Var28 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<div class=\"mt-8\" hx-ext=\"ws\" ws-connect=\"/admin/config/logs\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Console Logs</span></h2><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"p-4 rounded text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\" class=\"config-console-logs\"></div></div></div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "<div class=\"mt-8\" hx-ext=\"ws\" ws-connect=\"/admin/config/logs\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Console Logs</span></h2><div class=\"flex place-content-center\"><div class=\"w-full px-4\"><div class=\"uk-card p-4\"><div id=\"console-logs-container\" class=\"p-4 rounded text-sm h-96 overflow-y-auto\"><div id=\"console-logs-output\" class=\"config-console-logs\"></div></div></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

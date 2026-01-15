@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 
+	"github.com/gofiber/fiber/v2/log"
+
+	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
+	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
@@ -281,6 +286,26 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		return handleView(c, views.SuccessAlert(successMsg))
 	}
 
+	// Check for metadata cover URL
+	metadataCoverURL := c.FormValue("metadata_cover_url")
+	if metadataCoverURL != "" {
+		// Download and store the metadata cover image
+		storedImageURL, err := scheduler.DownloadAndStoreImage(mangaSlug, metadataCoverURL)
+		if err != nil {
+			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+		}
+
+		// Update media with new cover art URL
+		media.CoverArtURL = storedImageURL
+		if err := models.UpdateMedia(media); err != nil {
+			return sendInternalServerError(c, ErrInternalServerError, err)
+		}
+
+		// Return success message
+		successMsg := "Poster updated successfully!"
+		return handleView(c, views.SuccessAlert(successMsg))
+	}
+
 	// Existing logic for cropping from existing images
 	chapterSlug := c.FormValue("chapter_slug")
 	cropDataStr := c.FormValue("crop_data")
@@ -352,4 +377,96 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Return success message
 	successMsg := "Poster updated successfully!"
 	return handleView(c, views.SuccessAlert(successMsg))
+}
+
+// HandlePosterMetadataSelect renders a grid of cover images from metadata providers
+func HandlePosterMetadataSelect(c *fiber.Ctx) error {
+	mangaSlug := c.Params("media")
+
+	media, err := models.GetMediaUnfiltered(mangaSlug)
+	if err != nil || media == nil {
+		return sendNotFoundError(c, ErrMediaNotFound)
+	}
+
+	// Use saved potential poster URLs if available
+	var results []metadata.SearchResult
+	if len(media.PotentialPosterURLs) > 0 {
+		// Create SearchResult-like structs for saved URLs
+		for i, url := range media.PotentialPosterURLs {
+			results = append(results, metadata.SearchResult{
+				CoverArtURL: url,
+				Title:       fmt.Sprintf("Saved Poster %d", i+1),
+			})
+		}
+		log.Infof("Using %d saved potential poster URLs for media '%s'", len(results), mangaSlug)
+	} else {
+		// Fallback to searching all providers if no saved URLs
+		var allResults []metadata.SearchResult
+		providerNames := metadata.ListProviders()
+
+		for _, providerName := range providerNames {
+			provider, err := metadata.GetProvider(providerName, "")
+			if err != nil {
+				log.Debugf("Skipping provider %s: %v", providerName, err)
+				continue
+			}
+
+			providerResults, err := provider.Search(media.Name)
+			if err != nil {
+				log.Debugf("Provider %s search failed: %v", providerName, err)
+				continue
+			}
+
+			allResults = append(allResults, providerResults...)
+		}
+
+		if len(allResults) == 0 {
+			return handleView(c, views.EmptyState("No metadata results found from any provider."))
+		}
+
+		// Filter results by similarity score >= 0.9
+		var filteredResults []metadata.SearchResult
+		for _, result := range allResults {
+			if result.SimilarityScore >= 0.9 {
+				filteredResults = append(filteredResults, result)
+			}
+		}
+
+		if len(filteredResults) == 0 {
+			return handleView(c, views.EmptyState("No high-confidence metadata results found (score >= 0.9)."))
+		}
+
+		// Sort results by similarity score (highest first)
+		sort.Slice(filteredResults, func(i, j int) bool {
+			return filteredResults[i].SimilarityScore > filteredResults[j].SimilarityScore
+		})
+
+		// Limit to top 20 results to avoid overwhelming the UI
+		if len(filteredResults) > 20 {
+			filteredResults = filteredResults[:20]
+		}
+
+		results = filteredResults
+		log.Infof("Using %d filtered live-searched results (score >= 0.9) from all providers for media '%s'", len(results), mangaSlug)
+	}
+
+	if len(results) == 0 {
+		return handleView(c, views.EmptyState("No metadata poster URLs found."))
+	}
+
+	// Download and cache images locally
+	for i := range results {
+		if results[i].CoverArtURL != "" {
+			uniqueSlug := fmt.Sprintf("%s_metadata_%d", mangaSlug, i)
+			localURL, err := scheduler.DownloadAndStoreImage(uniqueSlug, results[i].CoverArtURL)
+			if err == nil {
+				results[i].CoverArtURL = localURL
+			} else {
+				// Keep original URL if download fails
+				fmt.Printf("Warning: failed to download metadata image for %s: %v\n", uniqueSlug, err)
+			}
+		}
+	}
+
+	return handleView(c, views.PosterMetadataSelector(mangaSlug, results))
 }

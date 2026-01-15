@@ -48,6 +48,24 @@ type MetadataFormData struct {
 	ContentRating    string `json:"content_rating" form:"content_rating"`
 	Tags             string `json:"tags" form:"tags"`
 	CoverURL         string `json:"cover_url" form:"cover_url"`
+
+	// Enhanced metadata fields
+	Authors           string  `json:"authors" form:"authors"`
+	Artists           string  `json:"artists" form:"artists"`
+	StartDate         string  `json:"start_date" form:"start_date"`
+	EndDate           string  `json:"end_date" form:"end_date"`
+	ChapterCount      int     `json:"chapter_count" form:"chapter_count"`
+	VolumeCount       int     `json:"volume_count" form:"volume_count"`
+	AverageScore      float64 `json:"average_score" form:"average_score"`
+	Popularity        int     `json:"popularity" form:"popularity"`
+	Favorites         int     `json:"favorites" form:"favorites"`
+	Demographic       string  `json:"demographic" form:"demographic"`
+	Publisher         string  `json:"publisher" form:"publisher"`
+	Magazine          string  `json:"magazine" form:"magazine"`
+	Serialization     string  `json:"serialization" form:"serialization"`
+	Genres            string  `json:"genres" form:"genres"`
+	Characters        string  `json:"characters" form:"characters"`
+	AlternativeTitles string  `json:"alternative_titles" form:"alternative_titles"`
 }
 
 // HandleUpdateMetadataMedia displays search results for updating a local media's metadata.
@@ -212,6 +230,89 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 	if err := models.SetTagsForMedia(existingMedia.Slug, tags); err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
+
+	// Process authors (comma-separated list, format: "Name (Role)" or "Name")
+	var authors []models.AuthorInfo
+	for author := range strings.SplitSeq(formData.Authors, ",") {
+		trimmed := strings.TrimSpace(author)
+		if trimmed != "" {
+			// Parse "Name (Role)" format
+			if strings.Contains(trimmed, "(") && strings.HasSuffix(trimmed, ")") {
+				parts := strings.SplitN(trimmed, " (", 2)
+				if len(parts) == 2 {
+					name := strings.TrimSpace(parts[0])
+					role := strings.TrimSuffix(strings.TrimSpace(parts[1]), ")")
+					authors = append(authors, models.AuthorInfo{Name: name, Role: role})
+				}
+			} else {
+				authors = append(authors, models.AuthorInfo{Name: trimmed, Role: "author"})
+			}
+		}
+	}
+	existingMedia.Authors = authors
+
+	// Process artists (comma-separated list, format: "Name (Role)" or "Name")
+	var artists []models.AuthorInfo
+	for artist := range strings.SplitSeq(formData.Artists, ",") {
+		trimmed := strings.TrimSpace(artist)
+		if trimmed != "" {
+			// Parse "Name (Role)" format
+			if strings.Contains(trimmed, "(") && strings.HasSuffix(trimmed, ")") {
+				parts := strings.SplitN(trimmed, " (", 2)
+				if len(parts) == 2 {
+					name := strings.TrimSpace(parts[0])
+					role := strings.TrimSuffix(strings.TrimSpace(parts[1]), ")")
+					artists = append(artists, models.AuthorInfo{Name: name, Role: role})
+				}
+			} else {
+				artists = append(artists, models.AuthorInfo{Name: trimmed, Role: "artist"})
+			}
+		}
+	}
+	existingMedia.Artists = artists
+
+	// Process genres (comma-separated list)
+	var genres []string
+	for genre := range strings.SplitSeq(formData.Genres, ",") {
+		trimmed := strings.TrimSpace(genre)
+		if trimmed != "" {
+			genres = append(genres, trimmed)
+		}
+	}
+	existingMedia.Genres = genres
+
+	// Process characters (comma-separated list)
+	var characters []string
+	for character := range strings.SplitSeq(formData.Characters, ",") {
+		trimmed := strings.TrimSpace(character)
+		if trimmed != "" {
+			characters = append(characters, trimmed)
+		}
+	}
+	existingMedia.Characters = characters
+
+	// Process alternative titles (comma-separated list)
+	var alternativeTitles []string
+	for title := range strings.SplitSeq(formData.AlternativeTitles, ",") {
+		trimmed := strings.TrimSpace(title)
+		if trimmed != "" {
+			alternativeTitles = append(alternativeTitles, trimmed)
+		}
+	}
+	existingMedia.AlternativeTitles = alternativeTitles
+
+	// Update other enhanced fields
+	existingMedia.StartDate = formData.StartDate
+	existingMedia.EndDate = formData.EndDate
+	existingMedia.ChapterCount = formData.ChapterCount
+	existingMedia.VolumeCount = formData.VolumeCount
+	existingMedia.AverageScore = formData.AverageScore
+	existingMedia.Popularity = formData.Popularity
+	existingMedia.Favorites = formData.Favorites
+	existingMedia.Demographic = formData.Demographic
+	existingMedia.Publisher = formData.Publisher
+	existingMedia.Magazine = formData.Magazine
+	existingMedia.Serialization = formData.Serialization
 
 	// Process cover art URL (download and store)
 	if formData.CoverURL != "" {
@@ -388,6 +489,49 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		// Update metadata from aggregated metadata while preserving creation date
 		originalType := existingMedia.Type
 		metadata.UpdateMediaFromAggregated(existingMedia, aggregatedMeta, existingMedia.CoverArtURL)
+
+		// Fetch potential poster URLs from all metadata providers
+		var allPosterURLs []string
+		providerNames := metadata.ListProviders()
+
+		for _, providerName := range providerNames {
+			provider, err := metadata.GetProvider(providerName, "")
+			if err != nil {
+				log.Debugf("Skipping provider %s for potential posters: %v", providerName, err)
+				continue
+			}
+
+			results, err := provider.Search(existingMedia.Name)
+			if err != nil {
+				log.Debugf("Provider %s search failed for potential posters: %v", providerName, err)
+				continue
+			}
+
+			// Filter results by similarity score >= 0.9 and collect URLs
+			for _, result := range results {
+				if result.SimilarityScore >= 0.9 && result.CoverArtURL != "" {
+					allPosterURLs = append(allPosterURLs, result.CoverArtURL)
+				}
+			}
+		}
+
+		// Remove duplicates and limit to reasonable number
+		uniqueURLs := make(map[string]bool)
+		var uniquePosterURLs []string
+		for _, url := range allPosterURLs {
+			if !uniqueURLs[url] {
+				uniqueURLs[url] = true
+				uniquePosterURLs = append(uniquePosterURLs, url)
+			}
+		}
+
+		// Limit to top 20 to keep database size reasonable
+		if len(uniquePosterURLs) > 20 {
+			uniquePosterURLs = uniquePosterURLs[:20]
+		}
+
+		existingMedia.PotentialPosterURLs = uniquePosterURLs
+		log.Debugf("Saved %d potential poster URLs from all providers for media '%s'", len(uniquePosterURLs), mangaSlug)
 
 		// Check if the media is a webtoon by checking image dimensions, and overwrite type if detected
 		mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)

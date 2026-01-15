@@ -15,7 +15,7 @@ import sys
 import threading
 import time
 import zipfile
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html import unescape as html_unescape
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
@@ -308,21 +308,22 @@ def process_chapter(
     chapter_url = chapter_info['url']
     chapter_num = chapter_info['num']
     
+    # Construct full chapter URL for bypass if needed
+    full_chapter_url = f"{base_url}{chapter_url}" if base_url else chapter_url
+    
     # Normalize chapter number for consistent comparison
     normalized_chapter_num = normalize_chapter_num(chapter_num)
     
-    # Skip if chapter already exists
-    if normalized_chapter_num in series_info['existing_chapters']:
-        return {'processed': False}
+    chapter_name = chapter_info.get('name')
+    if not chapter_name:
+        chapter_name = format_chapter_name(
+            '', 
+            chapter_num, 
+            series_info['padding_width'], 
+            config['default_suffix']
+        )
     
-    chapter_name = format_chapter_name(
-        '', 
-        chapter_num, 
-        series_info['padding_width'], 
-        config['default_suffix']
-    )
-    
-    cbz_name = f"{series_info['clean_title']} {chapter_name}"
+    cbz_name = f"{series_info['clean_title']} {chapter_name} {config.get('tag', '')}".strip()
     
     # Check if CBZ already exists
     cbz_path = series_info['series_directory'] / f"{cbz_name}.cbz"
@@ -353,7 +354,7 @@ def process_chapter(
             nonlocal session
             log("Re-running Cloudflare bypass due to 403 response...")
             try:
-                cookies, headers = asyncio.run(bypass_cloudflare(base_url))
+                cookies, headers = asyncio.run(bypass_cloudflare(full_chapter_url))
                 if cookies:
                     session = get_session(cookies, headers)
                     success("Cloudflare bypass re-run successful")
@@ -370,12 +371,13 @@ def process_chapter(
         allowed_domains=allowed_domains,
         convert_to_webp=config['convert_to_webp'],
         timeout=30,
-        bypass_callback=bypass_callback
+        bypass_callback=bypass_callback,
+        referer=base_url
     )
     
     # Handle CBZ creation and cleanup
     chapter_folder = series_info['series_directory'] / chapter_name
-    if downloaded_count > 1:
+    if downloaded_count > 1 or (downloaded_count == 1 and any('wowpic' in url for url in image_urls)):
         if create_cbz(chapter_folder, cbz_name):
             # Remove temp folder
             import shutil
@@ -640,7 +642,16 @@ def format_chapter_name(title: str, chapter_num: Union[int, float], padding_widt
     """
     if isinstance(chapter_num, float) and chapter_num == int(chapter_num):
         chapter_num = int(chapter_num)
-    formatted = f"{chapter_num:0{padding_width}d}" if isinstance(chapter_num, int) else f"{chapter_num:0{padding_width}.1f}"
+    if isinstance(chapter_num, int):
+        formatted = f"{chapter_num:0{padding_width}d}"
+    else:
+        int_part = f"{int(chapter_num):0{padding_width}d}"
+        frac = chapter_num - int(chapter_num)
+        if frac == 0:
+            formatted = int_part
+        else:
+            decimal_str = f"{frac:.1f}".lstrip('0').lstrip('.').rstrip('0').rstrip('.')
+            formatted = f"{int_part}.{decimal_str}"
     return f"Ch.{formatted} {suffix}".strip()
 
 
@@ -654,7 +665,7 @@ def calculate_padding_width(max_chapter: Union[int, float]) -> int:
     Returns:
         int: Number of digits needed for padding
     """
-    return len(str(int(max_chapter)))
+    return max(2, len(str(int(max_chapter))))
 
 
 def normalize_chapter_padding(series_directory: Union[str, Path], padding_width: int, suffix: str) -> None:
@@ -878,7 +889,7 @@ def get_default_headers(user_agent: Optional[str] = None) -> Dict[str, str]:
 # =============================================================================
 # Image Processing
 # =============================================================================
-def convert_to_webp(filepath: Path) -> bool:
+def convert_image_to_webp(filepath: Path) -> bool:
     """
     Convert an image file to WebP format if it's not already WebP.
 
@@ -1068,7 +1079,7 @@ def download_images_to_folder(
                 
                 # Convert to WebP if needed
                 if convert_webp and ext != 'webp':
-                    if not convert_to_webp(filename):
+                    if not convert_image_to_webp(filename):
                         return False, f"WebP conversion failed for {filename.name}"
                 
                 if progress_callback:
@@ -1166,7 +1177,7 @@ def process_downloaded_images(folder_path: Union[str, Path], convert_webp: bool 
             continue
         
         if convert_webp and img_file.suffix.lower() != '.webp':
-            if convert_to_webp(img_file):
+            if convert_image_to_webp(img_file):
                 results['converted'] += 1
             else:
                 results['failed'] += 1
@@ -1246,7 +1257,8 @@ def download_chapter_images(
     allowed_domains: Optional[List[str]] = None,
     convert_to_webp: bool = True,
     timeout: int = 30,
-    bypass_callback: Optional[Callable[[], None]] = None
+    bypass_callback: Optional[Callable[[], None]] = None,
+    referer: Optional[str] = None
 ) -> int:
     """
     Download images for a chapter to the specified folder.
@@ -1269,14 +1281,30 @@ def download_chapter_images(
     # Set up options for download_images_to_folder
     options = {
         'allowed_domains': allowed_domains,
-        'convert_webp': convert_to_webp,
+        'convert_webp': False,  # Download first, convert later
+        'concurrent': True,     # Download images concurrently
+        'max_workers': 5,       # Number of concurrent download workers
         'timeout': timeout,
-        'bypass_callback': bypass_callback
+        'bypass_callback': bypass_callback,
+        'referer': referer
     }
     
     # Download images
     result = download_images_to_folder(image_urls, chapter_folder, session, options)
-    return result['downloaded']
+    downloaded_count = result['downloaded']
+    
+    # Convert to WebP in parallel if requested
+    if convert_to_webp and downloaded_count > 0:
+        image_files = list(chapter_folder.glob('*'))
+        with ThreadPoolExecutor(max_workers=min(5, len(image_files))) as executor:
+            futures = [executor.submit(convert_image_to_webp, img_file) for img_file in image_files if img_file.is_file()]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    error(f"Failed to convert image: {e}")
+    
+    return downloaded_count
 
 
 # =============================================================================
@@ -1310,6 +1338,9 @@ def create_cbz(
         return False
     
     log(f"Creating {name}.cbz ({len(files)} files)")
+    
+    # Ensure the parent directory exists
+    cbz_file.parent.mkdir(parents=True, exist_ok=True)
     
     # Sort files, handling split images (e.g., 001.webp, 001_part01.webp, 001_part02.webp, 002.webp)
     def sort_key(file):

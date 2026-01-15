@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS issues (
     status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'in_progress', 'closed')),
     priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'critical')),
     category TEXT NOT NULL DEFAULT 'bug' CHECK(category IN ('bug', 'feature', 'improvement', 'question')),
+    resolution TEXT,
     user_agent TEXT,
     url TEXT,
     created_at INTEGER NOT NULL,

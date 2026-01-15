@@ -81,7 +81,7 @@ templ LibraryTable(libraries []models.Library) {
 								<div class="uk-btn-group flex-nowrap">
 									<button
 										type="button"
-										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0"
+										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0 spin-on-request"
 										hx-post={ fmt.Sprintf("/admin/libraries/%s/scan", library.Slug) }
 										hx-trigger="click"
 										hx-disabled-elt="this"

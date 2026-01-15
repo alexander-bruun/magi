@@ -7,6 +7,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 // HandleReportIssue displays the issue reporting form
@@ -21,6 +22,10 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 	var userUsername *string
 	if ok && userName != "" {
 		userUsername = &userName
+	}
+
+	if userUsername == nil {
+		return sendBadRequestError(c, ErrBadRequest)
 	}
 
 	var req struct {
@@ -74,13 +79,17 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 	moderators, err := models.GetUsersByRole("moderator")
 	if err == nil {
 		for _, mod := range moderators {
-			models.CreateAdminNotification(mod.Username, fmt.Sprintf("New issue reported: %s", issue.Title))
+			if err := models.CreateAdminNotification(mod.Username, fmt.Sprintf("New issue reported: %s", issue.Title)); err != nil {
+				log.Errorf("Failed to create notification for moderator %s: %v", mod.Username, err)
+			}
 		}
 	}
 	admins, err := models.GetUsersByRole("admin")
 	if err == nil {
 		for _, admin := range admins {
-			models.CreateAdminNotification(admin.Username, fmt.Sprintf("New issue reported: %s", issue.Title))
+			if err := models.CreateAdminNotification(admin.Username, fmt.Sprintf("New issue reported: %s", issue.Title)); err != nil {
+				log.Errorf("Failed to create notification for admin %s: %v", admin.Username, err)
+			}
 		}
 	}
 
@@ -147,13 +156,27 @@ func HandleUpdateIssueStatus(c *fiber.Ctx) error {
 		return sendBadRequestError(c, ErrBadRequest)
 	}
 
-	err = models.UpdateIssueStatus(id, status)
+	resolution := c.FormValue("resolution")
+
+	err = models.UpdateIssueResolution(id, status, resolution)
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 
-	// If issue is closed, mark related admin notifications as read for all moderators/admins
+	// If issue is closed, send notification to the user who reported it
 	if status == "closed" {
+		issue, err := models.GetIssueByID(id)
+		if err == nil && issue.UserUsername != nil {
+			message := fmt.Sprintf("Your issue '%s' has been resolved.", issue.Title)
+			if resolution != "" {
+				message += fmt.Sprintf(" Resolution: %s", resolution)
+			}
+			if err := models.CreateAdminNotification(*issue.UserUsername, message); err != nil {
+				log.Errorf("Failed to create resolution notification for user %s: %v", *issue.UserUsername, err)
+			}
+		}
+
+		// Mark related admin notifications as read for all moderators/admins
 		moderators, err := models.GetUsersByRole("moderator")
 		if err == nil {
 			for _, mod := range moderators {

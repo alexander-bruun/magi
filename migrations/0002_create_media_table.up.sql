@@ -29,5 +29,6 @@ CREATE TABLE IF NOT EXISTS media (
     genres TEXT, -- JSON array
     characters TEXT, -- JSON array
     alternative_titles TEXT, -- JSON array
-    attribution_links TEXT -- JSON array
+    attribution_links TEXT, -- JSON array
+    potential_poster_urls TEXT -- JSON array
 );

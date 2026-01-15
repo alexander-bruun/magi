@@ -168,23 +168,24 @@ func SortMedias(media []Media, key, order string) {
 
 // Media represents the media table schema
 type Media struct {
-	Slug             string    `json:"slug"`
-	Name             string    `json:"name"`
-	Author           string    `json:"author"`
-	Description      string    `json:"description"`
-	Year             int       `json:"year"`
-	OriginalLanguage string    `json:"original_language"`
-	Type             string    `json:"type"`
-	Status           string    `json:"status"`
-	ContentRating    string    `json:"content_rating"`
-	CoverArtURL      string    `json:"cover_art_url"`
-	FileCount        int       `json:"file_count"`
-	ReadCount        int       `json:"read_count"`
-	VoteScore        int       `json:"vote_score"`
-	Tags             []string  `json:"tags"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
-	PremiumCountdown string    `json:"premium_countdown,omitempty"`
+	Slug                string    `json:"slug"`
+	Name                string    `json:"name"`
+	Author              string    `json:"author"`
+	Description         string    `json:"description"`
+	Year                int       `json:"year"`
+	OriginalLanguage    string    `json:"original_language"`
+	Type                string    `json:"type"`
+	Status              string    `json:"status"`
+	ContentRating       string    `json:"content_rating"`
+	CoverArtURL         string    `json:"cover_art_url"`
+	PotentialPosterURLs []string  `json:"potential_poster_urls,omitempty"`
+	FileCount           int       `json:"file_count"`
+	ReadCount           int       `json:"read_count"`
+	VoteScore           int       `json:"vote_score"`
+	Tags                []string  `json:"tags"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+	PremiumCountdown    string    `json:"premium_countdown,omitempty"`
 
 	// Enhanced metadata fields
 	Authors           []AuthorInfo      `json:"authors,omitempty"`
@@ -303,17 +304,17 @@ func getMedia(slug string, applyContentFilter bool, contentRatingLimit int) (*Me
 		COALESCE(average_score, 0.0) as average_score, COALESCE(popularity, 0) as popularity, COALESCE(favorites, 0) as favorites,
 		COALESCE(demographic, '') as demographic, COALESCE(publisher, '') as publisher, COALESCE(magazine, '') as magazine, COALESCE(serialization, '') as serialization,
 		COALESCE(authors, '[]') as authors, COALESCE(artists, '[]') as artists, COALESCE(genres, '[]') as genres, COALESCE(characters, '[]') as characters,
-		COALESCE(alternative_titles, '[]') as alternative_titles, COALESCE(attribution_links, '[]') as attribution_links FROM media WHERE slug = ?`
+                COALESCE(alternative_titles, '[]') as alternative_titles, COALESCE(attribution_links, '[]') as attribution_links, COALESCE(potential_poster_urls, '[]') as potential_poster_urls FROM media WHERE slug = ?`
 
 	row := db.QueryRow(query, slug)
 
 	var m Media
 	var createdAt, updatedAt int64
-	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON, potentialPosterURLsJSON []byte
 
 	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
 		&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
-		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
+		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON, &potentialPosterURLsJSON)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Debugf("getMedia: no rows for slug=%s", slug)
@@ -334,6 +335,7 @@ func getMedia(slug string, applyContentFilter bool, contentRatingLimit int) (*Me
 	json.Unmarshal(charactersJSON, &m.Characters)
 	json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
 	json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+	json.Unmarshal(potentialPosterURLsJSON, &m.PotentialPosterURLs)
 
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
@@ -373,7 +375,7 @@ func getMediaBySlugAndLibrary(slug, _ string, applyContentFilter bool, contentRa
 		COALESCE(m.average_score, 0.0) as average_score, COALESCE(m.popularity, 0) as popularity, COALESCE(m.favorites, 0) as favorites,
 		COALESCE(m.demographic, '') as demographic, COALESCE(m.publisher, '') as publisher, COALESCE(m.magazine, '') as magazine, COALESCE(m.serialization, '') as serialization,
 		COALESCE(m.authors, '[]') as authors, COALESCE(m.artists, '[]') as artists, COALESCE(m.genres, '[]') as genres, COALESCE(m.characters, '[]') as characters,
-		COALESCE(m.alternative_titles, '[]') as alternative_titles, COALESCE(m.attribution_links, '[]') as attribution_links
+		COALESCE(m.alternative_titles, '[]') as alternative_titles, COALESCE(m.attribution_links, '[]') as attribution_links, COALESCE(m.potential_poster_urls, '[]') as potential_poster_urls
 	          FROM media m 
 	          WHERE m.slug = ?`
 
@@ -381,11 +383,11 @@ func getMediaBySlugAndLibrary(slug, _ string, applyContentFilter bool, contentRa
 
 	var m Media
 	var createdAt, updatedAt int64
-	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+	var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON, potentialPosterURLsJSON []byte
 
 	err := row.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
 		&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
-		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
+		&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON, &potentialPosterURLsJSON)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No media found
@@ -403,6 +405,7 @@ func getMediaBySlugAndLibrary(slug, _ string, applyContentFilter bool, contentRa
 	json.Unmarshal(charactersJSON, &m.Characters)
 	json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
 	json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+	json.Unmarshal(potentialPosterURLsJSON, &m.PotentialPosterURLs)
 
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
@@ -476,13 +479,14 @@ func UpdateMediaMetadata(media *Media) error {
 	charactersJSON, _ := json.Marshal(media.Characters)
 	alternativeTitlesJSON, _ := json.Marshal(media.AlternativeTitles)
 	attributionLinksJSON, _ := json.Marshal(media.AttributionLinks)
+	potentialPosterURLsJSON, _ := json.Marshal(media.PotentialPosterURLs)
 
 	query := `
 	UPDATE media
 	SET name = ?, author = ?, description = ?, year = ?, original_language = ?, type = ?, status = ?, content_rating = ?, cover_art_url = ?,
 		start_date = ?, end_date = ?, chapter_count = ?, volume_count = ?, average_score = ?, popularity = ?, favorites = ?,
 		demographic = ?, publisher = ?, magazine = ?, serialization = ?, authors = ?, artists = ?, genres = ?,
-		characters = ?, alternative_titles = ?, attribution_links = ?
+		characters = ?, alternative_titles = ?, attribution_links = ?, potential_poster_urls = ?
 	WHERE slug = ?
 	`
 
@@ -490,7 +494,7 @@ func UpdateMediaMetadata(media *Media) error {
 		media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL,
 		media.StartDate, media.EndDate, media.ChapterCount, media.VolumeCount, media.AverageScore, media.Popularity, media.Favorites,
 		media.Demographic, media.Publisher, media.Magazine, media.Serialization, string(authorsJSON), string(artistsJSON), string(genresJSON),
-		string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON), media.Slug)
+		string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON), string(potentialPosterURLsJSON), media.Slug)
 	if err != nil {
 		return err
 	}
@@ -709,7 +713,7 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 
 	query := fmt.Sprintf(`SELECT slug, name, author, description, year, original_language, type, status, content_rating, cover_art_url, file_count, created_at, updated_at,
 		start_date, end_date, chapter_count, volume_count, average_score, popularity, favorites, demographic, publisher, magazine, serialization,
-		authors, artists, genres, characters, alternative_titles, attribution_links FROM media WHERE slug IN (%s)`, placeholders)
+		authors, artists, genres, characters, alternative_titles, attribution_links, potential_poster_urls FROM media WHERE slug IN (%s)`, placeholders)
 
 	args := make([]any, len(slugs))
 	for i, slug := range slugs {
@@ -733,11 +737,11 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON, potentialPosterURLsJSON []byte
 
 		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
 			&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
-			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON)
+			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON, &potentialPosterURLsJSON)
 		if err != nil {
 			return nil, err
 		}
@@ -752,6 +756,7 @@ func GetMediasBySlugs(slugs []string) ([]Media, error) {
 		json.Unmarshal(charactersJSON, &m.Characters)
 		json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
 		json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+		json.Unmarshal(potentialPosterURLsJSON, &m.PotentialPosterURLs)
 
 		// Apply content rating filter
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {
@@ -786,7 +791,7 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 	var mediaList []Media
 	query := `SELECT DISTINCT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.created_at, m.updated_at,
 		m.start_date, m.end_date, m.chapter_count, m.volume_count, m.average_score, m.popularity, m.favorites, m.demographic, m.publisher, m.magazine, m.serialization,
-		m.authors, m.artists, m.genres, m.characters, m.alternative_titles, m.attribution_links FROM media m INNER JOIN chapters c ON m.slug = c.media_slug WHERE c.library_slug = ?`
+		m.authors, m.artists, m.genres, m.characters, m.alternative_titles, m.attribution_links, m.potential_poster_urls FROM media m INNER JOIN chapters c ON m.slug = c.media_slug WHERE c.library_slug = ?`
 
 	rows, err := db.Query(query, librarySlug)
 	if err != nil {
@@ -805,11 +810,11 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 	for rows.Next() {
 		var m Media
 		var createdAt, updatedAt int64
-		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON []byte
+		var authorsJSON, artistsJSON, genresJSON, charactersJSON, alternativeTitlesJSON, attributionLinksJSON, potentialPosterURLsJSON []byte
 
 		if err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &createdAt, &updatedAt,
 			&m.StartDate, &m.EndDate, &m.ChapterCount, &m.VolumeCount, &m.AverageScore, &m.Popularity, &m.Favorites, &m.Demographic, &m.Publisher, &m.Magazine, &m.Serialization,
-			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON); err != nil {
+			&authorsJSON, &artistsJSON, &genresJSON, &charactersJSON, &alternativeTitlesJSON, &attributionLinksJSON, &potentialPosterURLsJSON); err != nil {
 			log.Errorf("Failed to scan media row: %v", err)
 			return nil, err
 		}
@@ -823,6 +828,7 @@ func GetMediasByLibrarySlug(librarySlug string) ([]Media, error) {
 		json.Unmarshal(charactersJSON, &m.Characters)
 		json.Unmarshal(alternativeTitlesJSON, &m.AlternativeTitles)
 		json.Unmarshal(attributionLinksJSON, &m.AttributionLinks)
+		json.Unmarshal(potentialPosterURLsJSON, &m.PotentialPosterURLs)
 
 		// Filter based on content rating limit
 		if IsContentRatingAllowed(m.ContentRating, cfg.ContentRatingLimit) {

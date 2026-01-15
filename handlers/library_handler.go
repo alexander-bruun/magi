@@ -10,7 +10,6 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils/text"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -294,7 +293,7 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 		return c.SendString("")
 	}
 
-	return c.SendString(`<uk-icon icon="check"></uk-icon>`)
+	return c.SendString(`<uk-icon icon="RefreshCw"></uk-icon>`)
 }
 
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
@@ -332,138 +331,6 @@ func HandleCancelEdit(c *fiber.Ctx) error {
 
 	c.Response().Header.Set("Content-Type", "text/html")
 	return c.SendString(buf.String())
-}
-
-// HandleBetter shows potential duplicate folders across all libraries
-func HandleBetter(c *fiber.Ctx) error {
-	// Get page parameter, default to 1
-	page := c.QueryInt("page", 1)
-	if page < 1 {
-		page = 1
-	}
-
-	return handleView(c, views.Better(page))
-}
-
-// HandleDismissDuplicate dismisses a media duplicate entry
-func HandleDismissDuplicate(c *fiber.Ctx) error {
-	// Get duplicate ID from URL params
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(400).SendString("Invalid duplicate ID")
-	}
-
-	// Dismiss the duplicate
-	if err := models.DismissMediaDuplicate(int64(id)); err != nil {
-		log.Errorf("Failed to dismiss duplicate %d: %v", id, err)
-		return c.Status(500).SendString("Failed to dismiss duplicate")
-	}
-
-	// Return empty response to remove the row
-	return c.SendString("")
-}
-
-// HandleGetDuplicateFolderInfo returns folder information for a duplicate entry
-func HandleGetDuplicateFolderInfo(c *fiber.Ctx) error {
-	// Get duplicate ID from URL params
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
-	}
-
-	// Get folder info
-	folderInfo, err := models.GetDuplicateFolderInfo(int64(id))
-	if err != nil {
-		log.Errorf("Failed to get folder info for duplicate %d: %v", id, err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to get folder info"})
-	}
-
-	return c.JSON(folderInfo)
-}
-
-// HandleDeleteDuplicateFolder deletes a specific folder from a duplicate entry
-func HandleDeleteDuplicateFolder(c *fiber.Ctx) error {
-	// Get duplicate ID and folder path from request
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid duplicate ID"})
-	}
-
-	type DeleteRequest struct {
-		FolderPath string `json:"folder_path"`
-	}
-
-	var req DeleteRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
-	}
-
-	// Delete the folder
-	if err := models.DeleteDuplicateFolder(int64(id), req.FolderPath); err != nil {
-		log.Errorf("Failed to delete folder %s for duplicate %d: %v", req.FolderPath, id, err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete folder"})
-	}
-
-	return c.JSON(fiber.Map{"success": true})
-}
-
-// findDuplicatesInLibrary finds similar folders within a library's directories
-func findDuplicatesInLibrary(library models.Library, threshold float64) [][]models.DuplicateFolder {
-	var allFolders []string
-
-	// Collect all subdirectories from all library folders
-	for _, folder := range library.Folders {
-		subdirs, err := getSubdirectories(folder)
-		if err != nil {
-			log.Errorf("Error reading directory %s: %v", folder, err)
-			continue
-		}
-		allFolders = append(allFolders, subdirs...)
-	}
-
-	if len(allFolders) < 2 {
-		return nil
-	}
-
-	// Track which folders we've already grouped
-	grouped := make(map[int]bool)
-	var duplicateGroups [][]models.DuplicateFolder
-
-	// Compare each folder with all others
-	for i := 0; i < len(allFolders); i++ {
-		if grouped[i] {
-			continue
-		}
-
-		var group []models.DuplicateFolder
-		group = append(group, models.DuplicateFolder{
-			Name:       allFolders[i],
-			Similarity: 1.0,
-		})
-
-		for j := i + 1; j < len(allFolders); j++ {
-			if grouped[j] {
-				continue
-			}
-
-			similarity := text.SimilarityRatio(allFolders[i], allFolders[j])
-			if similarity >= threshold {
-				group = append(group, models.DuplicateFolder{
-					Name:       allFolders[j],
-					Similarity: similarity,
-				})
-				grouped[j] = true
-			}
-		}
-
-		// Only add groups with more than one folder
-		if len(group) > 1 {
-			duplicateGroups = append(duplicateGroups, group)
-			grouped[i] = true
-		}
-	}
-
-	return duplicateGroups
 }
 
 // getSubdirectories returns the names of all subdirectories in a given path

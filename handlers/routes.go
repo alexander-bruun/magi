@@ -257,7 +257,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Issue Reporting Routes
 	// ========================================
 	app.Get("/report-issue", HandleReportIssue)
-	app.Post("/report-issue", OptionalAuthMiddleware(), HandleCreateIssue)
+	app.Post("/report-issue", AuthMiddleware("reader"), HandleCreateIssue)
 	app.Get("/report-issue/success", HandleReportIssueSuccess)
 
 	// ========================================
@@ -354,14 +354,15 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	media.Get("/:media<[A-Za-z0-9_-]+>/vote/fragment", HandleMediaVoteFragment)
 	media.Post("/:media<[A-Za-z0-9_-]+>/favorite", HandleMediaFavorite)
 	media.Get("/:media<[A-Za-z0-9_-]+>/favorite/fragment", HandleMediaFavoriteFragment)
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", HandleAddHighlight)
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", HandleRemoveHighlight)
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)
+	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", AuthMiddleware("moderator"), HandleRemoveHighlight)
 
 	// Poster management
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", HandlePosterChapterSelect)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", HandlePosterSelector)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", HandlePosterPreview)
-	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", HandlePosterSet)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
+	media.Get("/:media<[A-Za-z0-9_-]+>/poster/metadata", AuthMiddleware("moderator"), HandlePosterMetadataSelect)
+	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 
 	// Media metadata management
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
@@ -373,6 +374,10 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
 	media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
 	media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:id", AuthMiddleware("reader"), HandleDeleteReview)
+
+	// Chapter comments
+	media.Get("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", HandleGetCommentsForSeries)
+	media.Post("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", AuthMiddleware("reader"), HandleCreateCommentForSeries)
 
 	// ========================================
 	// Account Routes
@@ -426,7 +431,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Banned IPs Management
 	// ========================================
-	bannedIPs := app.Group("/admin/banned-ips", AuthMiddleware("admin"))
+	bannedIPs := app.Group("/admin/banned-ips", AuthMiddleware("moderator"))
 	bannedIPs.Get("", HandleBannedIPs)
 	bannedIPs.Post("/:ip/unban", HandleUnbanIP)
 
@@ -478,7 +483,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Scraper Routes
 	// ========================================
-	scraper := app.Group("/admin/scraper", AuthMiddleware("moderator"))
+	scraper := app.Group("/admin/scraper", AuthMiddleware("admin"))
 	scraper.Get("", HandleScraper)
 	scraper.Get("/new", HandleScraperNewForm)
 	scraper.Post("", HandleScraperScriptCreate)
@@ -488,21 +493,16 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	scraper.Delete("/:id", HandleScraperScriptDelete)
 	scraper.Delete("/:id/logs/:logId", HandleScraperLogDelete)
 	scraper.Post("/:id/run", HandleScraperScriptRun)
-	scraper.Post("/:id/toggle", HandleScraperScriptToggle)
+	scraper.Post("/:id/disable", HandleScraperScriptDisable)
+	scraper.Post("/:id/enable", HandleScraperScriptEnable)
 	scraper.Post("/:id/cancel", HandleScraperScriptCancel)
 	scraper.Get("/:id/logs", HandleScraperLogsWebSocketUpgrade)
 
 	scraperHelpers := app.Group("/admin/scraper/helpers", AuthMiddleware("moderator"))
 	scraperHelpers.Get("/add-variable", HandleScraperVariableAdd)
 	scraperHelpers.Get("/remove-variable", HandleScraperVariableRemove)
-	scraperHelpers.Get("/add-package", HandleScraperPackageAdd)
-	scraperHelpers.Get("/remove-package", HandleScraperPackageRemove)
-	scraperHelpers.Get("/update-language", HandleScraperUpdateLanguage)
-
-	// ========================================
-	// Duplicate Detection
-	// ========================================
-	app.Get("/admin/duplicates", AuthMiddleware("admin"), HandleBetter)
+	scraperHelpers.Get("/update-script-path", HandleScraperUpdateScriptPath)
+	scraperHelpers.Get("/cancel-edit", HandleScraperCancelEdit)
 
 	// ========================================
 	// Issue Management
@@ -510,9 +510,6 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Get("/admin/issues", AuthMiddleware("admin"), HandleIssuesAdmin)
 	apiAdmin := app.Group("/admin", AuthMiddleware("admin"))
 	apiAdmin.Put("/issues/:id/status", HandleUpdateIssueStatus)
-	apiAdmin.Post("/duplicates/:id/dismiss", HandleDismissDuplicate)
-	apiAdmin.Get("/duplicates/:id/folder-info", HandleGetDuplicateFolderInfo)
-	apiAdmin.Delete("/duplicates/:id/folder", HandleDeleteDuplicateFolder)
 
 	// ========================================
 	// Configuration

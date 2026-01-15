@@ -203,7 +203,16 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 func GetChapter(mediaSlug, librarySlug, chapterSlug string) (*Chapter, error) {
 	var query string
 	var args []any
-	if librarySlug == "" {
+	if mediaSlug == "" {
+		// Get by slug only, assuming unique
+		query = `
+	SELECT id, slug, name, type, file, chapter_cover_url, media_slug, library_slug, created_at, released_at
+	FROM chapters
+	WHERE slug = ?
+	LIMIT 1
+	`
+		args = []any{chapterSlug}
+	} else if librarySlug == "" {
 		query = `
 	SELECT id, slug, name, type, file, chapter_cover_url, media_slug, library_slug, created_at, released_at
 	FROM chapters
@@ -876,4 +885,11 @@ func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDu
 	}
 
 	return result, nil
+}
+
+// GetChapterCount returns the total number of chapters for a media
+func GetChapterCount(mediaSlug string) (int, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM chapters WHERE media_slug = ?", mediaSlug).Scan(&count)
+	return count, err
 }

@@ -125,8 +125,8 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 																<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
 															</a>
 														} else {
-															<a href={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
-															   hx-get={ templ.SafeURL(fmt.Sprintf("/series/%s/%s", notification.MediaSlug, notification.ChapterSlug)) } 
+															<a href={ templ.SafeURL(fmt.Sprintf("/chapter/%s", notification.ChapterID)) } 
+															   hx-get={ templ.SafeURL(fmt.Sprintf("/chapter/%s", notification.ChapterID)) } 
 															   hx-target="#content" 
 															   class="block text-inherit no-underline hover:text-primary">
 																<p class="uk-margin-small">{ notification.Message }</p>
@@ -223,14 +223,13 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 							<li><a href="/admin/users"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
 							<li><a href="/admin/permissions"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
 							<li><a href="/admin/issues"><uk-icon icon="Bug" class="icon-pad"></uk-icon>Issues</a></li>
-							<li><a href="/admin/duplicates"><uk-icon icon="WandSparkles" class="icon-pad"></uk-icon>Better</a></li>
-							<li><a href="/admin/scraper"><uk-icon icon="Zap" class="icon-pad"></uk-icon>Scraper</a></li>
+							<li><a href="/admin/banned-ips"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
 						}
 							if userRole == "admin" {
 								<li class="uk-nav-header">Admin</li>
 								<li><a href="/admin/libraries"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
+								<li><a href="/admin/scraper"><uk-icon icon="Bot" class="icon-pad"></uk-icon>Scraper</a></li>
 								<li><a href="/admin/config"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
-								<li><a href="/admin/banned-ips"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
 								<li><a href="/admin/monitoring"><uk-icon icon="Binoculars" class="icon-pad"></uk-icon>Monitoring</a></li>
 								<li><a href="/admin/backups"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
 							}

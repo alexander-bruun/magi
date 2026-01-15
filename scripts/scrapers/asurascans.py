@@ -195,18 +195,23 @@ def extract_chapter_urls(session, series_url):
     series_slug = series_url.split("/series/")[-1]
     # Extract chapter links like series_slug/chapter/123 or series_slug/chapter/1.2
     chapter_patterns = re.findall(rf"{re.escape(series_slug)}/chapter/\d+(?:\.\d+)?", html)
-    # Convert to full URLs
-    chapter_urls = [f"/series/{pattern}" for pattern in chapter_patterns]
-    # Sort by chapter number
-    chapter_urls.sort(key=lambda x: float(re.search(r"/chapter/([\d.]+)", x).group(1)))
-    chapter_urls = list(dict.fromkeys(chapter_urls))  # unique
-
-    chapter_info = []
-    for url in chapter_urls:
-        match = re.search(r"/chapter/([\d.]+)", url)
+    
+    # Collect unique chapter numbers
+    chapter_nums = set()
+    for pattern in chapter_patterns:
+        match = re.search(r"/chapter/([\d.]+)", pattern)
         if match:
             num = float(match.group(1))
-            chapter_info.append({'url': url, 'num': num})
+            chapter_nums.add(num)
+    
+    # Sort chapter numbers
+    sorted_nums = sorted(chapter_nums)
+    
+    # Create chapter info
+    chapter_info = []
+    for num in sorted_nums:
+        url = f"/series/{series_slug}/chapter/{num}"
+        chapter_info.append({'url': url, 'num': num})
 
     return chapter_info
 
