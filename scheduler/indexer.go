@@ -223,7 +223,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 	log.Debugf("Attempting to generate poster from local images for media '%s' at path '%s'", slug, absolutePath)
 
 	// First, check for standalone poster/thumbnail images
-	imageFiles := []string{"poster.webp", "poster.jpg", "poster.jpeg", "poster.png", "thumbnail.webp", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png"}
+	imageFiles := []string{"poster.webp", "poster.jpg", "poster.jpeg", "poster.png", "thumbnail.webp", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png", "cover.webp", "cover.jpg", "cover.jpeg", "cover.png"}
 
 	for _, filename := range imageFiles {
 		imagePath := filepath.Join(absolutePath, filename)

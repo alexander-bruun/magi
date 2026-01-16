@@ -361,7 +361,7 @@
         async nextPage() {
             if (this.focusModal && this.focusModal.classList.contains('active')) {
                 // Handle focus modal navigation
-                const increment = 1;
+                const increment = this.focusModalMode === MODES.SIDE_BY_SIDE ? 2 : 1;
                 const maxPage = this.images.length - 1;
                 if (this.currentFocusIndex < maxPage) {
                     this.currentFocusIndex += increment;
@@ -379,7 +379,7 @@
         async prevPage() {
             if (this.focusModal && this.focusModal.classList.contains('active')) {
                 // Handle focus modal navigation
-                const decrement = 1;
+                const decrement = this.focusModalMode === MODES.SIDE_BY_SIDE ? 2 : 1;
                 if (this.currentFocusIndex >= decrement) {
                     this.currentFocusIndex -= decrement;
                     await this.updateFocusModal();

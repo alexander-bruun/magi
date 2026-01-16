@@ -61,10 +61,10 @@ var allSizes = []ThumbnailSize{
 }
 
 var standardSizes = []ThumbnailSize{
-	{"", targetWidth, targetHeight},     // full
-	{"_thumb", thumbWidth, thumbHeight}, // thumbnail
-	{"_small", smallWidth, smallHeight}, // small
-	{"_tiny", tinyWidth, tinyHeight},    // tiny
+	{"", targetWidth, targetHeight},           // full
+	{"_thumb", thumbWidth, thumbHeight},       // thumbnail
+	{"_small", smallWidth, smallHeight},       // small
+	{"_tiny", tinyWidth, tinyHeight},          // tiny
 	{"_display", displayWidth, displayHeight}, // display
 }
 
@@ -681,6 +681,30 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 
 	// Generate thumbnails
 	if err := generateAndSaveThumbnails(img, slug, dataBackend, useWebp, standardSizes, "jpeg"); err != nil {
+		return "", err
+	}
+
+	return generatePosterURL(slug, useWebp), nil
+}
+
+// DownloadPosterImage downloads an image from a URL and creates multiple cached sizes
+// Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
+// Returns the URL path for the full-size image
+func DownloadPosterImage(imageURL, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
+
+	// Download and decode the image
+	img, format, err := fetchImage(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download image from %s: %w", imageURL, err)
+	}
+
+	// Save original (unprocessed) for potential future use
+	if err := saveOriginal(img, slug, dataBackend, useWebp, format); err != nil {
+		return "", err
+	}
+
+	// Generate thumbnails
+	if err := generateAndSaveThumbnails(img, slug, dataBackend, useWebp, standardSizes, format); err != nil {
 		return "", err
 	}
 
