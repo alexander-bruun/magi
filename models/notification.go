@@ -237,7 +237,8 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 	query := fmt.Sprintf(`
 	SELECT c.slug, c.name, c.library_slug
 	FROM chapters c
-	WHERE c.media_slug = ? AND c.slug IN (%s)
+	JOIN libraries l ON c.library_slug = l.slug
+	WHERE c.media_slug = ? AND c.slug IN (%s) AND l.enabled = true
 	`, strings.Join(placeholders, ","))
 
 	rows, err := tx.Query(query, args...)
@@ -441,7 +442,7 @@ func BundleNotificationsForUser(userName string) error {
 			args[i+1] = slug
 		}
 		chapQuery := fmt.Sprintf(`
-		SELECT name FROM chapters WHERE media_slug = ? AND slug IN (%s)
+		SELECT name FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND c.slug IN (%s) AND l.enabled = true
 		`, strings.Join(placeholders, ","))
 		chapRows, err := db.Query(chapQuery, args...)
 		if err != nil {
@@ -559,7 +560,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 			args[i+1] = slug
 		}
 		chapQuery := fmt.Sprintf(`
-		SELECT name, library_slug FROM chapters WHERE media_slug = ? AND slug IN (%s)
+		SELECT name, c.library_slug FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND c.slug IN (%s) AND l.enabled = true
 		`, strings.Join(placeholders, ","))
 		chapRows, err := tx.Query(chapQuery, args...)
 		if err != nil {
