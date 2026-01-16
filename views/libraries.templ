@@ -37,9 +37,8 @@ templ LibraryTable(libraries []models.Library) {
 				<tr>
 					<th class="text-center">ID</th>
 					<th class="text-center">Name</th>
-					<th class="text-center">Status</th>
+					<th class="text-center">Enabled</th>
 					<th class="text-center">Cron</th>
-					<th class="text-center">Metadata Provider</th>
 					<th class="text-center">Folders</th>
 					<th class="text-center">Actions</th>
 				</tr>
@@ -59,16 +58,16 @@ templ LibraryTable(libraries []models.Library) {
 						</td>
 						<td>
 							<div class="mt-2 flex items-center justify-center">
-								{ library.Cron }
+								if library.Enabled {
+									<span class="uk-badge uk-badge-success">Enabled</span>
+								} else {
+									<span class="uk-badge uk-badge-danger">Disabled</span>
+								}
 							</div>
 						</td>
 						<td>
 							<div class="mt-2 flex items-center justify-center">
-								if library.MetadataProvider.Valid && library.MetadataProvider.String != "" {
-									{ library.MetadataProvider.String }
-								} else {
-									<span class="text-gray-500">Global</span>
-								}
+								{ library.Cron }
 							</div>
 						</td>
 						<td>
@@ -79,6 +78,22 @@ templ LibraryTable(libraries []models.Library) {
 						<td colspan="3">
 							<div class="flex items-center justify-center">
 								<div class="uk-btn-group flex-nowrap">
+									<button
+										type="button"
+										class="uk-btn uk-btn-primary h-10 w-10 flex-shrink-0 spin-on-request"
+										hx-post={ fmt.Sprintf("/admin/libraries/%s/toggle", library.Slug) }
+										hx-trigger="click"
+										hx-target="#libraries-table"
+										hx-swap="outerHTML"
+										hx-disabled-elt="this"
+										title={ fmt.Sprintf("Toggle library %s", library.Name) }
+									>
+										if library.Enabled {
+											<uk-icon icon="EyeOff"></uk-icon>
+										} else {
+											<uk-icon icon="Eye"></uk-icon>
+										}
+									</button>
 									<button
 										type="button"
 										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0 spin-on-request"
@@ -108,6 +123,19 @@ templ LibraryTable(libraries []models.Library) {
 									>
 										<uk-icon icon="Trash"></uk-icon>
 									</button>
+								</div>
+								<div class="uk-drop uk-dropdown" data-uk-dropdown="mode: hover; pos: bottom-center; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm">
+									<div class="flex space-x-1 p-1">
+										<button type="button" class="uk-btn uk-btn-secondary uk-btn-icon h-8 w-8 flex-shrink-0 spin-on-request" hx-post={ fmt.Sprintf("/admin/libraries/%s/index-posters", library.Slug) } hx-trigger="click" hx-disabled-elt="this" hx-on:click='this.innerHTML="<uk-icon icon=\"RefreshCw\"></uk-icon>"' title="Index Posters">
+											<uk-icon icon="Image"></uk-icon>
+										</button>
+										<button type="button" class="uk-btn uk-btn-secondary uk-btn-icon h-8 w-8 flex-shrink-0 spin-on-request" hx-post={ fmt.Sprintf("/admin/libraries/%s/index-metadata", library.Slug) } hx-trigger="click" hx-disabled-elt="this" hx-on:click='this.innerHTML="<uk-icon icon=\"RefreshCw\"></uk-icon>"' title="Index Metadata">
+											<uk-icon icon="FileText"></uk-icon>
+										</button>
+										<button type="button" class="uk-btn uk-btn-secondary uk-btn-icon h-8 w-8 flex-shrink-0 spin-on-request" hx-post={ fmt.Sprintf("/admin/libraries/%s/index-chapters", library.Slug) } hx-trigger="click" hx-disabled-elt="this" hx-on:click='this.innerHTML="<uk-icon icon=\"RefreshCw\"></uk-icon>"' title="Index Chapters">
+											<uk-icon icon="BookOpen"></uk-icon>
+										</button>
+									</div>
 								</div>
 							</div>
 						</td>
@@ -182,15 +210,13 @@ templ FormContent(library models.Library, editing bool) {
 			/>
 		</div>
 		<div class="uk-margin">
-			<select class="uk-select" name="metadata_provider">
-				<option value="">Use Global Setting</option>
-				<option value="mangadex" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mangadex" }>MangaDex</option>
-				<option value="mal" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mal" }>MyAnimeList</option>
-				<option value="anilist" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "anilist" }>AniList</option>
-				<option value="jikan" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "jikan" }>Jikan (MAL API)</option>
-				<option value="mangaupdates" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "mangaupdates" }>MangaUpdates</option>
-				<option value="kitsu" selected?={ library.MetadataProvider.Valid && library.MetadataProvider.String == "kitsu" }>Kitsu</option>
-			</select>
+			<label class="uk-form-label">Enabled</label>
+			<input
+				class="uk-checkbox"
+				type="checkbox"
+				name="enabled"
+				checked?={ library.Enabled }
+			/>
 		</div>
 		@FolderInputs(library.Folders, editing)
 		<div id="response" class="mt-8"></div>
