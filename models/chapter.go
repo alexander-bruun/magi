@@ -148,7 +148,7 @@ func GetChapters(mangaSlug string) ([]Chapter, error) {
 	SELECT c.id, c.slug, c.name, c.type, c.file, c.chapter_cover_url, c.media_slug, c.library_slug, l.name as library_name, c.created_at, c.released_at
 	FROM chapters c
 	JOIN libraries l ON c.library_slug = l.slug
-	WHERE c.media_slug = ?
+	WHERE c.media_slug = ? AND l.enabled = true
 	`
 
 	rows, err := db.Query(query, mangaSlug)
@@ -458,6 +458,7 @@ func GetRecentChapters(limit int) ([]ChapterWithMedia, error) {
 		FROM chapters c
 		JOIN libraries l ON c.library_slug = l.slug
 		JOIN media m ON c.media_slug = m.slug
+		WHERE l.enabled = true
 		ORDER BY c.created_at DESC
 		LIMIT ?
 	`
@@ -556,7 +557,7 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 			WHERE media_slug = ?
 			GROUP BY chapter_slug, library_slug
 		) rs ON c.slug = rs.chapter_slug AND c.library_slug = rs.library_slug
-		WHERE c.media_slug = ?
+		WHERE c.media_slug = ? AND l.enabled = true
 	`
 
 	rows, err := db.Query(query, mediaSlug, mediaSlug)
