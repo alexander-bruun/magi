@@ -314,6 +314,10 @@ def process_chapter(
     # Normalize chapter number for consistent comparison
     normalized_chapter_num = normalize_chapter_num(chapter_num)
     
+    # Check if chapter already exists (by normalized number)
+    if normalized_chapter_num in series_info['existing_chapters']:
+        return {'processed': False}
+    
     chapter_name = chapter_info.get('name')
     if not chapter_name:
         chapter_name = format_chapter_name(
@@ -564,6 +568,7 @@ def normalize_chapter_num(chapter_num) -> str:
     """
     Normalize chapter number to handle floats properly.
     Keeps '164.0' and '164' as distinct chapters.
+    Strips leading zeros from integer part for consistent comparison.
     
     Args:
         chapter_num: Chapter number (str or float)
@@ -571,8 +576,13 @@ def normalize_chapter_num(chapter_num) -> str:
     Returns:
         Normalized chapter number string
     """
-    chapter_num_str = str(chapter_num)
-    return chapter_num_str.strip()
+    chapter_num_str = str(chapter_num).strip()
+    if '.' in chapter_num_str:
+        int_part, frac = chapter_num_str.split('.', 1)
+        int_part = int_part.lstrip('0') or '0'
+        return f"{int_part}.{frac}"
+    else:
+        return chapter_num_str.lstrip('0') or '0'
 
 
 def get_existing_chapters(series_directory: Union[str, Path], pattern: str = r'Ch\.([\d.]+)') -> Set[str]:
@@ -665,7 +675,7 @@ def calculate_padding_width(max_chapter: Union[int, float]) -> int:
     Returns:
         int: Number of digits needed for padding
     """
-    return max(2, len(str(int(max_chapter))))
+    return max(1, len(str(int(max_chapter))))
 
 
 def normalize_chapter_padding(series_directory: Union[str, Path], padding_width: int, suffix: str) -> None:
@@ -723,10 +733,6 @@ def normalize_chapter_padding(series_directory: Union[str, Path], padding_width:
         
         # Only rename if the name would actually change and target doesn't exist
         if cbz_file.name != new_filename:
-            if new_path.exists():
-                warn(f"Skipping rename of {cbz_file.name} - {new_filename} already exists")
-                continue
-            
             renames.append((cbz_file, new_path))
     
     if not renames:

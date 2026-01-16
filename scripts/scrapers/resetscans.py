@@ -234,11 +234,13 @@ def extract_poster_url(session, series_url):
     response.raise_for_status()
     html = response.text
 
-    # Look for poster image with "resource" in the src (specific to reset-scans.org posters)
-    poster_match = re.search(r'<img[^>]*src="([^"]*resource[^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"', html)
+    # Look for poster image with srcset (responsive images, typical for posters)
+    poster_match = re.search(r'<img[^>]*srcset="([^"]*wp-content/uploads[^"]*)"', html)
     if poster_match:
-        poster_url = poster_match.group(1)
-        return poster_url
+        # Extract the first URL from srcset
+        srcset = poster_match.group(1)
+        first_url = srcset.split()[0]
+        return first_url
 
     return None
 
