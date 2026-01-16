@@ -32,17 +32,21 @@ func HandleHome(c *fiber.Ctx) error {
 
 	log.Debugf("User %s has access to libraries: %v", userName, accessibleLibraries)
 
-	// For admins, allow access to all without library filter
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		log.Errorf("Failed to get app config: %v", err)
+	}
+
+	// Get content rating limit
+	contentRatingLimit := cfg.ContentRatingLimit
+
+	// For admins, allow access to all without library filter and with full content access
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil && user.Role == "admin" {
 			accessibleLibraries = []string{} // Admins can see all
+			contentRatingLimit = 3           // Admins can see all content
 		}
-	}
-
-	cfg, err := models.GetAppConfig()
-	if err != nil {
-		log.Errorf("Failed to get app config: %v", err)
 	}
 
 	// Fetch data for the home page
@@ -53,7 +57,7 @@ func HandleHome(c *fiber.Ctx) error {
 		SortBy:              "created_at",
 		SortOrder:           "desc",
 		AccessibleLibraries: accessibleLibraries,
-		ContentRatingLimit:  cfg.ContentRatingLimit,
+		ContentRatingLimit:  contentRatingLimit,
 	}
 
 	recentlyAdded, _, _ := models.SearchMediasWithOptions(opts)

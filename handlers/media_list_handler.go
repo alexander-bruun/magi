@@ -54,8 +54,8 @@ func GetMediaListData(params QueryParams, userName string) (*MediaListData, erro
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil && user.Role == "admin" {
-			contentRatingLimit = 3      // Admins can see all content
-			accessibleLibs = []string{} // Admins can access all libraries without filter
+			contentRatingLimit = 3 // Admins can see all content
+			// Admins still use accessible libraries filter to only show media with chapters from enabled libraries
 		}
 	}
 
@@ -173,14 +173,22 @@ func HandleMedia(c *fiber.Ctx) error {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
 	contentRatingLimit := cfg.ContentRatingLimit
+	isAdmin := false
 	if userName != "" {
 		user, err := models.FindUserByUsername(userName)
 		if err == nil && user != nil && user.Role == "admin" {
 			contentRatingLimit = 3 // Admins can see all content
+			isAdmin = true
 		}
 	}
 
-	media, err := models.GetMediaWithContentLimit(slug, contentRatingLimit)
+	// Get media - admins can see all media, others are filtered
+	var media *models.Media
+	if isAdmin {
+		media, err = models.GetMediaUnfiltered(slug)
+	} else {
+		media, err = models.GetMediaWithContentLimit(slug, contentRatingLimit)
+	}
 	if err != nil {
 		return sendInternalServerError(c, ErrInternalServerError, err)
 	}
@@ -374,7 +382,8 @@ func HandleMediaSearch(c *fiber.Ctx) error {
 	searchParam := c.Query("search")
 
 	if searchParam == "" {
-		return handleView(c, views.OneDoesNotSimplySearch())
+		// Return empty content to hide results container
+		return c.SendString("")
 	}
 
 	// Get app config for content rating limit
