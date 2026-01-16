@@ -10,6 +10,7 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -116,6 +117,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
+		Enabled:     formData.Enabled,
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
@@ -190,6 +192,47 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	return c.SendString(tableContent)
 }
 
+// HandleToggleLibrary toggles the enabled status of a library
+func HandleToggleLibrary(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if library == nil {
+		return c.Status(fiber.StatusNotFound).SendString("Library not found")
+	}
+
+	// Toggle the enabled status
+	library.Enabled = !library.Enabled
+
+	if err := models.UpdateLibrary(library); err != nil {
+		return sendInternalServerError(c, ErrLibraryUpdateFailed, err)
+	}
+
+	libraries, err := models.GetLibraries()
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	tableContent, err := renderLibraryTable(libraries)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	status := "disabled"
+	if library.Enabled {
+		status = "enabled"
+	}
+	triggerNotification(c, fmt.Sprintf("Library %s successfully", status), "success")
+	setCommonHeaders(c)
+	return c.SendString(tableContent)
+}
+
 // HandleUpdateLibrary updates library information and returns the refreshed listing.
 func HandleUpdateLibrary(c *fiber.Ctx) error {
 	var formData LibraryFormData
@@ -210,6 +253,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
+		Enabled:     formData.Enabled,
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
@@ -294,6 +338,230 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 	}
 
 	return c.SendString(`<uk-icon icon="RefreshCw"></uk-icon>`)
+}
+
+// HandleIndexPosters re-indexes posters for all media in the library
+func HandleIndexPosters(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return sendBadRequestError(c, "Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if library == nil {
+		return sendNotFoundError(c, ErrLibraryNotFound)
+	}
+
+	log.Debugf("Starting poster re-indexing for library '%s'", library.Name)
+
+	dataBackend := GetDataBackend()
+	if dataBackend == nil {
+		return sendInternalServerError(c, "Data backend not available", nil)
+	}
+
+	medias, err := models.GetMediasByLibrarySlug(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	log.Debugf("Processing %d medias for poster re-indexing", len(medias))
+
+	// Candidate poster file names to look for
+	posterCandidates := []string{"poster.webp", "poster.jpg", "poster.jpeg", "poster.png", "thumbnail.webp", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png", "cover.webp", "cover.jpg", "cover.jpeg", "cover.png"}
+
+	for _, media := range medias {
+		log.Debugf("Processing poster for media '%s'", media.Slug)
+
+		chapters, err := models.GetChapters(media.Slug)
+		if err != nil || len(chapters) == 0 {
+			log.Debugf("Skipping media '%s': no chapters found", media.Slug)
+			continue
+		}
+
+		lib, err := models.GetLibrary(chapters[0].LibrarySlug)
+		if err != nil {
+			log.Warnf("Failed to get library for media '%s': %v", media.Slug, err)
+			continue
+		}
+
+		if len(lib.Folders) == 0 {
+			log.Debugf("Skipping media '%s': no folders in library", media.Slug)
+			continue
+		}
+
+		path := filepath.Join(lib.Folders[0], chapters[0].File)
+		mediaDir := filepath.Dir(path)
+
+		log.Debugf("Checking for local posters in '%s' for media '%s'", mediaDir, media.Slug)
+
+		var posterURL string
+		var usedLocal bool
+		var skipMedia bool
+
+		// Check for local poster files
+		for _, candidate := range posterCandidates {
+			posterPath := filepath.Join(mediaDir, candidate)
+			if stat, err := os.Stat(posterPath); err == nil {
+				localSize := stat.Size()
+
+				// Get current poster size if exists
+				currentSize := int64(-1)
+				if currentData, err := dataBackend.Load("posters/" + media.Slug + ".webp"); err == nil {
+					currentSize = int64(len(currentData))
+				}
+
+				// Use local poster if sizes differ or no current poster
+				if currentSize == -1 || localSize != currentSize {
+					log.Debugf("Using local poster '%s' for media '%s' (local size: %d, current size: %d)", posterPath, media.Slug, localSize, currentSize)
+					posterURL, err = files.ProcessLocalImageWithThumbnails(posterPath, media.Slug, dataBackend, true)
+					if err != nil {
+						log.Warnf("Failed to process local poster '%s' for media '%s': %v", posterPath, media.Slug, err)
+						continue
+					}
+					usedLocal = true
+					break
+				} else {
+					log.Debugf("Skipping media '%s': local poster '%s' has same size as current (%d)", media.Slug, posterPath, localSize)
+					skipMedia = true
+					break
+				}
+			}
+		}
+
+		// Skip this media if local poster exists and size matches
+		if skipMedia {
+			continue
+		}
+
+		// If no local poster was used, try downloading from potential poster URLs
+		if !usedLocal {
+			// Get media to check for potential poster URLs
+			m, err := models.GetMediaUnfiltered(media.Slug)
+			if err != nil {
+				log.Warnf("Failed to get media '%s': %v", media.Slug, err)
+			} else if len(m.PotentialPosterURLs) > 0 {
+				log.Debugf("Trying %d potential poster URLs for media '%s'", len(m.PotentialPosterURLs), media.Slug)
+				for _, url := range m.PotentialPosterURLs {
+					log.Debugf("Attempting to download poster from '%s' for media '%s'", url, media.Slug)
+					downloadedURL, err := files.DownloadPosterImage(url, media.Slug, dataBackend, true)
+					if err != nil {
+						log.Debugf("Failed to download poster from '%s' for media '%s': %v", url, media.Slug, err)
+						continue
+					}
+					posterURL = downloadedURL
+					usedLocal = true
+					log.Debugf("Downloaded poster from URL for media '%s'", media.Slug)
+					break
+				}
+			}
+		}
+
+		// If no local poster or URL was used, extract from archive
+		if !usedLocal {
+			log.Debugf("Extracting poster from archive for media '%s'", media.Slug)
+			posterURL, err = files.ExtractPosterImage(path, media.Slug, dataBackend, true)
+			if err != nil {
+				log.Warnf("Failed to extract poster for media '%s': %v", media.Slug, err)
+				continue
+			}
+		}
+
+		// Update media cover art
+		m, err := models.GetMediaUnfiltered(media.Slug)
+		if err != nil {
+			log.Warnf("Failed to get media '%s': %v", media.Slug, err)
+			continue
+		}
+		m.CoverArtURL = posterURL
+		err = models.UpdateMedia(m)
+		if err != nil {
+			log.Warnf("Failed to update media '%s': %v", media.Slug, err)
+		} else {
+			log.Debugf("Updated poster for media '%s'", media.Slug)
+		}
+	}
+
+	log.Infof("Completed poster re-indexing for library '%s'", library.Name)
+
+	return c.SendString(`<uk-icon icon="Image"></uk-icon>`)
+}
+
+// HandleIndexMetadata re-indexes metadata for all media in the library
+func HandleIndexMetadata(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return sendBadRequestError(c, "Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if library == nil {
+		return sendNotFoundError(c, ErrLibraryNotFound)
+	}
+
+	log.Debugf("Starting metadata re-indexing for library '%s'", library.Name)
+
+	// For now, trigger full index as metadata re-indexing is complex
+	idx := scheduler.NewIndexer(*library)
+	if ran := idx.RunIndexingJob(); !ran {
+		triggerNotification(c, "Indexing already in progress for this library", "warning")
+		return c.SendString("")
+	}
+
+	return c.SendString(`<uk-icon icon="FileText"></uk-icon>`)
+}
+
+// HandleIndexChapters re-indexes chapters for all media in the library
+func HandleIndexChapters(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return sendBadRequestError(c, "Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if library == nil {
+		return sendNotFoundError(c, ErrLibraryNotFound)
+	}
+
+	log.Debugf("Starting chapter re-indexing for library '%s'", library.Name)
+
+	medias, err := models.GetMediasByLibrarySlug(slug)
+	if err != nil {
+		return sendInternalServerError(c, ErrInternalServerError, err)
+	}
+
+	for _, media := range medias {
+		chapters, err := models.GetChapters(media.Slug)
+		if err != nil || len(chapters) == 0 {
+			continue
+		}
+
+		lib, err := models.GetLibrary(chapters[0].LibrarySlug)
+		if err != nil {
+			continue
+		}
+
+		if len(lib.Folders) == 0 {
+			continue
+		}
+
+		path := filepath.Dir(filepath.Join(lib.Folders[0], chapters[0].File))
+
+		_, _, _, _, err = scheduler.IndexChapters(media.Slug, path, slug, false)
+		if err != nil {
+			log.Warnf("Failed to index chapters for media '%s': %v", media.Slug, err)
+		}
+	}
+
+	return c.SendString(`<uk-icon icon="BookOpen"></uk-icon>`)
 }
 
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
