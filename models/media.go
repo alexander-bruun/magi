@@ -358,6 +358,21 @@ func getMedia(slug string, applyContentFilter bool, contentRatingLimit int) (*Me
 		}
 	}
 
+	// Check if media has any chapters from enabled libraries (for user-facing operations)
+	if applyContentFilter {
+		var count int
+		checkQuery := `SELECT COUNT(*) FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND l.enabled = true`
+		err := db.QueryRow(checkQuery, m.Slug).Scan(&count)
+		if err != nil {
+			log.Errorf("Failed to check chapters for media '%s': %v", m.Slug, err)
+			return nil, err
+		}
+		if count == 0 {
+			log.Debugf("getMedia: media '%s' has no chapters from enabled libraries", m.Slug)
+			return nil, nil // Return nil to indicate media not found/accessible
+		}
+	}
+
 	// Load tags for this media if any
 	if tags, err := GetTagsForMedia(m.Slug); err == nil {
 		m.Tags = tags
@@ -410,6 +425,21 @@ func getMediaBySlugAndLibrary(slug, _ string, applyContentFilter bool, contentRa
 	// Apply content rating filter only if requested (for user-facing operations)
 	if applyContentFilter {
 		if !IsContentRatingAllowed(m.ContentRating, contentRatingLimit) {
+			return nil, nil // Return nil to indicate media not found/accessible
+		}
+	}
+
+	// Check if media has any chapters from enabled libraries (for user-facing operations)
+	if applyContentFilter {
+		var count int
+		checkQuery := `SELECT COUNT(*) FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND l.enabled = true`
+		err := db.QueryRow(checkQuery, m.Slug).Scan(&count)
+		if err != nil {
+			log.Errorf("Failed to check chapters for media '%s': %v", m.Slug, err)
+			return nil, err
+		}
+		if count == 0 {
+			log.Debugf("getMediaBySlugAndLibrary: media '%s' has no chapters from enabled libraries", m.Slug)
 			return nil, nil // Return nil to indicate media not found/accessible
 		}
 	}

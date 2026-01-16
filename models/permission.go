@@ -370,7 +370,9 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			slugs = append(slugs, lib.Slug)
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
 		}
 		return slugs, nil
 	}
@@ -390,7 +392,9 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			slugs = append(slugs, lib.Slug)
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
 		}
 		return slugs, nil
 	}
@@ -406,7 +410,7 @@ func GetAccessibleLibrariesForUser(username string) ([]string, error) {
 	JOIN permissions p ON combined.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
 	JOIN libraries l ON lp.library_slug = l.slug
-	WHERE p.is_enabled = 1
+	WHERE p.is_enabled = 1 AND l.enabled = true
 	ORDER BY lp.library_slug
 	`
 
@@ -634,7 +638,9 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 
 		slugs := make([]string, 0, len(libraries))
 		for _, lib := range libraries {
-			slugs = append(slugs, lib.Slug)
+			if lib.Enabled {
+				slugs = append(slugs, lib.Slug)
+			}
 		}
 		return slugs, nil
 	}
@@ -645,8 +651,9 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 	FROM role_permissions rp
 	JOIN permissions p ON rp.permission_id = p.id
 	JOIN library_permissions lp ON p.id = lp.permission_id
+	JOIN libraries l ON lp.library_slug = l.slug
 	WHERE rp.role = 'anonymous'
-	  AND p.is_enabled = 1
+	  AND p.is_enabled = 1 AND l.enabled = true
 	ORDER BY lp.library_slug
 	`
 
@@ -673,7 +680,9 @@ func GetAccessibleLibrariesForAnonymous() ([]string, error) {
 		}
 
 		for _, lib := range allLibraries {
-			libraries = append(libraries, lib.Slug)
+			if lib.Enabled {
+				libraries = append(libraries, lib.Slug)
+			}
 		}
 	}
 
