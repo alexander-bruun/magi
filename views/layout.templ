@@ -74,6 +74,11 @@ templ Layout(content templ.Component, userRole string, currentPath string, unrea
 		<body class="bg-background text-foreground">
 			<div id="app">
 				@Navbar(userRole, currentPath, unreadCount, notifications)
+				<div id="search-results" class="search-results bg-surface border-b border-border" style="display: none;">
+					<div class="uk-container uk-container-xl">
+						@OneDoesNotSimplySearch()
+					</div>
+				</div>
 			<main id="main-content" class="site-main" role="main">
 				<div id="content" class="uk-container uk-container-xl">
 						@content

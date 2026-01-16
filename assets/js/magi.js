@@ -900,20 +900,89 @@
       }
     };
 
-    // Search Modal Focus Manager
-    const SearchModalManager = {
+    // Search Manager
+    const SearchManager = {
       init() {
-        const searchModal = document.getElementById('search-modal');
-        if (!searchModal) return;
+        const searchToggle = document.getElementById('search-toggle');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('search-results');
+        const searchInputWrapper = document.querySelector('.search-input-wrapper');
 
-        // Focus search input when modal is shown
-        UIkit.util.on(searchModal, 'shown', () => {
-          setTimeout(() => {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
+        if (!searchToggle || !searchInput || !searchResults || !searchInputWrapper) return;
+
+        // Store the initial search results content
+        const initialSearchContent = searchResults.innerHTML;
+
+        let isSearchOpen = false;
+
+        // Toggle search input
+        searchToggle.addEventListener('click', () => {
+          if (isSearchOpen) {
+            // Close search
+            searchInputWrapper.classList.remove('expanded');
+            searchResults.classList.remove('open');
+            setTimeout(() => {
+              searchInput.value = '';
+              searchResults.style.display = 'none';
+              searchResults.innerHTML = initialSearchContent; // Reset content
+            }, 300); // Wait for animation
+            isSearchOpen = false;
+          } else {
+            // Open search - don't show results initially
+            searchInputWrapper.classList.add('expanded');
+            // Don't show searchResults initially
+            setTimeout(() => {
               searchInput.focus();
+            }, 300); // Wait for animation
+            isSearchOpen = true;
+          }
+        });
+
+        // Close search when clicking outside
+        document.addEventListener('click', (e) => {
+          if (isSearchOpen && !searchToggle.contains(e.target) && !searchInput.contains(e.target) && !searchResults.contains(e.target) && !searchInputWrapper.contains(e.target)) {
+            searchInputWrapper.classList.remove('expanded');
+            searchResults.classList.remove('open');
+            setTimeout(() => {
+              searchInput.value = '';
+              searchResults.style.display = 'none';
+              searchResults.innerHTML = initialSearchContent; // Reset content
+            }, 300); // Wait for animation
+            isSearchOpen = false;
+          }
+        });
+
+        // Close search on escape
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && isSearchOpen) {
+            searchInputWrapper.classList.remove('expanded');
+            searchResults.classList.remove('open');
+            setTimeout(() => {
+              searchInput.value = '';
+              searchResults.style.display = 'none';
+              searchResults.innerHTML = initialSearchContent; // Reset content
+            }, 300); // Wait for animation
+            isSearchOpen = false;
+          }
+        });
+
+        // Handle HTMX updates to search results
+        searchResults.addEventListener('htmx:afterSwap', (event) => {
+          if (isSearchOpen) {
+            const hasContent = searchResults.innerHTML.trim().length > 0;
+            if (hasContent) {
+              searchResults.style.display = 'block';
+              // Trigger animation after display is set
+              requestAnimationFrame(() => {
+                searchResults.classList.add('open');
+              });
+            } else {
+              searchResults.classList.remove('open');
+              setTimeout(() => {
+                searchResults.style.display = 'none';
+              }, 300);
             }
-          }, 100); // Small delay to ensure modal is fully rendered
+          }
         });
       }
     };
@@ -927,7 +996,7 @@
       safeExecute(() => ScrollHelpers.init(), 'Scroll helpers');
       safeExecute(() => DropdownManager.init(), 'Dropdown manager');
       safeExecute(() => ThemeManager.init(), 'Theme manager');
-      safeExecute(() => SearchModalManager.init(), 'Search modal focus');
+      safeExecute(() => SearchManager.init(), 'Search manager');
       safeExecute(() => ConfigManager.init(), 'Config manager');
       safeExecute(() => JobStatusManager.init(), 'Job status manager');
     }
