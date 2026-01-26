@@ -13,7 +13,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/gofiber/websocket/v2 v2.2.1
-	github.com/ncruces/go-sqlite3 v0.30.4
+	github.com/ncruces/go-sqlite3 v0.30.5
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nwaples/rardecode/v2 v2.2.2
 	github.com/pkg/sftp v1.13.10
