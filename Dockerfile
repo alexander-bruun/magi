@@ -49,7 +49,7 @@ ENV CGO_ENABLED=1
 RUN go build --tags extended -ldflags="-X 'main.Version=${VERSION}'" -o magi ./main.go
 
 # Start a new stage from scratch
-FROM --platform=$BUILDPLATFORM alpine:3.23.2
+FROM --platform=$BUILDPLATFORM alpine:3.23.3
 
 # Install ca-certificates (required for HTTPS connections)
 RUN apk --no-cache add ca-certificates
