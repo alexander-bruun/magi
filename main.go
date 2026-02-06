@@ -35,6 +35,9 @@ var viewsfs embed.FS
 //go:embed assets/*
 var assetsfs embed.FS
 
+//go:embed migrations/*
+var migrationsfs embed.FS
+
 func main() {
 	var dataDirectory string
 	var logLevel string
@@ -296,6 +299,9 @@ func main() {
 	rootCmd.AddCommand(cmd.NewBackupCmd(&dataDirectory, &dataDirectory))
 	rootCmd.AddCommand(cmd.NewHighlightsCmd(&dataDirectory))
 	rootCmd.AddCommand(cmd.NewMaintenanceCmd(&dataDirectory))
+
+	// Set the embedded migrations filesystem before executing any commands
+	models.SetMigrationsFS(migrationsfs)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)

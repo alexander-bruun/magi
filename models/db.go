@@ -1,7 +1,10 @@
 package models
 
 import (
+	"embed"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,6 +20,7 @@ import (
 )
 
 var db *sql.DB
+var migrationsFS embed.FS
 
 // BackupInfo represents information about a backup
 type BackupInfo struct {
@@ -90,6 +94,11 @@ func Close() error {
 	return nil
 }
 
+// SetMigrationsFS sets the embedded filesystem for migrations
+func SetMigrationsFS(fs embed.FS) {
+	migrationsFS = fs
+}
+
 // GetDB returns the database connection
 func GetDB() *sql.DB {
 	return db
@@ -108,7 +117,16 @@ func initializeSchemaMigrationsTable() error {
 
 // applyMigrations reads and applies all new migrations from the specified folder
 func applyMigrations(migrationsDir string) error {
-	files, err := os.ReadDir(migrationsDir)
+	var files []fs.DirEntry
+	var err error
+
+	// Use embedded filesystem if available, otherwise fallback to disk
+	if migrationsFS != (embed.FS{}) {
+		files, err = fs.ReadDir(migrationsFS, migrationsDir)
+	} else {
+		files, err = os.ReadDir(migrationsDir)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -148,10 +166,27 @@ func applyMigrations(migrationsDir string) error {
 
 // applyMigration reads and applies a single migration file
 func applyMigration(migrationsDir, fileName string, version int) error {
+	var query []byte
+	var err error
+
 	migrationPath := filepath.Join(migrationsDir, fileName)
-	query, err := os.ReadFile(migrationPath)
-	if err != nil {
-		return fmt.Errorf("failed to read migration file %s: %w", migrationPath, err)
+
+	// Use embedded filesystem if available, otherwise fallback to disk
+	if migrationsFS != (embed.FS{}) {
+		file, err := migrationsFS.Open(migrationPath)
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %w", migrationPath, err)
+		}
+		defer file.Close()
+		query, err = io.ReadAll(file)
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %w", migrationPath, err)
+		}
+	} else {
+		query, err = os.ReadFile(migrationPath)
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %w", migrationPath, err)
+		}
 	}
 
 	// Execute the migration
@@ -186,16 +221,48 @@ func extractVersion(fileName string) (int, error) {
 
 // rollbackMigration rolls back a migration by applying its .down.sql file
 func rollbackMigration(migrationsDir string, version int) error {
-	downFileName := fmt.Sprintf("%04d*.down.sql", version) // Example: 0001*.down.sql
-	files, err := filepath.Glob(filepath.Join(migrationsDir, downFileName))
-	if err != nil || len(files) == 0 {
-		return fmt.Errorf("no rollback file found for version %d", version)
-	}
+	versionStr := fmt.Sprintf("%04d", version)
+	var downFile string
+	var query []byte
+	var err error
 
-	// Read and apply the .down.sql file
-	query, err := os.ReadFile(files[0])
-	if err != nil {
-		return fmt.Errorf("failed to read rollback file: %w", err)
+	// Find the down migration file
+	if migrationsFS != (embed.FS{}) {
+		files, err := fs.ReadDir(migrationsFS, migrationsDir)
+		if err != nil {
+			return fmt.Errorf("failed to read migrations directory: %w", err)
+		}
+		for _, file := range files {
+			if strings.HasPrefix(file.Name(), versionStr) && strings.HasSuffix(file.Name(), ".down.sql") {
+				downFile = file.Name()
+				break
+			}
+		}
+		if downFile == "" {
+			return fmt.Errorf("no rollback file found for version %d", version)
+		}
+
+		migrationPath := filepath.Join(migrationsDir, downFile)
+		file, err := migrationsFS.Open(migrationPath)
+		if err != nil {
+			return fmt.Errorf("failed to read rollback file: %w", err)
+		}
+		defer file.Close()
+		query, err = io.ReadAll(file)
+		if err != nil {
+			return fmt.Errorf("failed to read rollback file: %w", err)
+		}
+	} else {
+		downFileName := fmt.Sprintf("%04d*.down.sql", version)
+		files, err := filepath.Glob(filepath.Join(migrationsDir, downFileName))
+		if err != nil || len(files) == 0 {
+			return fmt.Errorf("no rollback file found for version %d", version)
+		}
+
+		query, err = os.ReadFile(files[0])
+		if err != nil {
+			return fmt.Errorf("failed to read rollback file: %w", err)
+		}
 	}
 
 	_, err = db.Exec(string(query))
@@ -226,13 +293,34 @@ func MigrateUp(migrationsDir string, version int) error {
 		return nil
 	}
 
-	fileName := fmt.Sprintf("%04d_*.up.sql", version)
-	files, err := filepath.Glob(filepath.Join(migrationsDir, fileName))
-	if err != nil || len(files) == 0 {
-		return fmt.Errorf("no up migration file found for version %d", version)
+	versionStr := fmt.Sprintf("%04d", version)
+	var upFile string
+
+	// Find the up migration file
+	if migrationsFS != (embed.FS{}) {
+		files, err := fs.ReadDir(migrationsFS, migrationsDir)
+		if err != nil {
+			return fmt.Errorf("failed to read migrations directory: %w", err)
+		}
+		for _, file := range files {
+			if strings.HasPrefix(file.Name(), versionStr) && strings.HasSuffix(file.Name(), ".up.sql") {
+				upFile = file.Name()
+				break
+			}
+		}
+		if upFile == "" {
+			return fmt.Errorf("no up migration file found for version %d", version)
+		}
+	} else {
+		fileName := fmt.Sprintf("%04d_*.up.sql", version)
+		files, err := filepath.Glob(filepath.Join(migrationsDir, fileName))
+		if err != nil || len(files) == 0 {
+			return fmt.Errorf("no up migration file found for version %d", version)
+		}
+		upFile = filepath.Base(files[0])
 	}
 
-	return applyMigration(migrationsDir, filepath.Base(files[0]), version)
+	return applyMigration(migrationsDir, upFile, version)
 }
 
 // MigrateDown rolls back a specific migration version
