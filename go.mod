@@ -23,7 +23,7 @@ require (
 	github.com/stripe/stripe-go/v79 v79.12.0
 	github.com/tdewolff/minify/v2 v2.24.8
 	github.com/yuin/goldmark v1.7.16
-	golang.org/x/crypto v0.47.0
+	golang.org/x/crypto v0.48.0
 	golang.org/x/image v0.35.0
 )
 
@@ -73,6 +73,6 @@ require (
 	github.com/valyala/fasthttp v1.69.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
