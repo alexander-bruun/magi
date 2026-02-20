@@ -53,7 +53,7 @@ jobs:
       - name: Set up GoLang
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.3'
+          go-version: '1.26.0'
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -211,7 +211,7 @@ jobs:
       - name: Set up GoLang
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.3'
+          go-version: '1.26.0'
 
       - name: Set up Zig
         uses: mlugg/setup-zig@v2

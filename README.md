@@ -58,7 +58,7 @@ docker run -d \
 
 ## 🧑‍💻 Development
 
-Requires Go 1.25+. Clone and run with `air` for live reload.
+Requires Go 1.26+. Clone and run with `air` for live reload.
 
 ## 🤝 Contributing
 
