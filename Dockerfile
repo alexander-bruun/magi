@@ -1,5 +1,5 @@
 # Use the official Golang image to create a build artifact.
-FROM --platform=$BUILDPLATFORM golang:1.26.0-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.1-alpine AS builder
 
 ARG VERSION TARGETOS TARGETARCH TARGETPLATFORM
 
@@ -49,13 +49,13 @@ ENV CGO_ENABLED=1
 RUN go build --tags extended -ldflags="-X 'main.Version=${VERSION}'" -o magi ./main.go
 
 # Start a new stage from scratch
-FROM --platform=$BUILDPLATFORM alpine:3.23.3
+FROM --platform=$BUILDPLATFORM alpine:3.23.4
 
 # Specify default data directory environment variable
 ENV MAGI_DATA_DIR=/data/magi
 
-# Install ca-certificates (required for HTTPS connections)
-RUN apk --no-cache add ca-certificates
+# Install ca-certificates and upgrade all packages for security patches (OpenSSL CVEs)
+RUN apk --no-cache add ca-certificates && apk upgrade --no-cache
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/

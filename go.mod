@@ -1,6 +1,8 @@
 module github.com/alexander-bruun/magi
 
-go 1.25.3
+go 1.25.5
+
+toolchain go1.26.1
 
 require (
 	github.com/a-h/templ v0.3.977
