@@ -10,13 +10,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 
 	cron "github.com/robfig/cron/v3"
 
 	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/models"
 )
+
+type indexResult struct {
+	err  error
+	slug string
+}
 
 // Job represents a scheduled job that can be executed
 type Job interface {
@@ -204,6 +209,7 @@ var (
 // Indexer represents the state of an indexer
 type Indexer struct {
 	Library          models.Library
+	dataBackend      filestore.DataBackend
 	Scheduler        *CronScheduler
 	SchedulerRunning bool
 	JobRunning       bool
@@ -218,7 +224,7 @@ func InitializeIndexer(dataDirectory string, libraries []models.Library, cb file
 	log.Info("Initializing Indexer and Scheduler")
 
 	for _, library := range libraries {
-		indexer := NewIndexer(library)
+		indexer := NewIndexer(library, dataBackend)
 		go indexer.Start()
 	}
 
@@ -229,7 +235,7 @@ func InitializeIndexer(dataDirectory string, libraries []models.Library, cb file
 }
 
 // NewIndexer creates a new Indexer instance
-func NewIndexer(library models.Library) *Indexer {
+func NewIndexer(library models.Library, dataBackend filestore.DataBackend) *Indexer {
 	// Deep copy the Folders slice and strings to prevent sharing underlying arrays and string backing
 	foldersCopy := make([]string, len(library.Folders))
 	for i, f := range library.Folders {
@@ -244,8 +250,9 @@ func NewIndexer(library models.Library) *Indexer {
 	libraryCopy.Cron = string([]byte(library.Cron))
 
 	return &Indexer{
-		Library: libraryCopy,
-		stop:    make(chan struct{}),
+		Library:     libraryCopy,
+		dataBackend: dataBackend,
+		stop:        make(chan struct{}),
 	}
 }
 
@@ -534,7 +541,7 @@ func (idx *Indexer) processFolder(folder string) error {
 	// Process media concurrently with worker pool
 	const numWorkers = 4
 	jobs := make(chan string, len(mediaPaths))
-	results := make(chan error, len(mediaPaths))
+	results := make(chan indexResult, len(mediaPaths))
 
 	// Start workers
 	for range numWorkers {
@@ -542,7 +549,7 @@ func (idx *Indexer) processFolder(folder string) error {
 			for path := range jobs {
 				select {
 				case <-idx.stop:
-					results <- nil
+					results <- indexResult{err: nil, slug: ""}
 					return
 				default:
 				}
@@ -554,8 +561,8 @@ func (idx *Indexer) processFolder(folder string) error {
 
 				// Scanning media - don't log to avoid spam
 
-				_, err := IndexMediaFunc(path, idx.Library.Slug, dataBackend)
-				results <- err
+				slug, err := IndexMediaFunc(path, idx.Library.Slug, idx.dataBackend)
+				results <- indexResult{err: err, slug: slug}
 			}
 		}()
 	}
@@ -567,10 +574,64 @@ func (idx *Indexer) processFolder(folder string) error {
 	close(jobs)
 
 	// Collect results
+	processedSlugs := make(map[string]bool)
 	for i := 0; i < len(mediaPaths); i++ {
-		if err := <-results; err != nil {
+		result := <-results
+		if result.err != nil {
 			path := mediaPaths[i]
-			log.Errorf("Error indexing media at '%s': %s", path, err)
+			log.Errorf("Error indexing media at '%s': %s", path, result.err)
+		} else if result.slug != "" {
+			processedSlugs[result.slug] = true
+		}
+	}
+
+	// Clean up media that no longer exist on disk
+	if err := cleanupOrphanedMedia(idx.Library.Slug, processedSlugs, idx.dataBackend); err != nil {
+		log.Errorf("Error cleaning up orphaned media for library '%s': %s", idx.Library.Slug, err)
+	}
+
+	return nil
+}
+
+// cleanupOrphanedMedia removes media that have chapters in this library but no longer exist on disk
+func cleanupOrphanedMedia(librarySlug string, processedSlugs map[string]bool, dataBackend filestore.DataBackend) error {
+	// Get all chapters for this library
+	query := `
+	SELECT c.media_slug
+	FROM chapters c
+	WHERE c.library_slug = ?
+	`
+	rows, err := models.GetDB().Query(query, librarySlug)
+	if err != nil {
+		return fmt.Errorf("failed to query chapters for library '%s': %w", librarySlug, err)
+	}
+	defer rows.Close()
+
+	// Collect unique media slugs that have chapters in this library
+	mediaSlugs := make(map[string]bool)
+	for rows.Next() {
+		var mediaSlug string
+		if err := rows.Scan(&mediaSlug); err != nil {
+			return fmt.Errorf("failed to scan media_slug: %w", err)
+		}
+		mediaSlugs[mediaSlug] = true
+	}
+
+	// For each media that has chapters in this library but was not processed, clean it up
+	for mediaSlug := range mediaSlugs {
+		if processedSlugs[mediaSlug] {
+			continue // Was processed, skip
+		}
+
+		media, err := models.GetMediaUnfiltered(mediaSlug)
+		if err != nil || media == nil {
+			continue // Media doesn't exist or error
+		}
+
+		log.Warnf("Media '%s' has chapters in library '%s' but was not processed (orphaned), cleaning up", mediaSlug, librarySlug)
+		_, cleanupErr := handleMissingMediaPath(media, librarySlug)
+		if cleanupErr != nil {
+			log.Errorf("Failed to clean up orphaned media '%s': %s", mediaSlug, cleanupErr)
 		}
 	}
 
@@ -604,7 +665,7 @@ func (nl *NotificationListener) Notify(notification models.Notification) {
 }
 
 func (nl *NotificationListener) handleLibraryCreated(newLibrary models.Library) {
-	indexer := NewIndexer(newLibrary)
+	indexer := NewIndexer(newLibrary, dataBackend)
 	activeIndexers.Store(newLibrary.Slug, indexer)
 	go indexer.Start()
 }
@@ -617,7 +678,7 @@ func (nl *NotificationListener) handleLibraryUpdated(updatedLibrary models.Libra
 	}
 	activeIndexers.Store(updatedLibrary.Slug, nil) // Placeholder while creating new indexer
 
-	newIndexer := NewIndexer(updatedLibrary)
+	newIndexer := NewIndexer(updatedLibrary, dataBackend)
 	activeIndexers.Store(updatedLibrary.Slug, newIndexer)
 	go newIndexer.Start()
 }
@@ -633,7 +694,7 @@ func (nl *NotificationListener) handleLibraryDeleted(deletedLibrary models.Libra
 
 func (nl *NotificationListener) handleLibraryEnabled(enabledLibrary models.Library) {
 	// Start indexer for the enabled library
-	indexer := NewIndexer(enabledLibrary)
+	indexer := NewIndexer(enabledLibrary, dataBackend)
 	activeIndexers.Store(enabledLibrary.Slug, indexer)
 	go indexer.Start()
 }

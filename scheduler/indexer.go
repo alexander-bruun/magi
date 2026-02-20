@@ -9,12 +9,13 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 
 	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/metadata"
@@ -85,10 +86,8 @@ type OPF struct {
 func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBackend) (string, error) {
 	// Check if this is a file (single-chapter media)
 	fileInfo, err := os.Stat(absolutePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
-	}
-	isSingleFile := !fileInfo.IsDir()
+	pathExists := err == nil
+	isSingleFile := pathExists && !fileInfo.IsDir()
 
 	// For single files, use the filename without extension as the media name
 	baseName := filepath.Base(absolutePath)
@@ -102,6 +101,23 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 	}
 
 	slug := text.Sluggify(cleanedName)
+
+	// Check if media already exists
+	existingMedia, err := models.GetMediaUnfiltered(slug)
+	if err != nil {
+		log.Errorf("Failed to lookup media '%s': %s", slug, err)
+	}
+
+	// If path doesn't exist but media exists, handle as missing path
+	if !pathExists && existingMedia != nil {
+		log.Warnf("Media path '%s' does not exist, cleaning up existing media '%s'", absolutePath, slug)
+		return handleMissingMediaPath(existingMedia, librarySlug)
+	}
+
+	// If path doesn't exist and media doesn't exist, nothing to do
+	if !pathExists {
+		return "", fmt.Errorf("failed to stat path '%s': %w", absolutePath, err)
+	}
 
 	// Get metadata provider if configured
 	config, err := models.GetAppConfig()
@@ -134,7 +150,7 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 	// If media already exists, avoid external API calls and heavy image work.
 	// Only update the path if needed and index any new chapters.
 	// Use GetMediaUnfiltered to check globally
-	existingMedia, err := models.GetMediaUnfiltered(slug)
+	existingMedia, err = models.GetMediaUnfiltered(slug)
 	if err != nil {
 		log.Errorf("Failed to lookup media '%s': %s", slug, err)
 	}
@@ -165,8 +181,75 @@ func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBack
 	if existingMedia != nil {
 		return handleExistingMedia(existingMedia, absolutePath, librarySlug, cleanedName, slug, provider, fileInfo, isSingleFile)
 	} else {
-		return handleNewMedia(cleanedName, slug, librarySlug, absolutePath, provider, isSingleFile)
+		return handleNewMedia(cleanedName, slug, librarySlug, absolutePath, provider, isSingleFile, dataBackend)
 	}
+}
+
+// handleMissingMediaPath handles the case where a media's path no longer exists
+func handleMissingMediaPath(existingMedia *models.Media, librarySlug string) (string, error) {
+	slug := existingMedia.Slug
+	cleanedName := existingMedia.Name
+
+	// Delete all chapters for this media in this library
+	existingChapters, err := models.GetChapters(slug)
+	if err != nil {
+		return slug, fmt.Errorf("failed to load existing chapters for media '%s': %w", slug, err)
+	}
+
+	// Filter to only chapters from this library
+	var libraryChapters []models.Chapter
+	for _, c := range existingChapters {
+		if c.LibrarySlug == librarySlug {
+			libraryChapters = append(libraryChapters, c)
+		}
+	}
+
+	if len(libraryChapters) > 0 {
+		tx, txErr := models.BeginTx()
+		if txErr != nil {
+			return slug, fmt.Errorf("failed to begin transaction: %w", txErr)
+		}
+		defer tx.Rollback()
+
+		deletedCount := 0
+		for _, chapter := range libraryChapters {
+			if delErr := models.DeleteChapterTx(tx, slug, chapter.Slug, chapter.LibrarySlug); delErr != nil {
+				log.Errorf("Failed to delete chapter '%s' for missing media '%s': %v", chapter.Slug, slug, delErr)
+			} else {
+				deletedCount++
+			}
+		}
+
+		if commitErr := tx.Commit(); commitErr != nil {
+			return slug, fmt.Errorf("failed to commit transaction: %w", commitErr)
+		}
+
+		log.Infof("Deleted %d chapters for missing media '%s' in library '%s'", deletedCount, slug, librarySlug)
+		BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Deleted %d chapters for missing series '%s'", deletedCount, cleanedName))
+	}
+
+	// Update FileCount (recalculate based on remaining chapters)
+	allChapters, err := models.GetChapters(slug)
+	if err != nil {
+		log.Errorf("Failed to get remaining chapters for media '%s': %s", slug, err)
+	} else {
+		existingMedia.FileCount = len(allChapters)
+		if err := models.UpdateMedia(existingMedia); err != nil {
+			log.Errorf("Failed to update media file count for '%s': %s", slug, err)
+		}
+	}
+
+	// If no chapters remain globally, delete the media entirely
+	if existingMedia.FileCount == 0 {
+		log.Infof("Deleting media '%s' as it has no remaining chapters", slug)
+		BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Deleted series '%s' - no chapters remaining", cleanedName))
+		if err := models.DeleteMedia(slug); err != nil {
+			log.Errorf("Failed to delete media '%s': %s", slug, err)
+		}
+		return slug, nil
+	}
+
+	return slug, nil
 }
 
 func createMediaFromAggregatedMetadata(aggregatedMeta *metadata.AggregatedMediaMetadata, name, slug, _, _, coverURL string) models.Media {
@@ -219,7 +302,7 @@ func createMediaFromAggregatedMetadata(aggregatedMeta *metadata.AggregatedMediaM
 	return media
 }
 
-func HandleLocalImages(slug, absolutePath string) (string, error) {
+func HandleLocalImages(slug, absolutePath string, dataBackend filestore.DataBackend) (string, error) {
 	log.Debugf("Attempting to generate poster from local images for media '%s' at path '%s'", slug, absolutePath)
 
 	// First, check for standalone poster/thumbnail images
@@ -229,7 +312,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 		imagePath := filepath.Join(absolutePath, filename)
 		if _, err := os.Stat(imagePath); err == nil {
 			log.Debugf("Found standalone poster image '%s' for media '%s'", filename, slug)
-			return processLocalImage(slug, imagePath)
+			return processLocalImage(slug, imagePath, dataBackend)
 		}
 	}
 
@@ -305,7 +388,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 							strings.HasSuffix(lowerName, ".bmp") || strings.HasSuffix(lowerName, ".gif") {
 							imagePath := filepath.Join(chapterPath, chapterEntry.Name())
 							log.Debugf("Found first image '%s' in chapter directory '%s' for media '%s'", chapterEntry.Name(), dirName, slug)
-							return processLocalImage(slug, imagePath)
+							return processLocalImage(slug, imagePath, dataBackend)
 						}
 					}
 				}
@@ -331,7 +414,7 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 			if len(imageFiles) > 0 {
 				imagePath := filepath.Join(absolutePath, imageFiles[0])
 				log.Debugf("Found first loose image '%s' in main directory for media '%s'", imageFiles[0], slug)
-				return processLocalImage(slug, imagePath)
+				return processLocalImage(slug, imagePath, dataBackend)
 			}
 		}
 	}
@@ -340,11 +423,11 @@ func HandleLocalImages(slug, absolutePath string) (string, error) {
 	return "", nil
 }
 
-func processLocalImage(slug, imagePath string) (string, error) {
+func processLocalImage(slug, imagePath string, dataBackend filestore.DataBackend) (string, error) {
 	return files.ProcessLocalImageWithThumbnails(imagePath, slug, dataBackend, true)
 }
 
-func DownloadAndStoreImage(slug, coverArtURL string) (string, error) {
+func DownloadAndStoreImage(slug, coverArtURL string, dataBackend filestore.DataBackend) (string, error) {
 	log.Debugf("Attempting to download cover image for '%s' from URL: %s", slug, coverArtURL)
 
 	// Determine the stored image URL
@@ -425,7 +508,7 @@ func IndexChapters(slug, path, librarySlug string, dryRun bool) (int, int, []str
 		}
 		defer tx.Rollback()
 
-		addedCount, newChapterSlugs, err = processAdditions(tx, slug, presentMap, existingMap, librarySlug)
+		addedCount, newChapterSlugs, err = processAdditions(tx, slug, presentMap, existingMap, librarySlug, rootPath)
 		if err != nil {
 			return 0, 0, nil, 0, err
 		}
@@ -545,9 +628,16 @@ func collectPresentChapters(path string, rootPath string) (map[string]presentInf
 }
 
 // processAdditions creates missing chapters
-func processAdditions(tx *sql.Tx, slug string, presentMap map[string]presentInfo, existingMap map[string]models.Chapter, librarySlug string) (int, []string, error) {
+func processAdditions(tx *sql.Tx, slug string, presentMap map[string]presentInfo, existingMap map[string]models.Chapter, librarySlug string, rootPath string) (int, []string, error) {
 	addedCount := 0
 	var newChapterSlugs []string
+
+	// Get media for ComicInfo generation
+	media, err := models.GetMedia(slug)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to get media '%s': %w", slug, err)
+	}
+
 	for slugKey, info := range presentMap {
 		if existingChapter, ok := existingMap[slugKey]; !ok {
 			// not present in DB -> create with pretty name
@@ -563,6 +653,15 @@ func processAdditions(tx *sql.Tx, slug string, presentMap map[string]presentInfo
 			}
 			addedCount++
 			newChapterSlugs = append(newChapterSlugs, slugKey)
+
+			// Check if this is a CBZ file and add ComicInfo.xml
+			fullPath := filepath.Join(rootPath, info.Rel)
+			if strings.HasSuffix(strings.ToLower(fullPath), ".cbz") {
+				if err := addComicInfoToChapter(media, chapter, fullPath); err != nil {
+					log.Warnf("Failed to add ComicInfo.xml to chapter '%s': %v", fullPath, err)
+					// Don't fail the indexing process for this
+				}
+			}
 		} else {
 			// Chapter exists, check if File needs updating
 			if existingChapter.File != info.Rel {
@@ -573,6 +672,56 @@ func processAdditions(tx *sql.Tx, slug string, presentMap map[string]presentInfo
 		}
 	}
 	return addedCount, newChapterSlugs, nil
+}
+
+// addComicInfoToChapter generates and adds ComicInfo.xml to a CBZ or CBR chapter file
+func addComicInfoToChapter(media *models.Media, chapter models.Chapter, chapterPath string) error {
+	// Check if metadata embedding is enabled
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get app config: %w", err)
+	}
+	if !cfg.MetadataEmbeddingEnabled {
+		log.Debugf("Metadata embedding disabled, skipping ComicInfo addition for: %s", chapterPath)
+		return nil
+	}
+
+	// Count pages in the archive
+	pageCount, err := files.CountPagesInArchive(chapterPath)
+	if err != nil {
+		return fmt.Errorf("failed to count pages in archive: %w", err)
+	}
+
+	// Extract chapter number from chapter name/slug
+	chapterNumber := extractChapterNumber(chapter.Name)
+
+	// Generate ComicInfo
+	comicInfo := metadata.GenerateComicInfoFromMedia(media, chapterNumber, chapter.Name, pageCount)
+	xmlData, err := comicInfo.ToXML()
+	if err != nil {
+		return fmt.Errorf("failed to generate ComicInfo XML: %w", err)
+	}
+
+	// Add to archive based on file type
+	lowerPath := strings.ToLower(chapterPath)
+	if strings.HasSuffix(lowerPath, ".cbz") || strings.HasSuffix(lowerPath, ".zip") {
+		err = files.AddComicInfoToCBZ(chapterPath, xmlData)
+		if err != nil {
+			return fmt.Errorf("failed to add ComicInfo to CBZ: %w", err)
+		}
+	} else if strings.HasSuffix(lowerPath, ".cbr") || strings.HasSuffix(lowerPath, ".rar") {
+		err = files.AddComicInfoToCBR(chapterPath, xmlData)
+		if err != nil {
+			log.Warnf("Failed to add ComicInfo to CBR file (rar command not available?): %v", err)
+			// Don't fail the indexing process for CBR files if rar tools aren't available
+			return nil
+		}
+	} else {
+		return fmt.Errorf("unsupported archive format for ComicInfo addition: %s", chapterPath)
+	}
+
+	log.Debugf("Added ComicInfo.xml to chapter: %s", chapterPath)
+	return nil
 }
 
 // processDeletions deletes chapters no longer present
@@ -587,6 +736,20 @@ func processDeletions(tx *sql.Tx, slug string, presentMap map[string]presentInfo
 		}
 	}
 	return deletedCount, nil
+}
+
+// extractChapterNumber extracts the numeric part from a chapter name
+func extractChapterNumber(chapterName string) string {
+	// Look for patterns like "Chapter 1", "Volume 1", or just "1"
+	if matches := regexp.MustCompile(`(?:Chapter|Volume)\s+(\d+)`).FindStringSubmatch(chapterName); matches != nil {
+		return matches[1]
+	}
+	// If it's just a number
+	if matches := regexp.MustCompile(`^(\d+)$`).FindStringSubmatch(chapterName); matches != nil {
+		return matches[1]
+	}
+	// Default to 1
+	return "1"
 }
 
 // processDeletionsDryRun counts deletions for dry run
@@ -915,16 +1078,32 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 		return slug, nil
 	}
 
-	added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, librarySlug, false)
+	added, deleted, newChapterSlugs, presentCount, err := IndexChapters(slug, absolutePath, librarySlug, false)
 	if err != nil {
 		log.Errorf("Failed to index chapters for existing media '%s': %s", slug, err)
 		return slug, err
 	}
 
 	// Update FileCount after indexing
-	existingMedia.FileCount = existingMedia.FileCount + added - deleted
+	existingMedia.FileCount = presentCount
 	if err := models.UpdateMedia(existingMedia); err != nil {
 		log.Errorf("Failed to update media file count for '%s': %s", slug, err)
+	}
+
+	// If no chapters remain, delete the media entirely
+	if existingMedia.FileCount == 0 {
+		// Double-check by querying all chapters for this media
+		allChapters, err := models.GetChapters(slug)
+		if err != nil {
+			log.Errorf("Failed to check remaining chapters for media '%s': %s", slug, err)
+		} else if len(allChapters) == 0 {
+			log.Infof("Deleting media '%s' as it has no remaining chapters", slug)
+			BroadcastLog("indexer_"+librarySlug, "info", fmt.Sprintf("Deleted series '%s' - no chapters remaining", cleanedName))
+			if err := models.DeleteMedia(slug); err != nil {
+				log.Errorf("Failed to delete media '%s': %s", slug, err)
+			}
+			return slug, nil
+		}
 	}
 
 	if added > 0 && len(newChapterSlugs) > 0 {
@@ -941,7 +1120,7 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 }
 
 // handleNewMedia handles creating a new media entry
-func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metadata.Provider, _ bool) (string, error) {
+func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metadata.Provider, _ bool, dataBackend filestore.DataBackend) (string, error) {
 	// Media does not exist yet — fetch metadata, create it and index chapters
 	var aggregatedMeta *metadata.AggregatedMediaMetadata
 	// Use aggregated metadata from all providers instead of single provider
@@ -993,60 +1172,82 @@ func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metad
 	}
 
 	// Start async image processing after series is created
-	go func() {
-		var finalImageURL string
-		log.Debugf("Starting async image processing for series '%s'", slug)
+	if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+		go func() {
+			var finalImageURL string
+			log.Debugf("Starting async image processing for series '%s'", slug)
 
-		// Always try local images first
-		log.Debugf("Attempting local poster generation for new media '%s'", slug)
-		url, err := HandleLocalImages(slug, absolutePath)
-		log.Debugf("HandleLocalImages returned for '%s': url='%s', err='%v'", slug, url, err)
-		if err == nil && url != "" {
-			finalImageURL = url
-			log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, finalImageURL)
-		} else {
-			log.Debugf("Failed to generate poster from local images for new media '%s': err=%v", slug, err)
-			// If no local images, try metadata cover
-			if aggregatedMeta != nil && len(aggregatedMeta.CoverArtURLs) > 0 {
-				coverURL := aggregatedMeta.CoverArtURLs[0] // Use first cover URL
-				if coverURL != "" {
-					log.Debugf("Found metadata cover URL for '%s': %s", slug, coverURL)
-					if url, err := DownloadAndStoreImage(slug, coverURL); err == nil {
-						finalImageURL = url
-						log.Debugf("Successfully downloaded cover for '%s': %s", slug, finalImageURL)
+			// Always try local images first
+			log.Debugf("Attempting local poster generation for new media '%s'", slug)
+			url, err := HandleLocalImages(slug, absolutePath, dataBackend)
+			log.Debugf("HandleLocalImages returned for '%s': url='%s', err='%v'", slug, url, err)
+			if err == nil && url != "" {
+				finalImageURL = url
+				log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, finalImageURL)
+			} else {
+				log.Debugf("Failed to generate poster from local images for new media '%s': err=%v", slug, err)
+				// If no local images, try metadata cover
+				if aggregatedMeta != nil && len(aggregatedMeta.CoverArtURLs) > 0 {
+					coverURL := aggregatedMeta.CoverArtURLs[0] // Use first cover URL
+					if coverURL != "" {
+						log.Debugf("Found metadata cover URL for '%s': %s", slug, coverURL)
+						if url, err := DownloadAndStoreImage(slug, coverURL, dataBackend); err == nil {
+							finalImageURL = url
+							log.Debugf("Successfully downloaded cover for '%s': %s", slug, finalImageURL)
+						} else {
+							log.Debugf("Failed to download cover for '%s': %v", slug, err)
+						}
 					} else {
-						log.Debugf("Failed to download cover for '%s': %v", slug, err)
+						log.Debugf("No cover URL in metadata for '%s'", slug)
 					}
 				} else {
-					log.Debugf("No cover URL in metadata for '%s'", slug)
+					log.Debugf("No metadata found for '%s'", slug)
 				}
-			} else {
-				log.Debugf("No metadata found for '%s'", slug)
 			}
-		}
 
-		// Update media with cover URL if we got one
-		if finalImageURL != "" {
-			log.Debugf("Updating media '%s' with cover URL: %s", slug, finalImageURL)
-			if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
-				media.CoverArtURL = finalImageURL
-				if err := models.UpdateMedia(media); err != nil {
-					log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
+			// Update media with cover URL if we got one
+			if finalImageURL != "" {
+				log.Debugf("Updating media '%s' with cover URL: %s", slug, finalImageURL)
+				if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
+					media.CoverArtURL = finalImageURL
+					if err := models.UpdateMedia(media); err != nil {
+						log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
+					} else {
+						log.Debugf("Successfully updated cover URL for media '%s'", slug)
+					}
+				} else if err != nil {
+					log.Errorf("Failed to get media for update '%s': %v", slug, err)
 				} else {
-					log.Debugf("Successfully updated cover URL for media '%s'", slug)
+					log.Debugf("Media '%s' no longer exists, skipping cover URL update (likely deleted due to no chapters)", slug)
 				}
 			} else {
-				log.Errorf("Failed to get media for update '%s': %v", slug, err)
+				log.Debugf("No cover URL found for media '%s'", slug)
 			}
-		} else {
-			log.Debugf("No cover URL found for media '%s'", slug)
-		}
-	}()
+		}()
+	}
 
-	added, deleted, newChapterSlugs, _, err := IndexChapters(slug, absolutePath, librarySlug, false)
+	added, deleted, newChapterSlugs, presentCount, err := IndexChapters(slug, absolutePath, librarySlug, false)
 	if err != nil {
 		log.Errorf("Failed to index chapters: %s (%s)", slug, err.Error())
 		return "", err
+	}
+
+	// Update FileCount after indexing
+	if presentCount == 0 {
+		// No chapters found, delete the newly created media
+		log.Warnf("No chapters found for new media '%s', deleting", slug)
+		if err := models.DeleteMedia(slug); err != nil {
+			log.Errorf("Failed to delete empty media '%s': %s", slug, err)
+		}
+		return "", nil
+	} else {
+		// Update the FileCount on the newly created media
+		if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
+			media.FileCount = presentCount
+			if err := models.UpdateMedia(media); err != nil {
+				log.Errorf("Failed to update file count for new media '%s': %s", slug, err)
+			}
+		}
 	}
 
 	// If new chapters were added, check for users reading this media and notify them

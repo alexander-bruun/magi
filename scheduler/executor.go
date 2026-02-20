@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
-	websocket "github.com/gofiber/websocket/v2"
+	websocket "github.com/gofiber/contrib/v3/websocket"
+	"github.com/gofiber/fiber/v3/log"
 
 	"github.com/alexander-bruun/magi/models"
 )
@@ -418,7 +418,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 				BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "error", fmt.Sprintf("Library '%s' not found for indexing", *s.IndexLibrarySlug))
 			} else {
 				// Create indexer and trigger indexing
-				idx := NewIndexer(*library)
+				idx := NewIndexer(*library, dataBackend)
 				if ran := idx.RunIndexingJob(); !ran {
 					log.Warnf("Library indexing for '%s' is already in progress", *s.IndexLibrarySlug)
 					BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "warning", fmt.Sprintf("Library indexing for '%s' is already in progress", *s.IndexLibrarySlug))
