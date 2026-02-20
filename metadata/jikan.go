@@ -14,25 +14,25 @@ const jikanBaseURL = "https://api.jikan.moe/v4"
 
 // JikanProvider implements the Provider interface for Jikan API (unofficial MAL API)
 type JikanProvider struct {
-	apiToken string // Not used, but kept for interface compatibility
-	config   ConfigProvider
-	client   *http.Client // HTTP client for making requests (configurable for testing)
-	baseURL  string       // Base URL for API calls (configurable for testing)
+	BaseProvider
 }
 
 // NewJikanProvider creates a new Jikan API metadata provider
 func NewJikanProvider(apiToken string) Provider {
 	return &JikanProvider{
-		apiToken: apiToken,
-		client: &http.Client{
-			Transport: &http.Transport{
-				DisableKeepAlives: true,
+		BaseProvider: BaseProvider{
+			ProviderName: "jikan",
+			APIToken:     apiToken,
+			Client: &http.Client{
+				Transport: &http.Transport{
+					DisableKeepAlives: true,
+				},
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
 			},
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
+			BaseURL: jikanBaseURL,
 		},
-		baseURL: jikanBaseURL,
 	}
 }
 
@@ -40,28 +40,8 @@ func init() {
 	RegisterProvider("jikan", NewJikanProvider)
 }
 
-func (j *JikanProvider) Name() string {
-	return "jikan"
-}
-
-func (j *JikanProvider) RequiresAuth() bool {
-	return false
-}
-
-func (j *JikanProvider) SetAuthToken(token string) {
-	j.apiToken = token
-}
-
-func (j *JikanProvider) SetConfig(config ConfigProvider) {
-	j.config = config
-}
-
-func (j *JikanProvider) GetCoverImageURL(metadata *MediaMetadata) string {
-	if metadata == nil || metadata.CoverArtURL == "" {
-		return ""
-	}
-	// Jikan CoverArtURL is already the full URL
-	return metadata.CoverArtURL
+func (j *JikanProvider) FindBestMatch(title string) (*MediaMetadata, error) {
+	return DefaultFindBestMatch(j, title)
 }
 
 func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
@@ -104,7 +84,7 @@ func (j *JikanProvider) Search(title string) ([]SearchResult, error) {
 // searchMediaType searches a specific media type (anime or manga)
 func (j *JikanProvider) searchMediaType(title, mediaType string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/%s?q=%s&limit=25", j.baseURL, mediaType, titleEncoded)
+	searchURL := fmt.Sprintf("%s/%s?q=%s&limit=25", j.BaseURL, mediaType, titleEncoded)
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
@@ -113,7 +93,7 @@ func (j *JikanProvider) searchMediaType(title, mediaType string) ([]SearchResult
 	req.Header.Set("User-Agent", "curl/8.15.0")
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := j.client.Do(req)
+	resp, err := j.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search Jikan %s: %w", mediaType, err)
 	}
@@ -198,9 +178,9 @@ func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	mediaType := parts[0]
 	malID := parts[1]
 
-	fetchURL := fmt.Sprintf("%s/%s/%s", j.baseURL, mediaType, malID)
+	fetchURL := fmt.Sprintf("%s/%s/%s", j.BaseURL, mediaType, malID)
 
-	resp, err := j.client.Get(fetchURL)
+	resp, err := j.Client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Jikan metadata: %w", err)
 	}
@@ -226,28 +206,6 @@ func (j *JikanProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	// Set the ExternalID with the media type prefix
 	metadata.ExternalID = id
 	return metadata, nil
-}
-
-func (j *JikanProvider) FindBestMatch(title string) (*MediaMetadata, error) {
-	results, err := j.Search(title)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, ErrNoResults
-	}
-
-	// Find the result with the highest similarity score
-	bestMatch := results[0]
-	for _, result := range results[1:] {
-		if result.SimilarityScore > bestMatch.SimilarityScore {
-			bestMatch = result
-		}
-	}
-
-	// Fetch full metadata for the best match
-	return j.GetMetadata(bestMatch.ID)
 }
 
 func (j *JikanProvider) convertToMediaMetadata(data *jikanMediaData) *MediaMetadata {

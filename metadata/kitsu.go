@@ -16,18 +16,18 @@ const kitsuBaseURL = "https://kitsu.io/api/edge"
 
 // KitsuProvider implements the Provider interface for Kitsu API
 type KitsuProvider struct {
-	apiToken string
-	config   ConfigProvider
-	client   *http.Client // HTTP client for making requests (configurable for testing)
-	baseURL  string       // Base URL for API calls (configurable for testing)
+	BaseProvider
 }
 
 // NewKitsuProvider creates a new Kitsu metadata provider
 func NewKitsuProvider(apiToken string) Provider {
 	return &KitsuProvider{
-		apiToken: apiToken,
-		client:   &http.Client{},
-		baseURL:  kitsuBaseURL,
+		BaseProvider: BaseProvider{
+			ProviderName: "kitsu",
+			APIToken:     apiToken,
+			Client:       &http.Client{},
+			BaseURL:      kitsuBaseURL,
+		},
 	}
 }
 
@@ -35,28 +35,8 @@ func init() {
 	RegisterProvider("kitsu", NewKitsuProvider)
 }
 
-func (k *KitsuProvider) Name() string {
-	return "kitsu"
-}
-
-func (k *KitsuProvider) RequiresAuth() bool {
-	return false
-}
-
-func (k *KitsuProvider) SetAuthToken(token string) {
-	k.apiToken = token
-}
-
-func (k *KitsuProvider) SetConfig(config ConfigProvider) {
-	k.config = config
-}
-
-func (k *KitsuProvider) GetCoverImageURL(metadata *MediaMetadata) string {
-	if metadata == nil || metadata.CoverArtURL == "" {
-		return ""
-	}
-	// Kitsu CoverArtURL is already the full URL
-	return metadata.CoverArtURL
+func (k *KitsuProvider) FindBestMatch(title string) (*MediaMetadata, error) {
+	return DefaultFindBestMatch(k, title)
 }
 
 func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
@@ -85,9 +65,9 @@ func (k *KitsuProvider) Search(title string) ([]SearchResult, error) {
 // searchMediaType searches for a specific media type (anime or manga)
 func (k *KitsuProvider) searchMediaType(title, mediaType string) ([]SearchResult, error) {
 	titleEncoded := url.QueryEscape(title)
-	searchURL := fmt.Sprintf("%s/%s?filter[text]=%s&page[limit]=20", k.baseURL, mediaType, titleEncoded)
+	searchURL := fmt.Sprintf("%s/%s?filter[text]=%s&page[limit]=20", k.BaseURL, mediaType, titleEncoded)
 
-	resp, err := k.client.Get(searchURL)
+	resp, err := k.Client.Get(searchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search Kitsu %s: %w", mediaType, err)
 	}
@@ -162,9 +142,9 @@ func (k *KitsuProvider) GetMetadata(id string) (*MediaMetadata, error) {
 }
 
 func (k *KitsuProvider) getMetadataForType(id, mediaType string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/%s/%s", k.baseURL, mediaType, id)
+	fetchURL := fmt.Sprintf("%s/%s/%s", k.BaseURL, mediaType, id)
 
-	resp, err := k.client.Get(fetchURL)
+	resp, err := k.Client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Kitsu metadata: %w", err)
 	}
@@ -183,28 +163,6 @@ func (k *KitsuProvider) getMetadataForType(id, mediaType string) (*MediaMetadata
 	}
 
 	return k.convertToMediaMetadata(&response.Data), nil
-}
-
-func (k *KitsuProvider) FindBestMatch(title string) (*MediaMetadata, error) {
-	results, err := k.Search(title)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, ErrNoResults
-	}
-
-	// Find the result with the highest similarity score
-	bestMatch := results[0]
-	for _, result := range results[1:] {
-		if result.SimilarityScore > bestMatch.SimilarityScore {
-			bestMatch = result
-		}
-	}
-
-	// Fetch full metadata for the best match
-	return k.GetMetadata(bestMatch.ID)
 }
 
 func (k *KitsuProvider) convertToMediaMetadata(detail *kitsuMediaDetail) *MediaMetadata {

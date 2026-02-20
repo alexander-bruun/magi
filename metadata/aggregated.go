@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // AttributionLink represents a link to the source metadata page

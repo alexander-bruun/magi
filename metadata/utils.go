@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // DetermineMediaTypeByLanguage returns a suggested type (media/manhwa/manhua/etc.)

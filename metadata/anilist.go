@@ -8,50 +8,33 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils/text"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 const anilistBaseURL = "https://graphql.anilist.co"
 
 // AniListProvider implements the Provider interface for AniList GraphQL API
 type AniListProvider struct {
-	apiToken string
-	config   ConfigProvider
-	client   *http.Client
-	baseURL  string
+	BaseProvider
 }
 
 // NewAniListProvider creates a new AniList metadata provider
 func NewAniListProvider(apiToken string) Provider {
-	return &AniListProvider{apiToken: apiToken, baseURL: anilistBaseURL}
+	return &AniListProvider{
+		BaseProvider: BaseProvider{
+			ProviderName: "anilist",
+			APIToken:     apiToken,
+			BaseURL:      anilistBaseURL,
+		},
+	}
 }
 
 func init() {
 	RegisterProvider("anilist", NewAniListProvider)
 }
 
-func (a *AniListProvider) Name() string {
-	return "anilist"
-}
-
-func (a *AniListProvider) RequiresAuth() bool {
-	return false // AniList API doesn't require auth for public data
-}
-
-func (a *AniListProvider) SetAuthToken(token string) {
-	a.apiToken = token
-}
-
-func (a *AniListProvider) SetConfig(config ConfigProvider) {
-	a.config = config
-}
-
-func (a *AniListProvider) GetCoverImageURL(metadata *MediaMetadata) string {
-	if metadata == nil || metadata.CoverArtURL == "" {
-		return ""
-	}
-	// AniList CoverArtURL is already the full URL
-	return metadata.CoverArtURL
+func (a *AniListProvider) FindBestMatch(title string) (*MediaMetadata, error) {
+	return DefaultFindBestMatch(a, title)
 }
 
 func (a *AniListProvider) Search(title string) ([]SearchResult, error) {
@@ -266,28 +249,6 @@ func (a *AniListProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	return a.convertToMediaMetadata(media), nil
 }
 
-func (a *AniListProvider) FindBestMatch(title string) (*MediaMetadata, error) {
-	results, err := a.Search(title)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, ErrNoResults
-	}
-
-	// Find the result with the highest similarity score
-	bestMatch := results[0]
-	for _, result := range results[1:] {
-		if result.SimilarityScore > bestMatch.SimilarityScore {
-			bestMatch = result
-		}
-	}
-
-	// Fetch full metadata for the best match
-	return a.GetMetadata(bestMatch.ID)
-}
-
 func (a *AniListProvider) executeQuery(query string, variables map[string]any) (map[string]any, error) {
 	requestBody := map[string]any{
 		"query":     query,
@@ -299,7 +260,7 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]any) (
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", a.baseURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", a.BaseURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AniList request: %w", err)
 	}
@@ -307,14 +268,11 @@ func (a *AniListProvider) executeQuery(query string, variables map[string]any) (
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	if a.apiToken != "" {
-		req.Header.Set("Authorization", "Bearer "+a.apiToken)
+	if a.APIToken != "" {
+		req.Header.Set("Authorization", "Bearer "+a.APIToken)
 	}
 
-	client := a.client
-	if client == nil {
-		client = &http.Client{}
-	}
+	client := a.HTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query AniList: %w", err)

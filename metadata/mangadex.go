@@ -8,25 +8,25 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/utils/text"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 const mangadexBaseURL = "https://api.mangadex.org"
 
 // MangaDexProvider implements the Provider interface for MangaDex API
 type MangaDexProvider struct {
-	apiToken string
-	config   ConfigProvider
-	client   *http.Client // HTTP client for making requests (configurable for testing)
-	baseURL  string       // Base URL for API calls (configurable for testing)
+	BaseProvider
 }
 
 // NewMangaDexProvider creates a new MangaDex metadata provider
 func NewMangaDexProvider(apiToken string) Provider {
 	return &MangaDexProvider{
-		apiToken: apiToken,
-		client:   &http.Client{},
-		baseURL:  mangadexBaseURL,
+		BaseProvider: BaseProvider{
+			ProviderName: "mangadex",
+			APIToken:     apiToken,
+			Client:       &http.Client{},
+			BaseURL:      mangadexBaseURL,
+		},
 	}
 }
 
@@ -34,28 +34,8 @@ func init() {
 	RegisterProvider("mangadex", NewMangaDexProvider)
 }
 
-func (m *MangaDexProvider) Name() string {
-	return "mangadex"
-}
-
-func (m *MangaDexProvider) RequiresAuth() bool {
-	return false
-}
-
-func (m *MangaDexProvider) SetAuthToken(token string) {
-	m.apiToken = token
-}
-
-func (m *MangaDexProvider) SetConfig(config ConfigProvider) {
-	m.config = config
-}
-
-func (m *MangaDexProvider) GetCoverImageURL(metadata *MediaMetadata) string {
-	if metadata == nil || metadata.CoverArtURL == "" {
-		return ""
-	}
-	// MangaDex CoverArtURL is already the full URL
-	return metadata.CoverArtURL
+func (m *MangaDexProvider) FindBestMatch(title string) (*MediaMetadata, error) {
+	return DefaultFindBestMatch(m, title)
 }
 
 func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
@@ -63,8 +43,8 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 
 	// Build content rating query parameters based on global setting
 	var contentRatingParams []string
-	if m.config != nil {
-		limit := m.config.GetContentRatingLimit()
+	if m.Config != nil {
+		limit := m.Config.GetContentRatingLimit()
 		if limit >= 0 {
 			contentRatingParams = append(contentRatingParams, "contentRating[]=safe")
 		}
@@ -88,9 +68,9 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 	}
 
 	contentRatingQuery := strings.Join(contentRatingParams, "&")
-	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", m.baseURL, titleEncoded, contentRatingQuery)
+	searchURL := fmt.Sprintf("%s/manga?title=%s&limit=50&%s&includes[]=cover_art", m.BaseURL, titleEncoded, contentRatingQuery)
 
-	resp, err := m.client.Get(searchURL)
+	resp, err := m.Client.Get(searchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search MangaDex: %w", err)
 	}
@@ -159,9 +139,9 @@ func (m *MangaDexProvider) Search(title string) ([]SearchResult, error) {
 }
 
 func (m *MangaDexProvider) GetMetadata(id string) (*MediaMetadata, error) {
-	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art&includes[]=author&includes[]=artist&includes[]=scanlation_group", m.baseURL, id)
+	fetchURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art&includes[]=author&includes[]=artist&includes[]=scanlation_group", m.BaseURL, id)
 
-	resp, err := m.client.Get(fetchURL)
+	resp, err := m.Client.Get(fetchURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch MangaDex metadata: %w", err)
 	}
@@ -185,28 +165,6 @@ func (m *MangaDexProvider) GetMetadata(id string) (*MediaMetadata, error) {
 	}
 
 	return m.convertToMediaMetadata(&response.Data), nil
-}
-
-func (m *MangaDexProvider) FindBestMatch(title string) (*MediaMetadata, error) {
-	results, err := m.Search(title)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, ErrNoResults
-	}
-
-	// Find the result with the highest similarity score
-	bestMatch := results[0]
-	for _, result := range results[1:] {
-		if result.SimilarityScore > bestMatch.SimilarityScore {
-			bestMatch = result
-		}
-	}
-
-	// Fetch full metadata for the best match
-	return m.GetMetadata(bestMatch.ID)
 }
 
 func (m *MangaDexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *MediaMetadata {
