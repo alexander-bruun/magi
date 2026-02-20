@@ -1,4 +1,5 @@
 -- Migration 0010: Create app_config table for global application settings
+DROP TABLE IF EXISTS app_config;
 CREATE TABLE IF NOT EXISTS app_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     allow_registration INTEGER NOT NULL DEFAULT 1,      -- 1 = true, 0 = false
@@ -13,8 +14,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     bot_series_threshold INTEGER NOT NULL DEFAULT 5,    -- max series accesses per time window
     bot_chapter_threshold INTEGER NOT NULL DEFAULT 10,  -- max chapter accesses per time window
     bot_detection_window INTEGER NOT NULL DEFAULT 60,   -- time window in seconds for bot detection
+    bot_ban_duration INTEGER NOT NULL DEFAULT 300,       -- how long bot bans last in seconds
     image_access_secret TEXT NOT NULL DEFAULT '',
-    image_token_validity_minutes INTEGER NOT NULL DEFAULT 5,
     premium_early_access_duration INTEGER NOT NULL DEFAULT 3600, -- default 1 hour in seconds
     max_premium_chapters INTEGER NOT NULL DEFAULT 3,
     premium_cooldown_scaling_enabled INTEGER NOT NULL DEFAULT 0,
@@ -47,12 +48,13 @@ CREATE TABLE IF NOT EXISTS app_config (
     header_analysis_enabled BOOLEAN NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
     header_analysis_threshold INTEGER NOT NULL DEFAULT 5, -- suspicion score threshold
     header_analysis_strict BOOLEAN NOT NULL DEFAULT 0, -- 1 = block suspicious, 0 = don't block
-    discord_invite_link TEXT NOT NULL DEFAULT ''
+    discord_invite_link TEXT NOT NULL DEFAULT '',
+    metadata_embedding_enabled BOOLEAN NOT NULL DEFAULT 0
 );
 
 -- Ensure exactly one row exists (id = 1)
 INSERT INTO app_config (id, allow_registration, max_users, content_rating_limit, metadata_provider, 
-    rate_limit_enabled, rate_limit_requests, rate_limit_window, rate_limit_block_duration, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window,
-    image_access_secret, image_token_validity_minutes, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, honeypot_enabled, honeypot_auto_block, honeypot_auto_ban, honeypot_block_duration, parallel_indexing_enabled, parallel_indexing_threshold, browser_challenge_enabled, browser_challenge_difficulty, browser_challenge_validity_hours, browser_challenge_ip_bound, referer_validation_enabled, tarpit_enabled, tarpit_max_delay, timing_analysis_enabled, timing_variance_threshold, tls_fingerprint_enabled, tls_fingerprint_strict, behavioral_analysis_enabled, behavioral_score_threshold, header_analysis_enabled, header_analysis_threshold, header_analysis_strict, discord_invite_link)
-SELECT 1, 1, 0, 3, 'mangadex', 1, 100, 60, 300, 1, 5, 10, 60, '', 5, 3600, 3, 1, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0, ''
+    rate_limit_enabled, rate_limit_requests, rate_limit_window, rate_limit_block_duration, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window, bot_ban_duration,
+    image_access_secret, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, honeypot_enabled, honeypot_auto_block, honeypot_auto_ban, honeypot_block_duration, parallel_indexing_enabled, parallel_indexing_threshold, browser_challenge_enabled, browser_challenge_difficulty, browser_challenge_validity_hours, browser_challenge_ip_bound, referer_validation_enabled, tarpit_enabled, tarpit_max_delay, timing_analysis_enabled, timing_variance_threshold, tls_fingerprint_enabled, tls_fingerprint_strict, behavioral_analysis_enabled, behavioral_score_threshold, header_analysis_enabled, header_analysis_threshold, header_analysis_strict, discord_invite_link, metadata_embedding_enabled)
+SELECT 1, 1, 0, 3, 'mangadex', 1, 100, 60, 300, 1, 5, 10, 60, 300, '', 3600, 3, 1, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0, '', 0
 WHERE NOT EXISTS (SELECT 1 FROM app_config WHERE id = 1);

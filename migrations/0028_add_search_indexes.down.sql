@@ -1,0 +1,10 @@
+-- Remove search performance indexes
+DROP INDEX IF EXISTS idx_media_name;
+DROP INDEX IF EXISTS idx_media_type;
+DROP INDEX IF EXISTS idx_media_status;
+DROP INDEX IF EXISTS idx_media_content_rating;
+DROP INDEX IF EXISTS idx_media_year;
+DROP INDEX IF EXISTS idx_chapters_library_media;
+DROP INDEX IF EXISTS idx_votes_media_slug;
+DROP INDEX IF EXISTS idx_reading_states_media_slug;
+DROP INDEX IF EXISTS idx_media_tags_media_tag;
