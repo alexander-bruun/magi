@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/utils/text"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // CalculateCountdownText calculates the countdown text for a premium chapter
@@ -68,6 +68,16 @@ type Chapter struct {
 
 // CreateChapter adds a new chapter if it does not already exist
 func CreateChapter(chapter Chapter) error {
+	return createChapterWith(db, chapter)
+}
+
+// CreateChapterTx adds a new chapter within a transaction
+func CreateChapterTx(tx *sql.Tx, chapter Chapter) error {
+	return createChapterWith(tx, chapter)
+}
+
+// createChapterWith adds a new chapter using the given Executor.
+func createChapterWith(exec Executor, chapter Chapter) error {
 	chapter.Slug = text.Sluggify(chapter.Name)
 	exists, err := ChapterExists(chapter.Slug, chapter.LibrarySlug, chapter.MediaSlug)
 	if err != nil {
@@ -85,34 +95,7 @@ func CreateChapter(chapter Chapter) error {
 	timestamps := NewTimestamps()
 	createdAt := timestamps.CreatedAt.Unix()
 
-	_, err = db.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, chapter.LibrarySlug, createdAt)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CreateChapterTx adds a new chapter within a transaction
-func CreateChapterTx(tx *sql.Tx, chapter Chapter) error {
-	chapter.Slug = text.Sluggify(chapter.Name)
-	exists, err := ChapterExists(chapter.Slug, chapter.LibrarySlug, chapter.MediaSlug)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return errors.New("chapter already exists")
-	}
-
-	query := `
-	INSERT INTO chapters (slug, name, type, file, chapter_cover_url, media_slug, library_slug, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	timestamps := NewTimestamps()
-	createdAt := timestamps.CreatedAt.Unix()
-
-	_, err = tx.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, chapter.LibrarySlug, createdAt)
+	_, err = exec.Exec(query, chapter.Slug, chapter.Name, chapter.Type, chapter.File, chapter.ChapterCoverURL, chapter.MediaSlug, chapter.LibrarySlug, createdAt)
 	if err != nil {
 		return err
 	}
@@ -140,6 +123,16 @@ func UpdateChapterFileTx(tx *sql.Tx, mediaSlug, chapterSlug, librarySlug, newFil
 	`
 	_, err := tx.Exec(query, newFile, mediaSlug, chapterSlug, librarySlug)
 	return err
+}
+
+// DeleteChapter removes a specific chapter
+func DeleteChapter(mangaSlug, chapterSlug, librarySlug string) error {
+	return DeleteRecordWith(db, `DELETE FROM chapters WHERE media_slug = ? AND slug = ? AND library_slug = ?`, mangaSlug, chapterSlug, librarySlug)
+}
+
+// DeleteChapterTx removes a specific chapter within a transaction
+func DeleteChapterTx(tx *sql.Tx, mangaSlug, chapterSlug, librarySlug string) error {
+	return DeleteRecordWith(tx, `DELETE FROM chapters WHERE media_slug = ? AND slug = ? AND library_slug = ?`, mangaSlug, chapterSlug, librarySlug)
 }
 
 // GetChapters retrieves all chapters for a specific manga, sorted by name
@@ -324,16 +317,6 @@ func UpdateChapterReleasedAt(mediaSlug, chapterSlug, librarySlug string, release
 	return nil
 }
 
-// DeleteChapterTx removes a specific chapter within a transaction
-func DeleteChapterTx(tx *sql.Tx, mangaSlug, chapterSlug, librarySlug string) error {
-	return DeleteRecordTx(tx, `DELETE FROM chapters WHERE media_slug = ? AND slug = ? AND library_slug = ?`, mangaSlug, chapterSlug, librarySlug)
-}
-
-// DeleteChapter removes a specific chapter
-func DeleteChapter(mangaSlug, chapterSlug, librarySlug string) error {
-	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ? AND slug = ? AND library_slug = ?`, mangaSlug, chapterSlug, librarySlug)
-}
-
 // DeleteChaptersByMediaSlug removes all chapters for a specific manga
 func DeleteChaptersByMediaSlug(mangaSlug string) error {
 	return DeleteRecord(`DELETE FROM chapters WHERE media_slug = ?`, mangaSlug)
@@ -383,7 +366,7 @@ func isChapterAccessibleForUser(chapter *Chapter, userName string) bool {
 }
 
 // GetAdjacentChapters finds the previous and next chapters based on the current chapter ID
-func GetAdjacentChapters(chapters []Chapter, chapterID, userName string) (prevID, nextID string, err error) {
+func GetAdjacentChapters(chapters []Chapter, chapterID, userName string) (prevSlug, nextSlug string, err error) {
 	// Filter chapters to only include accessible ones
 	var accessibleChapters []Chapter
 	for _, chapter := range chapters {
@@ -398,13 +381,13 @@ func GetAdjacentChapters(chapters []Chapter, chapterID, userName string) (prevID
 	}
 
 	if currentIndex > 0 {
-		prevID = accessibleChapters[currentIndex-1].ID
+		prevSlug = accessibleChapters[currentIndex-1].Slug
 	}
 	if currentIndex < len(accessibleChapters)-1 {
-		nextID = accessibleChapters[currentIndex+1].ID
+		nextSlug = accessibleChapters[currentIndex+1].Slug
 	}
 
-	return prevID, nextID, nil
+	return prevSlug, nextSlug, nil
 }
 
 // Helper functions
@@ -632,6 +615,111 @@ func GetChaptersByMediaSlug(mediaSlug string, limit int, maxPremiumChapters int,
 	}
 
 	return chapters, nil
+}
+
+// GetChaptersByMediaSlugPaginated returns paginated chapters for a media
+func GetChaptersByMediaSlugPaginated(mediaSlug string, offset int, limit int, sorting string, maxPremiumChapters int, premiumDuration int, scalingEnabled bool) ([]Chapter, int, error) {
+	// First get total count
+	total, err := GetChapterCount(mediaSlug)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT c.id, c.slug, c.name, c.type, c.file, c.chapter_cover_url, c.media_slug, c.library_slug, l.name as library_name, c.created_at, c.released_at,
+		       COALESCE(rs.read_count, 0) as read_count
+		FROM chapters c
+		JOIN libraries l ON c.library_slug = l.slug
+		LEFT JOIN (
+			SELECT chapter_slug, library_slug, COUNT(*) as read_count
+			FROM reading_states
+			WHERE media_slug = ?
+			GROUP BY chapter_slug, library_slug
+		) rs ON c.slug = rs.chapter_slug AND c.library_slug = rs.library_slug
+		WHERE c.media_slug = ? AND l.enabled = true
+	`
+
+	rows, err := db.Query(query, mediaSlug, mediaSlug)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var chapters []Chapter
+	for rows.Next() {
+		var chapter Chapter
+		var createdAt int64
+		var releasedAt sql.NullInt64
+		if err := rows.Scan(&chapter.ID, &chapter.Slug, &chapter.Name, &chapter.Type, &chapter.File, &chapter.ChapterCoverURL, &chapter.MediaSlug, &chapter.LibrarySlug, &chapter.LibraryName, &createdAt, &releasedAt, &chapter.ReadCount); err != nil {
+			return nil, 0, err
+		}
+		chapter.CreatedAt = time.Unix(createdAt, 0)
+		if releasedAt.Valid {
+			t := time.Unix(releasedAt.Int64, 0)
+			chapter.ReleasedAt = &t
+		}
+		chapters = append(chapters, chapter)
+	}
+
+	// Sort chapters by extracted chapter number
+	ascending := sorting == "oldest"
+	sort.Slice(chapters, func(i, j int) bool {
+		numI := extractChapterNumber(chapters[i].Name)
+		numJ := extractChapterNumber(chapters[j].Name)
+		if ascending {
+			return numI < numJ
+		}
+		return numI > numJ
+	})
+
+	// Apply pagination
+	if offset >= len(chapters) {
+		return []Chapter{}, total, nil
+	}
+	end := offset + limit
+	if end > len(chapters) {
+		end = len(chapters)
+	}
+	paginatedChapters := chapters[offset:end]
+
+	// Set IsPremium for chapters within maxPremiumChapters and within time
+	now := time.Now()
+	premiumChapters := make([]int, 0) // Store indices of premium chapters
+	for i := range paginatedChapters {
+		if offset+i < maxPremiumChapters {
+			if paginatedChapters[i].ReleasedAt != nil {
+				paginatedChapters[i].IsPremium = false
+			} else {
+				// First pass: determine which chapters are premium using base duration
+				releaseTime := paginatedChapters[i].CreatedAt.Add(time.Duration(premiumDuration) * time.Second)
+				paginatedChapters[i].IsPremium = now.Before(releaseTime)
+				if paginatedChapters[i].IsPremium {
+					premiumChapters = append(premiumChapters, i)
+				}
+			}
+		} else {
+			paginatedChapters[i].IsPremium = false
+		}
+	}
+
+	// Second pass: calculate scaled durations for premium chapters
+	// Newest premium chapter gets highest multiplier, oldest gets 1x
+	for position, chapterIndex := range premiumChapters {
+		multiplier := len(premiumChapters) - position
+		if !scalingEnabled {
+			multiplier = 1
+		}
+		scaledDuration := premiumDuration * multiplier
+		releaseTime := paginatedChapters[chapterIndex].CreatedAt.Add(time.Duration(scaledDuration) * time.Second)
+
+		// Recalculate IsPremium with scaled duration (in case it changed)
+		paginatedChapters[chapterIndex].IsPremium = now.Before(releaseTime)
+
+		// Calculate countdown for premium chapters
+		paginatedChapters[chapterIndex].PremiumCountdown = CalculateCountdownText(releaseTime)
+	}
+
+	return paginatedChapters, total, nil
 }
 
 // MediaWithRecentChapters represents a media with its 3 most recent chapters
@@ -891,6 +979,72 @@ func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDu
 // GetChapterCount returns the total number of chapters for a media
 func GetChapterCount(mediaSlug string) (int, error) {
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM chapters WHERE media_slug = ?", mediaSlug).Scan(&count)
+	err := db.QueryRow("SELECT COUNT(DISTINCT slug) FROM chapters WHERE media_slug = ?", mediaSlug).Scan(&count)
 	return count, err
+}
+
+// GetFirstChapterSlug returns the slug of the first (oldest) chapter for a media
+func GetFirstChapterSlug(mediaSlug string) (string, error) {
+	query := `
+		SELECT c.slug, c.name
+		FROM chapters c
+		JOIN libraries l ON c.library_slug = l.slug
+		WHERE c.media_slug = ? AND l.enabled = true
+	`
+	rows, err := db.Query(query, mediaSlug)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	minNum := 999999
+	firstSlug := ""
+	for rows.Next() {
+		var slug, name string
+		if err := rows.Scan(&slug, &name); err != nil {
+			return "", err
+		}
+		num := extractChapterNumber(name)
+		if num < minNum && num >= 0 {
+			minNum = num
+			firstSlug = slug
+		}
+	}
+	if firstSlug == "" {
+		return "", sql.ErrNoRows
+	}
+	return firstSlug, nil
+}
+
+// GetLastChapterSlug returns the slug of the last (newest) chapter for a media
+func GetLastChapterSlug(mediaSlug string) (string, error) {
+	query := `
+		SELECT c.slug, c.name
+		FROM chapters c
+		JOIN libraries l ON c.library_slug = l.slug
+		WHERE c.media_slug = ? AND l.enabled = true
+	`
+	rows, err := db.Query(query, mediaSlug)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	maxNum := -1
+	lastSlug := ""
+	for rows.Next() {
+		var slug, name string
+		if err := rows.Scan(&slug, &name); err != nil {
+			return "", err
+		}
+		num := extractChapterNumber(name)
+		if num > maxNum {
+			maxNum = num
+			lastSlug = slug
+		}
+	}
+	if lastSlug == "" {
+		return "", sql.ErrNoRows
+	}
+	return lastSlug, nil
 }

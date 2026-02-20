@@ -2,10 +2,11 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // Collection represents a user-created collection of media
@@ -248,7 +249,7 @@ func RemoveMediaFromCollection(collectionID int, mediaSlug string) error {
 // GetCollectionMedia retrieves all media in a collection, filtered by accessible libraries
 func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
-		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count,
+		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.chapter_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
 			COALESCE(vote_scores.score, 0) as vote_score,
 			m.created_at, m.updated_at
@@ -260,12 +261,7 @@ func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media
 			GROUP BY media_slug
 		) read_counts ON m.slug = read_counts.media_slug
 		LEFT JOIN (
-			SELECT media_slug,
-				CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0
-				THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10)
-				ELSE 0 END as score
-			FROM votes
-			GROUP BY media_slug
+			` + fmt.Sprintf(VoteScoreSubquery, "") + `
 		) vote_scores ON m.slug = vote_scores.media_slug
 		WHERE cm.collection_id = ?
 		ORDER BY cm.added_at DESC`
@@ -285,7 +281,7 @@ func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media
 		err := rows.Scan(
 			&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage,
 			&m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL,
-			&m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
+			&m.FileCount, &m.ChapterCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
 		if err != nil {
 			log.Error("Failed to scan media:", err)
 			return nil, err
@@ -308,7 +304,7 @@ func GetCollectionMedia(collectionID int, accessibleLibraries []string) ([]Media
 // GetTopMediaInCollection retrieves the top 4 most popular media in a collection (by vote score), filtered by accessible libraries
 func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]Media, error) {
 	query := `
-		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count,
+		SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, m.chapter_count,
 			COALESCE(read_counts.read_count, 0) as read_count,
 			COALESCE(vote_scores.score, 0) as vote_score,
 			m.created_at, m.updated_at
@@ -320,12 +316,7 @@ func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]
 			GROUP BY media_slug
 		) read_counts ON m.slug = read_counts.media_slug
 		LEFT JOIN (
-			SELECT media_slug,
-				CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0
-				THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10)
-				ELSE 0 END as score
-			FROM votes
-			GROUP BY media_slug
+			` + fmt.Sprintf(VoteScoreSubquery, "") + `
 		) vote_scores ON m.slug = vote_scores.media_slug
 		WHERE cm.collection_id = ?
 		ORDER BY vote_scores.score DESC, cm.added_at DESC
@@ -346,7 +337,7 @@ func GetTopMediaInCollection(collectionID int, accessibleLibraries []string) ([]
 		err := rows.Scan(
 			&m.Slug, &m.Name, &m.Author, &m.Description, &m.Year, &m.OriginalLanguage,
 			&m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL,
-			&m.FileCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
+			&m.FileCount, &m.ChapterCount, &m.ReadCount, &voteScore, &createdAt, &updatedAt)
 		if err != nil {
 			log.Error("Failed to scan media:", err)
 			return nil, err

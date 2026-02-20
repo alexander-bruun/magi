@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 
 	"database/sql"
 
@@ -17,6 +17,36 @@ import (
 )
 
 var db *sql.DB
+
+var dataDirectory = "./data"
+
+// Executor is an interface satisfied by both *sql.DB and *sql.Tx,
+// allowing functions to work with either without duplication.
+type Executor interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+// DB returns the global database connection as an Executor.
+func DB() Executor {
+	return db
+}
+
+// SetDataDirectory sets the data directory path
+func SetDataDirectory(dir string) {
+	dataDirectory = dir
+}
+
+// GetDataDirectory returns the data directory path
+func GetDataDirectory() string {
+	return dataDirectory
+}
+
+// GetDB returns the database connection
+func GetDB() *sql.DB {
+	return db
+}
 
 // BackupInfo represents information about a backup
 type BackupInfo struct {
@@ -88,11 +118,6 @@ func Close() error {
 		return db.Close()
 	}
 	return nil
-}
-
-// GetDB returns the database connection
-func GetDB() *sql.DB {
-	return db
 }
 
 // initializeSchemaMigrationsTable ensures that the schema_migrations table exists
@@ -317,12 +342,16 @@ func CountRecords(query string, args ...interface{}) (int64, error) {
 
 // DeleteRecord executes a delete query
 func DeleteRecord(query string, args ...interface{}) error {
-	_, err := db.Exec(query, args...)
-	return err
+	return DeleteRecordWith(db, query, args...)
 }
 
 // DeleteRecordTx executes a delete query within a transaction
 func DeleteRecordTx(tx *sql.Tx, query string, args ...interface{}) error {
-	_, err := tx.Exec(query, args...)
+	return DeleteRecordWith(tx, query, args...)
+}
+
+// DeleteRecordWith executes a delete query using the given Executor.
+func DeleteRecordWith(exec Executor, query string, args ...interface{}) error {
+	_, err := exec.Exec(query, args...)
 	return err
 }

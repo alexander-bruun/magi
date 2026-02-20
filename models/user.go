@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,10 +25,11 @@ type User struct {
 
 // BannedIP represents a banned IP address
 type BannedIP struct {
-	ID        int       `json:"id"`
-	IPAddress string    `json:"ip_address"`
-	BannedAt  time.Time `json:"banned_at"`
-	Reason    string    `json:"reason"`
+	ID        int        `json:"id"`
+	IPAddress string     `json:"ip_address"`
+	BannedAt  time.Time  `json:"banned_at"`
+	Reason    string     `json:"reason"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
 // roleHierarchy defines the order of roles from lowest to highest.
@@ -254,35 +255,16 @@ var FindUserByUsername = func(username string) (*User, error) {
 
 // UpdateUserRole updates the role of a user.
 func UpdateUserRole(username, newRole string) error {
-	if !isValidRole(newRole) {
-		return errors.New("invalid role")
-	}
-
-	user, err := FindUserByUsername(username)
-	if err != nil {
-		return err
-	}
-	if user == nil {
-		return fmt.Errorf("user '%s' not found", username)
-	}
-
-	user.Role = newRole
-	query := `
-	UPDATE users
-	SET role = ?
-	WHERE username = ?
-	`
-
-	_, err = db.Exec(query, user.Role, username)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return updateUserRoleWith(db, username, newRole)
 }
 
 // UpdateUserRoleTx updates the role of a user within a transaction.
 func UpdateUserRoleTx(tx *sql.Tx, username, newRole string) error {
+	return updateUserRoleWith(tx, username, newRole)
+}
+
+// updateUserRoleWith updates the role of a user using the given Executor.
+func updateUserRoleWith(exec Executor, username, newRole string) error {
 	if !isValidRole(newRole) {
 		return errors.New("invalid role")
 	}
@@ -302,7 +284,7 @@ func UpdateUserRoleTx(tx *sql.Tx, username, newRole string) error {
 	WHERE username = ?
 	`
 
-	_, err = tx.Exec(query, user.Role, username)
+	_, err = exec.Exec(query, user.Role, username)
 	if err != nil {
 		return err
 	}
@@ -426,33 +408,16 @@ func DemoteUser(username string) error {
 
 // BanUser bans a user by setting the Banned field to true.
 func BanUser(username string) error {
-	user, err := FindUserByUsername(username)
-	if err != nil {
-		return fmt.Errorf("failed to find user to ban: %w", err)
-	}
-
-	if user.Banned {
-		return fmt.Errorf("user '%s' is already banned", username)
-	}
-
-	user.Banned = true
-	query := `
-	UPDATE users
-	SET banned = ?
-	WHERE username = ?
-	`
-
-	_, err = db.Exec(query, user.Banned, username)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("User '%s' has been banned", username)
-	return nil
+	return banUserWith(db, username)
 }
 
 // BanUserTx bans a user by setting the Banned field to true within a transaction.
 func BanUserTx(tx *sql.Tx, username string) error {
+	return banUserWith(tx, username)
+}
+
+// banUserWith bans a user using the given Executor.
+func banUserWith(exec Executor, username string) error {
 	user, err := FindUserByUsername(username)
 	if err != nil {
 		return fmt.Errorf("failed to find user to ban: %w", err)
@@ -469,7 +434,7 @@ func BanUserTx(tx *sql.Tx, username string) error {
 	WHERE username = ?
 	`
 
-	_, err = tx.Exec(query, user.Banned, username)
+	_, err = exec.Exec(query, user.Banned, username)
 	if err != nil {
 		return err
 	}
@@ -527,12 +492,19 @@ func UnbanUser(username string) error {
 	return nil
 }
 
-// BanIP adds an IP to the banned list
-func BanIP(ip, reason string) error {
+// BanIP adds an IP to the banned list with an optional duration in seconds.
+// If durationSeconds <= 0, the ban is permanent.
+func BanIP(ip, reason string, durationSeconds ...int) error {
+	var expiresAt *time.Time
+	if len(durationSeconds) > 0 && durationSeconds[0] > 0 {
+		t := time.Now().Add(time.Duration(durationSeconds[0]) * time.Second)
+		expiresAt = &t
+	}
 	_, err := db.Exec(`
-		INSERT INTO banned_ips (ip_address, reason)
-		VALUES (?, ?)
-	`, ip, reason)
+		INSERT INTO banned_ips (ip_address, reason, expires_at)
+		VALUES (?, ?, ?)
+		ON CONFLICT(ip_address) DO UPDATE SET reason = excluded.reason, expires_at = excluded.expires_at, banned_at = CURRENT_TIMESTAMP
+	`, ip, reason, expiresAt)
 	if err != nil {
 		log.Errorf("Failed to ban IP %s: %v", ip, err)
 	}
@@ -547,8 +519,12 @@ func UnbanIP(ip string) error {
 	return err
 }
 
-// IsIPBanned checks if an IP is banned
+// IsIPBanned checks if an IP is currently banned (respects expiry).
+// Expired bans are cleaned up automatically.
 func IsIPBanned(ip string) (bool, error) {
+	// Clean up expired bans for this IP
+	_, _ = db.Exec(`DELETE FROM banned_ips WHERE ip_address = ? AND expires_at IS NOT NULL AND expires_at <= ?`, ip, time.Now())
+
 	var count int
 	err := db.QueryRow(`
 		SELECT COUNT(*) FROM banned_ips WHERE ip_address = ?
@@ -564,10 +540,13 @@ func IsIPBanned(ip string) (bool, error) {
 	return banned, nil
 }
 
-// GetBannedIPs retrieves all banned IPs
+// GetBannedIPs retrieves all currently active banned IPs (expired bans are cleaned up).
 func GetBannedIPs() ([]BannedIP, error) {
+	// Clean up all expired bans
+	_, _ = db.Exec(`DELETE FROM banned_ips WHERE expires_at IS NOT NULL AND expires_at <= ?`, time.Now())
+
 	rows, err := db.Query(`
-		SELECT id, ip_address, banned_at, reason
+		SELECT id, ip_address, banned_at, reason, expires_at
 		FROM banned_ips
 		ORDER BY banned_at DESC
 	`)
@@ -580,10 +559,14 @@ func GetBannedIPs() ([]BannedIP, error) {
 	var bannedIPs []BannedIP
 	for rows.Next() {
 		var bip BannedIP
-		err := rows.Scan(&bip.ID, &bip.IPAddress, &bip.BannedAt, &bip.Reason)
+		var expiresAt sql.NullTime
+		err := rows.Scan(&bip.ID, &bip.IPAddress, &bip.BannedAt, &bip.Reason, &expiresAt)
 		if err != nil {
 			log.Errorf("Failed to scan banned IP: %v", err)
 			return nil, err
+		}
+		if expiresAt.Valid {
+			bip.ExpiresAt = &expiresAt.Time
 		}
 		bannedIPs = append(bannedIPs, bip)
 	}

@@ -247,58 +247,39 @@ func RecordDailyStatistics() error {
 }
 
 func GetDailyChange(statType string) (int, error) {
-	today := time.Now().Format("2006-01-02")
-
 	var query string
 	switch statType {
 	case "media":
-		// For media, count distinct media that have chapters read today
-		query = `SELECT COUNT(DISTINCT media_slug) FROM reading_states WHERE DATE(created_at) = ?`
+		query = `SELECT COUNT(*) FROM media WHERE created_at >= strftime('%s', datetime('now', '-1 day'))`
 	case "chapters":
-		// For chapters, count total chapters read today
-		query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
+		query = `SELECT COUNT(*) FROM chapters WHERE created_at >= strftime('%s', datetime('now', '-1 day'))`
 	case "chapters_read":
-		// This is the same as chapters for reading_states
-		query = `SELECT COUNT(*) FROM reading_states WHERE DATE(created_at) = ?`
+		// For chapters read, we still want reading activity in the last 24 hours
+		query = `SELECT COUNT(*) FROM reading_states WHERE created_at >= strftime('%s', datetime('now', '-1 day'))`
 	default:
 		return 0, fmt.Errorf("unknown stat type: %s", statType)
 	}
 
-	row := db.QueryRow(query, today)
+	row := db.QueryRow(query)
 	var change int
 	err := row.Scan(&change)
 	return change, err
 }
 
 func GetDailyChangeByType(statType string, mediaType string) (int, error) {
-	today := time.Now().Format("2006-01-02")
-	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-
 	var query string
 	switch statType {
 	case "media":
-		query = `
-            SELECT 
-                (SELECT COUNT(*) FROM media WHERE DATE(created_at) = ? AND LOWER(TRIM(type)) = LOWER(TRIM(?))) - 
-                (SELECT COUNT(*) FROM media WHERE DATE(created_at) = ? AND LOWER(TRIM(type)) = LOWER(TRIM(?)))
-        `
+		query = `SELECT COUNT(*) FROM media WHERE created_at >= strftime('%s', datetime('now', '-1 day')) AND LOWER(TRIM(type)) = LOWER(TRIM(?))`
 	case "chapters":
-		query = `
-            SELECT 
-                (SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE DATE(c.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))) - 
-                (SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE DATE(c.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?)))
-        `
+		query = `SELECT COUNT(*) FROM chapters c INNER JOIN media m ON c.media_slug = m.slug WHERE c.created_at >= strftime('%s', datetime('now', '-1 day')) AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))`
 	case "chapters_read":
-		query = `
-            SELECT 
-                (SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE DATE(rs.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))) - 
-                (SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE DATE(rs.created_at) = ? AND LOWER(TRIM(m.type)) = LOWER(TRIM(?)))
-        `
+		query = `SELECT COUNT(*) FROM reading_states rs INNER JOIN media m ON rs.media_slug = m.slug WHERE rs.created_at >= strftime('%s', datetime('now', '-1 day')) AND LOWER(TRIM(m.type)) = LOWER(TRIM(?))`
 	default:
 		return 0, fmt.Errorf("unknown stat type: %s", statType)
 	}
 
-	row := db.QueryRow(query, today, mediaType, yesterday, mediaType)
+	row := db.QueryRow(query, mediaType)
 	var change int
 	err := row.Scan(&change)
 	return change, err
@@ -313,24 +294,10 @@ func ensureTodaysStatsRecorded(today string) error {
 func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([]Media, error) {
 	cfg, err := GetAppConfig()
 	if err != nil {
-		// If we can't get config, default to showing all content
 		cfg.ContentRatingLimit = 3
 	}
 
-	var allowedRatings []string
-	switch cfg.ContentRatingLimit {
-	case 0:
-		allowedRatings = []string{"safe"}
-	case 1:
-		allowedRatings = []string{"safe", "suggestive"}
-	case 2:
-		allowedRatings = []string{"safe", "suggestive", "erotica"}
-	default:
-		allowedRatings = []string{"safe", "suggestive", "erotica", "pornographic"}
-	}
-
-	placeholders := strings.Repeat("?,", len(allowedRatings))
-	placeholders = placeholders[:len(placeholders)-1] // remove trailing comma
+	allowedRatings, placeholders := AllowedRatingsPlaceholders(cfg.ContentRatingLimit)
 
 	var dateFilter string
 	switch period {
@@ -361,7 +328,7 @@ func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([
 	}
 
 	query := fmt.Sprintf(`
-        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, COALESCE(top_reads.read_count, 0) as read_count, m.created_at, m.updated_at
+        SELECT m.slug, m.name, m.author, m.description, m.year, m.original_language, m.type, m.status, m.content_rating, m.cover_art_url, m.file_count, COALESCE((SELECT COUNT(DISTINCT c2.slug) FROM chapters c2 WHERE c2.media_slug = m.slug), 0) as chapter_count, COALESCE(top_reads.read_count, 0) as read_count, COALESCE(v.score, 0) as average_score, m.created_at, m.updated_at
         FROM media m
         LEFT JOIN (
             SELECT media_slug, COUNT(*) as read_count
@@ -370,12 +337,7 @@ func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([
             GROUP BY media_slug
         ) top_reads ON m.slug = top_reads.media_slug
         LEFT JOIN (
-            SELECT media_slug, 
-                CASE WHEN COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0) > 0 
-                THEN ROUND((COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) * 1.0 / (COALESCE(SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END),0) + COALESCE(SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END),0))) * 10) 
-                ELSE 0 END as score
-            FROM votes
-            GROUP BY media_slug
+            `+fmt.Sprintf(VoteScoreSubquery, "")+`
         ) v ON v.media_slug = m.slug
         WHERE m.content_rating IN (%s) %s
         ORDER BY COALESCE(top_reads.read_count, 0) DESC, v.score DESC
@@ -404,7 +366,7 @@ func GetTopReadMedias(period string, limit int, accessibleLibraries []string) ([
 		var m Media
 		var createdAt, updatedAt int64
 		var year sql.NullInt64
-		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &m.ReadCount, &createdAt, &updatedAt)
+		err := rows.Scan(&m.Slug, &m.Name, &m.Author, &m.Description, &year, &m.OriginalLanguage, &m.Type, &m.Status, &m.ContentRating, &m.CoverArtURL, &m.FileCount, &m.ChapterCount, &m.ReadCount, &m.AverageScore, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -500,11 +462,12 @@ func GetUserReadingStreak(userName string) (int, error) {
 // GetUserFavoriteGenres returns the top 5 genres based on user's reading history
 func GetUserFavoriteGenres(userName string) ([]string, error) {
 	rows, err := db.Query(`
-		SELECT m.genres, COUNT(*) as read_count
+		SELECT json_each.value as genre, COUNT(*) as read_count
 		FROM reading_states rs
 		JOIN media m ON rs.media_slug = m.slug
-		WHERE rs.user_name = ? AND m.genres != ''
-		GROUP BY m.genres
+		JOIN json_each(m.genres) ON true
+		WHERE rs.user_name = ? AND m.genres != '' AND json_valid(m.genres)
+		GROUP BY json_each.value
 		ORDER BY read_count DESC
 		LIMIT 5
 	`, userName)
@@ -516,17 +479,12 @@ func GetUserFavoriteGenres(userName string) ([]string, error) {
 
 	var genres []string
 	for rows.Next() {
-		var genreList string
+		var genre string
 		var count int
-		if err := rows.Scan(&genreList, &count); err != nil {
+		if err := rows.Scan(&genre, &count); err != nil {
 			return nil, err
 		}
-		// Split comma-separated genres and take the first one as representative
-		if strings.Contains(genreList, ",") {
-			genres = append(genres, strings.TrimSpace(strings.Split(genreList, ",")[0]))
-		} else {
-			genres = append(genres, strings.TrimSpace(genreList))
-		}
+		genres = append(genres, strings.TrimSpace(genre))
 	}
 
 	return genres, nil

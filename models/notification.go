@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // Notification represents a notification object
@@ -53,41 +53,31 @@ type UserNotification struct {
 
 // createUserNotification creates a new notification for a user about a new chapter
 func createUserNotification(userName, mangaSlug, chapterSlug, message string) error {
-	return createUserNotificationWithType(userName, mangaSlug, chapterSlug, message, "chapter")
+	return createNotificationWith(db, userName, mangaSlug, "", chapterSlug, message, "chapter")
 }
 
 // createUserNotificationWithType creates a new notification for a user with a specific type
 func createUserNotificationWithType(userName, mediaSlug, chapterSlug, message, notificationType string) error {
-	query := `
-	INSERT INTO user_notifications (user_name, media_slug, library_slug, chapter_slug, message, is_read, created_at, type)
-	VALUES (?, ?, ?, ?, ?, 0, ?, ?)
-	`
-
-	createdAt := time.Now().Unix()
-
-	// For admin notifications, use NULL for media/chapter fields
-	if notificationType == "admin_issue" {
-		_, err := db.Exec(query, userName, nil, nil, nil, message, createdAt, notificationType)
-		return err
-	}
-
-	// For chapter notifications, use the provided values (library_slug is empty for now)
-	_, err := db.Exec(query, userName, mediaSlug, "", chapterSlug, message, createdAt, notificationType)
-	return err
+	return createNotificationWith(db, userName, mediaSlug, "", chapterSlug, message, notificationType)
 }
 
 // CreateAdminNotification creates a new admin notification for moderators/admins
 func CreateAdminNotification(userName, message string) error {
-	return createUserNotificationWithType(userName, "admin", "", message, "admin_issue")
+	return createNotificationWith(db, userName, "admin", "", "", message, "admin_issue")
 }
 
 // createUserNotificationTx creates a new notification for a user about a new chapter within a transaction
 func createUserNotificationTx(tx *sql.Tx, userName, mangaSlug, librarySlug, chapterSlug, message string) error {
-	return createUserNotificationTxWithType(tx, userName, mangaSlug, librarySlug, chapterSlug, message, "chapter")
+	return createNotificationWith(tx, userName, mangaSlug, librarySlug, chapterSlug, message, "chapter")
 }
 
 // createUserNotificationTxWithType creates a new notification for a user with a specific type within a transaction
 func createUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, librarySlug, chapterSlug, message, notificationType string) error {
+	return createNotificationWith(tx, userName, mediaSlug, librarySlug, chapterSlug, message, notificationType)
+}
+
+// createNotificationWith creates a notification using the given Executor.
+func createNotificationWith(exec Executor, userName, mediaSlug, librarySlug, chapterSlug, message, notificationType string) error {
 	query := `
 	INSERT INTO user_notifications (user_name, media_slug, library_slug, chapter_slug, message, is_read, created_at, type)
 	VALUES (?, ?, ?, ?, ?, 0, ?, ?)
@@ -97,12 +87,12 @@ func createUserNotificationTxWithType(tx *sql.Tx, userName, mediaSlug, librarySl
 
 	// For admin notifications, use NULL for media/chapter fields
 	if notificationType == "admin_issue" {
-		_, err := tx.Exec(query, userName, nil, nil, nil, message, createdAt, notificationType)
+		_, err := exec.Exec(query, userName, nil, nil, nil, message, createdAt, notificationType)
 		return err
 	}
 
 	// For chapter notifications, use the provided values
-	_, err := tx.Exec(query, userName, mediaSlug, librarySlug, chapterSlug, message, createdAt, notificationType)
+	_, err := exec.Exec(query, userName, mediaSlug, librarySlug, chapterSlug, message, createdAt, notificationType)
 	return err
 }
 
@@ -286,10 +276,10 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		return numI < numJ
 	})
 
-	// Get users who are reading this manga
+	// Get users who have favorited this manga
 	usersQuery := `
-	SELECT DISTINCT user_name
-	FROM reading_states
+	SELECT DISTINCT user_username
+	FROM favorites
 	WHERE media_slug = ?
 	`
 
@@ -309,10 +299,10 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 		users = append(users, userName)
 	}
 
-	log.Debugf("Found %d users reading manga '%s'", len(users), mangaSlug)
+	log.Debugf("Found %d users who favorited manga '%s'", len(users), mangaSlug)
 
 	if len(users) == 0 {
-		log.Debugf("No users reading manga '%s', skipping notifications", mangaSlug)
+		log.Debugf("No users have favorited manga '%s', skipping notifications", mangaSlug)
 		return tx.Commit()
 	}
 
@@ -373,124 +363,16 @@ func NotifyUsersOfNewChapters(mangaSlug string, newChapterSlugs []string) error 
 
 // BundleNotificationsForUser bundles multiple unread notifications for the same manga into one
 func BundleNotificationsForUser(userName string) error {
-	// Find media with multiple unread notifications
-	query := `
-	SELECT media_slug, COUNT(*) as count
-	FROM user_notifications
-	WHERE user_name = ? AND is_read = 0
-	GROUP BY media_slug
-	HAVING COUNT(*) > 1
-	`
-
-	rows, err := db.Query(query, userName)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var mangaSlug string
-		var count int
-		if err := rows.Scan(&mangaSlug, &count); err != nil {
-			continue
-		}
-
-		// Get manga name
-		manga, err := GetMediaUnfiltered(mangaSlug)
-		if err != nil || manga == nil {
-			log.Errorf("Failed to get manga details for bundling: %v", err)
-			continue
-		}
-
-		// Get all unread notifications for this manga
-		notifsQuery := `
-		SELECT id, chapter_slug, message
-		FROM user_notifications
-		WHERE user_name = ? AND media_slug = ? AND is_read = 0
-		ORDER BY created_at ASC
-		`
-		notifRows, err := db.Query(notifsQuery, userName, mangaSlug)
-		if err != nil {
-			continue
-		}
-
-		var ids []int64
-		var chapterSlugs []string
-		var messages []string
-		for notifRows.Next() {
-			var id int64
-			var chapterSlug, message string
-			if err := notifRows.Scan(&id, &chapterSlug, &message); err != nil {
-				continue
-			}
-			ids = append(ids, id)
-			chapterSlugs = append(chapterSlugs, chapterSlug)
-			messages = append(messages, message)
-		}
-		notifRows.Close()
-
-		if len(ids) <= 1 {
-			continue
-		}
-
-		// Get chapter names
-		placeholders := make([]string, len(chapterSlugs))
-		args := make([]any, len(chapterSlugs)+1)
-		args[0] = mangaSlug
-		for i, slug := range chapterSlugs {
-			placeholders[i] = "?"
-			args[i+1] = slug
-		}
-		chapQuery := fmt.Sprintf(`
-		SELECT name FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND c.slug IN (%s) AND l.enabled = true
-		`, strings.Join(placeholders, ","))
-		chapRows, err := db.Query(chapQuery, args...)
-		if err != nil {
-			continue
-		}
-		var chapterNames []string
-		for chapRows.Next() {
-			var name string
-			if err := chapRows.Scan(&name); err != nil {
-				continue
-			}
-			chapterNames = append(chapterNames, name)
-		}
-		chapRows.Close()
-
-		// Create bundled message
-		var message string
-		if len(chapterNames) == 1 {
-			message = fmt.Sprintf("New chapter available for %s: %s", manga.Name, chapterNames[0])
-		} else if len(chapterNames) <= 5 {
-			message = fmt.Sprintf("New chapters available for %s: %s", manga.Name, strings.Join(chapterNames, ", "))
-		} else {
-			message = fmt.Sprintf("New chapters available for %s: %s to %s (%d total)", manga.Name, chapterNames[0], chapterNames[len(chapterNames)-1], len(chapterNames))
-		}
-
-		// Delete old notifications
-		deleteQuery := `DELETE FROM user_notifications WHERE id IN (` + strings.Repeat("?,", len(ids)-1) + "?)"
-		deleteArgs := make([]any, len(ids))
-		for i, id := range ids {
-			deleteArgs[i] = id
-		}
-		_, err = db.Exec(deleteQuery, deleteArgs...)
-		if err != nil {
-			log.Errorf("Failed to delete old notifications: %v", err)
-			continue
-		}
-
-		// Create new bundled notification
-		if err := createUserNotification(userName, mangaSlug, chapterSlugs[0], message); err != nil {
-			log.Errorf("Failed to create bundled notification: %v", err)
-		}
-	}
-
-	return nil
+	return bundleNotificationsWith(db, userName)
 }
 
 // BundleNotificationsForUserTx bundles multiple unread notifications for the same manga into one within a transaction
 func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
+	return bundleNotificationsWith(tx, userName)
+}
+
+// bundleNotificationsWith bundles multiple unread notifications using the given Executor.
+func bundleNotificationsWith(exec Executor, userName string) error {
 	// Find media with multiple unread notifications
 	query := `
 	SELECT media_slug, COUNT(*) as count
@@ -500,7 +382,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 	HAVING COUNT(*) > 1
 	`
 
-	rows, err := tx.Query(query, userName)
+	rows, err := exec.Query(query, userName)
 	if err != nil {
 		return err
 	}
@@ -527,7 +409,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		WHERE user_name = ? AND media_slug = ? AND is_read = 0
 		ORDER BY created_at ASC
 		`
-		notifRows, err := tx.Query(notifsQuery, userName, mangaSlug)
+		notifRows, err := exec.Query(notifsQuery, userName, mangaSlug)
 		if err != nil {
 			continue
 		}
@@ -562,7 +444,7 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		chapQuery := fmt.Sprintf(`
 		SELECT name, c.library_slug FROM chapters c JOIN libraries l ON c.library_slug = l.slug WHERE c.media_slug = ? AND c.slug IN (%s) AND l.enabled = true
 		`, strings.Join(placeholders, ","))
-		chapRows, err := tx.Query(chapQuery, args...)
+		chapRows, err := exec.Query(chapQuery, args...)
 		if err != nil {
 			continue
 		}
@@ -596,14 +478,14 @@ func BundleNotificationsForUserTx(tx *sql.Tx, userName string) error {
 		for i, id := range ids {
 			deleteArgs[i] = id
 		}
-		_, err = tx.Exec(deleteQuery, deleteArgs...)
+		_, err = exec.Exec(deleteQuery, deleteArgs...)
 		if err != nil {
 			log.Errorf("Failed to delete old notifications: %v", err)
 			continue
 		}
 
 		// Create new bundled notification
-		if err := createUserNotificationTx(tx, userName, mangaSlug, librarySlug, chapterSlugs[0], message); err != nil {
+		if err := createNotificationWith(exec, userName, mangaSlug, librarySlug, chapterSlugs[0], message, "chapter"); err != nil {
 			log.Errorf("Failed to create bundled notification: %v", err)
 		}
 	}

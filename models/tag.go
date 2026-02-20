@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"sort"
 )
 
 // GetTagsForMedia returns a slice of tag names associated with the media slug
@@ -66,9 +65,15 @@ func DeleteTagsByMediaSlug(mangaSlug string) error {
 	return nil
 }
 
-// GetAllTags returns all distinct tags across mangas, sorted ascending
+// GetAllTags returns all distinct tags (genres) across media, sorted ascending
 func GetAllTags() ([]string, error) {
-	rows, err := db.Query(`SELECT DISTINCT tag FROM media_tags`)
+	query := `
+		SELECT DISTINCT value
+		FROM media, json_each(media.genres)
+		WHERE value IS NOT NULL AND value != ''
+		ORDER BY value
+	`
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +85,8 @@ func GetAllTags() ([]string, error) {
 		if err := rows.Scan(&t); err != nil {
 			return nil, err
 		}
-		if t != "" {
-			tags = append(tags, t)
-		}
+		tags = append(tags, t)
 	}
-	sort.Strings(tags)
 	return tags, nil
 }
 
