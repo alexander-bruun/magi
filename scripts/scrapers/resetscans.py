@@ -112,13 +112,15 @@ def extract_series_title(session, series_url):
     response.raise_for_status()
     html = response.text
 
-    title_match = re.search(r"<title>([^<]+)", html)
+    # Try to extract from JSON-LD structured data first
+    json_match = re.search(r'"@type":"ComicSeries".*?"name":"([^"]+)"', html)
+    if json_match:
+        return json_match.group(1).strip()
+    
+    # Fallback to title tag
+    title_match = re.search(r"<title>([^<]+?) Manga – ", html)
     if title_match:
-        title = (
-            title_match.group(1)
-            .replace(" Manga – Read Online | RESET SCANS", "")
-            .strip()
-        )
+        title = title_match.group(1).strip()
         return title
     return None
 

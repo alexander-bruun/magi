@@ -38,6 +38,53 @@ BASE_URL = "https://demonicscans.org"
 
 
 # =============================================================================
+# Helper Functions
+# =============================================================================
+def make_request_with_bypass_retry(session, url, timeout=30):
+    """
+    Make a GET request with automatic Cloudflare bypass retry on 403 errors.
+    
+    Args:
+        session: requests.Session object
+        url: URL to request
+        timeout: Request timeout in seconds
+        
+    Returns:
+        requests.Response: The response object
+        
+    Raises:
+        Exception: If request fails after retry
+    """
+    try:
+        response = session.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response
+    except Exception as e:
+        if hasattr(e, 'response') and e.response and e.response.status_code == 403:
+            log(f"403 error encountered for {url}, attempting re-bypass...")
+            try:
+                # Re-bypass Cloudflare
+                cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
+                if cookies and headers:
+                    # Update session with new cookies and headers
+                    session.cookies.update(cookies)
+                    session.headers.update(headers)
+                    log("Re-bypass successful, retrying request...")
+                    # Retry the request
+                    response = session.get(url, timeout=timeout)
+                    response.raise_for_status()
+                    return response
+                else:
+                    error("Re-bypass failed")
+                    raise e
+            except Exception as retry_e:
+                error(f"Re-bypass retry failed: {retry_e}")
+                raise e
+        else:
+            raise e
+
+
+# =============================================================================
 # Series Extraction
 # =============================================================================
 def extract_series_urls(session, page_num):
@@ -58,11 +105,10 @@ def extract_series_urls(session, page_num):
     current_page = 1
     max_pages = 100  # Safety limit
     while current_page <= max_pages:
-        url = f"{BASE_URL}/translationlist.php?page={current_page}"
+        url = f"{BASE_URL}/lastupdates.php?list={current_page}"
         log(f"Fetching series list from page {current_page}...")
 
-        response = session.get(url, timeout=30)
-        response.raise_for_status()
+        response = make_request_with_bypass_retry(session, url, timeout=30)
         html = response.text
 
         # Check if this is the last page by looking for disabled "Next" button
@@ -99,8 +145,11 @@ def extract_series_title(session, series_url):
         str: Series title, or None if extraction failed
     """
     url = f"{BASE_URL}{series_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
+    try:
+        response = make_request_with_bypass_retry(session, url, timeout=30)
+    except Exception as e:
+        error(f"Failed to fetch series page {url}: {e}")
+        return None
     html = response.text
 
     title_match = re.search(r"<title>([^<]+)", html)
@@ -124,8 +173,7 @@ def extract_poster_url(session, series_url):
         str: Poster URL or None
     """
     url = f"{BASE_URL}{series_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
+    response = make_request_with_bypass_retry(session, url, timeout=30)
     html = response.text
 
     # Look for poster image with class="border-box"
@@ -152,8 +200,7 @@ def extract_chapter_urls(session, manga_url):
         list: Chapter info dicts with 'url' and 'num' keys, sorted by chapter number
     """
     full_url = f"{BASE_URL}{manga_url}"
-    response = session.get(full_url, timeout=30)
-    response.raise_for_status()
+    response = make_request_with_bypass_retry(session, full_url, timeout=30)
     html = response.text.replace("\0", "")
 
     chapter_urls = re.findall(
@@ -182,8 +229,7 @@ def extract_image_urls(session, chapter_url):
         list: Image URLs in reading order
     """
     full_url = f"{BASE_URL}{chapter_url}"
-    response = session.get(full_url, timeout=30)
-    response.raise_for_status()
+    response = make_request_with_bypass_retry(session, full_url, timeout=30)
     html = response.text.replace("\0", "")
 
     # Find all img tags

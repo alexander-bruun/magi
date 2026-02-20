@@ -137,61 +137,51 @@ def retry_request(
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session):
+def extract_series_urls(session, page):
     """
-    Extract all series data from the API with pagination support.
+    Extract series data from the API for a specific page.
 
     Args:
         session: requests.Session object
+        page: Page number to fetch
 
     Returns:
-        list: Series info dicts with 'series_url' key
+        tuple: (list of series info dicts with 'series_url' key, total_pages)
     """
-    all_series = []
-    current_page = 1
+    url = f"{API_BASE}/query?page={page}&perPage=20&series_type=Comic&query_string=&orderBy=created_at&adult=true&status=All&tags_ids=%5B%5D"
 
-    while True:
-        url = f"{API_BASE}/query?page={current_page}&perPage=20&series_type=Comic&query_string=&orderBy=created_at&adult=true&status=All&tags_ids=%5B%5D"
+    # Set the required headers from the curl command
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "dnt": "1",
+        "origin": "https://luacomic.org",
+        "priority": "u=1, i",
+        "referer": "https://luacomic.org/",
+        "sec-ch-ua": '"Chromium";v="143", "Not A(Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+    }
 
-        # Set the required headers from the curl command
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-            "dnt": "1",
-            "origin": "https://luacomic.org",
-            "priority": "u=1, i",
-            "referer": "https://luacomic.org/",
-            "sec-ch-ua": '"Chromium";v="143", "Not A(Brand";v="24"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-site",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-        }
+    log(f"Fetching series from API page {page}...")
+    response = retry_request(session, "get", url, headers=headers, timeout=60)
 
-        log(f"Fetching series from API page {current_page}...")
-        response = retry_request(session, "get", url, headers=headers, timeout=60)
+    data = response.json()
+    meta = data.get("meta", {})
+    series_list = data.get("data", [])
 
-        data = response.json()
-        meta = data.get("meta", {})
-        series_list = data.get("data", [])
+    series_data = []
+    for series in series_list:
+        series_slug = series["series_slug"]
+        series_data.append({'series_url': f"/series/{series_slug}"})
 
-        if not series_list:
-            break
+    total_pages = meta.get("last_page", 1)
 
-        for series in series_list:
-            series_slug = series["series_slug"]
-            all_series.append({'series_url': f"/series/{series_slug}"})
-
-        current_page_val = meta.get("current_page", current_page)
-        last_page = meta.get("last_page", current_page)
-        if current_page_val >= last_page:
-            break
-
-        current_page += 1
-
-    return all_series
+    return series_data, total_pages
 
 
 def extract_series_title(session, series_url):

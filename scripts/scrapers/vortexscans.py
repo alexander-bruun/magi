@@ -36,16 +36,20 @@ BASE_URL = "https://vortexscans.org"
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session):
+def extract_series_urls(session, page_num):
     """
     Extract all series slugs from the API.
 
     Args:
         session: requests.Session object
+        page_num: Page number (ignored, fetches all at once)
 
     Returns:
-        list: List of dicts with 'series_url' key
+        tuple: (list of dicts with 'series_url' key, total_pages)
     """
+    if page_num != 1:
+        return [], 1
+    
     if not os.path.exists(API_CACHE_FILE) or os.path.getsize(API_CACHE_FILE) == 0:
         log("Fetching all series data...")
         url = "https://api.vortexscans.org/api/query?page=1&perPage=99999"
@@ -65,7 +69,7 @@ def extract_series_urls(session):
         if slug and not slug.startswith("chapter-"):
             series_info.append({'series_url': f"/series/{slug}"})
 
-    return series_info
+    return series_info, 1
 
 
 def extract_series_title(session, series_url):
@@ -163,12 +167,13 @@ def extract_image_urls(session, chapter_url):
 
     Args:
         session: requests.Session object
-        chapter_url: Full chapter URL
+        chapter_url: Chapter URL path
 
     Returns:
         list: List of image URLs
     """
-    response = session.get(chapter_url, timeout=30)
+    full_chapter_url = f"{BASE_URL}{chapter_url}"
+    response = session.get(full_chapter_url, timeout=30)
     response.raise_for_status()
     html = response.text
 

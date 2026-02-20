@@ -84,9 +84,18 @@ def extract_series_urls(session, page_num):
 
             current_page += 1
 
-        return list(set(all_series))  # Remove duplicates
+        # Remove duplicates based on series_url
+        seen = set()
+        unique_series = []
+        for series in all_series:
+            series_url = series['series_url']
+            if series_url not in seen:
+                seen.add(series_url)
+                unique_series.append(series)
+
+        return unique_series, 1  # All fetched in one page
     else:
-        return []
+        return [], 1
 
 
 def extract_series_title(session, series_url):

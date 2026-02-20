@@ -28,7 +28,7 @@ from scraper_utils import (
 # Configuration
 # =============================================================================
 CONFIG = get_scraper_config("qiscans", "QiScans", "[QiScans]")
-ALLOWED_DOMAINS = ["media.qiscans.org"]
+ALLOWED_DOMAINS = ["media.qiscans.org", "cdn.qiscans.org"]
 API_CACHE_FILE = os.path.join(os.path.dirname(__file__), "qiscans.json")
 BASE_URL = "https://qiscans.org"
 
@@ -36,15 +36,16 @@ BASE_URL = "https://qiscans.org"
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session):
+def extract_series_urls(session, page_num):
     """
     Extract all series URLs from the API.
 
     Args:
         session: requests.Session object
+        page_num: Page number (ignored, fetches all at once)
 
     Returns:
-        list: List of dicts with 'series_url' key
+        tuple: (list of dicts with 'series_url' key, total_pages)
     """
     if not os.path.exists(API_CACHE_FILE) or os.path.getsize(API_CACHE_FILE) == 0:
         log("Fetching all series data...")
@@ -62,11 +63,12 @@ def extract_series_urls(session):
     series_urls = []
     for post in data.get("posts", []):
         slug = post.get("slug")
-        if slug and not slug.startswith("chapter-"):
+        title = post.get("postTitle", "")
+        if slug and not slug.startswith("chapter-") and not title.startswith("http") and "dashboard" not in slug:
             series_url = f"/series/{slug}"
             series_urls.append({'series_url': series_url})
 
-    return series_urls
+    return series_urls, 1
 
 
 def extract_series_title(session, series_url):
@@ -197,22 +199,43 @@ def extract_image_urls(session, chapter_url):
     if "Rate Limited" in html:
         return []
 
-    # Extract image URLs
-    img_urls = re.findall(
-        r'https://media\.qiscans\.org/file/qiscans/upload/series/[^"]*\.webp', html
-    )
-    # Remove /file/qiscans
-    img_urls = [url.replace("/file/qiscans", "") for url in img_urls]
-    # Exclude thumbnail images (case-insensitive)
-    img_urls = [url for url in img_urls if "thumbnail.webp" not in url.lower()]
-    img_urls = list(set(img_urls))
-    img_urls.sort()
+    # Extract image URLs from JSON data embedded in the page
+    # Look for image URLs from media.qiscans.org
+    img_urls = []
+    
+    # Media domain
+    media_pattern = r'https://media\.qiscans\.org/file/qiscans/upload/series/[^"]*\.(?:webp|jpg|jpeg|png)'
+    media_matches = re.findall(media_pattern, html)
+    for url in media_matches:
+        if not re.search(r'thumbnail\.(webp|jpg|jpeg|png)', url, re.IGNORECASE):
+            img_urls.append(url)
+    
+    # CDN domain
+    cdn_pattern = r'https://cdn\.qiscans\.org/public/upload/series/[^"]*\.(?:webp|jpg|jpeg|png)'
+    cdn_matches = re.findall(cdn_pattern, html)
+    for url in cdn_matches:
+        if not re.search(r'thumbnail\.(webp|jpg|jpeg|png)', url, re.IGNORECASE):
+            img_urls.append(url)
+    
+    if img_urls:
+        # Remove duplicates and sort
+        img_urls = list(set(img_urls))
+        img_urls.sort()
+        return img_urls
 
-    # Skip if only 1 image (likely not a real chapter)
-    if len(img_urls) <= 1:
-        return []
-
-    return img_urls
+    # Fallback: Extract from img src attributes
+    src_pattern = r'<img[^>]*src="([^"]*cdn\.qiscans\.org/public/upload/series/[^"]*\.(?:webp|jpg))"'
+    src_matches = re.findall(src_pattern, html)
+    if src_matches:
+        img_urls = []
+        for url in src_matches:
+            # Exclude thumbnails
+            if not re.search(r'thumbnail\.(webp|jpg)', url, re.IGNORECASE):
+                img_urls.append(url)
+        # Sort by order if possible, otherwise sort alphabetically
+        img_urls = list(set(img_urls))  # Remove duplicates
+        img_urls.sort()
+        return img_urls
 
 
 def extract_poster_url(session, series_url):

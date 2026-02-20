@@ -48,53 +48,46 @@ API_BASE_URL = "https://api.magustoon.org"
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session):
+def extract_series_urls(session, page):
     """
-    Extract all series URLs from API listing.
+    Extract series URLs from API listing for a specific page.
 
     Args:
         session: requests.Session object
+        page: Page number to fetch
 
     Returns:
-        list: List of dicts with 'series_url' key
+        tuple: (list of dicts with 'series_url' key, total_pages)
     """
-    all_series = []
-    current_page = 1
+    api_url = (
+        f"{API_BASE_URL}/api/query?page={page}&perPage=24&seriesType=&seriesStatus="
+    )
+    log(f"Fetching series list from page {page}...")
 
-    while True:
-        api_url = (
-            f"{API_BASE_URL}/api/query?page={current_page}&perPage=24&seriesType=&seriesStatus="
-        )
-        log(f"Fetching series list from page {current_page}...")
+    try:
+        response = session.get(api_url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
 
-        try:
-            response = session.get(api_url, timeout=30)
-            response.raise_for_status()
-            data = response.json()
+        # Check if we have data
+        posts_list = data.get("posts", [])
+        series_data = []
 
-            # Check if we have data
-            posts_list = data.get("posts", [])
-            if not posts_list:
-                break
+        # Extract series slugs
+        for post in posts_list:
+            if post.get("slug"):
+                series_data.append({'series_url': f"/series/{post.get('slug')}"})
 
-            # Extract series slugs
-            for post in posts_list:
-                if post.get("slug"):
-                    all_series.append({'series_url': f"/series/{post.get('slug')}"})
+        # Calculate total pages
+        total = data.get("total", 0)
+        per_page = 24
+        total_pages = (total + per_page - 1) // per_page  # Ceiling division
 
-            # Check if this is the last page
-            total = data.get("total", 0)
-            per_page = 24
-            if (current_page * per_page) >= total:
-                break
+        return series_data, total_pages
 
-            current_page += 1
-
-        except Exception as e:
-            error(f"Error fetching page {current_page}: {e}")
-            break
-
-    return all_series
+    except Exception as e:
+        error(f"Error fetching page {page}: {e}")
+        return [], 0
 
 
 def extract_series_title(session, series_url):
@@ -583,10 +576,10 @@ def scrape_series(session, series_urls, output_dir):
         series_output_dir.mkdir(parents=True, exist_ok=True)
 
         # Get chapter info for logging
-        max_chapter = max(ch["number"] for ch in chapters)
-        padding_width = calculate_padding_width(max_chapter)
+        chapter_numbers = [ch["number"] for ch in chapters]
+        padding_width = calculate_padding_width(chapter_numbers)
         log(
-            f"Found {len(chapters)} chapters (max: {max_chapter}, padding: {padding_width})"
+            f"Found {len(chapters)} chapters (max: {max(chapter_numbers) if chapter_numbers else 0}, padding: {padding_width})"
         )
 
         # Check for existing chapters
@@ -595,7 +588,6 @@ def scrape_series(session, series_urls, output_dir):
 
         for chapter_info in chapters:
             chapter_num = chapter_info["number"]
-            padding_width = calculate_padding_width(max_chapter)
             chapter_name = format_chapter_name(
                 title, chapter_num, padding_width, CONFIG["default_suffix"]
             )
@@ -640,15 +632,24 @@ def scrape_series(session, series_urls, output_dir):
 
 def main():
     """Main entry point for the scraper."""
+    log("Starting MagusToon scraper")
+
+    # Setup session with Cloudflare bypass
+    session = setup_session_with_bypass()
+    success("Health check passed")
+
+    # Run the scraper
     run_scraper(
-        extract_series_urls,
-        extract_chapter_urls,
-        extract_image_urls,
-        extract_series_title,
-        extract_poster_url,
-        CONFIG,
-        ALLOWED_DOMAINS,
-        cloudflare_bypass=True,
+        session=session,
+        config=CONFIG,
+        extract_series_func=extract_series_urls,
+        extract_series_title_func=extract_series_title,
+        extract_chapter_urls_func=extract_chapter_urls,
+        extract_image_urls_func=extract_image_urls,
+        extract_poster_func=extract_poster_url,
+        allowed_domains=ALLOWED_DOMAINS,
+        base_url=BASE_URL,
+        series_url_builder=lambda data: data['series_url']
     )
 
 

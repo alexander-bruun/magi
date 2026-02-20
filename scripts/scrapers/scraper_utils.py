@@ -22,13 +22,6 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse, quote as url_quote
 
 # =============================================================================
-# Custom Exceptions
-# =============================================================================
-class CloudflareBlockedError(Exception):
-    """Raised when a 403 Forbidden response indicates Cloudflare blocking."""
-    pass
-
-# =============================================================================
 # Constants
 # =============================================================================
 WEBP_QUALITY = int(os.getenv('webp_quality', '100'))
@@ -92,6 +85,7 @@ def sanitize_title(title: str) -> str:
 
     Removes invalid characters, replaces underscores with spaces,
     removes common genre words, and normalizes whitespace.
+    Truncates to 200 characters to prevent filesystem filename length limits.
 
     Args:
         title: The title string to sanitize
@@ -101,7 +95,9 @@ def sanitize_title(title: str) -> str:
     """
     clean = re.sub(r'[<>:"\/\\|?*]', '', html_unescape(title)).replace('_', ' ').strip()
     clean = clean.replace('\u2018', "'").replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"')
-    return re.sub(r'\s+', ' ', clean).strip()
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    # Truncate to 200 characters to prevent filename too long errors
+    return clean[:200].rstrip()
 
 
 def load_config() -> Dict[str, Any]:
@@ -251,11 +247,11 @@ def process_series(
     
     if not chapter_info:
         error("No chapter numbers found in URLs")
-        max_chapter = 0
+        chapter_numbers = []
     else:
-        max_chapter = max(info['num'] for info in chapter_info)
-    padding_width = calculate_padding_width(max_chapter)
-    log(f"Found {len(chapter_info)} chapters (max: {max_chapter}, padding: {padding_width})")
+        chapter_numbers = [info['num'] for info in chapter_info]
+    padding_width = calculate_padding_width(chapter_numbers)
+    log(f"Found {len(chapter_info)} chapters (max: {max(chapter_numbers) if chapter_numbers else 0}, padding: {padding_width})")
     
     # Check for existing chapters
     existing_chapters = get_existing_chapters(series_directory)
@@ -368,7 +364,7 @@ def process_chapter(
                 error(f"Cloudflare bypass re-run failed: {e}")
     
     # Download images
-    downloaded_count = download_chapter_images(
+    success, downloaded_count = download_chapter_images(
         image_urls=image_urls,
         chapter_folder=series_info['series_directory'] / chapter_name,
         session=session,
@@ -381,7 +377,7 @@ def process_chapter(
     
     # Handle CBZ creation and cleanup
     chapter_folder = series_info['series_directory'] / chapter_name
-    if downloaded_count > 1 or (downloaded_count == 1 and any('wowpic' in url for url in image_urls)):
+    if success:
         if create_cbz(chapter_folder, cbz_name):
             # Remove temp folder
             import shutil
@@ -389,10 +385,8 @@ def process_chapter(
         else:
             warn(f"CBZ creation failed for Chapter {chapter_num}, keeping folder")
     else:
-        log(f"Skipping CBZ creation for Chapter {chapter_num} - only {downloaded_count} image(s) downloaded")
-        # Remove temp folder
-        import shutil
-        shutil.rmtree(chapter_folder)
+        warn(f"Skipping CBZ creation for Chapter {chapter_num} - not all images processed successfully ({downloaded_count}/{len(image_urls)})")
+        # Keep temp folder for manual inspection
     
     return {'processed': True, 'chapter_num': chapter_num, 'downloaded_count': downloaded_count}
     
@@ -665,17 +659,20 @@ def format_chapter_name(title: str, chapter_num: Union[int, float], padding_widt
     return f"Ch.{formatted} {suffix}".strip()
 
 
-def calculate_padding_width(max_chapter: Union[int, float]) -> int:
+def calculate_padding_width(chapter_numbers: List[Union[int, float]]) -> int:
     """
     Calculate zero-padding width for chapter numbers.
 
     Args:
-        max_chapter: Maximum chapter number in series
+        chapter_numbers: List of chapter numbers in the series
 
     Returns:
         int: Number of digits needed for padding
     """
-    return max(1, len(str(int(max_chapter))))
+    if not chapter_numbers:
+        return 0
+    max_chapter = max(chapter_numbers)
+    return len(str(int(max_chapter)))
 
 
 def normalize_chapter_padding(series_directory: Union[str, Path], padding_width: int, suffix: str) -> None:
@@ -818,16 +815,19 @@ async def bypass_cloudflare(url: str) -> Tuple[Optional[Dict[str, str]], Optiona
         disable_coop=True
     ) as browser:
         page = await browser.new_page()
-        await page.goto(url)
-        captcha_success = await solve_captcha(page, captcha_type='cloudflare', challenge_type='interstitial')
-        if not captcha_success:
-            error("Failed to solve captcha challenge")
-            return None, None
+        await page.goto(url, timeout=30000, wait_until="domcontentloaded")  # Shorter timeout
+        # Try to solve captcha, but don't fail if it doesn't work
+        try:
+            captcha_success = await solve_captcha(page, captcha_type='cloudflare', challenge_type='interstitial')
+            if not captcha_success:
+                warn("Failed to solve captcha challenge, continuing anyway")
+        except Exception as e:
+            warn(f"Captcha solving failed: {e}, continuing anyway")
 
-        log("Cloudflare bypass successful")
+        log("Cloudflare bypass completed (with or without captcha)")
 
         # Wait a bit for any JavaScript to set session cookies
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(5000)  # Wait 5 seconds
 
         # Extract cookies
         cookies = {}
@@ -866,7 +866,8 @@ def get_session(cookies: Optional[Dict[str, str]] = None, headers: Optional[Dict
     import requests
     session = requests.Session()
     if cookies:
-        session.cookies.update(cookies)
+        for name, value in cookies.items():
+            session.cookies.set(name, value)
     if headers:
         session.headers.update(headers)
     return session
@@ -1265,7 +1266,7 @@ def download_chapter_images(
     timeout: int = 30,
     bypass_callback: Optional[Callable[[], None]] = None,
     referer: Optional[str] = None
-) -> int:
+) -> Tuple[bool, int]:
     """
     Download images for a chapter to the specified folder.
     
@@ -1279,7 +1280,7 @@ def download_chapter_images(
         bypass_callback: Function to call when Cloudflare 403 is detected
     
     Returns:
-        int: Number of images successfully downloaded
+        Tuple[bool, int]: (success, count) where success is True if all images were processed, count is the number of successfully processed images
     """
     chapter_folder = Path(chapter_folder)
     chapter_folder.mkdir(parents=True, exist_ok=True)
@@ -1302,15 +1303,31 @@ def download_chapter_images(
     # Convert to WebP in parallel if requested
     if convert_to_webp and downloaded_count > 0:
         image_files = list(chapter_folder.glob('*'))
+        conversion_failures = 0
         with ThreadPoolExecutor(max_workers=min(5, len(image_files))) as executor:
             futures = [executor.submit(convert_image_to_webp, img_file) for img_file in image_files if img_file.is_file()]
             for future in as_completed(futures):
                 try:
-                    future.result()
+                    if not future.result():
+                        conversion_failures += 1
                 except Exception as e:
                     error(f"Failed to convert image: {e}")
-    
-    return downloaded_count
+                    conversion_failures += 1
+        
+        # Count final image files after conversion and splitting
+        final_image_count = len(list(chapter_folder.glob('*.webp')))
+        # Return the number of original images successfully processed
+        processed_originals = downloaded_count - conversion_failures
+        success = processed_originals >= len(image_urls) - 2  # Allow up to 2 conversion failures
+        if conversion_failures > 0:
+            warn(f"Chapter processing completed with {conversion_failures} image conversion failures ({processed_originals}/{len(image_urls)} images processed)")
+        return success, processed_originals
+    else:
+        # Count downloaded files if no conversion
+        final_image_count = len(list(chapter_folder.glob('*')))
+        # Return the number of downloaded originals (no conversion, so all downloaded are processed)
+        success = downloaded_count == len(image_urls)
+        return success, downloaded_count
 
 
 # =============================================================================

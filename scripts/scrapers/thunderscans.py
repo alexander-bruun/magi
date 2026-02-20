@@ -32,16 +32,20 @@ BASE_URL = "https://en-thunderscans.com"
 # =============================================================================
 # Series Extraction
 # =============================================================================
-def extract_series_urls(session):
+def extract_series_urls(session, page_num):
     """
     Extract all series URLs from all pages.
 
     Args:
         session: requests.Session object
+        page_num: Page number (only processes if 1)
 
     Returns:
-        list: List of dicts with 'series_url' key
+        tuple: (list of dicts with 'series_url' key, total_pages)
     """
+    if page_num > 1:
+        return [], 1  # Only fetch on first page
+
     all_series_urls = []
     page = 1
     while True:
@@ -57,6 +61,21 @@ def extract_series_urls(session):
         series_urls = re.findall(r'href="https://en-thunderscans\.com/comics/[^"]*/"', html)
         series_urls = [url.replace('href="', "").rstrip('"') for url in series_urls]
 
+        # Filter out invalid URLs
+        exclude_patterns = [
+            '/comics/feed/',
+            '/comics/?page=',
+            '/comics/tag/',
+            '/comics/category/',
+            '/comics/author/',
+            '/comics/search/',
+            '/comics/privacy-policy/',
+            '/comics/dmca/',
+            '/comics/contact/',
+            '/comics/about/',
+        ]
+        series_urls = [url for url in series_urls if not any(pattern in url for pattern in exclude_patterns)]
+
         # Convert to dict format
         for series_url in series_urls:
             all_series_urls.append({'series_url': series_url})
@@ -65,7 +84,8 @@ def extract_series_urls(session):
             break
         page += 1
 
-    return sorted(set(all_series_urls), key=lambda x: x['series_url'])
+    unique_series = list({item['series_url']: item for item in all_series_urls}.values())
+    return sorted(unique_series, key=lambda x: x['series_url']), page
 
 
 def extract_series_title(session, series_url):
@@ -79,14 +99,18 @@ def extract_series_title(session, series_url):
     Returns:
         str: Series title, or None if extraction failed
     """
-    response = session.get(series_url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    try:
+        response = session.get(series_url, timeout=30)
+        response.raise_for_status()
+        html = response.text
 
-    title_match = re.search(r"<title>([^<]+)", html)
-    if title_match:
-        title = title_match.group(1).replace(" &#8211; Thunderscans EN", "").strip()
-        return title
+        title_match = re.search(r"<title>([^<]+)", html)
+        if title_match:
+            title = title_match.group(1).replace(" &#8211; Thunderscans EN", "").strip()
+            return title
+    except Exception as e:
+        warn(f"Failed to extract title from {series_url}: {e}")
+        return None
 
     return None
 
@@ -102,14 +126,18 @@ def extract_poster_url(session, series_url):
     Returns:
         str: Poster URL, or None if not found
     """
-    response = session.get(series_url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    try:
+        response = session.get(series_url, timeout=30)
+        response.raise_for_status()
+        html = response.text
 
-    # Look for poster image in the series page
-    poster_match = re.search(r'<img[^>]*itemprop="image"[^>]*src="([^"]+)"', html, re.IGNORECASE)
-    if poster_match:
-        return poster_match.group(1)
+        # Look for poster image in the series page
+        poster_match = re.search(r'<img[^>]*src="([^"]+)"[^>]*itemprop="image"', html, re.IGNORECASE)
+        if poster_match:
+            return poster_match.group(1)
+    except Exception as e:
+        warn(f"Failed to extract poster from {series_url}: {e}")
+        return None
 
     return None
 
@@ -128,27 +156,31 @@ def extract_chapter_urls(session, series_url):
     Returns:
         list: List of dicts with 'url' and 'num' keys
     """
-    response = session.get(series_url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    try:
+        response = session.get(series_url, timeout=30)
+        response.raise_for_status()
+        html = response.text
 
-    # Extract chapter URLs
-    chapter_urls = re.findall(
-        r'href="https://en-thunderscans\.com/[^"]*chapter-[0-9]*/"', html
-    )
-    chapter_urls = [url.replace('href="', "").rstrip('"') for url in chapter_urls]
+        # Extract chapter URLs
+        chapter_urls = re.findall(
+            r'href="https://en-thunderscans\.com/[^"]*chapter-[0-9]*/"', html
+        )
+        chapter_urls = [url.replace('href="', "").rstrip('"') for url in chapter_urls]
 
-    # Convert to dict format with chapter numbers
-    chapter_info = []
-    for url in chapter_urls:
-        match = re.search(r"chapter-(\d+)", url)
-        if match:
-            num = int(match.group(1))
-            chapter_info.append({'url': url, 'num': num})
+        # Convert to dict format with chapter numbers
+        chapter_info = []
+        for url in chapter_urls:
+            match = re.search(r"chapter-(\d+)", url)
+            if match:
+                num = int(match.group(1))
+                chapter_info.append({'url': url, 'num': num})
 
-    # Sort by chapter number
-    chapter_info.sort(key=lambda x: x['num'])
-    return chapter_info
+        # Sort by chapter number
+        chapter_info.sort(key=lambda x: x['num'])
+        return chapter_info
+    except Exception as e:
+        warn(f"Failed to extract chapters from {series_url}: {e}")
+        return []
 
 
 def extract_image_urls(session, chapter_url):
@@ -162,28 +194,32 @@ def extract_image_urls(session, chapter_url):
     Returns:
         list: Image URLs in reading order, empty list if locked/unavailable
     """
-    response = session.get(chapter_url, timeout=30)
-    response.raise_for_status()
-    html = response.text.replace("\n", "")
+    try:
+        response = session.get(chapter_url, timeout=30)
+        response.raise_for_status()
+        html = response.text.replace("\n", "")
 
-    # Check if chapter is locked
-    if "This chapter is locked" in html or "lock-container" in html:
-        warn("Chapter is locked, skipping...")
+        # Check if chapter is locked
+        if "This chapter is locked" in html or "lock-container" in html:
+            warn("Chapter is locked, skipping...")
+            return []
+
+        # Extract images JSON
+        images_match = re.search(r'"images":\[([^\]]*)\]', html)
+        if not images_match:
+            log("No images JSON found")
+            return []
+
+        images_json = images_match.group(1)
+        # Extract URLs
+        image_urls = re.findall(
+            r'https://[^"]*\.(?:webp|jpg|png)', images_json.replace("\\", "")
+        )
+
+        return image_urls
+    except Exception as e:
+        warn(f"Failed to extract images from {chapter_url}: {e}")
         return []
-
-    # Extract images JSON
-    images_match = re.search(r'"images":\[([^\]]*)\]', html)
-    if not images_match:
-        log("No images JSON found")
-        return []
-
-    images_json = images_match.group(1)
-    # Extract URLs
-    image_urls = re.findall(
-        r'https://[^"]*\.(?:webp|jpg|png)', images_json.replace("\\", "")
-    )
-
-    return image_urls
 
 
 # =============================================================================
@@ -196,10 +232,11 @@ def main():
     # Health check and Cloudflare bypass
     log(f"Performing health check on {BASE_URL}...")
     try:
-        cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
-        if not cookies:
-            return
-        session = get_session(cookies, headers)
+        # cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
+        # if not cookies:
+        #     return
+        # session = get_session(cookies, headers)
+        session = get_session()
         response = session.get(BASE_URL, timeout=30)
         if response.status_code != 200:
             error(f"Health check failed. Returned {response.status_code}")

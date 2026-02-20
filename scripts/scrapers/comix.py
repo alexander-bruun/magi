@@ -28,6 +28,8 @@ from scraper_utils import (
     run_scraper,
     sanitize_title,
     success,
+    format_chapter_name,
+    calculate_padding_width,
 )
 
 # =============================================================================
@@ -410,11 +412,18 @@ def main():
         series_tag = '[Comix]'
         
         # Prepare series info
+        # Calculate padding width based on max chapter number
+        if chapters:
+            chapter_numbers = [ch['num'] for ch in chapters]
+            padding_width = calculate_padding_width(chapter_numbers)
+        else:
+            padding_width = 1
+        
         series_info = {
             'clean_title': clean_title,
             'existing_chapters': set(),
             'series_directory': Path(CONFIG['folder']) / f"{clean_title} {series_tag}",
-            'padding_width': 1
+            'padding_width': padding_width
         }
         
         # Download poster
@@ -426,7 +435,8 @@ def main():
         for chapter in chapters:
             try:
                 group = chapter.get('group', '')
-                chapter['name'] = f"Ch.{int(chapter['num']) if chapter['num'].is_integer() else chapter['num']} [{group}]"
+                group = group.replace("/", "／")
+                chapter['name'] = format_chapter_name("", chapter['num'], padding_width, f"[{group}]")
                 config_copy = CONFIG.copy()
                 config_copy['tag'] = ''
                 process_chapter(session, chapter, series_info, config_copy, extract_image_urls, ALLOWED_DOMAINS, BASE_URL)

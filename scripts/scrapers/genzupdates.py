@@ -7,8 +7,14 @@ Downloads manga/manhwa/manhua from genzupdates.com.
 
 # Standard library imports
 import asyncio
+import random
 import re
+import subprocess
+import time
 import urllib.parse
+
+import requests
+from fake_useragent import UserAgent
 
 # Local imports
 from scraper_utils import (
@@ -28,6 +34,79 @@ ALLOWED_DOMAINS = ["cdn.meowing.org"]
 BASE_URL = "https://genzupdates.com"
 
 
+def curl_get(url, cookies=None, headers=None):
+    """
+    Fetch URL using Windows curl with cookies and headers, with human-like delays and retries.
+    """
+    max_retries = 3
+    for attempt in range(max_retries):
+        # Human-like delay: 2-5 seconds between requests, longer on retries
+        base_delay = random.uniform(2, 5)
+        retry_delay = attempt * 10  # Additional delay for retries
+        total_delay = base_delay + retry_delay
+        time.sleep(total_delay)
+        
+        # Randomize User-Agent for each request
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ]
+        random_ua = random.choice(user_agents)
+        
+        cmd = ['curl', '--fail', '-s', '-L', '--http1.0',
+               '--user-agent', random_ua,
+               '--max-time', '30',  # Timeout after 30 seconds
+               url]
+        
+        if cookies:
+            cookie_str = '; '.join(f'{k}={v}' for k, v in cookies.items())
+            if cookie_str:
+                cmd.extend(['-b', cookie_str])
+        
+        # Add some random headers to look more human
+        accept_languages = ['en-US,en;q=0.9', 'en-US,en;q=0.9,es;q=0.8', 'en-GB,en;q=0.9', 'en-US,en;q=0.9,de;q=0.8']
+        random_accept_lang = random.choice(accept_languages)
+        
+        cmd.extend(['-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'])
+        cmd.extend(['-H', f'Accept-Language: {random_accept_lang}'])
+        cmd.extend(['-H', 'Accept-Encoding: identity'])
+        cmd.extend(['-H', 'DNT: 1'])
+        cmd.extend(['-H', 'Connection: keep-alive'])
+        cmd.extend(['-H', 'Upgrade-Insecure-Requests: 1'])
+        cmd.extend(['-H', 'Sec-Fetch-Dest: document'])
+        cmd.extend(['-H', 'Sec-Fetch-Mode: navigate'])
+        cmd.extend(['-H', 'Sec-Fetch-Site: none'])
+        cmd.extend(['-H', 'Sec-Fetch-User: ?1'])
+        cmd.extend(['-H', 'Cache-Control: max-age=0'])
+        
+        if headers:
+            for k, v in headers.items():
+                if k.lower() not in ['user-agent', 'accept', 'accept-language', 'accept-encoding', 'dnt', 'connection', 'upgrade-insecure-requests', 'sec-fetch-dest', 'sec-fetch-mode', 'sec-fetch-site', 'sec-fetch-user', 'cache-control']:
+                    cmd.extend(['-H', f'{k}: {v}'])
+        
+        result = subprocess.run(cmd, capture_output=True, text=False)
+        html = result.stdout.decode('utf-8', errors='ignore')
+        
+        if result.returncode == 0:
+            return html
+        elif result.returncode == 22:  # HTTP error
+            if attempt == max_retries - 1:
+                # For simplicity, raise HTTPError like requests
+                class MockResponse:
+                    status_code = 404  # Assume 404
+                    text = html
+                raise requests.exceptions.HTTPError(response=MockResponse)
+        else:
+            if attempt == max_retries - 1:
+                raise Exception(f"curl failed with code {result.returncode}")
+    
+    # Should not reach here
+    raise Exception("Max retries exceeded")
+
+
 # =============================================================================
 # Series Extraction
 # =============================================================================
@@ -45,41 +124,23 @@ def extract_series_urls(session, page_num):
     if page_num > 1:
         return [], 1  # Only fetch on first page
 
-    all_series_urls = []
-    current_page = 1
-    max_pages = 100  # Safety limit
-    while current_page <= max_pages:
-        if current_page == 1:
-            url = f"{BASE_URL}/series"
-        else:
-            url = f"{BASE_URL}/series/page/{current_page}/"
+    url = f"{BASE_URL}"
+    log("Fetching series list...")
+    html = session.get(url).text
 
-        log(f"Fetching series list from page {current_page}...")
-        response = session.get(url, timeout=30)
-        response.raise_for_status()
-        html = response.text
+    # Extract series URLs
+    series_urls = re.findall(r'href="(/series/[^/]+/)"', html)
+    all_series_urls = sorted(set(series_urls))
+    log(f"Found {len(all_series_urls)} series")
 
-        # Check if this is the last page
-        is_last_page = (
-            "next page-numbers" not in html and "Next" not in html and ">" not in html
-        )
-
-        # Extract series URLs
-        series_urls = re.findall(r'href="(/series/[^/]+/)"', html)
-        all_series_urls.extend(series_urls)
-
-        if is_last_page or not series_urls:
-            log(f"Reached last page or no more series (page {current_page}).")
-            break
-        current_page += 1
-
-    # Remove duplicates
-    all_series_urls = sorted(set(all_series_urls))
-    log(f"Found {len(all_series_urls)} total series")
+    if len(all_series_urls) == 0:
+        with open('/tmp/genzupdates_debug.html', 'w') as f:
+            f.write(html)
+        log("Debug: HTML written to /tmp/genzupdates_debug.html")
 
     # Convert to dicts with series_url
     series_data = [{'series_url': url} for url in all_series_urls]
-    return series_data, current_page
+    return series_data, 1
 
 
 def extract_series_title(session, series_url):
@@ -94,9 +155,7 @@ def extract_series_title(session, series_url):
         str: Series title, or None if extraction failed
     """
     url = f"{BASE_URL}{series_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    html = session.get(url).text
 
     title_match = re.search(r"<title>([^<]+)", html)
     if title_match:
@@ -118,9 +177,7 @@ def extract_poster_url(session, series_url):
         str: Poster URL or None
     """
     url = f"{BASE_URL}{series_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    html = session.get(url).text
 
     # Look for poster image in style="--photoURL:url(...)"
     poster_match = re.search(r'style="--photoURL:url\(([^)]+)\)"', html)
@@ -151,9 +208,7 @@ def extract_chapter_urls(session, series_url):
         list: Chapter info dicts with 'url' and 'num' keys, sorted by chapter number
     """
     url = f"{BASE_URL}{series_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    html = session.get(url).text
 
     # Extract chapter URLs
     chapter_urls = re.findall(r'href="(/chapter/[^"]+)"', html)
@@ -189,9 +244,7 @@ def extract_image_urls(session, chapter_url):
         list: Image URLs in reading order
     """
     url = f"{BASE_URL}{chapter_url}"
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
-    html = response.text
+    html = session.get(url).text
 
     # Look for the #pages div and extract img tags with uid attributes
     pages_div_match = re.search(
@@ -254,17 +307,21 @@ def main():
     """Main entry point for the scraper."""
     log("Starting GenzUpdates scraper")
 
-    # Cloudflare bypass
-    try:
-        cookies, headers = asyncio.run(bypass_cloudflare(BASE_URL))
-        if not cookies or "cf_clearance" not in cookies:
-            warn("Cloudflare bypass failed, trying without bypass...")
-            session = get_session()
-        else:
-            session = get_session(cookies, headers)
-    except Exception as e:
-        warn(f"Cloudflare bypass failed: {e}, trying without bypass...")
-        session = get_session()
+    # Use manual session with headers
+    session = get_session()
+    session.headers.update({
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'identity',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
+    })
 
     # Run the scraper
     run_scraper(
