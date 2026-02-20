@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 const malBaseURL = "https://api.myanimelist.net/v2"

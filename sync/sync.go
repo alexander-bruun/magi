@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // SyncProvider interface for external service sync
