@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"os"
+	"fmt"
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
@@ -34,21 +34,13 @@ func newMaintenanceEnableCmd(dataDirectory *string) *cobra.Command {
 				message = strings.Join(args, " ")
 			}
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			_, err = models.UpdateMaintenanceConfig(true, message)
-			if err != nil {
-				cmd.PrintErrf("Failed to enable maintenance mode: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Maintenance mode enabled successfully\n")
+			withDB(dataDirectory, cmd, func() error {
+				if _, err := models.UpdateMaintenanceConfig(true, message); err != nil {
+					return fmt.Errorf("Failed to enable maintenance mode: %w", err)
+				}
+				cmd.Printf("Maintenance mode enabled successfully\n")
+				return nil
+			})
 		},
 	}
 }
@@ -58,21 +50,13 @@ func newMaintenanceDisableCmd(dataDirectory *string) *cobra.Command {
 		Use:   "disable",
 		Short: "Disable maintenance mode",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			_, err = models.UpdateMaintenanceConfig(false, "")
-			if err != nil {
-				cmd.PrintErrf("Failed to disable maintenance mode: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Maintenance mode disabled successfully\n")
+			withDB(dataDirectory, cmd, func() error {
+				if _, err := models.UpdateMaintenanceConfig(false, ""); err != nil {
+					return fmt.Errorf("Failed to disable maintenance mode: %w", err)
+				}
+				cmd.Printf("Maintenance mode disabled successfully\n")
+				return nil
+			})
 		},
 	}
 }

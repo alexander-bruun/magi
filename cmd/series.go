@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"os"
+	"fmt"
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
@@ -33,47 +33,39 @@ func newSeriesListCmd(dataDirectory *string) *cobra.Command {
 		Use:   "list",
 		Short: "List series in a library",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				var medias []models.Media
+				var err error
 
-			var medias []models.Media
+				if librarySlug != "" {
+					medias, err = models.GetMediasByLibrarySlug(librarySlug)
+				} else {
+					libraries, err := models.GetLibraries()
+					if err != nil {
+						return fmt.Errorf("Failed to get libraries: %w", err)
+					}
+					var accessibleLibraries []string
+					for _, lib := range libraries {
+						accessibleLibraries = append(accessibleLibraries, lib.Slug)
+					}
+					medias, err = models.GetTopMedias(limit, accessibleLibraries)
+				}
 
-			if librarySlug != "" {
-				medias, err = models.GetMediasByLibrarySlug(librarySlug)
-			} else {
-				// Get all libraries for admin access
-				libraries, err := models.GetLibraries()
 				if err != nil {
-					cmd.PrintErrf("Failed to get libraries: %v\n", err)
-					os.Exit(1)
+					return fmt.Errorf("Failed to get series: %w", err)
 				}
-				var accessibleLibraries []string
-				for _, lib := range libraries {
-					accessibleLibraries = append(accessibleLibraries, lib.Slug)
+
+				if len(medias) == 0 {
+					cmd.Println("No series found.")
+					return nil
 				}
-				// Get all medias with limit
-				medias, err = models.GetTopMedias(limit, accessibleLibraries)
-			}
 
-			if err != nil {
-				cmd.PrintErrf("Failed to get series: %v\n", err)
-				os.Exit(1)
-			}
-
-			if len(medias) == 0 {
-				cmd.Println("No series found.")
-				return
-			}
-
-			cmd.Printf("Series (%d):\n", len(medias))
-			for _, media := range medias {
-				cmd.Printf("  %s: %s (%d chapters)\n", media.Slug, media.Name, media.FileCount)
-			}
+				cmd.Printf("Series (%d):\n", len(medias))
+				for _, media := range medias {
+					cmd.Printf("  %s: %s (%d chapters)\n", media.Slug, media.Name, media.FileCount)
+				}
+				return nil
+			})
 		},
 	}
 
@@ -91,38 +83,31 @@ func newSeriesInfoCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			slug := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				media, err := models.GetMediaUnfiltered(slug)
+				if err != nil {
+					return fmt.Errorf("Failed to get series: %w", err)
+				}
+				if media == nil {
+					return fmt.Errorf("Series '%s' not found", slug)
+				}
 
-			media, err := models.GetMediaUnfiltered(slug)
-			if err != nil {
-				cmd.PrintErrf("Failed to get series: %v\n", err)
-				os.Exit(1)
-			}
-			if media == nil {
-				cmd.PrintErrf("Series '%s' not found\n", slug)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Series Information:\n")
-			cmd.Printf("  Slug: %s\n", media.Slug)
-			cmd.Printf("  Name: %s\n", media.Name)
-			cmd.Printf("  Author: %s\n", media.Author)
-			cmd.Printf("  Description: %s\n", media.Description)
-			cmd.Printf("  Year: %d\n", media.Year)
-			cmd.Printf("  Type: %s\n", media.Type)
-			cmd.Printf("  Status: %s\n", media.Status)
-			cmd.Printf("  Content Rating: %s\n", media.ContentRating)
-			cmd.Printf("  Chapters: %d\n", media.FileCount)
-			cmd.Printf("  Read Count: %d\n", media.ReadCount)
-			cmd.Printf("  Vote Score: %d\n", media.VoteScore)
-			cmd.Printf("  Tags: %s\n", strings.Join(media.Tags, ", "))
-			cmd.Printf("  Cover Art: %s\n", media.CoverArtURL)
+				cmd.Printf("Series Information:\n")
+				cmd.Printf("  Slug: %s\n", media.Slug)
+				cmd.Printf("  Name: %s\n", media.Name)
+				cmd.Printf("  Author: %s\n", media.Author)
+				cmd.Printf("  Description: %s\n", media.Description)
+				cmd.Printf("  Year: %d\n", media.Year)
+				cmd.Printf("  Type: %s\n", media.Type)
+				cmd.Printf("  Status: %s\n", media.Status)
+				cmd.Printf("  Content Rating: %s\n", media.ContentRating)
+				cmd.Printf("  Chapters: %d\n", media.FileCount)
+				cmd.Printf("  Read Count: %d\n", media.ReadCount)
+				cmd.Printf("  Vote Score: %d\n", media.VoteScore)
+				cmd.Printf("  Tags: %s\n", strings.Join(media.Tags, ", "))
+				cmd.Printf("  Cover Art: %s\n", media.CoverArtURL)
+				return nil
+			})
 		},
 	}
 }
@@ -139,62 +124,51 @@ func newSeriesUpdateCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			slug := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			// Get existing media
-			media, err := models.GetMediaUnfiltered(slug)
-			if err != nil {
-				cmd.PrintErrf("Failed to get series: %v\n", err)
-				os.Exit(1)
-			}
-			if media == nil {
-				cmd.PrintErrf("Series '%s' not found\n", slug)
-				os.Exit(1)
-			}
-
-			// Update fields if provided
-			if name != "" {
-				media.Name = name
-			}
-			if author != "" {
-				media.Author = author
-			}
-			if description != "" {
-				media.Description = description
-			}
-			if year > 0 {
-				media.Year = year
-			}
-			if mangaType != "" {
-				media.Type = mangaType
-			}
-			if status != "" {
-				media.Status = status
-			}
-			if contentRating != "" {
-				media.ContentRating = contentRating
-			}
-			if len(tags) > 0 {
-				err = models.SetTagsForMedia(slug, tags)
+			withDB(dataDirectory, cmd, func() error {
+				// Get existing media
+				media, err := models.GetMediaUnfiltered(slug)
 				if err != nil {
-					cmd.PrintErrf("Failed to update tags: %v\n", err)
-					os.Exit(1)
+					return fmt.Errorf("Failed to get series: %w", err)
 				}
-			}
+				if media == nil {
+					return fmt.Errorf("Series '%s' not found", slug)
+				}
 
-			err = models.UpdateMedia(media)
-			if err != nil {
-				cmd.PrintErrf("Failed to update series: %v\n", err)
-				os.Exit(1)
-			}
+				// Update fields if provided
+				if name != "" {
+					media.Name = name
+				}
+				if author != "" {
+					media.Author = author
+				}
+				if description != "" {
+					media.Description = description
+				}
+				if year > 0 {
+					media.Year = year
+				}
+				if mangaType != "" {
+					media.Type = mangaType
+				}
+				if status != "" {
+					media.Status = status
+				}
+				if contentRating != "" {
+					media.ContentRating = contentRating
+				}
+				if len(tags) > 0 {
+					if err := models.SetTagsForMedia(slug, tags); err != nil {
+						return fmt.Errorf("Failed to update tags: %w", err)
+					}
+				}
 
-			cmd.Printf("Series '%s' updated successfully\n", slug)
+				if err := models.UpdateMedia(media); err != nil {
+					return fmt.Errorf("Failed to update series: %w", err)
+				}
+
+				cmd.Printf("Series '%s' updated successfully\n", slug)
+				return nil
+			})
 		},
 	}
 
@@ -218,21 +192,14 @@ func newSeriesDeleteCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			slug := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err := models.DeleteMedia(slug); err != nil {
+					return fmt.Errorf("Failed to delete series: %w", err)
+				}
 
-			err = models.DeleteMedia(slug)
-			if err != nil {
-				cmd.PrintErrf("Failed to delete series: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Series '%s' deleted successfully\n", slug)
+				cmd.Printf("Series '%s' deleted successfully\n", slug)
+				return nil
+			})
 		},
 	}
 }

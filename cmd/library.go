@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"os"
+	"fmt"
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
@@ -30,29 +30,23 @@ func newLibraryListCmd(dataDirectory *string) *cobra.Command {
 		Use:   "list",
 		Short: "List all libraries",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				libraries, err := models.GetLibraries()
+				if err != nil {
+					return fmt.Errorf("Failed to get libraries: %w", err)
+				}
 
-			libraries, err := models.GetLibraries()
-			if err != nil {
-				cmd.PrintErrf("Failed to get libraries: %v\n", err)
-				os.Exit(1)
-			}
+				if len(libraries) == 0 {
+					cmd.Println("No libraries found.")
+					return nil
+				}
 
-			if len(libraries) == 0 {
-				cmd.Println("No libraries found.")
-				return
-			}
-
-			cmd.Println("Libraries:")
-			for _, lib := range libraries {
-				cmd.Printf("  %s: %s (%s)\n", lib.Slug, lib.Name, strings.Join(lib.Folders, ", "))
-			}
+				cmd.Println("Libraries:")
+				for _, lib := range libraries {
+					cmd.Printf("  %s: %s (%s)\n", lib.Slug, lib.Name, strings.Join(lib.Folders, ", "))
+				}
+				return nil
+			})
 		},
 	}
 }
@@ -67,28 +61,21 @@ func newLibraryCreateCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			name := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				library := models.Library{
+					Name:        name,
+					Description: description,
+					Cron:        cron,
+					Folders:     []string{}, // Empty folders, can be added later
+				}
 
-			library := models.Library{
-				Name:        name,
-				Description: description,
-				Cron:        cron,
-				Folders:     []string{}, // Empty folders, can be added later
-			}
+				if err := models.CreateLibrary(library); err != nil {
+					return fmt.Errorf("Failed to create library: %w", err)
+				}
 
-			err = models.CreateLibrary(library)
-			if err != nil {
-				cmd.PrintErrf("Failed to create library: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Library '%s' created successfully\n", name)
+				cmd.Printf("Library '%s' created successfully\n", name)
+				return nil
+			})
 		},
 	}
 
@@ -110,43 +97,34 @@ func newLibraryUpdateCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			slug := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				// Get existing library
+				library, err := models.GetLibrary(slug)
+				if err != nil {
+					return fmt.Errorf("Failed to get library: %w", err)
+				}
+				if library == nil {
+					return fmt.Errorf("Library '%s' not found", slug)
+				}
 
-			// Get existing library
-			library, err := models.GetLibrary(slug)
-			if err != nil {
-				cmd.PrintErrf("Failed to get library: %v\n", err)
-				os.Exit(1)
-			}
-			if library == nil {
-				cmd.PrintErrf("Library '%s' not found\n", slug)
-				os.Exit(1)
-			}
+				// Update fields if provided
+				if name != "" {
+					library.Name = name
+				}
+				if description != "" {
+					library.Description = description
+				}
+				if cron != "" {
+					library.Cron = cron
+				}
 
-			// Update fields if provided
-			if name != "" {
-				library.Name = name
-			}
-			if description != "" {
-				library.Description = description
-			}
-			if cron != "" {
-				library.Cron = cron
-			}
+				if err := models.UpdateLibrary(library); err != nil {
+					return fmt.Errorf("Failed to update library: %w", err)
+				}
 
-			err = models.UpdateLibrary(library)
-			if err != nil {
-				cmd.PrintErrf("Failed to update library: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Library '%s' updated successfully\n", slug)
+				cmd.Printf("Library '%s' updated successfully\n", slug)
+				return nil
+			})
 		},
 	}
 
@@ -165,21 +143,14 @@ func newLibraryDeleteCmd(dataDirectory *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			slug := args[0]
 
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err := models.DeleteLibrary(slug); err != nil {
+					return fmt.Errorf("Failed to delete library: %w", err)
+				}
 
-			err = models.DeleteLibrary(slug)
-			if err != nil {
-				cmd.PrintErrf("Failed to delete library: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Library '%s' deleted successfully\n", slug)
+				cmd.Printf("Library '%s' deleted successfully\n", slug)
+				return nil
+			})
 		},
 	}
 }

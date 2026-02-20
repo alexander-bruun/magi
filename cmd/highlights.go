@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -54,27 +55,20 @@ The display-order determines the order of highlights (lower numbers appear first
 			}
 
 			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				// Verify the media exists
+				if _, err := models.GetMedia(mediaSlug); err != nil {
+					return fmt.Errorf("Media with slug '%s' not found: %w", mediaSlug, err)
+				}
 
-			// Verify the media exists
-			_, err = models.GetMedia(mediaSlug)
-			if err != nil {
-				cmd.PrintErrf("Media with slug '%s' not found: %v\n", mediaSlug, err)
-				os.Exit(1)
-			}
+				highlight, err := models.CreateHighlight(mediaSlug, backgroundImageURL, description, displayOrder)
+				if err != nil {
+					return fmt.Errorf("Failed to create highlight: %w", err)
+				}
 
-			highlight, err := models.CreateHighlight(mediaSlug, backgroundImageURL, description, displayOrder)
-			if err != nil {
-				cmd.PrintErrf("Failed to create highlight: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Highlight created successfully for series '%s' (ID: %d)\n", mediaSlug, highlight.ID)
+				cmd.Printf("Highlight created successfully for series '%s' (ID: %d)\n", mediaSlug, highlight.ID)
+				return nil
+			})
 		},
 	}
 }
@@ -84,37 +78,31 @@ func newHighlightsListCmd(dataDirectory *string) *cobra.Command {
 		Use:   "list",
 		Short: "List all highlighted series",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
-
-			highlights, err := models.GetHighlights()
-			if err != nil {
-				cmd.PrintErrf("Failed to get highlights: %v\n", err)
-				os.Exit(1)
-			}
-
-			if len(highlights) == 0 {
-				cmd.Println("No highlights found.")
-				return
-			}
-
-			cmd.Println("Highlighted Series:")
-			cmd.Println("==================")
-			for _, h := range highlights {
-				cmd.Printf("ID: %d\n", h.Highlight.ID)
-				cmd.Printf("Series: %s (%s)\n", h.Media.Name, h.Media.Slug)
-				cmd.Printf("Background: %s\n", h.Highlight.BackgroundImageURL)
-				if h.Highlight.Description != "" {
-					cmd.Printf("Description: %s\n", h.Highlight.Description)
+			withDB(dataDirectory, cmd, func() error {
+				highlights, err := models.GetHighlights()
+				if err != nil {
+					return fmt.Errorf("Failed to get highlights: %w", err)
 				}
-				cmd.Printf("Display Order: %d\n", h.Highlight.DisplayOrder)
-				cmd.Println("---")
-			}
+
+				if len(highlights) == 0 {
+					cmd.Println("No highlights found.")
+					return nil
+				}
+
+				cmd.Println("Highlighted Series:")
+				cmd.Println("==================")
+				for _, h := range highlights {
+					cmd.Printf("ID: %d\n", h.Highlight.ID)
+					cmd.Printf("Series: %s (%s)\n", h.Media.Name, h.Media.Slug)
+					cmd.Printf("Background: %s\n", h.Highlight.BackgroundImageURL)
+					if h.Highlight.Description != "" {
+						cmd.Printf("Description: %s\n", h.Highlight.Description)
+					}
+					cmd.Printf("Display Order: %d\n", h.Highlight.DisplayOrder)
+					cmd.Println("---")
+				}
+				return nil
+			})
 		},
 	}
 }
@@ -131,21 +119,14 @@ func newHighlightsRemoveCmd(dataDirectory *string) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Initialize database without auto-migrations
-			err = models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err := models.DeleteHighlight(id); err != nil {
+					return fmt.Errorf("Failed to delete highlight: %w", err)
+				}
 
-			err = models.DeleteHighlight(id)
-			if err != nil {
-				cmd.PrintErrf("Failed to delete highlight: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Highlight with ID %d removed successfully\n", id)
+				cmd.Printf("Highlight with ID %d removed successfully\n", id)
+				return nil
+			})
 		},
 	}
 }

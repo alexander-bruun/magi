@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -51,20 +52,14 @@ func newMigrateUpCmd(dataDirectory *string) *cobra.Command {
 			}
 
 			// Initialize database without auto-migrations
-			err = models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err = models.MigrateUp("migrations", version); err != nil {
+					return fmt.Errorf("Migration failed: %w", err)
+				}
 
-			err = models.MigrateUp("migrations", version)
-			if err != nil {
-				cmd.PrintErrf("Migration failed: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Migration up %d completed successfully\n", version)
+				cmd.Printf("Migration up %d completed successfully\n", version)
+				return nil
+			})
 		},
 	}
 }
@@ -80,23 +75,15 @@ func newMigrateDownCmd(dataDirectory *string) *cobra.Command {
 
 			if args[0] == "all" {
 				// Rollback all migrations
-				err = models.InitializeWithMigration(*dataDirectory, false)
-				if err != nil {
-					cmd.PrintErrf("Failed to connect to database: %v\n", err)
-					os.Exit(1)
-				}
-				defer models.Close()
-
-				// Get all applied migrations and rollback them in reverse order
-				// For simplicity, rollback from highest to lowest
-				for v := 17; v >= 1; v-- {
-					err = models.MigrateDown("migrations", v)
-					if err != nil {
-						cmd.PrintErrf("Failed to rollback migration %d: %v\n", v, err)
-						os.Exit(1)
+				withDB(dataDirectory, cmd, func() error {
+					for v := 17; v >= 1; v-- {
+						if err = models.MigrateDown("migrations", v); err != nil {
+							return fmt.Errorf("Failed to rollback migration %d: %w", v, err)
+						}
 					}
-				}
-				cmd.Println("All migrations rolled back successfully")
+					cmd.Println("All migrations rolled back successfully")
+					return nil
+				})
 				return
 			} else {
 				version, err = strconv.Atoi(args[0])
@@ -107,20 +94,14 @@ func newMigrateDownCmd(dataDirectory *string) *cobra.Command {
 			}
 
 			// Initialize database without auto-migrations
-			err = models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err = models.MigrateDown("migrations", version); err != nil {
+					return fmt.Errorf("Migration failed: %w", err)
+				}
 
-			err = models.MigrateDown("migrations", version)
-			if err != nil {
-				cmd.PrintErrf("Migration failed: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Migration down %d completed successfully\n", version)
+				cmd.Printf("Migration down %d completed successfully\n", version)
+				return nil
+			})
 		},
 	}
 }
@@ -131,23 +112,15 @@ func newMigrateClearCmd(dataDirectory *string) *cobra.Command {
 		Short: "Clear all migration schema versions from the database",
 		Long:  "This will clear the schema_migrations table, making the system think no migrations have been applied. Use with caution!",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Initialize database without auto-migrations
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err := models.ClearMigrationVersions(); err != nil {
+					return fmt.Errorf("Failed to clear migration versions: %w", err)
+				}
 
-			// Clear all migration versions
-			err = models.ClearMigrationVersions()
-			if err != nil {
-				cmd.PrintErrf("Failed to clear migration versions: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Println("Migration schema versions cleared successfully")
-			cmd.Println("WARNING: The database schema has not been modified. Run 'migrate up all' to reapply all migrations.")
+				cmd.Println("Migration schema versions cleared successfully")
+				cmd.Println("WARNING: The database schema has not been modified. Run 'migrate up all' to reapply all migrations.")
+				return nil
+			})
 		},
 	}
 }

@@ -45,22 +45,15 @@ func newBackupCreateCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Initialize database
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				backupPath, err := createBackupCLI(*dataDirectory, backupDir)
+				if err != nil {
+					return fmt.Errorf("Failed to create backup: %w", err)
+				}
 
-			// Create backup
-			backupPath, err := createBackupCLI(*dataDirectory, backupDir)
-			if err != nil {
-				cmd.PrintErrf("Failed to create backup: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Backup created successfully: %s\n", backupPath)
+				cmd.Printf("Backup created successfully: %s\n", backupPath)
+				return nil
+			})
 		},
 	}
 }
@@ -86,22 +79,14 @@ func newBackupRestoreCmd(dataDirectory, backupDirectory *string) *cobra.Command 
 				os.Exit(1)
 			}
 
-			// Initialize database
-			err := models.InitializeWithMigration(*dataDirectory, false)
-			if err != nil {
-				cmd.PrintErrf("Failed to connect to database: %v\n", err)
-				os.Exit(1)
-			}
-			defer models.Close()
+			withDB(dataDirectory, cmd, func() error {
+				if err := restoreBackupCLI(backupPath, *dataDirectory); err != nil {
+					return fmt.Errorf("Failed to restore backup: %w", err)
+				}
 
-			// Restore backup
-			err = restoreBackupCLI(backupPath, *dataDirectory)
-			if err != nil {
-				cmd.PrintErrf("Failed to restore backup: %v\n", err)
-				os.Exit(1)
-			}
-
-			cmd.Printf("Backup restored successfully from: %s\n", backupPath)
+				cmd.Printf("Backup restored successfully from: %s\n", backupPath)
+				return nil
+			})
 		},
 	}
 }
