@@ -11,8 +11,8 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // BackupInfo represents information about a backup
@@ -23,7 +23,7 @@ type BackupInfo struct {
 }
 
 // handleBackups renders the backups page
-func handleBackups(c *fiber.Ctx) error {
+func handleBackups(c fiber.Ctx) error {
 	backups, err := getBackupList()
 	if err != nil {
 		log.Errorf("Failed to get backup list: %v", err)
@@ -34,7 +34,7 @@ func handleBackups(c *fiber.Ctx) error {
 }
 
 // handleCreateBackup creates a new database backup
-func handleCreateBackup(c *fiber.Ctx) error {
+func handleCreateBackup(c fiber.Ctx) error {
 	backupPath, err := createBackup()
 	if err != nil {
 		log.Errorf("Failed to create backup: %v", err)
@@ -55,7 +55,7 @@ func handleCreateBackup(c *fiber.Ctx) error {
 }
 
 // handleRestoreBackup restores the database from a backup
-func handleRestoreBackup(c *fiber.Ctx) error {
+func handleRestoreBackup(c fiber.Ctx) error {
 	filename := c.Params("filename")
 	if filename == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Backup filename is required")

@@ -62,10 +62,7 @@ func ServeComicArchiveFromZIP(filePath string, page int) ([]byte, string, error)
 	// Get sorted list of image files
 	var imageFiles []string
 	for _, f := range r.File {
-		lowerName := strings.ToLower(f.Name)
-		if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") ||
-			strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".gif") ||
-			strings.HasSuffix(lowerName, ".webp") {
+		if isImageFile(f.Name) {
 			imageFiles = append(imageFiles, f.Name)
 		}
 	}
@@ -121,10 +118,7 @@ func ServeComicArchiveFromRAR(filePath string, page int) ([]byte, string, error)
 		if err != nil {
 			break
 		}
-		lowerName := strings.ToLower(header.Name)
-		if strings.HasSuffix(lowerName, ".jpg") || strings.HasSuffix(lowerName, ".jpeg") ||
-			strings.HasSuffix(lowerName, ".png") || strings.HasSuffix(lowerName, ".gif") ||
-			strings.HasSuffix(lowerName, ".webp") {
+		if isImageFile(header.Name) {
 			imageFiles = append(imageFiles, header)
 		}
 	}
@@ -158,21 +152,4 @@ func ServeComicArchiveFromRAR(filePath string, page int) ([]byte, string, error)
 	}
 	contentType := getContentType(imageFiles[page-1].Name)
 	return data, contentType, nil
-}
-
-// getContentType returns the content type for a file extension
-func getContentType(filename string) string {
-	ext := strings.ToLower(filepath.Ext(filename))
-	switch ext {
-	case ".jpg", ".jpeg":
-		return "image/jpeg"
-	case ".png":
-		return "image/png"
-	case ".gif":
-		return "image/gif"
-	case ".webp":
-		return "image/webp"
-	default:
-		return "application/octet-stream"
-	}
 }

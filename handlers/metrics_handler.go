@@ -7,9 +7,9 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/adaptor/v2"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -131,7 +131,7 @@ func updateMetrics() {
 }
 
 // HandleMetrics serves Prometheus metrics
-func HandleMetrics(c *fiber.Ctx) error {
+func HandleMetrics(c fiber.Ctx) error {
 	// Update metrics before serving
 	updateMetrics()
 
@@ -140,7 +140,7 @@ func HandleMetrics(c *fiber.Ctx) error {
 }
 
 // HandleReady serves the readiness endpoint
-func HandleReady(c *fiber.Ctx) error {
+func HandleReady(c fiber.Ctx) error {
 	// Check if database is accessible - basic connectivity check
 	if err := models.PingDB(); err != nil {
 		log.Errorf("Database not ready: %v", err)
@@ -151,7 +151,7 @@ func HandleReady(c *fiber.Ctx) error {
 }
 
 // HandleHealth serves the health endpoint
-func HandleHealth(c *fiber.Ctx) error {
+func HandleHealth(c fiber.Ctx) error {
 	// Check database connectivity
 	if err := models.PingDB(); err != nil {
 		log.Errorf("Database health check failed: %v", err)
@@ -168,7 +168,7 @@ func HandleHealth(c *fiber.Ctx) error {
 }
 
 // HandleMetricsJSON serves metrics data in JSON format
-func HandleMetricsJSON(c *fiber.Ctx) error {
+func HandleMetricsJSON(c fiber.Ctx) error {
 	// Update metrics before serving
 	updateMetrics()
 
@@ -251,7 +251,7 @@ func groupUsersByCreationDate(users []models.User) map[string]int {
 }
 
 // HandleMonitoring renders the monitoring dashboard
-func HandleMonitoring(c *fiber.Ctx) error {
+func HandleMonitoring(c fiber.Ctx) error {
 	data := &models.MonitoringData{}
 
 	// Get basic user data
@@ -316,12 +316,13 @@ func HandleMonitoring(c *fiber.Ctx) error {
 	}
 	data.CommentsActivity = marshallIfOk("comments activity", commentsActivity)
 
-	reviewsActivity, err := models.GetReviewsActivityOverTime(30)
-	if err != nil {
-		log.Errorf("Failed to get reviews activity: %v", err)
-		reviewsActivity = make(map[string]int)
-	}
-	data.ReviewsActivity = marshallIfOk("reviews activity", reviewsActivity)
+	// Get reviews activity - DEPRECATED
+	// reviewsActivity, err := models.GetReviewsActivityOverTime(30)
+	// if err != nil {
+	// 	log.Errorf("Failed to get reviews activity: %v", err)
+	// 	reviewsActivity = make(map[string]int)
+	// }
+	// data.ReviewsActivity = marshallIfOk("reviews activity", reviewsActivity)
 
 	topCommentedSlice, err := models.GetTopSeriesByComments(10)
 	if err != nil {
@@ -330,12 +331,14 @@ func HandleMonitoring(c *fiber.Ctx) error {
 	}
 	data.TopCommented = marshallIfOk("top commented", seriesToMap(topCommentedSlice))
 
-	topReviewedSlice, err := models.GetTopSeriesByReviews(10)
-	if err != nil {
-		log.Errorf("Failed to get top reviewed series: %v", err)
-		topReviewedSlice = []models.SeriesData{}
-	}
-	data.TopReviewed = marshallIfOk("top reviewed", seriesToMap(topReviewedSlice))
+	// Get top reviewed series - DEPRECATED
+	// topReviewedSlice, err := models.GetTopSeriesByReviews(10)
+	// if err != nil {
+	// 	log.Errorf("Failed to get top reviewed series: %v", err)
+	// 	topReviewedSlice = []models.SeriesData{}
+	// }
+	// data.TopReviewed = marshallIfOk("top reviewed", seriesToMap(topReviewedSlice))
+	data.TopReviewed = marshallIfOk("top reviewed", map[string]int{}) // Empty - deprecated
 
 	// Get vote distribution data
 	upvotes, downvotes, err := models.GetVoteDistribution()

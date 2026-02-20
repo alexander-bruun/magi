@@ -4,12 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // TLSFingerprintEntry stores information about a TLS fingerprint
@@ -41,19 +40,16 @@ var knownBotFingerprints = map[string]string{
 	"769,49195-49199-49196-49200-52393-52392-52244-52243-49171-49172-156-157-47-53,65281-0-23-35-13-5-16-11-10,29-23-24-25,0": "curl",
 }
 
-var (
-	fingerprintStore = make(map[string]*TLSFingerprintEntry)
-	fingerprintMu    sync.RWMutex
+var fingerprintEntries = NewTTLStore[TLSFingerprintEntry](
+	24*time.Hour, 30*time.Minute,
+	func(e *TLSFingerprintEntry) time.Time { return e.LastSeen },
 )
 
 // TLSFingerprintMiddleware analyzes TLS fingerprints to detect non-browser clients
 // Note: This requires TLS termination to happen at the Go application level,
 // or the fingerprint to be passed via a header from a reverse proxy
 func TLSFingerprintMiddleware() fiber.Handler {
-	// Start cleanup goroutine
-	go fingerprintCleanup()
-
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -111,7 +107,7 @@ func TLSFingerprintMiddleware() fiber.Handler {
 }
 
 // generatePseudoFingerprint creates a fingerprint based on available HTTP/2 and header characteristics
-func generatePseudoFingerprint(c *fiber.Ctx) string {
+func generatePseudoFingerprint(c fiber.Ctx) string {
 	// Build a fingerprint from available request characteristics
 	var components []string
 
@@ -142,7 +138,7 @@ func generatePseudoFingerprint(c *fiber.Ctx) string {
 }
 
 // getHeaderOrder returns a string representing the order of headers
-func getHeaderOrder(c *fiber.Ctx) string {
+func getHeaderOrder(c fiber.Ctx) string {
 	// Get all request headers in order
 	var headers []string
 	c.Request().Header.VisitAll(func(key, value []byte) {
@@ -153,12 +149,8 @@ func getHeaderOrder(c *fiber.Ctx) string {
 
 // checkFingerprint checks if a fingerprint is suspicious
 func checkFingerprint(fingerprint, userAgent, ip string) bool {
-	fingerprintMu.Lock()
-	defer fingerprintMu.Unlock()
-
-	entry, exists := fingerprintStore[fingerprint]
-	if !exists {
-		entry = &TLSFingerprintEntry{
+	entry := fingerprintEntries.GetOrCreate(fingerprint, func() *TLSFingerprintEntry {
+		e := &TLSFingerprintEntry{
 			Fingerprint:  fingerprint,
 			UserAgent:    userAgent,
 			FirstSeen:    time.Now(),
@@ -166,24 +158,24 @@ func checkFingerprint(fingerprint, userAgent, ip string) bool {
 			RequestCount: 1,
 			IsTrusted:    false,
 		}
-		fingerprintStore[fingerprint] = entry
 
 		// Check against known fingerprints
 		if browser, ok := knownBrowserFingerprints[fingerprint]; ok {
-			entry.IsTrusted = true
+			e.IsTrusted = true
 			log.Debugf("TLS fingerprint: Known browser fingerprint (%s) from IP %s", browser, ip)
-			return false
-		}
-
-		if bot, ok := knownBotFingerprints[fingerprint]; ok {
+		} else if bot, ok := knownBotFingerprints[fingerprint]; ok {
 			log.Warnf("TLS fingerprint: Known bot fingerprint (%s) from IP %s", bot, ip)
+		} else {
+			e.IsTrusted = true
+		}
+		return e
+	})
+
+	// If this was a brand new entry, RequestCount is 1
+	if entry.RequestCount == 1 {
+		if _, ok := knownBotFingerprints[fingerprint]; ok {
 			return true
 		}
-
-		// Unknown fingerprint - not suspicious on first sight
-		// Without real JA3 fingerprints, we can't reliably distinguish browsers
-		// Mark as potentially trusted since browsers have varied fingerprints
-		entry.IsTrusted = true
 		return false
 	}
 
@@ -225,40 +217,21 @@ func isBrowserUserAgent(ua string) bool {
 	return false
 }
 
-// fingerprintCleanup removes old fingerprint entries
-func fingerprintCleanup() {
-	ticker := time.NewTicker(30 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		fingerprintMu.Lock()
-		now := time.Now()
-		for fp, entry := range fingerprintStore {
-			// Remove entries not seen in the last 24 hours
-			if now.Sub(entry.LastSeen) > 24*time.Hour {
-				delete(fingerprintStore, fp)
-			}
-		}
-		fingerprintMu.Unlock()
-	}
-}
-
 // GetTLSFingerprintStats returns statistics about TLS fingerprinting (for admin dashboard)
 func GetTLSFingerprintStats() map[string]any {
-	fingerprintMu.RLock()
-	defer fingerprintMu.RUnlock()
-
-	totalCount := len(fingerprintStore)
+	totalCount := 0
 	trustedCount := 0
 	suspiciousCount := 0
 
-	for _, entry := range fingerprintStore {
+	fingerprintEntries.Range(func(_ string, entry *TLSFingerprintEntry) bool {
+		totalCount++
 		if entry.IsTrusted {
 			trustedCount++
 		} else {
 			suspiciousCount++
 		}
-	}
+		return true
+	})
 
 	return map[string]any{
 		"total_fingerprints":      totalCount,

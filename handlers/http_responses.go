@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // SendError sends a generic error response with HX-Trigger notification for HTMX requests
-func SendError(c *fiber.Ctx, message string, status string) error {
+func SendError(c fiber.Ctx, message string, status string) error {
 	triggerNotification(c, message, status)
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusInternalServerError).SendString("")
@@ -17,7 +17,7 @@ func SendError(c *fiber.Ctx, message string, status string) error {
 }
 
 // SendValidationError sends a validation error with HX-Trigger notification for HTMX requests
-func SendValidationError(c *fiber.Ctx, message string) error {
+func SendValidationError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "warning")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusUnprocessableEntity).SendString("")
@@ -28,7 +28,7 @@ func SendValidationError(c *fiber.Ctx, message string) error {
 }
 
 // SendUnauthorizedError sends an unauthorized error with HX-Trigger notification for HTMX requests
-func SendUnauthorizedError(c *fiber.Ctx, message string) error {
+func SendUnauthorizedError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "destructive")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusUnauthorized).SendString("")
@@ -39,7 +39,7 @@ func SendUnauthorizedError(c *fiber.Ctx, message string) error {
 }
 
 // SendForbiddenError sends a forbidden error with HX-Trigger notification for HTMX requests
-func SendForbiddenError(c *fiber.Ctx, message string) error {
+func SendForbiddenError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "destructive")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusForbidden).SendString("")
@@ -50,7 +50,7 @@ func SendForbiddenError(c *fiber.Ctx, message string) error {
 }
 
 // SendConflictError sends a conflict error with HX-Trigger notification for HTMX requests
-func SendConflictError(c *fiber.Ctx, message string) error {
+func SendConflictError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "warning")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusConflict).SendString("")
@@ -61,7 +61,7 @@ func SendConflictError(c *fiber.Ctx, message string) error {
 }
 
 // SendNotFoundError sends a not found error with HX-Trigger notification for HTMX requests
-func SendNotFoundError(c *fiber.Ctx, message string) error {
+func SendNotFoundError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "warning")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusNotFound).SendString("")
@@ -72,7 +72,7 @@ func SendNotFoundError(c *fiber.Ctx, message string) error {
 }
 
 // SendInternalServerError sends an internal server error with HX-Trigger notification for HTMX requests
-func SendInternalServerError(c *fiber.Ctx, message string, err error) error {
+func SendInternalServerError(c fiber.Ctx, message string, err error) error {
 	// Log the actual error for debugging
 	log.Errorf("Internal server error: %v", err)
 
@@ -86,7 +86,7 @@ func SendInternalServerError(c *fiber.Ctx, message string, err error) error {
 }
 
 // SendBadRequestError sends a bad request error with HX-Trigger notification for HTMX requests
-func SendBadRequestError(c *fiber.Ctx, message string) error {
+func SendBadRequestError(c fiber.Ctx, message string) error {
 	triggerNotification(c, message, "warning")
 	if isHTMXRequest(c) {
 		return c.Status(fiber.StatusBadRequest).SendString("")

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/scheduler"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	websocket "github.com/gofiber/websocket/v2"
+	websocket "github.com/gofiber/contrib/v3/websocket"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // JobStatus represents the current status of a running job
@@ -89,7 +89,7 @@ func (m *JobStatusManager) pingClients() {
 }
 
 // HandleJobStatusWebSocketUpgrade upgrades the connection to WebSocket
-func HandleJobStatusWebSocketUpgrade(c *fiber.Ctx) error {
+func HandleJobStatusWebSocketUpgrade(c fiber.Ctx) error {
 	if websocket.IsWebSocketUpgrade(c) {
 		return websocket.New(func(conn *websocket.Conn) {
 			handleJobStatusWebSocket(conn)
@@ -293,7 +293,7 @@ func getIndexerKey(librarySlug string) string {
 }
 
 // HandleScraperLogsWebSocketUpgrade upgrades the connection to WebSocket and extracts the script ID
-func HandleScraperLogsWebSocketUpgrade(c *fiber.Ctx) error {
+func HandleScraperLogsWebSocketUpgrade(c fiber.Ctx) error {
 	// Check if this is a WebSocket upgrade request
 	if websocket.IsWebSocketUpgrade(c) {
 		// Extract script ID from route parameter
@@ -311,7 +311,7 @@ func HandleScraperLogsWebSocketUpgrade(c *fiber.Ctx) error {
 }
 
 // HandleIndexerLogsWebSocketUpgrade upgrades the connection to WebSocket and extracts the library slug
-func HandleIndexerLogsWebSocketUpgrade(c *fiber.Ctx) error {
+func HandleIndexerLogsWebSocketUpgrade(c fiber.Ctx) error {
 	// Check if this is a WebSocket upgrade request
 	if websocket.IsWebSocketUpgrade(c) {
 		// Extract library slug from route parameter

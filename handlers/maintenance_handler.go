@@ -4,14 +4,14 @@ import (
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 )
 
 // MaintenanceModeMiddleware checks if maintenance mode is enabled and shows maintenance page if needed
 // Admins can still access the site even during maintenance mode
 func MaintenanceModeMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Check if user is authenticated as admin - admins bypass maintenance mode
 		// First check if user_name is set in locals (from auth middleware)
 		userName, ok := c.Locals("user_name").(string)

@@ -6,27 +6,28 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils/files"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // handleAvatarRequest serves avatar images with quality based on user role
-func handleAvatarRequest(c *fiber.Ctx) error {
+func handleAvatarRequest(c fiber.Ctx) error {
 	return handleStoredImageRequest(c, "avatars")
 }
 
 // handlePosterRequest serves poster images with quality based on user role
-func handlePosterRequest(c *fiber.Ctx) error {
+func handlePosterRequest(c fiber.Ctx) error {
 	return handleStoredImageRequest(c, "posters")
 }
 
 // handleStoredImageRequest serves stored images with quality based on user role
-func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
+func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 	if dataManager == nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Data manager not initialized")
 	}
@@ -151,124 +152,95 @@ func handleStoredImageRequest(c *fiber.Ctx, subDir string) error {
 	return c.Send(data)
 }
 
-// ImageHandler serves images for both comics and light novels using token-based authentication
-func ImageHandler(c *fiber.Ctx) error {
-	token := c.Query("token")
-	log.Debugf("ImageHandler: received token %s", token)
+// ChapterImageHandler serves chapter images (comics and EPUB assets) via encrypted slug URLs.
+// Route: /series/:media/:chapter/:slug
+// The slug is decrypted to determine the content type (page or asset), library, and target.
+func ChapterImageHandler(c fiber.Ctx) error {
+	mediaSlug := c.Params("media")
+	chapterSlug := c.Params("chapter")
+	slug := c.Params("slug")
 
-	if token == "" {
-		log.Errorf("ImageHandler: token parameter is required")
-		return sendBadRequestError(c, ErrImageTokenRequired)
+	if mediaSlug == "" || chapterSlug == "" || slug == "" {
+		return SendBadRequestError(c, "invalid image URL")
 	}
 
-	// Validate the token
-	tokenInfo, err := files.ValidateImageToken(token)
+	// Decrypt the slug to get type, library slug, and value
+	slugType, librarySlug, value, err := files.DecryptSlug(mediaSlug, chapterSlug, slug)
 	if err != nil {
-		log.Errorf("ImageHandler: Token validation failed for token %s: %v", token, err)
-		return sendForbiddenError(c, ErrImageTokenInvalid)
+		log.Debugf("ChapterImageHandler: slug decryption failed: %v", err)
+		return SendNotFoundError(c, ErrImageNotFound)
 	}
 
-	// Validate MediaSlug to prevent malformed tokens
-	if strings.ContainsAny(tokenInfo.MediaSlug, "/,") {
-		log.Errorf("ImageHandler: Invalid MediaSlug in token: %s", tokenInfo.MediaSlug)
-		return sendForbiddenError(c, ErrImageTokenInvalid)
-	}
-
-	media, err := models.GetMedia(tokenInfo.MediaSlug)
-	if err != nil {
-		log.Errorf("ImageHandler: Failed to get media %s: %v", tokenInfo.MediaSlug, err)
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	if media == nil {
-		log.Errorf("ImageHandler: Media not found for slug: %s", tokenInfo.MediaSlug)
-		return sendNotFoundError(c, ErrImageNotFound)
-	}
-
-	var chapter *models.Chapter
-	if tokenInfo.AssetPath != "" {
-		log.Debugf("ImageHandler: Handling light novel asset: %s", tokenInfo.AssetPath)
-		// Light novel asset: chapterSlug may be 0 or empty, but should be valid for asset lookup
-		chapterSlug := tokenInfo.ChapterSlug
-		if chapterSlug == "" || strings.ContainsAny(chapterSlug, "./ ") {
-			// Fallback: try to extract from Referer if possible
-			referer := c.Get("Referer")
-			if referer != "" {
-				parts := strings.Split(referer, "/series/")
-				if len(parts) > 1 {
-					slugParts := strings.Split(parts[1], "/")
-					if len(slugParts) > 1 {
-						chapterSlug = slugParts[1]
-					}
-				}
-			}
+	switch slugType {
+	case "page":
+		page, err := strconv.Atoi(value)
+		if err != nil || page < 1 {
+			return SendBadRequestError(c, "invalid page")
 		}
-		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.LibrarySlug, chapterSlug)
+
+		chapter, err := models.GetChapter(mediaSlug, librarySlug, chapterSlug)
 		if err != nil {
-			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, chapterSlug, err)
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			log.Errorf("ChapterImageHandler: Failed to get chapter %s/%s: %v", mediaSlug, chapterSlug, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if chapter == nil {
-			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, chapterSlug)
-			return sendNotFoundError(c, ErrChapterNotFound)
+			return SendNotFoundError(c, ErrChapterNotFound)
 		}
+
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
-			log.Errorf("ImageHandler: Error checking access: %v", err)
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if !hasAccess {
-			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
-			if isHTMXRequest(c) {
-				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
-				// Return 204 No Content to prevent navigation/swap but show notification
-				return c.Status(fiber.StatusNoContent).SendString("")
-			}
-			return sendForbiddenError(c, ErrImageAccessDenied)
+			return SendForbiddenError(c, ErrImageAccessDenied)
 		}
-		return serveLightNovelAsset(c, media, chapter, tokenInfo.AssetPath)
-	} else {
-		// Comic page
-		chapter, err = models.GetChapter(tokenInfo.MediaSlug, tokenInfo.LibrarySlug, tokenInfo.ChapterSlug)
+
+		return serveComicPage(c, chapter, page)
+
+	case "asset":
+		media, err := models.GetMedia(mediaSlug)
+		if err != nil || media == nil {
+			return SendNotFoundError(c, ErrImageNotFound)
+		}
+
+		chapter, err := models.GetChapter(mediaSlug, librarySlug, chapterSlug)
 		if err != nil {
-			log.Errorf("ImageHandler: Failed to get chapter %s/%s: %v", tokenInfo.MediaSlug, tokenInfo.ChapterSlug, err)
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			log.Errorf("ChapterImageHandler: Failed to get chapter %s/%s: %v", mediaSlug, chapterSlug, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if chapter == nil {
-			log.Errorf("ImageHandler: Chapter not found: %s/%s", tokenInfo.MediaSlug, tokenInfo.ChapterSlug)
-			return sendNotFoundError(c, ErrChapterNotFound)
+			return SendNotFoundError(c, ErrChapterNotFound)
 		}
+
 		hasAccess, err := UserHasLibraryAccess(c, chapter.MediaSlug)
 		if err != nil {
-			log.Errorf("ImageHandler: Error checking access: %v", err)
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		if !hasAccess {
-			log.Errorf("ImageHandler: Access denied for chapter %s", chapter.Slug)
-			if isHTMXRequest(c) {
-				triggerNotification(c, "Access denied: you don't have permission to view this chapter", "destructive")
-				// Return 204 No Content to prevent navigation/swap but show notification
-				return c.Status(fiber.StatusNoContent).SendString("")
-			}
-			return sendForbiddenError(c, ErrImageAccessDenied)
+			return SendForbiddenError(c, ErrImageAccessDenied)
 		}
-		return serveComicPage(c, chapter, tokenInfo.Page)
+
+		return serveLightNovelAsset(c, media, chapter, value)
+
+	default:
+		return SendBadRequestError(c, "invalid image URL")
 	}
 }
 
 // serveComicPage serves a comic page image
-func serveComicPage(c *fiber.Ctx, chapter *models.Chapter, page int) error {
+func serveComicPage(c fiber.Ctx, chapter *models.Chapter, page int) error {
 	start := time.Now()
 	// log.Infof("serveComicPage: serving page %d for media %s chapter %s", page, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	library, err := models.GetLibrary(chapter.LibrarySlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	filePath := filepath.Join(library.Folders[0], chapter.File)
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return sendNotFoundError(c, ErrImageNotFound)
+		return SendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// If the path is a directory, serve images from within it
@@ -305,7 +277,7 @@ func serveComicPage(c *fiber.Ctx, chapter *models.Chapter, page int) error {
 		imageLoadDuration.WithLabelValues("cbr").Observe(time.Since(start).Seconds())
 		imageBytes, contentType, err := ServeComicArchiveFromRAR(filePath, page)
 		if err != nil {
-			return sendInternalServerError(c, ErrImageProcessingFailed, err)
+			return SendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
 		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
@@ -313,23 +285,23 @@ func serveComicPage(c *fiber.Ctx, chapter *models.Chapter, page int) error {
 		imageLoadDuration.WithLabelValues("cbz").Observe(time.Since(start).Seconds())
 		imageBytes, contentType, err := ServeComicArchiveFromZIP(filePath, page)
 		if err != nil {
-			return sendInternalServerError(c, ErrImageProcessingFailed, err)
+			return SendInternalServerError(c, ErrImageProcessingFailed, err)
 		}
 		c.Set("Content-Type", contentType)
 		return c.Send(imageBytes)
 	default:
-		return sendBadRequestError(c, ErrImageUnsupportedType)
+		return SendBadRequestError(c, ErrImageUnsupportedType)
 	}
 }
 
 // serveLightNovelAsset serves a light novel asset from an EPUB file
-func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Chapter, assetPath string) error {
+func serveLightNovelAsset(c fiber.Ctx, media *models.Media, chapter *models.Chapter, assetPath string) error {
 	start := time.Now()
 	log.Debugf("serveLightNovelAsset: serving asset %s for media %s chapter %s", assetPath, media.Slug, chapter.Slug)
 	// Determine the actual chapter file path
 	library, err := models.GetLibrary(chapter.LibrarySlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	chapterFilePath := filepath.Join(library.Folders[0], chapter.File)
 
@@ -340,14 +312,14 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	// Check if the file exists
 	if _, err := os.Stat(chapterFilePath); os.IsNotExist(err) {
 		log.Errorf("EPUB file not found: %s", chapterFilePath)
-		return sendNotFoundError(c, ErrImageNotFound)
+		return SendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// Open the EPUB file
 	r, err := zip.OpenReader(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error opening EPUB %s: %v", chapterFilePath, err)
-		return sendInternalServerError(c, ErrImageProcessingFailed, err)
+		return SendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	defer r.Close()
 
@@ -355,7 +327,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	opfDir, err := files.GetOPFDir(chapterFilePath)
 	if err != nil {
 		log.Errorf("Error getting OPF dir for %s: %v", chapterFilePath, err)
-		return sendInternalServerError(c, ErrImageProcessingFailed, err)
+		return SendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 
 	log.Debugf("OPF dir: %s, requested asset: %s", opfDir, assetPath)
@@ -374,7 +346,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	}
 	if file == nil {
 		log.Errorf("Asset not found in EPUB: %s (looked for %s)", assetPath, assetFullPath)
-		return sendNotFoundError(c, ErrImageNotFound)
+		return SendNotFoundError(c, ErrImageNotFound)
 	}
 
 	log.Debugf("Asset found in EPUB: %s", assetFullPath)
@@ -382,7 +354,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 	rc, err := file.Open()
 	if err != nil {
 		log.Errorf("Error opening asset %s: %v", assetPath, err)
-		return sendInternalServerError(c, ErrImageProcessingFailed, err)
+		return SendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	defer rc.Close()
 
@@ -407,7 +379,7 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 
 	if _, err := io.Copy(c.Response().BodyWriter(), rc); err != nil {
 		log.Errorf("Error writing asset %s to response: %v", assetPath, err)
-		return sendInternalServerError(c, ErrImageProcessingFailed, err)
+		return SendInternalServerError(c, ErrImageProcessingFailed, err)
 	}
 	metricExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(assetPath), "."))
 	imageLoadDuration.WithLabelValues(metricExt).Observe(time.Since(start).Seconds())
@@ -415,11 +387,11 @@ func serveLightNovelAsset(c *fiber.Ctx, media *models.Media, chapter *models.Cha
 }
 
 // serveImageFromDirectoryImageHandler handles serving individual image files from a chapter directory.
-func serveImageFromDirectoryImageHandler(c *fiber.Ctx, dirPath string, page int) error {
+func serveImageFromDirectoryImageHandler(c fiber.Ctx, dirPath string, page int) error {
 	start := time.Now()
 	imagePath, err := GetImagesFromDirectory(dirPath, page)
 	if err != nil {
-		return sendNotFoundError(c, ErrImageNotFound)
+		return SendNotFoundError(c, ErrImageNotFound)
 	}
 
 	// Serve raw image bytes

@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v3"
 )
 
 // getFirstChapterFilePath returns the path to the first chapter file (.cbz, .cbr, etc.)
@@ -44,12 +44,12 @@ func getFirstChapterFilePath(media *models.Media) (string, error) {
 }
 
 // HandlePosterChapterSelect renders a list of chapters to select from
-func HandlePosterChapterSelect(c *fiber.Ctx) error {
+func HandlePosterChapterSelect(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Get all chapters
@@ -62,13 +62,13 @@ func HandlePosterChapterSelect(c *fiber.Ctx) error {
 }
 
 // HandlePosterSelector renders the image selector for a chapter
-func HandlePosterSelector(c *fiber.Ctx) error {
+func HandlePosterSelector(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Query("chapter", "")
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	chapters, err := models.GetChapters(mangaSlug)
@@ -98,10 +98,10 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return sendNotFoundError(c, ErrChapterNotFound)
+			return SendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
 			return handleView(c, views.EmptyState("Error: chapter file not found"))
@@ -138,7 +138,7 @@ func HandlePosterSelector(c *fiber.Ctx) error {
 }
 
 // HandlePosterPreview renders a preview of a selected image with crop selector
-func HandlePosterPreview(c *fiber.Ctx) error {
+func HandlePosterPreview(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	chapterSlug := c.Query("chapter", "")
 	imageIndexStr := c.Query("index", "0")
@@ -150,12 +150,12 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	chapters, err := models.GetChapters(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	var chapterPage int
@@ -178,21 +178,21 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return sendNotFoundError(c, ErrChapterNotFound)
+			return SendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
-			return sendNotFoundError(c, ErrChapterFileReadFailed)
+			return SendNotFoundError(c, ErrChapterFileReadFailed)
 		}
 		// Get the library for the chapter
 		library, err := models.GetLibrary(chapter.LibrarySlug)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
+			return SendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
 		}
 		if len(library.Folders) == 0 {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
+			return SendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
 		}
 		// Construct the full path using the chapter's file path
 		chapterPath = filepath.Join(library.Folders[0], chapter.File)
@@ -201,35 +201,35 @@ func HandlePosterPreview(c *fiber.Ctx) error {
 		var err error
 		chapterPath, err = getFirstChapterFilePath(media)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 	}
 
 	// Extract and get the image data URI
 	imageDataURI, err := files.GetImageDataURIByIndex(chapterPath, imageIndex)
 	if err != nil {
-		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+		return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	imageCount, err := files.CountImageFiles(chapterPath)
 	if err != nil {
-		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+		return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	return handleView(c, views.PosterEditor(mangaSlug, chapters, chapterSlug, imageCount, imageIndex, imageDataURI, chapterPage))
 }
 
 // HandlePosterSet sets a custom poster image based on user selection or upload
-func HandlePosterSet(c *fiber.Ctx) error {
+func HandlePosterSet(c fiber.Ctx) error {
 	if dataManager == nil {
-		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
+		return SendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
 	}
 
 	mangaSlug := c.Params("media")
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	dataDir := files.GetDataDirectory()
@@ -240,20 +240,20 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	if file, err := c.FormFile("poster"); err == nil {
 		// Handle upload
 		if err := os.MkdirAll(postersDir, 0755); err != nil {
-			return sendInternalServerError(c, ErrPosterSaveFailed, err)
+			return SendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Save uploaded file temporarily
 		tempPath := filepath.Join(postersDir, fmt.Sprintf("temp_%s_%d", mangaSlug, time.Now().Unix()))
 		if err := c.SaveFile(file, tempPath); err != nil {
-			return sendInternalServerError(c, ErrPosterUploadFailed, err)
+			return SendInternalServerError(c, ErrPosterUploadFailed, err)
 		}
 		defer os.Remove(tempPath) // Clean up temp file
 
 		// Load and convert to appropriate format
 		img, err := files.OpenImage(tempPath)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
 		format := "webp"
@@ -261,10 +261,10 @@ func HandlePosterSet(c *fiber.Ctx) error {
 
 		imageData, err := files.EncodeImageToBytes(img, format, posterQuality)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if err := dataManager.Save(cachePath, imageData); err != nil {
-			return sendInternalServerError(c, ErrPosterSaveFailed, err)
+			return SendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Generate thumbnails
@@ -278,7 +278,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		// Update media with new cover art URL
 		media.CoverArtURL = storedImageURL
 		if err := models.UpdateMedia(media); err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Return success message
@@ -290,15 +290,15 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	metadataCoverURL := c.FormValue("metadata_cover_url")
 	if metadataCoverURL != "" {
 		// Download and store the metadata cover image
-		storedImageURL, err := scheduler.DownloadAndStoreImage(mangaSlug, metadataCoverURL)
+		storedImageURL, err := scheduler.DownloadAndStoreImage(mangaSlug, metadataCoverURL, dataManager.Backend())
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 
 		// Update media with new cover art URL
 		media.CoverArtURL = storedImageURL
 		if err := models.UpdateMedia(media); err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		// Return success message
@@ -322,21 +322,21 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		// Look up chapter by slug to get the actual file
 		chapter, err := models.GetChapter(mangaSlug, "", chapterSlug)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 		if chapter == nil {
-			return sendNotFoundError(c, ErrChapterNotFound)
+			return SendNotFoundError(c, ErrChapterNotFound)
 		}
 		if chapter.File == "" {
-			return sendNotFoundError(c, ErrChapterFileReadFailed)
+			return SendNotFoundError(c, ErrChapterFileReadFailed)
 		}
 		// Get the library for the chapter
 		library, err := models.GetLibrary(chapter.LibrarySlug)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
+			return SendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("failed to get library '%s': %w", chapter.LibrarySlug, err))
 		}
 		if len(library.Folders) == 0 {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
+			return SendInternalServerError(c, ErrPosterProcessingFailed, fmt.Errorf("library '%s' has no folders configured", chapter.LibrarySlug))
 		}
 		// Construct the full path using the chapter's file path
 		chapterPath = filepath.Join(library.Folders[0], chapter.File)
@@ -345,7 +345,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 		var err error
 		chapterPath, err = getFirstChapterFilePath(media)
 		if err != nil {
-			return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
 	}
 
@@ -358,7 +358,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Extract crop from image and cache it
 	storedImageURL, err := files.ExtractAndStoreImageWithCropByIndex(chapterPath, mangaSlug, imageIndex, cropData, true, posterQuality)
 	if err != nil {
-		return sendInternalServerError(c, ErrPosterProcessingFailed, err)
+		return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 	}
 
 	// Generate thumbnails
@@ -371,7 +371,7 @@ func HandlePosterSet(c *fiber.Ctx) error {
 	// Update media with new cover art URL
 	media.CoverArtURL = storedImageURL
 	if err := models.UpdateMedia(media); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Return success message
@@ -380,12 +380,12 @@ func HandlePosterSet(c *fiber.Ctx) error {
 }
 
 // HandlePosterMetadataSelect renders a grid of cover images from metadata providers
-func HandlePosterMetadataSelect(c *fiber.Ctx) error {
+func HandlePosterMetadataSelect(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 
 	media, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Use saved potential poster URLs if available
@@ -458,7 +458,7 @@ func HandlePosterMetadataSelect(c *fiber.Ctx) error {
 	for i := range results {
 		if results[i].CoverArtURL != "" {
 			uniqueSlug := fmt.Sprintf("%s_metadata_%d", mangaSlug, i)
-			localURL, err := scheduler.DownloadAndStoreImage(uniqueSlug, results[i].CoverArtURL)
+			localURL, err := scheduler.DownloadAndStoreImage(uniqueSlug, results[i].CoverArtURL, dataManager.Backend())
 			if err == nil {
 				results[i].CoverArtURL = localURL
 			} else {

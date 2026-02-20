@@ -10,8 +10,8 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // getMediaPathFromChapters returns a representative path for a media by using the first chapter's path
@@ -69,24 +69,24 @@ type MetadataFormData struct {
 }
 
 // HandleUpdateMetadataMedia displays search results for updating a local media's metadata.
-func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
+func HandleUpdateMetadataMedia(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	search := c.Query("search")
 
 	// Get the configured metadata provider
 	config, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	provider, err := metadata.GetProviderFromConfig(&config)
 	if err != nil {
-		return sendInternalServerError(c, ErrMetadataProviderError, err)
+		return SendInternalServerError(c, ErrMetadataProviderError, err)
 	}
 
 	// Search using the provider
 	results, err := provider.Search(search)
 	if err != nil {
-		return sendInternalServerError(c, ErrMetadataSearchFailed, err)
+		return SendInternalServerError(c, ErrMetadataSearchFailed, err)
 	}
 
 	// Sort results by similarity score (highest first)
@@ -98,48 +98,48 @@ func HandleUpdateMetadataMedia(c *fiber.Ctx) error {
 }
 
 // HandleEditMetadataMedia applies selected metadata to an existing media.
-func HandleEditMetadataMedia(c *fiber.Ctx) error {
+func HandleEditMetadataMedia(c fiber.Ctx) error {
 	metadataID := c.Query("id")
 	mangaSlug := c.Query("slug")
 	if mangaSlug == "" {
-		return sendBadRequestError(c, ErrRequiredField)
+		return SendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMedia(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Get the configured metadata provider
 	config, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	provider, err := metadata.GetProviderFromConfig(&config)
 	if err != nil {
-		return sendInternalServerError(c, ErrMetadataProviderError, err)
+		return SendInternalServerError(c, ErrMetadataProviderError, err)
 	}
 
 	// Fetch metadata using the provider
 	meta, err := provider.GetMetadata(metadataID)
 	if err != nil {
-		return sendInternalServerError(c, ErrMetadataSyncFailed, err)
+		return SendInternalServerError(c, ErrMetadataSyncFailed, err)
 	}
 
 	// Get cover URL and download/store it
 	coverURL := provider.GetCoverImageURL(meta)
 	var storedImageURL string
 	if coverURL != "" {
-		storedImageURL, err = scheduler.DownloadAndStoreImage(existingMedia.Slug, coverURL)
+		storedImageURL, err = scheduler.DownloadAndStoreImage(existingMedia.Slug, coverURL, dataManager.Backend())
 		if err != nil {
 			log.Warnf("Failed to download cover art: %v", err)
 			// Try local images as fallback
 			mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
 			if pathErr == nil {
-				storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, mediaPath)
+				storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, dataManager.Backend())
 			}
 		}
 	}
@@ -172,7 +172,7 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 	}
 
 	if err := models.UpdateMedia(existingMedia); err != nil {
-		return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
+		return SendInternalServerError(c, ErrMetadataUpdateFailed, err)
 	}
 
 	triggerNotification(c, "Metadata updated successfully", "success")
@@ -182,25 +182,25 @@ func HandleEditMetadataMedia(c *fiber.Ctx) error {
 }
 
 // HandleManualEditMetadata handles manual metadata updates by moderators or admins
-func HandleManualEditMetadata(c *fiber.Ctx) error {
+func HandleManualEditMetadata(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return sendBadRequestError(c, ErrRequiredField)
+		return SendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Parse form data
 	var formData MetadataFormData
-	if err := c.BodyParser(&formData); err != nil {
+	if err := c.Bind().Body(&formData); err != nil {
 		log.Errorf("Failed to parse metadata form data: %v", err)
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Update fields
@@ -228,7 +228,7 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 		}
 	}
 	if err := models.SetTagsForMedia(existingMedia.Slug, tags); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Process authors (comma-separated list, format: "Name (Role)" or "Name")
@@ -316,16 +316,16 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 
 	// Process cover art URL (download and store)
 	if formData.CoverURL != "" {
-		storedImageURL, err := scheduler.DownloadAndStoreImage(existingMedia.Slug, formData.CoverURL)
+		storedImageURL, err := scheduler.DownloadAndStoreImage(existingMedia.Slug, formData.CoverURL, dataManager.Backend())
 		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		existingMedia.CoverArtURL = storedImageURL
 	}
 
 	// Update media in database
 	if err := models.UpdateMedia(existingMedia); err != nil {
-		return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
+		return SendInternalServerError(c, ErrMetadataUpdateFailed, err)
 	}
 
 	// Return success response for HTMX
@@ -336,29 +336,29 @@ func HandleManualEditMetadata(c *fiber.Ctx) error {
 }
 
 // HandleReindexChapters re-indexes chapters without fetching external metadata
-func HandleReindexChapters(c *fiber.Ctx) error {
+func HandleReindexChapters(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return sendBadRequestError(c, ErrRequiredField)
+		return SendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Find the library that contains this media
 	mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
 	if pathErr != nil {
-		return sendInternalServerError(c, "Could not determine media path", pathErr)
+		return SendInternalServerError(c, "Could not determine media path", pathErr)
 	}
 
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	var librarySlug string
 	for _, lib := range libraries {
@@ -373,16 +373,16 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 		}
 	}
 	if librarySlug == "" {
-		return sendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
+		return SendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
 	}
 
 	// Get the library to find the root path
 	library, err := models.GetLibrary(librarySlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if len(library.Folders) == 0 {
-		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("library has no folders"))
+		return SendInternalServerError(c, ErrInternalServerError, fmt.Errorf("library has no folders"))
 	}
 
 	// Find the root path that contains the media path
@@ -394,13 +394,13 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 		}
 	}
 	if rootPath == "" {
-		return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("could not find root path for %s in library %s", mediaPath, librarySlug))
+		return SendInternalServerError(c, ErrInternalServerError, fmt.Errorf("could not find root path for %s in library %s", mediaPath, librarySlug))
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
 	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, mediaPath, librarySlug, false)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If new chapters were added, notify users
@@ -428,18 +428,18 @@ func HandleReindexChapters(c *fiber.Ctx) error {
 }
 
 // HandleRefreshMetadata refreshes media metadata and chapters without resetting creation date
-func HandleRefreshMetadata(c *fiber.Ctx) error {
+func HandleRefreshMetadata(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return sendBadRequestError(c, ErrRequiredField)
+		return SendBadRequestError(c, ErrRequiredField)
 	}
 
 	existingMedia, err := models.GetMediaUnfiltered(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if existingMedia == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Fetch fresh aggregated metadata from all providers
@@ -460,14 +460,14 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		var storedImageURL string
 		if coverURL != "" {
 			log.Debugf("Attempting to download cover art from aggregated metadata for media '%s': %s", mangaSlug, coverURL)
-			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL)
+			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL, dataManager.Backend())
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
 				log.Debugf("Falling back to local images for poster generation for media '%s'", mangaSlug)
 				mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
 				if pathErr == nil {
-					storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath)
+					storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, dataManager.Backend())
 				}
 			}
 		} else {
@@ -475,7 +475,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 			log.Debugf("No cover URL from aggregated metadata for media '%s', trying local images", mangaSlug)
 			mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
 			if pathErr == nil {
-				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath)
+				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, dataManager.Backend())
 			}
 		}
 
@@ -555,7 +555,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 
 		// Update media metadata without changing created_at
 		if err := models.UpdateMediaMetadata(existingMedia); err != nil {
-			return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
+			return SendInternalServerError(c, ErrMetadataUpdateFailed, err)
 		}
 	} else {
 		// No metadata match - update with local metadata
@@ -570,7 +570,7 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 			}
 
 			// Try to set poster from local images
-			storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, mediaPath)
+			storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, dataManager.Backend())
 			if storedImageURL != "" {
 				existingMedia.CoverArtURL = storedImageURL
 			}
@@ -578,19 +578,19 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 
 		// Update media metadata without changing created_at
 		if err := models.UpdateMediaMetadata(existingMedia); err != nil {
-			return sendInternalServerError(c, ErrMetadataUpdateFailed, err)
+			return SendInternalServerError(c, ErrMetadataUpdateFailed, err)
 		}
 	}
 
 	// Find the library that contains this media
 	mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
 	if pathErr != nil {
-		return sendInternalServerError(c, "Could not determine media path", pathErr)
+		return SendInternalServerError(c, "Could not determine media path", pathErr)
 	}
 
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	var librarySlug string
 	for _, lib := range libraries {
@@ -605,13 +605,13 @@ func HandleRefreshMetadata(c *fiber.Ctx) error {
 		}
 	}
 	if librarySlug == "" {
-		return sendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
+		return SendInternalServerError(c, "Could not determine library for media", fmt.Errorf("no library found for path %s", mediaPath))
 	}
 
 	// Re-index chapters (this will detect new/removed chapters without deleting the media)
 	added, deleted, newChapterSlugs, _, err := scheduler.IndexChapters(existingMedia.Slug, mediaPath, librarySlug, false)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If new chapters were added, notify users

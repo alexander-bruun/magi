@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
@@ -128,7 +128,7 @@ func InitCSSParser(assetsFS fs.FS, cssDir string) error {
 
 	cssParser = parser
 
-	log.Infof("CSS Parser initialized from %d files: %d rules, %d at-rules, %d universal rules",
+	log.Debugf("CSS Parser initialized from %d files: %d rules, %d at-rules, %d universal rules",
 		len(parser.SourceFiles),
 		len(parser.AllRules),
 		len(parser.AtRules),
@@ -165,7 +165,7 @@ func InitJSCache(assetsFS fs.FS, assetsPath string) error {
 		return err
 	}
 
-	log.Infof("JS Cache initialized with %d files", len(jsCache))
+	log.Debugf("JS Cache initialized with %d files", len(jsCache))
 	return nil
 }
 
@@ -173,7 +173,7 @@ func InitJSCache(assetsFS fs.FS, assetsPath string) error {
 // For HTML: optimizes CSS, inlines JS, then minifies HTML
 // For CSS/JS: applies direct minification
 func MinifyMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		path := c.Path()
 
 		// Skip static assets and API calls (except for direct CSS/JS which we'll minify)

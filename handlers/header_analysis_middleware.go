@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // HeaderAnalysisMiddleware checks for common browser headers and suspicious patterns
 func HeaderAnalysisMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -29,7 +29,7 @@ func HeaderAnalysisMiddleware() fiber.Handler {
 
 		// Skip for API endpoints and static assets
 		path := c.Path()
-		if isStaticAssetPath(path) || (len(path) >= 5 && path[:5] == "/api/") {
+		if isStaticAssetPath(path) || isAPIPath(path) {
 			return c.Next()
 		}
 
@@ -144,7 +144,7 @@ func analyzeUserAgent(ua string) int {
 }
 
 // checkHeaderConsistency checks for inconsistencies between headers
-func checkHeaderConsistency(c *fiber.Ctx) int {
+func checkHeaderConsistency(c fiber.Ctx) int {
 	score := 0
 	ua := strings.ToLower(c.Get("User-Agent"))
 	acceptLanguage := c.Get("Accept-Language")
@@ -174,7 +174,7 @@ func checkHeaderConsistency(c *fiber.Ctx) int {
 }
 
 // checkSuspiciousHeaderValues checks for suspicious header values
-func checkSuspiciousHeaderValues(c *fiber.Ctx) int {
+func checkSuspiciousHeaderValues(c fiber.Ctx) int {
 	score := 0
 
 	// Check for localhost/internal references in headers (proxy bypass attempts)

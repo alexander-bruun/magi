@@ -10,14 +10,62 @@ import (
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/adaptor/v2"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 )
 
 const (
 	sessionTokenCookie = "session_token"
 )
+
+// ParseIntParam parses a route param as int, returning an error response on failure.
+func ParseIntParam(c fiber.Ctx, name string, errMsg string) (int, error) {
+	idStr := c.Params(name)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, SendBadRequestError(c, errMsg)
+	}
+	return id, nil
+}
+
+// ParseInt64Param parses a route param as int64, returning an error response on failure.
+func ParseInt64Param(c fiber.Ctx, name string, errMsg string) (int64, error) {
+	idStr := c.Params(name)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return 0, SendBadRequestError(c, errMsg)
+	}
+	return id, nil
+}
+
+// GetContentRatingLimit returns the content rating limit, with admin override.
+func GetContentRatingLimit(userName string) int {
+	cfg, err := models.GetAppConfig()
+	if err != nil {
+		return 3 // default to show all
+	}
+	contentRatingLimit := cfg.ContentRatingLimit
+	if userName != "" {
+		user, err := models.FindUserByUsername(userName)
+		if err == nil && user != nil && user.Role == "admin" {
+			contentRatingLimit = 3
+		}
+	}
+	return contentRatingLimit
+}
+
+// GetUserRole returns the role for the given username, or "" if not found.
+func GetUserRole(userName string) string {
+	if userName == "" {
+		return ""
+	}
+	user, err := models.FindUserByUsername(userName)
+	if err == nil && user != nil {
+		return user.Role
+	}
+	return ""
+}
 
 // QueryParams holds parsed query parameters for media listings
 type QueryParams struct {
@@ -32,7 +80,7 @@ type QueryParams struct {
 }
 
 // ParseQueryParams extracts and normalizes query parameters from the request
-func ParseQueryParams(c *fiber.Ctx) QueryParams {
+func ParseQueryParams(c fiber.Ctx) QueryParams {
 	params := QueryParams{
 		Page:    getPageNumber(c.Query("page")),
 		TagMode: strings.ToLower(c.Query("tag_mode")),
@@ -145,7 +193,7 @@ func CalculateTotalPages(count int64, pageSize int) int {
 }
 
 // GetUserContext extracts username from fiber context locals
-func GetUserContext(c *fiber.Ctx) string {
+func GetUserContext(c fiber.Ctx) string {
 	if userName, ok := c.Locals("user_name").(string); ok && userName != "" {
 		return userName
 	}
@@ -153,17 +201,17 @@ func GetUserContext(c *fiber.Ctx) string {
 }
 
 // isHTMXRequest checks if the request is from HTMX
-func isHTMXRequest(c *fiber.Ctx) bool {
+func isHTMXRequest(c fiber.Ctx) bool {
 	return c.Get("HX-Request") == "true"
 }
 
 // GetHTMXTarget returns the HTMX target ID
-func GetHTMXTarget(c *fiber.Ctx) string {
+func GetHTMXTarget(c fiber.Ctx) string {
 	return c.Get("HX-Target")
 }
 
 // triggerNotification triggers an HTMX notification if the request is HTMX
-func triggerNotification(c *fiber.Ctx, message string, status string) {
+func triggerNotification(c fiber.Ctx, message string, status string) {
 	if isHTMXRequest(c) {
 		notification := map[string]interface{}{
 			"showNotification": map[string]string{
@@ -177,7 +225,7 @@ func triggerNotification(c *fiber.Ctx, message string, status string) {
 }
 
 // triggerCustomNotification triggers a custom HTMX notification with any event name
-func triggerCustomNotification(c *fiber.Ctx, eventName string, data map[string]interface{}) {
+func triggerCustomNotification(c fiber.Ctx, eventName string, data map[string]interface{}) {
 	if isHTMXRequest(c) {
 		var notification map[string]interface{}
 		if eventName == "" {
@@ -192,88 +240,13 @@ func triggerCustomNotification(c *fiber.Ctx, eventName string, data map[string]i
 	}
 }
 
-// sendValidationError sends a validation error with HX-Trigger notification for HTMX requests
-func sendValidationError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "warning")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusUnprocessableEntity).SendString("")
-	}
-	return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendUnauthorizedError sends an unauthorized error with HX-Trigger notification for HTMX requests
-func sendUnauthorizedError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "destructive")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusUnauthorized).SendString("")
-	}
-	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendForbiddenError sends a forbidden error with HX-Trigger notification for HTMX requests
-func sendForbiddenError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "destructive")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusForbidden).SendString("")
-	}
-	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendConflictError sends a conflict error with HX-Trigger notification for HTMX requests
-func sendConflictError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "warning")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusConflict).SendString("")
-	}
-	return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendNotFoundError sends a not found error with HX-Trigger notification for HTMX requests
-func sendNotFoundError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "warning")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusNotFound).SendString("")
-	}
-	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendInternalServerError sends an internal server error with HX-Trigger notification for HTMX requests
-func sendInternalServerError(c *fiber.Ctx, message string, err error) error {
-	// Log the actual error for debugging
-	log.Errorf("Internal server error: %v", err)
-
-	triggerNotification(c, message, "destructive")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusInternalServerError).SendString("")
-	}
-	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
-// sendBadRequestError sends a bad request error with HX-Trigger notification for HTMX requests
-func sendBadRequestError(c *fiber.Ctx, message string) error {
-	triggerNotification(c, message, "warning")
-	if isHTMXRequest(c) {
-		return c.Status(fiber.StatusBadRequest).SendString("")
-	}
-	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		"error": message,
-	})
-}
-
 // handleView wraps a page component with the layout unless the request is an HTMX fragment.
-func handleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotifications ...interface{}) error {
+func handleView(c fiber.Ctx, content templ.Component, unreadCountAndNotifications ...interface{}) error {
+	// Set cache control headers to prevent caching of dynamic content
+	c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Set("Pragma", "no-cache")
+	c.Set("Expires", "0")
+
 	// Return partial content if HTMX request
 	if isHTMXRequest(c) {
 		return renderComponent(c, content)
@@ -317,7 +290,7 @@ func handleView(c *fiber.Ctx, content templ.Component, unreadCountAndNotificatio
 	return renderComponent(c, base)
 }
 
-func renderComponent(c *fiber.Ctx, component templ.Component) error {
+func renderComponent(c fiber.Ctx, component templ.Component) error {
 	// Preserve the status code if it was already set
 	statusCode := c.Response().StatusCode()
 	if statusCode == 0 {
@@ -332,7 +305,7 @@ func renderComponent(c *fiber.Ctx, component templ.Component) error {
 	return err
 }
 
-func getUserRole(c *fiber.Ctx) (string, error) {
+func getUserRole(c fiber.Ctx) (string, error) {
 	sessionToken := c.Cookies(sessionTokenCookie)
 	if sessionToken == "" {
 		return "", nil
@@ -355,7 +328,7 @@ func getUserRole(c *fiber.Ctx) (string, error) {
 }
 
 // handleErrorWithStatus renders an error view with a custom HTTP status code
-func handleErrorWithStatus(c *fiber.Ctx, err error, status int) error {
+func handleErrorWithStatus(c fiber.Ctx, err error, status int) error {
 	c.Status(status)
 	return handleView(c, views.ErrorWithStatus(status, err.Error()))
 }
@@ -426,4 +399,26 @@ func GetNotificationStatusForError(err error) NotificationStatus {
 	// This could be expanded to check for specific error types
 	// For now, default to destructive for any error
 	return StatusDestructive
+}
+
+// isStaticAssetPath checks if the path is for a static asset.
+func isStaticAssetPath(path string) bool {
+	staticPrefixes := []string{
+		"/assets/",
+		"/favicon",
+		"/robots.txt",
+		"/manifest.json",
+	}
+
+	for _, prefix := range staticPrefixes {
+		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+			return true
+		}
+	}
+	return false
+}
+
+// isAPIPath checks if the path is an API endpoint.
+func isAPIPath(path string) bool {
+	return len(path) >= 5 && path[:5] == "/api/"
 }

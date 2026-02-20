@@ -15,9 +15,9 @@ import (
 	"github.com/a-h/templ"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 )
 
 const (
@@ -76,7 +76,7 @@ func verifySignature(data, signature string) bool {
 
 // HandleBrowserChallengeInit returns challenge data for invisible JS challenge
 // This endpoint is called by the browser to get a new challenge to solve
-func HandleBrowserChallengeInit(c *fiber.Ctx) error {
+func HandleBrowserChallengeInit(c fiber.Ctx) error {
 	// Check if already verified
 	if IsBrowserChallengeValid(c) {
 		return c.JSON(fiber.Map{
@@ -135,9 +135,9 @@ func HandleBrowserChallengeInit(c *fiber.Ctx) error {
 }
 
 // HandleBrowserChallengeVerify verifies the browser challenge solution
-func HandleBrowserChallengeVerify(c *fiber.Ctx) error {
+func HandleBrowserChallengeVerify(c fiber.Ctx) error {
 	var response ChallengeResponse
-	if err := c.BodyParser(&response); err != nil {
+	if err := c.Bind().Body(&response); err != nil {
 		log.Debugf("Failed to parse challenge response: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
@@ -273,7 +273,7 @@ func HandleBrowserChallengeVerify(c *fiber.Ctx) error {
 }
 
 // IsBrowserChallengeValid checks if the current request has a valid browser challenge cookie
-func IsBrowserChallengeValid(c *fiber.Ctx) bool {
+func IsBrowserChallengeValid(c fiber.Ctx) bool {
 	token := c.Cookies(browserChallengeCookie)
 	if token == "" {
 		return false
@@ -344,7 +344,7 @@ func IsBrowserChallengeValid(c *fiber.Ctx) bool {
 // This middleware is designed to be invisible - it only blocks API requests that require verification
 // The actual challenge is solved by JavaScript running in the browser
 func BrowserChallengeMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			log.Errorf("Failed to get app config for browser challenge: %v", err)
@@ -380,7 +380,7 @@ func BrowserChallengeMiddleware() fiber.Handler {
 // This middleware intercepts page requests and serves a lightweight challenge page that
 // auto-redirects once solved. This prevents curl/scripts from getting real page content.
 func BrowserChallengePageMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			log.Errorf("Failed to get app config for browser challenge: %v", err)

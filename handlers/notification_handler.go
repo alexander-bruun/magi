@@ -4,11 +4,11 @@ import (
 	"strconv"
 
 	"github.com/alexander-bruun/magi/models"
-	fiber "github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v3"
 )
 
 // HandleGetNotifications retrieves all notifications for the authenticated user
-func HandleGetNotifications(c *fiber.Ctx) error {
+func HandleGetNotifications(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -18,7 +18,7 @@ func HandleGetNotifications(c *fiber.Ctx) error {
 
 	notifications, err := models.GetUserNotifications(userName, unreadOnly)
 	if err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -27,7 +27,7 @@ func HandleGetNotifications(c *fiber.Ctx) error {
 }
 
 // HandleGetUnreadCount returns the count of unread notifications for the authenticated user
-func HandleGetUnreadCount(c *fiber.Ctx) error {
+func HandleGetUnreadCount(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -35,7 +35,7 @@ func HandleGetUnreadCount(c *fiber.Ctx) error {
 
 	count, err := models.GetUnreadNotificationCount(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -44,7 +44,7 @@ func HandleGetUnreadCount(c *fiber.Ctx) error {
 }
 
 // HandleMarkNotificationRead marks a specific notification as read
-func HandleMarkNotificationRead(c *fiber.Ctx) error {
+func HandleMarkNotificationRead(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -57,7 +57,7 @@ func HandleMarkNotificationRead(c *fiber.Ctx) error {
 	}
 
 	if err := models.MarkNotificationAsRead(notificationID, userName); err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -66,14 +66,14 @@ func HandleMarkNotificationRead(c *fiber.Ctx) error {
 }
 
 // HandleMarkAllNotificationsRead marks all notifications as read for the authenticated user
-func HandleMarkAllNotificationsRead(c *fiber.Ctx) error {
+func HandleMarkAllNotificationsRead(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
 
 	if err := models.MarkAllNotificationsAsRead(userName); err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	if c.Get("HX-Request") == "true" {
@@ -87,7 +87,7 @@ func HandleMarkAllNotificationsRead(c *fiber.Ctx) error {
 }
 
 // HandleDeleteNotification deletes a specific notification
-func HandleDeleteNotification(c *fiber.Ctx) error {
+func HandleDeleteNotification(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -100,7 +100,7 @@ func HandleDeleteNotification(c *fiber.Ctx) error {
 	}
 
 	if err := models.DeleteNotification(notificationID, userName); err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -109,14 +109,14 @@ func HandleDeleteNotification(c *fiber.Ctx) error {
 }
 
 // HandleClearReadNotifications clears all read notifications for the authenticated user
-func HandleClearReadNotifications(c *fiber.Ctx) error {
+func HandleClearReadNotifications(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
 
 	if err := models.ClearReadNotifications(userName); err != nil {
-		return sendInternalServerError(c, ErrNotificationOperationFailed, err)
+		return SendInternalServerError(c, ErrNotificationOperationFailed, err)
 	}
 
 	return c.JSON(fiber.Map{

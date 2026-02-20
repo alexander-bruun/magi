@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // BehaviorEntry tracks behavioral signals for a session
@@ -36,17 +35,14 @@ type BehaviorSignal struct {
 	TouchEvents    int     `json:"touch_events"`
 }
 
-var (
-	behaviorStore = make(map[string]*BehaviorEntry)
-	behaviorMu    sync.RWMutex
+var behaviorEntries = NewTTLStore[BehaviorEntry](
+	2*time.Hour, 10*time.Minute,
+	func(e *BehaviorEntry) time.Time { return e.LastActivity },
 )
 
 // BehavioralAnalysisMiddleware tracks and analyzes user behavior patterns
 func BehavioralAnalysisMiddleware() fiber.Handler {
-	// Start cleanup goroutine
-	go behaviorCleanup()
-
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -68,18 +64,15 @@ func BehavioralAnalysisMiddleware() fiber.Handler {
 			sessionID = ip // Fallback to IP if no session
 		}
 
-		behaviorMu.Lock()
-		entry, exists := behaviorStore[sessionID]
-		if !exists {
-			entry = &BehaviorEntry{
+		entry := behaviorEntries.GetOrCreate(sessionID, func() *BehaviorEntry {
+			return &BehaviorEntry{
 				SessionID:    sessionID,
 				IP:           ip,
 				HumanScore:   50, // Start neutral
 				LastActivity: time.Now(),
 				CreatedAt:    time.Now(),
 			}
-			behaviorStore[sessionID] = entry
-		}
+		})
 
 		// Track page view
 		path := c.Path()
@@ -95,7 +88,6 @@ func BehavioralAnalysisMiddleware() fiber.Handler {
 		calculateHumanScore(entry)
 
 		isSuspicious := entry.HumanScore < cfg.BehavioralScoreThreshold
-		behaviorMu.Unlock()
 
 		if isSuspicious {
 			c.Locals("suspicious_behavior", true)
@@ -109,7 +101,7 @@ func BehavioralAnalysisMiddleware() fiber.Handler {
 }
 
 // HandleBehaviorSignal receives client-side behavior signals
-func HandleBehaviorSignal(c *fiber.Ctx) error {
+func HandleBehaviorSignal(c fiber.Ctx) error {
 	cfg, err := models.GetAppConfig()
 	if err != nil || !cfg.BehavioralAnalysisEnabled {
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -128,20 +120,15 @@ func HandleBehaviorSignal(c *fiber.Ctx) error {
 		sessionID = ip
 	}
 
-	behaviorMu.Lock()
-	defer behaviorMu.Unlock()
-
-	entry, exists := behaviorStore[sessionID]
-	if !exists {
-		entry = &BehaviorEntry{
+	entry := behaviorEntries.GetOrCreate(sessionID, func() *BehaviorEntry {
+		return &BehaviorEntry{
 			SessionID:    sessionID,
 			IP:           ip,
 			HumanScore:   50,
 			LastActivity: time.Now(),
 			CreatedAt:    time.Now(),
 		}
-		behaviorStore[sessionID] = entry
-	}
+	})
 
 	// Update entry with signal data
 	if signal.MouseMoved {
@@ -268,47 +255,24 @@ func calculateHumanScoreWithSignal(entry *BehaviorEntry, signal *BehaviorSignal)
 	entry.HumanScore = score
 }
 
-// isAPIPath checks if the path is an API endpoint
-func isAPIPath(path string) bool {
-	return len(path) >= 5 && path[:5] == "/api/"
-}
-
-// behaviorCleanup removes old behavior entries
-func behaviorCleanup() {
-	ticker := time.NewTicker(10 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		behaviorMu.Lock()
-		now := time.Now()
-		for sessionID, entry := range behaviorStore {
-			// Remove entries inactive for more than 2 hours
-			if now.Sub(entry.LastActivity) > 2*time.Hour {
-				delete(behaviorStore, sessionID)
-			}
-		}
-		behaviorMu.Unlock()
-	}
-}
 
 // GetBehaviorStats returns statistics about behavioral analysis (for admin dashboard)
 func GetBehaviorStats() map[string]interface{} {
-	behaviorMu.RLock()
-	defer behaviorMu.RUnlock()
-
-	totalCount := len(behaviorStore)
+	totalCount := 0
 	humanCount := 0
 	suspiciousCount := 0
 	averageScore := 0
 
-	for _, entry := range behaviorStore {
+	behaviorEntries.Range(func(_ string, entry *BehaviorEntry) bool {
+		totalCount++
 		averageScore += entry.HumanScore
 		if entry.HumanScore >= 60 {
 			humanCount++
 		} else if entry.HumanScore < 40 {
 			suspiciousCount++
 		}
-	}
+		return true
+	})
 
 	if totalCount > 0 {
 		averageScore = averageScore / totalCount

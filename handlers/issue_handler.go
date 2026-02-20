@@ -6,17 +6,17 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // HandleReportIssue displays the issue reporting form
-func HandleReportIssue(c *fiber.Ctx) error {
+func HandleReportIssue(c fiber.Ctx) error {
 	return handleView(c, views.ReportIssue())
 }
 
 // HandleCreateIssue processes the issue report submission
-func HandleCreateIssue(c *fiber.Ctx) error {
+func HandleCreateIssue(c fiber.Ctx) error {
 	// Get user from context (set by auth middleware)
 	userName, ok := c.Locals("user_name").(string)
 	var userUsername *string
@@ -25,7 +25,7 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 	}
 
 	if userUsername == nil {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	var req struct {
@@ -35,12 +35,12 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 		Priority    string `json:"priority" form:"priority"`
 	}
 
-	if err := c.BodyParser(&req); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&req); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	if req.Title == "" || req.Description == "" {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Validate category
@@ -72,7 +72,7 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 
 	err := models.CreateIssue(issue)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Create notifications for moderators and admins about the new issue
@@ -99,16 +99,16 @@ func HandleCreateIssue(c *fiber.Ctx) error {
 	}
 
 	// Redirect to success page
-	return c.Redirect("/report-issue/success")
+	return c.Redirect().To("/report-issue/success")
 }
 
 // HandleReportIssueSuccess displays the success page after reporting an issue
-func HandleReportIssueSuccess(c *fiber.Ctx) error {
+func HandleReportIssueSuccess(c fiber.Ctx) error {
 	return c.Render("report-issue-success", fiber.Map{})
 }
 
 // HandleIssuesAdmin displays the admin issues management page
-func HandleIssuesAdmin(c *fiber.Ctx) error {
+func HandleIssuesAdmin(c fiber.Ctx) error {
 	status := c.Query("status")
 	category := c.Query("category")
 	limitStr := c.Query("limit", "50")
@@ -119,12 +119,12 @@ func HandleIssuesAdmin(c *fiber.Ctx) error {
 
 	issues, err := models.GetIssues(status, category, limit, offset)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	stats, err := models.GetIssueStats()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Check if this is an HTMX request (for filtering/sorting)
@@ -136,16 +136,16 @@ func HandleIssuesAdmin(c *fiber.Ctx) error {
 }
 
 // HandleUpdateIssueStatus updates the status of an issue
-func HandleUpdateIssueStatus(c *fiber.Ctx) error {
+func HandleUpdateIssueStatus(c fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	status := c.FormValue("status")
 	if status == "" {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Validate status
@@ -153,14 +153,14 @@ func HandleUpdateIssueStatus(c *fiber.Ctx) error {
 		"open": true, "in_progress": true, "closed": true,
 	}
 	if !validStatuses[status] {
-		return sendBadRequestError(c, ErrBadRequest)
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	resolution := c.FormValue("resolution")
 
 	err = models.UpdateIssueResolution(id, status, resolution)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If issue is closed, send notification to the user who reported it
@@ -211,7 +211,7 @@ func HandleUpdateIssueStatus(c *fiber.Ctx) error {
 	if c.Get("HX-Request") == "true" {
 		issue, err := models.GetIssueByID(id)
 		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 		return renderComponent(c, views.IssueRow(*issue))
 	}

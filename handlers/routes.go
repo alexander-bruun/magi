@@ -2,19 +2,20 @@ package handlers
 
 import (
 	"embed"
+	"os"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/scheduler"
-	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/utils/text"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/healthcheck"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/compress"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/healthcheck"
 )
 
 // savedBackupDirectory stores the backup directory path
@@ -22,6 +23,9 @@ var savedBackupDirectory string
 
 // dataManager manages data operations
 var dataManager *filestore.DataManager
+
+// globalDataBackend stores the data backend for child processes
+var globalDataBackend filestore.DataBackend
 
 // GetDataBackend returns the current data backend
 func GetDataBackend() filestore.DataBackend {
@@ -34,9 +38,6 @@ func GetDataBackend() filestore.DataBackend {
 // shutdownChan is used to trigger application shutdown
 var shutdownChan = make(chan struct{})
 
-// tokenCleanupStop is used to stop the token cleanup goroutine
-var tokenCleanupStop = make(chan struct{})
-
 // GetShutdownChan returns the shutdown channel for triggering application shutdown
 func GetShutdownChan() <-chan struct{} {
 	return shutdownChan
@@ -44,13 +45,35 @@ func GetShutdownChan() <-chan struct{} {
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
 func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string, assetsFS embed.FS) {
-	log.Info("Initializing application routes and middleware")
+	if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+		log.Info("Initializing application routes and middleware")
+	}
 
 	// Initialize data manager with provided backend
 	dataManager = filestore.NewDataManager(dataBackend)
+	globalDataBackend = dataBackend
+
+	if os.Getenv("FIBER_PREFORK_CHILD") != "" {
+		// Reinitialize data manager in child processes
+		dataManager = filestore.NewDataManager(globalDataBackend)
+	}
 
 	// Store backup directory for backup operations
 	savedBackupDirectory = backupDirectory
+
+	var (
+		api           fiber.Router
+		auth          fiber.Router
+		collections   fiber.Router
+		media         fiber.Router
+		account       fiber.Router
+		notifications fiber.Router
+		users         fiber.Router
+		bannedIPs     fiber.Router
+		permissions   fiber.Router
+		libraries     fiber.Router
+		scraper       fiber.Router
+	)
 
 	// ========================================
 	// Initialize CSS Parser for dynamic CSS injection
@@ -93,37 +116,21 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	scheduler.NotifyIndexerFinished = NotifyIndexerFinished
 
 	// ========================================
-	// Start token cleanup goroutine
-	// ========================================
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				files.CleanupExpiredTokens()
-			case <-tokenCleanupStop:
-				return
-			}
-		}
-	}()
-
-	// ========================================
 	// Middleware Configuration
 	// ========================================
 	app.Use(compress.New(compress.Config{
 		Level: compress.LevelBestSpeed, // Fast compression for better performance
 	}))
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Content-Type,Authorization",
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
 	}))
 
 	app.Use(RequestIDMiddleware())
 	app.Use(OptionalAuthMiddleware())
 	app.Use(MaintenanceModeMiddleware())
-	app.Use(healthcheck.New())
+	app.Get(healthcheck.LivenessEndpoint, healthcheck.New())
 
 	// Browser Challenge Middleware - serves challenge page for unverified HTML requests
 	// This must come before other middlewares to intercept requests early
@@ -164,7 +171,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Get("/metrics", AuthMiddleware("admin"), HandleMetrics)
 	app.Get("/api/metrics/json", AuthMiddleware("admin"), HandleMetricsJSON)
 
-	app.Options("/*", func(c *fiber.Ctx) error {
+	app.Options("/*", func(c fiber.Ctx) error {
 		c.Set("Access-Control-Allow-Origin", "*")
 		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 		c.Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
@@ -177,18 +184,18 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 
 	// Poster serving (no bot detection for better UX)
 	app.Use("/api/posters", imageCacheMiddleware)
-	app.Get("/api/posters/*", func(c *fiber.Ctx) error {
+	app.Get("/api/posters/*", func(c fiber.Ctx) error {
 		return handlePosterRequest(c)
 	})
 
 	// Avatar serving
 	app.Use("/api/avatars", imageCacheMiddleware)
-	app.Get("/api/avatars/*", func(c *fiber.Ctx) error {
+	app.Get("/api/avatars/*", func(c fiber.Ctx) error {
 		return handleAvatarRequest(c)
 	})
 
 	// Static assets (CSS and JS are handled by their respective middlewares)
-	app.Use("/assets/", func(c *fiber.Ctx) error {
+	app.Use("/assets/", func(c fiber.Ctx) error {
 		// Set cache headers for static assets (1 year for JS/CSS, 1 day for images)
 		if strings.HasSuffix(c.Path(), ".js") || strings.HasSuffix(c.Path(), ".css") {
 			c.Set("Cache-Control", "public, max-age=31536000") // 1 year
@@ -197,20 +204,20 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 		}
 		return c.Next()
 	})
-	app.Static("/assets/img/", "./assets/img/")
+	app.Get("/assets/img/*", static.New("./assets/img/"))
 
 	// Robots.txt
-	app.Get("/robots.txt", func(c *fiber.Ctx) error {
+	app.Get("/robots.txt", func(c fiber.Ctx) error {
 		return c.SendFile("./assets/robots.txt")
 	})
 
 	// PWA manifest and service worker
-	app.Get("/assets/manifest.json", func(c *fiber.Ctx) error {
+	app.Get("/assets/manifest.json", func(c fiber.Ctx) error {
 		c.Set("Content-Type", "application/manifest+json")
 		return c.SendFile("./assets/manifest.json")
 	})
 
-	app.Get("/assets/js/sw.js", func(c *fiber.Ctx) error {
+	app.Get("/assets/js/sw.js", func(c fiber.Ctx) error {
 		c.Set("Content-Type", "application/javascript")
 		return c.SendFile("./assets/js/sw.js")
 	})
@@ -218,10 +225,8 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// API Endpoints
 	// ========================================
-	api := app.Group("/api")
+	api = app.Group("/api")
 
-	api.Get("/comic", BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ComicHandler)
-	api.Get("/image", ImageProtectionMiddleware(), BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ImageHandler)
 	api.Get("/config/stripe", HandleGetStripeConfig)
 
 	// Browser Challenge API (invisible JS/cookie challenge)
@@ -246,9 +251,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// Public Routes
 	// ========================================
 	app.Get("/", HandleHome)
-	app.Get("/top-popular-full", HandleTopPopularFull)
 	app.Get("/top-read-full", HandleTopReadFull)
-	app.Get("/top-popular-card", HandleTopPopularCard)
 	app.Get("/top-read-card", HandleTopReadCard)
 	app.Get("/external/callback/mal", HandleMALCallback)
 	app.Get("/external/callback/anilist", HandleAniListCallback)
@@ -263,7 +266,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Authentication Routes
 	// ========================================
-	auth := app.Group("/auth")
+	auth = app.Group("/auth")
 	auth.Get("/login", loginHandler)
 	auth.Post("/login", loginUserHandler)
 	auth.Get("/register", registerHandler)
@@ -278,7 +281,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Get("/collections/create/modal", AuthMiddleware("reader"), HandleCreateCollectionModal)
 	app.Post("/collections/create", AuthMiddleware("reader"), HandleCreateCollection)
 
-	collections := app.Group("/collections/:id", func(c *fiber.Ctx) error {
+	collections = app.Group("/collections/:id", func(c fiber.Ctx) error {
 		idStr := c.Params("id")
 		if _, err := strconv.Atoi(idStr); err != nil {
 			return c.Status(400).SendString("Invalid collection ID")
@@ -301,6 +304,13 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	app.Post("/series/:media/collections/remove", AuthMiddleware("reader"), HandleRemoveMediaFromCollectionFromMedia)
 
 	// ========================================
+	// Chapter Image Serving (encrypted slug URLs)
+	// Must be registered before the /series group to ensure proper route matching.
+	// Min-length constraint on :slug avoids conflicts with short path segments like "comments", "chapters", etc.
+	// ========================================
+	app.Get("/series/:media<[A-Za-z0-9_-]+>/:chapter<[A-Za-z0-9_-]+>/:slug<[A-Za-z0-9_-]{30,}>", BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ChapterImageHandler)
+
+	// ========================================
 	// Chapter Routes (top-level)
 	// ========================================
 	app.Get("/chapter/:hash<[A-Za-z0-9_-]+>/assets/*", HandleMediaChapterAsset)
@@ -320,9 +330,9 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 
 	// Guard middleware to reject bad slugs before they reach handlers
-	media := app.Group("/series",
+	media = app.Group("/series",
 		ConditionalAuthMiddleware(),
-		func(c *fiber.Ctx) error {
+		func(c fiber.Ctx) error {
 			// Extract first segment after /series/
 			rest := strings.TrimPrefix(c.Path(), "/series/")
 			if rest == "" || rest == "/" {
@@ -348,6 +358,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 
 	// Individual media (restricted slug) - registered after chapter routes to avoid conflicts
 	media.Get("/:media<[A-Za-z0-9_-]+>", HandleMedia)
+	media.Post("/:media<[A-Za-z0-9_-]+>", HandleMedia)
 
 	// Media interactions
 	media.Post("/:media<[A-Za-z0-9_-]+>/vote", HandleMediaVote)
@@ -365,24 +376,29 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 
 	// Media metadata management
+	media.Get("/:media<[A-Za-z0-9_-]+>/metadata/search", AuthMiddleware("admin"), HandleUpdateMetadataMedia)
+	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/edit", AuthMiddleware("admin"), HandleManualEditMetadata)
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
 
-	// Review management
-	media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
-	media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
-	media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
-	media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:id", AuthMiddleware("reader"), HandleDeleteReview)
+	// Review management - DEPRECATED
+	// media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
+	// media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
+	// media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
+	// media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:id", AuthMiddleware("reader"), HandleDeleteReview)
 
 	// Chapter comments
 	media.Get("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", HandleGetCommentsForSeries)
 	media.Post("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", AuthMiddleware("reader"), HandleCreateCommentForSeries)
 
+	// Chapter page (slug-based URL) - must be registered AFTER all specific media sub-routes
+	media.Get("/:media<[A-Za-z0-9_-]+>/:chapter<[A-Za-z0-9_-]+>", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapterBySlug)
+
 	// ========================================
 	// Account Routes
 	// ========================================
-	account := app.Group("/account", AuthMiddleware("reader"))
+	account = app.Group("/account", AuthMiddleware("reader"))
 	account.Get("", HandleAccount)
 	account.Get("/favorites", HandleAccountFavorites)
 	account.Get("/upvoted", HandleAccountUpvoted)
@@ -409,7 +425,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Notification Routes
 	// ========================================
-	notifications := app.Group("/api/notifications", AuthMiddleware("reader"))
+	notifications = app.Group("/api/notifications", AuthMiddleware("reader"))
 	notifications.Get("", HandleGetNotifications)
 	notifications.Get("/unread-count", HandleGetUnreadCount)
 	notifications.Post("/:id/read", HandleMarkNotificationRead)
@@ -420,7 +436,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// User Management Routes
 	// ========================================
-	users := app.Group("/admin/users", AuthMiddleware("moderator"))
+	users = app.Group("/admin/users", AuthMiddleware("moderator"))
 	users.Get("", HandleUsers)
 	users.Get("/table", HandleUsersTable)
 	users.Post("/:username/ban", HandleUserBan)
@@ -431,7 +447,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Banned IPs Management
 	// ========================================
-	bannedIPs := app.Group("/admin/banned-ips", AuthMiddleware("moderator"))
+	bannedIPs = app.Group("/admin/banned-ips", AuthMiddleware("moderator"))
 	bannedIPs.Get("", HandleBannedIPs)
 	bannedIPs.Post("/:ip/unban", HandleUnbanIP)
 
@@ -444,7 +460,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Permission Management API
 	// ========================================
-	permissions := app.Group("/api/permissions", AuthMiddleware("moderator"))
+	permissions = app.Group("/api/permissions", AuthMiddleware("moderator"))
 	permissions.Get("/list", HandleGetPermissions)
 	permissions.Get("/:id/form", HandleGetPermissionForm)
 	permissions.Post("", HandleCreatePermission)
@@ -467,7 +483,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Library Management
 	// ========================================
-	libraries := app.Group("/admin/libraries", AuthMiddleware("admin"))
+	libraries = app.Group("/admin/libraries", AuthMiddleware("admin"))
 	libraries.Get("", HandleLibraries)
 	libraries.Post("", HandleCreateLibrary)
 	libraries.Get("/:slug", HandleEditLibrary)
@@ -487,7 +503,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Scraper Routes
 	// ========================================
-	scraper := app.Group("/admin/scraper", AuthMiddleware("admin"))
+	scraper = app.Group("/admin/scraper", AuthMiddleware("admin"))
 	scraper.Get("", HandleScraper)
 	scraper.Get("/new", HandleScraperNewForm)
 	scraper.Post("", HandleScraperScriptCreate)
@@ -549,10 +565,6 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	}
 
 	log.Debug("Starting server on port %s", port)
-	log.Fatal(app.Listen(":" + port))
-}
-
-// StopTokenCleanup stops the token cleanup goroutine
-func StopTokenCleanup() {
-	close(tokenCleanupStop)
+	enablePrefork := true
+	log.Fatal(app.Listen(":"+port, fiber.ListenConfig{EnablePrefork: enablePrefork}))
 }

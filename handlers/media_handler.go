@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/alexander-bruun/magi/models"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // DeleteMedia deletes a media and all associated data
@@ -21,15 +21,15 @@ func DeleteMedia(mediaSlug string) error {
 }
 
 // HandleDeleteMedia deletes a media and all associated data
-func HandleDeleteMedia(c *fiber.Ctx) error {
+func HandleDeleteMedia(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	if mangaSlug == "" {
-		return sendBadRequestError(c, "Media slug cannot be empty")
+		return SendBadRequestError(c, "Media slug cannot be empty")
 	}
 
 	if err := DeleteMedia(mangaSlug); err != nil {
 		log.Errorf("Failed to delete media '%s': %v", mangaSlug, err)
-		return sendInternalServerError(c, ErrMediaDeleteFailed, err)
+		return SendInternalServerError(c, ErrMediaDeleteFailed, err)
 	}
 
 	log.Infof("Successfully deleted media '%s'", mangaSlug)

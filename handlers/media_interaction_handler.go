@@ -7,7 +7,7 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v3"
 )
 
 // MediaInteractionFormData represents form data for media interactions (vote/favorite)
@@ -79,7 +79,7 @@ func GetMediaInteractionData(mediaSlug, userName string) (*MediaInteractionData,
 
 // HandleMediaVote handles a user's upvote/downvote for a media via HTMX.
 // Expected form values: "value" = "1" or "-1". User must be authenticated.
-func HandleMediaVote(c *fiber.Ctx) error {
+func HandleMediaVote(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	userName := GetUserContext(c)
 	if userName == "" {
@@ -87,8 +87,8 @@ func HandleMediaVote(c *fiber.Ctx) error {
 	}
 
 	var formData MediaInteractionFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	valStr := formData.Value
@@ -98,7 +98,7 @@ func HandleMediaVote(c *fiber.Ctx) error {
 
 	data, err := ProcessMediaVote(userName, mangaSlug, valStr)
 	if err != nil {
-		return sendInternalServerError(c, ErrMediaVoteFailed, err)
+		return SendInternalServerError(c, ErrMediaVoteFailed, err)
 	}
 
 	return handleView(c, views.MediaVoteFragment(mangaSlug, data.Score, data.UpVotes, data.DownVotes, data.UserVote))
@@ -106,18 +106,18 @@ func HandleMediaVote(c *fiber.Ctx) error {
 
 // HandleMediaVoteFragment returns the vote UI fragment for a media. If user is logged in,
 // it will show their current selection highlighted.
-func HandleMediaVoteFragment(c *fiber.Ctx) error {
+func HandleMediaVoteFragment(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the media page
 	if !isHTMXRequest(c) {
 		mangaSlug := c.Params("media")
-		return c.Redirect("/series/" + mangaSlug)
+		return c.Redirect().To("/series/" + mangaSlug)
 	}
 
 	mangaSlug := c.Params("media")
 	userName := GetUserContext(c)
 	score, up, down, err := models.GetMediaVotes(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrMediaVoteFailed, err)
+		return SendInternalServerError(c, ErrMediaVoteFailed, err)
 	}
 	userVote := 0
 	if userName != "" {
@@ -133,7 +133,7 @@ func HandleMediaVoteFragment(c *fiber.Ctx) error {
 
 // HandleMediaFavorite handles a user's favorite/unfavorite action for a media via HTMX.
 // Expected form values: "value" = "1" (favorite) or "0" (unfavorite). User must be authenticated.
-func HandleMediaFavorite(c *fiber.Ctx) error {
+func HandleMediaFavorite(c fiber.Ctx) error {
 	mangaSlug := c.Params("media")
 	userName := GetUserContext(c)
 	if userName == "" {
@@ -141,8 +141,8 @@ func HandleMediaFavorite(c *fiber.Ctx) error {
 	}
 
 	var formData MediaInteractionFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	valStr := formData.Value
@@ -152,36 +152,36 @@ func HandleMediaFavorite(c *fiber.Ctx) error {
 
 	if valStr == "0" {
 		if err := models.RemoveFavorite(userName, mangaSlug); err != nil {
-			return sendInternalServerError(c, ErrMediaFavoriteFailed, err)
+			return SendInternalServerError(c, ErrMediaFavoriteFailed, err)
 		}
 	} else {
 		if err := models.SetFavorite(userName, mangaSlug); err != nil {
-			return sendInternalServerError(c, ErrMediaFavoriteFailed, err)
+			return SendInternalServerError(c, ErrMediaFavoriteFailed, err)
 		}
 	}
 
 	// Return updated fragment so HTMX can refresh the favorite UI in-place.
 	favCount, err := models.GetFavoritesCount(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrMediaFavoriteFailed, err)
+		return SendInternalServerError(c, ErrMediaFavoriteFailed, err)
 	}
 	isFav, _ := models.IsFavoriteForUser(userName, mangaSlug)
 	return handleView(c, views.MediaFavoriteFragment(mangaSlug, favCount, isFav))
 }
 
 // HandleMediaFavoriteFragment returns the favorite UI fragment for a media.
-func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
+func HandleMediaFavoriteFragment(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the media page
 	if !isHTMXRequest(c) {
 		mangaSlug := c.Params("media")
-		return c.Redirect("/series/" + mangaSlug)
+		return c.Redirect().To("/series/" + mangaSlug)
 	}
 
 	mangaSlug := c.Params("media")
 	userName := GetUserContext(c)
 	favCount, err := models.GetFavoritesCount(mangaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrMediaFavoriteFailed, err)
+		return SendInternalServerError(c, ErrMediaFavoriteFailed, err)
 	}
 	isFav := false
 	if userName != "" {
@@ -197,19 +197,19 @@ func HandleMediaFavoriteFragment(c *fiber.Ctx) error {
 
 // HandleAddHighlight handles adding a media to highlights via HTMX.
 // Uses the media's cover art as background and generates a default description.
-func HandleAddHighlight(c *fiber.Ctx) error {
+func HandleAddHighlight(c fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 
 	// Verify media exists
 	media, err := models.GetMediaUnfiltered(mediaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Check if already highlighted
 	isHighlighted, err := models.IsMediaHighlighted(mediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if isHighlighted {
 		triggerNotification(c, "This series is already highlighted", "warning")
@@ -239,7 +239,7 @@ func HandleAddHighlight(c *fiber.Ctx) error {
 	// Create highlight
 	_, err = models.CreateHighlight(mediaSlug, backgroundImageURL, description, displayOrder)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	triggerNotification(c, "Series added to highlights successfully", "success")
@@ -247,19 +247,19 @@ func HandleAddHighlight(c *fiber.Ctx) error {
 }
 
 // HandleRemoveHighlight handles removing a media from highlights via HTMX.
-func HandleRemoveHighlight(c *fiber.Ctx) error {
+func HandleRemoveHighlight(c fiber.Ctx) error {
 	mediaSlug := c.Params("media")
 
 	// Verify media exists
 	media, err := models.GetMediaUnfiltered(mediaSlug)
 	if err != nil || media == nil {
-		return sendNotFoundError(c, ErrMediaNotFound)
+		return SendNotFoundError(c, ErrMediaNotFound)
 	}
 
 	// Check if highlighted
 	isHighlighted, err := models.IsMediaHighlighted(mediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if !isHighlighted {
 		triggerNotification(c, "This series is not highlighted", "warning")
@@ -268,7 +268,7 @@ func HandleRemoveHighlight(c *fiber.Ctx) error {
 
 	// Remove highlight
 	if err := models.DeleteHighlightByMediaSlug(mediaSlug); err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	triggerNotification(c, "Series removed from highlights successfully", "success")

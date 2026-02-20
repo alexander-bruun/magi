@@ -10,8 +10,8 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 const (
@@ -158,7 +158,7 @@ func cleanupOldIPTrackers() {
 
 // AuthMiddleware handles session token validation
 func AuthMiddleware(requiredRole string) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		sessionToken := c.Cookies("session_token")
 
 		if sessionToken != "" {
@@ -194,15 +194,17 @@ func AuthMiddleware(requiredRole string) fiber.Handler {
 			// But let's check if we should return 204 for unauthenticated too if it's an action?
 			// If it's a navigation, we should redirect.
 			// Let's keep redirect for unauthenticated for now, as the user focused on "premium" (permission).
+			log.Infof("AuthMiddleware: redirecting to login for path=%s, user not authenticated", c.Path())
 			c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(target))
 			return c.Status(fiber.StatusUnauthorized).SendString("")
 		}
 
-		return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
+		log.Infof("AuthMiddleware: redirecting to login for path=%s, user not authenticated", c.Path())
+		return c.Redirect().Status(fiber.StatusSeeOther).To("/auth/login?target=" + url.QueryEscape(target))
 	}
 }
 
-func validateSessionToken(c *fiber.Ctx, sessionToken, requiredRole string) error {
+func validateSessionToken(c fiber.Ctx, sessionToken, requiredRole string) error {
 	username, err := models.ValidateSessionToken(sessionToken)
 	if err != nil {
 		return fiber.ErrUnauthorized
@@ -211,7 +213,7 @@ func validateSessionToken(c *fiber.Ctx, sessionToken, requiredRole string) error
 	return validateUserRole(c, username, requiredRole)
 }
 
-func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
+func validateUserRole(c fiber.Ctx, userName, requiredRole string) error {
 	user, err := models.FindUserByUsername(userName)
 	if err != nil || user == nil {
 		return fiber.ErrUnauthorized
@@ -229,7 +231,7 @@ func validateUserRole(c *fiber.Ctx, userName, requiredRole string) error {
 	return nil
 }
 
-func ClearSessionCookie(c *fiber.Ctx) {
+func ClearSessionCookie(c fiber.Ctx) {
 	expiredTime := time.Now().Add(-time.Hour)
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
@@ -243,7 +245,7 @@ func ClearSessionCookie(c *fiber.Ctx) {
 	})
 }
 
-func SetSessionCookie(c *fiber.Ctx, sessionToken string) {
+func SetSessionCookie(c fiber.Ctx, sessionToken string) {
 	secure := isSecureRequest(c)
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",
@@ -258,7 +260,7 @@ func SetSessionCookie(c *fiber.Ctx, sessionToken string) {
 }
 
 // isPrivilegedUser checks if the current request is from a moderator or admin user
-func isPrivilegedUser(c *fiber.Ctx) bool {
+func isPrivilegedUser(c fiber.Ctx) bool {
 	sessionToken := c.Cookies("session_token")
 	if sessionToken == "" {
 		return false
@@ -286,7 +288,7 @@ func generateRequestID() string {
 
 // RequestIDMiddleware adds a unique request ID to each request
 func RequestIDMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		requestID := generateRequestID()
 
 		// Add to context for use in handlers
@@ -301,7 +303,7 @@ func RequestIDMiddleware() fiber.Handler {
 
 // RateLimitingMiddleware limits the number of requests per IP
 func RateLimitingMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		log.Debugf("RateLimitingMiddleware: checking request to %s", c.Path())
 		cfg, err := models.GetAppConfig()
 		if err != nil {
@@ -411,7 +413,7 @@ func RateLimitingMiddleware() fiber.Handler {
 }
 
 // isSecureRequest returns true if the request is using HTTPS or forwarded as HTTPS.
-func isSecureRequest(c *fiber.Ctx) bool {
+func isSecureRequest(c fiber.Ctx) bool {
 	if c.Secure() || c.Protocol() == "https" {
 		return true
 	}
@@ -426,7 +428,7 @@ func isSecureRequest(c *fiber.Ctx) bool {
 }
 
 // getRealIP extracts the real client IP from the request, considering proxies
-func getRealIP(c *fiber.Ctx) string {
+func getRealIP(c fiber.Ctx) string {
 	// Check X-Forwarded-For header (common with proxies/load balancers)
 	if xff := c.Get("X-Forwarded-For"); xff != "" {
 		// Take the first IP in the chain
@@ -444,7 +446,7 @@ func getRealIP(c *fiber.Ctx) string {
 }
 
 func BotDetectionMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			log.Errorf("Failed to get app config for bot detection: %v", err)
@@ -499,21 +501,22 @@ func BotDetectionMiddleware() fiber.Handler {
 			// /series -> 1 segment
 			// /series/{media} -> 2 segments (series page)
 			// /series/{media}/{chapter} -> 3 segments (chapter page)
+			// /series/{media}/{chapter}/{slug} -> 4 segments (chapter image, skip tracking)
 			pathParts := strings.Split(strings.Trim(path, "/"), "/")
-			if len(pathParts) >= 3 && pathParts[0] == "series" {
-				// Chapter access (3 or more segments after trimming leading slash)
+			if len(pathParts) == 3 && pathParts[0] == "series" {
+				// Chapter access (exactly 3 segments - actual chapter page views only, not image loads)
 				tracker.ChapterAccesses = append(tracker.ChapterAccesses, now)
 				if isBotBehavior(tracker.ChapterAccesses, cfg.BotChapterThreshold, cfg.BotDetectionWindow) {
-					log.Infof("Banning IP %s for excessive chapter accesses", ip)
-					models.BanIP(ip, "Excessive chapter accesses")
+					log.Infof("Banning IP %s for excessive chapter accesses (%ds)", ip, cfg.BotBanDuration)
+					models.BanIP(ip, "Excessive chapter accesses", cfg.BotBanDuration)
 					// Continue processing the request - ban is for future requests
 				}
 			} else if !strings.Contains(path, "/search") && !strings.Contains(path, "/tags") && len(pathParts) == 2 {
 				// Series access (exactly 2 segments, not search or tags)
 				tracker.SeriesAccesses = append(tracker.SeriesAccesses, now)
 				if isBotBehavior(tracker.SeriesAccesses, cfg.BotSeriesThreshold, cfg.BotDetectionWindow) {
-					log.Infof("Banning IP %s for excessive series accesses", ip)
-					models.BanIP(ip, "Excessive series accesses")
+					log.Infof("Banning IP %s for excessive series accesses (%ds)", ip, cfg.BotBanDuration)
+					models.BanIP(ip, "Excessive series accesses", cfg.BotBanDuration)
 					// Continue processing the request - ban is for future requests
 				}
 			}
@@ -571,7 +574,7 @@ func filterTimesAfter(times []time.Time, after time.Time) []time.Time {
 // but does not enforce authentication. It sets c.Locals("user_name") when a valid
 // token is found so handlers can optionally adapt views for logged-in users.
 func OptionalAuthMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		sessionToken := c.Cookies("session_token")
 
 		if sessionToken != "" {
@@ -587,7 +590,7 @@ func OptionalAuthMiddleware() fiber.Handler {
 // and falls back to anonymous role permissions for unauthenticated users.
 // If anonymous users have no permissions, it enforces authentication.
 func ConditionalAuthMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Try to authenticate if session cookie is present
 		sessionToken := c.Cookies("session_token")
 		if sessionToken != "" {
@@ -601,20 +604,48 @@ func ConditionalAuthMiddleware() fiber.Handler {
 		libraries, err := models.GetAccessibleLibrariesForAnonymous()
 		if err != nil {
 			// If we can't get anonymous permissions, fail open
-			log.Debugf("Failed to get anonymous libraries: %v", err)
+			log.Infof("Failed to get anonymous libraries: %v", err)
 			return c.Next()
 		}
 
 		hasWildcard, err := models.RoleHasWildcardPermission("anonymous")
 		if err != nil {
-			log.Debugf("Failed to check anonymous wildcard: %v", err)
+			log.Infof("Failed to check anonymous wildcard: %v", err)
 			return c.Next()
 		}
 
-		log.Debugf("Anonymous permissions: hasWildcard=%v, libraries=%v", hasWildcard, libraries)
+		log.Infof("Anonymous permissions: hasWildcard=%v, libraries=%v", hasWildcard, libraries)
+
+		// Check if this endpoint requires authentication (admin/moderator only)
+		path := c.Path()
+		requiresAuth := strings.Contains(path, "/poster/") ||
+			strings.Contains(path, "/metadata/") ||
+			strings.Contains(path, "/delete") ||
+			strings.Contains(path, "/highlights/") ||
+			strings.Contains(path, "/reviews/") // deprecated but keep
+
+		if requiresAuth {
+			// For endpoints that require authentication, redirect anonymous users to login
+			originalURL := c.OriginalURL()
+			target := originalURL
+			if after, ok := strings.CutPrefix(originalURL, "/series/"); ok {
+				parts := strings.Split(after, "/")
+				if len(parts) > 1 {
+					target = "/series/" + parts[0]
+				}
+			}
+			log.Infof("ConditionalAuthMiddleware: redirecting to login for path=%s, endpoint requires auth", c.Path())
+			if isHTMXRequest(c) {
+				c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(target))
+				return c.Status(fiber.StatusUnauthorized).SendString("")
+			}
+			log.Infof("ConditionalAuthMiddleware: redirecting to login for path=%s, endpoint requires auth", c.Path())
+			return c.Redirect().Status(fiber.StatusSeeOther).To("/auth/login?target=" + url.QueryEscape(target))
+		}
 
 		// If anonymous has wildcard permission or specific library access, allow
 		if hasWildcard || len(libraries) > 0 {
+			log.Infof("ConditionalAuthMiddleware: allowing anonymous access for path=%s", c.Path())
 			return c.Next()
 		}
 
@@ -627,12 +658,17 @@ func ConditionalAuthMiddleware() fiber.Handler {
 				target = "/series/" + parts[0]
 			}
 		}
-		return c.Redirect("/auth/login?target="+url.QueryEscape(target), fiber.StatusSeeOther)
+		log.Infof("ConditionalAuthMiddleware: redirecting to login for path=%s, anonymous has no permissions (hasWildcard=%v, libraries=%v)", c.Path(), hasWildcard, libraries)
+		if isHTMXRequest(c) {
+			c.Set("HX-Redirect", "/auth/login?target="+url.QueryEscape(target))
+			return c.Status(fiber.StatusUnauthorized).SendString("")
+		}
+		return c.Redirect().Status(fiber.StatusSeeOther).To("/auth/login?target=" + url.QueryEscape(target))
 	}
 }
 
 // GetCurrentUsername retrieves the username from the fiber context
-func GetCurrentUsername(c *fiber.Ctx) string {
+func GetCurrentUsername(c fiber.Ctx) string {
 	username, ok := c.Locals("user_name").(string)
 	if !ok {
 		return ""
@@ -642,7 +678,7 @@ func GetCurrentUsername(c *fiber.Ctx) string {
 
 // GetUserAccessibleLibraries returns the library slugs accessible to the current user
 // Returns libraries based on role permissions for authenticated users or anonymous permissions for unauthenticated users
-func GetUserAccessibleLibraries(c *fiber.Ctx) ([]string, error) {
+func GetUserAccessibleLibraries(c fiber.Ctx) ([]string, error) {
 	username := GetCurrentUsername(c)
 
 	// If no user is authenticated, return anonymous role permissions
@@ -675,7 +711,7 @@ func GetUserAccessibleLibraries(c *fiber.Ctx) ([]string, error) {
 }
 
 // UserHasLibraryAccess checks if the current user has access to a specific library
-func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
+func UserHasLibraryAccess(c fiber.Ctx, librarySlug string) (bool, error) {
 	username := GetCurrentUsername(c)
 
 	// If no user is authenticated, check anonymous role permissions
@@ -698,45 +734,8 @@ func UserHasLibraryAccess(c *fiber.Ctx, librarySlug string) (bool, error) {
 	return models.UserHasLibraryAccess(username, librarySlug)
 }
 
-// ImageProtectionMiddleware provides advanced protection for image endpoints
-func ImageProtectionMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		score := calculateBotScore(c)
-
-		// If score is high, require captcha
-		if score >= 50 {
-			if c.Cookies("captcha_solved") != "true" {
-				log.Infof("High bot score (%d) for IP: %s, redirecting to captcha", score, getRealIP(c))
-				// Set redirect cookie
-				c.Cookie(&fiber.Cookie{
-					Name:     "captcha_redirect",
-					Value:    c.OriginalURL(),
-					MaxAge:   300, // 5 minutes
-					HTTPOnly: true,
-					Secure:   isSecureRequest(c),
-					SameSite: fiber.CookieSameSiteLaxMode,
-				})
-				return c.Redirect("/captcha", fiber.StatusSeeOther)
-			}
-		}
-
-		// If score is very high, block outright
-		if score >= 80 {
-			log.Infof("Blocking high-risk request (score %d) from IP: %s", score, getRealIP(c))
-			if isHTMXRequest(c) {
-				triggerNotification(c, "Access denied: suspicious activity detected", "destructive")
-				// Return 204 No Content to prevent navigation/swap but show notification
-				return c.Status(fiber.StatusNoContent).SendString("")
-			}
-			return c.Status(fiber.StatusForbidden).SendString("Access denied: suspicious activity detected")
-		}
-
-		return c.Next()
-	}
-}
-
 // calculateBotScore assigns a score based on various bot indicators
-func calculateBotScore(c *fiber.Ctx) int {
+func calculateBotScore(c fiber.Ctx) int {
 	score := 0
 	userAgent := c.Get("User-Agent")
 	userAgentLower := strings.ToLower(userAgent)
@@ -823,7 +822,7 @@ func calculateBotScore(c *fiber.Ctx) int {
 }
 
 // imageCacheMiddleware sets appropriate cache headers for image requests
-func imageCacheMiddleware(c *fiber.Ctx) error {
+func imageCacheMiddleware(c fiber.Ctx) error {
 	if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead {
 		p := c.Path()
 		ext := ""

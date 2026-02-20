@@ -4,30 +4,132 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
-// HandleGetComments retrieves comments for a target (media or chapter)
-func HandleGetComments(c *fiber.Ctx) error {
+// getChapterByHash extracts the "hash" param and returns the chapter or an error response.
+func getChapterByHash(c fiber.Ctx) (*models.Chapter, error) {
 	hash := c.Params("hash")
-
-	// Get chapter by ID
 	chapter, err := models.GetChapterByID(hash)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return nil, SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if chapter == nil {
-		return sendNotFoundError(c, ErrChapterNotFound)
+		return nil, SendNotFoundError(c, ErrChapterNotFound)
+	}
+	return chapter, nil
+}
+
+// getChapterBySeriesParams extracts "media" and "chapter" params and returns the chapter or an error response.
+func getChapterBySeriesParams(c fiber.Ctx) (*models.Chapter, error) {
+	mediaSlug := c.Params("media")
+	chapterSlug := "chapter-" + c.Params("chapter")
+	chapter, err := models.GetChapter(mediaSlug, "", chapterSlug)
+	if err != nil {
+		return nil, SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if chapter == nil {
+		return nil, SendNotFoundError(c, ErrChapterNotFound)
+	}
+	return chapter, nil
+}
+
+// requireAuthenticatedUser extracts and validates the authenticated user or returns an error response.
+func requireAuthenticatedUser(c fiber.Ctx) (*models.User, error) {
+	userName, ok := c.Locals("user_name").(string)
+	if !ok || userName == "" {
+		return nil, SendUnauthorizedError(c, ErrUnauthorized)
+	}
+	user, err := models.FindUserByUsername(userName)
+	if err != nil || user == nil {
+		return nil, SendUnauthorizedError(c, ErrUnauthorized)
+	}
+	return user, nil
+}
+
+// parseCommentContent parses and validates the comment content from the request body.
+func parseCommentContent(c fiber.Ctx) (string, error) {
+	var req struct {
+		Content string `json:"content"`
+	}
+	if err := c.Bind().Body(&req); err != nil {
+		return "", SendBadRequestError(c, ErrBadRequest)
+	}
+	if req.Content == "" {
+		return "", SendBadRequestError(c, ErrEmptyComment)
+	}
+	return req.Content, nil
+}
+
+// renderHTMXCommentCreatedResponse renders the HTMX response after a comment is created.
+func renderHTMXCommentCreatedResponse(c fiber.Ctx, chapter *models.Chapter, user *models.User) (bool, error) {
+	if c.Get("HX-Request") != "true" {
+		return false, nil
+	}
+	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
+	if err != nil {
+		return true, SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	media, err := models.GetMedia(chapter.MediaSlug)
+	if err != nil || media == nil {
+		return true, SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	var buf bytes.Buffer
+	err = views.ChapterCommentsSection(*media, *chapter, comments, user.Role, user.Username).Render(context.Background(), &buf)
+	if err != nil {
+		return true, SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	wrapped := fmt.Sprintf(`<div id="comments-section" class="mt-8">%s</div>`, buf.String())
+	triggerNotification(c, "Comment posted successfully", "success")
+	return true, c.SendString(wrapped)
+}
+
+// handleCreateCommentCore is the shared logic for creating a comment on a chapter.
+func handleCreateCommentCore(c fiber.Ctx, chapter *models.Chapter) error {
+	user, err := requireAuthenticatedUser(c)
+	if err != nil {
+		return err
+	}
+
+	content, err := parseCommentContent(c)
+	if err != nil {
+		return err
+	}
+
+	comment := models.Comment{
+		UserUsername: user.Username,
+		TargetType:  "chapter",
+		TargetSlug:  chapter.Slug,
+		MediaSlug:   chapter.MediaSlug,
+		Content:     content,
+	}
+	if err := models.CreateComment(comment); err != nil {
+		return SendInternalServerError(c, ErrCommentCreateFailed, err)
+	}
+
+	if responded, err := renderHTMXCommentCreatedResponse(c, chapter, user); responded {
+		return err
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Comment created successfully",
+	})
+}
+
+// HandleGetComments retrieves comments for a target (media or chapter)
+func HandleGetComments(c fiber.Ctx) error {
+	chapter, err := getChapterByHash(c)
+	if err != nil {
+		return err
 	}
 
 	// Get comments for the chapter
 	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// If HTMX request, return HTML
@@ -35,7 +137,7 @@ func HandleGetComments(c *fiber.Ctx) error {
 		// Get media for the template
 		media, err := models.GetMedia(chapter.MediaSlug)
 		if err != nil || media == nil {
-			return sendInternalServerError(c, ErrInternalServerError, fmt.Errorf("media not found"))
+			return SendInternalServerError(c, ErrInternalServerError, fmt.Errorf("media not found"))
 		}
 
 		// Get user role and name if available
@@ -52,7 +154,7 @@ func HandleGetComments(c *fiber.Ctx) error {
 		var buf bytes.Buffer
 		err = views.CommentsList(*media, *chapter, comments, userRole, userName).Render(context.Background(), &buf)
 		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
+			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
 
 		c.Set("Content-Type", "text/html")
@@ -63,223 +165,57 @@ func HandleGetComments(c *fiber.Ctx) error {
 }
 
 // HandleGetCommentsForSeries retrieves comments for a chapter by series slug and chapter number
-func HandleGetCommentsForSeries(c *fiber.Ctx) error {
-	mediaSlug := c.Params("media")
-	chapterParam := c.Params("chapter")
-
-	chapterSlug := "chapter-" + chapterParam
-
-	// Get chapter by media slug and chapter slug
-	chapter, err := models.GetChapter(mediaSlug, "", chapterSlug)
+func HandleGetCommentsForSeries(c fiber.Ctx) error {
+	chapter, err := getChapterBySeriesParams(c)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
-	}
-	if chapter == nil {
-		return sendNotFoundError(c, ErrChapterNotFound)
+		return err
 	}
 
 	// Get comments for the chapter
 	comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	return c.JSON(comments)
 }
 
 // HandleCreateComment creates a new comment
-func HandleCreateComment(c *fiber.Ctx) error {
-	hash := c.Params("hash")
-
-	// Get chapter by ID
-	chapter, err := models.GetChapterByID(hash)
+func HandleCreateComment(c fiber.Ctx) error {
+	chapter, err := getChapterByHash(c)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return err
 	}
-	if chapter == nil {
-		return sendNotFoundError(c, ErrChapterNotFound)
-	}
-
-	// Get user from context (set by auth middleware)
-	userName, ok := c.Locals("user_name").(string)
-	if !ok || userName == "" {
-		return sendUnauthorizedError(c, ErrUnauthorized)
-	}
-
-	user, err := models.FindUserByUsername(userName)
-	if err != nil || user == nil {
-		return sendUnauthorizedError(c, ErrUnauthorized)
-	}
-
-	var req struct {
-		Content string `json:"content"`
-	}
-
-	if err := c.BodyParser(&req); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
-	}
-
-	if req.Content == "" {
-		return sendBadRequestError(c, ErrEmptyComment)
-	}
-
-	comment := models.Comment{
-		UserUsername: user.Username,
-		TargetType:   "chapter",
-		TargetSlug:   chapter.Slug,
-		MediaSlug:    chapter.MediaSlug,
-		Content:      req.Content,
-	}
-
-	err = models.CreateComment(comment)
-	if err != nil {
-		return sendInternalServerError(c, ErrCommentCreateFailed, err)
-	}
-
-	// If HTMX request, return updated comments section
-	if c.Get("HX-Request") == "true" {
-		// Fetch updated comments
-		comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Get media for the template
-		media, err := models.GetMedia(chapter.MediaSlug)
-		if err != nil || media == nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Render the component to HTML
-		var buf bytes.Buffer
-		err = views.ChapterCommentsSection(*media, *chapter, comments, user.Role, user.Username).Render(context.Background(), &buf)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-		html := buf.String()
-		wrapped := fmt.Sprintf(`<div id="comments-section" class="mt-8">%s</div>`, html)
-
-		// Add success notification for HTMX requests
-		triggerNotification(c, "Comment posted successfully", "success")
-
-		return c.SendString(wrapped)
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "Comment created successfully",
-	})
+	return handleCreateCommentCore(c, chapter)
 }
 
 // HandleCreateCommentForSeries creates a new comment for a chapter by series slug and chapter number
-func HandleCreateCommentForSeries(c *fiber.Ctx) error {
-	mediaSlug := c.Params("media")
-	chapterParam := c.Params("chapter")
-
-	chapterSlug := "chapter-" + chapterParam
-
-	// Get chapter by media slug and chapter slug
-	chapter, err := models.GetChapter(mediaSlug, "", chapterSlug)
+func HandleCreateCommentForSeries(c fiber.Ctx) error {
+	chapter, err := getChapterBySeriesParams(c)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return err
 	}
-	if chapter == nil {
-		return sendNotFoundError(c, ErrChapterNotFound)
-	}
-
-	// Get user from context (set by auth middleware)
-	userName, ok := c.Locals("user_name").(string)
-	if !ok || userName == "" {
-		return sendUnauthorizedError(c, ErrUnauthorized)
-	}
-
-	user, err := models.FindUserByUsername(userName)
-	if err != nil || user == nil {
-		return sendUnauthorizedError(c, ErrUnauthorized)
-	}
-
-	var req struct {
-		Content string `json:"content"`
-	}
-
-	if err := c.BodyParser(&req); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
-	}
-
-	if req.Content == "" {
-		return sendBadRequestError(c, ErrEmptyComment)
-	}
-
-	comment := models.Comment{
-		UserUsername: user.Username,
-		TargetType:   "chapter",
-		TargetSlug:   chapter.Slug,
-		MediaSlug:    chapter.MediaSlug,
-		Content:      req.Content,
-	}
-
-	err = models.CreateComment(comment)
-	if err != nil {
-		return sendInternalServerError(c, ErrCommentCreateFailed, err)
-	}
-
-	// If HTMX request, return updated comments section
-	if c.Get("HX-Request") == "true" {
-		// Fetch updated comments
-		comments, err := models.GetCommentsByTargetAndMedia("chapter", chapter.Slug, chapter.MediaSlug)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Get media for the template
-		media, err := models.GetMedia(chapter.MediaSlug)
-		if err != nil || media == nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-
-		// Render the component to HTML
-		var buf bytes.Buffer
-		err = views.ChapterCommentsSection(*media, *chapter, comments, user.Role, user.Username).Render(context.Background(), &buf)
-		if err != nil {
-			return sendInternalServerError(c, ErrInternalServerError, err)
-		}
-		html := buf.String()
-		wrapped := fmt.Sprintf(`<div id="comments-section" class="mt-8">%s</div>`, html)
-
-		// Add success notification for HTMX requests
-		triggerNotification(c, "Comment posted successfully", "success")
-
-		return c.SendString(wrapped)
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "Comment created successfully",
-	})
+	return handleCreateCommentCore(c, chapter)
 }
 
 // HandleDeleteComment deletes a comment (only by author)
-func HandleDeleteComment(c *fiber.Ctx) error {
-	commentIDStr := c.Params("id")
-	commentID, err := strconv.Atoi(commentIDStr)
+func HandleDeleteComment(c fiber.Ctx) error {
+	commentID, err := ParseIntParam(c, "id", "Invalid comment ID")
 	if err != nil {
-		return sendBadRequestError(c, "Invalid comment ID")
+		return err
 	}
 
-	userName, ok := c.Locals("user_name").(string)
-	if !ok || userName == "" {
-		return sendUnauthorizedError(c, ErrUnauthorized)
-	}
-
-	user, err := models.FindUserByUsername(userName)
-	if err != nil || user == nil {
-		return sendUnauthorizedError(c, ErrUnauthorized)
+	user, err := requireAuthenticatedUser(c)
+	if err != nil {
+		return err
 	}
 
 	err = models.DeleteComment(commentID, user.Username)
 	if err != nil {
 		if err.Error() == "comment not found or not authorized" {
-			return sendForbiddenError(c, "You don't have permission to delete this comment")
+			return SendForbiddenError(c, "You don't have permission to delete this comment")
 		}
-		return sendInternalServerError(c, ErrCommentDeleteFailed, err)
+		return SendInternalServerError(c, ErrCommentDeleteFailed, err)
 	}
 
 	return c.JSON(fiber.Map{

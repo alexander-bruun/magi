@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // HoneypotTrigger records when an IP accessed a honeypot
@@ -61,18 +61,19 @@ var honeypotPaths = []string{
 }
 
 var (
-	honeypotTriggers    = make(map[string]*HoneypotTrigger)
-	honeypotMu          sync.RWMutex
-	blockedByHoneypot   = make(map[string]time.Time) // IP -> block expiry time
-	blockedByHoneypotMu sync.RWMutex
+	honeypotTriggerEntries = NewTTLStore[HoneypotTrigger](
+		24*time.Hour, 10*time.Minute,
+		func(e *HoneypotTrigger) time.Time { return e.TriggeredAt },
+	)
+	blockedByHoneypotEntries = NewTTLStore[time.Time](
+		24*time.Hour, 10*time.Minute,
+		func(e *time.Time) time.Time { return *e },
+	)
 )
 
 // HoneypotMiddleware detects and blocks bots that access honeypot paths
 func HoneypotMiddleware() fiber.Handler {
-	// Start cleanup goroutine
-	go honeypotCleanup()
-
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -114,29 +115,26 @@ func HoneypotMiddleware() fiber.Handler {
 			log.Warnf("Honeypot: Trap triggered by IP %s on path %s", ip, path)
 
 			// Record the trigger
-			honeypotMu.Lock()
-			honeypotTriggers[ip] = &HoneypotTrigger{
+			honeypotTriggerEntries.Set(ip, &HoneypotTrigger{
 				IP:          ip,
 				Path:        path,
 				TriggeredAt: time.Now(),
 				UserAgent:   c.Get("User-Agent"),
 				Blocked:     cfg.HoneypotAutoBan || cfg.HoneypotAutoBlock,
-			}
-			honeypotMu.Unlock()
+			})
 
 			// Auto-ban if enabled
 			if cfg.HoneypotAutoBan {
-				if err := models.BanIP(ip, "Triggered honeypot"); err != nil {
+				banDuration := cfg.HoneypotBlockDuration * 60 // convert minutes to seconds
+				if err := models.BanIP(ip, "Triggered honeypot", banDuration); err != nil {
 					log.Errorf("Failed to ban IP %s: %v", ip, err)
 				} else {
-					log.Warnf("Honeypot: IP %s permanently banned for triggering honeypot", ip)
+					log.Warnf("Honeypot: IP %s banned for %d minutes for triggering honeypot", ip, cfg.HoneypotBlockDuration)
 				}
 			} else if cfg.HoneypotAutoBlock {
 				// Auto-block temporarily if enabled
-				blockDuration := time.Duration(cfg.HoneypotBlockDuration) * time.Minute
-				blockedByHoneypotMu.Lock()
-				blockedByHoneypot[ip] = time.Now().Add(blockDuration)
-				blockedByHoneypotMu.Unlock()
+				blockExpiry := time.Now().Add(time.Duration(cfg.HoneypotBlockDuration) * time.Minute)
+				blockedByHoneypotEntries.Set(ip, &blockExpiry)
 
 				log.Warnf("Honeypot: IP %s blocked for %d minutes", ip, cfg.HoneypotBlockDuration)
 			}
@@ -151,10 +149,11 @@ func HoneypotMiddleware() fiber.Handler {
 
 // isHoneypotPath checks if the path matches a honeypot
 func isHoneypotPath(path string) bool {
-	lowerPath := toLower(path)
+	lowerPath := strings.ToLower(path)
 
 	for _, hp := range honeypotPaths {
-		if lowerPath == toLower(hp) || (len(lowerPath) > len(hp) && lowerPath[:len(hp)] == toLower(hp)) {
+		hpLower := strings.ToLower(hp)
+		if lowerPath == hpLower || (len(lowerPath) > len(hp) && lowerPath[:len(hp)] == hpLower) {
 			return true
 		}
 	}
@@ -164,29 +163,24 @@ func isHoneypotPath(path string) bool {
 
 // isBlockedByHoneypot checks if an IP is currently blocked
 func isBlockedByHoneypot(ip string) bool {
-	blockedByHoneypotMu.RLock()
-	defer blockedByHoneypotMu.RUnlock()
-
-	expiry, exists := blockedByHoneypot[ip]
-	if !exists {
+	expiry, ok := blockedByHoneypotEntries.Get(ip)
+	if !ok {
 		return false
 	}
-
-	if time.Now().After(expiry) {
-		// Block expired, will be cleaned up later
+	if time.Now().After(*expiry) {
+		blockedByHoneypotEntries.Delete(ip)
 		return false
 	}
-
 	return true
 }
 
 // honeypotResponse returns a fake response to waste bot time
-func honeypotResponse(c *fiber.Ctx, path string) error {
+func honeypotResponse(c fiber.Ctx, path string) error {
 	// Add a small delay to waste bot resources
 	time.Sleep(2 * time.Second)
 
 	// Return a convincing but useless response based on the path
-	if containsString(path, "admin") || containsString(path, "login") {
+	if strings.Contains(path, "admin") || strings.Contains(path, "login") {
 		// Fake login page
 		return c.Status(fiber.StatusOK).SendString(`<!DOCTYPE html>
 <html>
@@ -201,7 +195,7 @@ func honeypotResponse(c *fiber.Ctx, path string) error {
 </html>`)
 	}
 
-	if containsString(path, ".php") || containsString(path, ".sql") || containsString(path, ".env") {
+	if strings.Contains(path, ".php") || strings.Contains(path, ".sql") || strings.Contains(path, ".env") {
 		// Return 404 for sensitive file probes
 		return c.Status(fiber.StatusNotFound).SendString("Not Found")
 	}
@@ -210,60 +204,21 @@ func honeypotResponse(c *fiber.Ctx, path string) error {
 	return c.Status(fiber.StatusForbidden).SendString("Forbidden")
 }
 
-// honeypotCleanup removes expired blocks and old triggers
-func honeypotCleanup() {
-	ticker := time.NewTicker(10 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		now := time.Now()
-
-		// Clean up expired blocks
-		blockedByHoneypotMu.Lock()
-		for ip, expiry := range blockedByHoneypot {
-			if now.After(expiry) {
-				delete(blockedByHoneypot, ip)
-			}
-		}
-		blockedByHoneypotMu.Unlock()
-
-		// Clean up old triggers (keep for 24 hours for logging/analysis)
-		honeypotMu.Lock()
-		for ip, trigger := range honeypotTriggers {
-			if now.Sub(trigger.TriggeredAt) > 24*time.Hour {
-				delete(honeypotTriggers, ip)
-			}
-		}
-		honeypotMu.Unlock()
-	}
-}
-
 // GetHoneypotStats returns statistics about honeypot activity (for admin dashboard)
 func GetHoneypotStats() map[string]interface{} {
-	honeypotMu.RLock()
-	triggersCount := len(honeypotTriggers)
-	honeypotMu.RUnlock()
-
-	blockedByHoneypotMu.RLock()
-	blockedCount := len(blockedByHoneypot)
-	blockedByHoneypotMu.RUnlock()
-
 	return map[string]interface{}{
-		"triggers_24h":      triggersCount,
-		"currently_blocked": blockedCount,
+		"triggers_24h":      honeypotTriggerEntries.Len(),
+		"currently_blocked": blockedByHoneypotEntries.Len(),
 		"honeypot_paths":    len(honeypotPaths),
 	}
 }
 
 // GetRecentHoneypotTriggers returns recent honeypot triggers (for admin dashboard)
 func GetRecentHoneypotTriggers() []HoneypotTrigger {
-	honeypotMu.RLock()
-	defer honeypotMu.RUnlock()
-
-	triggers := make([]HoneypotTrigger, 0, len(honeypotTriggers))
-	for _, trigger := range honeypotTriggers {
+	triggers := make([]HoneypotTrigger, 0)
+	honeypotTriggerEntries.Range(func(_ string, trigger *HoneypotTrigger) bool {
 		triggers = append(triggers, *trigger)
-	}
-
+		return true
+	})
 	return triggers
 }

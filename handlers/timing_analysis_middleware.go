@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"math"
-	"sync"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // TimingEntry tracks request timing for an IP
@@ -23,17 +22,19 @@ const (
 	timingWindowHours = 1   // How long to keep timing data
 )
 
-var (
-	timingStore = make(map[string]*TimingEntry)
-	timingMu    sync.RWMutex
+var timingEntries = NewTTLStore[TimingEntry](
+	time.Duration(timingWindowHours)*time.Hour, 10*time.Minute,
+	func(e *TimingEntry) time.Time {
+		if len(e.Timestamps) > 0 {
+			return e.Timestamps[len(e.Timestamps)-1]
+		}
+		return time.Time{}
+	},
 )
 
 // RequestTimingMiddleware analyzes request timing patterns to detect bots
 func RequestTimingMiddleware() fiber.Handler {
-	// Start cleanup goroutine
-	go timingCleanup()
-
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -58,16 +59,13 @@ func RequestTimingMiddleware() fiber.Handler {
 		ip := getRealIP(c)
 		now := time.Now()
 
-		timingMu.Lock()
-		entry, exists := timingStore[ip]
-		if !exists {
-			entry = &TimingEntry{
+		entry := timingEntries.GetOrCreate(ip, func() *TimingEntry {
+			return &TimingEntry{
 				Timestamps:   make([]time.Time, 0, maxTimestamps),
 				Intervals:    make([]int64, 0, maxTimestamps-1),
 				LastAnalyzed: now,
 			}
-			timingStore[ip] = entry
-		}
+		})
 
 		// Calculate interval from last request
 		if len(entry.Timestamps) > 0 {
@@ -101,7 +99,6 @@ func RequestTimingMiddleware() fiber.Handler {
 		}
 
 		isSuspicious := entry.SuspicionFlag
-		timingMu.Unlock()
 
 		// If flagged, we could block or just let tarpit handle it
 		if isSuspicious {
@@ -182,41 +179,18 @@ func countIdenticalIntervals(intervals []int64) int {
 	return maxCount
 }
 
-// timingCleanup removes old timing entries
-func timingCleanup() {
-	ticker := time.NewTicker(10 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		timingMu.Lock()
-		now := time.Now()
-		for ip, entry := range timingStore {
-			// Remove entries not updated in the last hour
-			if len(entry.Timestamps) > 0 {
-				lastTimestamp := entry.Timestamps[len(entry.Timestamps)-1]
-				if now.Sub(lastTimestamp) > time.Duration(timingWindowHours)*time.Hour {
-					delete(timingStore, ip)
-				}
-			}
-		}
-		timingMu.Unlock()
-	}
-}
-
 // GetTimingStats returns statistics about timing analysis (for admin dashboard)
 func GetTimingStats() map[string]interface{} {
-	timingMu.RLock()
-	defer timingMu.RUnlock()
-
 	activeCount := 0
 	suspiciousCount := 0
 
-	for _, entry := range timingStore {
+	timingEntries.Range(func(_ string, entry *TimingEntry) bool {
 		activeCount++
 		if entry.SuspicionFlag {
 			suspiciousCount++
 		}
-	}
+		return true
+	})
 
 	return map[string]interface{}{
 		"active_entries":   activeCount,

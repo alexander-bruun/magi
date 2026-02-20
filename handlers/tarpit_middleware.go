@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // TarpitEntry tracks suspicious activity for an IP
@@ -16,18 +16,15 @@ type TarpitEntry struct {
 	LastDelay      int       // Last delay applied in milliseconds
 }
 
-var (
-	tarpitStore = make(map[string]*TarpitEntry)
-	tarpitMu    sync.RWMutex
+var tarpitEntries = NewTTLStore[TarpitEntry](
+	time.Hour, 5*time.Minute,
+	func(e *TarpitEntry) time.Time { return e.LastSeen },
 )
 
 // TarpitMiddleware progressively slows responses for suspected bots
 // It tracks suspicious behavior and applies increasing delays to repeat offenders
 func TarpitMiddleware() fiber.Handler {
-	// Start cleanup goroutine
-	go tarpitCleanup()
-
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			return c.Next()
@@ -52,16 +49,13 @@ func TarpitMiddleware() fiber.Handler {
 		ip := getRealIP(c)
 
 		// Get or create tarpit entry
-		tarpitMu.Lock()
-		entry, exists := tarpitStore[ip]
-		if !exists {
-			entry = &TarpitEntry{
+		entry := tarpitEntries.GetOrCreate(ip, func() *TarpitEntry {
+			return &TarpitEntry{
 				SuspicionScore: 0,
 				LastSeen:       time.Now(),
 				LastDelay:      0,
 			}
-			tarpitStore[ip] = entry
-		}
+		})
 
 		// Calculate suspicion score increase based on request patterns
 		scoreIncrease := calculateSuspicionScore(c, entry)
@@ -74,7 +68,6 @@ func TarpitMiddleware() fiber.Handler {
 		// Calculate delay based on suspicion score
 		delay := calculateDelay(entry.SuspicionScore, cfg.TarpitMaxDelay)
 		entry.LastDelay = delay
-		tarpitMu.Unlock()
 
 		// Apply the delay if significant
 		if delay > 0 {
@@ -87,7 +80,7 @@ func TarpitMiddleware() fiber.Handler {
 }
 
 // calculateSuspicionScore determines how suspicious a request is
-func calculateSuspicionScore(c *fiber.Ctx, entry *TarpitEntry) int {
+func calculateSuspicionScore(c fiber.Ctx, entry *TarpitEntry) int {
 	score := 0
 
 	// Fast repeated requests (less than 100ms apart)
@@ -160,22 +153,6 @@ func calculateDelay(score, maxDelay int) int {
 	return delay
 }
 
-// isStaticAssetPath checks if the path is for a static asset
-func isStaticAssetPath(path string) bool {
-	staticPrefixes := []string{
-		"/assets/",
-		"/favicon",
-		"/robots.txt",
-		"/manifest.json",
-	}
-
-	for _, prefix := range staticPrefixes {
-		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
-			return true
-		}
-	}
-	return false
-}
 
 // isSuspiciousUserAgent checks for bot-like User-Agent patterns
 func isSuspiciousUserAgent(ua string) bool {
@@ -194,70 +171,22 @@ func isSuspiciousUserAgent(ua string) bool {
 		"go-http",
 	}
 
-	lowerUA := toLower(ua)
+	lowerUA := strings.ToLower(ua)
 	for _, pattern := range suspiciousPatterns {
-		if containsString(lowerUA, pattern) {
+		if strings.Contains(lowerUA, pattern) {
 			return true
 		}
 	}
 	return false
-}
-
-// toLower converts string to lowercase (simple implementation to avoid import)
-func toLower(s string) string {
-	result := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			result[i] = c + 32
-		} else {
-			result[i] = c
-		}
-	}
-	return string(result)
-}
-
-// containsString checks if s contains substr (simple implementation)
-func containsString(s, substr string) bool {
-	if len(substr) > len(s) {
-		return false
-	}
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
-// tarpitCleanup removes old entries from the tarpit store
-func tarpitCleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		tarpitMu.Lock()
-		now := time.Now()
-		for ip, entry := range tarpitStore {
-			// Remove entries not seen in the last hour
-			if now.Sub(entry.LastSeen) > time.Hour {
-				delete(tarpitStore, ip)
-			}
-		}
-		tarpitMu.Unlock()
-	}
 }
 
 // GetTarpitStats returns statistics about the tarpit (for admin dashboard)
 func GetTarpitStats() map[string]any {
-	tarpitMu.RLock()
-	defer tarpitMu.RUnlock()
-
 	activeCount := 0
 	highSuspicionCount := 0
 	maxScore := 0
 
-	for _, entry := range tarpitStore {
+	tarpitEntries.Range(func(_ string, entry *TarpitEntry) bool {
 		activeCount++
 		if entry.SuspicionScore > 50 {
 			highSuspicionCount++
@@ -265,7 +194,8 @@ func GetTarpitStats() map[string]any {
 		if entry.SuspicionScore > maxScore {
 			maxScore = entry.SuspicionScore
 		}
-	}
+		return true
+	})
 
 	return map[string]any{
 		"active_entries":       activeCount,

@@ -90,11 +90,6 @@ const (
 	ErrCollectionDeleteFailed = "Failed to delete collection."
 	ErrInvalidCollectionID    = "Invalid collection ID."
 
-	// Comic errors
-	ErrComicTokenRequired = "Access token is required to view this comic."
-	ErrComicTokenInvalid  = "Invalid or expired access token."
-	ErrComicNotFound      = "Comic not found."
-
 	// EPUB errors
 	ErrEPUBNotFound           = "EPUB file not found."
 	ErrEPUBAccessDenied       = "Access denied: you don't have permission to view this EPUB."
@@ -122,8 +117,6 @@ const (
 	ErrMediaFavoriteFailed = "Failed to update favorite status."
 
 	// Image errors
-	ErrImageTokenRequired    = "Access token is required to view this image."
-	ErrImageTokenInvalid     = "Invalid or expired access token."
 	ErrImageNotFound         = "Image not found."
 	ErrImageAccessDenied     = "Access denied: you don't have permission to view this image."
 	ErrImageProcessingFailed = "Failed to process image."

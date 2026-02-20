@@ -7,7 +7,8 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/checkout/session"
 	"github.com/stripe/stripe-go/v79/customer"
@@ -15,10 +16,10 @@ import (
 )
 
 // HandlePremiumPage renders the premium subscription page
-func HandlePremiumPage(c *fiber.Ctx) error {
+func HandlePremiumPage(c fiber.Ctx) error {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrConfigLoadFailed, err)
+		return SendInternalServerError(c, ErrConfigLoadFailed, err)
 	}
 
 	// Check if Stripe is enabled
@@ -29,13 +30,14 @@ func HandlePremiumPage(c *fiber.Ctx) error {
 	// Get current user
 	userName := c.Locals("user_name")
 	if userName == nil {
-		return c.Redirect("/auth/login")
+		log.Infof("Premium handler: redirecting to login, user not authenticated")
+		return c.Redirect().To("/auth/login")
 	}
 
 	username := userName.(string)
 	user, err := models.FindUserByUsername(username)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserNotFound, err)
+		return SendInternalServerError(c, ErrUserNotFound, err)
 	}
 
 	// Check if user already has premium
@@ -48,10 +50,10 @@ func HandlePremiumPage(c *fiber.Ctx) error {
 }
 
 // HandleCreateCheckoutSession creates a Stripe checkout session
-func HandleCreateCheckoutSession(c *fiber.Ctx) error {
+func HandleCreateCheckoutSession(c fiber.Ctx) error {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrConfigLoadFailed, err)
+		return SendInternalServerError(c, ErrConfigLoadFailed, err)
 	}
 
 	// Check if Stripe is enabled
@@ -71,7 +73,7 @@ func HandleCreateCheckoutSession(c *fiber.Ctx) error {
 	username := userName.(string)
 	user, err := models.FindUserByUsername(username)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserNotFound, err)
+		return SendInternalServerError(c, ErrUserNotFound, err)
 	}
 
 	// Check if user already has premium
@@ -83,7 +85,7 @@ func HandleCreateCheckoutSession(c *fiber.Ctx) error {
 	var req struct {
 		PlanID string `json:"plan_id"`
 	}
-	if err := c.BodyParser(&req); err != nil {
+	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
@@ -118,7 +120,7 @@ func HandleCreateCheckoutSession(c *fiber.Ctx) error {
 	} else {
 		customer, err := customer.New(customerParams)
 		if err != nil {
-			return sendInternalServerError(c, ErrStripeError, err)
+			return SendInternalServerError(c, ErrStripeError, err)
 		}
 		stripeCustomer = customer
 	}
@@ -153,7 +155,7 @@ func HandleCreateCheckoutSession(c *fiber.Ctx) error {
 
 	sess, err := session.New(sessionParams)
 	if err != nil {
-		return sendInternalServerError(c, ErrStripeError, err)
+		return SendInternalServerError(c, ErrStripeError, err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -163,7 +165,7 @@ func HandleCreateCheckoutSession(c *fiber.Ctx) error {
 }
 
 // HandlePremiumSuccess handles successful payment
-func HandlePremiumSuccess(c *fiber.Ctx) error {
+func HandlePremiumSuccess(c fiber.Ctx) error {
 	sessionID := c.Query("session_id")
 	if sessionID == "" {
 		return c.Status(400).SendString("Missing session ID")
@@ -171,7 +173,7 @@ func HandlePremiumSuccess(c *fiber.Ctx) error {
 
 	cfg, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrConfigLoadFailed, err)
+		return SendInternalServerError(c, ErrConfigLoadFailed, err)
 	}
 
 	// Set Stripe key
@@ -180,7 +182,7 @@ func HandlePremiumSuccess(c *fiber.Ctx) error {
 	// Retrieve session
 	sess, err := session.Get(sessionID, nil)
 	if err != nil {
-		return sendInternalServerError(c, ErrStripeError, err)
+		return SendInternalServerError(c, ErrStripeError, err)
 	}
 
 	// Get user from metadata
@@ -191,7 +193,7 @@ func HandlePremiumSuccess(c *fiber.Ctx) error {
 
 	// Update user role to premium
 	if err := models.UpdateUserRoleToPremium(username); err != nil {
-		return sendInternalServerError(c, ErrDatabaseError, err)
+		return SendInternalServerError(c, ErrDatabaseError, err)
 	}
 
 	// Create subscription record
@@ -229,10 +231,10 @@ func HandlePremiumSuccess(c *fiber.Ctx) error {
 }
 
 // HandleStripeWebhook handles Stripe webhook events
-func HandleStripeWebhook(c *fiber.Ctx) error {
+func HandleStripeWebhook(c fiber.Ctx) error {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
-		return sendInternalServerError(c, ErrConfigLoadFailed, err)
+		return SendInternalServerError(c, ErrConfigLoadFailed, err)
 	}
 
 	if !cfg.StripeEnabled {
@@ -280,29 +282,30 @@ func HandleStripeWebhook(c *fiber.Ctx) error {
 }
 
 // HandlePremiumCancel handles subscription cancellation
-func HandlePremiumCancel(c *fiber.Ctx) error {
+func HandlePremiumCancel(c fiber.Ctx) error {
 	userName := c.Locals("user_name")
 	if userName == nil {
-		return c.Redirect("/auth/login")
+		log.Infof("Premium cancel handler: redirecting to login, user not authenticated")
+		return c.Redirect().To("/auth/login")
 	}
 
 	username := userName.(string)
 
 	// Cancel subscription
 	if err := models.CancelSubscription(username); err != nil {
-		return sendInternalServerError(c, ErrDatabaseError, err)
+		return SendInternalServerError(c, ErrDatabaseError, err)
 	}
 
 	// Update user role back to reader
 	if err := models.UpdateUserRoleToReader(username); err != nil {
-		return sendInternalServerError(c, ErrDatabaseError, err)
+		return SendInternalServerError(c, ErrDatabaseError, err)
 	}
 
-	return c.Redirect("/account")
+	return c.Redirect().To("/account")
 }
 
 // HandleGetStripeConfig returns the Stripe publishable key for frontend use
-func HandleGetStripeConfig(c *fiber.Ctx) error {
+func HandleGetStripeConfig(c fiber.Ctx) error {
 	cfg, err := models.GetAppConfig()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to load config"})

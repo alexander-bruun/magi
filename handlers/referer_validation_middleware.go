@@ -4,15 +4,15 @@ import (
 	"strings"
 
 	"github.com/alexander-bruun/magi/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // RefererValidationMiddleware checks that requests have valid Referer headers
 // for internal navigation. This helps prevent direct access to certain endpoints
 // by scripts that don't properly simulate browser navigation.
 func RefererValidationMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		cfg, err := models.GetAppConfig()
 		if err != nil {
 			log.Errorf("Failed to get app config for referer validation: %v", err)

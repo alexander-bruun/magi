@@ -12,8 +12,8 @@ import (
 	"github.com/alexander-bruun/magi/scheduler"
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/robfig/cron/v3"
 )
 
@@ -24,7 +24,6 @@ type LibraryFormData struct {
 	Cron             string   `form:"cron"`
 	Folders          []string `form:"folders"`
 	MetadataProvider string   `form:"metadata_provider"`
-	Enabled          bool     `form:"enabled"`
 }
 
 // validateLibraryFormData validates the parsed library form data
@@ -82,7 +81,7 @@ func GetLibraries() ([]models.Library, error) {
 }
 
 // HandleLibraries renders the libraries dashboard with the current library list.
-func HandleLibraries(c *fiber.Ctx) error {
+func HandleLibraries(c fiber.Ctx) error {
 	return handleView(c, views.Libraries())
 }
 
@@ -95,20 +94,20 @@ func renderLibraryTable(libraries []models.Library) (string, error) {
 	return buf.String(), nil
 }
 
-func setCommonHeaders(c *fiber.Ctx) {
+func setCommonHeaders(c fiber.Ctx) {
 	c.Response().Header.Set("Content-Type", "text/html")
 }
 
 // HandleCreateLibrary persists a new library and returns the refreshed table markup.
-func HandleCreateLibrary(c *fiber.Ctx) error {
+func HandleCreateLibrary(c fiber.Ctx) error {
 	var formData LibraryFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	// Validate the form data
 	if err := validateLibraryFormData(formData, ""); err != nil {
-		return sendValidationError(c, err.Error())
+		return SendValidationError(c, err.Error())
 	}
 
 	// Convert form data to Library model
@@ -117,7 +116,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
-		Enabled:     formData.Enabled,
+		Enabled:     true,
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
@@ -129,12 +128,12 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 
 	libraries, err := CreateLibrary(library)
 	if err != nil {
-		return sendInternalServerError(c, ErrLibraryCreateFailed, err)
+		return SendInternalServerError(c, ErrLibraryCreateFailed, err)
 	}
 
 	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Render a fresh form
@@ -142,7 +141,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 	emptyLibrary := models.Library{}
 	err = views.LibraryForm(emptyLibrary, "post", false).Render(context.Background(), &formBuf)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	formContent := formBuf.String()
 
@@ -155,7 +154,7 @@ func HandleCreateLibrary(c *fiber.Ctx) error {
 }
 
 // HandleDeleteLibrary removes an existing library and responds with the updated table fragment.
-func HandleDeleteLibrary(c *fiber.Ctx) error {
+func HandleDeleteLibrary(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
@@ -171,7 +170,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 	// Immediately return the updated table without the deleted library
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Filter out the library being deleted from the response
@@ -184,7 +183,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 
 	tableContent, err := renderLibraryTable(filteredLibraries)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	triggerNotification(c, "Library deleted successfully", "success")
@@ -193,7 +192,7 @@ func HandleDeleteLibrary(c *fiber.Ctx) error {
 }
 
 // HandleToggleLibrary toggles the enabled status of a library
-func HandleToggleLibrary(c *fiber.Ctx) error {
+func HandleToggleLibrary(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Slug cannot be empty")
@@ -201,7 +200,7 @@ func HandleToggleLibrary(c *fiber.Ctx) error {
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
 		return c.Status(fiber.StatusNotFound).SendString("Library not found")
@@ -211,17 +210,17 @@ func HandleToggleLibrary(c *fiber.Ctx) error {
 	library.Enabled = !library.Enabled
 
 	if err := models.UpdateLibrary(library); err != nil {
-		return sendInternalServerError(c, ErrLibraryUpdateFailed, err)
+		return SendInternalServerError(c, ErrLibraryUpdateFailed, err)
 	}
 
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	status := "disabled"
@@ -234,17 +233,23 @@ func HandleToggleLibrary(c *fiber.Ctx) error {
 }
 
 // HandleUpdateLibrary updates library information and returns the refreshed listing.
-func HandleUpdateLibrary(c *fiber.Ctx) error {
+func HandleUpdateLibrary(c fiber.Ctx) error {
 	var formData LibraryFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	slug := c.Params("slug")
 
 	// Validate the form data
 	if err := validateLibraryFormData(formData, slug); err != nil {
-		return sendValidationError(c, err.Error())
+		return SendValidationError(c, err.Error())
+	}
+
+	// Get the existing library to preserve the Enabled state
+	existingLibrary, err := models.GetLibrary(slug)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	// Convert form data to Library model
@@ -253,7 +258,7 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 		Description: formData.Description,
 		Cron:        formData.Cron,
 		Folders:     formData.Folders,
-		Enabled:     formData.Enabled,
+		Enabled:     existingLibrary.Enabled, // Preserve existing enabled state
 	}
 
 	// Handle metadata_provider: empty string means use global (NULL in DB)
@@ -267,17 +272,17 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 	log.Infof("Updating library: %s", library.Slug)
 
 	if err := models.UpdateLibrary(&library); err != nil {
-		return sendInternalServerError(c, ErrLibraryUpdateFailed, err)
+		return SendInternalServerError(c, ErrLibraryUpdateFailed, err)
 	}
 
 	libraries, err := models.GetLibraries()
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	tableContent, err := renderLibraryTable(libraries)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	triggerCustomNotification(c, "showNotification", map[string]interface{}{
@@ -289,18 +294,18 @@ func HandleUpdateLibrary(c *fiber.Ctx) error {
 }
 
 // HandleEditLibrary renders the inline edit form for the requested library.
-func HandleEditLibrary(c *fiber.Ctx) error {
+func HandleEditLibrary(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return sendBadRequestError(c, "Slug cannot be empty")
+		return SendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return sendNotFoundError(c, ErrLibraryNotFound)
+		return SendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	var buf bytes.Buffer
@@ -314,23 +319,23 @@ func HandleEditLibrary(c *fiber.Ctx) error {
 }
 
 // HandleScanLibrary triggers an immediate indexing pass for the specified library.
-func HandleScanLibrary(c *fiber.Ctx) error {
+func HandleScanLibrary(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return sendBadRequestError(c, "Slug cannot be empty")
+		return SendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return sendNotFoundError(c, ErrLibraryNotFound)
+		return SendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	// Create a temporary Indexer for this library and run the job so we
 	// preserve the same logging and lifecycle as scheduled jobs.
-	idx := scheduler.NewIndexer(*library)
+	idx := scheduler.NewIndexer(*library, dataManager.Backend())
 	// RunIndexingJob will process all folders for the library.
 	if ran := idx.RunIndexingJob(); !ran {
 		triggerNotification(c, "Indexing already in progress for this library", "warning")
@@ -341,30 +346,30 @@ func HandleScanLibrary(c *fiber.Ctx) error {
 }
 
 // HandleIndexPosters re-indexes posters for all media in the library
-func HandleIndexPosters(c *fiber.Ctx) error {
+func HandleIndexPosters(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return sendBadRequestError(c, "Slug cannot be empty")
+		return SendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return sendNotFoundError(c, ErrLibraryNotFound)
+		return SendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	log.Debugf("Starting poster re-indexing for library '%s'", library.Name)
 
 	dataBackend := GetDataBackend()
 	if dataBackend == nil {
-		return sendInternalServerError(c, "Data backend not available", nil)
+		return SendInternalServerError(c, "Data backend not available", nil)
 	}
 
 	medias, err := models.GetMediasByLibrarySlug(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	log.Debugf("Processing %d medias for poster re-indexing", len(medias))
@@ -490,24 +495,24 @@ func HandleIndexPosters(c *fiber.Ctx) error {
 }
 
 // HandleIndexMetadata re-indexes metadata for all media in the library
-func HandleIndexMetadata(c *fiber.Ctx) error {
+func HandleIndexMetadata(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return sendBadRequestError(c, "Slug cannot be empty")
+		return SendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return sendNotFoundError(c, ErrLibraryNotFound)
+		return SendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	log.Debugf("Starting metadata re-indexing for library '%s'", library.Name)
 
 	// For now, trigger full index as metadata re-indexing is complex
-	idx := scheduler.NewIndexer(*library)
+	idx := scheduler.NewIndexer(*library, dataManager.Backend())
 	if ran := idx.RunIndexingJob(); !ran {
 		triggerNotification(c, "Indexing already in progress for this library", "warning")
 		return c.SendString("")
@@ -517,25 +522,25 @@ func HandleIndexMetadata(c *fiber.Ctx) error {
 }
 
 // HandleIndexChapters re-indexes chapters for all media in the library
-func HandleIndexChapters(c *fiber.Ctx) error {
+func HandleIndexChapters(c fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return sendBadRequestError(c, "Slug cannot be empty")
+		return SendBadRequestError(c, "Slug cannot be empty")
 	}
 
 	library, err := models.GetLibrary(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 	if library == nil {
-		return sendNotFoundError(c, ErrLibraryNotFound)
+		return SendNotFoundError(c, ErrLibraryNotFound)
 	}
 
 	log.Debugf("Starting chapter re-indexing for library '%s'", library.Name)
 
 	medias, err := models.GetMediasByLibrarySlug(slug)
 	if err != nil {
-		return sendInternalServerError(c, ErrInternalServerError, err)
+		return SendInternalServerError(c, ErrInternalServerError, err)
 	}
 
 	for _, media := range medias {
@@ -565,30 +570,30 @@ func HandleIndexChapters(c *fiber.Ctx) error {
 }
 
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
-func HandleAddFolder(c *fiber.Ctx) error {
+func HandleAddFolder(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
 	if !isHTMXRequest(c) {
-		return c.Redirect("/admin/libraries")
+		return c.Redirect().To("/admin/libraries")
 	}
 
 	return handleView(c, views.Folder(""))
 }
 
 // HandleRemoveFolder acknowledges folder removal requests without returning content.
-func HandleRemoveFolder(c *fiber.Ctx) error {
+func HandleRemoveFolder(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
 	if !isHTMXRequest(c) {
-		return c.Redirect("/admin/libraries")
+		return c.Redirect().To("/admin/libraries")
 	}
 
 	return c.SendString("")
 }
 
 // HandleCancelEdit resets the library form to its default state.
-func HandleCancelEdit(c *fiber.Ctx) error {
+func HandleCancelEdit(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
 	if !isHTMXRequest(c) {
-		return c.Redirect("/admin/libraries")
+		return c.Redirect().To("/admin/libraries")
 	}
 
 	var buf bytes.Buffer
@@ -627,7 +632,7 @@ type FileEntry struct {
 }
 
 // HandleBrowseDirectory returns a list of files and directories for the file explorer
-func HandleBrowseDirectory(c *fiber.Ctx) error {
+func HandleBrowseDirectory(c fiber.Ctx) error {
 	path := c.Query("path", "/")
 	if path == "" {
 		path = "/"

@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v3"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -62,7 +62,7 @@ func canRegister() (bool, error) {
 }
 
 // registerHandler renders the registration form page.
-func registerHandler(c *fiber.Ctx) error {
+func registerHandler(c fiber.Ctx) error {
 	canRegister, err := canRegister()
 	if err != nil {
 		return SendInternalServerError(c, ErrInternalServerError, err)
@@ -79,13 +79,13 @@ func registerHandler(c *fiber.Ctx) error {
 }
 
 // loginHandler renders the login page.
-func loginHandler(c *fiber.Ctx) error {
+func loginHandler(c fiber.Ctx) error {
 	target := c.Query("target", "")
 	return handleView(c, views.Login(target))
 }
 
 // createUserHandler processes a registration submission and redirects to login on success.
-func createUserHandler(c *fiber.Ctx) error {
+func createUserHandler(c fiber.Ctx) error {
 	canRegister, err := canRegister()
 	if err != nil {
 		return SendInternalServerError(c, ErrInternalServerError, err)
@@ -96,7 +96,7 @@ func createUserHandler(c *fiber.Ctx) error {
 	}
 
 	var formData RegisterFormData
-	if err := c.BodyParser(&formData); err != nil {
+	if err := c.Bind().Body(&formData); err != nil {
 		return SendBadRequestError(c, ErrBadRequest)
 	}
 
@@ -142,9 +142,9 @@ func createUserHandler(c *fiber.Ctx) error {
 }
 
 // loginUserHandler validates credentials and issues a session token.
-func loginUserHandler(c *fiber.Ctx) error {
+func loginUserHandler(c fiber.Ctx) error {
 	var formData LoginFormData
-	if err := c.BodyParser(&formData); err != nil {
+	if err := c.Bind().Body(&formData); err != nil {
 		return SendBadRequestError(c, ErrBadRequest)
 	}
 
@@ -181,7 +181,7 @@ func loginUserHandler(c *fiber.Ctx) error {
 }
 
 // logoutHandler revokes the session token and clears authentication cookie.
-func logoutHandler(c *fiber.Ctx) error {
+func logoutHandler(c fiber.Ctx) error {
 	sessionToken := c.Cookies("session_token")
 
 	if sessionToken != "" {

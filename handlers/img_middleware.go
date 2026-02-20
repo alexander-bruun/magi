@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 var (
@@ -36,13 +36,13 @@ func InitImgCache(assetsFS fs.FS, assetsPath string) error {
 		count++
 		return true
 	})
-	log.Infof("Image cache initialized with %d files", count)
+	log.Debugf("Image cache initialized with %d files", count)
 	return nil
 }
 
 // ImgMiddleware replaces image src/href with inline data URIs
 func ImgMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Skip non-HTML responses
 		path := c.Path()
 		if strings.HasPrefix(path, "/assets/") || strings.HasPrefix(path, "/api/") {

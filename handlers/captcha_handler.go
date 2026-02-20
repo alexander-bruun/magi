@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/alexander-bruun/magi/views"
 	"github.com/dchest/captcha"
-	fiber "github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v3"
 )
 
 // CaptchaFormData represents form data for captcha verification
@@ -13,7 +13,7 @@ type CaptchaFormData struct {
 }
 
 // HandleCaptchaPage serves the captcha verification page
-func HandleCaptchaPage(c *fiber.Ctx) error {
+func HandleCaptchaPage(c fiber.Ctx) error {
 	id := captcha.NewLen(6)
 	errorMsg := ""
 	if c.Query("error") == "invalid" {
@@ -24,23 +24,23 @@ func HandleCaptchaPage(c *fiber.Ctx) error {
 }
 
 // HandleCaptchaImage serves captcha images
-func HandleCaptchaImage(c *fiber.Ctx) error {
+func HandleCaptchaImage(c fiber.Ctx) error {
 	c.Type("png")
 	captcha.WriteImage(c.Response().BodyWriter(), c.Params("id"), 240, 80)
 	return nil
 }
 
 // HandleCaptchaNew generates a new captcha ID
-func HandleCaptchaNew(c *fiber.Ctx) error {
+func HandleCaptchaNew(c fiber.Ctx) error {
 	id := captcha.NewLen(6)
 	return c.JSON(fiber.Map{"captcha_id": id})
 }
 
 // HandleCaptchaVerify verifies captcha answers
-func HandleCaptchaVerify(c *fiber.Ctx) error {
+func HandleCaptchaVerify(c fiber.Ctx) error {
 	var formData CaptchaFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	id := formData.ID
@@ -59,7 +59,7 @@ func HandleCaptchaVerify(c *fiber.Ctx) error {
 		if redirectURL == "" {
 			redirectURL = "/"
 		}
-		return c.Redirect(redirectURL, fiber.StatusSeeOther)
+		return c.Redirect().Status(fiber.StatusSeeOther).To(redirectURL)
 	}
-	return c.Redirect("/captcha?error=invalid", fiber.StatusSeeOther)
+	return c.Redirect().Status(fiber.StatusSeeOther).To("/captcha?error=invalid")
 }

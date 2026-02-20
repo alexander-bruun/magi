@@ -17,8 +17,8 @@ import (
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // ExternalAccountFormData represents form data for connecting external accounts
@@ -192,7 +192,7 @@ func GetUserMediaListData(userName, listType string, options models.UserMediaLis
 
 // HandleAccountList is the unified handler for all account media lists
 func HandleAccountList(listType AccountListType) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		userName := GetUserContext(c)
 		if userName == "" {
 			return fiber.ErrUnauthorized
@@ -202,7 +202,7 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 
 		data, err := GetAccountListData(listType, params, userName)
 		if err != nil {
-			return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+			return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 		}
 
 		// HTMX fragment support
@@ -233,24 +233,24 @@ func HandleAccountList(listType AccountListType) fiber.Handler {
 }
 
 // Account list route handlers
-func HandleAccountFavorites(c *fiber.Ctx) error {
+func HandleAccountFavorites(c fiber.Ctx) error {
 	return HandleAccountList(AccountListFavorites)(c)
 }
 
-func HandleAccountUpvoted(c *fiber.Ctx) error {
+func HandleAccountUpvoted(c fiber.Ctx) error {
 	return HandleAccountList(AccountListUpvoted)(c)
 }
 
-func HandleAccountDownvoted(c *fiber.Ctx) error {
+func HandleAccountDownvoted(c fiber.Ctx) error {
 	return HandleAccountList(AccountListDownvoted)(c)
 }
 
-func HandleAccountReading(c *fiber.Ctx) error {
+func HandleAccountReading(c fiber.Ctx) error {
 	return HandleAccountList(AccountListReading)(c)
 }
 
 // HandleUsers renders the user administration view.
-func HandleUsers(c *fiber.Ctx) error {
+func HandleUsers(c fiber.Ctx) error {
 	// Load initial data for the table
 	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
 		Filter:   "",
@@ -258,14 +258,14 @@ func HandleUsers(c *fiber.Ctx) error {
 		PageSize: 10,
 	})
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.UsersWithData(users, 1, 10, total, ""))
 }
 
-// HandleUsersTable renders the users table fragment with pagination and search.
-func HandleUsersTable(c *fiber.Ctx) error {
+// renderUsersTable parses pagination/filter params and renders the users table fragment.
+func renderUsersTable(c fiber.Ctx) error {
 	page := 1
 	pageSize := 10
 	filter := ""
@@ -288,219 +288,76 @@ func HandleUsersTable(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
 }
 
+// HandleUsersTable renders the users table fragment with pagination and search.
+func HandleUsersTable(c fiber.Ctx) error {
+	return renderUsersTable(c)
+}
+
 // HandlePermissionsManagement renders the permissions management page
-func HandlePermissionsManagement(c *fiber.Ctx) error {
+func HandlePermissionsManagement(c fiber.Ctx) error {
 	return handleView(c, views.PermissionsManagement())
 }
 
 // HandleUserBan demotes and bans the specified user before returning the updated table.
-func HandleUserBan(c *fiber.Ctx) error {
+func HandleUserBan(c fiber.Ctx) error {
 	username := c.Params("username")
 
 	if err := models.BanUserWithDemotion(username); err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	page := 1
-	pageSize := 10
-	filter := ""
-
-	if p := c.Query("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-	if ps := c.Query("pageSize"); ps != "" {
-		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-			pageSize = parsed
-		}
-	}
-	filter = c.Query("filter")
-
-	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-		Filter:   filter,
-		Page:     page,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-	}
-
-	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return renderUsersTable(c)
 }
 
 // HandleUserUnban lifts a user's ban and refreshes the table fragment.
-func HandleUserUnban(c *fiber.Ctx) error {
+func HandleUserUnban(c fiber.Ctx) error {
 	username := c.Params("username")
 
 	models.UnbanUser(username)
 
-	page := 1
-	pageSize := 10
-	filter := ""
-
-	if p := c.Query("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-	if ps := c.Query("pageSize"); ps != "" {
-		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-			pageSize = parsed
-		}
-	}
-	filter = c.Query("filter")
-
-	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-		Filter:   filter,
-		Page:     page,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-	}
-
-	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return renderUsersTable(c)
 }
 
 // HandleUserPromote upgrades a user's role and returns the updated table.
-func HandleUserPromote(c *fiber.Ctx) error {
+func HandleUserPromote(c fiber.Ctx) error {
 	username := c.Params("username")
 
 	if err := models.PromoteUser(username); err != nil {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
 		if isHTMXRequest(c) {
-			page := 1
-			pageSize := 10
-			filter := ""
-
-			if p := c.Query("page"); p != "" {
-				if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-					page = parsed
-				}
-			}
-			if ps := c.Query("pageSize"); ps != "" {
-				if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-					pageSize = parsed
-				}
-			}
-			filter = c.Query("filter")
-
-			users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-				Filter:   filter,
-				Page:     page,
-				PageSize: pageSize,
-			})
-			if err != nil {
-				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-			}
-			return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+			return renderUsersTable(c)
 		}
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	page := 1
-	pageSize := 10
-	filter := ""
-
-	if p := c.Query("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-	if ps := c.Query("pageSize"); ps != "" {
-		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-			pageSize = parsed
-		}
-	}
-	filter = c.Query("filter")
-
-	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-		Filter:   filter,
-		Page:     page,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-	}
-
-	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return renderUsersTable(c)
 }
 
 // HandleUserDemote reduces a user's role and refreshes the table view.
-func HandleUserDemote(c *fiber.Ctx) error {
+func HandleUserDemote(c fiber.Ctx) error {
 	username := c.Params("username")
 
 	if err := models.DemoteUser(username); err != nil {
 		// For HTMX requests, return the table unchanged instead of an error
 		// to avoid breaking the UI
 		if isHTMXRequest(c) {
-			page := 1
-			pageSize := 10
-			filter := ""
-
-			if p := c.Query("page"); p != "" {
-				if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-					page = parsed
-				}
-			}
-			if ps := c.Query("pageSize"); ps != "" {
-				if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-					pageSize = parsed
-				}
-			}
-			filter = c.Query("filter")
-
-			users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-				Filter:   filter,
-				Page:     page,
-				PageSize: pageSize,
-			})
-			if err != nil {
-				return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-			}
-			return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+			return renderUsersTable(c)
 		}
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	page := 1
-	pageSize := 10
-	filter := ""
-
-	if p := c.Query("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-	if ps := c.Query("pageSize"); ps != "" {
-		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 {
-			pageSize = parsed
-		}
-	}
-	filter = c.Query("filter")
-
-	users, total, err := models.GetUsersWithOptions(models.UserSearchOptions{
-		Filter:   filter,
-		Page:     page,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
-	}
-
-	return handleView(c, views.UsersTable(users, page, pageSize, total, filter))
+	return renderUsersTable(c)
 }
 
 // HandleAccount renders the current user's account page showing favorites, reading lists and liked media
-func HandleAccount(c *fiber.Ctx) error {
+func HandleAccount(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -510,12 +367,12 @@ func HandleAccount(c *fiber.Ctx) error {
 }
 
 // HandleBannedIPs displays the list of banned IPs
-func HandleBannedIPs(c *fiber.Ctx) error {
+func HandleBannedIPs(c fiber.Ctx) error {
 	return handleView(c, views.BannedIPs())
 }
 
 // HandleUnbanIP removes an IP from the banned list
-func HandleUnbanIP(c *fiber.Ctx) error {
+func HandleUnbanIP(c fiber.Ctx) error {
 	ip := c.Params("ip")
 	if ip == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("IP address is required")
@@ -528,14 +385,14 @@ func HandleUnbanIP(c *fiber.Ctx) error {
 
 	bannedIPs, err := models.GetBannedIPs()
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.BannedIPsTable(bannedIPs))
 }
 
 // HandleExternalAccounts shows the external accounts page
-func HandleExternalAccounts(c *fiber.Ctx) error {
+func HandleExternalAccounts(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -544,28 +401,28 @@ func HandleExternalAccounts(c *fiber.Ctx) error {
 	// Get user's external accounts
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleConnectMAL saves MAL credentials
-func HandleConnectMAL(c *fiber.Ctx) error {
+func HandleConnectMAL(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
 
 	var formData ExternalAccountFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	clientID := formData.ClientID
 	clientSecret := formData.ClientSecret
 	if clientID == "" || clientSecret == "" {
-		return sendBadRequestError(c, ErrOAuthCredentialsRequired)
+		return SendBadRequestError(c, ErrOAuthCredentialsRequired)
 	}
 
 	// Save the account with client_id and client_secret
@@ -577,20 +434,20 @@ func HandleConnectMAL(c *fiber.Ctx) error {
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleAuthorizeMAL redirects to MAL for OAuth authorization
-func HandleAuthorizeMAL(c *fiber.Ctx) error {
+func HandleAuthorizeMAL(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -599,7 +456,7 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 	// Get the stored credentials
 	account, err := models.GetUserExternalAccount(userName, "mal")
 	if err != nil {
-		return sendBadRequestError(c, ErrOAuthNoCredentials)
+		return SendBadRequestError(c, ErrOAuthNoCredentials)
 	}
 
 	clientID := account.ExternalUserID
@@ -610,7 +467,7 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 		}
 	}
 	if clientID == "" {
-		return sendBadRequestError(c, ErrOAuthClientNotConfigured)
+		return SendBadRequestError(c, ErrOAuthClientNotConfigured)
 	}
 
 	// Generate PKCE code verifier and challenge
@@ -629,28 +486,28 @@ func HandleAuthorizeMAL(c *fiber.Ctx) error {
 	account.AccessToken = codeVerifier + "|" + state
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return c.Redirect(authURL)
+	return c.Redirect().To(authURL)
 }
 
 // HandleConnectAniList saves AniList credentials
-func HandleConnectAniList(c *fiber.Ctx) error {
+func HandleConnectAniList(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
 	}
 
 	var formData ExternalAccountFormData
-	if err := c.BodyParser(&formData); err != nil {
-		return sendBadRequestError(c, ErrBadRequest)
+	if err := c.Bind().Body(&formData); err != nil {
+		return SendBadRequestError(c, ErrBadRequest)
 	}
 
 	clientID := formData.ClientID
 	clientSecret := formData.ClientSecret
 	if clientID == "" || clientSecret == "" {
-		return sendBadRequestError(c, ErrOAuthCredentialsRequired)
+		return SendBadRequestError(c, ErrOAuthCredentialsRequired)
 	}
 
 	// Save the account with client_id and client_secret
@@ -662,20 +519,20 @@ func HandleConnectAniList(c *fiber.Ctx) error {
 	}
 	err := models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleAuthorizeAniList redirects to AniList for OAuth authorization
-func HandleAuthorizeAniList(c *fiber.Ctx) error {
+func HandleAuthorizeAniList(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -684,7 +541,7 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 	// Get the stored credentials
 	account, err := models.GetUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return sendBadRequestError(c, ErrOAuthNoCredentials)
+		return SendBadRequestError(c, ErrOAuthNoCredentials)
 	}
 
 	clientID := account.ExternalUserID
@@ -695,7 +552,7 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 		}
 	}
 	if clientID == "" {
-		return sendBadRequestError(c, ErrOAuthClientNotConfigured)
+		return SendBadRequestError(c, ErrOAuthClientNotConfigured)
 	}
 
 	// Generate state for security
@@ -710,14 +567,14 @@ func HandleAuthorizeAniList(c *fiber.Ctx) error {
 	account.AccessToken = state
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
-	return c.Redirect(authURL)
+	return c.Redirect().To(authURL)
 }
 
 // HandleDisconnectAniList disconnects the AniList account
-func HandleDisconnectAniList(c *fiber.Ctx) error {
+func HandleDisconnectAniList(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -725,20 +582,20 @@ func HandleDisconnectAniList(c *fiber.Ctx) error {
 
 	err := models.DeleteUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleDisconnectMAL disconnects the MAL account
-func HandleDisconnectMAL(c *fiber.Ctx) error {
+func HandleDisconnectMAL(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -746,47 +603,47 @@ func HandleDisconnectMAL(c *fiber.Ctx) error {
 
 	err := models.DeleteUserExternalAccount(userName, "mal")
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleMALCallback handles OAuth callback from MAL
-func HandleMALCallback(c *fiber.Ctx) error {
+func HandleMALCallback(c fiber.Ctx) error {
 	code := c.Query("code")
 	state := c.Query("state")
 
 	if code == "" || state == "" {
-		return sendBadRequestError(c, ErrOAuthMissingCodeOrState)
+		return SendBadRequestError(c, ErrOAuthMissingCodeOrState)
 	}
 
 	// Parse state: userName|suffix
 	parts := strings.Split(state, "|")
 	if len(parts) != 2 {
-		return sendBadRequestError(c, ErrOAuthInvalidState)
+		return SendBadRequestError(c, ErrOAuthInvalidState)
 	}
 	userName := parts[0]
 
 	// Get MAL account
 	account, err := models.GetUserExternalAccount(userName, "mal")
 	if err != nil {
-		return sendBadRequestError(c, ErrOAuthNoAccountFound)
+		return SendBadRequestError(c, ErrOAuthNoAccountFound)
 	}
 
 	storedParts := strings.Split(account.AccessToken, "|")
 	if len(storedParts) < 2 {
-		return sendBadRequestError(c, ErrOAuthInvalidStoredState)
+		return SendBadRequestError(c, ErrOAuthInvalidStoredState)
 	}
 	reconstructedState := strings.Join(storedParts[len(storedParts)-2:], "|")
 	if reconstructedState != state {
-		return sendBadRequestError(c, ErrOAuthStateMismatch)
+		return SendBadRequestError(c, ErrOAuthStateMismatch)
 	}
 	codeVerifier := storedParts[0]
 
@@ -794,41 +651,41 @@ func HandleMALCallback(c *fiber.Ctx) error {
 }
 
 // HandleAniListCallback handles OAuth callback from AniList
-func HandleAniListCallback(c *fiber.Ctx) error {
+func HandleAniListCallback(c fiber.Ctx) error {
 	code := c.Query("code")
 	state := c.Query("state")
 
 	if code == "" || state == "" {
-		return sendBadRequestError(c, ErrOAuthMissingCodeOrState)
+		return SendBadRequestError(c, ErrOAuthMissingCodeOrState)
 	}
 
 	// Parse state: userName|suffix
 	parts := strings.Split(state, "|")
 	if len(parts) != 2 {
-		return sendBadRequestError(c, ErrOAuthInvalidState)
+		return SendBadRequestError(c, ErrOAuthInvalidState)
 	}
 	userName := parts[0]
 
 	// Get AniList account
 	account, err := models.GetUserExternalAccount(userName, "anilist")
 	if err != nil {
-		return sendBadRequestError(c, ErrOAuthNoAccountFound)
+		return SendBadRequestError(c, ErrOAuthNoAccountFound)
 	}
 
 	storedParts := strings.Split(account.AccessToken, "|")
 	if len(storedParts) < 2 {
-		return sendBadRequestError(c, ErrOAuthInvalidStoredState)
+		return SendBadRequestError(c, ErrOAuthInvalidStoredState)
 	}
 	reconstructedState := strings.Join(storedParts[len(storedParts)-2:], "|")
 	if reconstructedState != state {
-		return sendBadRequestError(c, ErrOAuthStateMismatch)
+		return SendBadRequestError(c, ErrOAuthStateMismatch)
 	}
 
 	return exchangeAniListToken(c, account, code)
 }
 
 // exchangeMALToken exchanges authorization code for MAL access token
-func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, codeVerifier string) error {
+func exchangeMALToken(c fiber.Ctx, account *models.UserExternalAccount, code, codeVerifier string) error {
 	clientID := account.ExternalUserID
 	clientSecret := account.RefreshToken
 
@@ -842,13 +699,13 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 
 	resp, err := http.PostForm("https://myanimelist.net/v1/oauth2/token", data)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return sendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
+		return SendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
 	}
 
 	var tokenResp struct {
@@ -859,7 +716,7 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update account with tokens
@@ -870,20 +727,20 @@ func exchangeMALToken(c *fiber.Ctx, account *models.UserExternalAccount, code, c
 
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(account.UserName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // exchangeAniListToken exchanges authorization code for AniList access token
-func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, code string) error {
+func exchangeAniListToken(c fiber.Ctx, account *models.UserExternalAccount, code string) error {
 	clientID := account.ExternalUserID
 	clientSecret := account.RefreshToken
 
@@ -896,13 +753,13 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 
 	resp, err := http.PostForm("https://anilist.co/api/v2/oauth/token", data)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return sendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
+		return SendBadRequestError(c, fmt.Sprintf("%s: %s", ErrOAuthTokenExchangeFailed, string(body)))
 	}
 
 	var tokenResp struct {
@@ -912,7 +769,7 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update account with token
@@ -921,20 +778,20 @@ func exchangeAniListToken(c *fiber.Ctx, account *models.UserExternalAccount, cod
 
 	err = models.SaveUserExternalAccount(account)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Fetch updated accounts and return the view
 	accounts, err := models.GetUserExternalAccounts(account.UserName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	return handleView(c, views.ExternalAccountsPage(accounts))
 }
 
 // HandleUploadAvatar handles avatar image uploads
-func HandleUploadAvatar(c *fiber.Ctx) error {
+func HandleUploadAvatar(c fiber.Ctx) error {
 	userName := GetUserContext(c)
 	if userName == "" {
 		return fiber.ErrUnauthorized
@@ -943,7 +800,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	// Get current user to check for existing avatar
 	currentUser, err := models.FindUserByUsername(userName)
 	if err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 	if currentUser == nil {
 		return fiber.ErrUnauthorized
@@ -990,12 +847,12 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	// Ensure avatars directory exists
 	avatarsDir := filepath.Join(files.GetDataDirectory(), "avatars")
 	if err := os.MkdirAll(avatarsDir, 0755); err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Save the file
 	if err := c.SaveFile(file, filePath); err != nil {
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Update user avatar in database
@@ -1003,7 +860,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 	if err := models.UpdateUserAvatar(userName, avatarURL); err != nil {
 		// Clean up file if DB update fails
 		os.Remove(filePath)
-		return sendInternalServerError(c, ErrUserManagementOperationFailed, err)
+		return SendInternalServerError(c, ErrUserManagementOperationFailed, err)
 	}
 
 	// Return success response for HTMX
@@ -1015,7 +872,7 @@ func HandleUploadAvatar(c *fiber.Ctx) error {
 		return c.SendString("")
 	}
 
-	return c.Redirect("/account", fiber.StatusSeeOther)
+	return c.Redirect().Status(fiber.StatusSeeOther).To("/account")
 }
 
 // generateCodeVerifier generates a random code verifier for PKCE
