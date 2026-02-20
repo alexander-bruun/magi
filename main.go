@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,9 +23,9 @@ import (
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/utils/text"
 
-	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	html "github.com/gofiber/template/html/v2"
+	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	html "github.com/gofiber/template/html/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +36,9 @@ var viewsfs embed.FS
 
 //go:embed assets/*
 var assetsfs embed.FS
+
+//go:embed migrations
+var migrationsfs embed.FS
 
 func main() {
 	var dataDirectory string
@@ -103,7 +108,9 @@ func main() {
 			// Initialize console log streaming for admin panel
 			text.InitializeConsoleLogger()
 
-			log.Info("Starting Magi!")
+			if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+				log.Info("Starting Magi!")
+			}
 
 			// Ensure dataDirectory is absolute
 			if !filepath.IsAbs(dataDirectory) {
@@ -163,11 +170,13 @@ func main() {
 				return
 			}
 
-			log.Infof("Using data backend: %s", dataConfig.BackendType)
+			if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+				log.Infof("Using data backend: %s", dataConfig.BackendType)
 
-			log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
-			log.Debugf("Using '%s/...' as the image caching location", dataDirectory)
-			log.Debugf("Using '%s/...' as the backup location", backupDirectory)
+				log.Debugf("Using '%s/magi.db,-shm,-wal' as the database location", dataDirectory)
+				log.Debugf("Using '%s/...' as the image caching location", dataDirectory)
+				log.Debugf("Using '%s/...' as the backup location", backupDirectory)
+			}
 
 			// Initialize console log streaming for admin panel
 			text.InitializeConsoleLogger()
@@ -185,6 +194,30 @@ func main() {
 			}()
 			defer handlers.StopJobStatusManager()
 
+			// Generate ImageAccessSecret if not set
+			cfg, err := models.GetAppConfig()
+			if err != nil {
+				log.Errorf("Failed to get app config: %v", err)
+				return
+			}
+			if cfg.ImageAccessSecret == "" {
+				bytes := make([]byte, 32)
+				if _, err := rand.Read(bytes); err != nil {
+					log.Errorf("Failed to generate random secret: %v", err)
+					return
+				}
+				cfg.ImageAccessSecret = hex.EncodeToString(bytes)
+				_, err = models.UpdateImageAccessSecret(cfg.ImageAccessSecret)
+				if err != nil {
+					log.Errorf("Failed to update image access secret: %v", err)
+					return
+				}
+				log.Info("Generated new ImageAccessSecret")
+			}
+
+			// Initialize slug key for image URL generation (shared across prefork via DB)
+			files.SetSlugKey(cfg.ImageAccessSecret)
+
 			// Abort any orphaned "running" logs from previous application run
 			if err := models.AbortOrphanedRunningLogs(); err != nil {
 				log.Warnf("Failed to abort orphaned running logs: %v", err)
@@ -195,7 +228,6 @@ func main() {
 
 			// Custom config optimized for 10k concurrent users
 			app := fiber.New(fiber.Config{
-				Prefork:          false, // Use single process (no prefork with SQLite)
 				CaseSensitive:    true,
 				StrictRouting:    true,
 				ServerHeader:     "Magi",
@@ -215,21 +247,25 @@ func main() {
 			// Start API in its own goroutine
 			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port, assetsfs)
 
-			// Start Indexer in its own goroutine
-			libraries, err := models.GetLibraries()
-			if err != nil {
-				log.Warnf("Failed to get libraries: %v", err)
-				return
+			// Start Indexer and Scheduler only in master process
+			if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+				libraries, err := models.GetLibraries()
+				if err != nil {
+					log.Warnf("Failed to get libraries: %v", err)
+					return
+				}
+				scheduler.InitializeIndexer(dataDirectory, libraries, dataBackendInstance)
+				scheduler.InitializeScraperScheduler()
+				scheduler.InitializeSubscriptionScheduler()
 			}
-			go scheduler.InitializeIndexer(dataDirectory, libraries, dataBackendInstance)
-			go scheduler.InitializeScraperScheduler()
-			go scheduler.InitializeSubscriptionScheduler()
 
 			// Set up signal handling for graceful shutdown
 			sigChan := make(chan os.Signal, 1)
 			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-			log.Info("Magi started successfully. Press Ctrl+C to stop.")
+			if os.Getenv("FIBER_PREFORK_CHILD") == "" {
+				log.Info("Magi started successfully. Press Ctrl+C to stop.")
+			}
 
 			// Wait for shutdown signal
 			select {
@@ -248,7 +284,6 @@ func main() {
 			go func() {
 				defer close(done)
 				scheduler.StopAllIndexers()
-				handlers.StopTokenCleanup()
 				scheduler.StopScraperScheduler()
 				scheduler.StopSubscriptionScheduler()
 			}()
