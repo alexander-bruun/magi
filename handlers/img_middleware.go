@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alexander-bruun/magi/embedded"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 )
@@ -16,12 +17,12 @@ var (
 )
 
 // InitImgCache pre-loads image files as base64 data URIs
-func InitImgCache(assetsFS fs.FS, assetsPath string) error {
+func InitImgCache(assetsPath string) error {
 	imgDir := filepath.Join(assetsPath, "img")
 
 	// For now, just cache icon.webp - expand as needed
 	iconPath := filepath.Join(imgDir, "icon.webp")
-	content, err := fs.ReadFile(assetsFS, iconPath)
+	content, err := fs.ReadFile(embedded.Assets, iconPath)
 	if err != nil {
 		return err
 	}

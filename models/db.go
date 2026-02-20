@@ -1,16 +1,16 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/alexander-bruun/magi/embedded"
 	"github.com/gofiber/fiber/v3/log"
-
-	"database/sql"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
@@ -133,7 +133,7 @@ func initializeSchemaMigrationsTable() error {
 
 // applyMigrations reads and applies all new migrations from the specified folder
 func applyMigrations(migrationsDir string) error {
-	files, err := os.ReadDir(migrationsDir)
+	files, err := fs.ReadDir(embedded.Migrations, migrationsDir)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -173,8 +173,8 @@ func applyMigrations(migrationsDir string) error {
 
 // applyMigration reads and applies a single migration file
 func applyMigration(migrationsDir, fileName string, version int) error {
-	migrationPath := filepath.Join(migrationsDir, fileName)
-	query, err := os.ReadFile(migrationPath)
+	migrationPath := migrationsDir + "/" + fileName
+	query, err := fs.ReadFile(embedded.Migrations, migrationPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migration file %s: %w", migrationPath, err)
 	}
@@ -212,13 +212,13 @@ func extractVersion(fileName string) (int, error) {
 // rollbackMigration rolls back a migration by applying its .down.sql file
 func rollbackMigration(migrationsDir string, version int) error {
 	downFileName := fmt.Sprintf("%04d*.down.sql", version) // Example: 0001*.down.sql
-	files, err := filepath.Glob(filepath.Join(migrationsDir, downFileName))
+	files, err := fs.Glob(embedded.Migrations, migrationsDir+"/"+downFileName)
 	if err != nil || len(files) == 0 {
 		return fmt.Errorf("no rollback file found for version %d", version)
 	}
 
 	// Read and apply the .down.sql file
-	query, err := os.ReadFile(files[0])
+	query, err := fs.ReadFile(embedded.Migrations, files[0])
 	if err != nil {
 		return fmt.Errorf("failed to read rollback file: %w", err)
 	}
@@ -252,12 +252,18 @@ func MigrateUp(migrationsDir string, version int) error {
 	}
 
 	fileName := fmt.Sprintf("%04d_*.up.sql", version)
-	files, err := filepath.Glob(filepath.Join(migrationsDir, fileName))
+	files, err := fs.Glob(embedded.Migrations, migrationsDir+"/"+fileName)
 	if err != nil || len(files) == 0 {
 		return fmt.Errorf("no up migration file found for version %d", version)
 	}
 
-	return applyMigration(migrationsDir, filepath.Base(files[0]), version)
+	// fs.Glob returns full paths (e.g. "migrations/0001_create_libraries_table.up.sql")
+	// Extract just the base filename for applyMigration
+	matchedFile := files[0]
+	if idx := strings.LastIndex(matchedFile, "/"); idx >= 0 {
+		matchedFile = matchedFile[idx+1:]
+	}
+	return applyMigration(migrationsDir, matchedFile, version)
 }
 
 // MigrateDown rolls back a specific migration version

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/alexander-bruun/magi/cmd"
+	"github.com/alexander-bruun/magi/embedded"
 	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/models"
@@ -41,6 +42,9 @@ var assetsfs embed.FS
 var migrationsfs embed.FS
 
 func main() {
+	// Register all embedded filesystems in the central package
+	embedded.Init(viewsfs, assetsfs, migrationsfs)
+
 	var dataDirectory string
 	var logLevel string
 	var port string
@@ -224,7 +228,7 @@ func main() {
 			}
 
 			// Create a new engine
-			engine := html.NewFileSystem(http.FS(viewsfs), ".html")
+			engine := html.NewFileSystem(http.FS(embedded.Views), ".html")
 
 			// Custom config optimized for 10k concurrent users
 			app := fiber.New(fiber.Config{
@@ -245,7 +249,7 @@ func main() {
 			})
 
 			// Start API in its own goroutine
-			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port, assetsfs)
+			go handlers.Initialize(app, dataBackendInstance, backupDirectory, port)
 
 			// Start Indexer and Scheduler only in master process
 			if os.Getenv("FIBER_PREFORK_CHILD") == "" {

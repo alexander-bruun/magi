@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alexander-bruun/magi/embedded"
 	fiber "github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/tdewolff/minify/v2"
@@ -66,8 +67,8 @@ func InitMinifier() {
 	minifier.AddFunc("text/javascript", js.Minify)
 }
 
-// InitCSSParser loads and parses all CSS files from the given embedded filesystem
-func InitCSSParser(assetsFS fs.FS, cssDir string) error {
+// InitCSSParser loads and parses all CSS files from the embedded assets filesystem
+func InitCSSParser(cssDir string) error {
 	cssParserMu.Lock()
 	defer cssParserMu.Unlock()
 
@@ -83,7 +84,7 @@ func InitCSSParser(assetsFS fs.FS, cssDir string) error {
 	var allCSS strings.Builder
 
 	// Walk through the CSS directory in the embedded FS
-	err := fs.WalkDir(assetsFS, cssDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(embedded.Assets, cssDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -94,7 +95,7 @@ func InitCSSParser(assetsFS fs.FS, cssDir string) error {
 			return nil
 		}
 
-		content, err := fs.ReadFile(assetsFS, path)
+		content, err := fs.ReadFile(embedded.Assets, path)
 		if err != nil {
 			log.Warnf("Failed to read CSS file %s: %v", path, err)
 			return nil // Continue with other files
@@ -138,10 +139,10 @@ func InitCSSParser(assetsFS fs.FS, cssDir string) error {
 }
 
 // InitJSCache pre-loads all JS files into memory for fast inlining
-func InitJSCache(assetsFS fs.FS, assetsPath string) error {
+func InitJSCache(assetsPath string) error {
 	jsDir := filepath.Join(assetsPath, "js")
 
-	err := fs.WalkDir(assetsFS, jsDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(embedded.Assets, jsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -149,7 +150,7 @@ func InitJSCache(assetsFS fs.FS, assetsPath string) error {
 			return nil
 		}
 
-		content, err := fs.ReadFile(assetsFS, path)
+		content, err := fs.ReadFile(embedded.Assets, path)
 		if err != nil {
 			return err
 		}

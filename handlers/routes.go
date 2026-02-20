@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"embed"
 	"os"
 	"strconv"
 	"strings"
@@ -44,7 +43,7 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string, assetsFS embed.FS) {
+func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string) {
 	if os.Getenv("FIBER_PREFORK_CHILD") == "" {
 		log.Info("Initializing application routes and middleware")
 	}
@@ -78,14 +77,14 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Initialize CSS Parser for dynamic CSS injection
 	// ========================================
-	if err := InitCSSParser(assetsFS, "assets/css"); err != nil {
+	if err := InitCSSParser("assets/css"); err != nil {
 		log.Warnf("Failed to initialize CSS parser: %v - falling back to static CSS", err)
 	}
 
 	// ========================================
 	// Initialize JS Cache for dynamic JS inlining
 	// ========================================
-	if err := InitJSCache(assetsFS, "assets"); err != nil {
+	if err := InitJSCache("assets"); err != nil {
 		log.Warnf("Failed to initialize JS cache: %v - falling back to static JS", err)
 	}
 
@@ -97,7 +96,7 @@ func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirecto
 	// ========================================
 	// Initialize Image Cache for inlining icons
 	// ========================================
-	if err := InitImgCache(assetsFS, "assets"); err != nil {
+	if err := InitImgCache("assets"); err != nil {
 		log.Warnf("Failed to initialize image cache: %v - falling back to static images", err)
 	}
 
