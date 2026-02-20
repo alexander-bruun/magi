@@ -64,6 +64,8 @@ Requires Go 1.25+. Clone and run with `air` for live reload.
 
 Contributions welcome! Report bugs, suggest features, or submit PRs to the `next` branch.
 
+> We are looking for UI designers, to give the Web UI a modern overhaul!
+
 ## 📄 License
 
 [MIT License](LICENSE)
