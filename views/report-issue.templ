@@ -8,11 +8,11 @@ templ ReportIssue() {
 				Found a bug or have a feature request? Let us know!
 			</p>
 			<form hx-post="/report-issue" hx-target="#issue-form" hx-swap="innerHTML">
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label" for="issue-title">Title</label>
 					<input class="uk-input" id="issue-title" name="title" type="text" placeholder="Brief description of the issue" required>
 				</div>
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label" for="issue-category">Category</label>
 					<select class="uk-select" id="issue-category" name="category">
 						<option value="bug">Bug Report</option>
@@ -21,11 +21,11 @@ templ ReportIssue() {
 						<option value="other">Other</option>
 					</select>
 				</div>
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label" for="issue-description">Description</label>
 					<textarea class="uk-textarea" id="issue-description" name="description" rows="6" placeholder="Please provide detailed information about the issue..." required></textarea>
 				</div>
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label" for="issue-priority">Priority</label>
 					<select class="uk-select" id="issue-priority" name="priority">
 						<option value="low">Low</option>
@@ -34,11 +34,11 @@ templ ReportIssue() {
 						<option value="critical">Critical</option>
 					</select>
 				</div>
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label" for="issue-url">URL (optional)</label>
 					<input class="uk-input" id="issue-url" name="url" type="url" placeholder="https://example.com/page-with-issue">
 				</div>
-				<div class="uk-margin" id="issue-form">
+				<div id="issue-form">
 					<button class="uk-btn uk-btn-primary" type="submit">
 						<uk-icon icon="Send"></uk-icon>
 						Submit Issue
@@ -51,7 +51,7 @@ templ ReportIssue() {
 
 templ IssueSuccess() {
 	<div class="uk-text-center py-8">
-		<div class="uk-margin-large">
+		<div>
 			<uk-icon icon="CheckCircle" ratio="3" class="uk-text-success"></uk-icon>
 		</div>
 		<h2 class="uk-heading-medium uk-text-success">Issue Reported Successfully</h2>

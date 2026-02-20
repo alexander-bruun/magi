@@ -52,26 +52,26 @@ templ Account(userName string) {
     {{ favoriteGenres, _ := models.GetUserFavoriteGenres(userName) }}
     
     @PageTitle(fmt.Sprintf("Account - %s", userName))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-    })
+    <div class="uk-container">
+        @Breadcrumb([]BreadcrumbItem{
+            { Label: "Home", Href: "/" },
+            { Label: "Account", Href: "/account" },
+        })
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Account</span></h2>
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Account</span></h2>
+        <!-- Profile card -->
+        if user != nil {
+            @ProfileCard(*user, totalChaptersRead, totalMediaRead, readingStreak, favoriteGenres)
+        }
 
-    <!-- Profile card -->
-    if user != nil {
-        @ProfileCard(*user, totalChaptersRead, totalMediaRead, readingStreak, favoriteGenres)
-    }
+        <!-- Reading Timeline -->
+        @ReadingTimeline(activities)
 
-    <!-- Reading Timeline -->
-    @ReadingTimeline(activities)
-
-    <!-- Content Tabs -->
-    <div class="flex items-center justify-between mt-4">
-        <h3 class="uk-h4 mb-2">Upvoted</h3>
-        <a href={ templ.URL("/account/upvoted") } class="uk-button">View all</a>
-    </div>
+        <!-- Content Tabs -->
+        <div class="flex items-center justify-between mt-4">
+            <h3 class="uk-h4 mb-2">Upvoted</h3>
+            <a href={ templ.URL("/account/upvoted") } class="uk-button">View all</a>
+        </div>
 
         if len(liked) == 0 {
             <p class="role-reader">You have not upvoted any media yet.</p>
@@ -88,4 +88,5 @@ templ Account(userName string) {
         } else {
             @MediaSlider(downvoted, 200, 300, true, true, "")
         }
+    </div>
 }

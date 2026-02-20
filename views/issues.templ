@@ -7,47 +7,48 @@ import (
 
 templ Issues(issues []models.Issue, stats map[string]int, status, category string, limit, offset int) {
 	@PageTitle("Issues")
-	@Breadcrumb([]BreadcrumbItem{
-		{ Label: "Home", Href: "/" },
-		{ Label: "Issues", Href: "/admin/issues" },
-	})
-	<div >
-		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Issue Management</span></h2>
-	</div>
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{
+			{ Label: "Home", Href: "/" },
+			{ Label: "Issues", Href: "/admin/issues" },
+		})
+		<div >
+			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Issue Management</span></h2>
+		</div>
 
-	<!-- Stats Cards -->
-	<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
-		<div class="uk-card uk-card-default uk-card-body">
-			<h3 class="uk-card-title uk-text-center">{ stats["open"] }</h3>
-			<p class="uk-text-center uk-text-meta">Open Issues</p>
+		<!-- Stats Cards -->
+		<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-4">
+			<div class="uk-card uk-card-default uk-card-body">
+				<h3 class="uk-card-title uk-text-center">{ stats["open"] }</h3>
+				<p class="uk-text-center uk-text-meta">Open Issues</p>
+			</div>
+			<div class="uk-card uk-card-default uk-card-body">
+				<h3 class="uk-card-title uk-text-center">{ stats["in_progress"] }</h3>
+				<p class="uk-text-center uk-text-meta">In Progress</p>
+			</div>
+			<div class="uk-card uk-card-default uk-card-body">
+				<h3 class="uk-card-title uk-text-center">{ stats["closed"] }</h3>
+				<p class="uk-text-center uk-text-meta">Closed Issues</p>
+			</div>
+			<div class="uk-card uk-card-default uk-card-body">
+				<h3 class="uk-card-title uk-text-center">{ len(issues) }</h3>
+				<p class="uk-text-center uk-text-meta">Total Issues</p>
+			</div>
 		</div>
-		<div class="uk-card uk-card-default uk-card-body">
-			<h3 class="uk-card-title uk-text-center">{ stats["in_progress"] }</h3>
-			<p class="uk-text-center uk-text-meta">In Progress</p>
-		</div>
-		<div class="uk-card uk-card-default uk-card-body">
-			<h3 class="uk-card-title uk-text-center">{ stats["closed"] }</h3>
-			<p class="uk-text-center uk-text-meta">Closed Issues</p>
-		</div>
-		<div class="uk-card uk-card-default uk-card-body">
-			<h3 class="uk-card-title uk-text-center">{ len(issues) }</h3>
-			<p class="uk-text-center uk-text-meta">Total Issues</p>
-		</div>
-	</div>
 
-	<!-- Filters -->
-	<div >
-		<form id="issues-filter-form" hx-get="/admin/issues" hx-target="#issues-content" hx-swap="innerHTML">
-			<div class="uk-flex uk-flex-wrap" style="gap: 2rem; justify-content: center;">
-				<div>
-					<label class="uk-form-label">Status:</label>
-					<select class="uk-select" name="status" 
-					        hx-get="/admin/issues" 
-					        hx-target="#issues-content" 
-					        hx-swap="innerHTML"
-					        hx-include="closest form">
-						<option value="">All Status</option>
-						<option value="open" if status == "open" { selected } >Open</option>
+		<!-- Filters -->
+		<div >
+			<form id="issues-filter-form" hx-get="/admin/issues" hx-target="#issues-content" hx-swap="innerHTML">
+				<div class="uk-flex uk-flex-wrap" style="gap: 2rem; justify-content: center;">
+					<div>
+						<label class="uk-form-label">Status:</label>
+						<select class="uk-select" name="status" 
+						        hx-get="/admin/issues" 
+						        hx-target="#issues-content" 
+						        hx-swap="innerHTML"
+						        hx-include="closest form">
+							<option value="">All Status</option>
+							<option value="open" if status == "open" { selected } >Open</option>
 						<option value="in_progress" if status == "in_progress" { selected } >In Progress</option>
 						<option value="closed" if status == "closed" { selected } >Closed</option>
 					</select>
@@ -81,14 +82,14 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 			<h2 class="uk-modal-title">Close Issue</h2>
 			<p class="uk-text-meta">Provide a resolution message for the user (optional)</p>
 			<form id="close-issue-form">
-				<div class="uk-margin">
+				<div>
 					<label class="uk-form-label">Resolution Message:</label>
 					<textarea class="uk-textarea" name="resolution" rows="4" placeholder="Explain how the issue was resolved..."></textarea>
 				</div>
-				<p class="uk-text-right">
+				<div class="uk-flex uk-flex-between">
 					<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
 					<button class="uk-btn uk-btn-primary" type="submit">Close Issue</button>
-				</p>
+				</div>
 			</form>
 		</div>
 	</div>
@@ -121,13 +122,14 @@ templ Issues(issues []models.Issue, stats map[string]int, status, category strin
 			});
 		});
 	</script>
+	</div>
 }
 
 templ IssuesTable(issues []models.Issue, status, category string, limit, offset int) {
 	<div class="uk-card uk-card-default">
 		<div class="uk-card-body">
 			if len(issues) == 0 {
-				<div class="uk-text-center uk-margin-large">
+				<div class="uk-text-center">
 					<p class="uk-text-muted">No issues found.</p>
 				</div>
 			} else {

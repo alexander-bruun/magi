@@ -21,8 +21,8 @@ templ MediaListingFragment(media []models.Media, currentPage int, totalPages int
 }
 
 // GenericMediaListingWithTypes consolidates sort controls + results grid + pagination.
-templ GenericMediaListingWithTypes(path string, targetID string, includeTags bool, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
-    @SortControls(path, targetID + "-results", targetID, sort, order, selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter)
+templ GenericMediaListingWithTypes(path string, targetID string, includeTags bool, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string, isModerator bool, allLibraries []models.Library, selectedLibrary string) {
+    @SortControls(path, targetID + "-results", targetID, sort, order, selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter, isModerator, allLibraries, selectedLibrary)
     <div id={ targetID + "-results" }>
         @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, targetID + "-results", selectedTags, tagMode, selectedTypes, searchFilter)
     </div>
@@ -30,13 +30,15 @@ templ GenericMediaListingWithTypes(path string, targetID string, includeTags boo
 
 // Backward-compatible wrapper without types (used by account pages initially)
 templ GenericMediaListing(path string, targetID string, includeTags bool, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, selectedTags []string, tagMode string, allTags []string) {
-    @GenericMediaListingWithTypes(path, targetID, includeTags, media, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, "")
+    @GenericMediaListingWithTypes(path, targetID, includeTags, media, currentPage, totalPages, sort, order, emptyMessage, selectedTags, tagMode, allTags, nil, nil, "", false, nil, "")
 }
 
 
 // SortControls renders the sort, filter, search, and tag/type filter controls
 // Uses HTMX to swap the media listing fragment on any change
-templ SortControls(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
+templ SortControls(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string, isModerator bool, allLibraries []models.Library, selectedLibrary string) {
+    {{ includeStr := "#sort-controls-form, #search-input" }}
+    {{ if isModerator { includeStr += ", #library-filter-form" } }}
     <div class="flex justify-between items-center gap-2 my-4">
         {{ allowedSorts := models.GetAllowedMediaSortOptions() }}
         {{ sorts := []struct{ Key, Label string }{} }}
@@ -117,7 +119,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                                 {{ order = "desc" }}
                             }
                             <li>
-                                <a href="#" hx-get={ path } hx-vals={ fmt.Sprintf(`{"sort":"%s", "order":"%s"}`, s.Key, order) } hx-target={ "#" + parentID } hx-include="#sort-controls-form, #search-input" hx-push-url="true" hx-swap="outerHTML">
+                                <a href="#" hx-get={ path } hx-vals={ fmt.Sprintf(`{"sort":"%s", "order":"%s"}`, s.Key, order) } hx-target={ "#" + parentID } hx-include={ includeStr } hx-push-url="true" hx-swap="outerHTML" onclick="this.closest('.uk-drop')?.classList.remove('uk-open');">
                                     { s.Label }
                                 </a>
                             </li>
@@ -137,7 +139,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                     value={ searchFilter }
                     hx-get={ path }
                     hx-target={ "#" + targetID }
-                    hx-include="#sort-controls-form"
+                    hx-include={ includeStr }
                     hx-push-url="true"
                     hx-swap="outerHTML"
                     hx-trigger="input changed delay:300ms, search"
@@ -171,6 +173,10 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 @TypesDropdownButton(path, targetID, parentID, currentSort, currentOrder, selectedTypes, allTypes)
             }
             
+            if isModerator && len(allLibraries) > 0 {
+                @LibrariesDropdownButton(path, targetID, parentID, currentSort, currentOrder, selectedLibrary, allLibraries)
+            }
+            
             <!-- Sort Order Toggle -->
             {{ toggled := "desc" }}
             if currentOrder == "desc" {
@@ -180,7 +186,7 @@ templ SortControls(path string, targetID string, parentID string, currentSort st
                 class="uk-btn uk-btn-default uk-btn-icon btn-circular"
                 hx-get={ path }
                 hx-target={ "#" + parentID }
-                hx-include="#sort-controls-form, #search-input"
+                hx-include={ includeStr }
                 hx-vals={ fmt.Sprintf(`{"order":"%s", "page":"1"}`, toggled) }
                 hx-push-url="true"
                 hx-swap="outerHTML"
@@ -204,7 +210,7 @@ templ TagsDropdownButton(path string, targetID string, parentID string, currentS
         </button>
         <div id="tag-filter-drop" data-trigger-id="tag-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="tag-filter-form" class="uk-form">
-                <div class="uk-margin-small">
+                <div>
                     <div class="uk-text-center filter-controls-center">
                         <div class="uk-inline">
                             <div class="uk-btn-group">
@@ -215,7 +221,7 @@ templ TagsDropdownButton(path string, targetID string, parentID string, currentS
                         </div>
                     </div>
                 </div>
-                <div id="tag-list" class="uk-margin-small-top tag-list-scroll">
+                <div id="tag-list" class="tag-list-scroll">
                     @TagsFragment(allTags, selectedTags)
                 </div>
             </form>
@@ -289,7 +295,7 @@ templ TypesDropdownButton(path string, targetID string, parentID string, current
         </button>
         <div id="type-filter-drop" data-trigger-id="type-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; boundary: !.uk-article; animation: uk-anmt-slide-top-sm; duration: 100">
             <form id="type-filter-form" class="uk-form">
-                <div class="uk-margin-small">
+                <div>
                     <div class="uk-text-center filter-controls-center">
                         <div class="uk-inline">
                             <div class="uk-btn-group">
@@ -299,7 +305,7 @@ templ TypesDropdownButton(path string, targetID string, parentID string, current
                         </div>
                     </div>
                 </div>
-                <div id="type-list" class="uk-margin-small-top type-list-scroll">
+                <div id="type-list" class="type-list-scroll">
                     @TypesFragment(allTypes, selectedTypes)
                 </div>
             </form>
@@ -337,6 +343,85 @@ templ TypeClearButton(path string, targetID string, parentID string) {
     >
         <uk-icon icon="X" ratio="0.9"></uk-icon>
     </button>
+}
+
+// LibrariesDropdownButton renders inline library filter button with dropdown
+templ LibrariesDropdownButton(path string, targetID string, parentID string, currentSort string, currentOrder string, selectedLibrary string, allLibraries []models.Library) {
+    <div class="uk-inline filter-dropdown-inline">
+        <button id="library-filter-btn" class="uk-btn uk-btn-default uk-btn-icon" type="button" aria-label="Filter by library">
+            <uk-icon icon="Folder"></uk-icon>
+        </button>
+        <div id="library-filter-drop" data-trigger-id="library-filter-btn" class="uk-drop uk-dropdown min-w-64 p-3" data-uk-dropdown="mode: click; pos: bottom-center; offset: 6; flip: false; animation: uk-anmt-slide-top-sm; duration: 100">
+            <form id="library-filter-form" class="uk-form">
+                <div>
+                    <div class="uk-text-center filter-controls-center">
+                        <div class="uk-inline">
+                            <div class="uk-btn-group">
+                                @LibraryApplyButton(path, targetID, parentID)
+                                @LibraryClearButton(path, targetID, parentID)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="library-list" class="library-list-scroll">
+                    @LibrariesFragment(allLibraries, selectedLibrary)
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+templ LibraryApplyButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-primary uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form, #library-filter-form"
+        hx-vals='{"page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Apply filters"
+        title="Apply filters"
+        onclick="document.getElementById('library-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="Check" ratio="0.9"></uk-icon>
+    </button>
+}
+
+templ LibraryClearButton(path string, targetID string, parentID string) {
+    <button type="button" class="uk-btn uk-btn-destructive uk-btn-icon"
+        hx-get={ path }
+        hx-target={ "#" + parentID }
+        hx-include="#sort-controls-form"
+        hx-vals='{"library":"", "page":"1"}'
+        hx-push-url="true"
+        hx-swap="outerHTML"
+        aria-label="Clear filters"
+        title="Clear filters"
+        onclick="document.getElementById('library-filter-drop')?.classList.remove('uk-open');"
+    >
+        <uk-icon icon="X" ratio="0.9"></uk-icon>
+    </button>
+}
+
+// LibrariesFragment renders the list of library radio buttons
+templ LibrariesFragment(allLibraries []models.Library, selectedLibrary string) {
+    <div class="grid grid-cols-1 gap-y-3 library-grid-padding">
+        <div class="flex items-center">
+            <label class="inline-flex items-center gap-3 min-w-0 w-full">
+                <input class="uk-radio shrink-0" type="radio" name="library" value="" checked?={ selectedLibrary == "" }>
+                <span class="leading-none flex-1 min-w-0 library-text-truncate">All Libraries</span>
+            </label>
+        </div>
+        for _, lib := range allLibraries {
+            {{ isChecked := selectedLibrary == lib.Slug }}
+            <div class="flex items-center">
+                <label class="inline-flex items-center gap-3 min-w-0 w-full">
+                    <input class="uk-radio shrink-0" type="radio" name="library" value={ lib.Slug } checked?={ isChecked }>
+                    <span class="leading-none flex-1 min-w-0 library-text-truncate">{ lib.Name }</span>
+                </label>
+            </div>
+        }
+    </div>
 }
 
 // Pagination renders page navigation with proper HTMX attributes

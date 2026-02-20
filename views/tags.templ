@@ -16,7 +16,7 @@ templ TagsDropdown(path string, targetID string, currentSort string, currentOrde
                 <input type="hidden" name="sort" value={ currentSort }>
                 <input type="hidden" name="order" value={ currentOrder }>
                 <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
-                <div class="uk-margin-small">
+                <div>
                     <div class="uk-text-center tags-controls-center">
                         <div class="uk-inline">
                             <div class="uk-btn-group">
@@ -27,7 +27,7 @@ templ TagsDropdown(path string, targetID string, currentSort string, currentOrde
                         </div>
                     </div>
                 </div>
-                <div id="tag-list" class="uk-margin-small-top tags-list-scroll">
+                <div id="tag-list" class="tags-list-scroll">
                     @TagsFragment(allTags, selectedTags)
                 </div>
             </form>
@@ -49,7 +49,7 @@ templ TagsFilterDrop(path string, targetID string, currentSort string, currentOr
             <input type="hidden" name="sort" value={ currentSort }>
             <input type="hidden" name="order" value={ currentOrder }>
             <input type="hidden" name="tag_mode" value={ strings.ToLower(tagMode) }>
-            <div class="uk-margin-small">
+            <div>
                 <div class="uk-text-center tags-controls-center">
                     <div class="uk-inline">
                         <div class="uk-btn-group">
@@ -60,7 +60,7 @@ templ TagsFilterDrop(path string, targetID string, currentSort string, currentOr
                     </div>
                 </div>
             </div>
-            <div id="tag-list" class="uk-margin-small-top tags-list-scroll" hx-get="/series/tags/fragment" hx-trigger="revealed" hx-target="this" hx-swap="innerHTML">
+            <div id="tag-list" class="tags-list-scroll" hx-get="/series/tags/fragment" hx-trigger="revealed" hx-target="this" hx-swap="innerHTML">
             </div>
         </form>
     </div>
@@ -130,7 +130,7 @@ templ TagsFragment(allTags []string, selected []string) {
     <div class="grid grid-cols-1 gap-y-3 tags-grid-padding">
         for _, tag := range allTags {
             {{ isChecked := selectedMap[strings.ToLower(tag)] }}
-            <div class="uk-margin-small flex items-center">
+            <div class="flex items-center">
                 <label class="inline-flex items-center gap-3 min-w-0 w-full">
                     <input class="uk-checkbox shrink-0" type="checkbox" name="tags" value={ tag } checked?={ isChecked }>
                     <span class="leading-none flex-1 min-w-0 tags-text-truncate">{ tag }</span>

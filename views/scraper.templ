@@ -103,7 +103,7 @@ templ ScraperForm(script *models.ScraperScript, action string, editing bool) {
 // ScraperFormContent renders the form fields
 templ ScraperFormContent(script *models.ScraperScript, editing bool) {
 	<fieldset class="space-y-4">
-		<div class="uk-margin">
+		<div>
 			<input
 				class="uk-input"
 				type="text"
@@ -115,7 +115,7 @@ templ ScraperFormContent(script *models.ScraperScript, editing bool) {
 			/>
 		</div>
 
-		<div class="uk-margin">
+		<div>
 			<div class="flex items-center">
 				<input
 					class="uk-input flex-1"
@@ -140,7 +140,7 @@ templ ScraperFormContent(script *models.ScraperScript, editing bool) {
 			@LanguageDependentSections(script)
 		</div>
 
-		<div class="uk-margin">
+		<div>
 			<input
 				class="uk-input"
 				type="text"
@@ -152,7 +152,7 @@ templ ScraperFormContent(script *models.ScraperScript, editing bool) {
 		</div>
 
 		<!-- Script Variables -->
-		<div class="uk-margin">
+		<div>
 			<label class="uk-form-label">Variables (optional)</label>
 			@VariableInputs(script.Variables)
 		</div>
@@ -175,23 +175,25 @@ templ ScraperFormContent(script *models.ScraperScript, editing bool) {
 // Scraper renders the main scraper page with form and table layout
 templ Scraper(scripts []models.ScraperScript, activeID int64) {
 	@PageTitle("Scraper")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
-	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-		<div id="form-column" class="lg:col-span-1">
-			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
-				<div class="uk-card p-2">
-					@ScraperForm(&models.ScraperScript{}, "post", false)
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Scraper", Href: "/admin/scraper" }})
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+			<div id="form-column" class="lg:col-span-1">
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
+					<div class="uk-card p-2">
+						@ScraperForm(&models.ScraperScript{}, "post", false)
+					</div>
+				</div>
+				<div id="table-column" class="lg:col-span-3">
+					<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scrapers</span></h2>
+					<div class="uk-card p-2">
+						@ScraperTable(scripts)
+					</div>
 				</div>
 			</div>
-			<div id="table-column" class="lg:col-span-3">
-				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Scrapers</span></h2>
-				<div class="uk-card p-2">
-					@ScraperTable(scripts)
-				</div>
-			</div>
-		</div>
-	@FileExplorer()
-	@ScraperLogsModal()
+		@FileExplorer()
+		@ScraperLogsModal()
+	</div>
 }
 
 templ ScraperTable(scripts []models.ScraperScript) {
@@ -511,7 +513,7 @@ templ ScraperScriptEditor(script *models.ScraperScript) {
 				<li class="uk-active"><a href="#editor-tab">Editor</a></li>
 				<li><a href="#logs-tab">Logs</a></li>
 			</ul>
-			<ul class="uk-switcher uk-margin">
+			<ul class="uk-switcher">
 				<li id="editor-tab" class="uk-active">
 					@ScraperEditorTabContent(script)
 				</li>

@@ -59,48 +59,50 @@ templ Users() {
 
 templ UsersWithData(users []models.User, page, pageSize int, total int64, filter string) {
 	@PageTitle("Users")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
-	<div class="flex place-content-center">
-			<div class="w-full md:w-3/4">
-				<div class="uk-card p-2 w-full">
-					<!-- Search and Page Size Controls -->
-					<div class="mb-4 flex gap-4">
-						<div class="flex-1">
-							<input 
-								type="text" 
-								class="uk-input" 
-								placeholder="Search users..." 
-								id="user-search"
-								value={ filter }
-								hx-get="/admin/users/table"
-								hx-trigger="input changed delay:300ms, search"
-								hx-target="#users-container"
-								hx-include="[name='pageSize']"
-								name="filter"
-							>
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Users", Href: "/admin/users" }})
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Users</span></h2>
+		<div class="flex place-content-center">
+				<div class="w-full md:w-3/4">
+					<div class="uk-card p-2 w-full">
+						<!-- Search and Page Size Controls -->
+						<div class="mb-4 flex gap-4">
+							<div class="flex-1">
+								<input 
+									type="text" 
+									class="uk-input" 
+									placeholder="Search users..." 
+									id="user-search"
+									value={ filter }
+									hx-get="/admin/users/table"
+									hx-trigger="input changed delay:300ms, search"
+									hx-target="#users-container"
+									hx-include="[name='pageSize']"
+									name="filter"
+								>
+							</div>
+							<div class="flex items-center gap-2">
+								<label for="pageSize" class="text-sm">Page size:</label>
+								<select 
+									id="pageSize" 
+									name="pageSize" 
+									class="uk-select"
+									hx-get="/admin/users/table"
+									hx-trigger="change"
+									hx-target="#users-container"
+									hx-include="[name='filter']"
+								>
+									<option value="5" selected?={ pageSize == 5 }>5</option>
+									<option value="10" selected?={ pageSize == 10 }>10</option>
+									<option value="25" selected?={ pageSize == 25 }>25</option>
+									<option value="50" selected?={ pageSize == 50 }>50</option>
+								</select>
+							</div>
 						</div>
-						<div class="flex items-center gap-2">
-							<label for="pageSize" class="text-sm">Page size:</label>
-							<select 
-								id="pageSize" 
-								name="pageSize" 
-								class="uk-select"
-								hx-get="/admin/users/table"
-								hx-trigger="change"
-								hx-target="#users-container"
-								hx-include="[name='filter']"
-							>
-								<option value="5" selected?={ pageSize == 5 }>5</option>
-								<option value="10" selected?={ pageSize == 10 }>10</option>
-								<option value="25" selected?={ pageSize == 25 }>25</option>
-								<option value="50" selected?={ pageSize == 50 }>50</option>
-							</select>
+						
+						<div id="users-container">
+							@UsersTable(users, page, pageSize, total, filter)
 						</div>
-					</div>
-					
-					<div id="users-container">
-						@UsersTable(users, page, pageSize, total, filter)
 					</div>
 				</div>
 			</div>

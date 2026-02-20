@@ -10,7 +10,7 @@ import (
 // Use includeTags=true to enable tag filtering on account pages
 templ AccountMediaListing(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, allTags []string, searchFilter string) {
     <div id="account-listing">
-        @SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter)
+        @SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter, false, nil, "")
         <div id="account-media-list-results">
             @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", nil, "", nil, searchFilter)
         </div>
@@ -20,7 +20,7 @@ templ AccountMediaListing(media []models.Media, currentPage int, totalPages int,
 // AccountMediaListingWithTags includes selected tags and tag mode for filtered views
 templ AccountMediaListingWithTags(media []models.Media, currentPage int, totalPages int, sort string, order string, path string, emptyMessage string, selectedTags []string, tagMode string, allTags []string, searchFilter string) {
     <div id="account-listing">
-        @SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter)
+        @SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter, false, nil, "")
         <div id="account-media-list-results">
             @MediaListingFragment(media, currentPage, totalPages, sort, order, emptyMessage, path, "account-media-list-results", selectedTags, tagMode, nil, searchFilter)
         </div>

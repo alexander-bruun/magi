@@ -10,8 +10,8 @@ templ Collections(collections []models.Collection) {
 	@Breadcrumb([]BreadcrumbItem{
 		{ Label: "Collections" },
 	})
-
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Collections</span></h2>
+	<div class="uk-container">
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Collections</span></h2>
 				
 	{{ isFirstImage := true }}
 	<div class="mx-auto px-4 py-8">
@@ -118,4 +118,5 @@ templ Collections(collections []models.Collection) {
 			window.location.reload();
 		});
 	</script>
+	</div>
 }

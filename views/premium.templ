@@ -8,8 +8,8 @@ import (
 templ PremiumPage(plans []models.SubscriptionPlan) {
 	@PageTitle("Premium Subscription")
 	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }})
-	
-	<div class="uk-margin-large-bottom">
+	<div class="uk-container">
+		<div>
 		<!-- Pricing Plans -->
 		<div class="uk-text-center">
 			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Choose Your Plan</span></h2>
@@ -35,7 +35,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 						<div class="flex-shrink-0">
 							<span class="uk-text-large">⚡</span>
 						</div>
-						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Early Access</h3>
+						<h3 class="uk-card-title flex-shrink-0">Early Access</h3>
 						<p class="uk-text-muted flex-grow">Get up to 3 chapters ahead of everyone else</p>
 					</div>
 				</div>
@@ -44,7 +44,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 						<div class="flex-shrink-0">
 							<span class="uk-text-large">🖼️</span>
 						</div>
-						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">High Quality Images</h3>
+						<h3 class="uk-card-title flex-shrink-0">High Quality Images</h3>
 						<p class="uk-text-muted flex-grow">Enjoy crystal-clear images in WebP format</p>
 					</div>
 				</div>
@@ -53,7 +53,7 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 						<div class="flex-shrink-0">
 							<span class="uk-text-large">❤️</span>
 						</div>
-						<h3 class="uk-card-title uk-margin-small-bottom flex-shrink-0">Support Creators</h3>
+						<h3 class="uk-card-title flex-shrink-0">Support Creators</h3>
 						<p class="uk-text-muted flex-grow">Help keep the platform ad-free and support ongoing development</p>
 					</div>
 				</div>
@@ -175,12 +175,13 @@ templ PremiumPage(plans []models.SubscriptionPlan) {
 			});
 		}
 	</script>
+	</div>
 }
 
 templ PremiumPlanCard(plan models.SubscriptionPlan, isPopular bool) {
     <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-text-center">
-        <h3 class="uk-card-title uk-margin-small-bottom">{ plan.Name }</h3>
-        <div class="uk-text-large uk-margin-small-bottom">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
+        <h3 class="uk-card-title">{ plan.Name }</h3>
+        <div class="uk-text-large">${ fmt.Sprintf("%.2f", float64(plan.Price)/100) }</div>
         <div class="uk-text-meta">{ plan.Description }</div>
         if plan.Savings != "" {
             <div class="uk-label">
@@ -200,14 +201,14 @@ templ PremiumSuccess() {
     @PageTitle("Payment Successful")
     <div class="mt-4">
         @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Premium", Href: "/premium" }, { Label: "Success", Href: "/premium/success" }})
-        <div class="uk-width-2xl uk-margin-auto uk-text-center">
+        <div class="uk-width-2xl uk-text-center">
             <div class="uk-card uk-card-default uk-card-body">
                 <div class="uk-text-large">✅</div>
-                <h2 class="uk-card-title uk-margin-small-bottom">Payment Successful!</h2>
+                <h2 class="uk-card-title">Payment Successful!</h2>
                 <p class="uk-text-muted">Thank you for your subscription. Your premium access has been activated.</p>
             </div>
 
-            <div class="uk-margin">
+            <div>
                 <h3 class="uk-h3">What's Next?</h3>
                 <ul class="uk-list uk-list-divider">
                     <li>Your account has been upgraded to premium</li>
@@ -216,7 +217,7 @@ templ PremiumSuccess() {
                     <li>Access premium features across the platform</li>
                 </ul>
 
-                <div class="uk-flex uk-margin">
+                <div class="uk-flex">
                     <a href="/" class="uk-btn uk-btn-primary">
                         Continue Reading
                     </a>

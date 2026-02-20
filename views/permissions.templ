@@ -11,43 +11,44 @@ templ PermissionsManagement() {
 	{{ roles := []string{"anonymous", "reader", "premium", "moderator", "admin"} }}
 
 	@PageTitle("Permissions")
-	<!-- Header Section -->
-	<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
-		<div class="py-6">
-			@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Permissions", Href: "/admin/permissions" }})
-			<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row">
-				<div>
-					<h1 class="text-3xl font-bold">Permissions Management</h1>
-					<p class="mt-2 text-sm">Manage access permissions and user roles for your libraries</p>
-				</div>
-				<div class="flex items-center space-x-3 mt-4 sm:mt-0">
-					<div class="px-3 py-2 rounded-lg">
-						<div class="flex items-center space-x-2">
-							<uk-icon icon="users" ratio="0.8"></uk-icon>
-							<span class="text-sm font-medium">{ len(users) } Users</span>
-						</div>
+	<div class="uk-container">
+		<!-- Header Section -->
+		<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8">
+			<div class="py-6">
+				@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Permissions", Href: "/admin/permissions" }})
+				<div class="flex flex-col sm:items-center sm:justify-between sm:flex-row">
+					<div>
+						<h1 class="text-3xl font-bold">Permissions Management</h1>
+						<p class="mt-2 text-sm">Manage access permissions and user roles for your libraries</p>
 					</div>
-					<button
-						class="uk-btn uk-btn-primary"
-						hx-get="/api/permissions/new/form"
-						hx-target="#modal-content"
-						uk-toggle="target: #permission-modal"
-					>
-						<uk-icon icon="plus" ratio="0.8" class="mr-2"></uk-icon>
-						New Permission
-					</button>
+					<div class="flex items-center space-x-3 mt-4 sm:mt-0">
+						<div class="px-3 py-2 rounded-lg">
+							<div class="flex items-center space-x-2">
+								<uk-icon icon="users" ratio="0.8"></uk-icon>
+								<span class="text-sm font-medium">{ len(users) } Users</span>
+							</div>
+						</div>
+						<button
+							class="uk-btn uk-btn-primary"
+							hx-get="/api/permissions/new/form"
+							hx-target="#modal-content"
+							uk-toggle="target: #permission-modal"
+						>
+							<uk-icon icon="plus" ratio="0.8" class="mr-2"></uk-icon>
+							New Permission
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
 
-	<!-- Main Content -->
-	<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8">
-		<!-- Tab Navigation -->
-		<div class="mb-8">
-			<ul class="uk-tab" uk-tab>
-				<li class="uk-active"><a href="#">Permissions</a></li>
-				<li><a href="#">Roles</a></li>
+		<!-- Main Content -->
+		<div class="sm:max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-8">
+			<!-- Tab Navigation -->
+			<div class="mb-8">
+				<ul class="uk-tab" uk-tab>
+					<li class="uk-active"><a href="#">Permissions</a></li>
+					<li><a href="#">Roles</a></li>
 				<li><a href="#">Users</a></li>
 			</ul>
 
@@ -195,6 +196,7 @@ templ PermissionsManagement() {
 				</div>
 			</div>
 		</div>
+	</div>
 	</div>
 }
 
@@ -372,11 +374,11 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 
 			<!-- Access Settings Section -->
 			<div >
-				<h4 class="uk-heading-line uk-h5 uk-margin-small-bottom">
+				<h4 class="uk-heading-line uk-h5">
 					<span>Access Settings</span>
 				</h4>
 				
-				<div class="uk-margin">
+				<div>
 					<div class="uk-form-controls">
 						<label class="uk-flex">
 							<input 
@@ -393,11 +395,11 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 								<uk-icon icon="asterisk" ratio="0.7"></uk-icon> Wildcard Permission
 							</span>
 						</label>
-						<small class="uk-text-muted uk-margin-small-left">Grant access to all libraries (current and future)</small>
+						<small class="uk-text-muted">Grant access to all libraries (current and future)</small>
 					</div>
 				</div>
 				
-				<div class="uk-margin">
+				<div>
 					<div class="uk-form-controls">
 						<label class="uk-flex">
 							<input 
@@ -412,12 +414,12 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 								<uk-icon icon="star" ratio="0.7"></uk-icon> Premium Chapter Access
 							</span>
 						</label>
-						<small class="uk-text-muted uk-margin-small-left">Grant access to premium chapters in the defined libraries</small>
+						<small class="uk-text-muted">Grant access to premium chapters in the defined libraries</small>
 					</div>
 				</div>
 				
 				if permission != nil {
-					<div class="uk-margin">
+					<div>
 						<div class="uk-form-controls">
 							<label class="uk-flex">
 								<input 
@@ -432,7 +434,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 									<uk-icon icon="check" ratio="0.7"></uk-icon> Enabled
 								</span>
 							</label>
-							<small class="uk-text-muted uk-margin-small-left">Disable to temporarily revoke access without deleting</small>
+							<small class="uk-text-muted">Disable to temporarily revoke access without deleting</small>
 						</div>
 					</div>
 				}
@@ -446,7 +448,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 					style="display: none;"
 				}
 			>
-				<h4 class="uk-heading-line uk-h5 uk-margin-small-bottom">
+				<h4 class="uk-heading-line uk-h5">
 					<span>Library Access</span>
 				</h4>
 				
@@ -459,12 +461,12 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 					</div>
 				} else {
 					<div class="uk-card uk-card-default uk-card-body permissions-card-scroll">
-						<div class="uk-margin-small-bottom">
+						<div>
 							<div class="uk-flex">
 								<small class="uk-text-muted">Select the libraries this permission applies to</small>
 								<div>
 									<button type="button" class="uk-btn uk-btn-default" onclick="selectAllLibraries(this)">Select All</button>
-									<button type="button" class="uk-btn uk-btn-default uk-margin-small-left" onclick="clearAllLibraries(this)">Clear All</button>
+									<button type="button" class="uk-btn uk-btn-default" onclick="clearAllLibraries(this)">Clear All</button>
 								</div>
 							</div>
 						</div>
@@ -498,7 +500,7 @@ templ PermissionForm(permission *models.PermissionWithLibraries, libraries []mod
 				}
 			</div>
 			
-			<div class="mt-4 uk-text-right">
+			<div class="mt-4 uk-flex uk-flex-between">
 				<button class="uk-btn uk-btn-default uk-modal-close" type="button">
 					<uk-icon icon="close" ratio="0.8"></uk-icon> Cancel
 				</button>
@@ -837,7 +839,7 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 			} else {
 				<span class="uk-text-muted">No description provided</span>
 			}
-			<div class="uk-margin-small-top">
+			<div>
 				if permission.IsWildcard {
 					<span class="uk-label uk-label-warning"><uk-icon icon="asterisk" ratio="0.5"></uk-icon> All Libraries</span>
 				} else if len(permission.Libraries) > 0 {
@@ -857,11 +859,11 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 		hx-post={ fmt.Sprintf("/api/permissions/%d/bulk-assign", permission.ID) }
 		hx-swap="none"
 	>
-		<div class="uk-margin">
+		<div>
 			<label class="uk-form-label">
 				<uk-icon icon="users" ratio="0.8"></uk-icon> Select Users to Assign
 			</label>
-			<small class="uk-text-muted uk-margin-small-left">Users who already have this permission are shown but cannot be modified</small>
+			<small class="uk-text-muted">Users who already have this permission are shown but cannot be modified</small>
 			
 			if len(users) == 0 {
 				<div class="uk-alert uk-text-center">
@@ -869,12 +871,12 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 				</div>
 			} else {
 				<div class="uk-card uk-card-default uk-card-body permissions-card-scroll-large">
-					<div class="uk-margin-small-bottom">
+					<div>
 						<div class="uk-flex">
 							<small class="uk-text-muted">Choose users to grant this permission to</small>
 							<div>
 								<button type="button" class="uk-btn uk-btn-default" onclick="selectAllUsers(this)">Select All</button>
-								<button type="button" class="uk-btn uk-btn-default uk-margin-small-left" onclick="clearAllUsers(this)">Clear All</button>
+								<button type="button" class="uk-btn uk-btn-default" onclick="clearAllUsers(this)">Clear All</button>
 							</div>
 						</div>
 					</div>
@@ -912,7 +914,7 @@ templ BulkAssignForm(permission *models.PermissionWithLibraries, users []models.
 			}
 		</div>
 		
-		<div class="mt-4 uk-text-right">
+		<div class="mt-4 uk-flex uk-flex-between">
 			<button class="uk-btn uk-btn-default uk-modal-close" type="button">
 				<uk-icon icon="close" ratio="0.8"></uk-icon> Cancel
 			</button>

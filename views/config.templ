@@ -7,17 +7,19 @@ import (
 
 templ Config(cfg models.AppConfig) {
     @PageTitle("Configuration")
-    @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Configuration</span></h2>
-    <div class="flex place-content-center">
-        <div class="w-full md:w-3/4 space-y-6">
-            @ConfigForm()
+    <div class="uk-container">
+        @Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Configuration", Href: "/admin/config" }})
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Configuration</span></h2>
+        <div class="flex place-content-center">
+            <div class="w-full md:w-3/4 space-y-6">
+                @ConfigForm()
+            </div>
         </div>
-    </div>
-    
-    <!-- Console Logs Section -->
-    <div class="mt-8">
-        @ConsoleLogs()
+        
+        <!-- Console Logs Section -->
+        <div class="mt-8">
+            @ConsoleLogs()
+        </div>
     </div>
 }
 
@@ -113,6 +115,13 @@ templ ConfigForm() {
                     </select>
                     <p class="text-xs text-muted-foreground mt-1">Choose the default metadata provider for fetching manga information.</p>
                 </div>
+                <div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="metadata_embedding_enabled" checked?={ cfg.MetadataEmbeddingEnabled } class="uk-checkbox" />
+                        <span>Enable metadata embedding in archives</span>
+                    </label>
+                    <p class="text-xs text-muted-foreground mt-1">When enabled, ComicInfo.xml metadata will be embedded in CBZ files and CBR files will be converted to CBZ format with metadata. This provides rich metadata support for comic readers.</p>
+                </div>
             </div>
         </div>
         
@@ -184,7 +193,7 @@ templ ConfigForm() {
                 </label>
                 <p class="text-xs text-muted-foreground mt-1">Automatically detect and ban IPs that access too many series/chapters in sequence.</p>
             </div>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-4 gap-4">
                 <div>
                     <label class="block mb-1 mt-2">Series access threshold</label>
                     <input type="number" min="1" class="uk-input" name="bot_series_threshold" value={ fmt.Sprintf("%d", cfg.BotSeriesThreshold) } />
@@ -199,6 +208,11 @@ templ ConfigForm() {
                     <label class="block mb-1 mt-2">Detection window (seconds)</label>
                     <input type="number" min="1" class="uk-input" name="bot_detection_window" value={ fmt.Sprintf("%d", cfg.BotDetectionWindow) } />
                     <p class="text-xs text-muted-foreground mt-1">Time window in seconds for bot detection monitoring.</p>
+                </div>
+                <div>
+                    <label class="block mb-1 mt-2">Ban duration (seconds)</label>
+                    <input type="number" min="1" class="uk-input" name="bot_ban_duration" value={ fmt.Sprintf("%d", cfg.BotBanDuration) } />
+                    <p class="text-xs text-muted-foreground mt-1">How long a detected bot IP is temporarily blocked.</p>
                 </div>
             </div>
         </div>
@@ -393,20 +407,10 @@ templ ConfigForm() {
             </div>
         </div>
         
-        <!-- Image Settings Card -->
-        <div class="uk-card p-4">
-            <h4 class="uk-heading-line mb-2"><span>Image Settings</span></h4>
-            <div>
-                <label class="block mb-1 mt-2">Image token validity (minutes)</label>
-                <input type="number" min="1" max="60" class="uk-input" name="image_token_validity_minutes" value={ fmt.Sprintf("%d", cfg.ImageTokenValidityMinutes) } />
-                <p class="text-xs text-muted-foreground mt-1">Time in minutes that image access tokens remain valid for comic/manga images. Tokens are consumed after first use.</p>
-            </div>
-        </div>
-        
         <!-- Premium Features Card -->
         <div class="uk-card p-4">
             <h4 class="uk-heading-line mb-2"><span>Premium Features</span></h4>
-            <div class="uk-margin mt-2">
+            <div class="mt-2">
                 <label class="uk-form-label">
                     <input type="checkbox" class="uk-checkbox" name="premium_cooldown_scaling_enabled" if cfg.PremiumCooldownScalingEnabled { checked } />
                     Enable premium cooldown scaling

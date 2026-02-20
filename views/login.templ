@@ -2,70 +2,74 @@ package views
 
 templ Login(target string) {
 	@PageTitle("Login")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
-	<h2 class="uk-heading-line uk-h2 uk-card-title text-center"><span>Login</span></h2>
-	<div class="grid place-content-center my-4">
-		<form hx-post="/auth/login" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json" aria-label="Login form">
-			<fieldset>
-				<div class="mb-2">
-					<label for="username" class="uk-form-label block mb-1">Username</label>
-					<div class="uk-inline">
-						<span class="uk-form-icon" aria-hidden="true">
-							<uk-icon icon="User"></uk-icon>
-						</span>
-						<input id="username" class="uk-input" type="text" name="username" placeholder="Username" autocomplete="username" required/>
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
+		<h2 class="uk-heading-line uk-h2 uk-card-title text-center"><span>Login</span></h2>
+		<div class="grid place-content-center my-4">
+			<form hx-post="/auth/login" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json" aria-label="Login form">
+				<fieldset>
+					<div class="mb-2">
+						<label for="username" class="uk-form-label block mb-1">Username</label>
+						<div class="uk-inline">
+							<span class="uk-form-icon" aria-hidden="true">
+								<uk-icon icon="User"></uk-icon>
+							</span>
+							<input id="username" class="uk-input" type="text" name="username" placeholder="Username" autocomplete="username" required/>
+						</div>
 					</div>
-				</div>
-				<div class="mt-2">
-					<label for="password" class="uk-form-label block mb-1">Password</label>
-					<div class="uk-inline">
-						<span class="uk-form-icon" aria-hidden="true">
-							<uk-icon icon="Lock"></uk-icon>
-						</span>
-						<input id="password" class="uk-input" type="password" name="password" placeholder="Password" autocomplete="current-password" required/>
+					<div class="mt-2">
+						<label for="password" class="uk-form-label block mb-1">Password</label>
+						<div class="uk-inline">
+							<span class="uk-form-icon" aria-hidden="true">
+								<uk-icon icon="Lock"></uk-icon>
+							</span>
+							<input id="password" class="uk-input" type="password" name="password" placeholder="Password" autocomplete="current-password" required/>
+						</div>
 					</div>
-				</div>
-				if target != "" {
-					<input type="hidden" name="target" value={ target }/>
-				}
-				<div class="mt-4 flex place-content-center">
-					<button type="submit" class="uk-btn uk-btn-default mr-2">Login</button>
-					<a href="/auth/register" class="uk-btn uk-btn-default ml-2">Register</a>
-				</div>
-			</fieldset>
-		</form>
+					if target != "" {
+						<input type="hidden" name="target" value={ target }/>
+					}
+					<div class="mt-4 flex place-content-center">
+						<button type="submit" class="uk-btn uk-btn-default mr-2">Login</button>
+						<a href="/auth/register" class="uk-btn uk-btn-default ml-2">Register</a>
+					</div>
+				</fieldset>
+			</form>
+		</div>
 	</div>
 }
 
 templ WrongCredentials() {
 	@PageTitle("Login Failed")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
-	<section class="flex items-center justify-center">
-		<div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
-			<div class="mx-auto max-w-screen-sm text-center">
-				<h1 class="mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600">
-					Authentication Failed
-				</h1>
-				<p class="mb-4 text-3xl tracking-tight font-bold md:text-4xl dark:text-white">
-					Hmmm...
-				</p>
-				<p class="mb-4 text-lg font-light">
-					Sorry, we were unable to authenticate you with the provided credentials.
-				</p>
-				<p class="mb-4 text-sm">
-					Please check your username and password and try again.
-				</p>
-				<a
-					href="/auth/login"
-					hx-get="/auth/login"
-					hx-target="#content"
-					hx-push-url="true"
-					class="uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4"
-				>
-					<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
-					Back to Login
-				</a>
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
+		<section class="flex items-center justify-center">
+			<div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
+				<div class="mx-auto max-w-screen-sm text-center">
+					<h1 class="mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600">
+						Authentication Failed
+					</h1>
+					<p class="mb-4 text-3xl tracking-tight font-bold md:text-4xl dark:text-white">
+						Hmmm...
+					</p>
+					<p class="mb-4 text-lg font-light">
+						Sorry, we were unable to authenticate you with the provided credentials.
+					</p>
+					<p class="mb-4 text-sm">
+						Please check your username and password and try again.
+					</p>
+					<a
+						href="/auth/login"
+						hx-get="/auth/login"
+						hx-target="#content"
+						hx-push-url="true"
+						class="uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4"
+					>
+						<uk-icon icon="ArrowLeft" class="mr-2"></uk-icon>
+						Back to Login
+					</a>
+				</div>
 			</div>
-		</div>
-	</section>
+		</section>
+	</div>
 }

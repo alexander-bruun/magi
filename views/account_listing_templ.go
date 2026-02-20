@@ -41,7 +41,7 @@ func AccountMediaListing(media []models.Media, currentPage int, totalPages int, 
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, nil, "", allTags, nil, nil, searchFilter, false, nil, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -87,7 +87,7 @@ func AccountMediaListingWithTags(media []models.Media, currentPage int, totalPag
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = SortControls(path, "account-media-list-results", "account-listing", sort, order, selectedTags, tagMode, allTags, nil, nil, searchFilter, false, nil, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

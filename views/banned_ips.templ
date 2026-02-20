@@ -10,12 +10,14 @@ templ BannedIPs() {
 	{{ bannedIPs, _ := models.GetBannedIPs() }}
 
 	@PageTitle("Banned IPs")
-	@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Banned IPs", Href: "/admin/banned-ips" }})
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Banned IPs</span></h2>
-	<div class="flex place-content-center">
-		<div class="w-2/4">
-			<div class="uk-card p-2">
-				@BannedIPsTable(bannedIPs)
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Banned IPs", Href: "/admin/banned-ips" }})
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Banned IPs</span></h2>
+		<div class="flex place-content-center">
+			<div class="w-2/4">
+				<div class="uk-card p-2">
+					@BannedIPsTable(bannedIPs)
+				</div>
 			</div>
 		</div>
 	</div>
@@ -28,6 +30,7 @@ templ BannedIPsTable(bannedIPs []models.BannedIP) {
 				<tr>
 					<th class="text-center">IP Address</th>
 					<th class="text-center">Banned At</th>
+					<th class="text-center">Expires At</th>
 					<th class="text-center">Reason</th>
 					<th class="text-center">Actions</th>
 				</tr>
@@ -37,6 +40,13 @@ templ BannedIPsTable(bannedIPs []models.BannedIP) {
 					<tr>
 						<td class="text-center">{ bip.IPAddress }</td>
 						<td class="text-center">{ bip.BannedAt.Format("2006-01-02 15:04:05") }</td>
+						<td class="text-center">
+							if bip.ExpiresAt != nil {
+								{ bip.ExpiresAt.Format("2006-01-02 15:04:05") }
+							} else {
+								<span class="text-muted-foreground">Never</span>
+							}
+						</td>
 						<td class="text-center">{ bip.Reason }</td>
 						<td class="text-center">
 							<button

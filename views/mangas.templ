@@ -4,18 +4,17 @@ import (
     "github.com/alexander-bruun/magi/models"
 )
 
-templ MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) {
+templ MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string, isModerator bool, allLibraries []models.Library, selectedLibrary string) {
     @PageTitle("Series")
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Series" },
-    })
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Series</span></h2>
-    <div id="media-listing">
-        @GenericMediaListingWithTypes("/series", "media-listing", true, media, currentPage, totalPages, sort, order, "No media have been indexed yet.", selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter)
+    <div class="uk-container">
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Series</span></h2>
+        <div id="media-listing">
+            @GenericMediaListingWithTypes("/series", "media-listing", true, media, currentPage, totalPages, sort, order, "No media have been indexed yet.", selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter, isModerator, allLibraries, selectedLibrary)
+        </div>
     </div>
 }
 
 // Backwards compatibility until all call sites updated
 templ Medias(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string) {
-    @MediasWithTypes(media, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags, nil, nil, "")
+    @MediasWithTypes(media, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags, nil, nil, "", false, nil, "")
 }

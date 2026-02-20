@@ -79,14 +79,12 @@ templ Layout(content templ.Component, userRole string, currentPath string, unrea
 						@OneDoesNotSimplySearch()
 					</div>
 				</div>
-			<main id="main-content" class="site-main" role="main">
-				<div id="content" class="uk-container uk-container-xl">
-						@content
-					</div>
-					<div class="uk-container uk-mx-auto my-8">
-						@Footer()
-					</div>
-				</main>
+				<div id="content" class="mt-6">
+					@content
+				</div>
+				<div class="uk-container uk-mx-auto my-8">
+					@Footer()
+				</div>
 			</div>
 		</body>
 	</html>

@@ -11,8 +11,8 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
         { Label: "Account", Href: "/account" },
         { Label: "External Accounts", Href: "/account/external" },
     })
-
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>External Accounts</span></h2>
+    <div class="uk-container">
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>External Accounts</span></h2>
 
     <p class="uk-text-center uk-text-muted mb-6">Connect your accounts to sync reading progress with external services.</p>
 
@@ -24,13 +24,13 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                 if malAccount.ServiceName == "" {
                     <p class="mb-4">Connect your MyAnimeList account to sync reading progress.</p>
                     <form hx-post="/account/external/mal/connect" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json">
-                        <div class="uk-margin">
+                        <div>
                             <label class="uk-form-label" for="client_id">Client ID <button type="button" uk-tooltip="title: 1. Go to MAL API Config<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">
                                 <input class="uk-input" id="client_id" name="client_id" type="text" required>
                             </div>
                         </div>
-                        <div class="uk-margin">
+                        <div>
                             <label class="uk-form-label" for="client_secret">Client Secret <button type="button" uk-tooltip="title: 1. Go to MAL API Config<br>2. Create a new application<br>3. Copy the Client Secret; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">
                                 <input class="uk-input" id="client_secret" name="client_secret" type="password" required>
@@ -38,7 +38,7 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                         </div>
                         <button class="uk-btn uk-btn-primary" type="submit">Save Credentials</button>
                     </form>
-                    <div class="uk-alert uk-alert-primary uk-margin-small">
+                    <div class="uk-alert uk-alert-primary">
                         <p ><strong>Important:</strong> When creating your MAL application, set the redirect URI to:</p>
                         <code >http://localhost:3000/external/callback/mal</code>
                     </div>
@@ -65,13 +65,13 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                 if anilistAccount.ServiceName == "" {
                     <p class="mb-4">Connect your AniList account to sync reading progress.</p>
                     <form hx-post="/account/external/anilist/connect" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json">
-                        <div class="uk-margin">
+                        <div>
                             <label class="uk-form-label" for="client_id">Client ID <button type="button" uk-tooltip="title: 1. Go to AniList Developer Settings<br>2. Create a new application<br>3. Copy the Client ID; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">
                                 <input class="uk-input" id="client_id" name="client_id" type="text" required>
                             </div>
                         </div>
-                        <div class="uk-margin">
+                        <div>
                             <label class="uk-form-label" for="client_secret">Client Secret <button type="button" uk-tooltip="title: 1. Go to AniList Developer Settings<br>2. Create a new application<br>3. Copy the Client Secret; pos: top-left" class="uk-icon-button uk-icon-button-small"><uk-icon icon="Question"></uk-icon></button></label>
                             <div class="uk-form-controls">
                                 <input class="uk-input" id="client_secret" name="client_secret" type="password" required>
@@ -79,7 +79,7 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                         </div>
                         <button class="uk-btn uk-btn-primary" type="submit">Save Credentials</button>
                     </form>
-                    <div class="uk-alert uk-alert-primary uk-margin-small">
+                    <div class="uk-alert uk-alert-primary">
                         <p ><strong>Important:</strong> When creating your AniList application, set the redirect URI to:</p>
                         <code >http://localhost:3000/external/callback/anilist</code>
                     </div>
@@ -99,4 +99,5 @@ templ ExternalAccountsPage(accounts []models.UserExternalAccount) {
                 }
             </div>
         </div>
+    </div>
 }

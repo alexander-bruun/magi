@@ -7,17 +7,19 @@ import (
 
 templ Navbar(userRole string, currentPath string, unreadCount int, notifications []models.UserNotification) {
 	<header class="site-header uk-navbar p-3 bg-surface" role="banner">
-		<div class="nav-inner">
+	    <div class="uk-container">
+			<div class="nav-inner">
 			<div class="uk-navbar-left">
-				<button id="sidebar-toggle" class="uk-btn uk-btn-default uk-btn-icon" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true" type="button">
-					<uk-icon icon="menu"></uk-icon>
-				</button>
-				<a href="/" class="flex items-center" aria-label="Magi home">
-					<img src="/assets/img/icon.webp" alt="Magi logo" class="h-8 w-auto" width="32" height="32"/>
-					<h1 class="uk-hero-lg ml-2 font-semibold brand-title">
-						<span class="uk-text-background brand-gradient">Magi</span>
-					</h1>
-				</a>
+			<a href="/" class="flex items-center" aria-label="Magi home">
+				<img src="/assets/img/icon.webp" alt="Magi logo" class="h-8 w-auto" width="32" height="32"/>
+				<h1 class="uk-hero-lg ml-2 font-semibold brand-title">
+					<span class="uk-text-background brand-gradient">Magi</span>
+				</h1>
+			</a>
+			<div class="ml-6 flex items-center space-x-4">
+				<a href="/" class={ templ.KV("nav-link", true), templ.KV("active", currentPath == "/") }>Home</a>
+				<a href="/series" class={ templ.KV("nav-link", true), templ.KV("active", currentPath == "/series" || (len(currentPath) >= 7 && currentPath[:7] == "/series")) }>Series</a>
+			</div>
 			</div>
 			<div class="uk-navbar-right">
 				<div class="uk-navbar-item">
@@ -36,11 +38,11 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 					<div class="uk-modal-dialog uk-modal-body">
 						<h2 id="report-issue-modal-title" class="uk-modal-title">Report Issue</h2>
 						<form hx-post="/report-issue" hx-target="#report-issue-modal .uk-modal-body" hx-swap="innerHTML" hx-on:htmx:after-request="if (event.detail.xhr.status === 200) { UIkit.modal('#report-issue-modal').hide(); }">
-							<div class="uk-margin">
+							<div>
 								<label class="uk-form-label" for="issue-title">Title</label>
 								<input class="uk-input" id="issue-title" name="title" type="text" placeholder="Brief description of the issue" required>
 							</div>
-							<div class="uk-margin">
+							<div>
 								<label class="uk-form-label" for="issue-category">Category</label>
 								<select class="uk-select" id="issue-category" name="category">
 									<option value="bug">Bug Report</option>
@@ -49,7 +51,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 									<option value="question">Question</option>
 								</select>
 							</div>
-							<div class="uk-margin">
+							<div>
 								<label class="uk-form-label" for="issue-priority">Priority</label>
 								<select class="uk-select" id="issue-priority" name="priority">
 									<option value="low">Low</option>
@@ -58,14 +60,14 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 									<option value="critical">Critical</option>
 								</select>
 							</div>
-							<div class="uk-margin">
+							<div>
 								<label class="uk-form-label" for="issue-description">Description</label>
 								<textarea class="uk-textarea" id="issue-description" name="description" rows="5" placeholder="Please provide detailed information about the issue..." required></textarea>
 							</div>
-							<p class="uk-text-meta uk-margin-small">
+							<p class="uk-text-meta">
 								Your report will be stored locally and can be reviewed by administrators.
 							</p>
-							<div class="uk-margin uk-text-right">
+							<div class="uk-text-right">
 								<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
 								<button class="uk-btn uk-btn-primary" type="submit">Submit Report</button>
 							</div>
@@ -73,7 +75,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 					</div>
 				</div>
 				if userRole != "" {
-					<div class="uk-navbar-item">
+					<div class="uk-navbar-item hidden sm:block">
 						<div class="uk-inline">
 							<button id="notification-bell" class="uk-btn uk-btn-default uk-btn-icon relative" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
 								<uk-icon icon="Bell"></uk-icon>
@@ -116,7 +118,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 															   hx-get="/admin/issues" 
 															   hx-target="#content" 
 															   class="block text-inherit no-underline hover:text-primary">
-																<p class="uk-margin-small">{ notification.Message }</p>
+																<p>{ notification.Message }</p>
 																<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
 															</a>
 														} else {
@@ -124,7 +126,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 															   hx-get={ templ.SafeURL(fmt.Sprintf("/chapter/%s", notification.ChapterID)) } 
 															   hx-target="#content" 
 															   class="block text-inherit no-underline hover:text-primary">
-																<p class="uk-margin-small">{ notification.Message }</p>
+																<p>{ notification.Message }</p>
 																<span class="uk-text-meta uk-text-xsmall">{ getRelativeTime(notification.CreatedAt) }</span>
 															</a>
 														}
@@ -141,7 +143,7 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 						</div>
 					</div>
 				}
-				<div class="uk-navbar-item">
+				<div class="uk-navbar-item hidden md:block">
 					<div class="uk-inline">
 						<button class="uk-btn uk-btn-default uk-btn-icon" aria-label="Customize theme" aria-haspopup="true" aria-expanded="false">
 							<uk-icon icon="palette"></uk-icon>
@@ -239,42 +241,21 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 				</div>
 			</div>
 		</div>
+	    </div>
 	</header>
 
-	<!-- mobile backdrop for off-canvas sidebar -->
-	<div id="sidebar-backdrop" hidden></div>
-
-	<aside class="sidebar bg-surface" id="sidebar" role="navigation" aria-label="Main navigation">
-		<nav>
-			<ul class="uk-nav uk-nav-default">
-				@NavItem("/", "home", "Home", currentPath)
-				@NavItem("/series", "book", "Series", currentPath)
-				@NavItem("/collections", "folder", "Collections", currentPath)
-				{{ cfg, _ := models.GetAppConfig() }}
-				if cfg.DiscordInviteLink != "" {
-					<li>
-						<a href={ templ.SafeURL(cfg.DiscordInviteLink) } target="_blank" rel="noopener noreferrer">
-							<uk-icon icon="message-circle"></uk-icon>
-							<span class="nav-text">Discord</span>
-						</a>
-					</li>
-				}
-			</ul>
-		</nav>
-		<div class="sidebar-footer">
-			if userRole == "moderator" || userRole == "admin" {
-				<div id="job-status-indicator" class="job-status-indicator" style="display: none;" data-uk-tooltip="">
-					<div data-uk-spinner></div>
-				</div>
-			}
-			<button class="uk-btn uk-btn-default" uk-toggle="target: #report-issue-modal" aria-label="Report issue">
-				<uk-icon icon="Bug"></uk-icon>
-			</button>
-			<a class="uk-btn uk-btn-default" href="https://github.com/sponsors/alexander-bruun" aria-label="Sponsor project">
-				<uk-icon icon="heart"></uk-icon>
-			</a>
+	<!-- Status indicator - absolutely positioned above bug report -->
+	<div style="z-index: 99999;"class="fixed bottom-16 left-4 z-50 flex items-center gap-2">
+		<!-- Indexing status -->
+		<div id="job-status-indicator" class="uk-btn uk-btn-warning uk-btn-icon hidden" title="Indexing in progress">
+			<uk-icon icon="RefreshCw" class="animate-spin"></uk-icon>
 		</div>
-	</aside>
+	</div>
+
+	<!-- Bug report button - absolutely positioned bottom left -->
+	<button style="z-index: 99999;" class="fixed bottom-4 left-4 z-50 uk-btn uk-btn-default uk-btn-icon" uk-toggle="target: #report-issue-modal" aria-label="Report issue" title="Report Issue">
+		<uk-icon icon="Bug"></uk-icon>
+	</button>
 }
 
 // NavItem renders a single navigation item with active state handling

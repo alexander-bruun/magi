@@ -12,7 +12,7 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
-func MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string) templ.Component {
+func MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort string, order string, selectedTags []string, tagMode string, allTags []string, selectedTypes []string, allTypes []string, searchFilter string, isModerator bool, allLibraries []models.Library, selectedLibrary string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -37,21 +37,15 @@ func MediasWithTypes(media []models.Media, currentPage int, totalPages int, sort
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{
-			{Label: "Series"},
-		}).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Series</span></h2><div id=\"media-listing\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Series</span></h2><div id=\"media-listing\">")
+		templ_7745c5c3_Err = GenericMediaListingWithTypes("/series", "media-listing", true, media, currentPage, totalPages, sort, order, "No media have been indexed yet.", selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter, isModerator, allLibraries, selectedLibrary).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = GenericMediaListingWithTypes("/series", "media-listing", true, media, currentPage, totalPages, sort, order, "No media have been indexed yet.", selectedTags, tagMode, allTags, selectedTypes, allTypes, searchFilter).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -81,7 +75,7 @@ func Medias(media []models.Media, currentPage int, totalPages int, sort string, 
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = MediasWithTypes(media, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags, nil, nil, "").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MediasWithTypes(media, currentPage, totalPages, sort, order, selectedTags, tagMode, allTags, nil, nil, "", false, nil, "").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

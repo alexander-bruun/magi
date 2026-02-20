@@ -29,7 +29,7 @@ func ReportIssueSuccess() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container uk-container-small mt-4\"><div class=\"uk-card uk-card-default uk-card-body uk-text-center\"><div class=\"uk-margin-large\"><uk-icon icon=\"CheckCircle\" ratio=\"3\" class=\"uk-text-success\"></uk-icon></div><h1 class=\"uk-heading-medium uk-text-success\">Issue Reported Successfully</h1><p class=\"uk-text-large\">Thank you for your report! Your issue has been submitted and will be reviewed by our administrators.</p><p class=\"uk-text-meta\">You can continue using the application normally.</p><div class=\"mt-4\"><a class=\"uk-btn uk-btn-primary\" href=\"/\">Return to Home</a></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container uk-container-small mt-4\"><div class=\"uk-card uk-card-default uk-card-body uk-text-center\"><div><uk-icon icon=\"CheckCircle\" ratio=\"3\" class=\"uk-text-success\"></uk-icon></div><h1 class=\"uk-heading-medium uk-text-success\">Issue Reported Successfully</h1><p class=\"uk-text-large\">Thank you for your report! Your issue has been submitted and will be reviewed by our administrators.</p><p class=\"uk-text-meta\">You can continue using the application normally.</p><div class=\"mt-4\"><a class=\"uk-btn uk-btn-primary\" href=\"/\">Return to Home</a></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

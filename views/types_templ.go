@@ -60,7 +60,7 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"><div><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -112,7 +112,7 @@ func TypesDropdown(path string, targetID string, currentSort string, currentOrde
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" hx-vals='{\"types\":[]}' onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"x\"></uk-icon></button></div></div></div></div><div id=\"type-list\" class=\"uk-margin-small-top types-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" hx-vals='{\"types\":[]}' onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"x\"></uk-icon></button></div></div></div></div><div id=\"type-list\" class=\"types-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -206,7 +206,7 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><div><div class=\"uk-text-center types-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\"><button type=\"submit\" class=\"uk-btn uk-btn-icon uk-btn-primary\" aria-label=\"Apply type filters\" title=\"Apply type filters\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -258,7 +258,7 @@ func TypesFilterDrop(path string, targetID string, currentSort string, currentOr
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" hx-vals='{\"types\":[]}' onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"x\"></uk-icon></button></div></div></div></div><div id=\"type-list\" class=\"uk-margin-small-top types-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-push-url=\"true\" hx-replace-url=\"true\" hx-include=\"#type-filter-form input[name=sort], #type-filter-form input[name=order], #tag-filter-form input[name=tags], #tag-filter-form input[name=tag_mode], #search-filter-input, #account-media-list-search-input\" hx-vals='{\"types\":[]}' onclick=\"document.getElementById('type-filter-drop')?.classList.remove('uk-open');\"><uk-icon icon=\"x\"></uk-icon></button></div></div></div></div><div id=\"type-list\" class=\"types-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -307,7 +307,7 @@ func TypesFragment(allTypes []string, selected []string) templ.Component {
 		for _, t := range allTypes {
 			lt := strings.ToLower(t)
 			isChecked := selectedMap[lt]
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"uk-margin-small flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox shrink-0\" type=\"checkbox\" name=\"types\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox shrink-0\" type=\"checkbox\" name=\"types\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

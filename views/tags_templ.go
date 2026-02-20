@@ -74,7 +74,7 @@ func TagsDropdown(path string, targetID string, currentSort string, currentOrder
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><div><div class=\"uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -90,7 +90,7 @@ func TagsDropdown(path string, targetID string, currentSort string, currentOrder
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top tags-list-scroll\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></div></div><div id=\"tag-list\" class=\"tags-list-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -197,7 +197,7 @@ func TagsFilterDrop(path string, targetID string, currentSort string, currentOrd
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div class=\"uk-margin-small\"><div class=\"uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div><div class=\"uk-text-center tags-controls-center\"><div class=\"uk-inline\"><div class=\"uk-btn-group\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -213,7 +213,7 @@ func TagsFilterDrop(path string, targetID string, currentSort string, currentOrd
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div></div><div id=\"tag-list\" class=\"uk-margin-small-top tags-list-scroll\" hx-get=\"/series/tags/fragment\" hx-trigger=\"revealed\" hx-target=\"this\" hx-swap=\"innerHTML\"></div></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div></div><div id=\"tag-list\" class=\"tags-list-scroll\" hx-get=\"/series/tags/fragment\" hx-trigger=\"revealed\" hx-target=\"this\" hx-swap=\"innerHTML\"></div></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -531,7 +531,7 @@ func TagsFragment(allTags []string, selected []string) templ.Component {
 		}
 		for _, tag := range allTags {
 			isChecked := selectedMap[strings.ToLower(tag)]
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div class=\"uk-margin-small flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox shrink-0\" type=\"checkbox\" name=\"tags\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div class=\"flex items-center\"><label class=\"inline-flex items-center gap-3 min-w-0 w-full\"><input class=\"uk-checkbox shrink-0\" type=\"checkbox\" name=\"tags\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

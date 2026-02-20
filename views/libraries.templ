@@ -9,25 +9,27 @@ templ Libraries() {
 	{{ libraries, _ := models.GetLibraries() }}
 	
 	@PageTitle("Libraries")
-	@Breadcrumb([]BreadcrumbItem{
-		{ Label: "Home", Href: "/" },
-		{ Label: "Libraries", Href: "/admin/libraries" },
-	})
-	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-		<div id="form-column" class="lg:col-span-1">
-			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
-				<div class="uk-card p-2">
-					@LibraryForm(models.Library{}, "post", false)
+	<div class="uk-container">
+		@Breadcrumb([]BreadcrumbItem{
+			{ Label: "Home", Href: "/" },
+			{ Label: "Libraries", Href: "/admin/libraries" },
+		})
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+			<div id="form-column" class="lg:col-span-1">
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Creator</span></h2>
+					<div class="uk-card p-2">
+						@LibraryForm(models.Library{}, "post", false)
+					</div>
+				</div>
+				<div id="table-column" class="lg:col-span-3">
+					<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Libraries</span></h2>
+					<div class="uk-card p-2">
+						@LibraryTable(libraries)
+					</div>
 				</div>
 			</div>
-			<div id="table-column" class="lg:col-span-3">
-				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Libraries</span></h2>
-				<div class="uk-card p-2">
-					@LibraryTable(libraries)
-				</div>
-			</div>
-		</div>
-	@FileExplorer()
+		@FileExplorer()
+	</div>
 }
 
 templ LibraryTable(libraries []models.Library) {
@@ -80,6 +82,15 @@ templ LibraryTable(libraries []models.Library) {
 								<div class="uk-btn-group flex-nowrap">
 									<button
 										type="button"
+										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0 spin-on-request"
+										hx-post={ fmt.Sprintf("/admin/libraries/%s/scan", library.Slug) }
+										hx-trigger="click"
+										hx-disabled-elt="this"
+									>
+										<uk-icon icon="RefreshCw"></uk-icon>
+									</button>
+									<button
+										type="button"
 										class="uk-btn uk-btn-primary h-10 w-10 flex-shrink-0 spin-on-request"
 										hx-post={ fmt.Sprintf("/admin/libraries/%s/toggle", library.Slug) }
 										hx-trigger="click"
@@ -93,15 +104,6 @@ templ LibraryTable(libraries []models.Library) {
 										} else {
 											<uk-icon icon="Eye"></uk-icon>
 										}
-									</button>
-									<button
-										type="button"
-										class="uk-btn uk-btn-secondary h-10 w-10 flex-shrink-0 spin-on-request"
-										hx-post={ fmt.Sprintf("/admin/libraries/%s/scan", library.Slug) }
-										hx-trigger="click"
-										hx-disabled-elt="this"
-									>
-										<uk-icon icon="RefreshCw"></uk-icon>
 									</button>
 									<button
 										type="button"
@@ -174,7 +176,7 @@ templ LibraryForm(library models.Library, action string, editing bool) {
 
 templ FormContent(library models.Library, editing bool) {
 	<fieldset class="space-y-4">
-		<div class="uk-margin">
+		<div>
 			<input
 				class="uk-input"
 				aria-label="Input"
@@ -186,7 +188,7 @@ templ FormContent(library models.Library, editing bool) {
 				readonly?={ editing }
 			/>
 		</div>
-		<div class="uk-margin">
+		<div>
 			<input
 				class="uk-input"
 				aria-label="Input"
@@ -197,7 +199,7 @@ templ FormContent(library models.Library, editing bool) {
 				required
 			/>
 		</div>
-		<div class="uk-margin">
+		<div>
 			<input
 				class="uk-input"
 				aria-label="Input"
@@ -207,15 +209,6 @@ templ FormContent(library models.Library, editing bool) {
 				value={ library.Description }
 				rows="5"
 				required
-			/>
-		</div>
-		<div class="uk-margin">
-			<label class="uk-form-label">Enabled</label>
-			<input
-				class="uk-checkbox"
-				type="checkbox"
-				name="enabled"
-				checked?={ library.Enabled }
 			/>
 		</div>
 		@FolderInputs(library.Folders, editing)
@@ -235,7 +228,7 @@ templ FolderInputs(folders []string, editing bool) {
 		}
 	</div>
 	if editing {
-		<div class="mt-4 uk-flex">
+		<div class="mt-4 uk-text-center">
 			<button type="submit" class="uk-btn uk-btn-default mr-2">Save</button>
 			<button type="button" class="uk-btn uk-btn-default ml-2" hx-get="/admin/libraries/helpers/cancel-edit" hx-target="#library-form" hx-swap="outerHTML">Cancel</button>
 		</div>

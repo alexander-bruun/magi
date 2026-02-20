@@ -44,7 +44,7 @@ func Collections(collections []models.Collection) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Collections</span></h2>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container\"><h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Collections</span></h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -278,7 +278,7 @@ func Collections(collections []models.Collection) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><!-- Create Collection Modal --><div id=\"create-collection-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><div id=\"create-collection-modal-content\"></div></div></div><script>\n\t\t// Handle collection creation success\n\t\tdocument.addEventListener('collectionCreated', function(evt) {\n\t\t\t// Show notification\n\t\t\tif (typeof showNotification === 'function') {\n\t\t\t\tshowNotification(evt.detail.message, evt.detail.status);\n\t\t\t}\n\n\t\t\t// Close modal\n\t\t\tconst modal = document.getElementById('create-collection-modal');\n\t\t\tif (modal && typeof UIkit !== 'undefined') {\n\t\t\t\tUIkit.modal(modal).hide();\n\t\t\t}\n\n\t\t\t// Refresh the page to show the new collection\n\t\t\twindow.location.reload();\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><!-- Create Collection Modal --><div id=\"create-collection-modal\" uk-modal><div class=\"uk-modal-dialog uk-modal-body\"><div id=\"create-collection-modal-content\"></div></div></div><script>\n\t\t// Handle collection creation success\n\t\tdocument.addEventListener('collectionCreated', function(evt) {\n\t\t\t// Show notification\n\t\t\tif (typeof showNotification === 'function') {\n\t\t\t\tshowNotification(evt.detail.message, evt.detail.status);\n\t\t\t}\n\n\t\t\t// Close modal\n\t\t\tconst modal = document.getElementById('create-collection-modal');\n\t\t\tif (modal && typeof UIkit !== 'undefined') {\n\t\t\t\tUIkit.modal(modal).hide();\n\t\t\t}\n\n\t\t\t// Refresh the page to show the new collection\n\t\t\twindow.location.reload();\n\t\t});\n\t</script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

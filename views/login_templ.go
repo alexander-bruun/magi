@@ -33,34 +33,38 @@ func Login(target string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Login", Href: "/auth/login"}}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\" aria-label=\"Login form\"><fieldset><div class=\"mb-2\"><label for=\"username\" class=\"uk-form-label block mb-1\">Username</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"User\"></uk-icon></span> <input id=\"username\" class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" autocomplete=\"username\" required></div></div><div class=\"mt-2\"><label for=\"password\" class=\"uk-form-label block mb-1\">Password</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"Lock\"></uk-icon></span> <input id=\"password\" class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" autocomplete=\"current-password\" required></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line uk-h2 uk-card-title text-center\"><span>Login</span></h2><div class=\"grid place-content-center my-4\"><form hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\" aria-label=\"Login form\"><fieldset><div class=\"mb-2\"><label for=\"username\" class=\"uk-form-label block mb-1\">Username</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"User\"></uk-icon></span> <input id=\"username\" class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" autocomplete=\"username\" required></div></div><div class=\"mt-2\"><label for=\"password\" class=\"uk-form-label block mb-1\">Password</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"Lock\"></uk-icon></span> <input id=\"password\" class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" autocomplete=\"current-password\" required></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if target != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<input type=\"hidden\" name=\"target\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<input type=\"hidden\" name=\"target\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(target)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 29, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 30, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></fieldset></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"mt-4 flex place-content-center\"><button type=\"submit\" class=\"uk-btn uk-btn-default mr-2\">Login</button> <a href=\"/auth/register\" class=\"uk-btn uk-btn-default ml-2\">Register</a></div></fieldset></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -93,11 +97,15 @@ func WrongCredentials() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"uk-container\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = Breadcrumb([]BreadcrumbItem{{Label: "Home", Href: "/"}, {Label: "Login", Href: "/auth/login"}}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<section class=\"flex items-center justify-center\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600\">Authentication Failed</h1><p class=\"mb-4 text-3xl tracking-tight font-bold md:text-4xl dark:text-white\">Hmmm...</p><p class=\"mb-4 text-lg font-light\">Sorry, we were unable to authenticate you with the provided credentials.</p><p class=\"mb-4 text-sm\">Please check your username and password and try again.</p><a href=\"/auth/login\" hx-get=\"/auth/login\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Login</a></div></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<section class=\"flex items-center justify-center\"><div class=\"py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6\"><div class=\"mx-auto max-w-screen-sm text-center\"><h1 class=\"mb-4 text-5xl tracking-tight font-extrabold lg:text-7xl text-red-600\">Authentication Failed</h1><p class=\"mb-4 text-3xl tracking-tight font-bold md:text-4xl dark:text-white\">Hmmm...</p><p class=\"mb-4 text-lg font-light\">Sorry, we were unable to authenticate you with the provided credentials.</p><p class=\"mb-4 text-sm\">Please check your username and password and try again.</p><a href=\"/auth/login\" hx-get=\"/auth/login\" hx-target=\"#content\" hx-push-url=\"true\" class=\"uk-btn uk-btn-default inline-flex font-medium rounded-lg text-sm px-5 py-2.5 text-center my-4\"><uk-icon icon=\"ArrowLeft\" class=\"mr-2\"></uk-icon> Back to Login</a></div></div></section></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

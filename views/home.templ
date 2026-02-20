@@ -74,32 +74,77 @@ func truncateText(text string, maxLength int) string {
 	return truncated + "..."
 }
 
-templ TopReadList(media []models.Media, emptyMessage string, title string) {
+templ TopReadList(media []models.Media, title string) {
 	if title != "" {
 		<h3 class="text-lg font-semibold mb-2">{ title }</h3>
 	}
 	if len(media) == 0 {
-		@EmptyState(emptyMessage)
+		@EmptyState("No reads")
 	} else {
 		<ul class="top-manga-list">
 			for i, m := range media {
-				<li class="flex items-center justify-between gap-3 py-2">
-					<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 flex-1">
-						<div class="w-10 h-14 overflow-hidden rounded-sm">
-							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
+				if i == 0 {
+					<!-- Special #1 item with backdrop -->
+					<li class="mb-4" style="display: block;">
+						<div class="pt-4 bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl relative overflow-hidden">
+							<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="block rounded overflow-hidden v-card v-card--flat v-card--link">
+								<!-- Decorative elements -->
+								<div class="absolute inset-0">
+									<div class="absolute top-0 left-0 w-24 h-24 bg-red-600 opacity-20 rounded-full -translate-x-12 -translate-y-12"></div>
+									<div class="absolute top-0 left-0 w-48 h-48 bg-red-600 opacity-15 rounded-full -translate-x-24 -translate-y-24"></div>
+									<div class="absolute top-0 left-0 w-72 h-72 bg-red-600 opacity-10 rounded-full -translate-x-36 -translate-y-36"></div>
+									<div class="absolute top-0 left-0 w-96 h-96 bg-red-600 opacity-5 rounded-full -translate-x-48 -translate-y-48"></div>
+								</div>
+								<!-- Background image -->
+								<div class="relative rounded elevation-2" style="height: 200px; overflow: hidden;">
+									<img src={ m.CoverArtURL } alt="" class="absolute inset-0 w-full object-cover" style="transform: scale(1.1) translateY(-25%); opacity: 0.5;" />
+									<!-- Dark overlay -->
+									<div class="absolute inset-0 bg-black bg-opacity-40"></div>
+									<!-- Trending badge -->
+									<div class="uk-badge uk-badge-primary absolute top-4 left-4">
+										TRENDING
+									</div>
+									<!-- Bottom overlay with info -->
+									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4 rounded-b z-10">
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-4">
+												<div class="text-right">
+													<h1 class="text-4xl font-bold text-white">1</h1>
+												</div>
+												<div>
+													<div class="font-bold text-lg">{ m.Name }</div>
+													<div class="text-sm opacity-80">{ fmt.Sprintf("%d Chapters", m.ChapterCount) }</div>
+												</div>
+											</div>
+											<div class="flex items-center gap-2">
+												<uk-icon icon="star" class="text-yellow-400"></uk-icon>
+												<span class="font-bold">{ fmt.Sprintf("%.1f", m.AverageScore) }</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</a>
 						</div>
-						<div class="flex-1">
-							<span class="font-medium">{ m.Name }</span>
-							<div class="text-xs uk-text-muted">{ m.Author }</div>
+					</li>
+				} else {
+					<li class="flex items-center justify-between gap-3 py-2">
+						<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="flex items-center gap-3 flex-1">
+							<div class="w-10 h-14 overflow-hidden rounded-sm">
+								@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
+							</div>
+							<div class="flex-1">
+								<span class="font-medium">{ m.Name }</span>
+								<div class="text-xs uk-text-muted">{ m.Author }</div>
+							</div>
+						</a>
+						<div class="flex flex-col items-center">
+							<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+							<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
+								<span class="flex items-center gap-1"><uk-icon icon="star" stroke-width="2"></uk-icon> { fmt.Sprintf("%.1f", m.AverageScore) }</span>
+							</div>
 						</div>
-					</a>
-					<div class="flex flex-col items-center">
-						<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
-						<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
-							<span class="flex items-center gap-1"><uk-icon icon="eye" stroke-width="2"></uk-icon> { fmt.Sprint(m.ReadCount) }</span>
-						</div>
-					</div>
-				</li>
+					</li>
+				}
 			}
 		</ul>
 	}
@@ -112,23 +157,68 @@ templ TopPopularList(media []models.Media) {
 		<ul class="top-manga-list">
 			for i, m := range media {
 				{{ score, _, _, _ := models.GetMediaVotes(m.Slug) }}
-				<li class="flex items-center justify-between gap-3 py-2">
-					<div class="w-10 h-14 overflow-hidden rounded-sm">
-						<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
-							@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
-						</a>
-					</div>
-					<div class="flex-1">
-						<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="font-medium">{ m.Name }</a>
-						<div class="text-xs uk-text-muted">{ m.Author }</div>
-					</div>
-					<div class="flex flex-col items-center">
-						<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
-						<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
-							<span class="flex items-center gap-1"><uk-icon icon="Star" stroke-width="2"></uk-icon> { fmt.Sprint(score) }</span>
+				if i == 0 {
+					<!-- Special #1 item with backdrop -->
+					<li class="mb-4" style="display: block;">
+						<div class="pt-4 bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl relative overflow-hidden">
+							<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="block rounded overflow-hidden v-card v-card--flat v-card--link">
+								<!-- Decorative elements -->
+								<div class="absolute inset-0">
+									<div class="absolute top-0 left-0 w-24 h-24 bg-red-600 opacity-20 rounded-full -translate-x-12 -translate-y-12"></div>
+									<div class="absolute top-0 left-0 w-48 h-48 bg-red-600 opacity-15 rounded-full -translate-x-24 -translate-y-24"></div>
+									<div class="absolute top-0 left-0 w-72 h-72 bg-red-600 opacity-10 rounded-full -translate-x-36 -translate-y-36"></div>
+									<div class="absolute top-0 left-0 w-96 h-96 bg-red-600 opacity-5 rounded-full -translate-x-48 -translate-y-48"></div>
+								</div>
+								<!-- Background image -->
+								<div class="relative rounded elevation-2" style="height: 200px; overflow: hidden;">
+									<img src={ m.CoverArtURL } alt="" class="absolute inset-0 w-full object-cover" style="transform: scale(1.1) translateY(-25%); opacity: 0.5;" />
+									<!-- Dark overlay -->
+									<div class="absolute inset-0 bg-black bg-opacity-40"></div>
+									<!-- Trending badge -->
+									<div class="uk-badge uk-badge-primary absolute top-4 left-4">
+										TRENDING
+									</div>
+									<!-- Bottom overlay with info -->
+									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4 rounded-b z-10">
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-4">
+												<div class="text-right">
+													<h1 class="text-4xl font-bold text-white">1</h1>
+												</div>
+												<div>
+													<div class="font-bold text-lg">{ m.Name }</div>
+													<div class="text-sm opacity-80">{ fmt.Sprintf("%d Chapters", m.ChapterCount) }</div>
+												</div>
+											</div>
+											<div class="flex items-center gap-2">
+												<uk-icon icon="star" class="text-yellow-400"></uk-icon>
+												<span class="font-bold">{ fmt.Sprintf("%.1f", m.AverageScore) }</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</a>
 						</div>
-					</div>
-				</li>
+					</li>
+				} else {
+					<li class="flex items-center justify-between gap-3 py-2">
+						<div class="w-10 h-14 overflow-hidden rounded-sm">
+							<a href={ fmt.Sprintf("/series/%s", m.Slug) }>
+								@MediaCover(m.CoverArtURL, m.Name, 60, 90, true, "")
+							</a>
+						</div>
+						<div class="flex-1">
+							<a href={ fmt.Sprintf("/series/%s", m.Slug) } class="font-medium">{ m.Name }</a>
+							<div class="text-xs uk-text-muted">{ m.Author }</div>
+						</div>
+						<div class="flex flex-col items-center">
+							<div class="rank text-sm font-semibold">{ fmt.Sprint(i+1) }</div>
+							<div class="text-xs uk-text-muted flex gap-2 mt-1 items-center">
+								<span class="flex items-center gap-1"><uk-icon icon="Star" stroke-width="2"></uk-icon> { fmt.Sprint(score) }</span>
+							</div>
+						</div>
+					</li>
+				}
 			}
 		</ul>
 	}
@@ -149,25 +239,17 @@ templ TopPopularFullFragment(media []models.Media, activePeriod string) {
 	</div>
 }
 
-templ Top10Card(topMedias []models.Media, topReadToday []models.Media) {
-	<div id="top-10-card" class="uk-card uk-card-default uk-card-body mt-6">
-		<div class="flex justify-center gap-8 mb-4">
-			<button style="cursor: pointer !important;" class="px-4 py-2 pb-1 font-bold border-b-2" hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
-			<button style="cursor: pointer !important; padding-bottom: 6px;" class="px-4 py-2  font-bold border-b-0" hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
-		</div>
+templ TrendingCard(topReadMedias []models.Media, activePeriod string) {
+	<div id="top-10-card" class="uk-card uk-card-default uk-card-body mt-4">
 		<div id="top-content">
-			<div id="top-popular-full">
-				@TopPopularFullFragment(topMedias, "all")
+			<div id="top-read-full">
+				@TopReadFullWrapper(topReadMedias, activePeriod)
 			</div>
 		</div>
 	</div>
 }
 
-templ Top10CardContent(activeTab string, activePeriod string, topMedias []models.Media, topReadMedias []models.Media) {
-	<div class="flex justify-center gap-8 mb-4">
-		<button style={ templ.KV("cursor: pointer !important;", true), templ.KV("padding-bottom: 6px;", activeTab != "popular") } class={templ.KV("px-4 py-2 font-bold", true), templ.KV("pb-1 border-b-2", activeTab == "popular"), templ.KV("border-b-0", activeTab != "popular")} hx-get="/top-popular-card" hx-target="#top-10-card">Popular</button>
-		<button style={ templ.KV("cursor: pointer !important;", true), templ.KV("padding-bottom: 6px;", activeTab != "read") } class={templ.KV("px-4 py-2 font-bold", true), templ.KV("pb-1 border-b-2", activeTab == "read"), templ.KV("border-b-0", activeTab != "read")} hx-get="/top-read-card" hx-target="#top-10-card">Most Read</button>
-	</div>
+templ TrendingCardContent(activeTab string, activePeriod string, topMedias []models.Media, topReadMedias []models.Media) {
 	<div id="top-content">
 		if activeTab == "popular" {
 			<div id="top-popular-full">
@@ -193,7 +275,7 @@ templ TopReadFullWrapper(media []models.Media, activePeriod string) {
 			</ul>
 		</div>
 		<div id="top-read-content">
-			@TopReadList(media, "No reads today", "")
+			@TopReadList(media, "")
 		</div>
 	</div>
 }
@@ -315,79 +397,76 @@ templ HighlightBanner(highlights []models.HighlightWithMedia) {
 	</div>
 }
 
-templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, topMedias []models.Media, topReadToday []models.Media, topReadWeek []models.Media, topReadAll []models.Media, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification, recentReadingActivity []models.ReadingActivityItem) {
+templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.EnrichedMedia, premiumDuration int, latestUpdates []models.MediaWithRecentChapters, highlights []models.HighlightWithMedia, stats models.HomePageStats, unreadCount int, notifications []models.UserNotification, recentReadingActivity []models.ReadingActivityItem) {
 	@PageTitle("Magi")
-	@Breadcrumb([]BreadcrumbItem{
-		{ Label: "Home", Href: "/" },
-	})
 
-	if len(highlights) > 0 {
-		@HighlightBanner(highlights)
-	}
+	<div class="max-w-screen-2xl mx-auto px-4">
+		if len(highlights) > 0 {
+			@HighlightBanner(highlights)
+		}
 
-	if len(recentReadingActivity) > 0 {
-		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Continue Reading</span></h2>
-		<div class="mt-4">
-			<div class="grid grid-cols-1 gap-4">
-				<div class="overflow-x-auto">
-					<div class="flex gap-2 pb-2" style="width: max-content;">
-						for _, activity := range recentReadingActivity {
-							if activity.Media != nil {
-								{{ readCount, _ := models.GetUserReadCount(activity.ReadingState.UserName, activity.Media.Slug) }}
-								{{ totalChapters, _ := models.GetChapterCount(activity.Media.Slug) }}
-								{{ progress := float64(0) }}
-								if totalChapters > 0 {
-									{{ progress = float64(readCount) * 100.0 / float64(totalChapters) }}
-									if progress < 5 && readCount > 0 {
-										{{ progress = 5 }} // Minimum visible progress
+		if len(recentReadingActivity) > 0 {
+			<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Continue Reading</span></h2>
+			<div class="mt-4">
+				<div class="grid grid-cols-1 gap-4">
+					<div class="overflow-x-auto scrollbar-styled">
+						<div class="flex gap-2 pb-2" style="width: max-content;">
+							for _, activity := range recentReadingActivity {
+								if activity.Media != nil {
+									{{ readCount, _ := models.GetUserReadCount(activity.ReadingState.UserName, activity.Media.Slug) }}
+									{{ totalChapters, _ := models.GetChapterCount(activity.Media.Slug) }}
+									{{ progress := float64(0) }}
+									if totalChapters > 0 {
+										{{ progress = float64(readCount) * 100.0 / float64(totalChapters) }}
+										if progress < 5 && readCount > 0 {
+											{{ progress = 5 }} // Minimum visible progress
+										}
 									}
-								}
-								<div class="uk-card flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-md p-2">
-									<div class="flex gap-3">
-										<div class="w-20 h-[100px] flex-shrink-0 overflow-hidden rounded">
-											<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) }>
-												<img src={ activity.Media.CoverArtURL + "?size=tiny" } alt={ activity.Media.Name } class="w-full h-full object-contain rounded"/>
-											</a>
-										</div>
-										<div class="flex-1 min-w-0 overflow-hidden flex flex-col">
-											<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) } class="font-medium text-sm truncate-header hover:text-blue-600 dark:hover:text-blue-400 block overflow-hidden whitespace-nowrap">
-												{ activity.Media.Name }
-											</a>
-											<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-												if activity.Media.Type == "novel" {
-													{ fmt.Sprintf("Volume %s", strings.TrimPrefix(activity.ReadingState.Chapter, "volume-")) }
-												} else {
-													{ fmt.Sprintf("Chapter %s", strings.TrimPrefix(activity.ReadingState.Chapter, "chapter-")) }
-												}
+									<div class="uk-card flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-md p-2">
+										<div class="flex gap-3">
+											<div class="w-20 h-[100px] flex-shrink-0 overflow-hidden rounded">
+												<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) }>
+													<img src={ activity.Media.CoverArtURL + "?size=tiny" } alt={ activity.Media.Name } class="w-full h-full object-contain rounded"/>
+												</a>
 											</div>
-											<div class="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
-												<span class="flex items-center gap-1">
-													<uk-icon icon="clock" class="uk-icon"></uk-icon> {activity.Media.UpdatedAt.Format("Jan 2, 2006 15:04")}
-												</span>
-											</div>
-											<div class="mt-auto">
-												<div class="w-full rounded-full h-2" style="background-color: #6b7280;">
-													<div class="bg-success h-2 rounded-full transition-all duration-300" style={ fmt.Sprintf("width: %.0f%%; min-width: 8px;", progress) }></div>
+											<div class="flex-1 min-w-0 overflow-hidden flex flex-col">
+												<a href={ fmt.Sprintf("/series/%s", activity.Media.Slug) } class="font-medium text-sm truncate-header hover:text-blue-600 dark:hover:text-blue-400 block overflow-hidden whitespace-nowrap">
+													{ activity.Media.Name }
+												</a>
+												<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+													if activity.Media.Type == "novel" {
+														{ fmt.Sprintf("Volume %s", strings.TrimPrefix(activity.ReadingState.Chapter, "volume-")) }
+													} else {
+														{ fmt.Sprintf("Chapter %s", strings.TrimPrefix(activity.ReadingState.Chapter, "chapter-")) }
+													}
 												</div>
-												<div class="flex items-center justify-between text-sm text-gray-600 mt-1">
-													<span>{ fmt.Sprintf("%d / %d", readCount, totalChapters) }</span>
-													<span>{ fmt.Sprintf("%.0f%%", progress) }</span>
+												<div class="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+													<span class="flex items-center gap-1">
+														<uk-icon icon="clock" class="uk-icon"></uk-icon> {activity.Media.UpdatedAt.Format("Jan 2, 2006 15:04")}
+													</span>
+												</div>
+												<div class="mt-auto">
+													<div class="w-full rounded-full h-2" style="background-color: #6b7280;">
+														<div class="bg-success h-2 rounded-full transition-all duration-300" style={ fmt.Sprintf("width: %.0f%%; min-width: 8px;", progress) }></div>
+													</div>
+													<div class="flex items-center justify-between text-sm text-gray-600 mt-1">
+														<span>{ fmt.Sprintf("%d / %d", readCount, totalChapters) }</span>
+														<span>{ fmt.Sprintf("%.0f%%", progress) }</span>
+													</div>
 												</div>
 											</div>
 										</div>
 									</div>
-								</div>
+								}
 							}
-						}
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-	}
+		}
 
-	<div class="mt-4">
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-			<div class="md:col-span-1 lg:col-span-2">
+		<div class="flex flex-col lg:flex-row gap-6 mt-4" id="columns-container">
+			<div class="w-full lg:w-3/4 mt-4">
 				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently added</span></h2>
 				if len(recentlyAdded) == 0 {
 					@EmptyState("No recently added media.")
@@ -395,46 +474,28 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 					@Showcase(recentlyAdded)
 				}
 
-				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Recently updated</span></h2>
-				if len(recentlyUpdated) == 0 {
-					@EmptyState("No recently updated media.")
-				} else {
-					@Showcase(recentlyUpdated)
-				}
+				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-4"><span>Latest Updates</span></h2>
+				<div class="mt-4">
+					@LatestUpdatesGrid(latestUpdates, premiumDuration)
+				</div>
+
+				<div class="text-center mt-4">
+					<a href="/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at" class="uk-btn uk-btn-primary">View More</a>
+				</div>
 			</div>
 
-			<div class="md:col-span-1 lg:col-span-1">
-				<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Top 10</span></h2>
-				@Top10Card(topMedias, topReadAll)
+			<div class="w-full lg:w-1/4" id="trending-container">
+				<div class="space-y-6 mt-4" id="trending">
+					<div>
+						<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Trending</span></h2>
+						<div id="top-10-card" hx-get="/top-read-card?period=all" hx-trigger="load"></div>
+					</div>
+				</div>
 			</div>
-		</div>
-
-		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-8"><span>Latest Updates</span></h2>
-		<div class="mt-4">
-			@LatestUpdatesGrid(latestUpdates, premiumDuration)
-		</div>
-
-		<div class="text-center mt-4">
-			<a href="/series?order=desc&page=1&tag_mode=all&search=&sort=updated_at" class="uk-btn uk-btn-primary">View More</a>
-		</div>
-
-		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center mt-6"><span>Statistics</span></h2>
-		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-			@StatCard("Mangas", stats.TotalMedias, stats.MangasChange)
-			@StatCard("Manga Chapters", stats.TotalChapters, stats.ChaptersChange)
-			@StatCard("Manga Chapters Read", stats.TotalChaptersRead, stats.ChaptersReadChange)
-			@StatCard("Novels", stats.TotalNovels, stats.NovelsChange)
-			@StatCard("Novel Chapters", stats.TotalNovelChapters, stats.NovelChaptersChange)
-			@StatCard("Novel Chapters Read", stats.TotalNovelChaptersRead, stats.NovelChaptersReadChange)
-		</div>
-		<div class="text-center mt-2">
-			<small>Green badges show change in the last 24 hours</small>
 		</div>
 	</div>
 
 	<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			let currentIndex = 0;
 			let isPaused = localStorage.getItem('highlightSliderPaused') === 'true';
 			const slider = document.getElementById('highlight-slider');
 			const dots = document.getElementById('highlight-dots');
@@ -447,6 +508,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 				const sliderContent = slider.parentElement;
 				let containerWidth = sliderContent.offsetWidth;
 				let autoSlideInterval;
+				let currentIndex = 0;
 				
 				function setWidths() {
 					containerWidth = sliderContent.offsetWidth;
@@ -552,8 +614,7 @@ templ Home(recentlyAdded []models.EnrichedMedia, recentlyUpdated []models.Enrich
 				
 				updateSlider();
 			}
-		});
-	</script>
+		</script>
 }
 
 templ LatestUpdatesGrid(series []models.MediaWithRecentChapters, premiumDuration int) {

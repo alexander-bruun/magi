@@ -33,25 +33,27 @@ type BreadcrumbItem struct {
 
 // Breadcrumb renders a clickable breadcrumb trail
 templ Breadcrumb(items []BreadcrumbItem) {
-    <nav aria-label="Breadcrumb">
-        <ul class="uk-breadcrumb">
-            {{ n := len(items) }}
-            for i, it := range items {
-                if i < n-1 {
-                    <li>
-                        <a
-                            href={ it.Href }
-                            hx-get={ it.Href }
-                            hx-target="#content"
-                            hx-push-url="true"
-                        >{ it.Label }</a>
-                    </li>
-                } else {
-                    <li><span class="uk-text-muted">{ it.Label }</span></li>
+    if len(items) > 0 {
+        <nav aria-label="Breadcrumb">
+            <ul class="uk-breadcrumb">
+                {{ n := len(items) }}
+                for i, it := range items {
+                    if i < n-1 {
+                        <li>
+                            <a
+                                href={ it.Href }
+                                hx-get={ it.Href }
+                                hx-target="#content"
+                                hx-push-url="true"
+                            >{ it.Label }</a>
+                        </li>
+                    } else {
+                        <li><span class="uk-text-muted">{ it.Label }</span></li>
+                    }
                 }
-            }
-        </ul>
-    </nav>
+            </ul>
+        </nav>
+    }
 }
 
 // Simple, reusable empty state block
@@ -83,7 +85,7 @@ templ MediaCard(media models.Media, width int, height int, truncate bool, fixed 
 				style={ fmt.Sprintf("width:%dpx;", width) }
 			}
 		>
-			<h3 class={ "uk-card-title uk-h3 uk-margin mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
+			<h3 class={ "uk-card-title uk-h3 mb-2 uk-text-center", templ.KV("truncate-header", truncate) }>
 				{ media.Name }
 			</h3>
 			<div class="flex justify-center items-center relative">
@@ -233,13 +235,25 @@ templ StatCard(label string, value int, change int) {
         <div class="text-2xl font-bold mt-2 flex items-center justify-center gap-2">
             { fmt.Sprint(value) }
             if change > 0 {
-                <span class="uk-badge badge bg-success" title="Read today">
-                    +{ fmt.Sprint(change) }
-                </span>
+                if strings.Contains(label, "Read") {
+                    <span class="uk-badge badge bg-success" title="Read today">
+                        +{ fmt.Sprint(change) }
+                    </span>
+                } else {
+                    <span class="uk-badge badge bg-success" title="Added today">
+                        +{ fmt.Sprint(change) }
+                    </span>
+                }
             } else {
-                <span class="uk-badge badge bg-muted" title="No reads today">
-                    0
-                </span>
+                if strings.Contains(label, "Read") {
+                    <span class="uk-badge badge bg-muted" title="No reads today">
+                        0
+                    </span>
+                } else {
+                    <span class="uk-badge badge bg-muted" title="No additions today">
+                        0
+                    </span>
+                }
             }
         </div>
     </div>
@@ -341,7 +355,7 @@ templ ProfileCard(user models.User, totalChaptersRead int, totalMediaRead int, r
         <div class="uk-modal-dialog uk-modal-body">
             <h2 class="uk-modal-title">Change Avatar</h2>
             <form hx-post="/account/avatar" hx-target="#avatar-modal" hx-swap="none" enctype="multipart/form-data">
-                <div class="uk-margin">
+                <div>
                     <label class="uk-form-label">Upload Avatar Image</label>
                     <div class="relative">
                         <input type="file" name="avatar" accept="image/*" id="avatar-input" class="absolute inset-0 w-full h-full hidden-input" required/>
@@ -428,7 +442,7 @@ templ MediaSlider(media []models.Media, width int, height int, truncate bool, fi
 			<a class="uk-position-center-left" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
 			<a class="uk-position-center-right" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
 		</div>
-		<ul class="uk-slider-nav uk-dotnav uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+		<ul class="uk-slider-nav uk-dotnav place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
 	</div>
 }
 
@@ -487,7 +501,7 @@ templ Showcase(media []models.EnrichedMedia) {
                 <a class="uk-position-center-left" href uk-slidenav-previous uk-slider-item="previous" aria-label="Previous slide"></a>
                 <a class="uk-position-center-right" href uk-slidenav-next uk-slider-item="next" aria-label="Next slide"></a>
             </div>
-            <ul class="uk-slider-nav uk-dotnav uk-margin place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
+            <ul class="uk-slider-nav uk-dotnav place-content-center my-4" role="tablist" aria-label="Slider pagination"></ul>
         </div>
     }
 }
@@ -575,14 +589,14 @@ templ FileExplorer() {
 	<div id="file-explorer-modal" class="uk-modal" uk-modal>
 		<div class="uk-modal-dialog uk-modal-body">
 			<h2 class="uk-modal-title">Select File or Folder</h2>
-			<div class="uk-margin">
+			<div>
 				<div id="file-explorer-content" class="file-explorer-content">
 					<!-- Content will be populated by JavaScript -->
 				</div>
 			</div>
-			<div class="uk-flex mt-4">
-				<button id="select-folder-btn" class="uk-btn uk-btn-primary select-folder-btn" type="button">Select</button>
+			<div class="uk-flex mt-4 uk-flex-between">
 				<button class="uk-btn uk-btn-default uk-modal-close" type="button">Cancel</button>
+				<button id="select-folder-btn" class="uk-btn uk-btn-primary select-folder-btn" type="button">Select</button>
 			</div>
 		</div>
 	</div>
