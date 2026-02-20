@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // EPUB parsing structures (from POC)
@@ -516,11 +516,6 @@ func GetTOC(epubPath string) string {
 
 // GetBookContent extracts all readable content from an EPUB file as HTML
 func GetBookContent(epubPath, mangaSlug, librarySlug, chapterSlug string) string {
-	return GetBookContentWithValidity(epubPath, mangaSlug, librarySlug, chapterSlug, 5)
-}
-
-// GetBookContentWithValidity extracts all readable content from an EPUB file as HTML with custom token validity
-func GetBookContentWithValidity(epubPath, mangaSlug, librarySlug, chapterSlug string, validityMinutes int) string {
 	r, err := zip.OpenReader(epubPath)
 	if err != nil {
 		return "Error opening EPUB: " + err.Error()
@@ -596,7 +591,7 @@ func GetBookContentWithValidity(epubPath, mangaSlug, librarySlug, chapterSlug st
 
 		htmlContent := string(chapterData)
 		// Clean the HTML and rewrite image paths
-		htmlContent = cleanHTMLContentWithValidity(htmlContent, mangaSlug, librarySlug, chapterSlug, chapter.Path, opfDir, validityMinutes)
+		htmlContent = cleanHTMLContent(htmlContent, mangaSlug, librarySlug, chapterSlug, chapter.Path, opfDir)
 
 		// Add chapter ID
 		fmt.Fprintf(&content, `<div id="chapter-%s">`, chapter.Path)
@@ -612,8 +607,8 @@ func GetBookContentWithValidity(epubPath, mangaSlug, librarySlug, chapterSlug st
 	return content.String()
 }
 
-// cleanHTMLContentWithValidity performs basic cleaning of HTML content from EPUB with custom token validity
-func cleanHTMLContentWithValidity(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir string, validityMinutes int) string {
+// cleanHTMLContent performs basic cleaning of HTML content from EPUB
+func cleanHTMLContent(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir string) string {
 	// Remove DOCTYPE, html, head, body tags
 	html = strings.ReplaceAll(html, "<!DOCTYPE html>", "")
 	html = strings.ReplaceAll(html, "<html>", "")
@@ -662,12 +657,12 @@ func cleanHTMLContentWithValidity(html, mangaSlug, librarySlug, chapterSlug, cha
 	}
 
 	// Rewrite img src attributes to point to asset endpoint
-	html = rewriteAssetSourcesWithValidity(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir, validityMinutes)
+	html = rewriteAssetSources(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir)
 	return html
 }
 
-// rewriteAssetSourcesWithValidity rewrites img src and link href attributes to point to the asset endpoint with tokens and custom validity
-func rewriteAssetSourcesWithValidity(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir string, validityMinutes int) string {
+// rewriteAssetSources rewrites img src and link href attributes to point to the asset endpoint with direct URLs
+func rewriteAssetSources(html, mangaSlug, librarySlug, chapterSlug, chapterPath, opfDir string) string {
 	// Use regex to find img tags with src attributes
 	imgRe := regexp.MustCompile(`<img[^>]*src=(["']?)([^"'\s>]+)[^>]*>`)
 	html = imgRe.ReplaceAllStringFunc(html, func(match string) string {
@@ -729,13 +724,10 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, librarySlug, chapterSlug, 
 			log.Warnf("Asset path %s resolved to %s which is not under OPF dir %s, using fallback cleaning: %s", originalSrc, absoluteAsset, opfDir, cleanPath)
 		}
 
-		// Generate a token for this asset
-		token := GenerateImageAccessTokenWithAssetAndValidity(mangaSlug, librarySlug, chapterSlug, 0, cleanPath, validityMinutes) // Use page 0 for light novel assets
-		log.Debugf("Generated token for light novel asset: media=%s, chapter=%s, original=%s, clean=%s, token=%s", mangaSlug, chapterSlug, originalSrc, cleanPath, token)
-
-		// Build the asset URL with token
-		assetURL := fmt.Sprintf("/api/image?token=%s", token)
-		log.Debugf("originalSrc=%s, cleanPath=%s, token=%s\n", originalSrc, cleanPath, token)
+		// Generate encrypted slug URL for this asset
+		assetSlug := GenerateAssetSlug(mangaSlug, librarySlug, chapterSlug, cleanPath)
+		assetURL := fmt.Sprintf("/series/%s/%s/%s", mangaSlug, chapterSlug, assetSlug)
+		log.Debugf("originalSrc=%s, cleanPath=%s\n", originalSrc, cleanPath)
 		// Replace the src attribute
 		oldAttr := `src=` + quoteChar + originalSrc + quoteChar
 		newAttr := `src="` + assetURL + `"`
@@ -804,14 +796,11 @@ func rewriteAssetSourcesWithValidity(html, mangaSlug, librarySlug, chapterSlug, 
 			log.Warnf("Asset path %s resolved to %s which is not under OPF dir %s, using fallback cleaning: %s", originalHref, absoluteAsset, opfDir, cleanPath)
 		}
 
-		// Generate a token for this asset
-		token := GenerateImageAccessTokenWithAssetAndValidity(mangaSlug, librarySlug, chapterSlug, 0, cleanPath, validityMinutes)
-		log.Infof("Generated token for link asset %s: %s", cleanPath, token)
+		// Generate encrypted slug URL for this asset
+		assetSlug := GenerateAssetSlug(mangaSlug, librarySlug, chapterSlug, cleanPath)
+		assetURL := fmt.Sprintf("/series/%s/%s/%s", mangaSlug, chapterSlug, assetSlug)
 
-		// Build the asset URL with token
-		assetURL := fmt.Sprintf("/api/image?token=%s", token)
-
-		log.Infof("originalHref=%s, cleanPath=%s, token=%s\n", originalHref, cleanPath, token)
+		log.Infof("originalHref=%s, cleanPath=%s\n", originalHref, cleanPath)
 
 		// Replace the href attribute
 		oldAttr := `href=` + quoteChar + originalHref + quoteChar

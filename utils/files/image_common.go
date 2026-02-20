@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"image"
@@ -16,18 +17,114 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/alexander-bruun/magi/filestore"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/bmp"  // Register BMP format
 	_ "golang.org/x/image/tiff" // Register TIFF format
 	_ "golang.org/x/image/webp" // Register WebP format
 )
+
+// slugKey is the HMAC key used for image URL slug generation and verification.
+// Derived from ImageAccessSecret (stored in DB), so it is shared across all prefork children.
+// Must be set via SetSlugKey before generating or decrypting slugs.
+var slugKey []byte
+
+// SetSlugKey derives the slug HMAC key from the ImageAccessSecret.
+// Call this once during startup after the DB config is loaded.
+func SetSlugKey(imageAccessSecret string) {
+	h := sha256.Sum256([]byte("magi-slug-v1:" + imageAccessSecret))
+	slugKey = h[:]
+}
+
+// generateKeystream produces a deterministic byte stream for XOR obfuscation.
+func generateKeystream(mediaSlug, chapterSlug string, length int) []byte {
+	stream := make([]byte, 0, length+32)
+	for counter := 0; len(stream) < length; counter++ {
+		mac := hmac.New(sha256.New, slugKey)
+		mac.Write([]byte(fmt.Sprintf("ks\x00%s\x00%s\x00%d", mediaSlug, chapterSlug, counter)))
+		stream = append(stream, mac.Sum(nil)...)
+	}
+	return stream[:length]
+}
+
+// computeTag generates an 8-byte HMAC authentication tag for a payload.
+func computeTag(mediaSlug, chapterSlug string, payload []byte) []byte {
+	mac := hmac.New(sha256.New, slugKey)
+	mac.Write([]byte("tag\x00" + mediaSlug + "\x00" + chapterSlug + "\x00"))
+	mac.Write(payload)
+	return mac.Sum(nil)[:8]
+}
+
+// GeneratePageSlug creates a URL-safe slug that hides the page number.
+// The slug encodes the library slug + page number, XORed with an HMAC keystream
+// and authenticated with an HMAC tag. Deterministic for the same inputs + key.
+func GeneratePageSlug(mediaSlug, librarySlug, chapterSlug string, page int) string {
+	payload := []byte(fmt.Sprintf("p\x00%s\x00%d", librarySlug, page))
+	ks := generateKeystream(mediaSlug, chapterSlug, len(payload))
+	encrypted := make([]byte, len(payload))
+	for i := range payload {
+		encrypted[i] = payload[i] ^ ks[i]
+	}
+	tag := computeTag(mediaSlug, chapterSlug, payload)
+	return base64.RawURLEncoding.EncodeToString(append(encrypted, tag...))
+}
+
+// GenerateAssetSlug creates a URL-safe slug that hides an EPUB asset path.
+func GenerateAssetSlug(mediaSlug, librarySlug, chapterSlug, assetPath string) string {
+	payload := []byte(fmt.Sprintf("a\x00%s\x00%s", librarySlug, assetPath))
+	ks := generateKeystream(mediaSlug, chapterSlug, len(payload))
+	encrypted := make([]byte, len(payload))
+	for i := range payload {
+		encrypted[i] = payload[i] ^ ks[i]
+	}
+	tag := computeTag(mediaSlug, chapterSlug, payload)
+	return base64.RawURLEncoding.EncodeToString(append(encrypted, tag...))
+}
+
+// DecryptSlug decrypts a slug and returns the type ("page" or "asset"), library slug, and value.
+func DecryptSlug(mediaSlug, chapterSlug, slug string) (slugType, librarySlug, value string, err error) {
+	data, err := base64.RawURLEncoding.DecodeString(slug)
+	if err != nil {
+		return "", "", "", fmt.Errorf("invalid slug encoding")
+	}
+	if len(data) < 13 { // minimum: type(1) + \x00(1) + lib(1) + \x00(1) + val(1) + tag(8)
+		return "", "", "", fmt.Errorf("slug too short")
+	}
+
+	encrypted := data[:len(data)-8]
+	tag := data[len(data)-8:]
+
+	// Decrypt via XOR
+	ks := generateKeystream(mediaSlug, chapterSlug, len(encrypted))
+	payload := make([]byte, len(encrypted))
+	for i := range encrypted {
+		payload[i] = encrypted[i] ^ ks[i]
+	}
+
+	// Verify authentication tag
+	expectedTag := computeTag(mediaSlug, chapterSlug, payload)
+	if !hmac.Equal(tag, expectedTag) {
+		return "", "", "", fmt.Errorf("invalid slug")
+	}
+
+	// Parse: "type\x00librarySlug\x00value"
+	parts := strings.SplitN(string(payload), "\x00", 3)
+	if len(parts) != 3 {
+		return "", "", "", fmt.Errorf("invalid slug format")
+	}
+
+	switch parts[0] {
+	case "p":
+		return "page", parts[1], parts[2], nil
+	case "a":
+		return "asset", parts[1], parts[2], nil
+	default:
+		return "", "", "", fmt.Errorf("unknown slug type")
+	}
+}
 
 const (
 	targetWidth  = 400
@@ -419,53 +516,6 @@ func saveProcessedImage(filePath string, img image.Image, quality int) error {
 	}
 }
 
-// GenerateSignedImageURL generates a signed URL for image access with expiration
-func GenerateSignedImageURL(baseURL, secret, mediaSlug, chapterSlug string, page int, expiration time.Duration) string {
-	expires := time.Now().Add(expiration).Unix()
-	data := fmt.Sprintf("%s:%s:%d:%d", mediaSlug, chapterSlug, page, expires)
-
-	// Create HMAC signature
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(data))
-	signature := hex.EncodeToString(h.Sum(nil))
-
-	// Build the signed URL
-	return fmt.Sprintf("%s?media=%s&chapter=%s&page=%d&expires=%d&signature=%s",
-		baseURL, mediaSlug, chapterSlug, page, expires, signature)
-}
-
-// ValidateImageSignature validates the signature and expiration of an image access request
-func ValidateImageSignature(secret, mediaSlug, chapterSlug, pageStr, expiresStr, signatureStr string) error {
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		return fmt.Errorf("invalid page number")
-	}
-
-	expires, err := strconv.ParseInt(expiresStr, 10, 64)
-	if err != nil {
-		return fmt.Errorf("invalid expiration time")
-	}
-
-	// Check if expired
-	if time.Now().Unix() > expires {
-		return fmt.Errorf("signature expired")
-	}
-
-	// Recreate the data string
-	data := fmt.Sprintf("%s:%s:%d:%d", mediaSlug, chapterSlug, page, expires)
-
-	// Verify signature
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(data))
-	expectedSignature := hex.EncodeToString(h.Sum(nil))
-
-	if !hmac.Equal([]byte(signatureStr), []byte(expectedSignature)) {
-		return fmt.Errorf("invalid signature")
-	}
-
-	return nil
-}
-
 // GenerateRandomSecret generates a random 32-byte secret encoded as hex
 func GenerateRandomSecret() (string, error) {
 	bytes := make([]byte, 32)
@@ -473,105 +523,6 @@ func GenerateRandomSecret() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
-}
-
-// ImageAccessToken represents a one-time use token for image access
-type ImageAccessToken struct {
-	MediaSlug   string
-	LibrarySlug string
-	ChapterSlug string
-	Page        int
-	AssetPath   string // For light novel assets
-	ExpiresAt   time.Time
-	UsedCount   int
-}
-
-// Global token store
-var tokens sync.Map // map[string]*ImageAccessToken
-
-// GenerateImageAccessToken generates a one-time use token for image access
-func GenerateImageAccessToken(mediaSlug, librarySlug, chapterSlug string, page int) string {
-	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, librarySlug, chapterSlug, page, "", 5) // default 5 minutes
-}
-
-// GenerateImageAccessTokenWithValidity generates a one-time use token for image access with custom validity
-func GenerateImageAccessTokenWithValidity(mediaSlug, librarySlug, chapterSlug string, page int, validityMinutes int) string {
-	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, librarySlug, chapterSlug, page, "", validityMinutes)
-}
-
-// GenerateImageAccessTokenWithAsset generates a one-time use token for image access with optional asset path
-func GenerateImageAccessTokenWithAsset(mediaSlug, librarySlug, chapterSlug string, page int, assetPath string) string {
-	return GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, librarySlug, chapterSlug, page, assetPath, 5) // default 5 minutes
-}
-
-// GenerateImageAccessTokenWithAssetAndValidity generates a one-time use token for image access with optional asset path and custom validity
-func GenerateImageAccessTokenWithAssetAndValidity(mediaSlug, librarySlug, chapterSlug string, page int, assetPath string, validityMinutes int) string {
-	log.Debugf("Generating token for mediaSlug=%s, librarySlug=%s, chapterSlug=%s, assetPath=%s", mediaSlug, librarySlug, chapterSlug, assetPath)
-	tokenBytes := make([]byte, 32)
-	var token string
-	if _, err := rand.Read(tokenBytes); err == nil {
-		token = hex.EncodeToString(tokenBytes)
-	} else {
-		// Fallback to UUID if crypto/rand fails
-		uuid := fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", time.Now().UnixNano(), page, len(mediaSlug), len(chapterSlug), time.Now().UnixNano())
-		token = uuid
-		log.Errorf("crypto/rand failed for token generation, using UUID fallback: %s", token)
-	}
-
-	// Store the token
-	tokens.Store(token, &ImageAccessToken{
-		MediaSlug:   mediaSlug,
-		LibrarySlug: librarySlug,
-		ChapterSlug: chapterSlug,
-		Page:        page,
-		AssetPath:   assetPath,
-		ExpiresAt:   time.Now().Add(time.Duration(validityMinutes) * time.Minute),
-	})
-	log.Debugf("Stored token %s: media=%s, library=%s, chapter=%s, page=%d, asset=%s", token, mediaSlug, librarySlug, chapterSlug, page, assetPath)
-
-	return token
-}
-
-// ValidateImageToken validates a token (reusable)
-func ValidateImageToken(token string) (*ImageAccessToken, error) {
-	// log.Infof("ValidateImageToken: attempting to validate token %s", token)
-	val, ok := tokens.Load(token)
-	if !ok {
-		return nil, fmt.Errorf("Token %s is invalid: not found", token)
-	}
-	tokenInfo := val.(*ImageAccessToken)
-
-	log.Debugf("Retrieved token %s: media=%s, chapter=%s, page=%d, asset=%s", token, tokenInfo.MediaSlug, tokenInfo.ChapterSlug, tokenInfo.Page, tokenInfo.AssetPath)
-
-	// Check expiration
-	if time.Now().After(tokenInfo.ExpiresAt) {
-		tokens.Delete(token)
-		return nil, fmt.Errorf("Token %s is invalid: expired at %v (now: %v)", token, tokenInfo.ExpiresAt, time.Now())
-	}
-
-	log.Debugf("Token %s validated successfully", token)
-
-	return tokenInfo, nil
-}
-
-// ConsumeImageToken consumes a validated token
-func ConsumeImageToken(token string) {
-	tokens.Delete(token)
-	log.Debugf("Token %s consumed", token)
-}
-
-// CleanupExpiredTokens removes expired tokens from the store
-func CleanupExpiredTokens() {
-	now := time.Now()
-	tokens.Range(func(key, value any) bool {
-		token := key.(string)
-		info := value.(*ImageAccessToken)
-		if now.After(info.ExpiresAt) {
-			tokens.Delete(token)
-			log.Debugf("Expired token: %s", token)
-		}
-		return true
-	})
 }
 
 // ExtractPosterImage extracts a poster-sized image from any supported file type (image or archive)

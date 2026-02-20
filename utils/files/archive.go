@@ -13,8 +13,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/nwaples/rardecode/v2"
 )
 
@@ -1028,4 +1029,189 @@ func isImageFile(fileName string) bool {
 	default:
 		return false
 	}
+}
+
+// AddComicInfoToCBZ adds a ComicInfo.xml file to an existing CBZ archive
+func AddComicInfoToCBZ(cbzPath string, comicInfoXML []byte) error {
+	// Create a temporary file for the new CBZ
+	tempPath := cbzPath + ".tmp"
+
+	// Open the existing CBZ
+	reader, err := zip.OpenReader(cbzPath)
+	if err != nil {
+		return fmt.Errorf("failed to open CBZ file: %w", err)
+	}
+	defer reader.Close()
+
+	// Create the new CBZ file
+	newFile, err := os.Create(tempPath)
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer newFile.Close()
+
+	zipWriter := zip.NewWriter(newFile)
+	defer zipWriter.Close()
+
+	// Copy all existing files
+	for _, file := range reader.File {
+		// Skip existing ComicInfo.xml if present
+		if strings.EqualFold(file.Name, "ComicInfo.xml") {
+			continue
+		}
+
+		// Open the file from the existing archive
+		rc, err := file.Open()
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %w", file.Name, err)
+		}
+
+		// Create the file in the new archive
+		newFile, err := zipWriter.Create(file.Name)
+		if err != nil {
+			rc.Close()
+			return fmt.Errorf("failed to create file %s: %w", file.Name, err)
+		}
+
+		// Copy the content
+		_, err = io.Copy(newFile, rc)
+		rc.Close()
+		if err != nil {
+			return fmt.Errorf("failed to copy file %s: %w", file.Name, err)
+		}
+	}
+
+	// Add the ComicInfo.xml
+	comicInfoFile, err := zipWriter.Create("ComicInfo.xml")
+	if err != nil {
+		return fmt.Errorf("failed to create ComicInfo.xml: %w", err)
+	}
+
+	_, err = comicInfoFile.Write(comicInfoXML)
+	if err != nil {
+		return fmt.Errorf("failed to write ComicInfo.xml: %w", err)
+	}
+
+	// Close the writers
+	zipWriter.Close()
+	newFile.Close()
+
+	// Replace the original file
+	err = os.Rename(tempPath, cbzPath)
+	if err != nil {
+		// Clean up temp file
+		os.Remove(tempPath)
+		return fmt.Errorf("failed to replace original CBZ: %w", err)
+	}
+
+	log.Debugf("Added ComicInfo.xml to CBZ: %s", cbzPath)
+	return nil
+}
+
+// CountPagesInArchive counts the number of image pages in a CBZ/CBR archive
+func CountPagesInArchive(archivePath string) (int, error) {
+	return CountImageFiles(archivePath)
+}
+
+// AddComicInfoToCBR adds a ComicInfo.xml file to a CBR archive by converting it to CBZ format
+func AddComicInfoToCBR(cbrPath string, comicInfoXML []byte) error {
+	// Open the CBR file for reading
+	cbrFile, err := os.Open(cbrPath)
+	if err != nil {
+		return fmt.Errorf("failed to open CBR file: %w", err)
+	}
+	defer cbrFile.Close()
+
+	// Create RAR reader
+	rarReader, err := rardecode.NewReader(cbrFile)
+	if err != nil {
+		return fmt.Errorf("failed to create RAR reader: %w", err)
+	}
+
+	// Create temporary CBZ file
+	tempCbzPath := cbrPath + ".tmp"
+	cbzFile, err := os.Create(tempCbzPath)
+	if err != nil {
+		return fmt.Errorf("failed to create temporary CBZ file: %w", err)
+	}
+	defer cbzFile.Close()
+
+	// Create ZIP writer
+	zipWriter := zip.NewWriter(cbzFile)
+	defer zipWriter.Close()
+
+	// Extract files from CBR and add to CBZ
+	for {
+		header, err := rarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read RAR header: %w", err)
+		}
+
+		// Skip directories
+		if header.IsDir {
+			continue
+		}
+
+		// Create ZIP file header
+		zipHeader := &zip.FileHeader{
+			Name:   header.Name,
+			Method: zip.Deflate,
+		}
+		zipHeader.SetModTime(header.ModificationTime)
+
+		// Create ZIP file entry
+		zipFile, err := zipWriter.CreateHeader(zipHeader)
+		if err != nil {
+			return fmt.Errorf("failed to create ZIP entry for %s: %w", header.Name, err)
+		}
+
+		// Copy file data
+		if _, err := io.Copy(zipFile, rarReader); err != nil {
+			return fmt.Errorf("failed to copy file data for %s: %w", header.Name, err)
+		}
+	}
+
+	// Add ComicInfo.xml to the CBZ
+	comicInfoHeader := &zip.FileHeader{
+		Name:   "ComicInfo.xml",
+		Method: zip.Deflate,
+	}
+	comicInfoHeader.SetModTime(time.Now())
+
+	comicInfoFile, err := zipWriter.CreateHeader(comicInfoHeader)
+	if err != nil {
+		return fmt.Errorf("failed to create ComicInfo.xml entry: %w", err)
+	}
+
+	if _, err := comicInfoFile.Write(comicInfoXML); err != nil {
+		return fmt.Errorf("failed to write ComicInfo.xml: %w", err)
+	}
+
+	// Close ZIP writer
+	if err := zipWriter.Close(); err != nil {
+		return fmt.Errorf("failed to close ZIP writer: %w", err)
+	}
+
+	// Close CBZ file
+	if err := cbzFile.Close(); err != nil {
+		return fmt.Errorf("failed to close CBZ file: %w", err)
+	}
+
+	// Replace original CBR with new CBZ (change extension)
+	newCbzPath := strings.TrimSuffix(cbrPath, filepath.Ext(cbrPath)) + ".cbz"
+	if err := os.Rename(tempCbzPath, newCbzPath); err != nil {
+		os.Remove(tempCbzPath)
+		return fmt.Errorf("failed to rename CBZ file: %w", err)
+	}
+
+	// Remove original CBR file
+	if err := os.Remove(cbrPath); err != nil {
+		log.Warnf("Failed to remove original CBR file %s: %v", cbrPath, err)
+	}
+
+	log.Debugf("Converted CBR to CBZ with ComicInfo.xml: %s -> %s", cbrPath, newCbzPath)
+	return nil
 }

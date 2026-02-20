@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gofiber/fiber/v2/log"
-	websocket "github.com/gofiber/websocket/v2"
+	websocket "github.com/gofiber/contrib/v3/websocket"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 // ConsoleLogManager manages WebSocket connections for console log streaming
