@@ -748,11 +748,11 @@
           // Scroll any reader containers to top
           getScrollableElements().forEach(el => el.scrollTo({ top: 0, behavior }));
           // Always scroll main content to top
-          const mainElement = document.querySelector('main.site-main');
+          const mainElement = document.querySelector('main');
           if (mainElement) mainElement.scrollTo({ top: 0, behavior });
         };
 
-        window.scrollToTop = () => scrollToTop('smooth');
+        window.scrollTo = () => scrollToTop('smooth');
         window.scrollToTopInstant = () => scrollToTop('auto');
       }
     };
@@ -1098,7 +1098,7 @@
         }).join('<br>');
 
         // Show the indicator
-        indicator.style.display = 'block';
+        indicator.classList.remove('hidden');
 
         // Update custom tooltip content
         if (tooltipDiv) {
@@ -1110,7 +1110,7 @@
         }
       } else {
         // No jobs, hide immediately
-        indicator.style.display = 'none';
+        indicator.classList.add('hidden');
       }
     }
 

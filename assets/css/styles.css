@@ -181,6 +181,10 @@ html {
   color: #6b7280 !important;
 }
 
+.text-red-500 {
+  color: #ef4444 !important;
+}
+
 .bg-gray-500 {
   background-color: #6b7280 !important;
 }
@@ -253,6 +257,7 @@ html {
 
 .scrollbar-styled::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .scrollbar-styled::-webkit-scrollbar-track {
@@ -439,11 +444,10 @@ html {
 #app {
   display: block;
   min-height: 100vh;
-  padding-top: 64px;
   transition: grid-template-columns 200ms ease;
 }
 
-/* Top 10 list with stable rank spacing */
+/* Trending list with stable rank spacing */
 .top-manga-list {
   list-style: none;
   margin: 0;
@@ -530,10 +534,7 @@ div[uk-slider] {
    ============================================ */
 header.site-header {
   grid-column: 1 / -1;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 1000;
   min-height: 64px;
   height: auto;
@@ -616,30 +617,30 @@ header.site-header a:focus {
   outline: none;
 }
 
+/* Navigation links in header */
+.nav-link {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: hsl(var(--accent) / 0.1);
+  color: hsl(var(--accent-foreground));
+}
+
+.nav-link.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
 
 /* ============================================
    SIDEBAR NAVIGATION
    ============================================ */
 .sidebar {
-  position: fixed;
-  top: 64px;
-  left: 0;
-  bottom: 0;
-  width: var(--sidebar-width);
-  padding: 1rem;
-  background-color: hsl(var(--card));
-  border-right: 1px solid hsl(var(--border) / var(--border-alpha, 1));
-  box-shadow: inset -1px 0 0 hsl(var(--border) / var(--border-alpha, 1)), 6px 0 12px -10px hsl(var(--ui-shadow) / var(--ui-shadow-alpha, 1));
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  transition: width 200ms ease, padding 200ms ease, left 200ms ease;
-  z-index: 30;
-}
-
-.sidebar.bg-surface {
-  background-color: hsl(var(--card));
+  display: none;
 }
 
 .sidebar>.uk-nav {
@@ -716,75 +717,6 @@ header.site-header a:focus {
   padding: var(--space-xs);
 }
 
-main.site-main {
-  padding: 2rem;
-  overflow: auto;
-  margin-left: var(--sidebar-width);
-  transition: margin-left 200ms ease;
-}
-
-
-
-/* ============================================
-   SIDEBAR - COLLAPSED STATE
-   ============================================ */
-body.sidebar-collapsed .sidebar {
-  width: var(--sidebar-slim-width) !important;
-  padding-left: var(--space-sm);
-  padding-right: var(--space-sm);
-}
-
-body.sidebar-collapsed main.site-main {
-  margin-left: var(--sidebar-slim-width);
-}
-
-body.sidebar-collapsed .sidebar .nav-text {
-  display: none;
-  width: 0;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-  transform: none;
-  pointer-events: none;
-}
-
-body.sidebar-collapsed .sidebar .uk-nav>li>a {
-  justify-content: center;
-  gap: 0;
-  padding: var(--nav-item-pad-collapsed);
-  min-inline-size: var(--size-tap-target);
-  min-block-size: var(--size-tap-target);
-  overflow: hidden;
-}
-
-body.sidebar-collapsed .sidebar .uk-nav>li>a uk-icon,
-body.sidebar-collapsed .sidebar .uk-nav>li>a svg {
-  width: var(--nav-icon-size-collapsed);
-  height: var(--nav-icon-size-collapsed);
-}
-
-body.sidebar-collapsed .sidebar-footer {
-  justify-content: center;
-  padding-left: var(--space-sm);
-  padding-right: var(--space-sm);
-}
-
-body.sidebar-collapsed .sidebar-footer .uk-btn {
-  width: var(--size-tap-target);
-  justify-content: center;
-  align-items: center;
-  gap: 0;
-  padding: var(--nav-item-pad-collapsed);
-  min-inline-size: var(--size-tap-target);
-  min-block-size: var(--size-tap-target);
-}
-
-body.sidebar-collapsed .sidebar-footer .uk-btn uk-icon,
-body.sidebar-collapsed .sidebar-footer .uk-btn svg {
-  margin: 0 auto;
-  display: block;
-  flex-shrink: 0;
-}
 
 /* ============================================
    RESPONSIVE - MOBILE & TABLET
@@ -814,38 +746,6 @@ body.sidebar-collapsed .sidebar-footer .uk-btn svg {
   }
 }
 
-/* Prevent body scrolling - scrollbar only in content area */
-body {
-  overflow: hidden;
-  height: 100vh;
-}
-
-/* Site main takes remaining space after navbar */
-main.site-main {
-  height: calc(100vh - 64px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(200, 200, 200, 0.5) transparent;
-}
-
-main.site-main::-webkit-scrollbar {
-  width: 8px;
-}
-
-main.site-main::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-main.site-main::-webkit-scrollbar-thumb {
-  background: rgba(200, 200, 200, 0.5);
-  border-radius: 4px;
-}
-
-main.site-main::-webkit-scrollbar-thumb:hover {
-  background: rgba(160, 160, 160, 0.7);
-}
-
 /* Content area retains original styling */
 #content.uk-container {
   scrollbar-width: none;
@@ -866,13 +766,6 @@ main.site-main::-webkit-scrollbar-thumb:hover {
     padding-right: var(--space-sm) !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-  }
-
-  /* remove any inner padding around the reader area so images touch the edges */
-  #content.uk-container .site-main,
-  .site-main>#content {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
   }
 
   /* ensure the reader column itself uses full width and no extra padding */
@@ -927,18 +820,9 @@ main.site-main::-webkit-scrollbar-thumb:hover {
     width: 100% !important;
   }
 
-  main.site-main {
-    margin-left: 0 !important;
-  }
-
   /* Enable pull-to-refresh on mobile by making body scrollable */
   body {
     overflow: auto;
-  }
-
-  main.site-main {
-    height: auto;
-    overflow-y: visible;
   }
 
   #sidebar-backdrop {
@@ -1214,6 +1098,18 @@ main.site-main::-webkit-scrollbar-thumb:hover {
 .search-input-wrapper.expanded {
   width: 300px;
   border: 1px solid hsl(var(--border));
+}
+
+@media (max-width: 640px) {
+  .search-input-wrapper.expanded {
+    width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input-wrapper.expanded {
+    width: 150px;
+  }
 }
 
 input.search-input.input-bg {
@@ -2905,6 +2801,11 @@ body.webtoon-focus-open {
   pointer-events: auto;
 }
 
+.poster-fixed .edit-poster-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ============================================
    COMPONENT INLINE STYLES
    ============================================ */
@@ -3709,3 +3610,20 @@ body.webtoon-focus-open {
     pointer-events: none;
     opacity: 0.6;
 }
+
+/* Sticky poster on large screens */
+@media (min-width: 1280px) {
+    #poster {
+        position: sticky;
+        top: 0px;
+    }
+}
+
+/* Sticky trending on large screens */
+@media (min-width: 1280px) {
+    #trending {
+        position: sticky;
+        top: 0px;
+    }
+}
+

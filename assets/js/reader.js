@@ -71,7 +71,7 @@
             this.currentMode = MODES.WEBTOON;
             this.currentPage = 0;
             this.images = [];
-            this.lazyTokens = [];
+            this.lazyImages = [];
             this.loadedCanvases = [];
             this.focusModal = null;
             this.isLightNovel = window.isLightNovel || false;
@@ -87,11 +87,11 @@
 
         init() {
             this.loadSettings();
-            // Collect tokens from divs and remove them
-            const tokenDivs = Array.from(this.container.querySelectorAll('.reader-token'));
-            this.images = tokenDivs.map(div => div.dataset.token).filter(token => token && token.trim() && token !== 'undefined');
-            // Remove all token divs
-            tokenDivs.forEach(div => div.remove());
+            // Collect image URLs from divs and remove them
+            const imageDivs = Array.from(this.container.querySelectorAll('.reader-image'));
+            this.images = imageDivs.map(div => div.dataset.url).filter(url => url && url.trim() && url !== 'undefined');
+            // Remove all image URL divs
+            imageDivs.forEach(div => div.remove());
             this.setupEventListeners();
             this.setupLazyLoading();
             this.loadInitialImages();
@@ -109,6 +109,7 @@
         setupEventListeners() {
             window.addEventListener('resize', () => this.handleResize());
             window.addEventListener('keydown', (e) => this.handleKeydown(e));
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // Pagination buttons
             const prevBtn = document.getElementById('prev-page-btn');
@@ -121,7 +122,7 @@
             this.observer = new IntersectionObserver(
                 (entries) => {
                     entries.forEach(entry => {
-                        if (entry.isIntersecting && this.lazyTokens.length > 0 && !this.isInitialLoad) {
+                        if (entry.isIntersecting && this.lazyImages.length > 0 && !this.isInitialLoad) {
                             this.loadNextImage();
                         }
                     });
@@ -135,11 +136,11 @@
         }
 
         loadInitialImages() {
-            const initialTokens = this.images.slice(0, 2);
-            this.lazyTokens = [];
+            const initialImages = this.images.slice(0, 2);
+            this.lazyImages = [];
             this.currentLoadedIndex = 0;
 
-            const loadPromises = initialTokens.map((token, i) => this.createAndLoadCanvas(token, i));
+            const loadPromises = initialImages.map((url, i) => this.createAndLoadCanvas(url, i));
 
             Promise.all(loadPromises).then(() => {
                 this.updateMode();
@@ -150,7 +151,7 @@
                             const canvas = entry.target;
                             const imageIndex = parseInt(canvas.dataset.index);
                             if (imageIndex >= this.currentLoadedIndex && imageIndex < this.images.length) {
-                                this.loadImageToCanvas(canvas, `/api/image?token=${this.images[imageIndex]}`);
+                                this.loadImageToCanvas(canvas, this.images[imageIndex]);
                                 this.currentLoadedIndex++;
                                 observer.unobserve(canvas);
                             }
@@ -171,14 +172,14 @@
                         this.openFocusModal(canvas);
                     });
                     this.container.appendChild(canvas);
-                    this.lazyTokens.push(canvas);
+                    this.lazyImages.push(canvas);
                     observer.observe(canvas);
                 }
                 this.isInitialLoad = false;
             });
         }
 
-        createAndLoadCanvas(token, index) {
+        createAndLoadCanvas(url, index) {
             const canvas = document.createElement('canvas');
             canvas.className = 'reader-canvas';
             canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
@@ -187,7 +188,7 @@
             canvas.dataset.index = index;
             this.container.appendChild(canvas);
             this.loadedCanvases[index] = canvas;
-            return this.loadImageToCanvas(canvas, `/api/image?token=${token}`);
+            return this.loadImageToCanvas(canvas, url);
         }
 
         async loadImageToCanvas(canvas, url) {
@@ -222,12 +223,12 @@
         }
 
         loadNextImage() {
-            if (this.lazyTokens.length === 0) return;
-            const numToLoad = Math.min(2, this.lazyTokens.length);
+            if (this.lazyImages.length === 0) return;
+            const numToLoad = Math.min(2, this.lazyImages.length);
             const loadPromises = [];
 
             for (let i = 0; i < numToLoad; i++) {
-                const token = this.lazyTokens.shift();
+                const imageUrl = this.lazyImages.shift();
                 const canvas = document.createElement('canvas');
                 canvas.className = 'reader-canvas';
                 canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
@@ -236,7 +237,7 @@
                 canvas.style.display = 'block';
                 canvas.dataset.index = this.currentLoadedIndex + i;
                 this.container.appendChild(canvas);
-                loadPromises.push(this.loadImageToCanvas(canvas, `/api/image?token=${token}`));
+                loadPromises.push(this.loadImageToCanvas(canvas, imageUrl));
                 this.currentLoadedIndex++;
             }
 
@@ -297,7 +298,7 @@
         }
 
         loadImageForPage(pageIndex) {
-            const token = this.images[pageIndex];
+            const imageUrl = this.images[pageIndex];
             const canvas = document.createElement('canvas');
             canvas.className = 'reader-canvas';
             canvas.width = DIMENSIONS.PLACEHOLDER_SIZE;
@@ -305,7 +306,7 @@
             canvas.style.display = 'block';
             this.container.appendChild(canvas);
             this.loadedCanvases[pageIndex] = canvas;
-            this.loadImageToCanvas(canvas, `/api/image?token=${token}`);
+            this.loadImageToCanvas(canvas, imageUrl);
         }
 
         updatePaginationVisibility() {
@@ -470,9 +471,9 @@
                 const maxH = window.innerHeight * 0.9;
                 if (!canvas) {
                     // Load the image on demand
-                    const token = this.images[this.currentFocusIndex];
+                    const imageUrl = this.images[this.currentFocusIndex];
                     try {
-                        const response = await fetch(`/api/image?token=${token}`);
+                        const response = await fetch(imageUrl);
                         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
                         const blob = await response.blob();
                         const bitmap = await createImageBitmap(blob);
@@ -503,9 +504,9 @@
                 // Load left image
                 const leftImg = this.loadedCanvases[this.currentFocusIndex];
                 if (!leftImg) {
-                    const token = this.images[this.currentFocusIndex];
+                    const imageUrl = this.images[this.currentFocusIndex];
                     try {
-                        const response = await fetch(`/api/image?token=${token}`);
+                        const response = await fetch(imageUrl);
                         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
                         const blob = await response.blob();
                         const bitmap = await createImageBitmap(blob);
@@ -535,9 +536,9 @@
                     ctxRight.drawImage(rightImg, 0, 0, rightImg.width, rightImg.height, 0, 0, rightCanvas.width, rightCanvas.height);
                     rightCanvas.style.display = 'block';
                 } else if (this.currentFocusIndex + 1 < this.images.length) {
-                    const token = this.images[this.currentFocusIndex + 1];
+                    const imageUrl = this.images[this.currentFocusIndex + 1];
                     try {
-                        const response = await fetch(`/api/image?token=${token}`);
+                        const response = await fetch(imageUrl);
                         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
                         const blob = await response.blob();
                         const bitmap = await createImageBitmap(blob);
