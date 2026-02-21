@@ -25,7 +25,7 @@ templ Register() {
 						<!-- Form fields column -->
 						<div class="flex-1">
 							<div class="mb-2">
-								<label for="register-username" class="uk-form-label block mb-1">Username</label>
+								<label for="register-username" class="uk-form-label block mb-1">Username <span class="text-red-500 req-star" data-for="register-username">*</span></label>
 								<div class="uk-inline">
 									<span class="uk-form-icon" aria-hidden="true">
 										<uk-icon icon="User"></uk-icon>
@@ -34,7 +34,7 @@ templ Register() {
 								</div>
 							</div>
 							<div class="mt-2">
-								<label for="register-email" class="uk-form-label block mb-1">Email</label>
+								<label for="register-email" class="uk-form-label block mb-1">Email <span class="text-red-500 req-star" data-for="register-email">*</span></label>
 								<div class="uk-inline">
 									<span class="uk-form-icon" aria-hidden="true">
 										<uk-icon icon="Mail"></uk-icon>
@@ -43,7 +43,7 @@ templ Register() {
 								</div>
 							</div>
 							<div class="mt-2">
-								<label for="register-password" class="uk-form-label block mb-1">Password</label>
+								<label for="register-password" class="uk-form-label block mb-1">Password <span class="text-red-500 req-star" data-for="register-password">*</span></label>
 								<div class="relative">
 									<div class="uk-inline">
 										<span class="uk-form-icon" aria-hidden="true">
@@ -63,7 +63,7 @@ templ Register() {
 								</div>
 							</div>
 							<div class="mt-2">
-								<label for="register-confirm-password" class="uk-form-label block mb-1">Confirm Password</label>
+								<label for="register-confirm-password" class="uk-form-label block mb-1">Confirm Password <span class="text-red-500 req-star" data-for="register-confirm-password">*</span></label>
 								<div class="uk-inline">
 									<span class="uk-form-icon" aria-hidden="true">
 										<uk-icon icon="Lock"></uk-icon>
@@ -146,6 +146,17 @@ templ Register() {
 			pw.addEventListener('focus', function() { tooltip.classList.remove('hidden'); });
 			pw.addEventListener('blur', function() { tooltip.classList.add('hidden'); });
 			confirm.addEventListener('input', validateConfirm);
+
+			// Red asterisk visibility for required fields
+			document.querySelectorAll('.req-star').forEach(function(star) {
+				var field = document.getElementById(star.getAttribute('data-for'));
+				if (!field) return;
+				function toggle() {
+					star.style.display = field.value.trim() ? 'none' : '';
+				}
+				field.addEventListener('input', toggle);
+				toggle();
+			});
 		})();
 	</script>
 }
