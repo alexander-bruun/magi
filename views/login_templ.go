@@ -33,7 +33,7 @@ func Login(target string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container w-full\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"uk-container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -41,7 +41,7 @@ func Login(target string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Login</span></h2></div><div class=\"uk-container flex items-center justify-center flex-1\"><div class=\"relative flex items-center my-4\"><!-- Mascot --><div class=\"hidden md:flex items-center justify-center\"><img src=\"/assets/img/mascot.png\" alt=\"Magi mascot\" class=\"max-h-96 w-auto object-contain\"></div><!-- Login form --><form class=\"relative md:-ml-16 z-10\" hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\" aria-label=\"Login form\"><fieldset><div class=\"mb-2\"><label for=\"username\" class=\"uk-form-label block mb-1\">Username</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"User\"></uk-icon></span> <input id=\"username\" class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" autocomplete=\"username\" required></div></div><div class=\"mt-2\"><label for=\"password\" class=\"uk-form-label block mb-1\">Password</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"Lock\"></uk-icon></span> <input id=\"password\" class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" autocomplete=\"current-password\" required></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"uk-heading-line uk-h2 uk-card-title uk-text-center\"><span>Login</span></h2><div class=\"flex items-center justify-center my-8\"><!-- Mascot --><div class=\"hidden md:flex items-center justify-center\"><img src=\"/assets/img/mascot.png\" alt=\"Magi mascot\" class=\"max-h-96 w-auto object-contain\"></div><!-- Login form --><form class=\"relative md:-ml-16 z-10\" hx-post=\"/auth/login\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-ext=\"form-json\" aria-label=\"Login form\"><fieldset><div class=\"mb-2\"><label for=\"username\" class=\"uk-form-label block mb-1\">Username</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"User\"></uk-icon></span> <input id=\"username\" class=\"uk-input\" type=\"text\" name=\"username\" placeholder=\"Username\" autocomplete=\"username\" required></div></div><div class=\"mt-2\"><label for=\"password\" class=\"uk-form-label block mb-1\">Password</label><div class=\"uk-inline\"><span class=\"uk-form-icon\" aria-hidden=\"true\"><uk-icon icon=\"Lock\"></uk-icon></span> <input id=\"password\" class=\"uk-input\" type=\"password\" name=\"password\" placeholder=\"Password\" autocomplete=\"current-password\" required></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -53,7 +53,7 @@ func Login(target string) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(target)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 37, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/login.templ`, Line: 35, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {

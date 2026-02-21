@@ -442,8 +442,7 @@ html {
    LAYOUT & POSITIONING
    ============================================ */
 #app {
-  display: flex;
-  flex-direction: column;
+  display: block;
   min-height: 100vh;
   transition: grid-template-columns 200ms ease;
 }

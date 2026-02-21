@@ -2,12 +2,10 @@ package views
 
 templ Login(target string) {
 	@PageTitle("Login")
-	<div class="uk-container w-full">
+	<div class="uk-container">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Login</span></h2>
-	</div>
-	<div class="uk-container flex items-center justify-center flex-1">
-		<div class="relative flex items-center my-4">
+		<div class="flex items-center justify-center my-8">
 			<!-- Mascot -->
 			<div class="hidden md:flex items-center justify-center">
 				<img src="/assets/img/mascot.png" alt="Magi mascot" class="max-h-96 w-auto object-contain"/>

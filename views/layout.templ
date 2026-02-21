@@ -72,14 +72,14 @@ templ Layout(content templ.Component, userRole string, currentPath string, unrea
 			</script>
 		</head>
 		<body class="bg-background text-foreground">
-			<div id="app" class="flex flex-col min-h-screen">
+			<div id="app">
 				@Navbar(userRole, currentPath, unreadCount, notifications)
 				<div id="search-results" class="search-results bg-surface border-b border-border" style="display: none;">
 					<div class="uk-container uk-container-xl">
 						@OneDoesNotSimplySearch()
 					</div>
 				</div>
-				<div id="content" class="mt-6 flex-1 flex flex-col">
+				<div id="content" class="mt-6">
 					@content
 				</div>
 				@Footer()
