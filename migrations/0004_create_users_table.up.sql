@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT NOT NULL CHECK (role IN ('reader', 'premium', 'moderator', 'admin')),
     banned BOOLEAN NOT NULL DEFAULT FALSE,
     avatar TEXT DEFAULT '',
+    email TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
