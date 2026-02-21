@@ -33,8 +33,8 @@ type loginAttemptTracker struct {
 }
 
 const (
-	maxLoginAttempts    = 5
-	loginBlockDuration  = 15 * time.Minute
+	maxLoginAttempts   = 5
+	loginBlockDuration = 15 * time.Minute
 )
 
 // LoginRateLimitMiddleware returns 429 if the IP has exceeded login attempt limits.

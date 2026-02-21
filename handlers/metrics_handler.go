@@ -7,9 +7,9 @@ import (
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
-	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	fiber "github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

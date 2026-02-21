@@ -197,15 +197,15 @@ func GetUsersWithOptions(opts UserSearchOptions) ([]User, int64, error) {
 		if subID.Valid {
 			user.Subscription = &Subscription{
 				ID:                   int(subID.Int64),
-				Username:            user.Username,
-				StripeCustomerID:    subCustomerID.String,
+				Username:             user.Username,
+				StripeCustomerID:     subCustomerID.String,
 				StripeSubscriptionID: subSubscriptionID.String,
-				Status:              subStatus.String,
-				CurrentPeriodStart:  subPeriodStart.Time,
-				CurrentPeriodEnd:    subPeriodEnd.Time,
-				CancelAtPeriodEnd:   subCancelAtPeriodEnd.Bool,
-				CreatedAt:           subCreatedAt.Time,
-				UpdatedAt:           subUpdatedAt.Time,
+				Status:               subStatus.String,
+				CurrentPeriodStart:   subPeriodStart.Time,
+				CurrentPeriodEnd:     subPeriodEnd.Time,
+				CancelAtPeriodEnd:    subCancelAtPeriodEnd.Bool,
+				CreatedAt:            subCreatedAt.Time,
+				UpdatedAt:            subUpdatedAt.Time,
 			}
 		}
 

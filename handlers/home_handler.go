@@ -52,14 +52,14 @@ func HandleHome(c fiber.Ctx) error {
 
 	// --- Run independent queries in parallel ---
 	var (
-		wg             sync.WaitGroup
-		recentlyAdded  []models.Media
-		latestUpdates  []models.MediaWithRecentChapters
-		highlights     []models.HighlightWithMedia
-		stats          models.HomePageStats
-		notifications  []models.UserNotification
+		wg              sync.WaitGroup
+		recentlyAdded   []models.Media
+		latestUpdates   []models.MediaWithRecentChapters
+		highlights      []models.HighlightWithMedia
+		stats           models.HomePageStats
+		notifications   []models.UserNotification
 		readingActivity []models.ReadingActivityItem
-		unreadCount    int
+		unreadCount     int
 	)
 
 	opts := models.SearchOptions{
