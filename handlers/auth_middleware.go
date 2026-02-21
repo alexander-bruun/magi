@@ -1,9 +1,18 @@
 package handlers
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/alexander-bruun/magi/models"
+	emailutil "github.com/alexander-bruun/magi/utils/email"
+	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,8 +32,10 @@ type LoginFormData struct {
 
 // RegisterFormData represents registration form data
 type RegisterFormData struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirm_password"`
+	Email           string `json:"email"`
 }
 
 // getAuthConfig gets authentication configuration
@@ -47,8 +58,8 @@ func getAuthConfig() (*AuthConfig, error) {
 }
 
 // CreateUser creates a new user
-func createUser(username, password string) error {
-	return models.CreateUser(username, password)
+func createUser(username, password, email string) error {
+	return models.CreateUser(username, password, email)
 }
 
 // canRegister checks if registration is allowed
@@ -95,19 +106,38 @@ func createUserHandler(c fiber.Ctx) error {
 		return SendForbiddenError(c, "Registration is currently disabled.")
 	}
 
-	var formData RegisterFormData
-	if err := c.Bind().Body(&formData); err != nil {
+	// Parse multipart form fields
+	username := strings.TrimSpace(c.FormValue("username"))
+	password := c.FormValue("password")
+	confirmPassword := c.FormValue("confirm_password")
+	email := strings.TrimSpace(c.FormValue("email"))
+
+	if username == "" || password == "" || email == "" {
 		return SendBadRequestError(c, ErrBadRequest)
 	}
 
-	username := formData.Username
-	password := formData.Password
+	if password != confirmPassword {
+		if isHTMXRequest(c) {
+			return SendValidationError(c, ErrPasswordMismatch)
+		}
+		return handleView(c, views.Error(ErrPasswordMismatch))
+	}
 
-	if err := createUser(username, password); err != nil {
+	// Block disposable email providers
+	if emailutil.IsDisposableEmail(email) {
+		if isHTMXRequest(c) {
+			return SendValidationError(c, ErrDisposableEmail)
+		}
+		return handleView(c, views.Error(ErrDisposableEmail))
+	}
+
+	if err := createUser(username, password, email); err != nil {
 		// Provide specific error messages based on the error
 		var errorMsg string
 		if err.Error() == "username already exists" {
 			errorMsg = ErrUsernameExists
+		} else if err.Error() == "email already exists" {
+			errorMsg = ErrEmailExists
 		} else if err.Error() == "username too short" {
 			errorMsg = ErrUsernameTooShort
 		} else if err.Error() == "username too long" {
@@ -124,6 +154,34 @@ func createUserHandler(c fiber.Ctx) error {
 		}
 		// For regular requests, show error page
 		return handleView(c, views.Error(errorMsg))
+	}
+
+	// Handle optional avatar upload
+	if file, err := c.FormFile("avatar"); err == nil && file != nil {
+		if file.Size <= 2*1024*1024 {
+			contentType := file.Header.Get("Content-Type")
+			if contentType == "image/jpeg" || contentType == "image/png" || contentType == "image/gif" {
+				ext := ".jpg"
+				switch contentType {
+				case "image/png":
+					ext = ".png"
+				case "image/gif":
+					ext = ".gif"
+				}
+				filename := fmt.Sprintf("%s_%d%s", username, time.Now().Unix(), ext)
+				avatarsDir := filepath.Join(files.GetDataDirectory(), "avatars")
+				if err := os.MkdirAll(avatarsDir, 0755); err == nil {
+					filePath := filepath.Join(avatarsDir, filename)
+					if err := c.SaveFile(file, filePath); err == nil {
+						avatarURL := fmt.Sprintf("/api/avatars/%s", filename)
+						if err := models.UpdateUserAvatar(username, avatarURL); err != nil {
+							os.Remove(filePath)
+							log.Warnf("Failed to save avatar for new user '%s': %v", username, err)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// Automatically log in the user after registration

@@ -6,32 +6,146 @@ templ Register() {
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/auth/register" }})
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Register</span></h2>
 		<div class="grid place-content-center my-4">
-			<form hx-post="/auth/register" hx-redirect="/auth/login" hx-ext="form-json" aria-label="Registration form">
+			<form hx-post="/auth/register" hx-redirect="/" enctype="multipart/form-data" aria-label="Registration form">
 				<fieldset>
-					<div class="mb-2">
-						<label for="register-username" class="uk-form-label block mb-1">Username</label>
-						<div class="uk-inline">
-							<span class="uk-form-icon" aria-hidden="true">
-								<uk-icon icon="User"></uk-icon>
-							</span>
-							<input id="register-username" class="uk-input" type="text" name="username" placeholder="Username" autocomplete="username" required/>
+					<div class="flex gap-6">
+						<!-- Avatar upload column -->
+						<div class="flex flex-col items-center justify-start pt-1">
+							<div class="relative w-32 h-32 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer" id="register-avatar-preview" title="Upload avatar (optional)">
+								<div id="register-avatar-placeholder" class="flex flex-col items-center text-center text-xs">
+									<uk-icon icon="Camera" class="text-2xl mb-1"></uk-icon>
+									<span>Avatar</span>
+									<span class="text-muted-foreground">(optional)</span>
+								</div>
+								<img id="register-avatar-img" class="absolute inset-0 w-full h-full object-cover rounded-full hidden" alt="Avatar preview"/>
+							</div>
+							<input type="file" name="avatar" accept="image/*" id="register-avatar-input" class="hidden"/>
+							<p class="text-xs text-muted-foreground mt-1 text-center">Max 2MB</p>
 						</div>
-					</div>
-					<div class="mt-2">
-						<label for="register-password" class="uk-form-label block mb-1">Password</label>
-						<div class="uk-inline">
-							<span class="uk-form-icon" aria-hidden="true">
-								<uk-icon icon="Lock"></uk-icon>
-							</span>
-							<input id="register-password" class="uk-input" type="password" name="password" placeholder="Password" autocomplete="new-password" required/>
+						<!-- Form fields column -->
+						<div class="flex-1">
+							<div class="mb-2">
+								<label for="register-username" class="uk-form-label block mb-1">Username</label>
+								<div class="uk-inline">
+									<span class="uk-form-icon" aria-hidden="true">
+										<uk-icon icon="User"></uk-icon>
+									</span>
+									<input id="register-username" class="uk-input" type="text" name="username" placeholder="Username" autocomplete="username" required/>
+								</div>
+							</div>
+							<div class="mt-2">
+								<label for="register-email" class="uk-form-label block mb-1">Email</label>
+								<div class="uk-inline">
+									<span class="uk-form-icon" aria-hidden="true">
+										<uk-icon icon="Mail"></uk-icon>
+									</span>
+									<input id="register-email" class="uk-input" type="email" name="email" placeholder="Email" autocomplete="email" required/>
+								</div>
+							</div>
+							<div class="mt-2">
+								<label for="register-password" class="uk-form-label block mb-1">Password</label>
+								<div class="relative">
+									<div class="uk-inline">
+										<span class="uk-form-icon" aria-hidden="true">
+											<uk-icon icon="Lock"></uk-icon>
+										</span>
+										<input id="register-password" class="uk-input" type="password" name="password" placeholder="Password" autocomplete="new-password" required minlength="8"/>
+									</div>
+									<div id="pw-tooltip" class="absolute left-full top-0 ml-3 hidden z-50 whitespace-nowrap rounded border bg-popover p-2 shadow-md text-xs" style="min-width: 180px;">
+										<ul class="list-none p-0 m-0 space-y-0.5" id="pw-requirements">
+											<li id="pw-len" class="text-muted-foreground">&#x2022; At least 8 characters</li>
+											<li id="pw-upper" class="text-muted-foreground">&#x2022; One uppercase letter</li>
+											<li id="pw-lower" class="text-muted-foreground">&#x2022; One lowercase letter</li>
+											<li id="pw-digit" class="text-muted-foreground">&#x2022; One number</li>
+											<li id="pw-special" class="text-muted-foreground">&#x2022; One special character</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+							<div class="mt-2">
+								<label for="register-confirm-password" class="uk-form-label block mb-1">Confirm Password</label>
+								<div class="uk-inline">
+									<span class="uk-form-icon" aria-hidden="true">
+										<uk-icon icon="Lock"></uk-icon>
+									</span>
+									<input id="register-confirm-password" class="uk-input" type="password" name="confirm_password" placeholder="Confirm Password" autocomplete="new-password" required/>
+								</div>
+							</div>
 						</div>
 					</div>
 					<div class="mt-4 flex place-content-center">
-						<button type="submit" class="uk-btn uk-btn-default mr-2">Register</button>
-						<a href="/auth/login" class="uk-btn uk-btn-default ml-2">Back to login</a>
+						<button type="submit" class="uk-btn uk-btn-primary mr-2">Register</button>
+						<a href="/auth/login" class="uk-btn uk-btn-secondary ml-2">Back to login</a>
 					</div>
 				</fieldset>
 			</form>
 		</div>
 	</div>
+	<script>
+		(function() {
+			// Avatar preview
+			var preview = document.getElementById('register-avatar-preview');
+			var input = document.getElementById('register-avatar-input');
+			var img = document.getElementById('register-avatar-img');
+			var placeholder = document.getElementById('register-avatar-placeholder');
+			preview.addEventListener('click', function() { input.click(); });
+			input.addEventListener('change', function(e) {
+				var file = e.target.files[0];
+				if (file) {
+					var reader = new FileReader();
+					reader.onload = function(ev) {
+						img.src = ev.target.result;
+						img.classList.remove('hidden');
+						placeholder.classList.add('hidden');
+					};
+					reader.readAsDataURL(file);
+				} else {
+					img.classList.add('hidden');
+					placeholder.classList.remove('hidden');
+				}
+			});
+
+			// Password requirements validation
+			var pw = document.getElementById('register-password');
+			var confirm = document.getElementById('register-confirm-password');
+			var tooltip = document.getElementById('pw-tooltip');
+			var checks = {
+				'pw-len':     function(v) { return v.length >= 8; },
+				'pw-upper':   function(v) { return /[A-Z]/.test(v); },
+				'pw-lower':   function(v) { return /[a-z]/.test(v); },
+				'pw-digit':   function(v) { return /[0-9]/.test(v); },
+				'pw-special': function(v) { return /[^A-Za-z0-9]/.test(v); }
+			};
+			function validatePw() {
+				var v = pw.value;
+				var allValid = true;
+				for (var id in checks) {
+					var el = document.getElementById(id);
+					if (checks[id](v)) {
+						el.classList.remove('text-muted-foreground');
+						el.classList.add('text-green-500');
+						el.innerHTML = '&#x2713; ' + el.textContent.replace(/^[\u2022\u2713]\s*/, '');
+					} else {
+						el.classList.add('text-muted-foreground');
+						el.classList.remove('text-green-500');
+						el.innerHTML = '&#x2022; ' + el.textContent.replace(/^[\u2022\u2713]\s*/, '');
+						allValid = false;
+					}
+				}
+				pw.setCustomValidity(allValid ? '' : 'Password does not meet requirements');
+				validateConfirm();
+			}
+			function validateConfirm() {
+				if (confirm.value && confirm.value !== pw.value) {
+					confirm.setCustomValidity('Passwords do not match');
+				} else {
+					confirm.setCustomValidity('');
+				}
+			}
+			pw.addEventListener('input', validatePw);
+			pw.addEventListener('focus', function() { tooltip.classList.remove('hidden'); });
+			pw.addEventListener('blur', function() { tooltip.classList.add('hidden'); });
+			confirm.addEventListener('input', validateConfirm);
+		})();
+	</script>
 }

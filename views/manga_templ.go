@@ -1148,17 +1148,17 @@ func Media(media models.Media, chapters []models.Chapter, firstChapterSlug strin
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, ">Erotica</option> <option value=\"pornographic\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, ">Erotica</option> <option value=\"explicit\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if media.ContentRating == "pornographic" {
+			if media.ContentRating == "explicit" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, ">Pornographic</option></select></div><div><label class=\"uk-form-label\">Genres (comma-separated)</label> <input type=\"text\" name=\"genres\" class=\"uk-input\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, ">Explicit</option></select></div><div><label class=\"uk-form-label\">Genres (comma-separated)</label> <input type=\"text\" name=\"genres\" class=\"uk-input\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

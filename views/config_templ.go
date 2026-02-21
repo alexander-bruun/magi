@@ -173,7 +173,7 @@ func ConfigForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">All content (includes pornographic)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div><label class=\"block mb-1\">NEW badge duration (hours)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"new_badge_duration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">All content (includes explicit)</option></select><p class=\"text-xs text-muted-foreground mt-1\">Control the maximum content rating level users can view. Lower levels are more restrictive.</p></div><div><label class=\"block mb-1\">NEW badge duration (hours)</label> <input type=\"number\" min=\"1\" class=\"uk-input\" name=\"new_badge_duration\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

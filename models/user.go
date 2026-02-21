@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gofiber/fiber/v3/log"
 	"golang.org/x/crypto/bcrypt"
@@ -220,7 +221,12 @@ func GetUsersWithOptions(opts UserSearchOptions) ([]User, int64, error) {
 }
 
 // CreateUser creates a new user with hashed password and default role.
-func CreateUser(username, password string) error {
+func CreateUser(username, password, email string) error {
+	// Validate password strength
+	if err := validatePassword(password); err != nil {
+		return err
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
@@ -230,6 +236,7 @@ func CreateUser(username, password string) error {
 		Username: username,
 		Password: string(hashedPassword),
 		Role:     "reader", // Default role
+		Email:    email,
 	}
 
 	count, err := CountUsers()
@@ -242,12 +249,22 @@ func CreateUser(username, password string) error {
 		user.Role = "admin"
 	}
 
+	// Check if email is already in use
+	var emailCount int
+	err = db.QueryRow(`SELECT COUNT(*) FROM users WHERE email = ?`, user.Email).Scan(&emailCount)
+	if err != nil {
+		return fmt.Errorf("failed to check email uniqueness: %w", err)
+	}
+	if emailCount > 0 {
+		return fmt.Errorf("email already exists")
+	}
+
 	query := `
-	INSERT INTO users (username, password, role, banned, avatar)
-	VALUES (?, ?, ?, ?, ?)
+	INSERT INTO users (username, password, role, banned, avatar, email)
+	VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, user.Username, user.Password, user.Role, user.Banned, user.Avatar)
+	_, err = db.Exec(query, user.Username, user.Password, user.Role, user.Banned, user.Avatar, user.Email)
 	if err != nil {
 		return err
 	}
@@ -259,6 +276,31 @@ func CreateUser(username, password string) error {
 		// Don't fail user creation if permission assignment fails
 	}
 
+	return nil
+}
+
+// validatePassword checks that a password meets minimum security requirements:
+// at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.
+func validatePassword(password string) error {
+	if len(password) < 8 {
+		return fmt.Errorf("password too weak")
+	}
+	var hasUpper, hasLower, hasDigit, hasSpecial bool
+	for _, ch := range password {
+		switch {
+		case unicode.IsUpper(ch):
+			hasUpper = true
+		case unicode.IsLower(ch):
+			hasLower = true
+		case unicode.IsDigit(ch):
+			hasDigit = true
+		default:
+			hasSpecial = true
+		}
+	}
+	if !hasUpper || !hasLower || !hasDigit || !hasSpecial {
+		return fmt.Errorf("password too weak")
+	}
 	return nil
 }
 

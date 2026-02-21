@@ -18,6 +18,7 @@ import (
 	"github.com/alexander-bruun/magi/handlers"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/scheduler"
+	"github.com/alexander-bruun/magi/utils/email"
 	"github.com/alexander-bruun/magi/utils/embedded"
 	"github.com/alexander-bruun/magi/utils/files"
 	"github.com/alexander-bruun/magi/utils/store"
@@ -186,6 +187,9 @@ func main() {
 			if err := models.AbortOrphanedRunningLogs(); err != nil {
 				log.Warnf("Failed to abort orphaned running logs: %v", err)
 			}
+
+			// Load disposable email domain blocklist in background
+			go email.InitBlocklist()
 
 			// Create a new engine
 			engine := html.NewFileSystem(http.FS(embedded.Views), ".html")

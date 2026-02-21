@@ -47,9 +47,12 @@ const (
 	ErrUserNotFound     = "User not found."
 	ErrLoginFailed      = "Invalid username or password."
 	ErrUsernameExists   = "Username already exists."
+	ErrEmailExists      = "An account with this email address already exists."
+	ErrDisposableEmail  = "Disposable email addresses are not allowed. Please use a permanent email."
 	ErrUsernameTooShort = "Username must be at least 3 characters long."
 	ErrUsernameTooLong  = "Username cannot be longer than 50 characters."
-	ErrPasswordTooWeak  = "Password must be at least 8 characters long and contain uppercase, lowercase, and numbers."
+	ErrPasswordTooWeak  = "Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and a special character."
+	ErrPasswordMismatch = "Passwords do not match."
 	ErrMaxUsersReached  = "Maximum number of users reached."
 
 	// Chapter errors
