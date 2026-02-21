@@ -69,3 +69,13 @@ Contributions welcome! Report bugs, suggest features, or submit PRs to the `next
 ## 📄 License
 
 [MIT License](LICENSE)
+
+<details>
+<summary>🐾 <b>Psst... click here to meet our mascot!</b></summary>
+<br/>
+<div align="center">
+  <img src="assets/img/mascot.png" alt="Magi Mascot" width="300"/>
+  <br/>
+  <i>Meet <b>Gutama</b> - half rage, half boredom, 100% reading buddy!</i>
+</div>
+</details>
