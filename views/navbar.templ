@@ -202,42 +202,42 @@ templ Navbar(userRole string, currentPath string, unreadCount int, notifications
 					</div>
 				</div>
 				<div class="uk-navbar-item">
-					<button id="navbar-more-btn" class="uk-btn uk-btn-default h-10 w-10" type="button" aria-label="User menu" aria-haspopup="true" aria-expanded="false">
-						<uk-icon icon="EllipsisVertical"></uk-icon>
-					</button>
-					<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm" role="menu">
-						<ul class="uk-dropdown-nav uk-nav" role="none">
-							if userRole != "" {
+					if userRole == "" {
+						<a href="/auth/login" class="uk-btn uk-btn-default h-10 w-10" aria-label="Login">
+							<uk-icon icon="LogIn"></uk-icon>
+						</a>
+					} else {
+						<button id="navbar-more-btn" class="uk-btn uk-btn-default h-10 w-10" type="button" aria-label="User menu" aria-haspopup="true" aria-expanded="false">
+							<uk-icon icon="EllipsisVertical"></uk-icon>
+						</button>
+						<div class="uk-drop uk-dropdown min-w-72" data-trigger-id="navbar-more-btn" data-uk-dropdown="mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm" role="menu">
+							<ul class="uk-dropdown-nav uk-nav" role="none">
 								<li><a href="/account"><uk-icon icon="User" class="icon-pad"></uk-icon>Account</a></li>
 								<li><a href="/account/favorites"><uk-icon icon="Star" class="icon-pad"></uk-icon>Favorites</a></li>
 								<li><a href="/account/reading"><uk-icon icon="Bookmark" class="icon-pad"></uk-icon>Reading lists</a></li>
 								if userRole == "reader" {
 									<li><a href="/premium"><uk-icon icon="Crown" class="icon-pad"></uk-icon>Premium</a></li>
 								}
-							}
-						if userRole == "moderator" || userRole == "admin" {
-							<li class="uk-nav-header">Moderator</li>
-							<li><a href="/admin/users"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
-							<li><a href="/admin/permissions"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
-							<li><a href="/admin/issues"><uk-icon icon="Bug" class="icon-pad"></uk-icon>Issues</a></li>
-							<li><a href="/admin/banned-ips"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
-						}
-							if userRole == "admin" {
-								<li class="uk-nav-header">Admin</li>
-								<li><a href="/admin/libraries"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
-								<li><a href="/admin/scraper"><uk-icon icon="Bot" class="icon-pad"></uk-icon>Scraper</a></li>
-								<li><a href="/admin/config"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
-								<li><a href="/admin/monitoring"><uk-icon icon="Binoculars" class="icon-pad"></uk-icon>Monitoring</a></li>
-								<li><a href="/admin/backups"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
-							}
-							<li class="uk-nav-divider"></li>
-							if userRole == "" {
-								<li><a href="/auth/login"><uk-icon icon="LogIn" class="icon-pad"></uk-icon>Login</a></li>
-							} else {
+								if userRole == "moderator" || userRole == "admin" {
+									<li class="uk-nav-header">Moderator</li>
+									<li><a href="/admin/users"><uk-icon icon="Users" class="icon-pad"></uk-icon>Users</a></li>
+									<li><a href="/admin/permissions"><uk-icon icon="Shield" class="icon-pad"></uk-icon>Permissions</a></li>
+									<li><a href="/admin/issues"><uk-icon icon="Bug" class="icon-pad"></uk-icon>Issues</a></li>
+									<li><a href="/admin/banned-ips"><uk-icon icon="Ban" class="icon-pad"></uk-icon>Banned IPs</a></li>
+								}
+								if userRole == "admin" {
+									<li class="uk-nav-header">Admin</li>
+									<li><a href="/admin/libraries"><uk-icon icon="Library" class="icon-pad"></uk-icon>Libraries</a></li>
+									<li><a href="/admin/scraper"><uk-icon icon="Bot" class="icon-pad"></uk-icon>Scraper</a></li>
+									<li><a href="/admin/config"><uk-icon icon="Settings" class="icon-pad"></uk-icon>Configuration</a></li>
+									<li><a href="/admin/monitoring"><uk-icon icon="Binoculars" class="icon-pad"></uk-icon>Monitoring</a></li>
+									<li><a href="/admin/backups"><uk-icon icon="Database" class="icon-pad"></uk-icon>Backups</a></li>
+								}
+								<li class="uk-nav-divider"></li>
 								<li><a href="/" hx-post="/auth/logout"><uk-icon icon="LogOut" class="icon-pad"></uk-icon> Logout</a></li>
-							}
-						</ul>
-					</div>
+							</ul>
+						</div>
+					}
 				</div>
 			</div>
 		</div>

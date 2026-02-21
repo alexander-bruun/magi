@@ -261,50 +261,44 @@ func Navbar(userRole string, currentPath string, unreadCount int, notifications 
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"uk-navbar-item hidden md:block\"><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Customize theme\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"palette\"></uk-icon></button><div class=\"uk-card uk-card-body uk-drop w-96\" data-uk-dropdown=\"mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm\" role=\"menu\"><h2 class=\"uk-h3\">Customize</h2><div id=\"theme-customizer\"><!-- Theme Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Theme</h3><div class=\"grid grid-cols-3 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-zinc\" data-hex=\"#52525b\"><span class=\"color-circle color-zinc\"></span>Zinc</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-slate\" data-hex=\"#64748b\"><span class=\"color-circle color-slate\"></span>Slate</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-stone\" data-hex=\"#78716c\"><span class=\"color-circle color-stone\"></span>Stone</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-gray\" data-hex=\"#6b7280\"><span class=\"color-circle color-gray\"></span>Gray</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-neutral\" data-hex=\"#737373\"><span class=\"color-circle color-neutral\"></span>Neutral</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-red\" data-hex=\"#dc2626\"><span class=\"color-circle color-red\"></span>Red</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-rose\" data-hex=\"#e11d48\"><span class=\"color-circle color-rose\"></span>Rose</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-orange\" data-hex=\"#f97316\"><span class=\"color-circle color-orange\"></span>Orange</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-green\" data-hex=\"#16a34a\"><span class=\"color-circle color-green\"></span>Green</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-blue\" data-hex=\"#2563eb\"><span class=\"color-circle color-blue\"></span>Blue</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-yellow\" data-hex=\"#facc15\"><span class=\"color-circle color-yellow\"></span>Yellow</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-violet\" data-hex=\"#7c3aed\"><span class=\"color-circle color-violet\"></span>Violet</button></div></div><!-- Radii Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Radii</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-none\">None</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-sm\">Small</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-md\">Medium</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-lg\">Large</button></div></div><!-- Shadows Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Shadows</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-none\">None</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-sm\">Small</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-md\">Medium</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-lg\">Large</button></div></div><!-- Mode Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Mode</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"mode\" data-value=\"light\" data-icon=\"sun\">Light</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"mode\" data-value=\"dark\" data-icon=\"moon\">Dark</button></div></div></div></div></div></div><div class=\"uk-navbar-item\"><button id=\"navbar-more-btn\" class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\" aria-label=\"User menu\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-trigger-id=\"navbar-more-btn\" data-uk-dropdown=\"mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm\" role=\"menu\"><ul class=\"uk-dropdown-nav uk-nav\" role=\"none\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if userRole != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<li><a href=\"/account\"><uk-icon icon=\"User\" class=\"icon-pad\"></uk-icon>Account</a></li><li><a href=\"/account/favorites\"><uk-icon icon=\"Star\" class=\"icon-pad\"></uk-icon>Favorites</a></li><li><a href=\"/account/reading\"><uk-icon icon=\"Bookmark\" class=\"icon-pad\"></uk-icon>Reading lists</a></li>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			if userRole == "reader" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<li><a href=\"/premium\"><uk-icon icon=\"Crown\" class=\"icon-pad\"></uk-icon>Premium</a></li>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-		}
-		if userRole == "moderator" || userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/admin/users\"><uk-icon icon=\"Users\" class=\"icon-pad\"></uk-icon>Users</a></li><li><a href=\"/admin/permissions\"><uk-icon icon=\"Shield\" class=\"icon-pad\"></uk-icon>Permissions</a></li><li><a href=\"/admin/issues\"><uk-icon icon=\"Bug\" class=\"icon-pad\"></uk-icon>Issues</a></li><li><a href=\"/admin/banned-ips\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		if userRole == "admin" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/scraper\"><uk-icon icon=\"Bot\" class=\"icon-pad\"></uk-icon>Scraper</a></li><li><a href=\"/admin/config\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/monitoring\"><uk-icon icon=\"Binoculars\" class=\"icon-pad\"></uk-icon>Monitoring</a></li><li><a href=\"/admin/backups\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<li class=\"uk-nav-divider\"></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"uk-navbar-item hidden md:block\"><div class=\"uk-inline\"><button class=\"uk-btn uk-btn-default uk-btn-icon\" aria-label=\"Customize theme\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"palette\"></uk-icon></button><div class=\"uk-card uk-card-body uk-drop w-96\" data-uk-dropdown=\"mode: click; pos: bottom-right; offset: 8; boundary: !body; animation: uk-anmt-slide-top-sm\" role=\"menu\"><h2 class=\"uk-h3\">Customize</h2><div id=\"theme-customizer\"><!-- Theme Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Theme</h3><div class=\"grid grid-cols-3 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-zinc\" data-hex=\"#52525b\"><span class=\"color-circle color-zinc\"></span>Zinc</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-slate\" data-hex=\"#64748b\"><span class=\"color-circle color-slate\"></span>Slate</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-stone\" data-hex=\"#78716c\"><span class=\"color-circle color-stone\"></span>Stone</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-gray\" data-hex=\"#6b7280\"><span class=\"color-circle color-gray\"></span>Gray</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-neutral\" data-hex=\"#737373\"><span class=\"color-circle color-neutral\"></span>Neutral</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-red\" data-hex=\"#dc2626\"><span class=\"color-circle color-red\"></span>Red</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-rose\" data-hex=\"#e11d48\"><span class=\"color-circle color-rose\"></span>Rose</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-orange\" data-hex=\"#f97316\"><span class=\"color-circle color-orange\"></span>Orange</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-green\" data-hex=\"#16a34a\"><span class=\"color-circle color-green\"></span>Green</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-blue\" data-hex=\"#2563eb\"><span class=\"color-circle color-blue\"></span>Blue</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-yellow\" data-hex=\"#facc15\"><span class=\"color-circle color-yellow\"></span>Yellow</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"theme\" data-value=\"uk-theme-violet\" data-hex=\"#7c3aed\"><span class=\"color-circle color-violet\"></span>Violet</button></div></div><!-- Radii Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Radii</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-none\">None</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-sm\">Small</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-md\">Medium</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"radii\" data-value=\"uk-radii-lg\">Large</button></div></div><!-- Shadows Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Shadows</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-none\">None</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-sm\">Small</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-md\">Medium</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"shadows\" data-value=\"uk-shadows-lg\">Large</button></div></div><!-- Mode Section --><div class=\"mb-4\"><h3 class=\"uk-h4 mb-2\">Mode</h3><div class=\"grid grid-cols-2 gap-2\"><button class=\"theme-option uk-btn uk-btn-default\" data-key=\"mode\" data-value=\"light\" data-icon=\"sun\">Light</button> <button class=\"theme-option uk-btn uk-btn-default\" data-key=\"mode\" data-value=\"dark\" data-icon=\"moon\">Dark</button></div></div></div></div></div></div><div class=\"uk-navbar-item\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if userRole == "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<li><a href=\"/auth/login\"><uk-icon icon=\"LogIn\" class=\"icon-pad\"></uk-icon>Login</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<a href=\"/auth/login\" class=\"uk-btn uk-btn-default h-10 w-10\" aria-label=\"Login\"><uk-icon icon=\"LogIn\"></uk-icon></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<li><a href=\"/\" hx-post=\"/auth/logout\"><uk-icon icon=\"LogOut\" class=\"icon-pad\"></uk-icon> Logout</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<button id=\"navbar-more-btn\" class=\"uk-btn uk-btn-default h-10 w-10\" type=\"button\" aria-label=\"User menu\" aria-haspopup=\"true\" aria-expanded=\"false\"><uk-icon icon=\"EllipsisVertical\"></uk-icon></button><div class=\"uk-drop uk-dropdown min-w-72\" data-trigger-id=\"navbar-more-btn\" data-uk-dropdown=\"mode: click; pos: bottom-right; boundary: !.uk-navbar; animation: uk-anmt-slide-top-sm\" role=\"menu\"><ul class=\"uk-dropdown-nav uk-nav\" role=\"none\"><li><a href=\"/account\"><uk-icon icon=\"User\" class=\"icon-pad\"></uk-icon>Account</a></li><li><a href=\"/account/favorites\"><uk-icon icon=\"Star\" class=\"icon-pad\"></uk-icon>Favorites</a></li><li><a href=\"/account/reading\"><uk-icon icon=\"Bookmark\" class=\"icon-pad\"></uk-icon>Reading lists</a></li>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if userRole == "reader" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<li><a href=\"/premium\"><uk-icon icon=\"Crown\" class=\"icon-pad\"></uk-icon>Premium</a></li>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			if userRole == "moderator" || userRole == "admin" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<li class=\"uk-nav-header\">Moderator</li><li><a href=\"/admin/users\"><uk-icon icon=\"Users\" class=\"icon-pad\"></uk-icon>Users</a></li><li><a href=\"/admin/permissions\"><uk-icon icon=\"Shield\" class=\"icon-pad\"></uk-icon>Permissions</a></li><li><a href=\"/admin/issues\"><uk-icon icon=\"Bug\" class=\"icon-pad\"></uk-icon>Issues</a></li><li><a href=\"/admin/banned-ips\"><uk-icon icon=\"Ban\" class=\"icon-pad\"></uk-icon>Banned IPs</a></li>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			if userRole == "admin" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<li class=\"uk-nav-header\">Admin</li><li><a href=\"/admin/libraries\"><uk-icon icon=\"Library\" class=\"icon-pad\"></uk-icon>Libraries</a></li><li><a href=\"/admin/scraper\"><uk-icon icon=\"Bot\" class=\"icon-pad\"></uk-icon>Scraper</a></li><li><a href=\"/admin/config\"><uk-icon icon=\"Settings\" class=\"icon-pad\"></uk-icon>Configuration</a></li><li><a href=\"/admin/monitoring\"><uk-icon icon=\"Binoculars\" class=\"icon-pad\"></uk-icon>Monitoring</a></li><li><a href=\"/admin/backups\"><uk-icon icon=\"Database\" class=\"icon-pad\"></uk-icon>Backups</a></li>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<li class=\"uk-nav-divider\"></li><li><a href=\"/\" hx-post=\"/auth/logout\"><uk-icon icon=\"LogOut\" class=\"icon-pad\"></uk-icon> Logout</a></li></ul></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</ul></div></div></div></div></div></header><!-- Status indicator - absolutely positioned above bug report --><div style=\"z-index: 99999;\" class=\"fixed bottom-16 left-4 z-50 flex items-center gap-2\"><!-- Indexing status --><div id=\"job-status-indicator\" class=\"uk-btn uk-btn-warning uk-btn-icon hidden\" title=\"Indexing in progress\"><uk-icon icon=\"RefreshCw\" class=\"animate-spin\"></uk-icon></div></div><!-- Bug report button - absolutely positioned bottom left --><button style=\"z-index: 99999;\" class=\"fixed bottom-4 left-4 z-50 uk-btn uk-btn-default uk-btn-icon\" uk-toggle=\"target: #report-issue-modal\" aria-label=\"Report issue\" title=\"Report Issue\"><uk-icon icon=\"Bug\"></uk-icon></button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div></div></div></div></header><!-- Status indicator - absolutely positioned above bug report --><div style=\"z-index: 99999;\" class=\"fixed bottom-16 left-4 z-50 flex items-center gap-2\"><!-- Indexing status --><div id=\"job-status-indicator\" class=\"uk-btn uk-btn-warning uk-btn-icon hidden\" title=\"Indexing in progress\"><uk-icon icon=\"RefreshCw\" class=\"animate-spin\"></uk-icon></div></div><!-- Bug report button - absolutely positioned bottom left --><button style=\"z-index: 99999;\" class=\"fixed bottom-4 left-4 z-50 uk-btn uk-btn-default uk-btn-icon\" uk-toggle=\"target: #report-issue-modal\" aria-label=\"Report issue\" title=\"Report Issue\"><uk-icon icon=\"Bug\"></uk-icon></button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -340,7 +334,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<li class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<li class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -353,7 +347,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -366,7 +360,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\"><uk-icon icon=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><uk-icon icon=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -379,7 +373,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\"></uk-icon> <span class=\"nav-text\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\"></uk-icon> <span class=\"nav-text\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -392,7 +386,7 @@ func NavItem(path string, icon string, label string, currentPath string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</span></a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</span></a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -421,12 +415,12 @@ func SearchMedias(media []models.Media) templ.Component {
 			templ_7745c5c3_Var20 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, m := range media {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -439,7 +433,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" aria-label=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "\" aria-label=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -452,7 +446,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><div class=\"uk-card uk-card-default uk-card-body p-3 rounded-lg uk-shadow-sm\"><div class=\"flex justify-center items-center mb-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\"><div class=\"uk-card uk-card-default uk-card-body p-3 rounded-lg uk-shadow-sm\"><div class=\"flex justify-center items-center mb-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -460,7 +454,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</div><h3 class=\"uk-card-title uk-h4 mb-2 text-center truncate-header\" title=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</div><h3 class=\"uk-card-title uk-h4 mb-2 text-center truncate-header\" title=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -473,7 +467,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -486,7 +480,7 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</h3><div class=\"text-center text-sm text-gray-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</h3><div class=\"text-center text-sm text-gray-500\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -499,12 +493,12 @@ func SearchMedias(media []models.Media) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</div></div></a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</div></div></a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -533,7 +527,7 @@ func OneDoesNotSimplySearch() templ.Component {
 			templ_7745c5c3_Var26 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium mb-2\">Search for media</p><p class=\"text-sm text-gray-500\">Start typing to find your favorite series</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium mb-2\">Search for media</p><p class=\"text-sm text-gray-500\">Start typing to find your favorite series</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -562,7 +556,7 @@ func NoResultsSearch() templ.Component {
 			templ_7745c5c3_Var27 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium mb-2\">No results found</p><p class=\"text-sm text-gray-500\">Try adjusting your search terms</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"text-center py-8\"><p class=\"text-lg font-medium mb-2\">No results found</p><p class=\"text-sm text-gray-500\">Try adjusting your search terms</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

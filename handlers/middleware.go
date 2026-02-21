@@ -669,8 +669,6 @@ func ConditionalAuthMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		log.Infof("Anonymous permissions: hasWildcard=%v, libraries=%v", hasWildcard, libraries)
-
 		// Check if this endpoint requires authentication (admin/moderator only)
 		path := c.Path()
 		requiresAuth := strings.Contains(path, "/poster/") ||
@@ -699,7 +697,6 @@ func ConditionalAuthMiddleware() fiber.Handler {
 
 		// If anonymous has wildcard permission or specific library access, allow
 		if hasWildcard || len(libraries) > 0 {
-			log.Infof("ConditionalAuthMiddleware: allowing anonymous access for path=%s", c.Path())
 			return c.Next()
 		}
 
