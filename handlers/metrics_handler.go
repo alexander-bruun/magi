@@ -316,29 +316,12 @@ func HandleMonitoring(c fiber.Ctx) error {
 	}
 	data.CommentsActivity = marshallIfOk("comments activity", commentsActivity)
 
-	// Get reviews activity - DEPRECATED
-	// reviewsActivity, err := models.GetReviewsActivityOverTime(30)
-	// if err != nil {
-	// 	log.Errorf("Failed to get reviews activity: %v", err)
-	// 	reviewsActivity = make(map[string]int)
-	// }
-	// data.ReviewsActivity = marshallIfOk("reviews activity", reviewsActivity)
-
 	topCommentedSlice, err := models.GetTopSeriesByComments(10)
 	if err != nil {
 		log.Errorf("Failed to get top commented series: %v", err)
 		topCommentedSlice = []models.SeriesData{}
 	}
 	data.TopCommented = marshallIfOk("top commented", seriesToMap(topCommentedSlice))
-
-	// Get top reviewed series - DEPRECATED
-	// topReviewedSlice, err := models.GetTopSeriesByReviews(10)
-	// if err != nil {
-	// 	log.Errorf("Failed to get top reviewed series: %v", err)
-	// 	topReviewedSlice = []models.SeriesData{}
-	// }
-	// data.TopReviewed = marshallIfOk("top reviewed", seriesToMap(topReviewedSlice))
-	data.TopReviewed = marshallIfOk("top reviewed", map[string]int{}) // Empty - deprecated
 
 	// Get vote distribution data
 	upvotes, downvotes, err := models.GetVoteDistribution()

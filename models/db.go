@@ -282,6 +282,13 @@ func MigrateDown(migrationsDir string, version int) error {
 	return rollbackMigration(migrationsDir, version)
 }
 
+// GetMaxMigrationVersion returns the highest applied migration version, or 0 if none.
+func GetMaxMigrationVersion() (int, error) {
+	var version int
+	err := db.QueryRow("SELECT IFNULL(MAX(version), 0) FROM schema_migrations").Scan(&version)
+	return version, err
+}
+
 // ClearMigrationVersions clears all migration versions from the schema_migrations table
 func ClearMigrationVersions() error {
 	_, err := db.Exec("DELETE FROM schema_migrations")

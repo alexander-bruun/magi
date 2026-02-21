@@ -20,8 +20,8 @@ type Library struct {
 	Folders          []string       `json:"folders"`
 	MetadataProvider sql.NullString `json:"metadata_provider"` // Optional: mangadex, anilist, jikan
 	Enabled          bool           `json:"enabled"`
-	CreatedAt        int64          `json:"created_at"` // Unix timestamp
-	UpdatedAt        int64          `json:"updated_at"` // Unix timestamp
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
 // GetFolderNames returns a comma-separated string of folder names
@@ -58,7 +58,7 @@ func CreateLibrary(library Library) error {
 	}
 
 	// Set CreatedAt and UpdatedAt fields to current time
-	now := time.Now().Unix()
+	now := time.Now()
 	library.CreatedAt = now
 	library.UpdatedAt = now
 
@@ -72,7 +72,7 @@ func CreateLibrary(library Library) error {
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = db.Exec(query, library.Slug, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.CreatedAt, library.UpdatedAt)
+	_, err = db.Exec(query, library.Slug, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.CreatedAt.Unix(), library.UpdatedAt.Unix())
 	if err != nil {
 		return err
 	}
@@ -96,10 +96,13 @@ func GetLibraries() ([]Library, error) {
 	for rows.Next() {
 		var library Library
 		var foldersJson string
-		if err := rows.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &library.CreatedAt, &library.UpdatedAt); err != nil {
+		var createdAt, updatedAt int64
+		if err := rows.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &createdAt, &updatedAt); err != nil {
 			log.Errorf("Failed to scan library row: %v", err)
 			continue
 		}
+		library.CreatedAt = time.Unix(createdAt, 0)
+		library.UpdatedAt = time.Unix(updatedAt, 0)
 		if err := json.Unmarshal([]byte(foldersJson), &library.Folders); err != nil {
 			log.Errorf("Failed to unmarshal folders JSON: %v", err)
 			continue
@@ -123,12 +126,15 @@ func GetLibrary(slug string) (*Library, error) {
 
 	var library Library
 	var foldersJson string
-	if err := row.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &library.CreatedAt, &library.UpdatedAt); err != nil {
+	var createdAt, updatedAt int64
+	if err := row.Scan(&library.Slug, &library.Name, &library.Description, &library.Cron, &foldersJson, &library.MetadataProvider, &library.Enabled, &createdAt, &updatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("library with slug %s not found", slug)
 		}
 		return nil, err
 	}
+	library.CreatedAt = time.Unix(createdAt, 0)
+	library.UpdatedAt = time.Unix(updatedAt, 0)
 	if err := json.Unmarshal([]byte(foldersJson), &library.Folders); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal folders JSON: %w", err)
 	}
@@ -140,7 +146,7 @@ func UpdateLibrary(library *Library) error {
 	if err := library.Validate(); err != nil {
 		return err
 	}
-	library.UpdatedAt = time.Now().Unix() // Update the timestamp
+	library.UpdatedAt = time.Now() // Update the timestamp
 
 	foldersJson, err := json.Marshal(library.Folders)
 	if err != nil {
@@ -153,7 +159,7 @@ func UpdateLibrary(library *Library) error {
 	WHERE slug = ?
 	`
 
-	_, err = db.Exec(query, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.UpdatedAt, library.Slug)
+	_, err = db.Exec(query, library.Name, library.Description, library.Cron, foldersJson, library.MetadataProvider, library.Enabled, library.UpdatedAt.Unix(), library.Slug)
 	if err != nil {
 		return err
 	}
@@ -176,11 +182,8 @@ func DeleteLibrary(slug string) error {
 		return err
 	}
 
-	// Notify listeners to stop the indexer
+	// Notify listeners to stop the indexer (synchronous — indexer is stopped when this returns)
 	NotifyListeners(Notification{Type: "library_deleted", Payload: *library})
-
-	// Give the indexer time to stop and finish any in-progress operations
-	time.Sleep(2 * time.Second)
 
 	// Now delete all mangas associated with this library
 	if err := DeleteMediasByLibrarySlug(slug); err != nil {

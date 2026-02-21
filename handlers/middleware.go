@@ -18,6 +18,61 @@ const (
 	sessionTokenDuration = 30 * 24 * time.Hour // 1 month
 )
 
+// loginAttempts tracks failed login attempts per IP for brute-force protection.
+// 5 attempts allowed per 15 minutes, auto-cleanup every 5 minutes.
+var loginAttempts = NewTTLStore[loginAttemptTracker](
+	15*time.Minute,
+	5*time.Minute,
+	func(t *loginAttemptTracker) time.Time { return t.LastAttempt },
+)
+
+type loginAttemptTracker struct {
+	Count       int
+	LastAttempt time.Time
+	BlockUntil  time.Time
+}
+
+const (
+	maxLoginAttempts    = 5
+	loginBlockDuration  = 15 * time.Minute
+)
+
+// LoginRateLimitMiddleware returns 429 if the IP has exceeded login attempt limits.
+func LoginRateLimitMiddleware() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		ip := getRealIP(c)
+		tracker, exists := loginAttempts.Get(ip)
+		if exists {
+			if !tracker.BlockUntil.IsZero() && time.Now().Before(tracker.BlockUntil) {
+				remaining := int(time.Until(tracker.BlockUntil).Seconds())
+				if isHTMXRequest(c) {
+					triggerNotification(c, "Too many login attempts. Please try again later.", "warning")
+					return c.Status(fiber.StatusTooManyRequests).SendString("")
+				}
+				return handleView(c, views.RateLimit(remaining))
+			}
+		}
+		return c.Next()
+	}
+}
+
+// RecordFailedLogin increments the failed login counter for an IP and blocks if threshold exceeded.
+func RecordFailedLogin(ip string) {
+	tracker := loginAttempts.GetOrCreate(ip, func() *loginAttemptTracker {
+		return &loginAttemptTracker{}
+	})
+	tracker.Count++
+	tracker.LastAttempt = time.Now()
+	if tracker.Count >= maxLoginAttempts {
+		tracker.BlockUntil = time.Now().Add(loginBlockDuration)
+	}
+}
+
+// ClearLoginAttempts resets the failed login counter for an IP after successful login.
+func ClearLoginAttempts(ip string) {
+	loginAttempts.Delete(ip)
+}
+
 var roleHierarchy = map[string]int{
 	"reader":    1,
 	"premium":   2,
@@ -621,8 +676,7 @@ func ConditionalAuthMiddleware() fiber.Handler {
 		requiresAuth := strings.Contains(path, "/poster/") ||
 			strings.Contains(path, "/metadata/") ||
 			strings.Contains(path, "/delete") ||
-			strings.Contains(path, "/highlights/") ||
-			strings.Contains(path, "/reviews/") // deprecated but keep
+			strings.Contains(path, "/highlights/")
 
 		if requiresAuth {
 			// For endpoints that require authentication, redirect anonymous users to login

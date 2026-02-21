@@ -833,8 +833,6 @@ type MediaEnrichmentData struct {
 	PremiumCountdown  string
 	LatestChapterSlug string
 	LatestChapterName string
-	AverageRating     float64
-	ReviewCount       int
 }
 
 // BatchEnrichMediaData fetches enrichment data for multiple media items in bulk
@@ -898,31 +896,6 @@ func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDu
 		chaptersByMedia[mediaSlug] = append(chaptersByMedia[mediaSlug], ch)
 	}
 
-	// Batch fetch all ratings in one query
-	ratingQuery := fmt.Sprintf(`
-		SELECT media_slug, COALESCE(AVG(rating), 0), COUNT(*)
-		FROM reviews
-		WHERE media_slug IN (%s)
-		GROUP BY media_slug
-	`, placeholders)
-
-	ratingsRows, err := db.Query(ratingQuery, args...)
-	if err != nil {
-		return result, err
-	}
-	defer ratingsRows.Close()
-
-	ratingsByMedia := make(map[string][2]any)
-	for ratingsRows.Next() {
-		var mediaSlug string
-		var avg float64
-		var count int
-		if err := ratingsRows.Scan(&mediaSlug, &avg, &count); err != nil {
-			return result, err
-		}
-		ratingsByMedia[mediaSlug] = [2]any{avg, count}
-	}
-
 	// Process each media slug
 	for _, mediaSlug := range mediaSlugs {
 		enrichData := result[mediaSlug]
@@ -962,12 +935,6 @@ func BatchEnrichMediaData(mediaSlugs []string, maxPremiumChapters int, premiumDu
 					enrichData.LatestChapterName = ch.Name
 				}
 			}
-		}
-
-		// Add rating data
-		if ratingData, exists := ratingsByMedia[mediaSlug]; exists {
-			enrichData.AverageRating = ratingData[0].(float64)
-			enrichData.ReviewCount = ratingData[1].(int)
 		}
 
 		result[mediaSlug] = enrichData

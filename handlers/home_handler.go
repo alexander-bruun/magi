@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"sync"
+
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/views"
 	fiber "github.com/gofiber/fiber/v3"
@@ -48,7 +50,18 @@ func HandleHome(c fiber.Ctx) error {
 		}
 	}
 
-	// Fetch data for the home page
+	// --- Run independent queries in parallel ---
+	var (
+		wg             sync.WaitGroup
+		recentlyAdded  []models.Media
+		latestUpdates  []models.MediaWithRecentChapters
+		highlights     []models.HighlightWithMedia
+		stats          models.HomePageStats
+		notifications  []models.UserNotification
+		readingActivity []models.ReadingActivityItem
+		unreadCount    int
+	)
+
 	opts := models.SearchOptions{
 		Filter:              "",
 		Page:                1,
@@ -59,17 +72,65 @@ func HandleHome(c fiber.Ctx) error {
 		ContentRatingLimit:  contentRatingLimit,
 	}
 
-	recentlyAdded, _, _ := models.SearchMediasWithOptions(opts)
+	wg.Add(4) // recentlyAdded, latestUpdates, highlights, stats
 
-	// Fetch latest updates data
-	latestUpdates, err := models.GetRecentSeriesWithChapters(24, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries) // Reduced from 18
-	if err != nil {
-		log.Errorf("Failed to get latest updates: %v", err)
-		latestUpdates = []models.MediaWithRecentChapters{} // Empty slice if error
+	go func() {
+		defer wg.Done()
+		recentlyAdded, _, _ = models.SearchMediasWithOptions(opts)
+	}()
+
+	go func() {
+		defer wg.Done()
+		var err error
+		latestUpdates, err = models.GetRecentSeriesWithChapters(24, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled, accessibleLibraries)
+		if err != nil {
+			log.Errorf("Failed to get latest updates: %v", err)
+			latestUpdates = []models.MediaWithRecentChapters{}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		var err error
+		highlights, err = models.GetHighlights()
+		if err != nil {
+			log.Errorf("Failed to get highlights: %v", err)
+			highlights = []models.HighlightWithMedia{}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		var err error
+		stats, err = models.GetHomePageStats()
+		if err != nil {
+			log.Errorf("Failed to get homepage statistics: %v", err)
+			stats = models.HomePageStats{}
+		}
+	}()
+
+	// User-specific queries (also parallel)
+	if userName != "" {
+		wg.Add(2) // notifications, readingActivity
+
+		go func() {
+			defer wg.Done()
+			if notifs, err := models.GetUserNotifications(userName, true); err == nil {
+				notifications = notifs
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			if activities, err := models.GetRecentReadingActivity(userName, 10); err == nil {
+				readingActivity = activities
+			}
+		}()
 	}
-	log.Debugf("GetRecentSeriesWithChapters returned %d items", len(latestUpdates))
 
-	// No need to filter latest updates anymore - already filtered at database level
+	wg.Wait()
+
+	log.Debugf("GetRecentSeriesWithChapters returned %d items", len(latestUpdates))
 	log.Debugf("LatestUpdates count for user %s: %d", userName, len(latestUpdates))
 
 	// Use the same media for recently updated, ordered by latest chapter
@@ -87,18 +148,35 @@ func HandleHome(c fiber.Ctx) error {
 		allSlugs = append(allSlugs, m.Slug)
 	}
 
-	enrichmentData, err := models.BatchEnrichMediaData(allSlugs, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
-	if err != nil {
-		log.Errorf("Error enriching media data: %v", err)
-		enrichmentData = make(map[string]models.MediaEnrichmentData) // Empty map if error
-	}
+	// Run enrichment + votes in parallel
+	var (
+		enrichmentData map[string]models.MediaEnrichmentData
+		voteData       map[string][3]int
+		wg2            sync.WaitGroup
+	)
+	wg2.Add(2)
 
-	// Batch fetch vote data
-	voteData, err := models.BatchGetMediaVotes(allSlugs)
-	if err != nil {
-		log.Errorf("Error fetching vote data: %v", err)
-		voteData = make(map[string][3]int) // Empty map if error
-	}
+	go func() {
+		defer wg2.Done()
+		var err error
+		enrichmentData, err = models.BatchEnrichMediaData(allSlugs, cfg.MaxPremiumChapters, cfg.PremiumEarlyAccessDuration, cfg.PremiumCooldownScalingEnabled)
+		if err != nil {
+			log.Errorf("Error enriching media data: %v", err)
+			enrichmentData = make(map[string]models.MediaEnrichmentData)
+		}
+	}()
+
+	go func() {
+		defer wg2.Done()
+		var err error
+		voteData, err = models.BatchGetMediaVotes(allSlugs)
+		if err != nil {
+			log.Errorf("Error fetching vote data: %v", err)
+			voteData = make(map[string][3]int)
+		}
+	}()
+
+	wg2.Wait()
 
 	// Enrich recently added media
 	enrichedRecentlyAdded := make([]models.EnrichedMedia, len(recentlyAdded))
@@ -110,8 +188,6 @@ func HandleHome(c fiber.Ctx) error {
 			PremiumCountdown:  enrichData.PremiumCountdown,
 			LatestChapterSlug: enrichData.LatestChapterSlug,
 			LatestChapterName: enrichData.LatestChapterName,
-			AverageRating:     enrichData.AverageRating,
-			ReviewCount:       enrichData.ReviewCount,
 			VoteScore:         votes[0],
 			Upvotes:           votes[1],
 			Downvotes:         votes[2],
@@ -128,8 +204,6 @@ func HandleHome(c fiber.Ctx) error {
 			PremiumCountdown:  enrichData.PremiumCountdown,
 			LatestChapterSlug: enrichData.LatestChapterSlug,
 			LatestChapterName: enrichData.LatestChapterName,
-			AverageRating:     enrichData.AverageRating,
-			ReviewCount:       enrichData.ReviewCount,
 			VoteScore:         votes[0],
 			Upvotes:           votes[1],
 			Downvotes:         votes[2],
@@ -137,7 +211,6 @@ func HandleHome(c fiber.Ctx) error {
 	}
 
 	// Mark chapters as read for logged-in users
-	unreadCount := 0
 	if userName != "" {
 		for i := range latestUpdates {
 			readMap, err := models.GetReadChaptersForUser(userName, latestUpdates[i].Media.Slug)
@@ -154,38 +227,7 @@ func HandleHome(c fiber.Ctx) error {
 		}
 	}
 
-	// Fetch highlights for the banner
-	highlights, err := models.GetHighlights()
-	if err != nil {
-		log.Errorf("Failed to get highlights: %v", err)
-		highlights = []models.HighlightWithMedia{} // Empty slice if error
-	}
-
-	// Fetch notifications for logged-in users
-	var notifications []models.UserNotification
-	if userName != "" {
-		if notifs, err := models.GetUserNotifications(userName, true); err == nil {
-			notifications = notifs
-		}
-	}
-
-	// Fetch recent reading activity for logged-in users
-	var recentReadingActivity []models.ReadingActivityItem
-	if userName != "" {
-		if activities, err := models.GetRecentReadingActivity(userName, 10); err == nil {
-			recentReadingActivity = activities
-		}
-	}
-
-	// Fetch homepage statistics
-	stats, err := models.GetHomePageStats()
-	if err != nil {
-		log.Errorf("Failed to get homepage statistics: %v", err)
-		// Continue with empty stats if error
-		stats = models.HomePageStats{}
-	}
-
-	return handleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, latestUpdates, highlights, stats, unreadCount, notifications, recentReadingActivity), unreadCount, notifications)
+	return handleView(c, views.Home(enrichedRecentlyAdded, enrichedRecentlyUpdated, cfg.PremiumEarlyAccessDuration, latestUpdates, highlights, stats, unreadCount, notifications, readingActivity), unreadCount, notifications)
 }
 
 // HandleTopReadFull renders the Most Read section with sub-navigation

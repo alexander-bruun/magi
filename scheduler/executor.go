@@ -19,6 +19,36 @@ import (
 	"github.com/alexander-bruun/magi/models"
 )
 
+// safeEnvAllowlist contains environment variable prefixes that are safe to pass to scraper scripts.
+var safeEnvAllowlist = []string{
+	"PATH=",
+	"HOME=",
+	"LANG=",
+	"LC_",
+	"TERM=",
+	"TMPDIR=",
+	"TMP=",
+	"TEMP=",
+	"USER=",
+	"SHELL=",
+	"HOSTNAME=",
+	"TZ=",
+}
+
+// filteredEnv returns a minimal set of environment variables safe for script execution.
+func filteredEnv() []string {
+	var filtered []string
+	for _, env := range os.Environ() {
+		for _, prefix := range safeEnvAllowlist {
+			if strings.HasPrefix(env, prefix) {
+				filtered = append(filtered, env)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
 // SubscriptionExpiryJob checks for expired subscriptions and downgrades users
 type SubscriptionExpiryJob struct{}
 
@@ -258,7 +288,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 				errMsg = "No script path specified for bash execution"
 			} else {
 				cmd := exec.CommandContext(ctx, "bash", "-u", *s.ScriptPath)
-				cmd.Env = os.Environ()
+				cmd.Env = filteredEnv()
 				for k, v := range vars {
 					cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 				}
@@ -324,7 +354,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 					if s.RequirementsPath != nil && *s.RequirementsPath != "" {
 						BroadcastLog("scraper_"+strconv.FormatInt(s.ID, 10), "info", fmt.Sprintf("Installing packages from requirements file: %s", *s.RequirementsPath))
 						pipCmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/pip", venvPath), "install", "-r", *s.RequirementsPath)
-						pipCmd.Env = os.Environ()
+						pipCmd.Env = filteredEnv()
 						for k, v := range vars {
 							pipCmd.Env = append(pipCmd.Env, fmt.Sprintf("%s=%s", k, v))
 						}
@@ -342,7 +372,7 @@ func StartScriptExecution(script *models.ScraperScript, variables map[string]str
 						} else {
 							// Run the Python script in the virtual environment
 							cmd := exec.CommandContext(ctx, fmt.Sprintf("%s/bin/python", venvPath), *s.ScriptPath)
-							cmd.Env = os.Environ()
+							cmd.Env = filteredEnv()
 							for k, v := range vars {
 								cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 							}

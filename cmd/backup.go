@@ -2,12 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
-	"time"
 
 	"github.com/alexander-bruun/magi/models"
 	"github.com/spf13/cobra"
@@ -40,13 +36,13 @@ func newBackupCreateCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 			}
 
 			// Ensure backup directory exists
-			if err := os.MkdirAll(backupDir, os.ModePerm); err != nil {
+			if err := os.MkdirAll(backupDir, 0750); err != nil {
 				cmd.PrintErrf("Failed to create backup directory: %v\n", err)
 				os.Exit(1)
 			}
 
 			withDB(dataDirectory, cmd, func() error {
-				backupPath, err := createBackupCLI(*dataDirectory, backupDir)
+				backupPath, err := models.CreateBackup(*dataDirectory, backupDir)
 				if err != nil {
 					return fmt.Errorf("Failed to create backup: %w", err)
 				}
@@ -80,7 +76,7 @@ func newBackupRestoreCmd(dataDirectory, backupDirectory *string) *cobra.Command 
 			}
 
 			withDB(dataDirectory, cmd, func() error {
-				if err := restoreBackupCLI(backupPath, *dataDirectory); err != nil {
+				if err := models.RestoreBackup(backupPath, *dataDirectory, true); err != nil {
 					return fmt.Errorf("Failed to restore backup: %w", err)
 				}
 
@@ -101,7 +97,7 @@ func newBackupListCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 				backupDir = filepath.Join(*dataDirectory, "backups")
 			}
 
-			backups, err := listBackupsCLI(backupDir)
+			backups, err := models.ListBackups(backupDir)
 			if err != nil {
 				cmd.PrintErrf("Failed to list backups: %v\n", err)
 				os.Exit(1)
@@ -118,145 +114,6 @@ func newBackupListCmd(dataDirectory, backupDirectory *string) *cobra.Command {
 			}
 		},
 	}
-}
-
-// CLI versions of backup functions
-func createBackupCLI(dataDir, backupDir string) (string, error) {
-	// Generate backup filename with timestamp
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	backupFilename := fmt.Sprintf("magi_backup_%s.db", timestamp)
-	backupPath := filepath.Join(backupDir, backupFilename)
-
-	// Get database path
-	dbPath := filepath.Join(dataDir, "magi.db")
-
-	// Copy the database file
-	err := copyFileCLI(dbPath, backupPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to copy database: %w", err)
-	}
-
-	// Also copy WAL and SHM files if they exist
-	walPath := dbPath + "-wal"
-	shmPath := dbPath + "-shm"
-
-	if _, err := os.Stat(walPath); err == nil {
-		walBackup := backupPath + "-wal"
-		if err := copyFileCLI(walPath, walBackup); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to backup WAL file: %v\n", err)
-		}
-	}
-
-	if _, err := os.Stat(shmPath); err == nil {
-		shmBackup := backupPath + "-shm"
-		if err := copyFileCLI(shmPath, shmBackup); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to backup SHM file: %v\n", err)
-		}
-	}
-
-	return backupPath, nil
-}
-
-func restoreBackupCLI(backupPath, dataDir string) error {
-	// Get database path
-	dbPath := filepath.Join(dataDir, "magi.db")
-
-	// Close the current database connection
-	if err := models.Close(); err != nil {
-		return fmt.Errorf("failed to close database: %w", err)
-	}
-
-	// Copy the backup file back
-	err := copyFileCLI(backupPath, dbPath)
-	if err != nil {
-		return fmt.Errorf("failed to restore database: %w", err)
-	}
-
-	// Also restore WAL and SHM files if they exist
-	backupWal := backupPath + "-wal"
-	backupShm := backupPath + "-shm"
-	dbWal := dbPath + "-wal"
-	dbShm := dbPath + "-shm"
-
-	if _, err := os.Stat(backupWal); err == nil {
-		if err := copyFileCLI(backupWal, dbWal); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to restore WAL file: %v\n", err)
-		}
-	}
-
-	if _, err := os.Stat(backupShm); err == nil {
-		if err := copyFileCLI(backupShm, dbShm); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to restore SHM file: %v\n", err)
-		}
-	}
-
-	// Reinitialize the database connection
-	err = models.InitializeWithMigration(dataDir, false)
-	if err != nil {
-		return fmt.Errorf("failed to reinitialize database: %w", err)
-	}
-
-	return nil
-}
-
-func listBackupsCLI(backupDir string) ([]models.BackupInfo, error) {
-	files, err := os.ReadDir(backupDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []models.BackupInfo{}, nil
-		}
-		return nil, err
-	}
-
-	var backups []models.BackupInfo
-	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".db") {
-			info, err := file.Info()
-			if err != nil {
-				continue
-			}
-
-			backups = append(backups, models.BackupInfo{
-				Filename: file.Name(),
-				Size:     info.Size(),
-				Created:  info.ModTime(),
-			})
-		}
-	}
-
-	// Sort by creation time, newest first
-	sort.Slice(backups, func(i, j int) bool {
-		return backups[i].Created.After(backups[j].Created)
-	})
-
-	return backups, nil
-}
-
-func copyFileCLI(src, dst string) error {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sourceFile.Close()
-
-	destFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		return err
-	}
-
-	// Copy file permissions
-	sourceInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod(dst, sourceInfo.Mode())
 }
 
 func formatFileSize(size int64) string {

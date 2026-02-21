@@ -108,7 +108,12 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 		Level: compress.LevelBestSpeed, // Fast compression for better performance
 	}))
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"},
+		AllowOriginsFunc: func(_ string) bool {
+			// Reject all cross-origin requests by default.
+			// Same-origin requests do not trigger CORS at all.
+			// To allow specific external origins, add them to AllowOrigins above.
+			return false
+		},
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 	}))
@@ -254,9 +259,9 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	// ========================================
 	auth = app.Group("/auth")
 	auth.Get("/login", loginHandler)
-	auth.Post("/login", loginUserHandler)
+	auth.Post("/login", LoginRateLimitMiddleware(), loginUserHandler)
 	auth.Get("/register", registerHandler)
-	auth.Post("/register", createUserHandler)
+	auth.Post("/register", LoginRateLimitMiddleware(), createUserHandler)
 	auth.Post("/logout", logoutHandler)
 
 	// ========================================
@@ -367,12 +372,6 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
 	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
 	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
-
-	// Review management - DEPRECATED
-	// media.Get("/:media<[A-Za-z0-9_-]+>/reviews", HandleGetReviews)
-	// media.Post("/:media<[A-Za-z0-9_-]+>/reviews", AuthMiddleware("reader"), HandleCreateReview)
-	// media.Get("/:media<[A-Za-z0-9_-]+>/reviews/user", AuthMiddleware("reader"), HandleGetUserReview)
-	// media.Delete("/:media<[A-Za-z0-9_-]+>/reviews/:id", AuthMiddleware("reader"), HandleDeleteReview)
 
 	// Chapter comments
 	media.Get("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", HandleGetCommentsForSeries)

@@ -59,9 +59,7 @@ type MonitoringData struct {
 	PopularFavorites     string
 	PopularVotes         string
 	CommentsActivity     string
-	ReviewsActivity      string
 	TopCommented         string
-	TopReviewed          string
 	VoteDistribution     string
 	ControversialSeries  string
 	ChaptersDistribution string
@@ -636,35 +634,6 @@ func GetCommentsActivityOverTime(days int) (map[string]int, error) {
 	return activity, nil
 }
 
-// GetReviewsActivityOverTime returns daily review activity for the last N days
-// GetReviewsActivityOverTime returns daily review activity for the last N days
-func GetReviewsActivityOverTime(days int) (map[string]int, error) {
-	query := `
-		SELECT DATE(datetime(created_at, 'unixepoch')) as date, COUNT(*) as count
-		FROM reviews
-		WHERE created_at >= strftime('%s', 'now', '-' || ? || ' days')
-		GROUP BY DATE(datetime(created_at, 'unixepoch'))
-		ORDER BY DATE(datetime(created_at, 'unixepoch'))
-	`
-
-	rows, err := db.Query(query, days)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	activity := make(map[string]int)
-	for rows.Next() {
-		var date string
-		var count int
-		if err := rows.Scan(&date, &count); err != nil {
-			return nil, err
-		}
-		activity[date] = count
-	}
-	return activity, nil
-}
-
 // GetTopSeriesByComments returns the top N series by comment count
 func GetTopSeriesByComments(limit int) ([]SeriesData, error) {
 	query := `
@@ -673,34 +642,6 @@ func GetTopSeriesByComments(limit int) ([]SeriesData, error) {
 		INNER JOIN comments c ON m.slug = c.media_slug
 		GROUP BY m.slug, m.name
 		ORDER BY comment_count DESC
-		LIMIT ?
-	`
-
-	rows, err := db.Query(query, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var series []SeriesData
-	for rows.Next() {
-		var data SeriesData
-		if err := rows.Scan(&data.Name, &data.Count); err != nil {
-			return nil, err
-		}
-		series = append(series, data)
-	}
-	return series, nil
-}
-
-// GetTopSeriesByReviews returns the top N series by review count
-func GetTopSeriesByReviews(limit int) ([]SeriesData, error) {
-	query := `
-		SELECT m.name, COUNT(r.id) as review_count
-		FROM media m
-		INNER JOIN reviews r ON m.slug = r.media_slug
-		GROUP BY m.slug, m.name
-		ORDER BY review_count DESC
 		LIMIT ?
 	`
 

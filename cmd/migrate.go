@@ -76,7 +76,11 @@ func newMigrateDownCmd(dataDirectory *string) *cobra.Command {
 			if args[0] == "all" {
 				// Rollback all migrations
 				withDB(dataDirectory, cmd, func() error {
-					for v := 17; v >= 1; v-- {
+					maxVersion, err := models.GetMaxMigrationVersion()
+					if err != nil {
+						return fmt.Errorf("Failed to get max migration version: %w", err)
+					}
+					for v := maxVersion; v >= 1; v-- {
 						if err = models.MigrateDown("migrations", v); err != nil {
 							return fmt.Errorf("Failed to rollback migration %d: %w", v, err)
 						}

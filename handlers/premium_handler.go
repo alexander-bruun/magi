@@ -102,10 +102,16 @@ func HandleCreateCheckoutSession(c fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid plan selected"})
 	}
 
+	// Determine email for Stripe customer
+	stripeEmail := user.Email
+	if stripeEmail == "" {
+		stripeEmail = user.Username + "@noreply.local" // fallback when no email is set
+	}
+
 	// Create or retrieve Stripe customer
 	var stripeCustomer *stripe.Customer
 	customerParams := &stripe.CustomerParams{
-		Email: stripe.String(user.Username + "@placeholder.com"), // Using username as email placeholder
+		Email: stripe.String(stripeEmail),
 		Name:  stripe.String(user.Username),
 		Metadata: map[string]string{
 			"username": user.Username,
@@ -113,7 +119,7 @@ func HandleCreateCheckoutSession(c fiber.Ctx) error {
 	}
 
 	customers := customer.List(&stripe.CustomerListParams{
-		Email: stripe.String(user.Username + "@placeholder.com"),
+		Email: stripe.String(stripeEmail),
 	})
 	if customers.Next() {
 		stripeCustomer = customers.Customer()

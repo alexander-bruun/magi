@@ -186,9 +186,7 @@ templ Monitoring(data *models.MonitoringData) {
 			const popularFavoritesData = JSON.parse({{ data.PopularFavorites }});
 			const popularVotesData = JSON.parse({{ data.PopularVotes }});
 			const commentsActivityData = JSON.parse({{ data.CommentsActivity }});
-			// const reviewsActivityData = JSON.parse({{ data.ReviewsActivity }}); - DEPRECATED
 			const topCommentedData = JSON.parse({{ data.TopCommented }});
-			// const topReviewedData = JSON.parse({{ data.TopReviewed }}); - DEPRECATED
 			const voteDistributionData = JSON.parse({{ data.VoteDistribution }});
 			const controversialSeriesData = JSON.parse({{ data.ControversialSeries }});
 			const chaptersDistributionData = JSON.parse({{ data.ChaptersDistribution }});
@@ -817,55 +815,6 @@ templ Monitoring(data *models.MonitoringData) {
 						}
 					}
 				});
-			// function loadReviewsActivityChart() { - DEPRECATED
-			// 	const dates = Object.keys(reviewsActivityData).sort();
-			// 	const counts = dates.map(date => reviewsActivityData[date]);
-			//
-			// 	const reviewsCtx = document.getElementById('reviewsActivityChart').getContext('2d');
-			// 	new Chart(reviewsCtx, {
-			// 		type: 'line',
-			// 		data: {
-			// 			labels: dates,
-			// 			datasets: [{
-			// 				label: 'Reviews',
-			// 				data: counts,
-			// 				borderColor: 'rgba(255, 159, 64, 1)',
-			// 				backgroundColor: 'rgba(255, 159, 64, 0.1)',
-			// 				tension: 0.1,
-			// 				fill: true
-			// 			}]
-			// 		},
-			// 		options: {
-			// 			responsive: true,
-			// 			layout: {
-			// 				padding: {
-			// 					top: 10,
-			// 					bottom: 10,
-			// 					left: 10,
-			// 					right: 10
-			// 				}
-			// 			},
-			// 			scales: {
-			// 				y: {
-			// 					beginAtZero: true,
-			// 					ticks: {
-			// 						stepSize: 1
-			// 					}
-			// 				},
-			// 				x: {
-			// 					ticks: {
-			// 						maxTicksLimit: 10
-			// 					}
-			// 				}
-			// 			},
-			// 			plugins: {
-			// 				legend: {
-			// 					display: false
-			// 				}
-			// 			}
-			// 		}
-			// 	});
-			// }
 
 			function loadTopCommentedChart() {
 				const series = Object.keys(topCommentedData)
@@ -908,48 +857,6 @@ templ Monitoring(data *models.MonitoringData) {
 						}
 					}
 				});
-			// function loadTopReviewedChart() { - DEPRECATED
-			// 	const series = Object.keys(topReviewedData)
-			// 		.sort((a, b) => topReviewedData[b] - topReviewedData[a]);
-			// 	const counts = series.map(name => topReviewedData[name]);
-			//
-			// 	const reviewedCtx = document.getElementById('topReviewedChart').getContext('2d');
-			// 	new Chart(reviewedCtx, {
-			// 		type: 'bar',
-			// 		data: {
-			// 			labels: series,
-			// 			datasets: [{
-			// 				label: 'Reviews',
-			// 				data: counts,
-			// 				backgroundColor: 'rgba(255, 159, 64, 0.6)',
-			// 				borderColor: 'rgba(255, 159, 64, 1)',
-			// 				borderWidth: 1
-			// 			}]
-			// 		},
-			// 		options: {
-			// 			responsive: true,
-			// 			indexAxis: 'y',
-			// 			layout: {
-			// 				padding: {
-			// 					top: 10,
-			// 					bottom: 10,
-			// 					left: 10,
-			// 					right: 10
-			// 				}
-			// 			},
-			// 			scales: {
-			// 				x: {
-			// 					beginAtZero: true
-			// 				}
-			// 			},
-			// 			plugins: {
-			// 				legend: {
-			// 					display: false
-			// 				}
-			// 			}
-			// 		}
-			// 	});
-			// }
 
 			// User Activity Level Charts
 			function loadChaptersDistributionChart() {
@@ -1280,9 +1187,7 @@ templ Monitoring(data *models.MonitoringData) {
 			loadPopularFavoritesChart();
 			loadPopularVotesChart();
 			loadCommentsActivityChart();
-			// loadReviewsActivityChart(); - DEPRECATED
 			loadTopCommentedChart();
-			// loadTopReviewedChart(); - DEPRECATED
 			loadChaptersDistributionChart();
 			loadMostActiveReadersChart();
 			loadActivityByMediaTypeChart();

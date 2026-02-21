@@ -153,6 +153,7 @@ func loginUserHandler(c fiber.Ctx) error {
 
 	user, err := models.FindUserByUsername(username)
 	if err != nil || user == nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+		RecordFailedLogin(getRealIP(c))
 		// For HTMX requests, return unauthorized error with notification
 		if isHTMXRequest(c) {
 			return SendUnauthorizedError(c, ErrLoginFailed)
@@ -160,6 +161,8 @@ func loginUserHandler(c fiber.Ctx) error {
 		// For regular requests, show wrong credentials view
 		return handleView(c, views.WrongCredentials())
 	}
+
+	ClearLoginAttempts(getRealIP(c))
 
 	sessionToken, err := models.CreateSessionToken(user.Username)
 	if err != nil {

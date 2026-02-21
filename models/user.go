@@ -19,6 +19,7 @@ type User struct {
 	Role         string        `json:"role"`
 	Banned       bool          `json:"banned"`
 	Avatar       string        `json:"avatar,omitempty"`
+	Email        string        `json:"email,omitempty"`
 	CreatedAt    time.Time     `json:"created_at"`
 	Subscription *Subscription `json:"subscription,omitempty"` // Active subscription if any
 }
@@ -59,7 +60,7 @@ func GetUserRoleDistribution() (map[string]int, error) {
 // GetUsers retrieves all Users from the database
 func GetUsers() ([]User, error) {
 	query := `
-	SELECT username, password, role, banned, avatar, created_at
+	SELECT username, password, role, banned, avatar, email, created_at
 	FROM users
 	`
 
@@ -72,7 +73,7 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.Email, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -88,7 +89,7 @@ func GetUsers() ([]User, error) {
 // GetUsersByRole retrieves all users with a specific role
 func GetUsersByRole(role string) ([]User, error) {
 	query := `
-	SELECT username, password, role, banned, avatar, created_at
+	SELECT username, password, role, banned, avatar, email, created_at
 	FROM users
 	WHERE role = ?
 	`
@@ -102,7 +103,7 @@ func GetUsersByRole(role string) ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.Email, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)
@@ -122,56 +123,100 @@ type UserSearchOptions struct {
 	PageSize int
 }
 
-// GetUsersWithOptions performs a flexible user search with pagination
+// GetUsersWithOptions performs a flexible user search with SQL-level filtering and pagination
 func GetUsersWithOptions(opts UserSearchOptions) ([]User, int64, error) {
-	users, err := GetUsers()
-	if err != nil {
-		return nil, 0, err
-	}
+	// Build WHERE clause
+	var conditions []string
+	var args []interface{}
 
-	// Load subscription data for each user
-	for i := range users {
-		subscription, err := GetUserSubscription(users[i].Username)
-		if err != nil {
-			log.Warnf("Failed to load subscription for user %s: %v", users[i].Username, err)
-		} else {
-			users[i].Subscription = subscription
-		}
-	}
-
-	total := int64(len(users))
-
-	// Apply text search filter
 	if opts.Filter != "" {
-		filtered := make([]User, 0, len(users))
-		filterLower := strings.ToLower(opts.Filter)
-		for _, user := range users {
-			if strings.Contains(strings.ToLower(user.Username), filterLower) {
-				filtered = append(filtered, user)
+		conditions = append(conditions, "u.username LIKE ?")
+		args = append(args, "%"+opts.Filter+"%")
+	}
+
+	where := ""
+	if len(conditions) > 0 {
+		where = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Count total matching rows
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM users u %s", where)
+	var total int64
+	if err := db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count users: %w", err)
+	}
+
+	// Fetch paginated results with subscription data via LEFT JOIN
+	dataQuery := fmt.Sprintf(`
+		SELECT u.username, u.password, u.role, u.banned, u.avatar, u.email, u.created_at,
+		       s.id, s.stripe_customer_id, s.stripe_subscription_id, s.status,
+		       s.current_period_start, s.current_period_end, s.cancel_at_period_end,
+		       s.created_at, s.updated_at
+		FROM users u
+		LEFT JOIN user_subscriptions s
+		  ON s.username = u.username AND s.status = 'active'
+		%s
+		ORDER BY u.created_at DESC
+		LIMIT ? OFFSET ?
+	`, where)
+
+	pageSize := opts.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	page := opts.Page
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	paginatedArgs := append(args, pageSize, offset)
+	rows, err := db.Query(dataQuery, paginatedArgs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		var subID sql.NullInt64
+		var subCustomerID, subSubscriptionID, subStatus sql.NullString
+		var subPeriodStart, subPeriodEnd, subCreatedAt, subUpdatedAt sql.NullTime
+		var subCancelAtPeriodEnd sql.NullBool
+
+		if err := rows.Scan(
+			&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.Email, &user.CreatedAt,
+			&subID, &subCustomerID, &subSubscriptionID, &subStatus,
+			&subPeriodStart, &subPeriodEnd, &subCancelAtPeriodEnd,
+			&subCreatedAt, &subUpdatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan user: %w", err)
+		}
+
+		if subID.Valid {
+			user.Subscription = &Subscription{
+				ID:                   int(subID.Int64),
+				Username:            user.Username,
+				StripeCustomerID:    subCustomerID.String,
+				StripeSubscriptionID: subSubscriptionID.String,
+				Status:              subStatus.String,
+				CurrentPeriodStart:  subPeriodStart.Time,
+				CurrentPeriodEnd:    subPeriodEnd.Time,
+				CancelAtPeriodEnd:   subCancelAtPeriodEnd.Bool,
+				CreatedAt:           subCreatedAt.Time,
+				UpdatedAt:           subUpdatedAt.Time,
 			}
 		}
-		users = filtered
-		total = int64(len(users))
+
+		users = append(users, user)
 	}
 
-	// Paginate
-	return paginateUsers(users, opts.Page, opts.PageSize), total, nil
-}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate users: %w", err)
+	}
 
-// paginateUsers returns a slice of users for the given page
-func paginateUsers(users []User, page, pageSize int) []User {
-	if pageSize <= 0 {
-		return users
-	}
-	start := max((page-1)*pageSize, 0)
-	end := start + pageSize
-	if start > len(users) {
-		return []User{}
-	}
-	if end > len(users) {
-		end = len(users)
-	}
-	return users[start:end]
+	return users, total, nil
 }
 
 // CreateUser creates a new user with hashed password and default role.
@@ -234,7 +279,7 @@ func assignDefaultPermissionToUser(username string) error {
 // FindUserByUsername retrieves a user by their username.
 var FindUserByUsername = func(username string) (*User, error) {
 	query := `
-	SELECT username, password, role, banned, avatar
+	SELECT username, password, role, banned, avatar, email
 	FROM users
 	WHERE username = ?
 	`
@@ -242,7 +287,7 @@ var FindUserByUsername = func(username string) (*User, error) {
 	row := db.QueryRow(query, username)
 
 	var user User
-	err := row.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar)
+	err := row.Scan(&user.Username, &user.Password, &user.Role, &user.Banned, &user.Avatar, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No user found
@@ -583,5 +628,17 @@ func UpdateUserAvatar(username, avatarURL string) error {
 	`
 
 	_, err := db.Exec(query, avatarURL, username)
+	return err
+}
+
+// UpdateUserEmail updates a user's email address
+func UpdateUserEmail(username, email string) error {
+	query := `
+	UPDATE users
+	SET email = ?
+	WHERE username = ?
+	`
+
+	_, err := db.Exec(query, email, username)
 	return err
 }

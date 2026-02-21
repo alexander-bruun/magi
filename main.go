@@ -118,11 +118,11 @@ func main() {
 			backupDirectory = filepath.Join(dataDirectory, "backups")
 
 			// Ensure the directories exist
-			if err := os.MkdirAll(dataDirectory, os.ModePerm); err != nil {
+			if err := os.MkdirAll(dataDirectory, 0750); err != nil {
 				log.Errorf("Failed to create data directory: %s", err)
 				return
 			}
-			if err := os.MkdirAll(backupDirectory, os.ModePerm); err != nil {
+			if err := os.MkdirAll(backupDirectory, 0750); err != nil {
 				log.Errorf("Failed to create backup directory: %s", err)
 				return
 			}
@@ -144,9 +144,6 @@ func main() {
 				log.Debugf("Using '%s/...' as the image caching location", dataDirectory)
 				log.Debugf("Using '%s/...' as the backup location", backupDirectory)
 			}
-
-			// Initialize console log streaming for admin panel
-			text.InitializeConsoleLogger()
 
 			// Initialize database connection
 			err := models.Initialize(dataDirectory)
@@ -202,7 +199,6 @@ func main() {
 				Views:            engine,
 				ViewsLayout:      "base",
 				BodyLimit:        50 * 1024 * 1024,
-				Concurrency:      262144,
 				ReadBufferSize:   16 * 1024,
 				WriteBufferSize:  16 * 1024,
 				ReadTimeout:      30 * time.Second,
