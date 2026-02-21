@@ -29,7 +29,20 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mt-6 uk-card rounded-lgw-2/4 mx-auto p-4 flex flex-col items-center justify-between\"><span class=\"text-sm sm:text-center font-bold\">© 2025 <a href=\"https://github.com/alexander-bruun/magi/\" class=\"hover:underline\">Magi™</a>. All Rights Reserved.</span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"mt-auto pt-10\"><div class=\"uk-container\"><div class=\"border-t border-border pt-10 pb-8\"><div class=\"grid grid-cols-1 md:grid-cols-3 gap-10\"><!-- Brand --><div class=\"flex flex-col gap-3\"><a href=\"/\" class=\"flex items-center gap-2 w-fit\"><img src=\"/assets/img/icon.webp\" alt=\"Magi\" class=\"h-9 w-auto\" width=\"36\" height=\"36\"> <span class=\"text-xl font-semibold uk-text-background brand-gradient\">Magi</span></a><p class=\"text-sm uk-text-muted max-w-xs leading-relaxed\">A self-hosted media library for organizing and reading your manga, comics, and more.</p></div><!-- Quick Links --><div class=\"flex flex-col gap-3\"><h4 class=\"text-xs font-semibold uppercase tracking-widest uk-text-muted\">Quick Links</h4><nav class=\"flex flex-col gap-2\"><a href=\"/\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"Home\" ratio=\"1\" class=\"mr-2\"></uk-icon>Home</a> <a href=\"/series\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"BookOpen\" ratio=\"1\" class=\"mr-2\"></uk-icon>Series</a> <a href=\"/account\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"User\" ratio=\"1\" class=\"mr-2\"></uk-icon>Account</a></nav></div><!-- Resources --><div class=\"flex flex-col gap-3\"><h4 class=\"text-xs font-semibold uppercase tracking-widest uk-text-muted\">Resources</h4><nav class=\"flex flex-col gap-2\"><a href=\"https://github.com/alexander-bruun/magi/\" target=\"_blank\" rel=\"noopener\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"Github\" ratio=\"1\" class=\"mr-2\"></uk-icon>GitHub</a> <a href=\"https://github.com/alexander-bruun/magi/issues\" target=\"_blank\" rel=\"noopener\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"Bug\" ratio=\"1\" class=\"mr-2\"></uk-icon>Report a Bug</a> <a href=\"https://github.com/alexander-bruun/magi/blob/main/LICENSE\" target=\"_blank\" rel=\"noopener\" class=\"text-sm uk-text-muted hover:text-foreground transition-colors w-fit flex items-center\"><uk-icon icon=\"Scale\" ratio=\"1\" class=\"mr-2\"></uk-icon>License</a></nav></div></div><!-- Bottom bar --><div class=\"border-t border-border mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3\"><span class=\"text-xs uk-text-muted\">© 2026 <a href=\"https://github.com/alexander-bruun/magi/\" class=\"hover:underline font-medium\" target=\"_blank\" rel=\"noopener\">Magi</a> — Free &amp; open-source software.</span> <span class=\"text-sm uk-text-muted flex items-center gap-1.5\">Made with <uk-icon icon=\"Heart\" ratio=\"0.9\" class=\"text-red-500\"></uk-icon> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var2 string
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs("for")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/footer.templ`, Line: 55, Col: 88}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " manga enthusiasts</span></div></div></div></footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

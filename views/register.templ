@@ -2,15 +2,17 @@ package views
 
 templ Register() {
 	@PageTitle("Register")
-	<div class="uk-container">
+	<div class="uk-container w-full">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Register", Href: "/auth/register" }})
 		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Register</span></h2>
+	</div>
+	<div class="uk-container flex flex-col items-center justify-center flex-1">
 		<div class="grid place-content-center my-4">
 			<form hx-post="/auth/register" hx-redirect="/" enctype="multipart/form-data" aria-label="Registration form">
 				<fieldset>
 					<div class="flex gap-6">
 						<!-- Avatar upload column -->
-						<div class="flex flex-col items-center justify-start pt-1">
+						<div class="flex flex-col items-center justify-center pt-1">
 							<div class="relative w-32 h-32 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer" id="register-avatar-preview" title="Upload avatar (optional)">
 								<div id="register-avatar-placeholder" class="flex flex-col items-center text-center text-xs">
 									<uk-icon icon="Camera" class="text-2xl mb-1"></uk-icon>

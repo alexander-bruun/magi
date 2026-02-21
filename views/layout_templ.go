@@ -43,7 +43,7 @@ func Layout(content templ.Component, userRole string, currentPath string, unread
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script><script src=\"/assets/js/reader.js\" defer></script><!-- Browser Challenge - invisible bot detection --><script src=\"/assets/js/browser-challenge.js\" defer></script><!-- Service Worker Registration --><script>\n\t\t\t\tif ('serviceWorker' in navigator) {\n\t\t\t\t\twindow.addEventListener('load', () => {\n\t\t\t\t\t\tnavigator.serviceWorker.register('/assets/js/sw.js')\n\t\t\t\t\t\t\t.then(registration => {\n\t\t\t\t\t\t\t\tconsole.debug('Service Worker registered:', registration);\n\t\t\t\t\t\t\t})\n\t\t\t\t\t\t\t.catch(error => {\n\t\t\t\t\t\t\t\tconsole.error('Service Worker registration failed:', error);\n\t\t\t\t\t\t\t});\n\t\t\t\t\t});\n\t\t\t\t}\n\t\t\t</script></head><body class=\"bg-background text-foreground\"><div id=\"app\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"/assets/js/vendor/htmx-ext-form-json.js\" defer></script><script src=\"/assets/js/magi.js\" defer></script><script src=\"/assets/js/reader.js\" defer></script><!-- Browser Challenge - invisible bot detection --><script src=\"/assets/js/browser-challenge.js\" defer></script><!-- Service Worker Registration --><script>\n\t\t\t\tif ('serviceWorker' in navigator) {\n\t\t\t\t\twindow.addEventListener('load', () => {\n\t\t\t\t\t\tnavigator.serviceWorker.register('/assets/js/sw.js')\n\t\t\t\t\t\t\t.then(registration => {\n\t\t\t\t\t\t\t\tconsole.debug('Service Worker registered:', registration);\n\t\t\t\t\t\t\t})\n\t\t\t\t\t\t\t.catch(error => {\n\t\t\t\t\t\t\t\tconsole.error('Service Worker registration failed:', error);\n\t\t\t\t\t\t\t});\n\t\t\t\t\t});\n\t\t\t\t}\n\t\t\t</script></head><body class=\"bg-background text-foreground\"><div id=\"app\" class=\"flex flex-col min-h-screen\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -59,7 +59,7 @@ func Layout(content templ.Component, userRole string, currentPath string, unread
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div><div id=\"content\" class=\"mt-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div><div id=\"content\" class=\"mt-6 flex-1 flex flex-col\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -67,7 +67,7 @@ func Layout(content templ.Component, userRole string, currentPath string, unread
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><div class=\"uk-container uk-mx-auto my-8\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -75,7 +75,7 @@ func Layout(content templ.Component, userRole string, currentPath string, unread
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

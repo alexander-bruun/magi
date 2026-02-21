@@ -2,11 +2,18 @@ package views
 
 templ Login(target string) {
 	@PageTitle("Login")
-	<div class="uk-container">
+	<div class="uk-container w-full">
 		@Breadcrumb([]BreadcrumbItem{{ Label: "Home", Href: "/" }, { Label: "Login", Href: "/auth/login" }})
-		<h2 class="uk-heading-line uk-h2 uk-card-title text-center"><span>Login</span></h2>
-		<div class="grid place-content-center my-4">
-			<form hx-post="/auth/login" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json" aria-label="Login form">
+		<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>Login</span></h2>
+	</div>
+	<div class="uk-container flex items-center justify-center flex-1">
+		<div class="relative flex items-center my-4">
+			<!-- Mascot -->
+			<div class="hidden md:flex items-center justify-center">
+				<img src="/assets/img/mascot.png" alt="Magi mascot" class="max-h-96 w-auto object-contain"/>
+			</div>
+			<!-- Login form -->
+			<form class="relative md:-ml-16 z-10" hx-post="/auth/login" hx-target="#content" hx-swap="innerHTML" hx-ext="form-json" aria-label="Login form">
 				<fieldset>
 					<div class="mb-2">
 						<label for="username" class="uk-form-label block mb-1">Username</label>
@@ -30,8 +37,8 @@ templ Login(target string) {
 						<input type="hidden" name="target" value={ target }/>
 					}
 					<div class="mt-4 flex place-content-center">
-						<button type="submit" class="uk-btn uk-btn-default mr-2">Login</button>
-						<a href="/auth/register" class="uk-btn uk-btn-default ml-2">Register</a>
+						<button type="submit" class="uk-btn uk-btn-primary mr-2">Login</button>
+						<a href="/auth/register" class="uk-btn uk-btn-secondary ml-2">Register</a>
 					</div>
 				</fieldset>
 			</form>
