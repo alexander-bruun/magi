@@ -393,7 +393,7 @@ func extractMangaUpdatesContentRating(series mangaupdatesSeriesDetail) string {
 	for _, genre := range series.Genres {
 		genreLower := strings.ToLower(genre.Genre)
 		if strings.Contains(genreLower, "hentai") || strings.Contains(genreLower, "adult") {
-			return "pornographic"
+			return "explicit"
 		}
 		if strings.Contains(genreLower, "ecchi") || strings.Contains(genreLower, "mature") {
 			return "erotica"

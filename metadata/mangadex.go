@@ -174,7 +174,7 @@ func (m *MangaDexProvider) convertToMediaMetadata(detail *mangadexMediaDetail) *
 		Year:             detail.Attributes.Year,
 		OriginalLanguage: detail.Attributes.OriginalLanguage,
 		Status:           detail.Attributes.Status,
-		ContentRating:    detail.Attributes.ContentRating,
+		ContentRating:    normalizeMangaDexContentRating(detail.Attributes.ContentRating),
 		CoverArtURL:      extractCoverURL(detail.ID, detail.Relationships),
 		ExternalID:       detail.ID,
 		Type:             determineMediaType(detail),
@@ -250,6 +250,14 @@ type mangadexAttributes struct {
 	Year             int                 `json:"year"`
 	ContentRating    string              `json:"contentRating"`
 	Tags             []mangadexTag       `json:"tags"`
+}
+
+// normalizeMangaDexContentRating maps MangaDex API content rating to internal values.
+func normalizeMangaDexContentRating(rating string) string {
+	if strings.ToLower(rating) == "pornographic" {
+		return "explicit"
+	}
+	return rating
 }
 
 type mangadexTag struct {

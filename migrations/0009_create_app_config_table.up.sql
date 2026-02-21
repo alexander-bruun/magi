@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS app_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     allow_registration INTEGER NOT NULL DEFAULT 1,      -- 1 = true, 0 = false
     max_users INTEGER NOT NULL DEFAULT 1,               -- 0 = unlimited
-    content_rating_limit INTEGER NOT NULL DEFAULT 0,    -- 0=safe, 1=suggestive, 2=erotica, 3=pornographic (show all)
+    content_rating_limit INTEGER NOT NULL DEFAULT 0,    -- 0=safe, 1=suggestive, 2=erotica, 3=explicit (show all)
     metadata_provider TEXT NOT NULL DEFAULT 'mangadex', -- Metadata provider: 'mangadex', 'mal', or 'anilist'
     rate_limit_enabled INTEGER NOT NULL DEFAULT 1,      -- 1 = enabled, 0 = disabled
     rate_limit_requests INTEGER NOT NULL DEFAULT 100,   -- requests per window

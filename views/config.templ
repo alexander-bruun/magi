@@ -49,7 +49,7 @@ templ ConfigForm() {
                         <option value="0" selected?={ cfg.ContentRatingLimit == 0 }>Safe only</option>
                         <option value="1" selected?={ cfg.ContentRatingLimit == 1 }>Suggestive (includes safe)</option>
                         <option value="2" selected?={ cfg.ContentRatingLimit == 2 }>Erotica (includes safe, suggestive)</option>
-                        <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes pornographic)</option>
+                        <option value="3" selected?={ cfg.ContentRatingLimit == 3 }>All content (includes explicit)</option>
                     </select>
                     <p class="text-xs text-muted-foreground mt-1">Control the maximum content rating level users can view. Lower levels are more restrictive.</p>
                 </div>

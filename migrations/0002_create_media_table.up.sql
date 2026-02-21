@@ -92,7 +92,7 @@ BEGIN
         WHEN 'safe' THEN 0
         WHEN 'suggestive' THEN 1
         WHEN 'erotica' THEN 2
-        WHEN 'pornographic' THEN 3
+        WHEN 'explicit' THEN 3
         ELSE 3 END
     WHERE slug = NEW.slug;
 END;
@@ -102,6 +102,6 @@ UPDATE media SET content_rating_level = CASE LOWER(TRIM(content_rating))
     WHEN 'safe' THEN 0
     WHEN 'suggestive' THEN 1
     WHEN 'erotica' THEN 2
-    WHEN 'pornographic' THEN 3
+    WHEN 'explicit' THEN 3
     ELSE 3 END
 WHERE content_rating_level IS NULL OR content_rating_level NOT IN (0,1,2,3);

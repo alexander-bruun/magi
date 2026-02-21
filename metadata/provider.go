@@ -14,7 +14,7 @@ type MediaMetadata struct {
 	Year              int
 	OriginalLanguage  string
 	Status            string // ongoing, completed, hiatus, cancelled
-	ContentRating     string // safe, suggestive, erotica, pornographic
+	ContentRating     string // safe, suggestive, erotica, explicit
 	CoverArtURL       string
 	Tags              []string
 	Type              string // media, manhwa, manhua, webtoon, etc.
@@ -110,9 +110,9 @@ type BaseProvider struct {
 	BaseURL      string
 }
 
-func (b *BaseProvider) Name() string              { return b.ProviderName }
-func (b *BaseProvider) RequiresAuth() bool         { return false }
-func (b *BaseProvider) SetAuthToken(token string)  { b.APIToken = token }
+func (b *BaseProvider) Name() string                    { return b.ProviderName }
+func (b *BaseProvider) RequiresAuth() bool              { return false }
+func (b *BaseProvider) SetAuthToken(token string)       { b.APIToken = token }
 func (b *BaseProvider) SetConfig(config ConfigProvider) { b.Config = config }
 
 func (b *BaseProvider) GetCoverImageURL(metadata *MediaMetadata) string {

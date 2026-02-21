@@ -149,7 +149,7 @@ func GenerateComicInfo(meta *AggregatedMediaMetadata, chapterNumber string, chap
 		comicInfo.AgeRating = "Teen"
 	case "erotica":
 		comicInfo.AgeRating = "Mature 17+"
-	case "pornographic":
+	case "explicit":
 		comicInfo.AgeRating = "Adults Only 18+"
 	default:
 		comicInfo.AgeRating = "Unknown"

@@ -16,7 +16,7 @@ type AppConfig struct {
 	// General
 	AllowRegistration  bool   `json:"allow_registration" form:"allow_registration"`
 	MaxUsers           int64  `json:"max_users" form:"max_users"`                       // 0 means unlimited
-	ContentRatingLimit int    `json:"content_rating_limit" form:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=pornographic
+	ContentRatingLimit int    `json:"content_rating_limit" form:"content_rating_limit"` // 0=safe, 1=suggestive, 2=erotica, 3=explicit
 	MetadataProvider   string `json:"metadata_provider" form:"metadata_provider"`       // mangadex, anilist, jikan, mangaupdates, kitsu
 	ImageAccessSecret  string `json:"image_access_secret" form:"image_access_secret"`
 
@@ -522,7 +522,7 @@ func UpdateImageAccessSecret(secret string) (AppConfig, error) {
 // ---------------------------------------------------------------------------
 
 // ContentRatingToInt converts a rating string to its integer level.
-// 0=safe, 1=suggestive, 2=erotica, 3=pornographic
+// 0=safe, 1=suggestive, 2=erotica, 3=explicit
 func ContentRatingToInt(rating string) int {
 	switch rating {
 	case "safe":
@@ -531,7 +531,7 @@ func ContentRatingToInt(rating string) int {
 		return 1
 	case "erotica":
 		return 2
-	case "pornographic":
+	case "explicit":
 		return 3
 	default:
 		return 3
@@ -545,7 +545,7 @@ func IsContentRatingAllowed(rating string, limit int) bool {
 
 // GetAllowedRatings returns the list of allowed content rating strings for a given limit.
 func GetAllowedRatings(limit int) []string {
-	all := []string{"safe", "suggestive", "erotica", "pornographic"}
+	all := []string{"safe", "suggestive", "erotica", "explicit"}
 	if limit < 0 || limit >= len(all) {
 		return all
 	}

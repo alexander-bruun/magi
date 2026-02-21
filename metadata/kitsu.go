@@ -315,7 +315,7 @@ func mapKitsuAgeRating(ageRating *string, ageRatingGuide *string) string {
 		}
 		return "suggestive"
 	case "r18":
-		return "pornographic"
+		return "explicit"
 	default:
 		return "safe"
 	}

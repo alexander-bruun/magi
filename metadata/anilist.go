@@ -581,7 +581,7 @@ func convertAniListStatus(status string) string {
 
 func convertAniListContentRating(isAdult bool) string {
 	if isAdult {
-		return "pornographic"
+		return "explicit"
 	}
 	return "safe"
 }

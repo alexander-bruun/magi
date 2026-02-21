@@ -345,7 +345,7 @@ func convertJikanRating(demographics []struct {
 	for _, demo := range demographics {
 		name := strings.ToLower(demo.Name)
 		if strings.Contains(name, "hentai") || strings.Contains(name, "erotica") {
-			return "pornographic"
+			return "explicit"
 		}
 		if strings.Contains(name, "ecchi") {
 			return "suggestive"
