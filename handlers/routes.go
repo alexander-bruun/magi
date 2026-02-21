@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v3/middleware/static"
 
-	"github.com/alexander-bruun/magi/filestore"
 	"github.com/alexander-bruun/magi/scheduler"
+	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/alexander-bruun/magi/utils/text"
 	fiber "github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
@@ -20,18 +20,12 @@ import (
 // savedBackupDirectory stores the backup directory path
 var savedBackupDirectory string
 
-// dataManager manages data operations
-var dataManager *filestore.DataManager
+// fileStore provides local file system operations
+var fileStore *store.FileStore
 
-// globalDataBackend stores the data backend for child processes
-var globalDataBackend filestore.DataBackend
-
-// GetDataBackend returns the current data backend
-func GetDataBackend() filestore.DataBackend {
-	if dataManager == nil {
-		return nil
-	}
-	return dataManager.Backend()
+// GetFileStore returns the current file store
+func GetFileStore() *store.FileStore {
+	return fileStore
 }
 
 // shutdownChan is used to trigger application shutdown
@@ -43,19 +37,12 @@ func GetShutdownChan() <-chan struct{} {
 }
 
 // Initialize configures all HTTP routes, middleware, and static assets for the application
-func Initialize(app *fiber.App, dataBackend filestore.DataBackend, backupDirectory string, port string) {
+func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, port string) {
 	if os.Getenv("FIBER_PREFORK_CHILD") == "" {
 		log.Info("Initializing application routes and middleware")
 	}
 
-	// Initialize data manager with provided backend
-	dataManager = filestore.NewDataManager(dataBackend)
-	globalDataBackend = dataBackend
-
-	if os.Getenv("FIBER_PREFORK_CHILD") != "" {
-		// Reinitialize data manager in child processes
-		dataManager = filestore.NewDataManager(globalDataBackend)
-	}
+	fileStore = fs
 
 	// Store backup directory for backup operations
 	savedBackupDirectory = backupDirectory

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-bruun/magi/embedded"
+	"github.com/alexander-bruun/magi/utils/embedded"
 	"github.com/gofiber/fiber/v3/log"
 
 	_ "github.com/ncruces/go-sqlite3/driver"

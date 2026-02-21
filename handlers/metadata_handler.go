@@ -133,13 +133,13 @@ func HandleEditMetadataMedia(c fiber.Ctx) error {
 	coverURL := provider.GetCoverImageURL(meta)
 	var storedImageURL string
 	if coverURL != "" {
-		storedImageURL, err = scheduler.DownloadAndStoreImage(existingMedia.Slug, coverURL, dataManager.Backend())
+		storedImageURL, err = scheduler.DownloadAndStoreImage(existingMedia.Slug, coverURL, fileStore)
 		if err != nil {
 			log.Warnf("Failed to download cover art: %v", err)
 			// Try local images as fallback
 			mediaPath, pathErr := getMediaPathFromChapters(existingMedia.Slug)
 			if pathErr == nil {
-				storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, dataManager.Backend())
+				storedImageURL, _ = scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, fileStore)
 			}
 		}
 	}
@@ -316,7 +316,7 @@ func HandleManualEditMetadata(c fiber.Ctx) error {
 
 	// Process cover art URL (download and store)
 	if formData.CoverURL != "" {
-		storedImageURL, err := scheduler.DownloadAndStoreImage(existingMedia.Slug, formData.CoverURL, dataManager.Backend())
+		storedImageURL, err := scheduler.DownloadAndStoreImage(existingMedia.Slug, formData.CoverURL, fileStore)
 		if err != nil {
 			return SendInternalServerError(c, ErrInternalServerError, err)
 		}
@@ -460,14 +460,14 @@ func HandleRefreshMetadata(c fiber.Ctx) error {
 		var storedImageURL string
 		if coverURL != "" {
 			log.Debugf("Attempting to download cover art from aggregated metadata for media '%s': %s", mangaSlug, coverURL)
-			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL, dataManager.Backend())
+			storedImageURL, err = scheduler.DownloadAndStoreImage(mangaSlug, coverURL, fileStore)
 			if err != nil {
 				log.Warnf("Failed to download cover art during metadata refresh: %v", err)
 				// Try to fall back to local images
 				log.Debugf("Falling back to local images for poster generation for media '%s'", mangaSlug)
 				mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
 				if pathErr == nil {
-					storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, dataManager.Backend())
+					storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, fileStore)
 				}
 			}
 		} else {
@@ -475,7 +475,7 @@ func HandleRefreshMetadata(c fiber.Ctx) error {
 			log.Debugf("No cover URL from aggregated metadata for media '%s', trying local images", mangaSlug)
 			mediaPath, pathErr := getMediaPathFromChapters(mangaSlug)
 			if pathErr == nil {
-				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, dataManager.Backend())
+				storedImageURL, _ = scheduler.HandleLocalImages(mangaSlug, mediaPath, fileStore)
 			}
 		}
 
@@ -570,7 +570,7 @@ func HandleRefreshMetadata(c fiber.Ctx) error {
 			}
 
 			// Try to set poster from local images
-			storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, dataManager.Backend())
+			storedImageURL, _ := scheduler.HandleLocalImages(existingMedia.Slug, mediaPath, fileStore)
 			if storedImageURL != "" {
 				existingMedia.CoverArtURL = storedImageURL
 			}

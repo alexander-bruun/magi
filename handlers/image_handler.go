@@ -28,7 +28,7 @@ func handlePosterRequest(c fiber.Ctx) error {
 
 // handleStoredImageRequest serves stored images with quality based on user role
 func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
-	if dataManager == nil {
+	if fileStore == nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Data manager not initialized")
 	}
 
@@ -58,7 +58,7 @@ func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 	}
 
 	// Check if the file exists in data manager
-	exists, err := dataManager.Exists(imagePath)
+	exists, err := fileStore.Exists(imagePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Cache error")
 	}
@@ -68,7 +68,7 @@ func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 
 	// Load the image
 	start := time.Now()
-	reader, err := dataManager.LoadReader(imagePath)
+	reader, err := fileStore.LoadReader(imagePath)
 	if err != nil {
 		// If loading fails, try to serve without compression
 		switch strings.ToLower(filepath.Ext(imagePath)) {
@@ -84,7 +84,7 @@ func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
+		data, err := fileStore.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -107,7 +107,7 @@ func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
+		data, err := fileStore.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}
@@ -141,7 +141,7 @@ func handleStoredImageRequest(c fiber.Ctx, subDir string) error {
 			c.Set("Content-Type", "application/octet-stream")
 		}
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
-		data, err := dataManager.Load(imagePath)
+		data, err := fileStore.Load(imagePath)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to load image")
 		}

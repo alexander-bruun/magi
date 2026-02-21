@@ -20,10 +20,6 @@ help:
 	@echo "  test               - Run tests"
 	@echo "  coverage           - Run tests with coverage"
 	@echo ""
-	@echo "Services:"
-	@echo "  start-minio        - Start MinIO S3 server for testing"
-	@echo "  stop-minio         - Stop MinIO S3 server"
-	@echo ""
 	@echo "Utilities:"
 	@echo "  all                - Run build-binaries and test"
 	@echo "  help               - Show this help"
@@ -61,32 +57,6 @@ test:
 # Run tests and show coverage per folder
 coverage:
 	@bash scripts/coverage.sh
-
-# Start MinIO S3 server for testing
-start-minio:
-	@echo "Starting MinIO S3 server..."
-	@docker run -d --name magi-minio \
-		-p 9000:9000 \
-		-p 9001:9001 \
-		-e "MINIO_ACCESS_KEY=magiaccesskey" \
-		-e "MINIO_SECRET_KEY=magisecretkey" \
-		-v $(PWD)/minio-data:/data \
-		minio/minio server /data --console-address ":9001"
-	@echo "MinIO started. Creating .env file with credentials..."
-	@echo "MAGI_DATA_BACKEND=s3" > .env
-	@echo "MAGI_DATA_S3_BUCKET=magi-test" >> .env
-	@echo "MAGI_DATA_S3_REGION=us-east-1" >> .env
-	@echo "MAGI_DATA_S3_ENDPOINT=http://localhost:9000" >> .env
-	@echo "AWS_ACCESS_KEY_ID=magiaccesskey" >> .env
-	@echo "AWS_SECRET_ACCESS_KEY=magisecretkey" >> .env
-	@echo "Credentials saved to .env file"
-
-# Stop MinIO S3 server
-stop-minio:
-	@echo "Stopping MinIO S3 server..."
-	@docker stop magi-minio || true
-	@docker rm magi-minio || true
-	@echo "MinIO stopped"
 
 # Run all the above commands
 all: build-binaries test

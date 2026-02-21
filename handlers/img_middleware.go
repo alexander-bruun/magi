@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alexander-bruun/magi/embedded"
+	"github.com/alexander-bruun/magi/utils/embedded"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 )

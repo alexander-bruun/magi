@@ -335,7 +335,7 @@ func HandleScanLibrary(c fiber.Ctx) error {
 
 	// Create a temporary Indexer for this library and run the job so we
 	// preserve the same logging and lifecycle as scheduled jobs.
-	idx := scheduler.NewIndexer(*library, dataManager.Backend())
+	idx := scheduler.NewIndexer(*library, fileStore)
 	// RunIndexingJob will process all folders for the library.
 	if ran := idx.RunIndexingJob(); !ran {
 		triggerNotification(c, "Indexing already in progress for this library", "warning")
@@ -362,7 +362,7 @@ func HandleIndexPosters(c fiber.Ctx) error {
 
 	log.Debugf("Starting poster re-indexing for library '%s'", library.Name)
 
-	dataBackend := GetDataBackend()
+	dataBackend := GetFileStore()
 	if dataBackend == nil {
 		return SendInternalServerError(c, "Data backend not available", nil)
 	}
@@ -512,7 +512,7 @@ func HandleIndexMetadata(c fiber.Ctx) error {
 	log.Debugf("Starting metadata re-indexing for library '%s'", library.Name)
 
 	// For now, trigger full index as metadata re-indexing is complex
-	idx := scheduler.NewIndexer(*library, dataManager.Backend())
+	idx := scheduler.NewIndexer(*library, fileStore)
 	if ran := idx.RunIndexingJob(); !ran {
 		triggerNotification(c, "Indexing already in progress for this library", "warning")
 		return c.SendString("")

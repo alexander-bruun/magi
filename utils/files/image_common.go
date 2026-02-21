@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/alexander-bruun/magi/filestore"
+	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/nfnt/resize"
 	_ "golang.org/x/image/bmp"  // Register BMP format
@@ -166,7 +166,7 @@ var standardSizes = []ThumbnailSize{
 }
 
 // saveOriginal saves the original image to the data backend
-func saveOriginal(img image.Image, baseName string, dataBackend filestore.DataBackend, useWebp bool, originalFormat string) error {
+func saveOriginal(img image.Image, baseName string, dataBackend *store.FileStore, useWebp bool, originalFormat string) error {
 	var format string
 	if useWebp {
 		format = "webp"
@@ -182,7 +182,7 @@ func saveOriginal(img image.Image, baseName string, dataBackend filestore.DataBa
 }
 
 // generateAndSaveThumbnails generates and saves multiple thumbnail sizes
-func generateAndSaveThumbnails(img image.Image, baseName string, dataBackend filestore.DataBackend, useWebp bool, sizes []ThumbnailSize, originalFormat string) error {
+func generateAndSaveThumbnails(img image.Image, baseName string, dataBackend *store.FileStore, useWebp bool, sizes []ThumbnailSize, originalFormat string) error {
 	for _, size := range sizes {
 		resized := resizeAndCrop(img, size.Width, size.Height)
 		var format string
@@ -213,7 +213,7 @@ func generatePosterURL(slug string, useWebp bool) string {
 }
 
 // DownloadImageWithThumbnails downloads an image and creates multiple sizes for better performance
-func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend filestore.DataBackend, useWebp bool) error {
+func DownloadImageWithThumbnails(fileName, fileUrl string, dataBackend *store.FileStore, useWebp bool) error {
 
 	// Determine file name and extension
 	fileNameWithExtension := getFileNameWithExtension(fileName, fileUrl)
@@ -530,7 +530,7 @@ func GenerateRandomSecret() (string, error) {
 // For tall images (webtoons), it crops from the top to capture the cover/title area.
 // Creates multiple sizes: original, full (400x600), thumbnail (200x300), and small (100x150).
 // Returns the cached image URL path.
-func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
+func ExtractPosterImage(filePath, slug string, dataBackend *store.FileStore, useWebp bool) (string, error) {
 
 	log.Debugf("Extracting poster image from '%s' for media '%s'", filePath, slug)
 
@@ -617,7 +617,7 @@ func ExtractPosterImage(filePath, slug string, dataBackend filestore.DataBackend
 // ProcessLocalImageWithThumbnails processes a local image file and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
+func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend *store.FileStore, useWebp bool) (string, error) {
 
 	// Load the image
 	img, err := OpenImage(imagePath)
@@ -641,7 +641,7 @@ func ProcessLocalImageWithThumbnails(imagePath, slug string, dataBackend filesto
 // DownloadPosterImage downloads an image from a URL and creates multiple cached sizes
 // Creates: original, full (400x600), thumbnail (200x300), and small (100x150) versions
 // Returns the URL path for the full-size image
-func DownloadPosterImage(imageURL, slug string, dataBackend filestore.DataBackend, useWebp bool) (string, error) {
+func DownloadPosterImage(imageURL, slug string, dataBackend *store.FileStore, useWebp bool) (string, error) {
 
 	// Download and decode the image
 	img, format, err := fetchImage(imageURL)
@@ -663,7 +663,7 @@ func DownloadPosterImage(imageURL, slug string, dataBackend filestore.DataBacken
 }
 
 // GenerateThumbnails generates thumbnail and small versions from a cached full-size image
-func GenerateThumbnails(fullImagePath, slug string, dataBackend filestore.DataBackend) error {
+func GenerateThumbnails(fullImagePath, slug string, dataBackend *store.FileStore) error {
 	// Load the full-size image from cache
 	data, err := dataBackend.Load(fullImagePath)
 	if err != nil {

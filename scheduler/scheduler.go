@@ -14,7 +14,7 @@ import (
 
 	cron "github.com/robfig/cron/v3"
 
-	"github.com/alexander-bruun/magi/filestore"
+	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/alexander-bruun/magi/models"
 )
 
@@ -202,14 +202,14 @@ var (
 	scannedPathCount int
 	scanMutex        sync.Mutex
 	indexingRunning  sync.Map
-	IndexMediaFunc   func(path, librarySlug string, dataBackend filestore.DataBackend) (string, error)
-	dataBackend      filestore.DataBackend
+	IndexMediaFunc   func(path, librarySlug string, dataBackend *store.FileStore) (string, error)
+	dataBackend      *store.FileStore
 )
 
 // Indexer represents the state of an indexer
 type Indexer struct {
 	Library          models.Library
-	dataBackend      filestore.DataBackend
+	dataBackend      *store.FileStore
 	Scheduler        *CronScheduler
 	SchedulerRunning bool
 	JobRunning       bool
@@ -218,7 +218,7 @@ type Indexer struct {
 }
 
 // InitializeIndexer sets up indexers and notifications
-func InitializeIndexer(dataDirectory string, libraries []models.Library, cb filestore.DataBackend) {
+func InitializeIndexer(dataDirectory string, libraries []models.Library, cb *store.FileStore) {
 	DataDirectory = dataDirectory
 	dataBackend = cb
 	log.Info("Initializing Indexer and Scheduler")
@@ -235,7 +235,7 @@ func InitializeIndexer(dataDirectory string, libraries []models.Library, cb file
 }
 
 // NewIndexer creates a new Indexer instance
-func NewIndexer(library models.Library, dataBackend filestore.DataBackend) *Indexer {
+func NewIndexer(library models.Library, dataBackend *store.FileStore) *Indexer {
 	// Deep copy the Folders slice and strings to prevent sharing underlying arrays and string backing
 	foldersCopy := make([]string, len(library.Folders))
 	for i, f := range library.Folders {
@@ -594,7 +594,7 @@ func (idx *Indexer) processFolder(folder string) error {
 }
 
 // cleanupOrphanedMedia removes media that have chapters in this library but no longer exist on disk
-func cleanupOrphanedMedia(librarySlug string, processedSlugs map[string]bool, dataBackend filestore.DataBackend) error {
+func cleanupOrphanedMedia(librarySlug string, processedSlugs map[string]bool, dataBackend *store.FileStore) error {
 	// Get all chapters for this library
 	query := `
 	SELECT c.media_slug

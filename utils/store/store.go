@@ -1,4 +1,4 @@
-package filestore
+package store
 
 import (
 	"io"
@@ -6,20 +6,20 @@ import (
 	"path/filepath"
 )
 
-// LocalFileSystemAdapter implements DataBackend for local file system storage
-type LocalFileSystemAdapter struct {
+// FileStore provides local file system storage operations.
+type FileStore struct {
 	basePath string
 }
 
-// NewLocalFileSystemAdapter creates a new local file system data adapter
-func NewLocalFileSystemAdapter(basePath string) *LocalFileSystemAdapter {
-	return &LocalFileSystemAdapter{
+// NewFileStore creates a new local file store rooted at basePath.
+func NewFileStore(basePath string) *FileStore {
+	return &FileStore{
 		basePath: basePath,
 	}
 }
 
 // Save saves data to the specified path
-func (l *LocalFileSystemAdapter) Save(path string, data []byte) error {
+func (l *FileStore) Save(path string, data []byte) error {
 	fullPath := filepath.Join(l.basePath, path)
 
 	// Ensure directory exists
@@ -32,7 +32,7 @@ func (l *LocalFileSystemAdapter) Save(path string, data []byte) error {
 }
 
 // SaveReader saves data from a reader to the specified path
-func (l *LocalFileSystemAdapter) SaveReader(path string, reader io.Reader) error {
+func (l *FileStore) SaveReader(path string, reader io.Reader) error {
 	fullPath := filepath.Join(l.basePath, path)
 
 	// Ensure directory exists
@@ -52,19 +52,19 @@ func (l *LocalFileSystemAdapter) SaveReader(path string, reader io.Reader) error
 }
 
 // Load loads data from the specified path
-func (l *LocalFileSystemAdapter) Load(path string) ([]byte, error) {
+func (l *FileStore) Load(path string) ([]byte, error) {
 	fullPath := filepath.Join(l.basePath, path)
 	return os.ReadFile(fullPath)
 }
 
 // LoadReader returns a reader for the specified path
-func (l *LocalFileSystemAdapter) LoadReader(path string) (io.ReadCloser, error) {
+func (l *FileStore) LoadReader(path string) (io.ReadCloser, error) {
 	fullPath := filepath.Join(l.basePath, path)
 	return os.Open(fullPath)
 }
 
 // Exists checks if a file exists at the specified path
-func (l *LocalFileSystemAdapter) Exists(path string) (bool, error) {
+func (l *FileStore) Exists(path string) (bool, error) {
 	fullPath := filepath.Join(l.basePath, path)
 	_, err := os.Stat(fullPath)
 	if err != nil {
@@ -77,19 +77,19 @@ func (l *LocalFileSystemAdapter) Exists(path string) (bool, error) {
 }
 
 // Delete deletes a file at the specified path
-func (l *LocalFileSystemAdapter) Delete(path string) error {
+func (l *FileStore) Delete(path string) error {
 	fullPath := filepath.Join(l.basePath, path)
 	return os.Remove(fullPath)
 }
 
 // CreateDir creates a directory at the specified path
-func (l *LocalFileSystemAdapter) CreateDir(path string) error {
+func (l *FileStore) CreateDir(path string) error {
 	fullPath := filepath.Join(l.basePath, path)
 	return os.MkdirAll(fullPath, 0755)
 }
 
 // List lists files in the specified directory
-func (l *LocalFileSystemAdapter) List(path string) ([]string, error) {
+func (l *FileStore) List(path string) ([]string, error) {
 	fullPath := filepath.Join(l.basePath, path)
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {

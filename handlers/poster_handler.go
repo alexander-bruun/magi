@@ -221,7 +221,7 @@ func HandlePosterPreview(c fiber.Ctx) error {
 
 // HandlePosterSet sets a custom poster image based on user selection or upload
 func HandlePosterSet(c fiber.Ctx) error {
-	if dataManager == nil {
+	if fileStore == nil {
 		return SendInternalServerError(c, ErrInternalServerError, fmt.Errorf("cache not initialized"))
 	}
 
@@ -263,12 +263,12 @@ func HandlePosterSet(c fiber.Ctx) error {
 		if err != nil {
 			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
-		if err := dataManager.Save(cachePath, imageData); err != nil {
+		if err := fileStore.Save(cachePath, imageData); err != nil {
 			return SendInternalServerError(c, ErrPosterSaveFailed, err)
 		}
 
 		// Generate thumbnails
-		if err := files.GenerateThumbnails(cachePath, mangaSlug, dataManager.Backend()); err != nil {
+		if err := files.GenerateThumbnails(cachePath, mangaSlug, fileStore); err != nil {
 			// Log error but don't fail the request
 			fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 		}
@@ -290,7 +290,7 @@ func HandlePosterSet(c fiber.Ctx) error {
 	metadataCoverURL := c.FormValue("metadata_cover_url")
 	if metadataCoverURL != "" {
 		// Download and store the metadata cover image
-		storedImageURL, err := scheduler.DownloadAndStoreImage(mangaSlug, metadataCoverURL, dataManager.Backend())
+		storedImageURL, err := scheduler.DownloadAndStoreImage(mangaSlug, metadataCoverURL, fileStore)
 		if err != nil {
 			return SendInternalServerError(c, ErrPosterProcessingFailed, err)
 		}
@@ -363,7 +363,7 @@ func HandlePosterSet(c fiber.Ctx) error {
 
 	// Generate thumbnails
 	fullImagePath := fmt.Sprintf("posters/%s.webp", mangaSlug)
-	if err := files.GenerateThumbnails(fullImagePath, mangaSlug, dataManager.Backend()); err != nil {
+	if err := files.GenerateThumbnails(fullImagePath, mangaSlug, fileStore); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: failed to generate thumbnails: %v\n", err)
 	}
@@ -458,7 +458,7 @@ func HandlePosterMetadataSelect(c fiber.Ctx) error {
 	for i := range results {
 		if results[i].CoverArtURL != "" {
 			uniqueSlug := fmt.Sprintf("%s_metadata_%d", mangaSlug, i)
-			localURL, err := scheduler.DownloadAndStoreImage(uniqueSlug, results[i].CoverArtURL, dataManager.Backend())
+			localURL, err := scheduler.DownloadAndStoreImage(uniqueSlug, results[i].CoverArtURL, fileStore)
 			if err == nil {
 				results[i].CoverArtURL = localURL
 			} else {

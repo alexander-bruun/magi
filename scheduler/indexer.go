@@ -17,7 +17,7 @@ import (
 
 	"github.com/gofiber/fiber/v3/log"
 
-	"github.com/alexander-bruun/magi/filestore"
+	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils/files"
@@ -83,7 +83,7 @@ type OPF struct {
 }
 
 // IndexMedia inspects a media directory or file (.cbz/.cbr), syncing metadata and chapters with the database.
-func IndexMedia(absolutePath, librarySlug string, dataBackend filestore.DataBackend) (string, error) {
+func IndexMedia(absolutePath, librarySlug string, dataBackend *store.FileStore) (string, error) {
 	// Check if this is a file (single-chapter media)
 	fileInfo, err := os.Stat(absolutePath)
 	pathExists := err == nil
@@ -302,7 +302,7 @@ func createMediaFromAggregatedMetadata(aggregatedMeta *metadata.AggregatedMediaM
 	return media
 }
 
-func HandleLocalImages(slug, absolutePath string, dataBackend filestore.DataBackend) (string, error) {
+func HandleLocalImages(slug, absolutePath string, dataBackend *store.FileStore) (string, error) {
 	log.Debugf("Attempting to generate poster from local images for media '%s' at path '%s'", slug, absolutePath)
 
 	// First, check for standalone poster/thumbnail images
@@ -423,11 +423,11 @@ func HandleLocalImages(slug, absolutePath string, dataBackend filestore.DataBack
 	return "", nil
 }
 
-func processLocalImage(slug, imagePath string, dataBackend filestore.DataBackend) (string, error) {
+func processLocalImage(slug, imagePath string, dataBackend *store.FileStore) (string, error) {
 	return files.ProcessLocalImageWithThumbnails(imagePath, slug, dataBackend, true)
 }
 
-func DownloadAndStoreImage(slug, coverArtURL string, dataBackend filestore.DataBackend) (string, error) {
+func DownloadAndStoreImage(slug, coverArtURL string, dataBackend *store.FileStore) (string, error) {
 	log.Debugf("Attempting to download cover image for '%s' from URL: %s", slug, coverArtURL)
 
 	// Determine the stored image URL
@@ -1120,7 +1120,7 @@ func handleExistingMedia(existingMedia *models.Media, absolutePath, librarySlug,
 }
 
 // handleNewMedia handles creating a new media entry
-func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metadata.Provider, _ bool, dataBackend filestore.DataBackend) (string, error) {
+func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metadata.Provider, _ bool, dataBackend *store.FileStore) (string, error) {
 	// Media does not exist yet — fetch metadata, create it and index chapters
 	var aggregatedMeta *metadata.AggregatedMediaMetadata
 	// Use aggregated metadata from all providers instead of single provider

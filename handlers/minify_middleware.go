@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alexander-bruun/magi/embedded"
+	"github.com/alexander-bruun/magi/utils/embedded"
 	fiber "github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/tdewolff/minify/v2"
