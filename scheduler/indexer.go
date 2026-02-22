@@ -17,10 +17,10 @@ import (
 
 	"github.com/gofiber/fiber/v3/log"
 
-	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/alexander-bruun/magi/metadata"
 	"github.com/alexander-bruun/magi/models"
 	"github.com/alexander-bruun/magi/utils/files"
+	"github.com/alexander-bruun/magi/utils/store"
 	"github.com/alexander-bruun/magi/utils/text"
 )
 
@@ -1208,17 +1208,10 @@ func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metad
 			// Update media with cover URL if we got one
 			if finalImageURL != "" {
 				log.Debugf("Updating media '%s' with cover URL: %s", slug, finalImageURL)
-				if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
-					media.CoverArtURL = finalImageURL
-					if err := models.UpdateMedia(media); err != nil {
-						log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
-					} else {
-						log.Debugf("Successfully updated cover URL for media '%s'", slug)
-					}
-				} else if err != nil {
-					log.Errorf("Failed to get media for update '%s': %v", slug, err)
+				if err := models.UpdateMediaCoverArtURL(slug, finalImageURL); err != nil {
+					log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
 				} else {
-					log.Debugf("Media '%s' no longer exists, skipping cover URL update (likely deleted due to no chapters)", slug)
+					log.Debugf("Successfully updated cover URL for media '%s'", slug)
 				}
 			} else {
 				log.Debugf("No cover URL found for media '%s'", slug)
@@ -1241,12 +1234,9 @@ func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metad
 		}
 		return "", nil
 	} else {
-		// Update the FileCount on the newly created media
-		if media, err := models.GetMediaUnfiltered(slug); err == nil && media != nil {
-			media.FileCount = presentCount
-			if err := models.UpdateMedia(media); err != nil {
-				log.Errorf("Failed to update file count for new media '%s': %s", slug, err)
-			}
+		// Update only the FileCount field to avoid racing with the async cover art goroutine
+		if err := models.UpdateMediaFileCount(slug, presentCount); err != nil {
+			log.Errorf("Failed to update file count for new media '%s': %s", slug, err)
 		}
 	}
 

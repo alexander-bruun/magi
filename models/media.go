@@ -467,6 +467,22 @@ func (m *Media) SetCharacters(chars []string)                { m.Characters = ch
 func (m *Media) SetAlternativeTitles(titles []string)        { m.AlternativeTitles = titles }
 func (m *Media) SetAttributionLinks(links []AttributionLink) { m.AttributionLinks = links }
 
+// UpdateMediaFileCount updates only the file_count and updated_at fields for a media entry.
+// This avoids races with concurrent cover_art_url updates.
+func UpdateMediaFileCount(slug string, fileCount int) error {
+	now := time.Now()
+	_, err := db.Exec(`UPDATE media SET file_count = ?, updated_at = ? WHERE slug = ?`, fileCount, now.Unix(), slug)
+	return err
+}
+
+// UpdateMediaCoverArtURL updates only the cover_art_url and updated_at fields for a media entry.
+// This avoids races with concurrent file_count updates.
+func UpdateMediaCoverArtURL(slug, coverArtURL string) error {
+	now := time.Now()
+	_, err := db.Exec(`UPDATE media SET cover_art_url = ?, updated_at = ? WHERE slug = ?`, coverArtURL, now.Unix(), slug)
+	return err
+}
+
 // UpdateMedia modifies an existing media and always updates the updated_at timestamp to the current time
 func UpdateMedia(media *Media) error {
 	media.UpdatedAt = time.Now()
