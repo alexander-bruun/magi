@@ -185,6 +185,12 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 		return handleAvatarRequest(c)
 	})
 
+	// Chapter preview images (smart thumbnails for chapter panel)
+	app.Get("/api/chapter-preview/:media/:chapter", ConditionalAuthMiddleware(), HandleChapterPreview)
+
+	// Chapter list panel (HTMX endpoint for sliding chapter panel)
+	app.Get("/api/chapter-panel/:media/:chapter", ConditionalAuthMiddleware(), HandleChapterListPanel)
+
 	// Static assets (CSS and JS are handled by their respective middlewares)
 	app.Use("/assets/", func(c fiber.Ctx) error {
 		// Set cache headers for static assets (1 year for JS/CSS, 1 day for images)

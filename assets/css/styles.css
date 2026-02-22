@@ -3632,3 +3632,193 @@ body.webtoon-focus-open {
     }
 }
 
+/* ============================================
+   CHAPTER SLIDING PANEL
+   Slides in from the right with preview images
+   ============================================ */
+
+.chapter-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.chapter-panel-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.chapter-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 380px;
+    max-width: 90vw;
+    background: hsl(var(--background));
+    z-index: 10001;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.chapter-panel.active {
+    transform: translateX(0);
+}
+
+.chapter-panel-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.chapter-panel-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+    flex-shrink: 0;
+    background: hsl(var(--background));
+}
+
+.chapter-panel-header h3 {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.chapter-panel-close {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px;
+    padding: 0 !important;
+}
+
+.chapter-panel-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+    scrollbar-width: thin;
+}
+
+.chapter-panel-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chapter-panel-list::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 2px;
+}
+
+.chapter-panel-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    text-decoration: none !important;
+    color: hsl(var(--foreground));
+    transition: background 0.15s ease;
+    margin-bottom: 0.25rem;
+}
+
+.chapter-panel-item:hover {
+    background: hsl(var(--muted) / 0.5);
+    text-decoration: none !important;
+    color: hsl(var(--foreground));
+}
+
+.chapter-panel-item-active {
+    background: hsl(var(--primary) / 0.1);
+    border: 1px solid hsl(var(--primary) / 0.3);
+}
+
+.chapter-panel-item-active:hover {
+    background: hsl(var(--primary) / 0.15);
+}
+
+.chapter-panel-preview {
+    position: relative;
+    width: 120px;
+    min-width: 120px;
+    height: 68px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: hsl(var(--muted));
+    flex-shrink: 0;
+}
+
+.chapter-panel-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.chapter-panel-item:hover .chapter-panel-preview-img {
+    transform: scale(1.05);
+}
+
+.chapter-panel-preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 60%, hsl(var(--background) / 0.2));
+    pointer-events: none;
+}
+
+.chapter-panel-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.chapter-panel-name {
+    font-size: 0.85rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.chapter-panel-read-badge {
+    color: hsl(var(--primary));
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+}
+
+.chapter-panel-premium {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Mobile: full width panel */
+@media (max-width: 480px) {
+    .chapter-panel {
+        width: 100vw;
+        max-width: 100vw;
+    }
+
+    .chapter-panel-preview {
+        width: 90px;
+        min-width: 90px;
+        height: 51px;
+    }
+}
+
+/* Dark mode adjustments for panel */
+:root[data-theme="dark"] .chapter-panel-overlay,
+.dark .chapter-panel-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}

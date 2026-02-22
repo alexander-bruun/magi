@@ -747,12 +747,11 @@
         const scrollToTop = (behavior = 'smooth') => {
           // Scroll any reader containers to top
           getScrollableElements().forEach(el => el.scrollTo({ top: 0, behavior }));
-          // Always scroll main content to top
-          const mainElement = document.querySelector('main');
-          if (mainElement) mainElement.scrollTo({ top: 0, behavior });
+          // Scroll the window/document to top
+          window.scrollTo({ top: 0, behavior });
         };
 
-        window.scrollTo = () => scrollToTop('smooth');
+        window.scrollToTop = () => scrollToTop('smooth');
         window.scrollToTopInstant = () => scrollToTop('auto');
       }
     };
@@ -1366,5 +1365,107 @@
     // Close the modal
     UIkit.modal(document.getElementById('file-explorer-modal')).hide();
   };
+
+  // ============================================================================
+  // CHAPTER PANEL MODULE - Sliding chapter list with preview images
+  // ============================================================================
+
+  let chapterPanelLoaded = false;
+
+  function attachChapterPanelTriggers() {
+    document.querySelectorAll('.chapter-panel-trigger').forEach(function (btn) {
+      if (btn.dataset.panelBound) return;
+      btn.dataset.panelBound = '1';
+      btn.addEventListener('click', function () {
+        var mediaSlug = btn.dataset.mediaSlug;
+        var chapterSlug = btn.dataset.chapterSlug;
+        if (mediaSlug && chapterSlug) {
+          window.openChapterPanel(mediaSlug, chapterSlug);
+        }
+      });
+    });
+  }
+
+  /**
+   * Opens the chapter sliding panel from the right side.
+   * Loads content via fetch on first open, then reuses cached content.
+   */
+  window.openChapterPanel = function (mediaSlug, chapterSlug) {
+    var panel = document.getElementById('chapter-panel');
+    var overlay = document.getElementById('chapter-panel-overlay');
+    if (!panel || !overlay) return;
+
+    // Measure scrollbar width BEFORE hiding overflow so the measurement is accurate
+    var scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    // Show overlay and panel
+    overlay.classList.add('active');
+    panel.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = scrollbarWidth + 'px';
+
+    // Load content if not already loaded
+    if (!chapterPanelLoaded) {
+      chapterPanelLoaded = true;
+      var contentEl = document.getElementById('chapter-panel-content');
+      if (contentEl) {
+        fetch('/api/chapter-panel/' + mediaSlug + '/' + chapterSlug)
+          .then(function (res) { return res.text(); })
+          .then(function (html) {
+            contentEl.innerHTML = html;
+            // Scroll to active chapter
+            setTimeout(function () {
+              var activeItem = contentEl.querySelector('.chapter-panel-item-active');
+              if (activeItem) {
+                activeItem.scrollIntoView({ block: 'center', behavior: 'auto' });
+              }
+            }, 50);
+          })
+          .catch(function (err) {
+            contentEl.innerHTML = '<div class="p-4 text-center text-gray-500">Failed to load chapters</div>';
+            console.error('Chapter panel load error:', err);
+          });
+      }
+    } else {
+      // Already loaded — just scroll to active item
+      setTimeout(function () {
+        var activeItem = document.querySelector('.chapter-panel-item-active');
+        if (activeItem) {
+          activeItem.scrollIntoView({ block: 'center', behavior: 'auto' });
+        }
+      }, 50);
+    }
+  };
+
+  /**
+   * Closes the chapter sliding panel.
+   */
+  window.closeChapterPanel = function () {
+    var panel = document.getElementById('chapter-panel');
+    var overlay = document.getElementById('chapter-panel-overlay');
+    if (panel) panel.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  };
+
+  // Close panel on Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var panel = document.getElementById('chapter-panel');
+      if (panel && panel.classList.contains('active')) {
+        window.closeChapterPanel();
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+  });
+
+  // Attach triggers on DOM ready and after HTMX swaps
+  document.addEventListener('DOMContentLoaded', attachChapterPanelTriggers);
+  document.addEventListener('htmx:afterSwap', function () {
+    chapterPanelLoaded = false;
+    window.closeChapterPanel();
+    attachChapterPanelTriggers();
+  });
 
 })(window);
