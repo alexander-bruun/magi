@@ -30,18 +30,20 @@ templ AccountMediaListingWithTags(media []models.Media, currentPage int, totalPa
 // Generic account page layout - consolidates all account list pages
 templ AccountPageLayout(title string, breadcrumbLabel string, path string, media []models.Media, currentPage int, totalPages int, sort string, order string, emptyMessage string, allTags []string, selectedTags []string, tagMode string, searchFilter string) {
     @PageTitle(fmt.Sprintf("%s - page #%d", title, currentPage))
-    @Breadcrumb([]BreadcrumbItem{
-        { Label: "Home", Href: "/" },
-        { Label: "Account", Href: "/account" },
-        { Label: breadcrumbLabel, Href: path },
-    })
+    <div class="uk-container">
+        @Breadcrumb([]BreadcrumbItem{
+            { Label: "Home", Href: "/" },
+            { Label: "Account", Href: "/account" },
+            { Label: breadcrumbLabel, Href: path },
+        })
 
-    <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ title }</span></h2>
-    <div id="account-media-list">
-        if len(selectedTags) > 0 || tagMode != "" {
-            @AccountMediaListingWithTags(media, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter)
-        } else {
-            @AccountMediaListing(media, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter)
-        }
+        <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ title }</span></h2>
+        <div id="account-media-list">
+            if len(selectedTags) > 0 || tagMode != "" {
+                @AccountMediaListingWithTags(media, currentPage, totalPages, sort, order, path, emptyMessage, selectedTags, tagMode, allTags, searchFilter)
+            } else {
+                @AccountMediaListing(media, currentPage, totalPages, sort, order, path, emptyMessage, allTags, searchFilter)
+            }
+        </div>
     </div>
 }
