@@ -315,9 +315,10 @@ func selectCandidatePages(totalPages int) []int {
 	return candidates
 }
 
-// analyzeImageInterest scores an image based on how visually interesting it is.
-// Higher scores mean more content, detail, and variation — good for previews.
-// It combines: edge density, color variance, non-white content ratio, and contrast.
+// analyzeImageInterest scores an image for character artwork presence.
+// The algorithm favors pages with colorful character art (skin tones, saturated
+// colors, smooth gradients) and penalizes text-heavy pages (speech bubbles,
+// bimodal black/white luminance). Higher scores = better character previews.
 func analyzeImageInterest(img image.Image) float64 {
 	// Scale down for fast processing
 	small := resize.Resize(analysisScale, 0, img, resize.NearestNeighbor)
@@ -328,13 +329,21 @@ func analyzeImageInterest(img image.Image) float64 {
 		return 0
 	}
 
-	// Convert to grayscale array for edge detection
-	gray := make([][]float64, h)
-	var totalR, totalG, totalB float64
-	var rValues, gValues, bValues []float64
+	// Pre-allocate pixel data arrays
 	totalPixels := float64(w * h)
+	gray := make([][]float64, h)
+
+	var totalR, totalG, totalB float64
 	whitePixels := 0.0
 	blackPixels := 0.0
+	skinPixels := 0.0
+	saturatedPixels := 0.0
+	midTonePixels := 0.0
+	var totalSaturation float64
+
+	// Luminance histogram for bimodality detection (16 bins)
+	const lumBins = 16
+	var lumHist [lumBins]float64
 
 	for y := 0; y < h; y++ {
 		gray[y] = make([]float64, w)
@@ -342,38 +351,64 @@ func analyzeImageInterest(img image.Image) float64 {
 			r, g, b, _ := small.At(x+bounds.Min.X, y+bounds.Min.Y).RGBA()
 			rf, gf, bf := float64(r>>8), float64(g>>8), float64(b>>8)
 
-			gray[y][x] = 0.299*rf + 0.587*gf + 0.114*bf
+			lum := 0.299*rf + 0.587*gf + 0.114*bf
+			gray[y][x] = lum
 			totalR += rf
 			totalG += gf
 			totalB += bf
 
-			rValues = append(rValues, rf)
-			gValues = append(gValues, gf)
-			bValues = append(bValues, bf)
+			// Luminance histogram
+			bin := int(lum / 256.0 * float64(lumBins))
+			if bin >= lumBins {
+				bin = lumBins - 1
+			}
+			lumHist[bin]++
 
-			// Count very white pixels (likely blank areas)
+			// Count extreme pixels
 			if rf > 240 && gf > 240 && bf > 240 {
 				whitePixels++
 			}
-			// Count very dark pixels (likely ink/outlines)
 			if rf < 15 && gf < 15 && bf < 15 {
 				blackPixels++
+			}
+
+			// Count mid-tone pixels (characteristic of character shading/artwork)
+			if lum > 40 && lum < 210 {
+				midTonePixels++
+			}
+
+			// --- Color saturation (HSV-based) ---
+			maxC := math.Max(rf, math.Max(gf, bf))
+			minC := math.Min(rf, math.Min(gf, bf))
+			chroma := maxC - minC
+			sat := 0.0
+			if maxC > 0 {
+				sat = chroma / maxC
+			}
+			totalSaturation += sat
+			if sat > 0.15 && maxC > 30 {
+				saturatedPixels++
+			}
+
+			// --- Skin tone detection ---
+			// Skin tones: warm hue, moderate saturation, not too dark/light
+			if isSkinTone(rf, gf, bf, sat, maxC) {
+				skinPixels++
 			}
 		}
 	}
 
-	// 1. Edge density (Sobel operator) — measures detail and line art
+	// === SCORING ===
+
+	// 1. Edge density (Sobel) — still useful but reduced weight
 	edgeCount := 0.0
 	for y := 1; y < h-1; y++ {
 		for x := 1; x < w-1; x++ {
-			// Sobel X
 			gx := -gray[y-1][x-1] + gray[y-1][x+1] +
 				-2*gray[y][x-1] + 2*gray[y][x+1] +
 				-gray[y+1][x-1] + gray[y+1][x+1]
-			// Sobel Y
 			gy := -gray[y-1][x-1] - 2*gray[y-1][x] - gray[y-1][x+1] +
 				gray[y+1][x-1] + 2*gray[y+1][x] + gray[y+1][x+1]
-
 			magnitude := math.Sqrt(gx*gx + gy*gy)
 			if magnitude > edgeThreshold {
 				edgeCount++
@@ -382,35 +417,223 @@ func analyzeImageInterest(img image.Image) float64 {
 	}
 	edgeDensity := edgeCount / totalPixels
 
-	// 2. Color variance — measures visual richness
-	meanR, meanG, meanB := totalR/totalPixels, totalG/totalPixels, totalB/totalPixels
-	var varR, varG, varB float64
-	for i := 0; i < len(rValues); i++ {
-		varR += (rValues[i] - meanR) * (rValues[i] - meanR)
-		varG += (gValues[i] - meanG) * (gValues[i] - meanG)
-		varB += (bValues[i] - meanB) * (bValues[i] - meanB)
-	}
-	colorVariance := (varR + varG + varB) / (3 * totalPixels)
+	// 2. Color saturation score — characters have colored hair, skin, clothing
+	avgSaturation := totalSaturation / totalPixels
+	saturationRatio := saturatedPixels / totalPixels
 
-	// 3. Non-white ratio — penalize blank/mostly-white pages
+	// 3. Skin tone ratio — strong signal for character presence
+	skinRatio := skinPixels / totalPixels
+
+	// 4. Mid-tone ratio — artwork has smooth gradients; text pages are bimodal (black+white)
+	midToneRatio := midTonePixels / totalPixels
+
+	// 5. Luminance bimodality penalty — detect text-heavy pages
+	// Text pages have peaks at very low (ink) and very high (paper) luminance
+	// with little in between. We measure this as a "text penalty".
+	textPenalty := computeLuminanceBimodality(lumHist[:], totalPixels)
+
+	// 6. White blob penalty — large contiguous white areas = speech bubbles
+	whiteBlobPenalty := computeWhiteBlobPenalty(gray, w, h)
+
+	// 7. Non-white ratio — still penalize mostly-blank pages
 	nonWhiteRatio := 1.0 - (whitePixels / totalPixels)
 
-	// 4. Content balance — pages with a good mix of dark and light are more interesting
-	// than uniformly colored pages
-	blackRatio := blackPixels / totalPixels
-	contentBalance := math.Min(blackRatio*10, 1.0) * math.Min(nonWhiteRatio*2, 1.0)
-
-	// 5. Spatial variance — check if detail is spread across the image (not just one corner)
+	// 8. Spatial variance — detail spread across the image
 	spatialScore := computeSpatialVariance(gray, w, h)
 
-	// Combine scores with weights
-	score := edgeDensity*40.0 + // Edge detail is the strongest indicator
-		(colorVariance/1000.0)*15.0 + // Color richness
-		nonWhiteRatio*20.0 + // Penalize blank pages heavily
-		contentBalance*15.0 + // Good balance of content
-		spatialScore*10.0 // Content spread across the image
+	// 9. Gradient smoothness — character shading produces smooth gradients,
+	// while text has abrupt transitions. Measure ratio of soft edges to hard edges.
+	gradientScore := computeGradientSmoothness(gray, w, h)
+
+	// Combine with character-focused weights
+	score := edgeDensity*15.0 + // Reduced: text also has high edges
+		avgSaturation*25.0 + // Color saturation (characters are colorful)
+		saturationRatio*20.0 + // Ratio of colorful pixels
+		skinRatio*30.0 + // Skin tones = characters present
+		midToneRatio*20.0 + // Mid-tones = artwork shading
+		nonWhiteRatio*10.0 + // Penalize blank pages
+		spatialScore*10.0 + // Content spread
+		gradientScore*15.0 // Smooth gradients = artwork
+
+	// Apply penalties
+	score *= (1.0 - textPenalty*0.5)      // Reduce score for text-heavy pages
+	score *= (1.0 - whiteBlobPenalty*0.4) // Reduce score for speech-bubble-heavy pages
+
+	// Bonus: heavily penalize pages that are >60% black (solid/dark pages)
+	blackRatio := blackPixels / totalPixels
+	if blackRatio > 0.6 {
+		score *= 0.3
+	}
 
 	return score
+}
+
+// isSkinTone detects whether an RGB pixel is likely a skin tone.
+// Uses a broad range to cover light, medium, and dark skin across manga/webtoon art styles.
+func isSkinTone(r, g, b, saturation, maxC float64) bool {
+	// Too dark or too bright for skin
+	if maxC < 40 || maxC > 250 {
+		return false
+	}
+	// Skin needs some warmth: R should be dominant or close
+	if r < g || r < b {
+		return false
+	}
+	// Warm tone check: red-blue difference
+	warmth := r - b
+	if warmth < 10 {
+		return false
+	}
+	// Saturation range for skin (not gray, not fully saturated)
+	if saturation < 0.08 || saturation > 0.65 {
+		return false
+	}
+	// Green should be between red and blue for natural skin
+	if g < b {
+		return false
+	}
+	// Additional constraint: luminance range typical for skin
+	lum := 0.299*r + 0.587*g + 0.114*b
+	if lum < 50 || lum > 230 {
+		return false
+	}
+	return true
+}
+
+// computeLuminanceBimodality detects text-heavy pages by analyzing the luminance histogram.
+// Text pages have strong peaks at the extremes (black ink + white paper) with a valley
+// in the middle. Returns 0-1 where 1 = very bimodal (text-heavy).
+func computeLuminanceBimodality(hist []float64, totalPixels float64) float64 {
+	n := len(hist)
+	if n < 4 {
+		return 0
+	}
+
+	// Normalize histogram
+	norm := make([]float64, n)
+	for i, v := range hist {
+		norm[i] = v / totalPixels
+	}
+
+	// Sum mass in bottom 3 bins (dark/ink) and top 3 bins (white/paper)
+	darkMass := norm[0] + norm[1] + norm[2]
+	lightMass := norm[n-1] + norm[n-2] + norm[n-3]
+
+	// Sum mass in middle bins
+	var middleMass float64
+	for i := 3; i < n-3; i++ {
+		middleMass += norm[i]
+	}
+
+	// Bimodality: strong extremes with weak middle
+	extremeMass := darkMass + lightMass
+
+	if extremeMass < 0.3 {
+		return 0 // Not bimodal, plenty of mid-tones
+	}
+
+	// Ratio of extreme to middle — higher means more text-like
+	if middleMass < 0.01 {
+		return 1.0 // Almost entirely black + white
+	}
+
+	bimodality := extremeMass / (extremeMass + middleMass)
+	// Scale to 0-1 range (only penalize when clearly bimodal)
+	penalty := (bimodality - 0.5) * 2.0
+	if penalty < 0 {
+		penalty = 0
+	}
+	if penalty > 1 {
+		penalty = 1
+	}
+	return penalty
+}
+
+// computeWhiteBlobPenalty estimates the presence of large white regions (speech bubbles).
+// Divides the image into blocks and checks for clusters of mostly-white blocks.
+// Returns 0-1 where 1 = many large white blobs.
+func computeWhiteBlobPenalty(gray [][]float64, w, h int) float64 {
+	blockSize := 8
+	if w < blockSize*2 || h < blockSize*2 {
+		return 0
+	}
+
+	blocksX := w / blockSize
+	blocksY := h / blockSize
+	totalBlocks := blocksX * blocksY
+	if totalBlocks == 0 {
+		return 0
+	}
+
+	whiteBlocks := 0
+	for by := 0; by < blocksY; by++ {
+		for bx := 0; bx < blocksX; bx++ {
+			whiteCount := 0
+			totalCount := 0
+			for y := by * blockSize; y < (by+1)*blockSize && y < h; y++ {
+				for x := bx * blockSize; x < (bx+1)*blockSize && x < w; x++ {
+					totalCount++
+					if gray[y][x] > 235 {
+						whiteCount++
+					}
+				}
+			}
+			if totalCount > 0 && float64(whiteCount)/float64(totalCount) > 0.85 {
+				whiteBlocks++
+			}
+		}
+	}
+
+	whiteBlockRatio := float64(whiteBlocks) / float64(totalBlocks)
+	// Only penalize when >25% of blocks are white (significant speech bubbles)
+	if whiteBlockRatio < 0.25 {
+		return 0
+	}
+	// Scale: 25% → 0, 70% → 1
+	penalty := (whiteBlockRatio - 0.25) / 0.45
+	if penalty > 1 {
+		penalty = 1
+	}
+	return penalty
+}
+
+// computeGradientSmoothness measures the ratio of soft gradients to hard edges.
+// Character artwork has smooth shading gradients while text has abrupt black/white transitions.
+// Returns 0-1 where higher = smoother gradients (more artwork-like).
+func computeGradientSmoothness(gray [][]float64, w, h int) float64 {
+	if w < 3 || h < 3 {
+		return 0
+	}
+
+	softEdges := 0.0
+	hardEdges := 0.0
+	softThreshold := 15.0 // Subtle gradients
+	hardThreshold := 60.0 // Sharp transitions (text edges)
+
+	for y := 1; y < h-1; y++ {
+		for x := 1; x < w-1; x++ {
+			gx := -gray[y-1][x-1] + gray[y-1][x+1] +
+				-2*gray[y][x-1] + 2*gray[y][x+1] +
+				-gray[y+1][x-1] + gray[y+1][x+1]
+			gy := -gray[y-1][x-1] - 2*gray[y-1][x] - gray[y-1][x+1] +
+				gray[y+1][x-1] + 2*gray[y+1][x] + gray[y+1][x+1]
+			magnitude := math.Sqrt(gx*gx + gy*gy)
+
+			if magnitude > softThreshold && magnitude < hardThreshold {
+				softEdges++
+			} else if magnitude >= hardThreshold {
+				hardEdges++
+			}
+		}
+	}
+
+	totalEdges := softEdges + hardEdges
+	if totalEdges == 0 {
+		return 0
+	}
+
+	// Higher ratio of soft-to-hard edges = more artwork, less text
+	return softEdges / totalEdges
 }
 
 // computeSpatialVariance divides the image into a 3x3 grid and checks
@@ -564,14 +787,18 @@ func findBestVerticalRegion(img image.Image, cropH int) int {
 	return int(float64(bestY) / scaleRatio)
 }
 
-// scoreRegion scores a horizontal strip of the grayscale image for edge density and contrast.
+// scoreRegion scores a horizontal strip for character artwork presence.
+// Combines edge density, gradient smoothness, color saturation, and skin tones.
 func scoreRegion(gray [][]float64, w, startY, endY int) float64 {
 	if endY-startY < 3 || w < 3 {
 		return 0
 	}
 
 	edgeCount := 0.0
+	softEdges := 0.0
+	hardEdges := 0.0
 	var values []float64
+	whitePixels := 0.0
 
 	for y := startY + 1; y < endY-1; y++ {
 		for x := 1; x < w-1; x++ {
@@ -584,7 +811,15 @@ func scoreRegion(gray [][]float64, w, startY, endY int) float64 {
 			if mag > edgeThreshold {
 				edgeCount++
 			}
+			if mag > 15 && mag < 60 {
+				softEdges++
+			} else if mag >= 60 {
+				hardEdges++
+			}
 			values = append(values, gray[y][x])
+			if gray[y][x] > 235 {
+				whitePixels++
+			}
 		}
 	}
 
@@ -596,20 +831,35 @@ func scoreRegion(gray [][]float64, w, startY, endY int) float64 {
 	// Edge density
 	edgeDensity := edgeCount / totalPixels
 
-	// Luminance variance (contrast)
-	var mean float64
+	// Mid-tone ratio — artwork regions have lots of mid-luminance pixels
+	midToneCount := 0.0
 	for _, v := range values {
-		mean += v
+		if v > 40 && v < 210 {
+			midToneCount++
+		}
 	}
-	mean /= totalPixels
-	var variance float64
-	for _, v := range values {
-		diff := v - mean
-		variance += diff * diff
-	}
-	variance /= totalPixels
+	midToneRatio := midToneCount / totalPixels
 
-	return edgeDensity*60 + (variance/1000)*40
+	// Gradient smoothness — prefer soft shading over sharp text edges
+	gradientScore := 0.0
+	totalEdges := softEdges + hardEdges
+	if totalEdges > 0 {
+		gradientScore = softEdges / totalEdges
+	}
+
+	// White blob penalty — avoid regions dominated by speech bubbles
+	whiteRatio := whitePixels / totalPixels
+	whitePenalty := 0.0
+	if whiteRatio > 0.3 {
+		whitePenalty = (whiteRatio - 0.3) / 0.7
+	}
+
+	score := edgeDensity*20 +
+		midToneRatio*35 +
+		gradientScore*25 +
+		(1.0-whitePenalty)*20
+
+	return score
 }
 
 // decodeZipEntry decodes an image from a zip file entry
