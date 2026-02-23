@@ -265,7 +265,7 @@ func HandleBrowserChallengeVerify(c fiber.Ctx) error {
 		Path:     "/",
 	})
 
-	log.Infof("Browser challenge solved by IP: %s", getRealIP(c))
+	log.Debugf("Browser challenge solved by IP: %s", getRealIP(c))
 
 	return c.JSON(fiber.Map{
 		"success": true,

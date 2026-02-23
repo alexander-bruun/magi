@@ -62,6 +62,38 @@
         }
     };
 
+    /**
+     * JS-driven eased scroll — works regardless of any CSS overflow on parent elements.
+     * @param {number} targetY  - absolute page Y position to scroll to
+     * @param {number} duration - animation duration in ms
+     */
+    function smoothScrollTo(targetY, duration) {
+        // Cancel any in-progress scroll animation
+        if (smoothScrollTo._raf) cancelAnimationFrame(smoothScrollTo._raf);
+
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        if (distance === 0) return;
+
+        const startTime = performance.now();
+
+        // Ease in-out cubic
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        function step(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            window.scrollTo(0, startY + distance * easeInOutCubic(progress));
+            if (progress < 1) {
+                smoothScrollTo._raf = requestAnimationFrame(step);
+            }
+        }
+
+        smoothScrollTo._raf = requestAnimationFrame(step);
+    }
+
     // Reader class for modularity
     class Reader {
         constructor(containerSelector) {
@@ -145,7 +177,7 @@
             Promise.all(loadPromises).then(() => {
                 this.updateMode();
                 // Set up intersection observer for lazy loading
-                const observer = new IntersectionObserver((entries) => {
+                const lazyObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
                             const canvas = entry.target;
@@ -153,11 +185,14 @@
                             if (imageIndex >= this.currentLoadedIndex && imageIndex < this.images.length) {
                                 this.loadImageToCanvas(canvas, this.images[imageIndex]);
                                 this.currentLoadedIndex++;
-                                observer.unobserve(canvas);
+                                lazyObserver.unobserve(canvas);
                             }
                         }
                     });
                 }, { rootMargin: '100px' });
+
+                // Store reference to lazyObserver for use in scrollToImage
+                this.lazyObserver = lazyObserver;
 
                 // Create placeholder canvases for remaining images
                 for (let i = 2; i < this.images.length; i++) {
@@ -173,7 +208,10 @@
                     });
                     this.container.appendChild(canvas);
                     this.lazyImages.push(canvas);
-                    observer.observe(canvas);
+                    lazyObserver.observe(canvas);
+
+                    // Also store canvas reference so scrollToImage can find it
+                    this.loadedCanvases[i] = canvas;
                 }
                 this.isInitialLoad = false;
             });
@@ -245,6 +283,47 @@
                 const lastCanvas = this.container.querySelector('.reader-canvas:last-child');
                 if (lastCanvas) this.observer.observe(lastCanvas);
             });
+        }
+
+        /**
+         * Scroll to a specific image by index.
+         * Handles progressive loading: if the canvas hasn't been loaded yet,
+         * it triggers eager loading of all canvases up to and including the target,
+         * then scrolls once the target is ready.
+         */
+        async scrollToImage(index) {
+            // Clamp index to valid range
+            index = Math.max(0, Math.min(index, this.images.length - 1));
+
+            const canvas = this.loadedCanvases[index];
+            if (!canvas) return;
+
+            // Check if this canvas is still a placeholder (hasn't been loaded yet).
+            // Placeholder canvases have width === PLACEHOLDER_SIZE.
+            const isPlaceholder = canvas.width === DIMENSIONS.PLACEHOLDER_SIZE && canvas.height === DIMENSIONS.PLACEHOLDER_SIZE;
+
+            if (isPlaceholder) {
+                // Eagerly load all canvases from currentLoadedIndex up to target index.
+                // We do this by temporarily unobserving placeholders and loading them directly.
+                const loadChain = [];
+                for (let i = this.currentLoadedIndex; i <= index; i++) {
+                    const c = this.loadedCanvases[i];
+                    if (c && c.width === DIMENSIONS.PLACEHOLDER_SIZE) {
+                        // Stop the lazy observer from handling this one
+                        if (this.lazyObserver) this.lazyObserver.unobserve(c);
+                        // Remove from lazyImages queue if present
+                        const qIdx = this.lazyImages.indexOf(c);
+                        if (qIdx !== -1) this.lazyImages.splice(qIdx, 1);
+                        loadChain.push(this.loadImageToCanvas(c, this.images[i]));
+                        this.currentLoadedIndex = Math.max(this.currentLoadedIndex, i + 1);
+                    }
+                }
+                // Wait for the target canvas to finish loading
+                await Promise.all(loadChain);
+            }
+
+            // JS-driven eased scroll — bypasses any CSS overflow interference
+            smoothScrollTo(canvas.getBoundingClientRect().top + window.scrollY, 600);
         }
 
         updateMode() {
@@ -597,6 +676,164 @@
         }
     }
 
+    // --- Reader Progress Bar (Webtoon mode) ---
+
+    // Inject progress bar enhancement styles once
+    function injectProgressBarStyles() {
+        const id = 'magi-progress-bar-styles';
+        if (document.getElementById(id)) return;
+        const style = document.createElement('style');
+        style.id = id;
+        style.textContent = `
+            .progress-square {
+                position: relative;
+                overflow: hidden;
+                transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+                            opacity 0.18s ease,
+                            background-color 0.18s ease;
+                transform-origin: center center;
+                will-change: transform;
+            }
+            .progress-square:hover {
+                transform: scaleY(1.6) scaleX(1.25);
+                opacity: 1 !important;
+                filter: brightness(1.25);
+                z-index: 1;
+            }
+            .progress-square.active {
+                transform: scaleY(1.5) scaleX(1.2);
+                z-index: 1;
+            }
+            .progress-square.active:hover {
+                transform: scaleY(1.8) scaleX(1.35);
+            }
+            .progress-square.active::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(
+                    90deg,
+                    transparent 0%,
+                    rgba(255,255,255,0.55) 50%,
+                    transparent 100%
+                );
+                animation: progress-scan 1.2s ease-in-out infinite;
+            }
+            @keyframes progress-scan {
+                0%   { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function initReaderProgressBar(images) {
+        const progress = document.getElementById('progress');
+        if (!progress || !images || images.length === 0) return;
+
+        injectProgressBarStyles();
+
+        // Remove old squares if any
+        progress.innerHTML = '';
+
+        for (let i = 0; i < images.length; i++) {
+            const sq = document.createElement('div');
+            sq.className = 'progress-square';
+            sq.title = `Page ${i + 1}`;
+            sq.style.cursor = 'pointer';
+
+            // Click handler: delegate to the reader's scrollToImage method.
+            // We capture `i` in the closure.
+            sq.addEventListener('click', () => {
+                const reader = window.reader;
+                if (reader && typeof reader.scrollToImage === 'function') {
+                    reader.scrollToImage(i);
+                } else {
+                    // Fallback: find the canvas by data-index and scroll to it directly.
+                    const canvas = document.querySelector(
+                        `${SELECTORS.CONTAINER} .reader-canvas[data-index="${i}"]`
+                    );
+                    if (canvas) {
+                        smoothScrollTo(canvas.getBoundingClientRect().top + window.scrollY, 600);
+                    }
+                }
+            });
+
+            progress.appendChild(sq);
+        }
+
+        const squares = progress.querySelectorAll('.progress-square');
+        const visibleRatios = new Array(images.length).fill(0);
+
+        const observer = new window.IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                const index = parseInt(entry.target.dataset.index, 10);
+                if (!isNaN(index)) {
+                    visibleRatios[index] = entry.intersectionRatio;
+                }
+            });
+
+            let maxIndex = 0;
+            let maxRatio = 0;
+            visibleRatios.forEach((ratio, i) => {
+                if (ratio > maxRatio) {
+                    maxRatio = ratio;
+                    maxIndex = i;
+                }
+            });
+
+            squares.forEach(s => s.classList.remove('active'));
+            if (maxRatio > 0) {
+                squares[maxIndex].classList.add('active');
+            } else if (squares.length > 0) {
+                squares[0].classList.add('active'); // fallback: highlight first
+            }
+        }, {
+            threshold: buildThresholdList()
+        });
+
+        function buildThresholdList() {
+            let thresholds = [];
+            for (let i = 0; i <= 1; i += 0.05) {
+                thresholds.push(i);
+            }
+            return thresholds;
+        }
+
+        // Observe all current and future canvases
+        const container = document.querySelector('#reader-images-container');
+
+        function observeAllCanvases() {
+            const canvases = container.querySelectorAll('.reader-canvas');
+            canvases.forEach(canvas => observer.observe(canvas));
+        }
+        observeAllCanvases();
+
+        // MutationObserver to watch for new canvases
+        const mutationObserver = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && node.classList.contains('reader-canvas')) {
+                        observer.observe(node);
+                    }
+                });
+            });
+        });
+        mutationObserver.observe(container, { childList: true });
+    }
+
+    // Wait for canvases to be rendered by JS
+    function waitForCanvasesAndInitProgressBar(images) {
+        function tryInit() {
+            if (document.querySelectorAll('.reader-canvas').length > 0) {
+                initReaderProgressBar(images);
+            } else {
+                setTimeout(tryInit, 100);
+            }
+        }
+        tryInit();
+    }
+
     // Initialize when DOM is ready
     function initializeReaders() {
         console.log('[Reader] Initializing readers...');
@@ -883,13 +1120,25 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log('[Reader] DOMContentLoaded fired');
+        let images = [];
+        const container = document.querySelector('#reader-images-container');
+        if (container) {
+            images = Array.from(container.querySelectorAll('.reader-image')).map(div => div.dataset.url).filter(url => url && url.trim() && url !== 'undefined');
+        }
         initializeReaders();
+        waitForCanvasesAndInitProgressBar(images);
     });
 
     // Also initialize after HTMX content swaps
     document.addEventListener('htmx:afterSwap', function() {
         console.log('[Reader] htmx:afterSwap fired');
+        let images = [];
+        const container = document.querySelector('#reader-images-container');
+        if (container) {
+            images = Array.from(container.querySelectorAll('.reader-image')).map(div => div.dataset.url).filter(url => url && url.trim() && url !== 'undefined');
+        }
         initializeReaders();
+        waitForCanvasesAndInitProgressBar(images);
     });
 
 })();
