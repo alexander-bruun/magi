@@ -3786,7 +3786,7 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 		var templ_7745c5c3_Var192 string
 		templ_7745c5c3_Var192, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1297, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1297, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var192))
 		if templ_7745c5c3_Err != nil {
@@ -3812,7 +3812,7 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 			var templ_7745c5c3_Var193 string
 			templ_7745c5c3_Var193, templ_7745c5c3_Err = templ.JoinStringErrs(media.Slug)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1302, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1302, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var193))
 			if templ_7745c5c3_Err != nil {
@@ -3825,7 +3825,7 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 			var templ_7745c5c3_Var194 string
 			templ_7745c5c3_Var194, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Slug)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1302, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1302, Col: 114}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var194))
 			if templ_7745c5c3_Err != nil {
@@ -3836,14 +3836,14 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 356, "<div id=\"reader-images-container\" data-media-type=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 356, "<!-- Reader Progress Bar --><div class=\"progress-container\" id=\"progress\"></div><div id=\"reader-images-container\" data-media-type=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var195 string
 		templ_7745c5c3_Var195, templ_7745c5c3_Err = templ.JoinStringErrs(media.Type)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1310, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1314, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var195))
 		if templ_7745c5c3_Err != nil {
@@ -3861,7 +3861,7 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 			var templ_7745c5c3_Var196 string
 			templ_7745c5c3_Var196, templ_7745c5c3_Err = templ.JoinStringErrs(imageURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1312, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1316, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var196))
 			if templ_7745c5c3_Err != nil {
@@ -3888,7 +3888,7 @@ func Chapter(prevSlug string, nextSlug string, media models.Media, images []stri
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 362, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 362, "</div><!-- Reader Progress Bar Script removed: now integrated into reader.js --></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -3930,7 +3930,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var198 templ.SafeURL
 			templ_7745c5c3_Var198, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, prevSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1356, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1363, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var198))
 			if templ_7745c5c3_Err != nil {
@@ -3954,7 +3954,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var199 templ.SafeURL
 			templ_7745c5c3_Var199, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1369, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1376, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var199))
 			if templ_7745c5c3_Err != nil {
@@ -3967,7 +3967,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var200 string
 			templ_7745c5c3_Var200, templ_7745c5c3_Err = templ.JoinStringErrs(media.Slug)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1375, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1382, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var200))
 			if templ_7745c5c3_Err != nil {
@@ -3980,7 +3980,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var201 string
 			templ_7745c5c3_Var201, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Slug)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1376, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1383, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var201))
 			if templ_7745c5c3_Err != nil {
@@ -3993,7 +3993,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var202 string
 			templ_7745c5c3_Var202, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1378, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1385, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var202))
 			if templ_7745c5c3_Err != nil {
@@ -4012,7 +4012,7 @@ func ChapterNavigation(media models.Media, chapter models.Chapter, chapters []mo
 			var templ_7745c5c3_Var203 templ.SafeURL
 			templ_7745c5c3_Var203, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1387, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1394, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var203))
 			if templ_7745c5c3_Err != nil {
@@ -4066,7 +4066,7 @@ func ChapterReadBadge(read bool, mangaSlug string, chapterID string) templ.Compo
 			var templ_7745c5c3_Var205 string
 			templ_7745c5c3_Var205, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/chapter/%s/unread", chapterID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1411, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1418, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var205))
 			if templ_7745c5c3_Err != nil {
@@ -4084,7 +4084,7 @@ func ChapterReadBadge(read bool, mangaSlug string, chapterID string) templ.Compo
 			var templ_7745c5c3_Var206 string
 			templ_7745c5c3_Var206, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/chapter/%s/read", chapterID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1425, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1432, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var206))
 			if templ_7745c5c3_Err != nil {
@@ -4128,7 +4128,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 		var templ_7745c5c3_Var208 string
 		templ_7745c5c3_Var208, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(chapters)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1437, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1444, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var208))
 		if templ_7745c5c3_Err != nil {
@@ -4154,7 +4154,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var209 string
 			templ_7745c5c3_Var209, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-selector-btn-%s", chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1450, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1457, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var209))
 			if templ_7745c5c3_Err != nil {
@@ -4167,7 +4167,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var210 string
 			templ_7745c5c3_Var210, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector", mangaSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1452, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1459, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var210))
 			if templ_7745c5c3_Err != nil {
@@ -4180,7 +4180,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var211 string
 			templ_7745c5c3_Var211, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"chapter\": \"%s\"}", chapter.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1455, Col: 66}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1462, Col: 66}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var211))
 			if templ_7745c5c3_Err != nil {
@@ -4203,7 +4203,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var212 string
 			templ_7745c5c3_Var212, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1461, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1468, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var212))
 			if templ_7745c5c3_Err != nil {
@@ -4231,7 +4231,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var213 string
 				templ_7745c5c3_Var213, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector", mangaSlug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1470, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1477, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var213))
 				if templ_7745c5c3_Err != nil {
@@ -4244,7 +4244,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var214 string
 				templ_7745c5c3_Var214, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"page\": %d}", chapterPage-1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1470, Col: 221}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1477, Col: 221}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var214))
 				if templ_7745c5c3_Err != nil {
@@ -4262,7 +4262,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var215 string
 			templ_7745c5c3_Var215, templ_7745c5c3_Err = templ.JoinStringErrs(chapterPage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1474, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1481, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var215))
 			if templ_7745c5c3_Err != nil {
@@ -4275,7 +4275,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var216 string
 			templ_7745c5c3_Var216, templ_7745c5c3_Err = templ.JoinStringErrs(totalPages)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1474, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1481, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var216))
 			if templ_7745c5c3_Err != nil {
@@ -4293,7 +4293,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var217 string
 				templ_7745c5c3_Var217, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector", mangaSlug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1478, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1485, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var217))
 				if templ_7745c5c3_Err != nil {
@@ -4306,7 +4306,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var218 string
 				templ_7745c5c3_Var218, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"page\": %d}", chapterPage+1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1478, Col: 221}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1485, Col: 221}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var218))
 				if templ_7745c5c3_Err != nil {
@@ -4334,7 +4334,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 			var templ_7745c5c3_Var219 string
 			templ_7745c5c3_Var219, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1487, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1494, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var219))
 			if templ_7745c5c3_Err != nil {
@@ -4352,7 +4352,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var220 string
 				templ_7745c5c3_Var220, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("image-selector-btn-%d", i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1492, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1499, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var220))
 				if templ_7745c5c3_Err != nil {
@@ -4365,7 +4365,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var221 string
 				templ_7745c5c3_Var221, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/preview", mangaSlug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1494, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1501, Col: 68}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var221))
 				if templ_7745c5c3_Err != nil {
@@ -4378,7 +4378,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var222 string
 				templ_7745c5c3_Var222, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"chapter\": \"%s\", \"index\": %d}", currentChapterSlug, i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1497, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1504, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var222))
 				if templ_7745c5c3_Err != nil {
@@ -4401,7 +4401,7 @@ func PosterEditor(mangaSlug string, chapters []models.Chapter, currentChapterSlu
 				var templ_7745c5c3_Var223 string
 				templ_7745c5c3_Var223, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(i + 1))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1503, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1510, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var223))
 				if templ_7745c5c3_Err != nil {
@@ -4469,7 +4469,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var225 string
 		templ_7745c5c3_Var225, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex + 1))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1858, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1865, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var225))
 		if templ_7745c5c3_Err != nil {
@@ -4482,7 +4482,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var226 string
 		templ_7745c5c3_Var226, templ_7745c5c3_Err = templ.JoinStringErrs(imageDataURI)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1869, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1876, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var226))
 		if templ_7745c5c3_Err != nil {
@@ -4495,7 +4495,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var227 string
 		templ_7745c5c3_Var227, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/selector", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1879, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1886, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var227))
 		if templ_7745c5c3_Err != nil {
@@ -4508,7 +4508,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var228 string
 		templ_7745c5c3_Var228, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"chapter\": \"%s\"}", chapterSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1882, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1889, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var228))
 		if templ_7745c5c3_Err != nil {
@@ -4521,7 +4521,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var229 string
 		templ_7745c5c3_Var229, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", mangaSlug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1890, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1897, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var229))
 		if templ_7745c5c3_Err != nil {
@@ -4534,7 +4534,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var230 string
 		templ_7745c5c3_Var230, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(imageIndex))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1898, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1905, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var230))
 		if templ_7745c5c3_Err != nil {
@@ -4547,7 +4547,7 @@ func PosterPreviewAndCropper(mangaSlug string, chapterSlug string, imageIndex in
 		var templ_7745c5c3_Var231 string
 		templ_7745c5c3_Var231, templ_7745c5c3_Err = templ.JoinStringErrs(chapterSlug)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1899, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1906, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var231))
 		if templ_7745c5c3_Err != nil {
@@ -4590,7 +4590,7 @@ func PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) t
 		var templ_7745c5c3_Var233 string
 		templ_7745c5c3_Var233, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(len(results)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1908, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1915, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var233))
 		if templ_7745c5c3_Err != nil {
@@ -4608,7 +4608,7 @@ func PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) t
 			var templ_7745c5c3_Var234 string
 			templ_7745c5c3_Var234, templ_7745c5c3_Err = templ.JoinStringErrs(result.CoverArtURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1912, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1919, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var234))
 			if templ_7745c5c3_Err != nil {
@@ -4621,7 +4621,7 @@ func PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) t
 			var templ_7745c5c3_Var235 string
 			templ_7745c5c3_Var235, templ_7745c5c3_Err = templ.JoinStringErrs(result.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1913, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1920, Col: 24}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var235))
 			if templ_7745c5c3_Err != nil {
@@ -4634,7 +4634,7 @@ func PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) t
 			var templ_7745c5c3_Var236 string
 			templ_7745c5c3_Var236, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/series/%s/poster/set", mangaSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1916, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1923, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var236))
 			if templ_7745c5c3_Err != nil {
@@ -4647,7 +4647,7 @@ func PosterMetadataSelector(mangaSlug string, results []metadata.SearchResult) t
 			var templ_7745c5c3_Var237 string
 			templ_7745c5c3_Var237, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf(`{"metadata_cover_url": "%s"}`, result.CoverArtURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1917, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1924, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var237))
 			if templ_7745c5c3_Err != nil {
@@ -4711,7 +4711,7 @@ func NovelChapter(prevSlug string, nextSlug string, media models.Media, chapter 
 		var templ_7745c5c3_Var239 string
 		templ_7745c5c3_Var239, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1943, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1950, Col: 82}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var239))
 		if templ_7745c5c3_Err != nil {
@@ -4724,7 +4724,7 @@ func NovelChapter(prevSlug string, nextSlug string, media models.Media, chapter 
 		var templ_7745c5c3_Var240 string
 		templ_7745c5c3_Var240, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/chapter/%s/read", chapter.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1946, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1953, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var240))
 		if templ_7745c5c3_Err != nil {
@@ -4796,7 +4796,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 			var templ_7745c5c3_Var242 templ.SafeURL
 			templ_7745c5c3_Var242, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, prevSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1987, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 1994, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var242))
 			if templ_7745c5c3_Err != nil {
@@ -4819,7 +4819,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var243 string
 		templ_7745c5c3_Var243, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2005, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2012, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var243))
 		if templ_7745c5c3_Err != nil {
@@ -4832,7 +4832,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var244 string
 		templ_7745c5c3_Var244, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2006, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2013, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var244))
 		if templ_7745c5c3_Err != nil {
@@ -4845,7 +4845,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var245 string
 		templ_7745c5c3_Var245, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-drop-%s", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2009, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2016, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var245))
 		if templ_7745c5c3_Err != nil {
@@ -4858,7 +4858,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var246 string
 		templ_7745c5c3_Var246, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("chapter-list-btn-%s", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2009, Col: 129}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2016, Col: 129}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var246))
 		if templ_7745c5c3_Err != nil {
@@ -4871,7 +4871,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var247 string
 		templ_7745c5c3_Var247, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters", len(chapters)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2013, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2020, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var247))
 		if templ_7745c5c3_Err != nil {
@@ -4908,7 +4908,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 			var templ_7745c5c3_Var250 templ.SafeURL
 			templ_7745c5c3_Var250, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2021, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2028, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var250))
 			if templ_7745c5c3_Err != nil {
@@ -4921,7 +4921,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 			var templ_7745c5c3_Var251 string
 			templ_7745c5c3_Var251, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2021, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2028, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var251))
 			if templ_7745c5c3_Err != nil {
@@ -4949,7 +4949,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 		var templ_7745c5c3_Var252 templ.SafeURL
 		templ_7745c5c3_Var252, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s", media.Slug))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2033, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2040, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var252))
 		if templ_7745c5c3_Err != nil {
@@ -4967,7 +4967,7 @@ func NovelChapterNavigation(media models.Media, chapter models.Chapter, chapters
 			var templ_7745c5c3_Var253 templ.SafeURL
 			templ_7745c5c3_Var253, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/series/%s/%s", media.Slug, nextSlug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2039, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2046, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var253))
 			if templ_7745c5c3_Err != nil {
@@ -5031,7 +5031,7 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		var templ_7745c5c3_Var255 string
 		templ_7745c5c3_Var255, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2134, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2141, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var255))
 		if templ_7745c5c3_Err != nil {
@@ -5044,7 +5044,7 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		var templ_7745c5c3_Var256 string
 		templ_7745c5c3_Var256, templ_7745c5c3_Err = templ.JoinStringErrs(chapter.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2135, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2142, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var256))
 		if templ_7745c5c3_Err != nil {
@@ -5057,7 +5057,7 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		var templ_7745c5c3_Var257 string
 		templ_7745c5c3_Var257, templ_7745c5c3_Err = templ.JoinStringErrs(getCountdownText(chapter.CreatedAt, premiumDuration))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2146, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2153, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var257))
 		if templ_7745c5c3_Err != nil {
@@ -5070,7 +5070,7 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		var templ_7745c5c3_Var258 templ.SafeURL
 		templ_7745c5c3_Var258, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s", media.Slug)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2161, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2168, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var258))
 		if templ_7745c5c3_Err != nil {
@@ -5083,7 +5083,7 @@ func PremiumChapterError(media models.Media, chapter models.Chapter, premiumDura
 		var templ_7745c5c3_Var259 string
 		templ_7745c5c3_Var259, templ_7745c5c3_Err = templ.JoinStringErrs(media.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2162, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2169, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var259))
 		if templ_7745c5c3_Err != nil {
@@ -5130,7 +5130,7 @@ func ChapterCommentsSection(media models.Media, chapter models.Chapter, comments
 			var templ_7745c5c3_Var261 string
 			templ_7745c5c3_Var261, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/chapter/%s/comments", chapter.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2204, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2211, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var261))
 			if templ_7745c5c3_Err != nil {
@@ -5196,7 +5196,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var263 string
 				templ_7745c5c3_Var263, templ_7745c5c3_Err = templ.JoinStringErrs(comment.UserUsername)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2243, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2250, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var263))
 				if templ_7745c5c3_Err != nil {
@@ -5209,7 +5209,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var264 string
 				templ_7745c5c3_Var264, templ_7745c5c3_Err = templ.JoinStringErrs(comment.CreatedAt.Format("Jan 2, 2006 at 3:04 PM"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2244, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2251, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var264))
 				if templ_7745c5c3_Err != nil {
@@ -5222,7 +5222,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 				var templ_7745c5c3_Var265 string
 				templ_7745c5c3_Var265, templ_7745c5c3_Err = templ.JoinStringErrs(comment.Content)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2246, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2253, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var265))
 				if templ_7745c5c3_Err != nil {
@@ -5240,7 +5240,7 @@ func CommentsList(media models.Media, chapter models.Chapter, comments []models.
 					var templ_7745c5c3_Var266 string
 					templ_7745c5c3_Var266, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/comments/%d", comment.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2252, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2259, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var266))
 					if templ_7745c5c3_Err != nil {
@@ -5295,7 +5295,7 @@ func ChapterListPanel(media models.Media, currentChapterSlug string, chapters []
 		var templ_7745c5c3_Var268 string
 		templ_7745c5c3_Var268, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d chapters", len(chapters)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2274, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2281, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var268))
 		if templ_7745c5c3_Err != nil {
@@ -5319,7 +5319,7 @@ func ChapterListPanel(media models.Media, currentChapterSlug string, chapters []
 			var templ_7745c5c3_Var270 templ.SafeURL
 			templ_7745c5c3_Var270, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/series/%s/%s", media.Slug, ch.Slug)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2285, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2292, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var270))
 			if templ_7745c5c3_Err != nil {
@@ -5345,7 +5345,7 @@ func ChapterListPanel(media models.Media, currentChapterSlug string, chapters []
 			var templ_7745c5c3_Var272 string
 			templ_7745c5c3_Var272, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/api/chapter-preview/%s/%s", media.Slug, ch.Slug))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2292, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2299, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var272))
 			if templ_7745c5c3_Err != nil {
@@ -5358,7 +5358,7 @@ func ChapterListPanel(media models.Media, currentChapterSlug string, chapters []
 			var templ_7745c5c3_Var273 string
 			templ_7745c5c3_Var273, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2293, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2300, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var273))
 			if templ_7745c5c3_Err != nil {
@@ -5393,7 +5393,7 @@ func ChapterListPanel(media models.Media, currentChapterSlug string, chapters []
 			var templ_7745c5c3_Var276 string
 			templ_7745c5c3_Var276, templ_7745c5c3_Err = templ.JoinStringErrs(ch.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2300, Col: 15}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/manga.templ`, Line: 2307, Col: 15}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var276))
 			if templ_7745c5c3_Err != nil {

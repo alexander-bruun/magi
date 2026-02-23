@@ -1280,61 +1280,68 @@ templ UpdateMetadataResults(results []metadata.SearchResult, mangaSlug string) {
 }
 
 templ Chapter(prevSlug string, nextSlug string, media models.Media, images []string, chapter models.Chapter, chapters []models.Chapter, comments []models.Comment, userRole string, userName string) {
-	@PageTitle(media.Name + ": " + chapter.Name)
-	<div class="uk-container">
-	@Breadcrumb([]BreadcrumbItem{
-		{Label: "Series", Href: "/series"},
-		{Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
-		{Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
-	})
-	<button
-		class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
-		type="button"
-		onclick="scrollToTop()"
-	>
-		<uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
-	</button>
-	<h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
-	@ChapterNavigation(media, chapter, chapters, prevSlug, nextSlug)
-	<!-- Chapter sliding panel (rendered once outside navigation) -->
-	if chapters != nil && len(chapters) > 0 {
-		<div id="chapter-panel-overlay" class="chapter-panel-overlay" onclick="closeChapterPanel()"></div>
-		<div id="chapter-panel" class="chapter-panel" data-media-slug={ media.Slug } data-chapter-slug={ chapter.Slug }>
-			<div id="chapter-panel-content" class="chapter-panel-content">
-				<div class="flex items-center justify-center p-8">
-					<div class="uk-spinner"></div>
-				</div>
-			</div>
-		</div>
-	}
-	<div id="reader-images-container" data-media-type={ media.Type }>
-		for _, imageURL := range images {
-			<div class="reader-image" data-url={ imageURL }></div>
-		}
-	</div>
-	<!-- Pagination Controls (bottom, hidden in webtoon mode) -->
-	<div id="reader-pagination-bottom" class="reader-pagination">
-		<div class="pagination-controls">
-			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('first-page-btn').click()" title="First page">
-				<uk-icon icon="chevrons-left" ratio="0.8"></uk-icon>
-			</button>
-			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('prev-page-btn').click()" title="Previous page">
-				<uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
-			</button>
-			<span  id="page-counter-bottom">1 / 1</span>
-			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('next-page-btn').click()" title="Next page">
-				<uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
-			</button>
-			<button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('last-page-btn').click()" title="Last page">
-				<uk-icon icon="chevrons-right" ratio="1.5"></uk-icon>
-			</button>
-		</div>
-	</div>
-	@ChapterNavigation(media, chapter, chapters, prevSlug, nextSlug)
-	<div id="comments-section" class="mt-8">
-		@ChapterCommentsSection(media, chapter, comments, userRole, userName)
-	</div>
-	</div>
+	   @PageTitle(media.Name + ": " + chapter.Name)
+	   <div class="uk-container">
+	   @Breadcrumb([]BreadcrumbItem{
+		   {Label: "Series", Href: "/series"},
+		   {Label: media.Name, Href: fmt.Sprintf("/series/%s", media.Slug)},
+		   {Label: chapter.Name, Href: fmt.Sprintf("/series/%s/%s", media.Slug, chapter.Slug)},
+	   })
+	   <button
+		   class="scroll-to-top uk-btn uk-btn-default h-10 w-10 rounded-full inline-flex items-center justify-center p-0 mr-2"
+		   type="button"
+		   onclick="scrollToTop()"
+	   >
+		   <uk-icon icon="ChevronUp" ratio="0.8"></uk-icon>
+	   </button>
+	   <h2 class="uk-heading-line uk-h2 uk-card-title uk-text-center"><span>{ media.Name }</span></h2>
+	   @ChapterNavigation(media, chapter, chapters, prevSlug, nextSlug)
+	   <!-- Chapter sliding panel (rendered once outside navigation) -->
+	   if chapters != nil && len(chapters) > 0 {
+		   <div id="chapter-panel-overlay" class="chapter-panel-overlay" onclick="closeChapterPanel()"></div>
+		   <div id="chapter-panel" class="chapter-panel" data-media-slug={ media.Slug } data-chapter-slug={ chapter.Slug }>
+			   <div id="chapter-panel-content" class="chapter-panel-content">
+				   <div class="flex items-center justify-center p-8">
+					   <div class="uk-spinner"></div>
+				   </div>
+			   </div>
+		   </div>
+	   }
+
+	   <!-- Reader Progress Bar -->
+	   <div class="progress-container" id="progress"></div>
+
+	   <div id="reader-images-container" data-media-type={ media.Type }>
+			for _, imageURL := range images {
+				<div class="reader-image" data-url={ imageURL }></div>
+			}
+	   </div>
+
+	   <!-- Pagination Controls (bottom, hidden in webtoon mode) -->
+	   <div id="reader-pagination-bottom" class="reader-pagination">
+		   <div class="pagination-controls">
+			   <button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('first-page-btn').click()" title="First page">
+				   <uk-icon icon="chevrons-left" ratio="0.8"></uk-icon>
+			   </button>
+			   <button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('prev-page-btn').click()" title="Previous page">
+				   <uk-icon icon="chevron-left" ratio="0.8"></uk-icon>
+			   </button>
+			   <span  id="page-counter-bottom">1 / 1</span>
+			   <button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('next-page-btn').click()" title="Next page">
+				   <uk-icon icon="chevron-right" ratio="0.8"></uk-icon>
+			   </button>
+			   <button type="button" class="uk-btn uk-btn-lg uk-btn-secondary uk-btn-icon btn-circular" onclick="document.getElementById('last-page-btn').click()" title="Last page">
+				   <uk-icon icon="chevrons-right" ratio="1.5"></uk-icon>
+			   </button>
+		   </div>
+	   </div>
+	   @ChapterNavigation(media, chapter, chapters, prevSlug, nextSlug)
+	   <div id="comments-section" class="mt-8">
+		   @ChapterCommentsSection(media, chapter, comments, userRole, userName)
+	   </div>
+
+	<!-- Reader Progress Bar Script removed: now integrated into reader.js -->
+	   </div>
 }
 
 // ChapterNavigation renders the navigation controls for prev/next chapter and chapter dropdown
