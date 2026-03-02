@@ -3,7 +3,7 @@ module github.com/alexander-bruun/magi
 go 1.26.0
 
 require (
-	github.com/a-h/templ v0.3.977
+	github.com/a-h/templ v0.3.1001
 	github.com/chai2010/webp v1.4.0
 	github.com/dchest/captcha v1.1.0
 	github.com/gofiber/contrib/v3/websocket v1.0.0
