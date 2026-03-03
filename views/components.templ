@@ -13,9 +13,9 @@ import (
 func isNewUpdate(updatedAt time.Time) bool {
 	now := time.Now()
 	duration := now.Sub(updatedAt)
-	// Get config to determine duration, default to 48 hours if config fails
+	// Get config to determine duration, default to 12 hours if config fails
 	config, err := models.GetAppConfig()
-	hours := 48
+	hours := 12
 	if err == nil {
 		hours = config.NewBadgeDuration
 	}

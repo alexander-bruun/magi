@@ -1171,52 +1171,73 @@ func handleNewMedia(cleanedName, slug, librarySlug, absolutePath string, _ metad
 		log.Debugf("No tags found in metadata for new media '%s'", slug)
 	}
 
-	// Start async image processing after series is created
-	if os.Getenv("FIBER_PREFORK_CHILD") == "" {
-		go func() {
-			var finalImageURL string
-			log.Debugf("Starting async image processing for series '%s'", slug)
+	// Synchronously generate and set poster using robust logic
+	var posterURL string
+	var usedLocal bool
 
-			// Always try local images first
-			log.Debugf("Attempting local poster generation for new media '%s'", slug)
-			url, err := HandleLocalImages(slug, absolutePath, dataBackend)
-			log.Debugf("HandleLocalImages returned for '%s': url='%s', err='%v'", slug, url, err)
-			if err == nil && url != "" {
-				finalImageURL = url
-				log.Debugf("Successfully generated poster from local images for new media '%s': %s", slug, finalImageURL)
-			} else {
-				log.Debugf("Failed to generate poster from local images for new media '%s': err=%v", slug, err)
-				// If no local images, try metadata cover
-				if aggregatedMeta != nil && len(aggregatedMeta.CoverArtURLs) > 0 {
-					coverURL := aggregatedMeta.CoverArtURLs[0] // Use first cover URL
-					if coverURL != "" {
-						log.Debugf("Found metadata cover URL for '%s': %s", slug, coverURL)
-						if url, err := DownloadAndStoreImage(slug, coverURL, dataBackend); err == nil {
-							finalImageURL = url
-							log.Debugf("Successfully downloaded cover for '%s': %s", slug, finalImageURL)
-						} else {
-							log.Debugf("Failed to download cover for '%s': %v", slug, err)
-						}
-					} else {
-						log.Debugf("No cover URL in metadata for '%s'", slug)
-					}
-				} else {
-					log.Debugf("No metadata found for '%s'", slug)
-				}
+	// Try local poster files in the media directory
+	posterCandidates := []string{"poster.webp", "poster.jpg", "poster.jpeg", "poster.png", "thumbnail.webp", "thumbnail.jpg", "thumbnail.jpeg", "thumbnail.png", "cover.webp", "cover.jpg", "cover.jpeg", "cover.png"}
+	for _, candidate := range posterCandidates {
+		posterPath := filepath.Join(absolutePath, candidate)
+		if stat, err := os.Stat(posterPath); err == nil {
+			localSize := stat.Size()
+			currentSize := int64(-1)
+			if currentData, err := dataBackend.Load("posters/" + slug + ".webp"); err == nil {
+				currentSize = int64(len(currentData))
 			}
+			if currentSize == -1 || localSize != currentSize {
+				log.Debugf("Using local poster '%s' for media '%s' (local size: %d, current size: %d)", posterPath, slug, localSize, currentSize)
+				posterURL, err = files.ProcessLocalImageWithThumbnails(posterPath, slug, dataBackend, true)
+				if err != nil {
+					log.Warnf("Failed to process local poster '%s' for media '%s': %v", posterPath, slug, err)
+					continue
+				}
+				usedLocal = true
+				break
+			} else {
+				log.Debugf("Skipping media '%s': local poster '%s' has same size as current (%d)", slug, posterPath, localSize)
+				usedLocal = true
+				break
+			}
+		}
+	}
 
-			// Update media with cover URL if we got one
-			if finalImageURL != "" {
-				log.Debugf("Updating media '%s' with cover URL: %s", slug, finalImageURL)
-				if err := models.UpdateMediaCoverArtURL(slug, finalImageURL); err != nil {
-					log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
-				} else {
-					log.Debugf("Successfully updated cover URL for media '%s'", slug)
-				}
+	// If no local poster was used, try downloading from potential poster URLs (from metadata)
+	if !usedLocal && aggregatedMeta != nil && len(aggregatedMeta.CoverArtURLs) > 0 {
+		coverURL := aggregatedMeta.CoverArtURLs[0]
+		if coverURL != "" {
+			log.Debugf("Found metadata cover URL for '%s': %s", slug, coverURL)
+			if url, err := DownloadAndStoreImage(slug, coverURL, dataBackend); err == nil {
+				posterURL = url
+				usedLocal = true
+				log.Debugf("Successfully downloaded cover for '%s': %s", slug, posterURL)
 			} else {
-				log.Debugf("No cover URL found for media '%s'", slug)
+				log.Debugf("Failed to download cover for '%s': %v", slug, err)
 			}
-		}()
+		}
+	}
+
+	// If still no poster, try extracting from archive
+	if !usedLocal {
+		log.Debugf("Extracting poster from archive for media '%s'", slug)
+		posterURL, err = files.ExtractPosterImage(absolutePath, slug, dataBackend, true)
+		if err != nil {
+			log.Warnf("Failed to extract poster for media '%s': %v", slug, err)
+		} else {
+			usedLocal = true
+		}
+	}
+
+	// Update media with cover URL if we got one
+	if posterURL != "" {
+		log.Debugf("Updating media '%s' with cover URL: %s", slug, posterURL)
+		if err := models.UpdateMediaCoverArtURL(slug, posterURL); err != nil {
+			log.Errorf("Failed to update cover URL for media '%s': %s", slug, err)
+		} else {
+			log.Debugf("Successfully updated cover URL for media '%s'", slug)
+		}
+	} else {
+		log.Debugf("No cover URL found for media '%s'", slug)
 	}
 
 	added, deleted, newChapterSlugs, presentCount, err := IndexChapters(slug, absolutePath, librarySlug, false)

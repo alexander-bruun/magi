@@ -137,6 +137,9 @@ templ LibraryTable(libraries []models.Library) {
 										<button type="button" class="uk-btn uk-btn-secondary uk-btn-icon h-8 w-8 flex-shrink-0 spin-on-request" hx-post={ fmt.Sprintf("/admin/libraries/%s/index-chapters", library.Slug) } hx-trigger="click" hx-disabled-elt="this" hx-on:click='this.innerHTML="<uk-icon icon=\"RefreshCw\"></uk-icon>"' title="Index Chapters">
 											<uk-icon icon="BookOpen"></uk-icon>
 										</button>
+										<button type="button" class="uk-btn uk-btn-secondary uk-btn-icon h-8 w-8 flex-shrink-0 spin-on-request" hx-post={ fmt.Sprintf("/admin/libraries/%s/recalculate-recommendations", library.Slug) } hx-trigger="click" hx-disabled-elt="this" hx-on:click='this.innerHTML="<uk-icon icon=\"RefreshCw\"></uk-icon>"' title="Recalculate Recommendations">
+											<uk-icon icon="Star"></uk-icon>
+										</button>
 									</div>
 								</div>
 							</div>

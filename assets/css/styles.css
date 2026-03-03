@@ -3648,15 +3648,15 @@ body.webtoon-focus-open {
 }
 
 /* Sticky poster on large screens */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
     #poster {
         position: sticky;
-        top: 0px;
+        top: 20px;
     }
 }
 
 /* Sticky trending on large screens */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
     #trending {
         position: sticky;
         top: 0px;

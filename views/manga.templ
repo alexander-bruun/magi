@@ -379,9 +379,14 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 					<div id="chapters-section">
 						@MediaChaptersSection(media, chapters, sortParam, lastReadChapterSlug, premiumDuration, userRole, isHighlighted, unit, userName, page, limit, chapterCount)
 					</div>
+
+					<!-- Recommendations Slider (moved below chapter list) -->
+					<!-- removed inline placeholder; the slider will be rendered in its own container below -->
 				</div>
 			</div>
 		</div>
+		<!-- Recommendations placed in their own container (full-width inside main container) -->
+		<div class="uk-container mt-8" id="recommendations-slider-root" hx-get={ fmt.Sprintf("/series/%s/recommendations/slider", media.Slug) } hx-trigger="load" hx-swap="outerHTML"></div>
 		<!-- Edit Poster Modal for Moderators/Admins -->
 		if userRole == "moderator" || userRole == "admin" {
 		<div id="edit-poster-modal" uk-modal role="dialog" aria-labelledby="edit-poster-modal-title" aria-modal="true">
@@ -713,17 +718,17 @@ templ Media(media models.Media, chapters []models.Chapter, firstChapterSlug stri
 		</div>
 		}
 		<script>
-		function toggleTags() {
-			const hiddenTags = document.getElementById('hidden-tags');
-			const viewMoreBtn = document.getElementById('view-more-tags');
-			if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
-				hiddenTags.style.display = 'inline';
-				viewMoreBtn.textContent = 'View Less';
-			} else {
-				hiddenTags.style.display = 'none';
-				viewMoreBtn.textContent = '+' + viewMoreBtn.getAttribute('data-count') + ' more';
-			}
-		}
+		   function toggleTags() {
+			   const hiddenTags = document.getElementById('hidden-tags');
+			   const viewMoreBtn = document.getElementById('view-more-tags');
+			   if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
+				   hiddenTags.style.display = 'inline';
+				   viewMoreBtn.textContent = 'View Less';
+			   } else {
+				   hiddenTags.style.display = 'none';
+				   viewMoreBtn.textContent = '+' + viewMoreBtn.getAttribute('data-count') + ' more';
+			   }
+		   }
 		</script>
 	</div>
 }
@@ -2173,30 +2178,30 @@ templ PremiumChapterError(media models.Media, chapter models.Chapter, premiumDur
 		</div>
 	</div>
 	<script>
-	// Update countdown every second
-	function updateCountdown() {
-	const countdownEl = document.getElementById(countdown);
-	if (countdownEl) {
-	// This would need server-side calculation for accuracy
-	// For now, just refresh the page or implement client-side calculation
-	setTimeout(() => {
-	location.reload();
-	}, 30000); // Refresh every 30 seconds
-	}
-	}
-	updateCountdown();
-
-	function toggleTags() {
-		const hiddenTags = document.getElementById('hidden-tags');
-		const viewMoreBtn = document.getElementById('view-more-btn');
-		if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
-			hiddenTags.style.display = 'inline';
-			viewMoreBtn.textContent = 'View Less';
-		} else {
-			hiddenTags.style.display = 'none';
-			viewMoreBtn.textContent = 'View More';
+		// Update countdown every second
+		function updateCountdown() {
+			const countdownEl = document.getElementById('countdown');
+			if (countdownEl) {
+				// This would need server-side calculation for accuracy
+				// For now, just refresh the page or implement client-side calculation
+				setTimeout(() => {
+					location.reload();
+				}, 30000); // Refresh every 30 seconds
+			}
 		}
-	}
+		updateCountdown();
+
+		function toggleTags() {
+			const hiddenTags = document.getElementById('hidden-tags');
+			const viewMoreBtn = document.getElementById('view-more-btn');
+			if (hiddenTags.style.display === 'none' || hiddenTags.style.display === '') {
+				hiddenTags.style.display = 'inline';
+				viewMoreBtn.textContent = 'View Less';
+			} else {
+				hiddenTags.style.display = 'none';
+				viewMoreBtn.textContent = 'View More';
+			}
+		}
 	</script>
 }
 

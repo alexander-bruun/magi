@@ -295,11 +295,19 @@ func CreateMedia(media Media) error {
 	`
 
 	createdAt, updatedAt := timestamps.UnixTimestamps()
-	_, err = db.Exec(query,
-		media.Slug, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.FileCount, createdAt, updatedAt,
-		media.StartDate, media.EndDate, media.ChapterCount, media.VolumeCount, media.AverageScore, media.Popularity, media.Favorites, media.Demographic, media.Publisher, media.Magazine, media.Serialization,
-		string(authorsJSON), string(artistsJSON), string(genresJSON), string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON))
-	return err
+	       _, err = db.Exec(query,
+		       media.Slug, media.Name, media.Author, media.Description, media.Year, media.OriginalLanguage, media.Type, media.Status, media.ContentRating, media.CoverArtURL, media.FileCount, createdAt, updatedAt,
+		       media.StartDate, media.EndDate, media.ChapterCount, media.VolumeCount, media.AverageScore, media.Popularity, media.Favorites, media.Demographic, media.Publisher, media.Magazine, media.Serialization,
+		       string(authorsJSON), string(artistsJSON), string(genresJSON), string(charactersJSON), string(alternativeTitlesJSON), string(attributionLinksJSON))
+	       if err != nil {
+		       return err
+	       }
+	       // Compute and store recommendations at index time
+	       m, err := GetMediaUnfiltered(media.Slug)
+	       if err == nil && m != nil {
+		       _ = ComputeAndStoreRecommendations(m)
+	       }
+	       return nil
 }
 
 // GetMedia retrieves a single media by slug from enabled libraries

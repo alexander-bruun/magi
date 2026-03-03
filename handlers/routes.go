@@ -224,6 +224,9 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	// ========================================
 	api = app.Group("/api")
 
+	// Register missing recommendations API endpoint
+	api.Get("/series/:media/recommendations", HandleMediaRecommendations)
+
 	api.Get("/config/stripe", HandleGetStripeConfig)
 
 	// Browser Challenge API (invisible JS/cookie challenge)
@@ -305,7 +308,13 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	// Must be registered before the /series group to ensure proper route matching.
 	// Min-length constraint on :slug avoids conflicts with short path segments like "comments", "chapters", etc.
 	// ========================================
-	app.Get("/series/:media<[A-Za-z0-9_-]+>/:chapter<[A-Za-z0-9_-]+>/:slug<[A-Za-z0-9_-]{30,}>", BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ChapterImageHandler)
+
+	// Explicitly register recommendations slider at top-level so it cannot be
+	// mistaken for an encrypted chapter image URL. This ensures URLs like
+	// /series/:media/recommendations/slider are routed correctly.
+	app.Get("/series/:media<[^/]+>/recommendations/slider", HandleMediaRecommendationsSlider)
+
+	app.Get("/series/:media<[^/]+>/:chapter<[A-Za-z0-9_-]+>/:slug<[A-Za-z0-9_-]{30,}>", BotDetectionMiddleware(), BrowserChallengeMiddleware(), ConditionalAuthMiddleware(), ChapterImageHandler)
 
 	// ========================================
 	// Chapter Routes (top-level)
@@ -354,37 +363,40 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	media.Get("/tags/fragment", HandleTagsFragment)
 
 	// Individual media (restricted slug) - registered after chapter routes to avoid conflicts
-	media.Get("/:media<[A-Za-z0-9_-]+>", HandleMedia)
-	media.Post("/:media<[A-Za-z0-9_-]+>", HandleMedia)
+	media.Get("/:media<[^/]+>", HandleMedia)
+	media.Post("/:media<[^/]+>", HandleMedia)
+
+	// Recommendations slider HTML fragment
+	media.Get("/:media<[^/]+>/recommendations/slider", HandleMediaRecommendationsSlider)
 
 	// Media interactions
-	media.Post("/:media<[A-Za-z0-9_-]+>/vote", HandleMediaVote)
-	media.Get("/:media<[A-Za-z0-9_-]+>/vote/fragment", HandleMediaVoteFragment)
-	media.Post("/:media<[A-Za-z0-9_-]+>/favorite", HandleMediaFavorite)
-	media.Get("/:media<[A-Za-z0-9_-]+>/favorite/fragment", HandleMediaFavoriteFragment)
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)
-	media.Post("/:media<[A-Za-z0-9_-]+>/highlights/remove", AuthMiddleware("moderator"), HandleRemoveHighlight)
+	media.Post("/:media<[^/]+>/vote", HandleMediaVote)
+	media.Get("/:media<[^/]+>/vote/fragment", HandleMediaVoteFragment)
+	media.Post("/:media<[^/]+>/favorite", HandleMediaFavorite)
+	media.Get("/:media<[^/]+>/favorite/fragment", HandleMediaFavoriteFragment)
+	media.Post("/:media<[^/]+>/highlights/add", AuthMiddleware("moderator"), HandleAddHighlight)
+	media.Post("/:media<[^/]+>/highlights/remove", AuthMiddleware("moderator"), HandleRemoveHighlight)
 
 	// Poster management
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
-	media.Get("/:media<[A-Za-z0-9_-]+>/poster/metadata", AuthMiddleware("moderator"), HandlePosterMetadataSelect)
-	media.Post("/:media<[A-Za-z0-9_-]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
+	media.Get("/:media<[^/]+>/poster/chapters", AuthMiddleware("moderator"), HandlePosterChapterSelect)
+	media.Get("/:media<[^/]+>/poster/selector", AuthMiddleware("moderator"), HandlePosterSelector)
+	media.Get("/:media<[^/]+>/poster/preview", AuthMiddleware("moderator"), HandlePosterPreview)
+	media.Get("/:media<[^/]+>/poster/metadata", AuthMiddleware("moderator"), HandlePosterMetadataSelect)
+	media.Post("/:media<[^/]+>/poster/set", AuthMiddleware("moderator"), HandlePosterSet)
 
 	// Media metadata management
-	media.Get("/:media<[A-Za-z0-9_-]+>/metadata/search", AuthMiddleware("admin"), HandleUpdateMetadataMedia)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/edit", AuthMiddleware("admin"), HandleManualEditMetadata)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
-	media.Post("/:media<[A-Za-z0-9_-]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
-	media.Post("/:media<[A-Za-z0-9_-]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
+	media.Get("/:media<[^/]+>/metadata/search", AuthMiddleware("admin"), HandleUpdateMetadataMedia)
+	media.Post("/:media<[^/]+>/metadata/edit", AuthMiddleware("admin"), HandleManualEditMetadata)
+	media.Post("/:media<[^/]+>/metadata/reindex", AuthMiddleware("admin"), HandleReindexChapters)
+	media.Post("/:media<[^/]+>/metadata/refresh", AuthMiddleware("admin"), HandleRefreshMetadata)
+	media.Post("/:media<[^/]+>/delete", AuthMiddleware("admin"), HandleDeleteMedia)
 
 	// Chapter comments
-	media.Get("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", HandleGetCommentsForSeries)
-	media.Post("/:media<[A-Za-z0-9_-]+>/chapter-:chapter/comments", AuthMiddleware("reader"), HandleCreateCommentForSeries)
+	media.Get("/:media<[^/]+>/chapter-:chapter/comments", HandleGetCommentsForSeries)
+	media.Post("/:media<[^/]+>/chapter-:chapter/comments", AuthMiddleware("reader"), HandleCreateCommentForSeries)
 
 	// Chapter page (slug-based URL) - must be registered AFTER all specific media sub-routes
-	media.Get("/:media<[A-Za-z0-9_-]+>/:chapter<[A-Za-z0-9_-]+>", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapterBySlug)
+	media.Get("/:media<[^/]+>/:chapter<[A-Za-z0-9_-]+>", RateLimitingMiddleware(), BotDetectionMiddleware(), HandleChapterBySlug)
 
 	// ========================================
 	// Account Routes
@@ -486,6 +498,8 @@ func Initialize(app *fiber.App, fs *store.FileStore, backupDirectory string, por
 	libraries.Post("/:slug/index-posters", HandleIndexPosters)
 	libraries.Post("/:slug/index-metadata", HandleIndexMetadata)
 	libraries.Post("/:slug/index-chapters", HandleIndexChapters)
+	// Recalculate recommendations for all media in a library (async)
+	libraries.Post("/:slug/recalculate-recommendations", HandleRecalculateRecommendations)
 	libraries.Get("/helpers/add-folder", HandleAddFolder)
 	libraries.Get("/helpers/remove-folder", HandleRemoveFolder)
 	libraries.Get("/helpers/cancel-edit", HandleCancelEdit)

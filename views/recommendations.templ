@@ -1,0 +1,16 @@
+package views
+
+import (
+	"github.com/alexander-bruun/magi/models"
+)
+
+templ RecommendationsSlider(recommendations []models.Media) {
+	if len(recommendations) == 0 {
+		return
+	}
+	// Reuse the site's MediaSlider/MediaCard styles used on the home page
+	<div class="recommendations-slider-container mt-8 mb-8">
+		<h2 class="text-xl font-bold mb-4">Recommended Series</h2>
+		@MediaSlider(recommendations, 140, 200, true, true, "")
+	</div>
+}

@@ -153,7 +153,7 @@ var configColumns = []colDef{
 	{"premium_cooldown_scaling_enabled", "0"},
 	{"maintenance_enabled", "0"},
 	{"maintenance_message", "'We are currently performing maintenance. Please check back later.'"},
-	{"new_badge_duration", "48"},
+	{"new_badge_duration", "12"},
 	{"parallel_indexing_enabled", "1"},
 	{"parallel_indexing_threshold", "100"},
 	{"discord_invite_link", "''"},
@@ -225,7 +225,7 @@ func defaultConfig() AppConfig {
 		PremiumEarlyAccessDuration:    3600,
 		MaxPremiumChapters:            3,
 		MaintenanceMessage:            "We are currently performing maintenance. Please check back later.",
-		NewBadgeDuration:              48,
+		NewBadgeDuration:              12,
 		ParallelIndexingEnabled:       true,
 		ParallelIndexingThreshold:     100,
 	}
@@ -291,7 +291,7 @@ func (c *AppConfig) Validate() {
 		c.MaxPremiumChapters = 0
 	}
 	if c.NewBadgeDuration < 1 {
-		c.NewBadgeDuration = 48
+		c.NewBadgeDuration = 12
 	}
 	if c.ParallelIndexingThreshold < 1 {
 		c.ParallelIndexingThreshold = 100

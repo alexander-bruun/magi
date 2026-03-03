@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS app_config (
     premium_cooldown_scaling_enabled INTEGER NOT NULL DEFAULT 0,
     maintenance_enabled INTEGER NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
     maintenance_message TEXT NOT NULL DEFAULT 'We are currently performing maintenance. Please check back later.', -- Custom maintenance message
-    new_badge_duration INTEGER NOT NULL DEFAULT 48, -- Duration in hours that media is marked as NEW after update
+    new_badge_duration INTEGER NOT NULL DEFAULT 12, -- Duration in hours that media is marked as NEW after update
     stripe_enabled INTEGER NOT NULL DEFAULT 0, -- 1 = enabled, 0 = disabled
     stripe_publishable_key TEXT NOT NULL DEFAULT '',
     stripe_secret_key TEXT NOT NULL DEFAULT '',
@@ -56,5 +56,5 @@ CREATE TABLE IF NOT EXISTS app_config (
 INSERT INTO app_config (id, allow_registration, max_users, content_rating_limit, metadata_provider, 
     rate_limit_enabled, rate_limit_requests, rate_limit_window, rate_limit_block_duration, bot_detection_enabled, bot_series_threshold, bot_chapter_threshold, bot_detection_window, bot_ban_duration,
     image_access_secret, premium_early_access_duration, max_premium_chapters, premium_cooldown_scaling_enabled, maintenance_enabled, maintenance_message, new_badge_duration, stripe_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, honeypot_enabled, honeypot_auto_block, honeypot_auto_ban, honeypot_block_duration, parallel_indexing_enabled, parallel_indexing_threshold, browser_challenge_enabled, browser_challenge_difficulty, browser_challenge_validity_hours, browser_challenge_ip_bound, referer_validation_enabled, tarpit_enabled, tarpit_max_delay, timing_analysis_enabled, timing_variance_threshold, tls_fingerprint_enabled, tls_fingerprint_strict, behavioral_analysis_enabled, behavioral_score_threshold, header_analysis_enabled, header_analysis_threshold, header_analysis_strict, discord_invite_link, metadata_embedding_enabled)
-SELECT 1, 1, 0, 3, 'mangadex', 1, 100, 60, 300, 1, 5, 10, 60, 300, '', 3600, 3, 1, 0, 'We are currently performing maintenance. Please check back later.', 48, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0, '', 0
+SELECT 1, 1, 0, 3, 'mangadex', 1, 100, 60, 300, 1, 5, 10, 60, 300, '', 3600, 3, 1, 0, 'We are currently performing maintenance. Please check back later.', 12, 0, '', '', '', 0, 1, 0, 60, 1, 100, 0, 3, 24, 0, 0, 0, 5000, 0, 0.1, 0, 0, 0, 40, 0, 5, 0, '', 0
 WHERE NOT EXISTS (SELECT 1 FROM app_config WHERE id = 1);

@@ -569,6 +569,46 @@ func HandleIndexChapters(c fiber.Ctx) error {
 	return c.SendString(`<uk-icon icon="BookOpen"></uk-icon>`)
 }
 
+// HandleRecalculateRecommendations triggers recomputation of recommendations for all media in the library
+func HandleRecalculateRecommendations(c fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return SendBadRequestError(c, "Slug cannot be empty")
+	}
+
+	library, err := models.GetLibrary(slug)
+	if err != nil {
+		return SendInternalServerError(c, ErrInternalServerError, err)
+	}
+	if library == nil {
+		return SendNotFoundError(c, ErrLibraryNotFound)
+	}
+
+	// Run recomputation in background to avoid blocking the UI
+	go func(libSlug string, libName string) {
+		log.Infof("Starting recommendation recompute for library '%s'", libName)
+		medias, err := models.GetMediasByLibrarySlug(libSlug)
+		if err != nil {
+			log.Errorf("Failed to list medias for library '%s': %v", libSlug, err)
+			return
+		}
+		for _, m := range medias {
+			mm, err := models.GetMediaUnfiltered(m.Slug)
+			if err != nil || mm == nil {
+				log.Debugf("Skipping media '%s' for recommendations: %v", m.Slug, err)
+				continue
+			}
+			if err := models.ComputeAndStoreRecommendations(mm); err != nil {
+				log.Warnf("Failed to compute recommendations for '%s': %v", m.Slug, err)
+			}
+		}
+		log.Infof("Completed recommendation recompute for library '%s'", libName)
+	}(slug, library.Name)
+
+	// Immediate UI feedback: show star icon
+	return c.SendString(`<uk-icon icon="Star"></uk-icon>`)
+}
+
 // HandleAddFolder returns an empty folder form fragment for HTMX inserts.
 func HandleAddFolder(c fiber.Ctx) error {
 	// If not an HTMX request, redirect to the libraries page
