@@ -6,8 +6,8 @@ require (
 	github.com/a-h/templ v0.3.977
 	github.com/chai2010/webp v1.4.0
 	github.com/dchest/captcha v1.1.0
-	github.com/gofiber/contrib/v3/websocket v1.0.0
-	github.com/gofiber/fiber/v3 v3.0.0
+	github.com/gofiber/contrib/v3/websocket v1.1.0
+	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/gofiber/template/html/v3 v3.0.2
 	github.com/ncruces/go-sqlite3 v0.30.5
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
@@ -50,7 +50,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.69.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
