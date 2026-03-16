@@ -9,7 +9,7 @@ require (
 	github.com/gofiber/contrib/v3/websocket v1.1.0
 	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/gofiber/template/html/v3 v3.0.2
-	github.com/ncruces/go-sqlite3 v0.31.1
+	github.com/ncruces/go-sqlite3 v0.32.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nwaples/rardecode/v2 v2.2.2
 	github.com/prometheus/client_golang v1.23.2
