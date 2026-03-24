@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stripe/stripe-go/v79 v79.12.0
 	github.com/tdewolff/minify/v2 v2.24.10
-	github.com/yuin/goldmark v1.7.16
+	github.com/yuin/goldmark v1.8.1
 	golang.org/x/crypto v0.49.0
 	golang.org/x/image v0.37.0
 )
