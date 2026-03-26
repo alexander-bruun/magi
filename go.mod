@@ -16,7 +16,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stripe/stripe-go/v79 v79.12.0
-	github.com/tdewolff/minify/v2 v2.24.10
+	github.com/tdewolff/minify/v2 v2.24.11
 	github.com/yuin/goldmark v1.7.16
 	golang.org/x/crypto v0.49.0
 	golang.org/x/image v0.37.0
@@ -43,7 +43,7 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/savsgio/gotils v0.0.0-20250924091648-bce9a52d7761 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/tdewolff/parse/v2 v2.8.10 // indirect
+	github.com/tdewolff/parse/v2 v2.8.11 // indirect
 	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/tinylib/msgp v1.6.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
