@@ -19,7 +19,7 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.12
 	github.com/yuin/goldmark v1.8.2
 	golang.org/x/crypto v0.50.0
-	golang.org/x/image v0.38.0
+	golang.org/x/image v0.39.0
 )
 
 require (
