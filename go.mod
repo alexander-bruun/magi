@@ -8,7 +8,7 @@ require (
 	github.com/dchest/captcha v1.1.0
 	github.com/gofiber/contrib/v3/websocket v1.1.0
 	github.com/gofiber/fiber/v3 v3.1.0
-	github.com/gofiber/template/html/v3 v3.0.2
+	github.com/gofiber/template/html/v3 v3.0.3
 	github.com/ncruces/go-sqlite3 v0.32.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nwaples/rardecode/v2 v2.2.2
@@ -29,7 +29,7 @@ require (
 	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/gofiber/schema v1.7.0 // indirect
 	github.com/gofiber/template/v2 v2.1.0 // indirect
-	github.com/gofiber/utils/v2 v2.0.2 // indirect
+	github.com/gofiber/utils/v2 v2.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
